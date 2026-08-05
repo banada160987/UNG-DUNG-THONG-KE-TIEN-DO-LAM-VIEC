@@ -19,8 +19,13 @@ export default function Layout({ children, title }) {
         
         <div style={styles.headerRight}>
           <div style={styles.navLinks}>
-            <Link to="/" style={styles.navLink}>Lãnh đạo</Link>
-            <Link to="/committee" style={styles.navLink}>Tiểu ban</Link>
+            <Link to="/" style={{...styles.navLink, color: 'var(--primary)'}}>Trang Công Khai</Link>
+            <span style={{color: '#ccc'}}>|</span>
+            <Link to="/admin" style={styles.navLink}>Lãnh đạo</Link>
+            <Link to="/admin/committee" style={styles.navLink}>Tiểu ban</Link>
+            <Link to="/admin/guests" style={styles.navLink}>Khách Mời</Link>
+            <Link to="/admin/sponsors" style={styles.navLink}>Tài Trợ</Link>
+            <Link to="/admin/news" style={styles.navLink}>Tin Tức</Link>
           </div>
           <span style={styles.userInfo}>{user?.email}</span>
           <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">

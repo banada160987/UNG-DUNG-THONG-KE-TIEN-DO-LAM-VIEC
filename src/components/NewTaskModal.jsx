@@ -11,6 +11,7 @@ export default function NewTaskModal({ committees, onClose, onTaskAdded }) {
     deadline: '',
     location: '',
     expected_result: '',
+    budget_estimate: 0,
     committee_id: committees[0]?.id || ''
   });
 
@@ -93,6 +94,11 @@ export default function NewTaskModal({ committees, onClose, onTaskAdded }) {
           <div style={styles.inputGroup}>
             <label style={styles.label}>Kết quả mong đợi (Rõ kết quả)</label>
             <textarea name="expected_result" value={formData.expected_result} onChange={handleChange} required style={{...styles.input, minHeight: '80px'}} />
+          </div>
+
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Dự trù kinh phí (VNĐ)</label>
+            <input type="number" name="budget_estimate" value={formData.budget_estimate} onChange={handleChange} style={styles.input} />
           </div>
 
           <div style={styles.footer}>

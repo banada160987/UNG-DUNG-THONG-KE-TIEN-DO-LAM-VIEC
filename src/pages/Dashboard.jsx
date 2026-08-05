@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { AlertTriangle, CheckCircle, Clock, Plus } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign } from 'lucide-react';
 import NewTaskModal from '../components/NewTaskModal';
 
 export default function Dashboard() {
@@ -54,6 +54,7 @@ export default function Dashboard() {
   };
 
   const redAlertTasks = getRedAlertTasks();
+  const totalBudget = tasks.reduce((acc, t) => acc + (Number(t.budget_estimate) || 0), 0);
 
   return (
     <Layout title="Tổng quan Ban Tổ chức">
@@ -113,6 +114,13 @@ export default function Dashboard() {
             <div>
               <div style={styles.statValue}>{tasks.filter(t => t.status === 'completed').length}</div>
               <div style={styles.statLabel}>Đã hoàn thành</div>
+            </div>
+          </div>
+          <div className="glass" style={styles.statCard}>
+            <DollarSign color="#eab308" size={32} />
+            <div>
+              <div style={{...styles.statValue, color: '#eab308'}}>{totalBudget.toLocaleString()} đ</div>
+              <div style={styles.statLabel}>Tổng dự trù kinh phí</div>
             </div>
           </div>
 
