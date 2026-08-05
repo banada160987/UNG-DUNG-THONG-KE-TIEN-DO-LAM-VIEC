@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
-import { Calendar, Users, Heart, Search, MapPin, Phone, Mail, Award, BookOpen, Clock } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronRight } from 'lucide-react';
 
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
@@ -9,13 +9,9 @@ export default function PublicHome() {
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
-  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     fetchPublicData();
-    const handleScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const fetchPublicData = async () => {
@@ -38,764 +34,601 @@ export default function PublicHome() {
     e.preventDefault();
     if (!rsvpCode) return;
     try {
-      const { data, error } = await supabase.from('cbq_guests').select('*').eq('invitation_code', rsvpCode).single();
-      if (error || !data) setRsvpResult({ error: 'Không tìm thấy mã khách mời. Vui lòng kiểm tra lại.' });
+      const { data, error } = await supabase.from('cbq_guests').select('*').eq('invitation_code', rsvpCode.trim()).single();
+      if (error || !data) setRsvpResult({ error: 'Không tìm thấy mã khách mời. Vui lòng kiểm tra lại mã số.' });
       else setRsvpResult({ success: true, guest: data });
     } catch (err) {
       setRsvpResult({ error: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
     }
   };
 
-  const scrollTo = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  const handleConfirm = async (status) => {
+    try {
+      const { error } = await supabase
+        .from('cbq_guests')
+        .update({ rsvp_status: status })
+        .eq('id', rsvpResult.guest.id);
+        
+      if (!error) {
+        setRsvpResult(prev => ({
+          ...prev,
+          guest: { ...prev.guest, rsvp_status: status }
+        }));
+        alert(status === 'attending' ? 'Cảm ơn Quý vị đã xác nhận tham dự!' : 'Cảm ơn Quý vị đã phản hồi!');
+      } else {
+        alert('Có lỗi xảy ra khi xác nhận, vui lòng thử lại.');
+      }
+    } catch (err) {
+      alert('Có lỗi xảy ra, vui lòng thử lại.');
+    }
   };
 
-  return (
-    <div style={styles.container}>
-      {/* Modern Navbar */}
-      <nav style={{...styles.navbar, ...(scrolled ? styles.navbarScrolled : {})}}>
-        <div style={styles.navContainer}>
-          <div style={styles.logoArea} onClick={() => window.scrollTo(0, 0)}>
-            <div style={styles.logoCircle}>30</div>
-            <div style={styles.brandGroup}>
-              <span style={styles.brandName}>THPT Cao Bá Quát</span>
-              <span style={styles.brandSub}>1996 - 2026</span>
-            </div>
-          </div>
-          <div style={styles.navLinks}>
-            <button onClick={() => scrollTo('gioithieu')} style={styles.navLink}>Giới thiệu</button>
-            <button onClick={() => scrollTo('tintuc')} style={styles.navLink}>Tin tức</button>
-            <button onClick={() => scrollTo('vinhdanh')} style={styles.navLink}>Bảng vàng</button>
-            <button onClick={() => scrollTo('thiepmoi')} style={styles.navLink}>Tra cứu</button>
-            <Link to="/admin" style={styles.adminBtn}>Ban Tổ Chức</Link>
-          </div>
-        </div>
-      </nav>
+  const currentDate = new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
-      {/* Hero Section - Red/Gold Theme */}
-      <header style={styles.hero}>
-        <div style={styles.heroOverlay}></div>
-        <div style={styles.heroContent}>
-          <div style={styles.badge}>Lễ Kỷ Niệm Thành Lập Trường</div>
-          <h1 style={styles.heroTitle}>30 Năm<br/><span style={styles.textGold}>Một Hành Trình</span></h1>
-          <p style={styles.heroText}>
-            Trường THPT Cao Bá Quát tự hào là nơi ươm mầm tài năng, chắp cánh ước mơ cho bao thế hệ học sinh. Kính mời các cựu giáo viên, cựu học sinh về thăm lại mái trường xưa.
-          </p>
-          <div style={styles.heroActions}>
-            <button onClick={() => scrollTo('thiepmoi')} style={styles.btnGold}>Tra cứu Thư mời điện tử</button>
-            <button onClick={() => scrollTo('tintuc')} style={styles.btnOutline}>Xem thông báo mới</button>
+  return (
+    <div style={styles.portalContainer}>
+      {/* 1. Header Banner */}
+      <header style={styles.banner}>
+        <div style={styles.bannerContent}>
+          <div style={styles.bannerLeft}>
+            <div style={styles.logoCircle}>30</div>
+            <div>
+              <h1 style={styles.bannerTitle}>TRƯỜNG THPT CAO BÁ QUÁT</h1>
+              <h2 style={styles.bannerSubtitle}>LỄ KỶ NIỆM 30 NĂM THÀNH LẬP (1996 - 2026)</h2>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Stats Section */}
-      <section id="gioithieu" style={styles.statsSection}>
-        <div style={styles.statsGrid}>
-          <div style={styles.statItem}>
-            <Clock size={40} color="#d32f2f" style={styles.statIcon} />
-            <h3 style={styles.statNum}>30</h3>
-            <p style={styles.statLabel}>Năm Xây Dựng & Phát Triển</p>
+      {/* 2. Horizontal Navigation */}
+      <nav style={styles.navbar}>
+        <div style={styles.navContainer}>
+          <div style={styles.navLinks}>
+            <a href="#" style={styles.navItemActive}>Trang chủ</a>
+            <a href="#" style={styles.navItem}>Giới thiệu</a>
+            <a href="#" style={styles.navItem}>Tin tức - Sự kiện</a>
+            <a href="#" style={styles.navItem}>Văn bản - Thông báo</a>
+            <a href="#" style={styles.navItem}>Bảng vàng</a>
+            <a href="#" style={styles.navItem}>Thư viện ảnh</a>
           </div>
-          <div style={styles.statItem}>
-            <Users size={40} color="#d32f2f" style={styles.statIcon} />
-            <h3 style={styles.statNum}>30+</h3>
-            <p style={styles.statLabel}>Thế hệ học sinh</p>
-          </div>
-          <div style={styles.statItem}>
-            <Award size={40} color="#d32f2f" style={styles.statIcon} />
-            <h3 style={styles.statNum}>1000+</h3>
-            <p style={styles.statLabel}>Bằng khen & Giải thưởng</p>
-          </div>
-          <div style={styles.statItem}>
-            <BookOpen size={40} color="#d32f2f" style={styles.statIcon} />
-            <h3 style={styles.statNum}>20K+</h3>
-            <p style={styles.statLabel}>Cựu học sinh thành đạt</p>
-          </div>
+          <Link to="/admin" style={styles.adminLoginBtn}>Đăng nhập BTC</Link>
         </div>
-      </section>
+      </nav>
 
-      {/* News Section */}
-      <section id="tintuc" style={styles.sectionLight}>
-        <div style={styles.sectionHeader}>
-          <h2 style={styles.sectionTitle}>Tin Tức & Thông Báo</h2>
-          <div style={styles.titleUnderline}></div>
+      {/* 3. Marquee & Date Bar */}
+      <div style={styles.topBar}>
+        <div style={styles.dateInfo}>{currentDate}</div>
+        <div style={styles.marqueeWrapper}>
+          <marquee style={styles.marqueeText} scrollamount="5">
+            CHÀO MỪNG QUÝ VỊ ĐẠI BIỂU, QUÝ THẦY CÔ VÀ CÁC THẾ HỆ HỌC SINH VỀ DỰ LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT! CHƯƠNG TRÌNH SẼ ĐƯỢC TỔ CHỨC VÀO NGÀY 15/11/2026.
+          </marquee>
         </div>
+        <div style={styles.searchMini}>
+          <input type="text" placeholder="Tìm kiếm..." style={styles.searchMiniInput}/>
+          <button style={styles.searchMiniBtn}><Search size={14}/></button>
+        </div>
+      </div>
+
+      {/* 4. Main 3-Column Layout */}
+      <div style={styles.mainGrid}>
         
-        {news.length === 0 ? (
-          <div style={styles.emptyState}>Chưa có thông báo nào được đăng tải.</div>
-        ) : (
-          <div style={styles.newsGrid}>
-            {news.map(item => (
-              <div key={item.id} className="news-card" style={styles.newsCard}>
-                <div style={styles.newsImageWrapper}>
-                  {item.image_url ? (
-                    <img src={item.image_url} alt="news" style={styles.newsImg} />
-                  ) : (
-                    <div style={styles.newsPlaceholder}>THPT CAO BÁ QUÁT</div>
-                  )}
-                  <div style={styles.newsDateBadge}>
-                    <span style={styles.dateDay}>{new Date(item.published_at).getDate()}</span>
-                    <span style={styles.dateMonth}>Tháng {new Date(item.published_at).getMonth() + 1}</span>
-                  </div>
-                </div>
-                <div style={styles.newsBody}>
-                  <h3 style={styles.newsTitle}>{item.title}</h3>
-                  <p style={styles.newsDesc}>{item.content.substring(0, 120)}...</p>
-                  <button style={styles.readMoreBtn}>Đọc tiếp →</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* Sponsors Section */}
-      <section id="vinhdanh" style={styles.sectionDark}>
-        <div style={styles.sectionHeader}>
-          <h2 style={{...styles.sectionTitle, color: 'white'}}>Bảng Vàng Tri Ân</h2>
-          <div style={{...styles.titleUnderline, backgroundColor: '#fbbf24'}}></div>
-          <p style={{textAlign: 'center', color: '#cbd5e1', maxWidth: '600px', margin: '1rem auto'}}>
-            Ban Tổ chức xin trân trọng cảm ơn những đóng góp quý báu của Quý Cơ quan, Doanh nghiệp, Thầy Cô và các Anh/Chị Cựu học sinh.
-          </p>
-        </div>
-        
-        <div style={styles.sponsorGrid}>
-          {sponsors.length === 0 ? (
-            <div style={{gridColumn: '1/-1', textAlign: 'center', color: '#94a3b8'}}>Danh sách đang được cập nhật...</div>
-          ) : (
-            sponsors.map((sponsor, index) => (
-              <div key={sponsor.id} style={{...styles.sponsorCard, animationDelay: `${index * 0.1}s`}}>
-                <div style={styles.sponsorIconBox}>
-                  <Heart size={24} color="#d32f2f" fill="#d32f2f" />
-                </div>
-                <h4 style={styles.sponsorName}>{sponsor.name}</h4>
-                {sponsor.donation_amount > 0 && (
-                  <div style={styles.sponsorAmount}>{Number(sponsor.donation_amount).toLocaleString()} VNĐ</div>
-                )}
-                {sponsor.donation_item && (
-                  <div style={styles.sponsorItem}>{sponsor.donation_item}</div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* RSVP Section */}
-      <section id="thiepmoi" style={styles.sectionLight}>
-        <div style={styles.rsvpContainer}>
-          <div style={styles.rsvpLeft}>
-            <h2 style={styles.rsvpTitle}>Tra Cứu Thiệp Mời Điện Tử</h2>
-            <p style={styles.rsvpText}>
-              Nhập mã số khách mời (được in trên thư mời bản cứng hoặc gửi qua tin nhắn) để xem phiên bản điện tử và gửi phản hồi xác nhận tham dự.
-            </p>
-            <div style={styles.rsvpFeatures}>
-              <div style={styles.rsvpFeature}><CheckIcon /> Xem chi tiết lịch trình sự kiện</div>
-              <div style={styles.rsvpFeature}><CheckIcon /> Sơ đồ vị trí chỗ ngồi</div>
-              <div style={styles.rsvpFeature}><CheckIcon /> Xác nhận đi kèm người thân</div>
+        {/* LEFT COLUMN */}
+        <div style={styles.leftCol}>
+          <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534">
+            <div style={styles.mockSlider}>
+              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="School" style={{width: '100%', height: '150px', objectFit: 'cover'}} />
             </div>
-          </div>
-          <div style={styles.rsvpRight}>
-            <div style={styles.rsvpFormBox}>
-              <h3 style={{marginBottom: '1rem', color: '#1e293b'}}>Nhập Mã Khách Mời</h3>
-              <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
-                <div style={styles.inputWrapper}>
-                  <Search color="#94a3b8" size={20} style={styles.inputIcon} />
-                  <input 
-                    type="text" 
-                    placeholder="VD: CBQ-12345" 
-                    value={rsvpCode}
-                    onChange={(e) => setRsvpCode(e.target.value)}
-                    style={styles.searchInput}
-                  />
-                </div>
-                <button type="submit" style={styles.searchBtn}>Tìm kiếm</button>
-              </form>
+          </PortalBlock>
+          
+          <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534">
+            <ul style={styles.listStyle}>
+              <li>📍 Địa chỉ trường THPT Cao Bá Quát</li>
+              <li>📞 Hotline: 0123.456.789</li>
+              <li>✉️ Email: lk@caobaquat.edu.vn</li>
+            </ul>
+          </PortalBlock>
+
+          <PortalBlock title="LIÊN KẾT TRANG" color="#166534">
+            <ul style={styles.linkList}>
+              <li><ChevronRight size={14} color="#166534"/> Cổng thông tin Sở GD&ĐT</li>
+              <li><ChevronRight size={14} color="#166534"/> Báo Giáo dục và Thời đại</li>
+            </ul>
+          </PortalBlock>
+        </div>
+
+        {/* CENTER COLUMN */}
+        <div style={styles.centerCol}>
+          
+          {/* NỔI BẬT: Tra cứu thiệp mời đặt ở giữa để khách dễ thấy nhất */}
+          <div style={styles.rsvpHighlightBlock}>
+            <div style={styles.rsvpHighlightHeader}>TRA CỨU THIỆP MỜI ĐIỆN TỬ</div>
+            <div style={styles.rsvpHighlightBody}>
+              <p style={{marginBottom: '10px', fontSize: '14px', color: '#475569'}}>Nhập mã số khách mời (được in trên thư mời bản cứng hoặc gửi qua tin nhắn) để xem phiên bản điện tử và gửi phản hồi xác nhận tham dự.</p>
               
+              <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
+                <input 
+                  type="text" 
+                  placeholder="Nhập mã khách mời (VD: CBQ-12345)" 
+                  value={rsvpCode}
+                  onChange={(e) => setRsvpCode(e.target.value)}
+                  style={styles.searchInput}
+                />
+                <button type="submit" style={styles.searchBtn}>Tra Cứu</button>
+              </form>
+
+              {/* Kết quả Thiệp Mời */}
               {rsvpResult?.error && <div style={styles.errorMsg}>{rsvpResult.error}</div>}
               {rsvpResult?.success && (
-                <div style={styles.successBox}>
-                  <div style={styles.successHeader}>Đã tìm thấy thông tin!</div>
-                  <h4 style={{fontSize: '1.2rem', margin: '0.5rem 0'}}>{rsvpResult.guest.name}</h4>
-                  <p style={{color: '#64748b', marginBottom: '1rem'}}>Phân loại: {rsvpResult.guest.category}</p>
-                  
-                  <div style={{ display: 'grid', gap: '0.5rem' }}>
-                    <button style={styles.btnConfirm}>Chắc chắn tham dự</button>
-                    <button style={styles.btnDecline}>Rất tiếc, tôi không thể đến</button>
+                <div style={styles.inviteCardWrapper}>
+                  {/* Mặt thiệp */}
+                  <div style={styles.inviteCard}>
+                    <div style={styles.inviteCardInner}>
+                      <div style={styles.inviteHeader}>
+                        <div style={styles.inviteLogoSmall}>30</div>
+                        <h4 style={styles.inviteSchool}>THPT CAO BÁ QUÁT</h4>
+                      </div>
+                      
+                      <div style={styles.inviteBody}>
+                        <p style={styles.inviteIntro}>Trân trọng kính mời</p>
+                        <h2 style={styles.inviteName}>{rsvpResult.guest.name}</h2>
+                        <p style={styles.inviteRole}>{rsvpResult.guest.category}</p>
+                        
+                        <div style={styles.inviteDivider}></div>
+                        <p style={styles.inviteEvent}>Tới dự Lễ Kỷ Niệm 30 Năm Thành Lập Trường</p>
+                        
+                        <div style={styles.inviteDetails}>
+                          <div style={styles.inviteDetailRow}>
+                            <Clock size={16} color="#b71c1c"/> <strong>Thời gian:</strong> 08:00, Chủ nhật, 15/11/2026
+                          </div>
+                          <div style={styles.inviteDetailRow}>
+                            <MapPin size={16} color="#b71c1c"/> <strong>Địa điểm:</strong> Sân trường THPT Cao Bá Quát
+                          </div>
+                        </div>
+
+                        <div style={styles.inviteAgenda}>
+                          <p style={{fontWeight: '700', marginBottom: '0.5rem', color: '#78350f'}}>Chương trình dự kiến:</p>
+                          <ul style={{textAlign: 'left', fontSize: '13px', color: '#475569', paddingLeft: '20px', margin: 0}}>
+                            <li>08:00 - 08:30: Đón tiếp đại biểu</li>
+                            <li>08:30 - 10:30: Lễ mít tinh kỷ niệm</li>
+                            <li>10:30 - 11:30: Giao lưu các thế hệ</li>
+                            <li>11:30: Tiệc thân mật</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Khu vực Xác nhận */}
+                  <div style={styles.rsvpActionBox}>
+                    {rsvpResult.guest.rsvp_status === 'pending' ? (
+                      <>
+                        <p style={{fontWeight: 'bold', marginBottom: '10px', fontSize: '14px'}}>Quý vị vui lòng xác nhận tham dự:</p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                          <button style={styles.btnConfirm} onClick={() => handleConfirm('attending')}>Tham dự</button>
+                          <button style={styles.btnDecline} onClick={() => handleConfirm('not_attending')}>Không thể đến</button>
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{padding: '10px', backgroundColor: rsvpResult.guest.rsvp_status === 'attending' ? '#f0fdf4' : '#fef2f2', color: rsvpResult.guest.rsvp_status === 'attending' ? '#166534' : '#991b1b', borderRadius: '4px', fontWeight: 'bold', fontSize: '14px', border: '1px solid #ccc'}}>
+                        {rsvpResult.guest.rsvp_status === 'attending' 
+                          ? '✅ Quý vị đã xác nhận tham dự sự kiện.' 
+                          : '❌ Quý vị đã xác nhận không thể tham dự.'}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer style={styles.footer}>
-        <div style={styles.footerGrid}>
-          <div>
-            <div style={{...styles.logoArea, marginBottom: '1rem', cursor: 'default'}}>
-              <div style={styles.logoCircle}>30</div>
-              <span style={{...styles.brandName, color: 'white'}}>THPT Cao Bá Quát</span>
+          {/* Tin Tức - Sự Kiện */}
+          <div style={styles.newsBlock}>
+            <div style={styles.newsMainHeader}>TIN TỨC - SỰ KIỆN</div>
+            <div style={styles.newsMainContent}>
+              {news.length === 0 ? (
+                <div style={{padding: '20px', textAlign: 'center', color: '#666'}}>Đang cập nhật tin tức...</div>
+              ) : (
+                <>
+                  {/* Tin nổi bật (tin đầu tiên) */}
+                  <div style={styles.featuredNews}>
+                    <img src={news[0].image_url || 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&auto=format&fit=crop'} alt="featured" style={styles.featuredNewsImg} />
+                    <h3 style={styles.featuredNewsTitle}>{news[0].title}</h3>
+                    <div style={styles.newsMeta}>📅 {new Date(news[0].published_at).toLocaleDateString('vi-VN')} | 👁️ Lượt xem: {Math.floor(Math.random() * 500) + 100}</div>
+                    <p style={styles.featuredNewsDesc}>{news[0].content.substring(0, 150)}...</p>
+                  </div>
+                  
+                  {/* Danh sách tin cũ hơn */}
+                  {news.length > 1 && (
+                    <ul style={styles.olderNewsList}>
+                      {news.slice(1, 5).map(item => (
+                        <li key={item.id} style={styles.olderNewsItem}>
+                          <ChevronRight size={14} color="#0284c7" style={{minWidth: '14px'}}/>
+                          <a href="#" style={styles.olderNewsLink}>{item.title}</a>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
             </div>
-            <p style={{color: '#94a3b8', lineHeight: 1.6}}>
-              Kỷ niệm 30 năm thành lập trường (1996 - 2026).<br/>
-              Tự hào truyền thống, vững bước tương lai.
-            </p>
           </div>
-          <div>
-            <h4 style={styles.footerTitle}>Thông Tin Liên Hệ</h4>
-            <div style={styles.footerContact}><MapPin size={18}/> Địa chỉ trường THPT Cao Bá Quát</div>
-            <div style={styles.footerContact}><Phone size={18}/> Hotline BTC: 0123 456 789</div>
-            <div style={styles.footerContact}><Mail size={18}/> Email: lienhe@caobaquat.edu.vn</div>
-          </div>
+
         </div>
-        <div style={styles.footerBottom}>
-          <p>© 2026 Ban Tổ Chức Lễ Kỷ Niệm 30 Năm THPT Cao Bá Quát. Hệ thống quản trị bởi Tiểu ban Nội dung.</p>
+
+        {/* RIGHT COLUMN */}
+        <div style={styles.rightCol}>
+          <PortalBlock title="THÔNG BÁO MỚI" color="#d32f2f">
+            <div style={styles.marqueeVertical}>
+              <ul style={styles.linkList}>
+                {news.slice(0, 4).map((n, i) => (
+                  <li key={i} style={{borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px', marginBottom: '8px'}}>
+                    <a href="#" style={{color: '#d32f2f', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none'}}>✔ {n.title}</a>
+                    <div style={{fontSize: '11px', color: '#64748b', marginTop: '4px'}}>({new Date(n.published_at).toLocaleDateString('vi-VN')})</div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </PortalBlock>
+
+          <PortalBlock title="BẢNG VÀNG TRI ÂN" color="#d32f2f">
+            {sponsors.length === 0 ? (
+              <div style={{fontSize: '13px', color: '#666', padding: '10px'}}>Chưa có dữ liệu.</div>
+            ) : (
+              <ul style={styles.sponsorList}>
+                {sponsors.slice(0, 10).map((s, i) => (
+                  <li key={i} style={styles.sponsorItem}>
+                    <span style={{fontWeight: 'bold', color: '#0f172a'}}>{s.name}</span>
+                    {s.donation_amount > 0 && <span style={{color: '#d32f2f', fontWeight: 'bold', display: 'block'}}>{Number(s.donation_amount).toLocaleString()} VNĐ</span>}
+                    {s.donation_item && <span style={{color: '#059669', display: 'block', fontSize: '12px'}}>{s.donation_item}</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </PortalBlock>
         </div>
-      </footer>
+
+      </div>
     </div>
   );
 }
 
-const CheckIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="20 6 9 17 4 12"></polyline>
-  </svg>
-);
+// Reusable Portal Block Component
+function PortalBlock({ title, color, children }) {
+  return (
+    <div style={styles.portalBlock}>
+      <div style={{...styles.portalBlockHeader, backgroundColor: color}}>
+        {title}
+      </div>
+      <div style={styles.portalBlockContent}>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 const styles = {
-  container: {
-    fontFamily: "'Inter', sans-serif",
-    color: '#1e293b',
-    backgroundColor: '#f8fafc',
-    overflowX: 'hidden'
+  portalContainer: {
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    backgroundColor: '#e5e5e5', // Light gray background typical of portals
+    minHeight: '100vh',
+    paddingBottom: '40px',
   },
-  navbar: {
-    position: 'fixed',
-    top: 0,
-    width: '100%',
-    padding: '1.25rem 0',
-    backgroundColor: 'transparent',
-    transition: 'all 0.3s ease',
-    zIndex: 1000,
+  banner: {
+    backgroundColor: '#fff',
+    backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")',
   },
-  navbarScrolled: {
-    backgroundColor: '#ffffff',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-    padding: '0.75rem 0',
-  },
-  navContainer: {
+  bannerContent: {
     maxWidth: '1200px',
     margin: '0 auto',
-    padding: '0 2rem',
+    padding: '15px 20px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  logoArea: {
+  bannerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    cursor: 'pointer',
+    gap: '15px',
   },
   logoCircle: {
-    width: '45px',
-    height: '45px',
-    borderRadius: '12px',
-    backgroundColor: '#d32f2f', /* Red Flag */
-    color: 'white',
+    width: '70px',
+    height: '70px',
+    backgroundColor: '#d32f2f',
+    borderRadius: '50%',
+    color: '#fbbf24',
     display: 'flex',
-    justifyContent: 'center',
     alignItems: 'center',
-    fontWeight: '800',
-    fontSize: '1.2rem',
-    boxShadow: '0 4px 10px rgba(211, 47, 47, 0.3)',
+    justifyContent: 'center',
+    fontSize: '24px',
+    fontWeight: 'bold',
+    border: '3px solid #fbbf24',
   },
-  brandGroup: {
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  brandName: {
-    fontWeight: '800',
-    fontSize: '1.1rem',
+  bannerTitle: {
     color: '#d32f2f',
-    letterSpacing: '-0.5px'
+    margin: '0 0 5px 0',
+    fontSize: '22px',
+    fontWeight: 'bold',
+    textTransform: 'uppercase',
   },
-  brandSub: {
-    fontSize: '0.75rem',
-    color: '#64748b',
-    fontWeight: '600'
+  bannerSubtitle: {
+    color: '#166534',
+    margin: 0,
+    fontSize: '16px',
+    fontWeight: 'bold',
+  },
+  navbar: {
+    backgroundColor: '#166534', // Green navigation matching screenshot
+    borderTop: '2px solid #14532d',
+    borderBottom: '2px solid #14532d',
+  },
+  navContainer: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   navLinks: {
     display: 'flex',
-    gap: '2rem',
-    alignItems: 'center',
   },
-  navLink: {
-    background: 'none',
-    border: 'none',
-    color: '#475569',
-    fontWeight: '600',
-    fontSize: '0.95rem',
-    cursor: 'pointer',
-    transition: 'color 0.2s',
-  },
-  adminBtn: {
+  navItem: {
+    color: 'white',
     textDecoration: 'none',
-    backgroundColor: '#1e293b',
+    padding: '12px 15px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    borderRight: '1px solid #14532d',
+    transition: 'background 0.2s',
+  },
+  navItemActive: {
     color: 'white',
-    padding: '0.6rem 1.25rem',
-    borderRadius: '8px',
-    fontWeight: '600',
-    fontSize: '0.9rem',
-    transition: 'background-color 0.2s',
+    textDecoration: 'none',
+    padding: '12px 15px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    borderRight: '1px solid #14532d',
+    backgroundColor: '#14532d',
   },
-  hero: {
-    minHeight: '80vh',
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '6rem 2rem 4rem',
-    backgroundColor: '#0f172a',
-    overflow: 'hidden',
-    // We would use an image here normally, for now a rich gradient
-    background: 'linear-gradient(135deg, #b71c1c 0%, #d32f2f 40%, #0f172a 100%)', 
-  },
-  heroOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundImage: 'radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%)',
-  },
-  heroContent: {
-    position: 'relative',
-    maxWidth: '800px',
-    textAlign: 'center',
-    color: 'white',
-    zIndex: 10,
-  },
-  badge: {
-    display: 'inline-block',
-    padding: '0.5rem 1rem',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    border: '1px solid rgba(255,255,255,0.2)',
-    borderRadius: '20px',
-    fontSize: '0.875rem',
-    fontWeight: '600',
-    marginBottom: '1.5rem',
-    letterSpacing: '1px',
-    textTransform: 'uppercase',
-  },
-  heroTitle: {
-    fontSize: 'clamp(3rem, 8vw, 5rem)',
-    fontWeight: '900',
-    lineHeight: 1.1,
-    marginBottom: '1.5rem',
-    letterSpacing: '-2px',
-  },
-  textGold: {
-    color: '#fbbf24', // Yellow Star
-    textShadow: '0 4px 20px rgba(251, 191, 36, 0.4)',
-  },
-  heroText: {
-    fontSize: '1.25rem',
-    lineHeight: 1.6,
-    marginBottom: '2.5rem',
-    color: '#e2e8f0',
-    fontWeight: '400',
-    maxWidth: '700px',
-    margin: '0 auto 2.5rem',
-  },
-  heroActions: {
-    display: 'flex',
-    gap: '1rem',
-    justifyContent: 'center',
-    flexWrap: 'wrap',
-  },
-  btnGold: {
-    backgroundColor: '#fbbf24',
-    color: '#78350f',
-    padding: '1rem 2rem',
-    borderRadius: '8px',
-    fontWeight: '700',
-    fontSize: '1.1rem',
-    border: 'none',
-    cursor: 'pointer',
-    boxShadow: '0 10px 25px -5px rgba(251, 191, 36, 0.4)',
-    transition: 'transform 0.2s',
-  },
-  btnOutline: {
-    backgroundColor: 'transparent',
-    color: 'white',
-    padding: '1rem 2rem',
-    borderRadius: '8px',
-    fontWeight: '600',
-    fontSize: '1.1rem',
-    border: '2px solid rgba(255,255,255,0.3)',
-    cursor: 'pointer',
-    transition: 'background-color 0.2s',
-  },
-  statsSection: {
-    backgroundColor: 'white',
-    padding: '4rem 2rem',
-    borderBottom: '1px solid #e2e8f0',
-    position: 'relative',
-    marginTop: '-50px',
-    maxWidth: '1000px',
-    margin: '-50px auto 0',
-    borderRadius: '16px',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-    zIndex: 20,
-  },
-  statsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-    gap: '2rem',
-    textAlign: 'center',
-  },
-  statItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-  },
-  statIcon: {
-    marginBottom: '1rem',
-  },
-  statNum: {
-    fontSize: '3rem',
-    fontWeight: '900',
-    color: '#1e293b',
-    lineHeight: 1,
-    marginBottom: '0.5rem',
-  },
-  statLabel: {
-    color: '#64748b',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    fontSize: '0.85rem',
-    letterSpacing: '1px',
-  },
-  sectionLight: {
-    padding: '6rem 2rem',
-    backgroundColor: '#f8fafc',
-  },
-  sectionDark: {
-    padding: '6rem 2rem',
-    backgroundColor: '#1e293b',
-    color: 'white',
-  },
-  sectionHeader: {
-    textAlign: 'center',
-    marginBottom: '4rem',
-  },
-  sectionTitle: {
-    fontSize: '2.5rem',
-    fontWeight: '800',
-    color: '#0f172a',
-    letterSpacing: '-1px',
-  },
-  titleUnderline: {
-    width: '80px',
-    height: '4px',
-    backgroundColor: '#d32f2f',
-    margin: '1rem auto 0',
-    borderRadius: '2px',
-  },
-  newsGrid: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '2.5rem',
-  },
-  newsCard: {
-    backgroundColor: 'white',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
-    border: '1px solid #f1f5f9',
-    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-  },
-  newsImageWrapper: {
-    position: 'relative',
-    height: '220px',
-    backgroundColor: '#f1f5f9',
-  },
-  newsImg: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'cover',
-  },
-  newsPlaceholder: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '1.5rem',
-    fontWeight: '800',
-    color: '#cbd5e1',
-    backgroundColor: '#f8fafc',
-  },
-  newsDateBadge: {
-    position: 'absolute',
-    top: '1rem',
-    left: '1rem',
-    backgroundColor: 'white',
-    padding: '0.5rem',
-    borderRadius: '8px',
-    textAlign: 'center',
-    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-  },
-  dateDay: {
-    display: 'block',
-    fontSize: '1.5rem',
-    fontWeight: '800',
-    color: '#d32f2f',
-    lineHeight: 1,
-  },
-  dateMonth: {
-    display: 'block',
-    fontSize: '0.7rem',
-    fontWeight: '600',
-    color: '#64748b',
-    textTransform: 'uppercase',
-    marginTop: '2px',
-  },
-  newsBody: {
-    padding: '1.5rem',
-  },
-  newsTitle: {
-    fontSize: '1.25rem',
-    fontWeight: '700',
-    marginBottom: '1rem',
-    color: '#1e293b',
-    lineHeight: 1.4,
-  },
-  newsDesc: {
-    color: '#64748b',
-    marginBottom: '1.5rem',
-    lineHeight: 1.6,
-  },
-  readMoreBtn: {
-    background: 'none',
-    border: 'none',
-    color: '#2563eb',
-    fontWeight: '600',
-    fontSize: '0.95rem',
-    cursor: 'pointer',
-    padding: 0,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.25rem',
-  },
-  emptyState: {
-    textAlign: 'center',
-    color: '#64748b',
-    padding: '3rem',
-    backgroundColor: 'white',
-    borderRadius: '12px',
-    border: '1px dashed #cbd5e1',
-    maxWidth: '600px',
-    margin: '0 auto',
-  },
-  sponsorGrid: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-    gap: '1.5rem',
-  },
-  sponsorCard: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderRadius: '16px',
-    padding: '2rem 1.5rem',
-    textAlign: 'center',
-    transition: 'transform 0.3s ease, background-color 0.3s ease',
-  },
-  sponsorIconBox: {
-    width: '60px',
-    height: '60px',
-    borderRadius: '50%',
-    backgroundColor: 'rgba(211, 47, 47, 0.1)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: '0 auto 1.5rem',
-  },
-  sponsorName: {
-    fontSize: '1.2rem',
-    fontWeight: '700',
-    marginBottom: '0.5rem',
-    color: 'white',
-  },
-  sponsorAmount: {
+  adminLoginBtn: {
     color: '#fbbf24',
-    fontWeight: '800',
-    fontSize: '1.25rem',
+    textDecoration: 'none',
+    padding: '12px 15px',
+    fontSize: '14px',
+    fontWeight: 'bold',
+    backgroundColor: '#d32f2f',
+  },
+  topBar: {
+    maxWidth: '1200px',
+    margin: '0 auto',
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderTop: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    fontSize: '13px',
+  },
+  dateInfo: {
+    padding: '8px 15px',
+    color: '#475569',
+    borderRight: '1px solid #e2e8f0',
+    backgroundColor: '#f1f5f9',
+    whiteSpace: 'nowrap',
+  },
+  marqueeWrapper: {
+    flex: 1,
+    padding: '0 15px',
+    overflow: 'hidden',
+  },
+  marqueeText: {
+    color: '#d32f2f',
+    fontWeight: 'bold',
+  },
+  searchMini: {
+    display: 'flex',
+    borderLeft: '1px solid #e2e8f0',
+  },
+  searchMiniInput: {
+    border: 'none',
+    padding: '8px',
+    outline: 'none',
+    width: '150px',
+  },
+  searchMiniBtn: {
+    backgroundColor: '#ef4444',
+    color: 'white',
+    border: 'none',
+    padding: '0 15px',
+    cursor: 'pointer',
+  },
+  mainGrid: {
+    maxWidth: '1200px',
+    margin: '15px auto 0',
+    display: 'grid',
+    gridTemplateColumns: '250px 1fr 250px',
+    gap: '15px',
+  },
+  // Columns
+  leftCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  centerCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  rightCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
+  
+  // Blocks
+  portalBlock: {
+    backgroundColor: '#fff',
+    border: '1px solid #e2e8f0',
+  },
+  portalBlockHeader: {
+    color: 'white',
+    padding: '8px 12px',
+    fontWeight: 'bold',
+    fontSize: '14px',
+    textTransform: 'uppercase',
+  },
+  portalBlockContent: {
+    padding: '10px',
+  },
+  listStyle: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0,
+    fontSize: '13px',
+    lineHeight: '1.8',
+    color: '#334155'
+  },
+  linkList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0,
+  },
+  linkListLi: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '6px 0',
+    borderBottom: '1px dashed #e2e8f0',
+    fontSize: '13px',
+  },
+  sponsorList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: 0,
   },
   sponsorItem: {
-    color: '#94a3b8',
-    fontSize: '0.95rem',
-    marginTop: '0.5rem',
+    padding: '8px 0',
+    borderBottom: '1px dashed #e2e8f0',
+    fontSize: '13px',
   },
-  rsvpContainer: {
-    maxWidth: '1000px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr',
-    gap: '4rem',
-    alignItems: 'center',
+
+  // RSVP Highlight in Center
+  rsvpHighlightBlock: {
+    backgroundColor: '#fff',
+    border: '2px solid #fbbf24',
   },
-  rsvpLeft: {
-    paddingRight: '2rem',
+  rsvpHighlightHeader: {
+    backgroundColor: '#fbbf24',
+    color: '#78350f',
+    padding: '10px 15px',
+    fontWeight: 'bold',
+    fontSize: '15px',
+    textAlign: 'center',
   },
-  rsvpTitle: {
-    fontSize: '2.5rem',
-    fontWeight: '800',
-    marginBottom: '1.5rem',
-    color: '#0f172a',
-    letterSpacing: '-1px',
-  },
-  rsvpText: {
-    fontSize: '1.1rem',
-    color: '#64748b',
-    lineHeight: 1.6,
-    marginBottom: '2rem',
-  },
-  rsvpFeatures: {
-    display: 'grid',
-    gap: '1rem',
-  },
-  rsvpFeature: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '0.75rem',
-    fontSize: '1.05rem',
-    fontWeight: '500',
-    color: '#334155',
-  },
-  rsvpRight: {
-    // Left empty for layout
-  },
-  rsvpFormBox: {
-    backgroundColor: 'white',
-    padding: '2.5rem',
-    borderRadius: '20px',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.08)',
-    border: '1px solid #f1f5f9',
+  rsvpHighlightBody: {
+    padding: '20px',
+    backgroundColor: '#fffbeb',
   },
   searchForm: {
     display: 'flex',
-    flexDirection: 'column',
-    gap: '1rem',
-  },
-  inputWrapper: {
-    position: 'relative',
-    display: 'flex',
-    alignItems: 'center',
-  },
-  inputIcon: {
-    position: 'absolute',
-    left: '1rem',
+    gap: '10px',
   },
   searchInput: {
-    width: '100%',
-    padding: '1rem 1rem 1rem 3rem',
-    borderRadius: '10px',
-    border: '2px solid #e2e8f0',
-    fontSize: '1.1rem',
-    outline: 'none',
-    transition: 'border-color 0.2s',
+    flex: 1,
+    padding: '10px',
+    border: '1px solid #d1d5db',
+    borderRadius: '4px',
+    fontSize: '14px',
   },
   searchBtn: {
+    padding: '10px 20px',
     backgroundColor: '#d32f2f',
     color: 'white',
     border: 'none',
-    padding: '1rem',
-    borderRadius: '10px',
-    fontSize: '1.1rem',
-    fontWeight: '600',
+    borderRadius: '4px',
+    fontWeight: 'bold',
     cursor: 'pointer',
-    transition: 'background-color 0.2s',
   },
   errorMsg: {
-    color: '#ef4444',
-    marginTop: '1rem',
-    padding: '0.75rem',
+    marginTop: '10px',
+    padding: '10px',
     backgroundColor: '#fef2f2',
-    borderRadius: '8px',
-    fontSize: '0.9rem',
+    color: '#b91c1c',
+    fontSize: '13px',
+    border: '1px solid #fca5a5',
+    borderRadius: '4px',
   },
-  successBox: {
-    marginTop: '1.5rem',
-    padding: '1.5rem',
-    backgroundColor: '#f8fafc',
+  
+  // Invite Card Styling (Adapted for Portal)
+  inviteCardWrapper: { marginTop: '15px' },
+  inviteCard: {
+    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
+    padding: '4px',
+    borderRadius: '8px',
+  },
+  inviteCardInner: {
+    backgroundColor: '#fff',
+    padding: '20px',
+    borderRadius: '4px',
+    textAlign: 'center',
+    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23fef3c7\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+  },
+  inviteHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' },
+  inviteLogoSmall: { width: '30px', height: '30px', backgroundColor: '#d32f2f', color: '#fbbf24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', marginBottom: '5px' },
+  inviteSchool: { color: '#d32f2f', margin: 0, fontSize: '13px', fontWeight: 'bold' },
+  inviteIntro: { fontStyle: 'italic', color: '#666', fontSize: '13px', margin: '10px 0 5px' },
+  inviteName: { fontFamily: 'serif', fontSize: '24px', margin: 0, color: '#000' },
+  inviteRole: { color: '#d32f2f', fontSize: '13px', fontWeight: 'bold', margin: '5px 0 10px' },
+  inviteDivider: { width: '40px', height: '2px', backgroundColor: '#fbbf24', margin: '0 auto 10px' },
+  inviteEvent: { fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' },
+  inviteDetails: { backgroundColor: '#f8fafc', padding: '10px', fontSize: '13px', marginBottom: '10px' },
+  inviteAgenda: { backgroundColor: '#fef3c7', padding: '10px', border: '1px solid #fde68a' },
+  
+  rsvpActionBox: { marginTop: '10px', textAlign: 'center' },
+  btnConfirm: { backgroundColor: '#166534', color: 'white', padding: '8px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
+  btnDecline: { backgroundColor: '#fff', color: '#333', border: '1px solid #ccc', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' },
+
+  // News Block
+  newsBlock: {
+    backgroundColor: '#fff',
     border: '1px solid #e2e8f0',
-    borderRadius: '12px',
-    textAlign: 'center',
   },
-  successHeader: {
-    color: '#10b981',
-    fontWeight: '700',
-    fontSize: '0.9rem',
-    textTransform: 'uppercase',
-    letterSpacing: '1px',
-  },
-  btnConfirm: {
-    backgroundColor: '#10b981',
+  newsMainHeader: {
+    backgroundColor: '#166534',
     color: 'white',
-    border: 'none',
-    padding: '0.75rem',
-    borderRadius: '8px',
-    fontWeight: '600',
-    cursor: 'pointer',
+    padding: '8px 15px',
+    fontWeight: 'bold',
+    fontSize: '15px',
   },
-  btnDecline: {
-    backgroundColor: 'transparent',
+  newsMainContent: {
+    padding: '15px',
+  },
+  featuredNewsImg: {
+    width: '100%',
+    height: '250px',
+    objectFit: 'cover',
+    marginBottom: '10px',
+  },
+  featuredNewsTitle: {
+    color: '#166534',
+    fontSize: '18px',
+    fontWeight: 'bold',
+    margin: '0 0 5px 0',
+  },
+  newsMeta: {
+    fontSize: '12px',
     color: '#64748b',
-    border: '1px solid #cbd5e1',
-    padding: '0.75rem',
-    borderRadius: '8px',
-    fontWeight: '600',
-    cursor: 'pointer',
+    marginBottom: '10px',
   },
-  footer: {
-    backgroundColor: '#0f172a',
-    padding: '4rem 2rem 2rem',
-    borderTop: '1px solid rgba(255,255,255,0.1)',
+  featuredNewsDesc: {
+    fontSize: '14px',
+    lineHeight: '1.6',
+    color: '#334155',
   },
-  footerGrid: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-    gap: '3rem',
-    marginBottom: '3rem',
+  olderNewsList: {
+    listStyle: 'none',
+    padding: 0,
+    margin: '15px 0 0 0',
+    borderTop: '1px solid #e2e8f0',
+    paddingTop: '10px',
   },
-  footerTitle: {
-    color: 'white',
-    fontSize: '1.2rem',
-    fontWeight: '700',
-    marginBottom: '1.5rem',
-  },
-  footerContact: {
+  olderNewsItem: {
     display: 'flex',
-    alignItems: 'center',
-    gap: '1rem',
-    color: '#94a3b8',
-    marginBottom: '1rem',
+    alignItems: 'flex-start',
+    gap: '5px',
+    padding: '6px 0',
   },
-  footerBottom: {
-    borderTop: '1px solid rgba(255,255,255,0.1)',
-    paddingTop: '2rem',
-    textAlign: 'center',
-    color: '#64748b',
-    fontSize: '0.9rem',
-  }
+  olderNewsLink: {
+    color: '#0284c7',
+    textDecoration: 'none',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
 };
