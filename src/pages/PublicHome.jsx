@@ -84,12 +84,12 @@ export default function PublicHome() {
       <nav style={styles.navbar}>
         <div style={styles.navContainer}>
           <div className="portal-nav-links">
-            <a href="#" style={styles.navItemActive}>Trang chủ</a>
-            <a href="#" style={styles.navItem}>Giới thiệu</a>
-            <a href="#" style={styles.navItem}>Tin tức - Sự kiện</a>
-            <a href="#" style={styles.navItem}>Văn bản - Thông báo</a>
-            <a href="#" style={styles.navItem}>Bảng vàng</a>
-            <a href="#" style={styles.navItem}>Thư viện ảnh</a>
+            <Link to="/" style={styles.navItemActive}>Trang chủ</Link>
+            <Link to="/gioi-thieu" style={styles.navItem}>Giới thiệu</Link>
+            <Link to="/tin-tuc" style={styles.navItem}>Tin tức - Sự kiện</Link>
+            <Link to="/van-ban" style={styles.navItem}>Văn bản - Thông báo</Link>
+            <Link to="/bang-vang" style={styles.navItem}>Bảng vàng</Link>
+            <Link to="/thu-vien-anh" style={styles.navItem}>Thư viện ảnh</Link>
           </div>
           <Link to="/admin" style={styles.adminLoginBtn}>Đăng nhập BTC</Link>
         </div>

@@ -4,6 +4,11 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CommitteeView from './pages/CommitteeView';
 import PublicHome from './pages/PublicHome';
+import PublicAbout from './pages/PublicAbout';
+import PublicNewsList from './pages/PublicNewsList';
+import PublicDocs from './pages/PublicDocs';
+import PublicSponsorsList from './pages/PublicSponsorsList';
+import PublicGallery from './pages/PublicGallery';
 import AdminSponsors from './pages/AdminSponsors';
 import AdminNews from './pages/AdminNews';
 import AdminGuests from './pages/AdminGuests';
@@ -17,10 +22,15 @@ function App() {
     <Routes>
       <Route path="/login" element={<Navigate to="/admin" replace />} />
       
-      {/* Public Route */}
+      {/* Public Portal Routes */}
       <Route path="/" element={<PublicHome />} />
+      <Route path="/gioi-thieu" element={<PublicAbout />} />
+      <Route path="/tin-tuc" element={<PublicNewsList />} />
+      <Route path="/van-ban" element={<PublicDocs />} />
+      <Route path="/bang-vang" element={<PublicSponsorsList />} />
+      <Route path="/thu-vien-anh" element={<PublicGallery />} />
       
-      {/* Admin Route */}
+      {/* Protected Admin Routes */}
       <Route path="/admin" element={<Dashboard />} />
       
       {/* Committee Route */}

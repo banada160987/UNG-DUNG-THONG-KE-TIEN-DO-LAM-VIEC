@@ -143,4 +143,37 @@ input, select, textarea {
     border-right: none !important;
     border-bottom: 1px solid #14532d;
   }
+  
+  /* Strict mobile overrides for inline styles */
+  header h1 {
+    font-size: 16px !important;
+    text-align: center;
+  }
+  header h2 {
+    font-size: 11px !important;
+    text-align: center;
+  }
+  .portal-banner-content > div > div:first-child {
+    flex-direction: column !important;
+    justify-content: center;
+    width: 100%;
+  }
+  .portal-banner-content > div > div:first-child > div:first-child {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 18px !important;
+    margin: 0 auto 10px !important;
+  }
+  
+  .portal-top-bar, [style*="display: flex"][style*="border-top: none"] {
+    flex-direction: column !important;
+    text-align: center;
+  }
+  
+  [style*="border-left: 1px solid #e2e8f0"] {
+    border-left: none !important;
+    border-top: 1px solid #e2e8f0 !important;
+    width: 100% !important;
+    justify-content: center !important;
+  }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Plus } from 'lucide-react';
+import ImageUpload from '../components/ImageUpload';
 
 export default function AdminNews() {
   const [news, setNews] = useState([]);
@@ -59,8 +60,12 @@ export default function AdminNews() {
               <input type="text" name="title" value={formData.title} onChange={handleChange} required style={styles.input} />
             </div>
             <div>
-              <label style={{display: 'block', marginBottom: '0.5rem'}}>Link Ảnh bìa (URL)</label>
-              <input type="text" name="image_url" value={formData.image_url} onChange={handleChange} placeholder="Ví dụ: https://link-anh.com/anh1.jpg" style={styles.input} />
+              <label style={{display: 'block', marginBottom: '0.5rem'}}>Ảnh bìa</label>
+              <ImageUpload 
+                currentUrl={formData.image_url} 
+                onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
+                onRemove={() => setFormData(prev => ({ ...prev, image_url: '' }))}
+              />
             </div>
             <div>
               <label style={{display: 'block', marginBottom: '0.5rem'}}>Nội dung bài viết (*)</label>
