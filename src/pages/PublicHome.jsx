@@ -69,7 +69,7 @@ export default function PublicHome() {
     <div style={styles.portalContainer}>
       {/* 1. Header Banner */}
       <header style={styles.banner}>
-        <div style={styles.bannerContent}>
+        <div className="portal-banner-content">
           <div style={styles.bannerLeft}>
             <div style={styles.logoCircle}>30</div>
             <div>
@@ -83,7 +83,7 @@ export default function PublicHome() {
       {/* 2. Horizontal Navigation */}
       <nav style={styles.navbar}>
         <div style={styles.navContainer}>
-          <div style={styles.navLinks}>
+          <div className="portal-nav-links">
             <a href="#" style={styles.navItemActive}>Trang chủ</a>
             <a href="#" style={styles.navItem}>Giới thiệu</a>
             <a href="#" style={styles.navItem}>Tin tức - Sự kiện</a>
@@ -110,7 +110,7 @@ export default function PublicHome() {
       </div>
 
       {/* 4. Main 3-Column Layout */}
-      <div style={styles.mainGrid}>
+      <div className="portal-main-grid">
         
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
@@ -317,14 +317,6 @@ const styles = {
     backgroundColor: '#fff',
     backgroundImage: 'url("https://www.transparenttextures.com/patterns/cubes.png")',
   },
-  bannerContent: {
-    maxWidth: '1200px',
-    margin: '0 auto',
-    padding: '15px 20px',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
   bannerLeft: {
     display: 'flex',
     alignItems: 'center',
@@ -367,9 +359,7 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  navLinks: {
-    display: 'flex',
+    flexWrap: 'wrap',
   },
   navItem: {
     color: 'white',
@@ -439,13 +429,6 @@ const styles = {
     border: 'none',
     padding: '0 15px',
     cursor: 'pointer',
-  },
-  mainGrid: {
-    maxWidth: '1200px',
-    margin: '15px auto 0',
-    display: 'grid',
-    gridTemplateColumns: '250px 1fr 250px',
-    gap: '15px',
   },
   // Columns
   leftCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
