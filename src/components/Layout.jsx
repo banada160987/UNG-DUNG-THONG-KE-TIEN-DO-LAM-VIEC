@@ -1,5 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Layout({ children, title }) {
   const { signOut, user } = useAuth();
@@ -17,6 +18,10 @@ export default function Layout({ children, title }) {
         </div>
         
         <div style={styles.headerRight}>
+          <div style={styles.navLinks}>
+            <Link to="/" style={styles.navLink}>Lãnh đạo</Link>
+            <Link to="/committee" style={styles.navLink}>Tiểu ban</Link>
+          </div>
           <span style={styles.userInfo}>{user?.email}</span>
           <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
             <LogOut size={20} />
@@ -79,6 +84,17 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '1rem',
+  },
+  navLinks: {
+    display: 'flex',
+    gap: '1rem',
+    marginRight: '1rem',
+  },
+  navLink: {
+    textDecoration: 'none',
+    color: 'var(--text-main)',
+    fontWeight: '500',
+    padding: '0.5rem',
   },
   userInfo: {
     fontSize: '0.875rem',

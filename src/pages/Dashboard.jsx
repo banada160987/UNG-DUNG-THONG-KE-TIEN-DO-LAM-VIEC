@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Plus } from 'lucide-react';
+import NewTaskModal from '../components/NewTaskModal';
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -58,7 +60,21 @@ export default function Dashboard() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>Đang tải dữ liệu...</div>
       ) : (
-        <div style={styles.grid}>
+        <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                background: 'var(--primary)', color: 'white', padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem', fontWeight: 'bold', boxShadow: 'var(--shadow-sm)'
+              }}
+            >
+              <Plus size={20} />
+              Giao việc mới
+            </button>
+          </div>
+          <div style={styles.grid}>
           {/* Red Alert Section */}
           <div className="glass" style={{...styles.card, gridColumn: '1 / -1'}}>
             <h2 style={styles.cardTitle}>
@@ -127,6 +143,14 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        {isModalOpen && (
+          <NewTaskModal 
+            committees={committees} 
+            onClose={() => setIsModalOpen(false)} 
+            onTaskAdded={fetchData}
+          />
+        )}
+        </>
       )}
     </Layout>
   );

@@ -7,48 +7,20 @@ import CommitteeView from './pages/CommitteeView';
 function App() {
   const { user, role } = useAuth();
 
-  // Protected Route Wrapper
-  const ProtectedRoute = ({ children, allowedRoles }) => {
-    if (!user) {
-      return <Navigate to="/login" replace />;
-    }
-    
-    if (allowedRoles && !allowedRoles.includes(role)) {
-      // If user has a role but tries to access an unauthorized route
-      if (role === 'admin') return <Navigate to="/" replace />;
-      if (role === 'committee_member') return <Navigate to="/committee" replace />;
-      return <div>Không có quyền truy cập</div>;
-    }
-
-    return children;
-  };
+  // Bỏ qua xác thực để test nhanh
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to={role === 'admin' ? '/' : '/committee'} /> : <Login />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
       
       {/* Admin Route */}
-      <Route 
-        path="/" 
-        element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
+      <Route path="/" element={<Dashboard />} />
       
       {/* Committee Route */}
-      <Route 
-        path="/committee" 
-        element={
-          <ProtectedRoute allowedRoles={['committee_member']}>
-            <CommitteeView />
-          </ProtectedRoute>
-        } 
-      />
+      <Route path="/committee" element={<CommitteeView />} />
       
       {/* Fallback */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
