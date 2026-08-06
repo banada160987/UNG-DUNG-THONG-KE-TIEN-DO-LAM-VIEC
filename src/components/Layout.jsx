@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2 } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -63,6 +63,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
     { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: 'NỘI DUNG WEB (PUBLIC)', show: role === 'admin' },
     { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: 'HỆ THỐNG', show: role === 'admin' },
+    { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: 'HỆ THỐNG', show: role === 'admin' },
   ];
 
   const visibleMenuItems = menuItems.filter(item => item.show);

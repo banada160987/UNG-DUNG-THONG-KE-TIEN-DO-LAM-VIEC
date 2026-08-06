@@ -8,6 +8,7 @@ import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Resp
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [committees, setCommittees] = useState([]);
+  const [sponsors, setSponsors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -18,9 +19,10 @@ export default function Dashboard() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tasksRes, committeesRes] = await Promise.all([
+      const [tasksRes, committeesRes, sponsorsRes] = await Promise.all([
         supabase.from('cbq_tasks').select('*'),
-        supabase.from('cbq_committees').select('*')
+        supabase.from('cbq_committees').select('*'),
+        supabase.from('cbq_sponsors').select('donation_amount').eq('is_public', true)
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
@@ -28,6 +30,7 @@ export default function Dashboard() {
 
       setTasks(tasksRes.data || []);
       setCommittees(committeesRes.data || []);
+      setSponsors(sponsorsRes.data || []);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -56,6 +59,8 @@ export default function Dashboard() {
 
   const redAlertTasks = getRedAlertTasks();
   const totalBudget = tasks.reduce((acc, t) => acc + (Number(t.budget_estimate) || 0), 0);
+  const totalIncome = sponsors.reduce((acc, s) => acc + (Number(s.donation_amount) || 0), 0);
+  const balance = totalIncome - totalBudget;
 
   const statusData = [
     { name: 'Chưa làm', value: tasks.filter(t => t.status === 'pending').length, color: 'var(--status-pending)' },
@@ -130,10 +135,24 @@ export default function Dashboard() {
             </div>
           </div>
           <div className="glass" style={styles.statCard}>
+            <DollarSign color="#166534" size={32} />
+            <div>
+              <div style={{...styles.statValue, color: '#166534'}}>{totalIncome.toLocaleString()} đ</div>
+              <div style={styles.statLabel}>Tổng thu (Tài trợ)</div>
+            </div>
+          </div>
+          <div className="glass" style={styles.statCard}>
             <DollarSign color="#eab308" size={32} />
             <div>
               <div style={{...styles.statValue, color: '#eab308'}}>{totalBudget.toLocaleString()} đ</div>
-              <div style={styles.statLabel}>Tổng dự trù kinh phí</div>
+              <div style={styles.statLabel}>Tổng chi (Dự kiến)</div>
+            </div>
+          </div>
+          <div className="glass" style={{...styles.statCard, gridColumn: '1 / -1', justifyContent: 'center', backgroundColor: balance >= 0 ? '#f0fdf4' : '#fef2f2'}}>
+            <DollarSign color={balance >= 0 ? '#166534' : '#d32f2f'} size={40} />
+            <div>
+              <div style={{fontSize: '2.5rem', fontWeight: 'bold', color: balance >= 0 ? '#166534' : '#d32f2f'}}>{balance.toLocaleString()} đ</div>
+              <div style={{...styles.statLabel, textAlign: 'center'}}>Cân đối Ngân sách</div>
             </div>
           </div>
 
