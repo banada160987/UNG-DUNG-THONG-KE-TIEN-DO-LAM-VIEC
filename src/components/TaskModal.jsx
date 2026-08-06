@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Send } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function TaskModal({ isOpen, onClose, onSave, task, committees, userRole, userCommitteeId }) {
   const isMember = userRole === 'committee_member';
@@ -17,6 +18,25 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
     committee_id: ''
   });
 
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+
+  const fetchComments = async () => {
+    const { data } = await supabase.from('cbq_task_comments').select('*').eq('task_id', task.id).order('created_at', { ascending: true });
+    if (data) setComments(data);
+  };
+
+  const handleAddComment = async () => {
+    if (!newComment.trim()) return;
+    const { error } = await supabase.from('cbq_task_comments').insert([
+      { task_id: task.id, user_name: 'Thành viên BTC', content: newComment }
+    ]);
+    if (!error) {
+      setNewComment('');
+      fetchComments();
+    }
+  };
+
   useEffect(() => {
     if (task) {
       setFormData({
@@ -30,6 +50,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
         notes: task.notes || '',
         committee_id: task.committee_id || ''
       });
+      fetchComments();
     } else {
       setFormData({
         title: '',
@@ -117,6 +138,38 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
             <label style={styles.label}>Ghi chú (Tùy chọn)</label>
             <textarea name="notes" value={formData.notes} onChange={handleChange} style={{...styles.input, minHeight: '80px', resize: 'vertical'}} placeholder="Các lưu ý bổ sung..." />
           </div>
+
+          {task && (
+            <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+              <h3 style={{fontSize: '1rem', color: '#334155', marginBottom: '1rem'}}>Thảo luận & Minh chứng</h3>
+              <div style={{ maxHeight: '200px', overflowY: 'auto', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {comments.map(c => (
+                  <div key={c.id} style={{ padding: '0.75rem', backgroundColor: '#f1f5f9', borderRadius: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                      <strong style={{fontSize: '0.85rem', color: '#0f172a'}}>{c.user_name}</strong>
+                      <span style={{fontSize: '0.75rem', color: '#64748b'}}>{new Date(c.created_at).toLocaleString('vi-VN')}</span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap' }}>{c.content}</p>
+                    {c.file_url && <a href={c.file_url} target="_blank" rel="noreferrer" style={{fontSize: '0.8rem', color: 'var(--primary)', marginTop: '0.25rem', display: 'inline-block'}}>📎 Xem đính kèm</a>}
+                  </div>
+                ))}
+                {comments.length === 0 && <p style={{color: '#64748b', fontSize: '0.9rem', textAlign: 'center'}}>Chưa có thảo luận nào.</p>}
+              </div>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <input 
+                  type="text" 
+                  value={newComment} 
+                  onChange={e => setNewComment(e.target.value)} 
+                  onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddComment())}
+                  placeholder="Nhập nội dung thảo luận..." 
+                  style={{...styles.input, flex: 1}} 
+                />
+                <button type="button" onClick={handleAddComment} className="btn-primary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Send size={16} /> Gửi
+                </button>
+              </div>
+            </div>
+          )}
 
           <div style={styles.footer}>
             <button type="button" onClick={onClose} style={styles.cancelBtn}>Hủy</button>

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign, PieChart as PieChartIcon, BarChart as BarChartIcon } from 'lucide-react';
 import TaskModal from '../components/TaskModal';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -55,6 +56,18 @@ export default function Dashboard() {
 
   const redAlertTasks = getRedAlertTasks();
   const totalBudget = tasks.reduce((acc, t) => acc + (Number(t.budget_estimate) || 0), 0);
+
+  const statusData = [
+    { name: 'Chưa làm', value: tasks.filter(t => t.status === 'pending').length, color: 'var(--status-pending)' },
+    { name: 'Đang làm', value: tasks.filter(t => t.status === 'in_progress').length, color: 'var(--status-progress)' },
+    { name: 'Hoàn thành', value: tasks.filter(t => t.status === 'completed').length, color: 'var(--status-completed)' },
+    { name: 'Quá hạn', value: tasks.filter(t => t.status === 'overdue').length, color: 'var(--status-overdue)' },
+  ].filter(d => d.value > 0);
+
+  const committeeChartData = committees.map(c => ({
+    name: c.name.replace('Tiểu ban ', ''),
+    'Tiến độ (%)': getCommitteeProgress(c.id)
+  }));
 
   return (
     <Layout title="Tổng quan Ban Tổ chức">
@@ -148,6 +161,51 @@ export default function Dashboard() {
                   </div>
                 );
               })}
+            </div>
+          </div>
+
+          {/* Biểu đồ phân tích (Analytics) */}
+          <div className="glass" style={{...styles.card, gridColumn: '1 / -1'}}>
+            <h2 style={styles.cardTitle}>
+              <PieChartIcon style={{ marginRight: '0.5rem' }} /> Phân tích Tổng thể
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', height: '300px' }}>
+              
+              <div style={{ height: '100%' }}>
+                <h3 style={{textAlign: 'center', fontSize: '1rem', marginBottom: '1rem', color: 'var(--text-muted)'}}>Trạng thái Công việc</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={statusData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                      label={({name, percent}) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                    >
+                      {statusData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div style={{ height: '100%' }}>
+                <h3 style={{textAlign: 'center', fontSize: '1rem', marginBottom: '1rem', color: 'var(--text-muted)'}}>Tiến độ các Tiểu ban</h3>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={committeeChartData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <XAxis type="number" domain={[0, 100]} hide />
+                    <YAxis dataKey="name" type="category" width={120} style={{fontSize: '12px'}} />
+                    <Tooltip />
+                    <Bar dataKey="Tiến độ (%)" fill="var(--primary)" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
             </div>
           </div>
         </div>

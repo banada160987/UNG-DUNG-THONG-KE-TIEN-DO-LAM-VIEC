@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Upload } from 'lucide-react';
+import { Plus, Download, FileSpreadsheet, ScanLine } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { QRCodeSVG } from 'qrcode.react';
+import QRScannerModal from '../components/QRScannerModal';
 
 export default function AdminGuests() {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
-  const [bulkText, setBulkText] = useState('');
+  const [showScanner, setShowScanner] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -51,69 +54,100 @@ export default function AdminGuests() {
     }
   };
 
-  const handleBulkSubmit = async () => {
-    // Phân tích dữ liệu từ Excel paste vào (Mỗi dòng 1 người, cách nhau bằng Tab)
-    const lines = bulkText.trim().split('\n');
-    const newGuests = [];
-    
-    for (const line of lines) {
-      if (!line.trim()) continue;
-      const parts = line.split('\t'); // Tab delimiter from Excel
-      // Cấu trúc mong muốn: Tên | Phân loại | SĐT
-      const name = parts[0] ? parts[0].trim() : 'Khách ẩn danh';
-      const category = parts[1] ? parts[1].trim() : 'Khách mời';
-      const phone = parts[2] ? parts[2].trim() : '';
-      
-      newGuests.push({
-        name,
-        category,
-        phone,
-        invitation_code: generateCode(),
-        rsvp_status: 'pending'
-      });
-    }
-
+  const insertBulkGuests = async (newGuests) => {
     if (newGuests.length === 0) return;
-
     const { error } = await supabase.from('cbq_guests').insert(newGuests);
     if (!error) {
       setShowBulk(false);
-      setBulkText('');
-      alert(`Đã thêm thành công ${newGuests.length} khách mời!`);
+      alert(`Đã thêm thành công ${newGuests.length} khách mời từ Excel!`);
       fetchGuests();
     } else {
       alert("Lỗi khi nhập hàng loạt.");
     }
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const bstr = evt.target.result;
+      const wb = XLSX.read(bstr, { type: 'binary' });
+      const wsname = wb.SheetNames[0];
+      const ws = wb.Sheets[wsname];
+      const data = XLSX.utils.sheet_to_json(ws);
+      
+      const newGuests = data.map(row => ({
+        name: row['Họ Tên'] || 'Khách ẩn danh',
+        category: row['Phân loại'] || 'Khách mời khác',
+        phone: row['Số điện thoại'] || '',
+        invitation_code: generateCode(),
+        rsvp_status: 'pending'
+      }));
+      insertBulkGuests(newGuests);
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleExport = () => {
+    const exportData = guests.map(g => ({
+      'Họ Tên': g.name,
+      'Phân loại': g.category,
+      'Số điện thoại': g.phone,
+      'Mã Thư Mời': g.invitation_code,
+      'Trạng thái': g.rsvp_status === 'pending' ? 'Chờ phản hồi' : (g.rsvp_status === 'attending' ? 'Tham dự' : 'Không tham dự')
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Khách mời");
+    XLSX.writeFile(wb, "DanhSachKhachMoi.xlsx");
+  };
+
+  const handleDownloadTemplate = () => {
+    const ws = XLSX.utils.json_to_sheet([{
+      'Họ Tên': 'Nguyễn Văn A',
+      'Phân loại': 'Cựu giáo viên',
+      'Số điện thoại': '0901234567'
+    }]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+    XLSX.writeFile(wb, "Template_NhapKhachMoi.xlsx");
+  };
+
   return (
     <Layout title="Quản lý Khách Mời & Lễ tân">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
         <p style={{color: '#64748b'}}>Quản lý danh sách đại biểu, xuất thư mời và theo dõi xác nhận tham dự.</p>
-        <div style={{display: 'flex', gap: '0.5rem'}}>
-          <button onClick={() => { setShowBulk(!showBulk); setShowForm(false); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem', backgroundColor: '#10b981' }}>
-            <Upload size={20} /> Nhập từ Excel
+        <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
+          <button onClick={() => setShowScanner(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#8b5cf6' }}>
+            <ScanLine size={20} /> Quét mã Check-in
           </button>
-          <button onClick={() => { setShowForm(!showForm); setShowBulk(false); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
+          <button onClick={handleExport} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#3b82f6' }}>
+            <Download size={20} /> Xuất Excel
+          </button>
+          <button onClick={() => { setShowBulk(!showBulk); setShowForm(false); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#10b981' }}>
+            <FileSpreadsheet size={20} /> Nhập Excel
+          </button>
+          <button onClick={() => { setShowForm(!showForm); setShowBulk(false); }} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem' }}>
             <Plus size={20} /> Thêm Thủ công
           </button>
         </div>
       </div>
 
       {showBulk && (
-        <div className="glass" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '1rem' }}>
-          <h3>Nhập danh sách từ Excel</h3>
-          <p style={{marginBottom: '1rem', color: '#64748b'}}>Copy dữ liệu từ Excel (3 cột: Tên - Phân loại - SĐT) và Paste (Dán) vào ô dưới đây:</p>
-          <textarea 
-            value={bulkText} 
-            onChange={e => setBulkText(e.target.value)} 
-            style={{...styles.input, minHeight: '150px', fontFamily: 'monospace'}} 
-            placeholder="Ví dụ:&#10;Nguyễn Văn A&#09;Cựu giáo viên&#09;0901234567&#10;Trần Thị B&#09;Đại biểu Sở&#09;0912345678"
-          />
-          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-            <button onClick={handleBulkSubmit} className="btn-primary" style={{ padding: '0.75rem 2rem', backgroundColor: '#10b981' }}>Tiến hành Nhập</button>
-            <button type="button" onClick={() => setShowBulk(false)} style={{ padding: '0.75rem 2rem', background: '#e2e8f0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Hủy</button>
+        <div className="glass" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '1rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981' }}>
+          <h3 style={{color: '#047857'}}>Nhập danh sách từ Excel</h3>
+          <p style={{marginBottom: '1rem', color: '#065f46'}}>
+            1. Tải file mẫu về máy và điền thông tin.<br/>
+            2. Bấm "Chọn file" để tải lên hệ thống.
+          </p>
+          <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', alignItems: 'center' }}>
+            <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '0.5rem 1rem', backgroundColor: '#34d399', color: '#064e3b' }}>
+              Tải Template Mẫu
+            </button>
+            <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} />
           </div>
+          <button type="button" onClick={() => setShowBulk(false)} style={{ marginTop: '1rem', padding: '0.5rem 1rem', background: '#e2e8f0', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Đóng</button>
         </div>
       )}
 
@@ -168,7 +202,12 @@ export default function AdminGuests() {
                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={styles.td}><strong>{g.name}</strong><br/><small style={{color: '#64748b'}}>{g.phone}</small></td>
                     <td style={styles.td}>{g.category}</td>
-                    <td style={styles.td}><code style={{background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px'}}>{g.invitation_code}</code></td>
+                    <td style={styles.td}>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                        <QRCodeSVG value={g.invitation_code} size={48} />
+                        <code style={{background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px'}}>{g.invitation_code}</code>
+                      </div>
+                    </td>
                     <td style={styles.td}>
                       {g.rsvp_status === 'pending' && <span style={{color: '#f59e0b', fontWeight: 'bold'}}>Chờ phản hồi</span>}
                       {g.rsvp_status === 'attending' && <span style={{color: '#10b981', fontWeight: 'bold'}}>Sẽ tham dự ✅</span>}
@@ -186,6 +225,12 @@ export default function AdminGuests() {
           </div>
         )}
       </div>
+
+      <QRScannerModal 
+        isOpen={showScanner} 
+        onClose={() => setShowScanner(false)} 
+        onScanSuccess={() => fetchGuests()} 
+      />
     </Layout>
   );
 }

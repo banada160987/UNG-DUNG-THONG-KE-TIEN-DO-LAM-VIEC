@@ -1,13 +1,47 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+import { differenceInDays } from 'date-fns';
 
 export default function Layout({ children, title }) {
   const { user, role, permissions = {}, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  const targetDate = new Date('2026-09-03');
+  const daysLeft = differenceInDays(targetDate, new Date());
+
+  useEffect(() => {
+    const fetchNotifs = async () => {
+      const { data } = await supabase.from('cbq_notifications').select('*').order('created_at', { ascending: false }).limit(5);
+      if(data) setNotifications(data);
+    }
+    fetchNotifs();
+    
+    const channel = supabase.channel('public:cbq_notifications')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cbq_notifications' }, payload => {
+        setNotifications(prev => [payload.new, ...prev].slice(0, 5));
+      })
+      .subscribe();
+      
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -94,6 +128,39 @@ export default function Layout({ children, title }) {
             <h1 className="header-title" style={styles.headerTitle}>{title}</h1>
           </div>
           <div style={styles.headerRight}>
+            
+            <div className="layout-header-countdown" style={styles.countdown}>
+              <Calendar size={18} color="#ef4444" />
+              <span>Còn <strong style={{color: '#ef4444'}}>{daysLeft > 0 ? daysLeft : 0} ngày</strong> đến Lễ 30 năm</span>
+            </div>
+
+            <div style={{position: 'relative'}} ref={notifRef}>
+              <button 
+                onClick={() => setShowNotifications(!showNotifications)} 
+                style={styles.notifBtn}
+                title="Thông báo"
+              >
+                <Bell size={20} />
+                {notifications.length > 0 && <span style={styles.notifBadge}>{notifications.length}</span>}
+              </button>
+              
+              {showNotifications && (
+                <div style={styles.notifDropdown}>
+                  <div style={styles.notifHeader}>Thông báo mới nhất</div>
+                  <div style={styles.notifList}>
+                    {notifications.map(n => (
+                      <div key={n.id} style={styles.notifItem}>
+                        <div style={{fontSize: '0.85rem', fontWeight: 'bold'}}>{n.title}</div>
+                        <div style={{fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem'}}>{n.message}</div>
+                        <div style={{fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem'}}>{new Date(n.created_at).toLocaleString('vi-VN')}</div>
+                      </div>
+                    ))}
+                    {notifications.length === 0 && <div style={{padding: '1rem', textAlign: 'center', color: '#64748b'}}>Không có thông báo.</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <span style={styles.userInfo}>{user?.email || 'Admin User'}</span>
             <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
               <LogOut size={18} />
@@ -226,5 +293,83 @@ const styles = {
     flex: 1,
     padding: '30px',
     overflowY: 'auto'
+  },
+  countdown: {
+    display: 'none',
+    alignItems: 'center',
+    gap: '0.5rem',
+    backgroundColor: '#fef2f2',
+    padding: '0.5rem 1rem',
+    borderRadius: '2rem',
+    border: '1px solid #fca5a5',
+    fontSize: '0.85rem'
+  },
+  notifBtn: {
+    background: '#f1f5f9',
+    border: 'none',
+    padding: '8px',
+    borderRadius: '50%',
+    cursor: 'pointer',
+    color: '#475569',
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  notifBadge: {
+    position: 'absolute',
+    top: '-2px',
+    right: '-2px',
+    backgroundColor: '#ef4444',
+    color: 'white',
+    fontSize: '0.65rem',
+    fontWeight: 'bold',
+    width: '16px',
+    height: '16px',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  notifDropdown: {
+    position: 'absolute',
+    top: '120%',
+    right: '0',
+    width: '320px',
+    backgroundColor: 'white',
+    borderRadius: '0.75rem',
+    boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #e2e8f0',
+    zIndex: 50,
+    overflow: 'hidden'
+  },
+  notifHeader: {
+    padding: '1rem',
+    borderBottom: '1px solid #e2e8f0',
+    fontWeight: 'bold',
+    backgroundColor: '#f8fafc'
+  },
+  notifList: {
+    maxHeight: '300px',
+    overflowY: 'auto'
+  },
+  notifItem: {
+    padding: '1rem',
+    borderBottom: '1px solid #f1f5f9',
+    cursor: 'pointer',
+    transition: 'background 0.2s'
   }
 };
+
+// Add to global CSS or handle inline via JS for media query equivalent
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @media (min-width: 768px) {
+      .layout-header-countdown {
+        display: flex !important;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
