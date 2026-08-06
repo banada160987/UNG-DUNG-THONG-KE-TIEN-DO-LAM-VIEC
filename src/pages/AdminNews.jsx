@@ -3,6 +3,8 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Plus } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 export default function AdminNews() {
   const [news, setNews] = useState([]);
@@ -69,7 +71,7 @@ export default function AdminNews() {
             </div>
             <div>
               <label style={{display: 'block', marginBottom: '0.5rem'}}>Nội dung bài viết (*)</label>
-              <textarea name="content" value={formData.content} onChange={handleChange} required style={{...styles.input, minHeight: '150px'}} />
+              <ReactQuill theme="snow" value={formData.content} onChange={(val) => setFormData(prev => ({...prev, content: val}))} style={{backgroundColor: 'white', marginBottom: '20px'}} />
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <button type="submit" className="btn-primary" style={{ padding: '0.75rem 2rem' }}>Đăng bài</button>
@@ -92,7 +94,7 @@ export default function AdminNews() {
                 <small style={{ color: '#64748b', display: 'block', marginBottom: '0.5rem' }}>
                   Đăng lúc: {new Date(n.published_at).toLocaleString('vi-VN')}
                 </small>
-                <p style={{ margin: 0, color: '#334155' }}>{n.content.substring(0, 150)}...</p>
+                <p style={{ margin: 0, color: '#334155' }}>{n.content.replace(/<[^>]+>/g, '').substring(0, 150)}...</p>
               </div>
             </div>
           ))

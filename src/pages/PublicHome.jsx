@@ -9,6 +9,32 @@ export default function PublicHome() {
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
+  
+  const [totalDonation, setTotalDonation] = useState(0);
+  const [attendingGuests, setAttendingGuests] = useState(0);
+  
+  const calculateTimeLeft = () => {
+    const difference = +new Date("2026-09-03T08:00:00") - +new Date();
+    let timeLeft = {};
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60)
+      };
+    }
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    return () => clearTimeout(timer);
+  });
 
   useEffect(() => {
     fetchPublicData();
@@ -17,12 +43,21 @@ export default function PublicHome() {
   const fetchPublicData = async () => {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
-        supabase.from('cbq_news').select('*').order('published_at', { ascending: false })
+        supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
+        supabase.from('cbq_guests').select('rsvp_status')
       ]);
-      if (!sponsorsRes.error) setSponsors(sponsorsRes.data || []);
+      if (!sponsorsRes.error) {
+        setSponsors(sponsorsRes.data || []);
+        const total = (sponsorsRes.data || []).reduce((sum, s) => sum + (Number(s.donation_amount) || 0), 0);
+        setTotalDonation(total);
+      }
       if (!newsRes.error) setNews(newsRes.data || []);
+      if (!guestsRes.error) {
+        const attendingCount = (guestsRes.data || []).filter(g => g.rsvp_status === 'attending').length;
+        setAttendingGuests(attendingCount);
+      }
     } catch (error) {
       console.log('Chưa có dữ liệu mới.');
     } finally {
@@ -114,6 +149,42 @@ export default function PublicHome() {
 
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
+          {/* COUNTDOWN & STATS */}
+          <PortalBlock title="HƯỚNG VỀ LỄ KỶ NIỆM" color="#d32f2f">
+            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534', marginBottom: '5px' }}>ĐẾM NGƯỢC THỜI GIAN</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                {Object.keys(timeLeft).length > 0 ? (
+                  <>
+                    <div style={styles.timeBox}><span>{timeLeft.days}</span><small>Ngày</small></div>
+                    <div style={styles.timeBox}><span>{timeLeft.hours}</span><small>Giờ</small></div>
+                    <div style={styles.timeBox}><span>{timeLeft.minutes}</span><small>Phút</small></div>
+                    <div style={styles.timeBox}><span>{timeLeft.seconds}</span><small>Giây</small></div>
+                  </>
+                ) : (
+                  <div style={{ fontWeight: 'bold', color: '#d32f2f', padding: '10px' }}>SỰ KIỆN ĐANG DIỄN RA</div>
+                )}
+              </div>
+            </div>
+            
+            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '15px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                <div style={styles.statIcon}>👥</div>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Đại biểu xác nhận tham dự</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#166534' }}>{attendingGuests} người</div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={styles.statIcon}>💝</div>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Tổng tài trợ (Công khai)</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#d32f2f' }}>{totalDonation.toLocaleString()} VNĐ</div>
+                </div>
+              </div>
+            </div>
+          </PortalBlock>
+
           <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534">
             <div style={styles.mockSlider}>
               <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="School" style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
@@ -439,6 +510,30 @@ const styles = {
   portalBlock: {
     backgroundColor: '#fff',
     border: '1px solid #e2e8f0',
+  },
+  timeBox: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fef2f2',
+    color: '#d32f2f',
+    border: '1px solid #fca5a5',
+    borderRadius: '8px',
+    width: '50px',
+    height: '50px',
+  },
+  'timeBox span': { // Just inline it, this is React so I should put inline styles carefully
+  },
+  statIcon: {
+    width: '40px',
+    height: '40px',
+    backgroundColor: '#f1f5f9',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '20px',
   },
   portalBlockHeader: {
     color: 'white',

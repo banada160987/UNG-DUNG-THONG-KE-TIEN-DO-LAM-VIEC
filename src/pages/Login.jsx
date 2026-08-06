@@ -28,9 +28,13 @@ export default function Login() {
     <div style={styles.container}>
       <div className="glass" style={styles.card}>
         <div style={styles.header}>
-          <div style={styles.logoPlaceholder}>CBQ</div>
-          <h2 style={styles.title}>Quản lý Tiến độ</h2>
-          <p style={styles.subtitle}>Kỷ niệm 30 năm THPT Cao Bá Quát</p>
+          <img src="/logo.jpg" alt="Logo Kỷ niệm 30 năm" style={styles.logoImage} />
+          <h2 style={styles.title}>HỆ THỐNG QUẢN LÝ TIẾN ĐỘ</h2>
+          <div style={styles.subtitle}>
+            <p style={{margin: '0 0 4px 0', fontWeight: '700', color: '#b91c1c', textTransform: 'uppercase'}}>Kỷ niệm 30 năm ngày thành lập</p>
+            <p style={{margin: 0, fontWeight: '700'}}>TRƯỜNG THPT CAO BÁ QUÁT</p>
+            <p style={{margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748b'}}>Phường Tân An - Tỉnh Đắk Lắk</p>
+          </div>
         </div>
 
         {error && <div style={styles.error}>{error}</div>}
@@ -78,35 +82,36 @@ const styles = {
   },
   card: {
     width: '100%',
-    maxWidth: '400px',
-    padding: '2.5rem',
-    borderRadius: '1rem',
-    textAlign: 'center'
+    maxWidth: '450px',
+    padding: '3rem 2.5rem',
+    borderRadius: '1.5rem',
+    textAlign: 'center',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+    border: '1px solid rgba(255,255,255,0.4)',
+    background: 'rgba(255, 255, 255, 0.85)',
+    backdropFilter: 'blur(12px)'
   },
   header: {
     marginBottom: '2rem'
   },
-  logoPlaceholder: {
-    width: '64px',
-    height: '64px',
-    background: 'var(--primary)',
-    color: 'white',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '1.5rem',
-    fontWeight: 'bold',
-    margin: '0 auto 1rem auto',
-    boxShadow: 'var(--shadow-md)'
+  logoImage: {
+    width: '160px',
+    height: 'auto',
+    marginBottom: '1.25rem',
+    filter: 'drop-shadow(0 10px 8px rgb(0 0 0 / 0.04))'
   },
   title: {
-    fontSize: '1.5rem',
-    marginBottom: '0.25rem'
+    fontSize: '1.4rem',
+    fontWeight: '800',
+    color: '#0f172a',
+    marginBottom: '0.75rem',
+    letterSpacing: '0.5px'
   },
   subtitle: {
-    color: 'var(--text-muted)',
-    fontSize: '0.875rem'
+    color: '#1e293b',
+    fontSize: '0.9rem',
+    fontWeight: '600',
+    lineHeight: '1.4'
   },
   form: {
     display: 'flex',

@@ -15,6 +15,7 @@ export default function CommitteeView() {
   const [allCommittees, setAllCommittees] = useState([]);
   const [selectedCommitteeId, setSelectedCommitteeId] = useState(isAdminOrSecretary ? 'all' : (committeeId || ''));
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('list');
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -208,6 +209,9 @@ export default function CommitteeView() {
 
             {/* Action Buttons for ALL (Admin/Secretary/Member) */}
             <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={() => setViewMode(v => v === 'list' ? 'kanban' : 'list')} style={{ ...styles.actionBtn, backgroundColor: '#e2e8f0', color: '#1e293b', border: '1px solid #cbd5e1' }}>
+                {viewMode === 'list' ? 'Chế độ: Kanban' : 'Chế độ: Danh sách'}
+              </button>
               {isAdminOrSecretary && (
                 <button onClick={() => setIsBulkModalOpen(true)} style={{ ...styles.actionBtn, backgroundColor: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>
                   <Calendar size={18} /> Đổi Hạn chót loạt
@@ -238,22 +242,57 @@ export default function CommitteeView() {
           </div>
 
           <h2 style={{ marginBottom: '1rem', marginTop: '2rem' }}>Danh sách công việc</h2>
-          <div style={styles.taskList}>
-            {displayedTasks.length === 0 ? (
-              <p className="glass" style={{ padding: '1rem', textAlign: 'center' }}>Chưa có công việc nào được giao.</p>
-            ) : (
-              displayedTasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  onUpdate={fetchData} 
-                  onEdit={handleOpenEditTask}
-                  onDelete={handleDeleteTask}
-                  isAdmin={true} // Everyone who can see the task can edit it now
-                />
-              ))
-            )}
-          </div>
+          {viewMode === 'list' ? (
+            <div style={styles.taskList}>
+              {displayedTasks.length === 0 ? (
+                <p className="glass" style={{ padding: '1rem', textAlign: 'center' }}>Chưa có công việc nào được giao.</p>
+              ) : (
+                displayedTasks.map(task => (
+                  <TaskCard 
+                    key={task.id} 
+                    task={task} 
+                    onUpdate={fetchData} 
+                    onEdit={handleOpenEditTask}
+                    onDelete={handleDeleteTask}
+                    isAdmin={true} 
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(300px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+              {['pending', 'in_progress', 'completed'].map(statusKey => {
+                const statusName = statusKey === 'pending' ? 'Chưa bắt đầu' : statusKey === 'in_progress' ? 'Đang thực hiện' : 'Đã hoàn thành';
+                const statusColor = statusKey === 'pending' ? '#94a3b8' : statusKey === 'in_progress' ? '#f59e0b' : '#10b981';
+                return (
+                  <div key={statusKey} style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                    <h3 style={{ margin: '0 0 15px 0', borderBottom: `2px solid ${statusColor}`, paddingBottom: '10px', fontSize: '16px', display: 'flex', justifyContent: 'space-between' }}>
+                      {statusName}
+                      <span style={{ backgroundColor: '#e2e8f0', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: '#475569' }}>
+                        {displayedTasks.filter(t => t.status === statusKey).length}
+                      </span>
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                      {displayedTasks.filter(t => t.status === statusKey).map(task => (
+                        <div key={task.id} style={{ position: 'relative' }}>
+                           <TaskCard 
+                            task={task} 
+                            onUpdate={fetchData} 
+                            onEdit={handleOpenEditTask}
+                            onDelete={handleDeleteTask}
+                            isAdmin={true} 
+                          />
+                        </div>
+                      ))}
+                      {displayedTasks.filter(t => t.status === statusKey).length === 0 && (
+                        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Không có công việc</p>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

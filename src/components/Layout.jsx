@@ -95,7 +95,7 @@ export default function Layout({ children, title }) {
       {/* Sidebar */}
       <aside className={`layout-sidebar ${isSidebarOpen ? 'open' : ''}`} style={styles.sidebar}>
         <div style={styles.logoArea}>
-          <div style={styles.logoCircle}>30</div>
+          <img src="/logo.jpg" alt="Logo 30 năm" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
           <div>
             <h2 style={{margin: 0, fontSize: '16px', color: 'white'}}>CBQ Admin</h2>
             <small style={{color: '#94a3b8'}}>Kỷ niệm 30 năm</small>

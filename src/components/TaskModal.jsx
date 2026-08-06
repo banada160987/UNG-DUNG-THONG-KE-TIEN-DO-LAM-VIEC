@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import FileUpload from './FileUpload';
 
 export default function TaskModal({ isOpen, onClose, onSave, task, committees, userRole, userCommitteeId }) {
   const isMember = userRole === 'committee_member';
@@ -20,6 +21,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
 
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
+  const [newCommentFile, setNewCommentFile] = useState('');
 
   const fetchComments = async () => {
     const { data } = await supabase.from('cbq_task_comments').select('*').eq('task_id', task.id).order('created_at', { ascending: true });
@@ -27,12 +29,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) return;
+    if (!newComment.trim() && !newCommentFile) return;
     const { error } = await supabase.from('cbq_task_comments').insert([
-      { task_id: task.id, user_name: 'Thành viên BTC', content: newComment }
+      { task_id: task.id, user_name: 'Thành viên BTC', content: newComment, file_url: newCommentFile }
     ]);
     if (!error) {
       setNewComment('');
+      setNewCommentFile('');
       fetchComments();
     }
   };
@@ -155,18 +158,25 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
                 ))}
                 {comments.length === 0 && <p style={{color: '#64748b', fontSize: '0.9rem', textAlign: 'center'}}>Chưa có thảo luận nào.</p>}
               </div>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input 
-                  type="text" 
-                  value={newComment} 
-                  onChange={e => setNewComment(e.target.value)} 
-                  onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddComment())}
-                  placeholder="Nhập nội dung thảo luận..." 
-                  style={{...styles.input, flex: 1}} 
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input 
+                    type="text" 
+                    value={newComment} 
+                    onChange={e => setNewComment(e.target.value)} 
+                    onKeyPress={e => e.key === 'Enter' && (e.preventDefault(), handleAddComment())}
+                    placeholder="Nhập nội dung thảo luận..." 
+                    style={{...styles.input, flex: 1}} 
+                  />
+                  <button type="button" onClick={handleAddComment} className="btn-primary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Send size={16} /> Gửi
+                  </button>
+                </div>
+                <FileUpload 
+                  currentUrl={newCommentFile}
+                  onUploadSuccess={(url) => setNewCommentFile(url)}
+                  onRemove={() => setNewCommentFile('')}
                 />
-                <button type="button" onClick={handleAddComment} className="btn-primary" style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Send size={16} /> Gửi
-                </button>
               </div>
             </div>
           )}
