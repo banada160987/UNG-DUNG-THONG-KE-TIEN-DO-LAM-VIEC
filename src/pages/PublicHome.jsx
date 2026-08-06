@@ -48,7 +48,7 @@ export default function PublicHome() {
         .from('cbq_guests')
         .update({ rsvp_status: status })
         .eq('id', rsvpResult.guest.id);
-        
+
       if (!error) {
         setRsvpResult(prev => ({
           ...prev,
@@ -100,26 +100,26 @@ export default function PublicHome() {
         <div style={styles.dateInfo}>{currentDate}</div>
         <div style={styles.marqueeWrapper}>
           <marquee style={styles.marqueeText} scrollamount="5">
-            CHÀO MỪNG QUÝ VỊ ĐẠI BIỂU, QUÝ THẦY CÔ VÀ CÁC THẾ HỆ HỌC SINH VỀ DỰ LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT! CHƯƠNG TRÌNH SẼ ĐƯỢC TỔ CHỨC VÀO NGÀY 15/11/2026.
+            CHÀO MỪNG QUÝ VỊ ĐẠI BIỂU, QUÝ THẦY CÔ VÀ CÁC THẾ HỆ HỌC SINH VỀ DỰ LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT! CHƯƠNG TRÌNH SẼ ĐƯỢC TỔ CHỨC VÀO NGÀY 03/9/2026.
           </marquee>
         </div>
         <div style={styles.searchMini}>
-          <input type="text" placeholder="Tìm kiếm..." style={styles.searchMiniInput}/>
-          <button style={styles.searchMiniBtn}><Search size={14}/></button>
+          <input type="text" placeholder="Tìm kiếm..." style={styles.searchMiniInput} />
+          <button style={styles.searchMiniBtn}><Search size={14} /></button>
         </div>
       </div>
 
       {/* 4. Main 3-Column Layout */}
       <div className="portal-main-grid">
-        
+
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
           <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534">
             <div style={styles.mockSlider}>
-              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="School" style={{width: '100%', height: '150px', objectFit: 'cover'}} />
+              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="School" style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
             </div>
           </PortalBlock>
-          
+
           <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534">
             <ul style={styles.listStyle}>
               <li>📍 Địa chỉ trường THPT Cao Bá Quát</li>
@@ -130,25 +130,25 @@ export default function PublicHome() {
 
           <PortalBlock title="LIÊN KẾT TRANG" color="#166534">
             <ul style={styles.linkList}>
-              <li><ChevronRight size={14} color="#166534"/> Cổng thông tin Sở GD&ĐT</li>
-              <li><ChevronRight size={14} color="#166534"/> Báo Giáo dục và Thời đại</li>
+              <li><ChevronRight size={14} color="#166534" /> Cổng thông tin Sở GD&ĐT</li>
+              <li><ChevronRight size={14} color="#166534" /> Báo Giáo dục và Thời đại</li>
             </ul>
           </PortalBlock>
         </div>
 
         {/* CENTER COLUMN */}
         <div style={styles.centerCol}>
-          
+
           {/* NỔI BẬT: Tra cứu thiệp mời đặt ở giữa để khách dễ thấy nhất */}
           <div style={styles.rsvpHighlightBlock}>
             <div style={styles.rsvpHighlightHeader}>TRA CỨU THIỆP MỜI ĐIỆN TỬ</div>
             <div style={styles.rsvpHighlightBody}>
-              <p style={{marginBottom: '10px', fontSize: '14px', color: '#475569'}}>Nhập mã số khách mời (được in trên thư mời bản cứng hoặc gửi qua tin nhắn) để xem phiên bản điện tử và gửi phản hồi xác nhận tham dự.</p>
-              
+              <p style={{ marginBottom: '10px', fontSize: '14px', color: '#475569' }}>Nhập mã số khách mời (được in trên thư mời bản cứng hoặc gửi qua tin nhắn) để xem phiên bản điện tử và gửi phản hồi xác nhận tham dự.</p>
+
               <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
-                <input 
-                  type="text" 
-                  placeholder="Nhập mã khách mời (VD: CBQ-12345)" 
+                <input
+                  type="text"
+                  placeholder="Nhập mã khách mời (VD: CBQ-12345)"
                   value={rsvpCode}
                   onChange={(e) => setRsvpCode(e.target.value)}
                   style={styles.searchInput}
@@ -167,27 +167,27 @@ export default function PublicHome() {
                         <div style={styles.inviteLogoSmall}>30</div>
                         <h4 style={styles.inviteSchool}>THPT CAO BÁ QUÁT</h4>
                       </div>
-                      
+
                       <div style={styles.inviteBody}>
                         <p style={styles.inviteIntro}>Trân trọng kính mời</p>
                         <h2 style={styles.inviteName}>{rsvpResult.guest.name}</h2>
                         <p style={styles.inviteRole}>{rsvpResult.guest.category}</p>
-                        
+
                         <div style={styles.inviteDivider}></div>
                         <p style={styles.inviteEvent}>Tới dự Lễ Kỷ Niệm 30 Năm Thành Lập Trường</p>
-                        
+
                         <div style={styles.inviteDetails}>
                           <div style={styles.inviteDetailRow}>
-                            <Clock size={16} color="#b71c1c"/> <strong>Thời gian:</strong> 08:00, Chủ nhật, 15/11/2026
+                            <Clock size={16} color="#b71c1c" /> <strong>Thời gian:</strong> 08:00, Chủ nhật, 15/11/2026
                           </div>
                           <div style={styles.inviteDetailRow}>
-                            <MapPin size={16} color="#b71c1c"/> <strong>Địa điểm:</strong> Sân trường THPT Cao Bá Quát
+                            <MapPin size={16} color="#b71c1c" /> <strong>Địa điểm:</strong> Sân trường THPT Cao Bá Quát
                           </div>
                         </div>
 
                         <div style={styles.inviteAgenda}>
-                          <p style={{fontWeight: '700', marginBottom: '0.5rem', color: '#78350f'}}>Chương trình dự kiến:</p>
-                          <ul style={{textAlign: 'left', fontSize: '13px', color: '#475569', paddingLeft: '20px', margin: 0}}>
+                          <p style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#78350f' }}>Chương trình dự kiến:</p>
+                          <ul style={{ textAlign: 'left', fontSize: '13px', color: '#475569', paddingLeft: '20px', margin: 0 }}>
                             <li>08:00 - 08:30: Đón tiếp đại biểu</li>
                             <li>08:30 - 10:30: Lễ mít tinh kỷ niệm</li>
                             <li>10:30 - 11:30: Giao lưu các thế hệ</li>
@@ -202,16 +202,16 @@ export default function PublicHome() {
                   <div style={styles.rsvpActionBox}>
                     {rsvpResult.guest.rsvp_status === 'pending' ? (
                       <>
-                        <p style={{fontWeight: 'bold', marginBottom: '10px', fontSize: '14px'}}>Quý vị vui lòng xác nhận tham dự:</p>
+                        <p style={{ fontWeight: 'bold', marginBottom: '10px', fontSize: '14px' }}>Quý vị vui lòng xác nhận tham dự:</p>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                           <button style={styles.btnConfirm} onClick={() => handleConfirm('attending')}>Tham dự</button>
                           <button style={styles.btnDecline} onClick={() => handleConfirm('not_attending')}>Không thể đến</button>
                         </div>
                       </>
                     ) : (
-                      <div style={{padding: '10px', backgroundColor: rsvpResult.guest.rsvp_status === 'attending' ? '#f0fdf4' : '#fef2f2', color: rsvpResult.guest.rsvp_status === 'attending' ? '#166534' : '#991b1b', borderRadius: '4px', fontWeight: 'bold', fontSize: '14px', border: '1px solid #ccc'}}>
-                        {rsvpResult.guest.rsvp_status === 'attending' 
-                          ? '✅ Quý vị đã xác nhận tham dự sự kiện.' 
+                      <div style={{ padding: '10px', backgroundColor: rsvpResult.guest.rsvp_status === 'attending' ? '#f0fdf4' : '#fef2f2', color: rsvpResult.guest.rsvp_status === 'attending' ? '#166534' : '#991b1b', borderRadius: '4px', fontWeight: 'bold', fontSize: '14px', border: '1px solid #ccc' }}>
+                        {rsvpResult.guest.rsvp_status === 'attending'
+                          ? '✅ Quý vị đã xác nhận tham dự sự kiện.'
                           : '❌ Quý vị đã xác nhận không thể tham dự.'}
                       </div>
                     )}
@@ -226,7 +226,7 @@ export default function PublicHome() {
             <div style={styles.newsMainHeader}>TIN TỨC - SỰ KIỆN</div>
             <div style={styles.newsMainContent}>
               {news.length === 0 ? (
-                <div style={{padding: '20px', textAlign: 'center', color: '#666'}}>Đang cập nhật tin tức...</div>
+                <div style={{ padding: '20px', textAlign: 'center', color: '#666' }}>Đang cập nhật tin tức...</div>
               ) : (
                 <>
                   {/* Tin nổi bật (tin đầu tiên) */}
@@ -236,13 +236,13 @@ export default function PublicHome() {
                     <div style={styles.newsMeta}>📅 {new Date(news[0].published_at).toLocaleDateString('vi-VN')} | 👁️ Lượt xem: {Math.floor(Math.random() * 500) + 100}</div>
                     <p style={styles.featuredNewsDesc}>{news[0].content.substring(0, 150)}...</p>
                   </div>
-                  
+
                   {/* Danh sách tin cũ hơn */}
                   {news.length > 1 && (
                     <ul style={styles.olderNewsList}>
                       {news.slice(1, 5).map(item => (
                         <li key={item.id} style={styles.olderNewsItem}>
-                          <ChevronRight size={14} color="#0284c7" style={{minWidth: '14px'}}/>
+                          <ChevronRight size={14} color="#0284c7" style={{ minWidth: '14px' }} />
                           <a href="#" style={styles.olderNewsLink}>{item.title}</a>
                         </li>
                       ))}
@@ -261,9 +261,9 @@ export default function PublicHome() {
             <div style={styles.marqueeVertical}>
               <ul style={styles.linkList}>
                 {news.slice(0, 4).map((n, i) => (
-                  <li key={i} style={{borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px', marginBottom: '8px'}}>
-                    <a href="#" style={{color: '#d32f2f', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none'}}>✔ {n.title}</a>
-                    <div style={{fontSize: '11px', color: '#64748b', marginTop: '4px'}}>({new Date(n.published_at).toLocaleDateString('vi-VN')})</div>
+                  <li key={i} style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px', marginBottom: '8px' }}>
+                    <a href="#" style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none' }}>✔ {n.title}</a>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>({new Date(n.published_at).toLocaleDateString('vi-VN')})</div>
                   </li>
                 ))}
               </ul>
@@ -272,14 +272,14 @@ export default function PublicHome() {
 
           <PortalBlock title="BẢNG VÀNG TRI ÂN" color="#d32f2f">
             {sponsors.length === 0 ? (
-              <div style={{fontSize: '13px', color: '#666', padding: '10px'}}>Chưa có dữ liệu.</div>
+              <div style={{ fontSize: '13px', color: '#666', padding: '10px' }}>Chưa có dữ liệu.</div>
             ) : (
               <ul style={styles.sponsorList}>
                 {sponsors.slice(0, 10).map((s, i) => (
                   <li key={i} style={styles.sponsorItem}>
-                    <span style={{fontWeight: 'bold', color: '#0f172a'}}>{s.name}</span>
-                    {s.donation_amount > 0 && <span style={{color: '#d32f2f', fontWeight: 'bold', display: 'block'}}>{Number(s.donation_amount).toLocaleString()} VNĐ</span>}
-                    {s.donation_item && <span style={{color: '#059669', display: 'block', fontSize: '12px'}}>{s.donation_item}</span>}
+                    <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{s.name}</span>
+                    {s.donation_amount > 0 && <span style={{ color: '#d32f2f', fontWeight: 'bold', display: 'block' }}>{Number(s.donation_amount).toLocaleString()} VNĐ</span>}
+                    {s.donation_item && <span style={{ color: '#059669', display: 'block', fontSize: '12px' }}>{s.donation_item}</span>}
                   </li>
                 ))}
               </ul>
@@ -296,7 +296,7 @@ export default function PublicHome() {
 function PortalBlock({ title, color, children }) {
   return (
     <div style={styles.portalBlock}>
-      <div style={{...styles.portalBlockHeader, backgroundColor: color}}>
+      <div style={{ ...styles.portalBlockHeader, backgroundColor: color }}>
         {title}
       </div>
       <div style={styles.portalBlockContent}>
@@ -434,7 +434,7 @@ const styles = {
   leftCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
   centerCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
   rightCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
-  
+
   // Blocks
   portalBlock: {
     backgroundColor: '#fff',
@@ -528,7 +528,7 @@ const styles = {
     border: '1px solid #fca5a5',
     borderRadius: '4px',
   },
-  
+
   // Invite Card Styling (Adapted for Portal)
   inviteCardWrapper: { marginTop: '15px' },
   inviteCard: {
@@ -553,7 +553,7 @@ const styles = {
   inviteEvent: { fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' },
   inviteDetails: { backgroundColor: '#f8fafc', padding: '10px', fontSize: '13px', marginBottom: '10px' },
   inviteAgenda: { backgroundColor: '#fef3c7', padding: '10px', border: '1px solid #fde68a' },
-  
+
   rsvpActionBox: { marginTop: '10px', textAlign: 'center' },
   btnConfirm: { backgroundColor: '#166534', color: 'white', padding: '8px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   btnDecline: { backgroundColor: '#fff', color: '#333', border: '1px solid #ccc', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' },
