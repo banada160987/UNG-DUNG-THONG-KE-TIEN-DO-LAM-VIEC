@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign } from 'lucide-react';
-import NewTaskModal from '../components/NewTaskModal';
+import TaskModal from '../components/TaskModal';
 
 export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
@@ -151,13 +151,27 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        {isModalOpen && (
-          <NewTaskModal 
-            committees={committees} 
-            onClose={() => setIsModalOpen(false)} 
-            onTaskAdded={fetchData}
-          />
-        )}
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={async (taskData) => {
+            try {
+              const { error } = await supabase.from('cbq_tasks').insert([{
+                ...taskData,
+                progress: 0,
+                status: 'pending'
+              }]);
+              if (error) throw error;
+              alert('Giao việc thành công!');
+              setIsModalOpen(false);
+              fetchData();
+            } catch (err) {
+              alert('Lỗi thêm công việc: ' + err.message);
+            }
+          }}
+          committees={committees}
+          task={null}
+        />
         </>
       )}
     </Layout>

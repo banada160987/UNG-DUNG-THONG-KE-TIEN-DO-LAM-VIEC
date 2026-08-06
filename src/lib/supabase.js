@@ -1,10 +1,17 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.warn('Thiếu cấu hình Supabase URL hoặc Anon Key trong file .env')
+  console.warn('Thiếu cấu hình Supabase URL hoặc Anon Key trong file .env');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '')
+// Client thông thường (Cho tất cả user)
+export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+
+// Client đặc quyền Admin (Chỉ dùng trên Frontend trong trường hợp đặc biệt này)
+export const supabaseAdmin = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey) 
+  : null;

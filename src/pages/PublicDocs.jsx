@@ -1,33 +1,56 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 export default function PublicDocs() {
+  const [docs, setDocs] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from('cbq_documents').select('*').order('published_date', { ascending: false }).then(({data}) => {
+      if(data) setDocs(data);
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Văn bản - Thông báo</h1>
         <Link to="/" style={styles.backBtn}>← Về trang chủ</Link>
       </div>
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.th}>STT</th>
-            <th style={styles.th}>Tên văn bản</th>
-            <th style={styles.th}>Ngày ban hành</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={styles.td}>1</td>
-            <td style={styles.td}>Kế hoạch tổ chức Lễ Kỷ niệm 30 năm</td>
-            <td style={styles.td}>01/08/2026</td>
-          </tr>
-          <tr>
-            <td style={styles.td}>2</td>
-            <td style={styles.td}>Quyết định thành lập các Tiểu ban</td>
-            <td style={styles.td}>15/07/2026</td>
-          </tr>
-        </tbody>
-      </table>
+      
+      {loading ? <p>Đang tải...</p> : (
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              <th style={styles.th}>STT</th>
+              <th style={styles.th}>Ngày ban hành</th>
+              <th style={styles.th}>Tên văn bản</th>
+              <th style={styles.th}>Tệp đính kèm</th>
+            </tr>
+          </thead>
+          <tbody>
+            {docs.map((d, index) => (
+              <tr key={d.id}>
+                <td style={styles.td}>{index + 1}</td>
+                <td style={styles.td}>{new Date(d.published_date).toLocaleDateString('vi-VN')}</td>
+                <td style={styles.td}><strong>{d.title}</strong></td>
+                <td style={styles.td}>
+                  {d.file_url ? (
+                    <a href={d.file_url} target="_blank" rel="noreferrer" style={{color: '#166534', fontWeight: 'bold', textDecoration: 'none'}}>
+                      Tải về / Xem
+                    </a>
+                  ) : '-'}
+                </td>
+              </tr>
+            ))}
+            {docs.length === 0 && (
+              <tr><td colSpan="4" style={{...styles.td, textAlign: 'center'}}>Đang cập nhật...</td></tr>
+            )}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

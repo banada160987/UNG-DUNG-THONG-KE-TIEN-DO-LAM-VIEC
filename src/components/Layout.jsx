@@ -1,125 +1,215 @@
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 
 export default function Layout({ children, title }) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, role } = useAuth();
+  const location = useLocation();
+
+  const isAdmin = role === 'admin';
+  const isSecretary = role === 'secretary';
+  const isAdminOrSecretary = isAdmin || isSecretary;
+
+  const isActive = (path) => location.pathname === path;
+
+  const NavItem = ({ to, icon: Icon, label }) => (
+    <Link 
+      to={to} 
+      style={{
+        ...styles.navItem, 
+        backgroundColor: isActive(to) ? '#334155' : 'transparent',
+        borderLeft: isActive(to) ? '4px solid #3b82f6' : '4px solid transparent'
+      }}
+    >
+      <Icon size={18} /> {label}
+    </Link>
+  );
 
   return (
     <div style={styles.container}>
-      {/* Topbar */}
-      <header className="glass" style={styles.header}>
-        <div style={styles.headerLeft}>
-          <div style={styles.logoPlaceholder}>CBQ</div>
+      {/* Sidebar */}
+      <aside style={styles.sidebar}>
+        <div style={styles.logoArea}>
+          <div style={styles.logoCircle}>30</div>
           <div>
-            <h1 style={styles.title}>{title}</h1>
-            <p style={styles.subtitle}>Kỷ niệm 30 năm THPT Cao Bá Quát</p>
+            <h2 style={{margin: 0, fontSize: '16px', color: 'white'}}>CBQ Admin</h2>
+            <small style={{color: '#94a3b8'}}>Kỷ niệm 30 năm</small>
           </div>
         </div>
-        
-        <div style={styles.headerRight}>
-          <div style={styles.navLinks}>
-            <Link to="/" style={{...styles.navLink, color: 'var(--primary)'}}>Trang Công Khai</Link>
-            <span style={{color: '#ccc'}}>|</span>
-            <Link to="/admin" style={styles.navLink}>Lãnh đạo</Link>
-            <Link to="/admin/committee" style={styles.navLink}>Tiểu ban</Link>
-            <Link to="/admin/guests" style={styles.navLink}>Khách Mời</Link>
-            <Link to="/admin/sponsors" style={styles.navLink}>Tài Trợ</Link>
-            <Link to="/admin/news" style={styles.navLink}>Tin Tức</Link>
-          </div>
-          <span style={styles.userInfo}>{user?.email}</span>
-          <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
-            <LogOut size={20} />
-          </button>
-        </div>
-      </header>
 
-      {/* Main Content */}
-      <main style={styles.main}>
-        {children}
-      </main>
+        <div style={styles.navContainer}>
+          {isAdminOrSecretary && (
+            <>
+              <div style={styles.navGroup}>TỔ CHỨC SỰ KIỆN</div>
+              <NavItem to="/admin" icon={Home} label="Tổng quan Lãnh đạo" />
+            </>
+          )}
+          
+          {/* Tiểu ban thấy được mục này */}
+          <NavItem to="/admin/committee" icon={CheckSquare} label="Việc của Tiểu ban" />
+
+          {isAdminOrSecretary && (
+            <>
+              <div style={styles.navGroup}>QUẢN LÝ KHÁCH & TÀI TRỢ</div>
+              <NavItem to="/admin/guests" icon={Users} label="Quản lý Khách mời" />
+              <NavItem to="/admin/sponsors" icon={Gift} label="Quản lý Tài trợ" />
+            </>
+          )}
+
+          {isAdmin && (
+            <>
+              <div style={styles.navGroup}>NỘI DUNG WEB (PUBLIC)</div>
+              <NavItem to="/admin/news" icon={Image} label="Tin tức - Sự kiện" />
+              <NavItem to="/admin/pages" icon={Globe} label="Trang Giới thiệu" />
+              <NavItem to="/admin/docs" icon={FileText} label="Văn bản - Thông báo" />
+
+              <div style={styles.navGroup}>HỆ THỐNG</div>
+              <NavItem to="/admin/users" icon={Settings} label="Phân quyền Tài khoản" />
+            </>
+          )}
+        </div>
+
+        <div style={styles.sidebarBottom}>
+          <Link to="/" style={styles.publicLink}>← Trở ra Cổng thông tin</Link>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div style={styles.mainWrapper}>
+        <header style={styles.header}>
+          <h1 style={styles.headerTitle}>{title}</h1>
+          <div style={styles.headerRight}>
+            <span style={styles.userInfo}>{user?.email || 'Admin User'}</span>
+            <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
+              <LogOut size={18} />
+            </button>
+          </div>
+        </header>
+        
+        <main style={styles.mainContent}>
+          {children}
+        </main>
+      </div>
     </div>
   );
 }
 
 const styles = {
   container: {
+    display: 'flex',
     minHeight: '100vh',
+    backgroundColor: '#f1f5f9',
+  },
+  sidebar: {
+    width: '260px',
+    backgroundColor: '#1e293b',
+    color: '#f8fafc',
     display: 'flex',
     flexDirection: 'column',
+    boxShadow: '4px 0 10px rgba(0,0,0,0.1)',
+    zIndex: 20
   },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: '1rem 2rem',
-    position: 'sticky',
-    top: 0,
-    zIndex: 10,
-    borderBottom: '1px solid var(--border)',
-    borderRadius: '0 0 1rem 1rem',
-    margin: '0 1rem',
-  },
-  headerLeft: {
+  logoArea: {
+    padding: '20px',
+    borderBottom: '1px solid #334155',
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
+    gap: '12px'
   },
-  logoPlaceholder: {
+  logoCircle: {
     width: '40px',
     height: '40px',
-    background: 'var(--primary)',
-    color: 'white',
+    backgroundColor: '#d32f2f',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     fontWeight: 'bold',
+    fontSize: '16px'
   },
-  title: {
-    fontSize: '1.25rem',
-    margin: 0,
+  navContainer: {
+    flex: 1,
+    padding: '20px 0',
+    overflowY: 'auto'
   },
-  subtitle: {
-    fontSize: '0.75rem',
-    color: 'var(--text-muted)',
-    margin: 0,
+  navGroup: {
+    fontSize: '11px',
+    fontWeight: 'bold',
+    color: '#64748b',
+    padding: '10px 20px',
+    marginTop: '10px',
+    letterSpacing: '1px'
+  },
+  navItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 20px',
+    color: '#cbd5e1',
+    textDecoration: 'none',
+    transition: 'all 0.2s',
+    fontSize: '14px'
+  },
+  sidebarBottom: {
+    padding: '20px',
+    borderTop: '1px solid #334155'
+  },
+  publicLink: {
+    color: '#cbd5e1',
+    textDecoration: 'none',
+    fontSize: '13px',
+    display: 'block',
+    textAlign: 'center',
+    padding: '8px',
+    border: '1px solid #475569',
+    borderRadius: '6px'
+  },
+  mainWrapper: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden'
+  },
+  header: {
+    backgroundColor: '#ffffff',
+    height: '70px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '0 30px',
+    borderBottom: '1px solid #e2e8f0',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+  },
+  headerTitle: {
+    fontSize: '20px',
+    fontWeight: '600',
+    color: '#0f172a',
+    margin: 0
   },
   headerRight: {
     display: 'flex',
     alignItems: 'center',
-    gap: '1rem',
-  },
-  navLinks: {
-    display: 'flex',
-    gap: '1rem',
-    marginRight: '1rem',
-  },
-  navLink: {
-    textDecoration: 'none',
-    color: 'var(--text-main)',
-    fontWeight: '500',
-    padding: '0.5rem',
+    gap: '15px'
   },
   userInfo: {
-    fontSize: '0.875rem',
-    color: 'var(--text-muted)',
-    display: 'none', // Hide on small screens if needed, wait no CSS media query here. Let's keep it visible for now.
+    fontSize: '14px',
+    color: '#475569',
+    fontWeight: '500'
   },
   logoutBtn: {
-    background: 'transparent',
-    color: 'var(--text-muted)',
-    padding: '0.5rem',
-    borderRadius: '0.5rem',
+    backgroundColor: '#fee2e2',
+    color: '#ef4444',
+    border: 'none',
+    padding: '8px',
+    borderRadius: '8px',
+    cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
+    transition: '0.2s'
   },
-  main: {
+  mainContent: {
     flex: 1,
-    padding: '2rem',
-    maxWidth: '1200px',
-    margin: '0 auto',
-    width: '100%',
+    padding: '30px',
+    overflowY: 'auto'
   }
 };

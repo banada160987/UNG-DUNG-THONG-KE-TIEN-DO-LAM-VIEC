@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { MapPin, User, CheckSquare, Clock } from 'lucide-react';
+import { MapPin, User, CheckSquare, Clock, Edit2, Trash2, FileText } from 'lucide-react';
 
-export default function TaskCard({ task, onUpdate }) {
+export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin }) {
   const [progress, setProgress] = useState(task.progress);
   const [updating, setUpdating] = useState(false);
 
@@ -49,11 +49,19 @@ export default function TaskCard({ task, onUpdate }) {
     <div className={cardClass} style={styles.card}>
       <div style={styles.header}>
         <h3 style={styles.title}>{task.title}</h3>
-        <span style={styles.statusBadge(task.status)}>
-          {task.status === 'completed' ? 'Hoàn thành' : 
-           task.status === 'in_progress' ? 'Đang làm' : 
-           task.status === 'pending' ? 'Chưa bắt đầu' : 'Quá hạn'}
-        </span>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+          <span style={styles.statusBadge(isOverdue() ? 'overdue' : task.status)}>
+            {isOverdue() ? 'Quá hạn' :
+             task.status === 'completed' ? 'Hoàn thành' : 
+             task.status === 'in_progress' ? 'Đang làm' : 'Chưa bắt đầu'}
+          </span>
+          {isAdmin && (
+            <>
+              <button onClick={() => onEdit(task)} style={styles.iconBtn} title="Sửa công việc"><Edit2 size={16} /></button>
+              <button onClick={() => onDelete(task.id)} style={{...styles.iconBtn, color: '#ef4444'}} title="Xóa công việc"><Trash2 size={16} /></button>
+            </>
+          )}
+        </div>
       </div>
 
       <div style={styles.infoGrid}>
@@ -76,7 +84,15 @@ export default function TaskCard({ task, onUpdate }) {
       </div>
 
       <div style={styles.resultBox}>
-        <strong>Kết quả yêu cầu:</strong> {task.expected_result}
+        <div style={{ marginBottom: task.notes ? '0.5rem' : 0 }}>
+          <strong>Kết quả yêu cầu:</strong> {task.expected_result}
+        </div>
+        {task.notes && (
+          <div style={{ paddingTop: '0.5rem', borderTop: '1px dashed #cbd5e1', color: '#475569' }}>
+            <FileText size={14} style={{display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px'}} />
+            <strong>Ghi chú:</strong> {task.notes}
+          </div>
+        )}
       </div>
 
       {task.status !== 'completed' && (
@@ -133,12 +149,25 @@ const styles = {
     fontWeight: 'bold',
     whiteSpace: 'nowrap',
     backgroundColor: status === 'completed' ? '#d1fae5' : 
-                     status === 'in_progress' ? '#dbeafe' : 
-                     status === 'pending' ? '#fef3c7' : '#fee2e2',
+                     status === 'overdue' ? '#fee2e2' :
+                     status === 'in_progress' ? '#dbeafe' : '#fef3c7',
     color: status === 'completed' ? '#059669' : 
-           status === 'in_progress' ? '#2563eb' : 
-           status === 'pending' ? '#d97706' : '#dc2626',
+           status === 'overdue' ? '#dc2626' :
+           status === 'in_progress' ? '#2563eb' : '#d97706',
   }),
+  iconBtn: {
+    background: 'white',
+    border: '1px solid var(--border)',
+    borderRadius: '0.5rem',
+    width: '32px',
+    height: '32px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: 'pointer',
+    color: 'var(--text-muted)',
+    boxShadow: 'var(--shadow-sm)'
+  },
   infoGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',

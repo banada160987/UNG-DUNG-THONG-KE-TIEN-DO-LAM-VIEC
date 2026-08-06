@@ -1,6 +1,18 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
 import { Link } from 'react-router-dom';
 
 export default function PublicAbout() {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase.from('cbq_pages').select('content').eq('slug', 'gioi-thieu').single().then(({data}) => {
+      if(data) setContent(data.content);
+      setLoading(false);
+    });
+  }, []);
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -8,8 +20,9 @@ export default function PublicAbout() {
         <Link to="/" style={styles.backBtn}>← Về trang chủ</Link>
       </div>
       <div style={styles.content}>
-        <p>Trường THPT Cao Bá Quát được thành lập vào năm 1996. Trải qua 30 năm xây dựng và phát triển...</p>
-        <p>(Nội dung chi tiết đang được cập nhật bởi Ban tổ chức)</p>
+        {loading ? <p>Đang tải...</p> : (
+          <div dangerouslySetInnerHTML={{ __html: content || '<p>Nội dung đang được cập nhật...</p>' }} />
+        )}
       </div>
     </div>
   );
