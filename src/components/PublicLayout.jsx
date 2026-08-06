@@ -13,7 +13,7 @@ export default function PublicLayout() {
       <header style={styles.banner}>
         <div className="portal-banner-content">
           <div style={styles.bannerLeft}>
-            <div style={styles.logoCircle}>30</div>
+            <img src="/logo.jpg" alt="Logo" style={styles.mainLogo} />
             <div>
               <h1 style={styles.bannerTitle}>TRƯỜNG THPT CAO BÁ QUÁT</h1>
               <h2 style={styles.bannerSubtitle}>LỄ KỶ NIỆM 30 NĂM THÀNH LẬP (1996 - 2026)</h2>
@@ -45,10 +45,6 @@ export default function PublicLayout() {
             CHÀO MỪNG QUÝ VỊ ĐẠI BIỂU, QUÝ THẦY CÔ VÀ CÁC THẾ HỆ HỌC SINH VỀ DỰ LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT! CHƯƠNG TRÌNH SẼ ĐƯỢC TỔ CHỨC VÀO NGÀY 03/9/2026.
           </marquee>
         </div>
-        <div style={styles.searchMini}>
-          <input type="text" placeholder="Tìm kiếm..." style={styles.searchMiniInput} />
-          <button style={styles.searchMiniBtn}><Search size={14} /></button>
-        </div>
       </div>
 
       {/* Main Content Rendered Here */}
@@ -78,18 +74,12 @@ const styles = {
     maxWidth: '1200px',
     margin: '0 auto'
   },
-  logoCircle: {
-    width: '70px',
-    height: '70px',
-    backgroundColor: '#d32f2f',
-    borderRadius: '50%',
-    color: '#fbbf24',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '24px',
-    fontWeight: 'bold',
-    border: '3px solid #fbbf24',
+  mainLogo: {
+    height: '80px',
+    width: 'auto',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    boxShadow: '0 2px 5px rgba(0,0,0,0.1)'
   },
   bannerTitle: {
     color: '#d32f2f',

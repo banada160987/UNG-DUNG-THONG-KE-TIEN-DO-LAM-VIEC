@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Download, FileSpreadsheet, ScanLine } from 'lucide-react';
+import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { QRCodeSVG } from 'qrcode.react';
 import QRScannerModal from '../components/QRScannerModal';
@@ -205,7 +205,22 @@ export default function AdminGuests() {
                     <td style={styles.td}>
                       <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
                         <QRCodeSVG value={g.invitation_code} size={48} />
-                        <code style={{background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px'}}>{g.invitation_code}</code>
+                        <div>
+                          <code style={{background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', display: 'block', marginBottom: '4px'}}>{g.invitation_code}</code>
+                          <button 
+                            onClick={(e) => {
+                              const link = `${window.location.origin}/?rsvp=${g.invitation_code}`;
+                              navigator.clipboard.writeText(link);
+                              e.currentTarget.innerHTML = '<span style="color:#10b981">Đã copy!</span>';
+                              setTimeout(() => {
+                                if(e.target) e.target.innerHTML = 'Copy Link';
+                              }, 2000);
+                            }}
+                            style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white' }}
+                          >
+                            Copy Link
+                          </button>
+                        </div>
                       </div>
                     </td>
                     <td style={styles.td}>

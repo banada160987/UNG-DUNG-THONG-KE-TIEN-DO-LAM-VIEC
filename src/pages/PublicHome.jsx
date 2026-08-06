@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Search, MapPin, Clock, ChevronRight } from 'lucide-react';
 
@@ -11,6 +12,8 @@ export default function PublicHome() {
   
   const [totalDonation, setTotalDonation] = useState(0);
   const [attendingGuests, setAttendingGuests] = useState(0);
+  const [externalLinks, setExternalLinks] = useState([]);
+  const [searchParams] = useSearchParams();
   
   const calculateTimeLeft = () => {
     const difference = +new Date("2026-09-03T08:00:00") - +new Date();
@@ -37,15 +40,32 @@ export default function PublicHome() {
 
   useEffect(() => {
     fetchPublicData();
-  }, []);
+    const rsvpParam = searchParams.get('rsvp');
+    if (rsvpParam) {
+      setRsvpCode(rsvpParam);
+      // Let it render first then fetch
+      setTimeout(() => autoFetchRsvp(rsvpParam), 500);
+    }
+  }, [searchParams]);
+
+  const autoFetchRsvp = async (code) => {
+    try {
+      const { data, error } = await supabase.from('cbq_guests').select('*').eq('invitation_code', code.trim()).single();
+      if (error || !data) setRsvpResult({ error: 'Không tìm thấy mã khách mời. Vui lòng kiểm tra lại mã số.' });
+      else setRsvpResult({ success: true, guest: data });
+    } catch (err) {
+      setRsvpResult({ error: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
+    }
+  };
 
   const fetchPublicData = async () => {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes, linksRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
-        supabase.from('cbq_guests').select('rsvp_status')
+        supabase.from('cbq_guests').select('rsvp_status'),
+        supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true })
       ]);
       if (!sponsorsRes.error) {
         setSponsors(sponsorsRes.data || []);
@@ -57,6 +77,7 @@ export default function PublicHome() {
         const attendingCount = (guestsRes.data || []).filter(g => g.rsvp_status === 'attending').length;
         setAttendingGuests(attendingCount);
       }
+      if (!linksRes.error) setExternalLinks(linksRes.data || []);
     } catch (error) {
       console.log('Chưa có dữ liệu mới.');
     } finally {
@@ -156,8 +177,16 @@ export default function PublicHome() {
 
           <PortalBlock title="LIÊN KẾT TRANG" color="#166534">
             <ul style={styles.linkList}>
-              <li><ChevronRight size={14} color="#166534" /> Cổng thông tin Sở GD&ĐT</li>
-              <li><ChevronRight size={14} color="#166534" /> Báo Giáo dục và Thời đại</li>
+              {externalLinks.length > 0 ? (
+                externalLinks.map(link => (
+                  <li key={link.id}>
+                    <ChevronRight size={14} color="#166534" /> 
+                    <a href={link.url} target="_blank" rel="noreferrer" style={{color: '#334155', textDecoration: 'none'}}>{link.title}</a>
+                  </li>
+                ))
+              ) : (
+                <li><span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: '13px'}}>Đang cập nhật...</span></li>
+              )}
             </ul>
           </PortalBlock>
         </div>
@@ -185,18 +214,18 @@ export default function PublicHome() {
               {/* Kết quả Thiệp Mời */}
               {rsvpResult?.error && <div style={styles.errorMsg}>{rsvpResult.error}</div>}
               {rsvpResult?.success && (
-                <div style={styles.inviteCardWrapper}>
+                <div style={styles.inviteCardWrapper} className="invite-card-animated">
                   {/* Mặt thiệp */}
                   <div style={styles.inviteCard}>
                     <div style={styles.inviteCardInner}>
                       <div style={styles.inviteHeader}>
-                        <div style={styles.inviteLogoSmall}>30</div>
+                        <div style={styles.inviteLogoSmall} className="invite-logo-animated">30</div>
                         <h4 style={styles.inviteSchool}>THPT CAO BÁ QUÁT</h4>
                       </div>
 
                       <div style={styles.inviteBody}>
                         <p style={styles.inviteIntro}>Trân trọng kính mời</p>
-                        <h2 style={styles.inviteName}>{rsvpResult.guest.name}</h2>
+                        <h2 style={styles.inviteName} className="gold-text-shimmer">{rsvpResult.guest.name}</h2>
                         <p style={styles.inviteRole}>{rsvpResult.guest.category}</p>
 
                         <div style={styles.inviteDivider}></div>
@@ -458,31 +487,34 @@ const styles = {
   // Invite Card Styling (Adapted for Portal)
   inviteCardWrapper: { marginTop: '15px' },
   inviteCard: {
-    background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)',
-    padding: '4px',
-    borderRadius: '8px',
+    background: 'linear-gradient(135deg, #b71c1c 0%, #7f1d1d 100%)', // Deep red
+    padding: '8px',
+    borderRadius: '12px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
   },
   inviteCardInner: {
-    backgroundColor: '#fff',
-    padding: '20px',
-    borderRadius: '4px',
+    backgroundColor: '#fffcf2', // Cream color
+    padding: '30px 20px',
+    borderRadius: '8px',
     textAlign: 'center',
-    backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23fef3c7\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
+    border: '2px dashed #d4af37', // Gold dashed border
+    backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")',
   },
-  inviteHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '10px' },
-  inviteLogoSmall: { width: '30px', height: '30px', backgroundColor: '#d32f2f', color: '#fbbf24', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '12px', marginBottom: '5px' },
-  inviteSchool: { color: '#d32f2f', margin: 0, fontSize: '13px', fontWeight: 'bold' },
-  inviteIntro: { fontStyle: 'italic', color: '#666', fontSize: '13px', margin: '10px 0 5px' },
-  inviteName: { fontFamily: 'serif', fontSize: '24px', margin: 0, color: '#000' },
-  inviteRole: { color: '#d32f2f', fontSize: '13px', fontWeight: 'bold', margin: '5px 0 10px' },
-  inviteDivider: { width: '40px', height: '2px', backgroundColor: '#fbbf24', margin: '0 auto 10px' },
-  inviteEvent: { fontWeight: 'bold', fontSize: '14px', marginBottom: '10px' },
-  inviteDetails: { backgroundColor: '#f8fafc', padding: '10px', fontSize: '13px', marginBottom: '10px' },
-  inviteAgenda: { backgroundColor: '#fef3c7', padding: '10px', border: '1px solid #fde68a' },
+  inviteHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '15px' },
+  inviteLogoSmall: { width: '45px', height: '45px', background: 'linear-gradient(135deg, #d4af37 0%, #aa7c11 100%)', color: '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '18px', marginBottom: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' },
+  inviteSchool: { color: '#b71c1c', margin: 0, fontSize: '15px', fontWeight: 'bold', letterSpacing: '1px' },
+  inviteIntro: { fontStyle: 'italic', color: '#666', fontSize: '14px', margin: '10px 0 5px' },
+  inviteName: { fontFamily: '"Times New Roman", Georgia, serif', fontSize: '28px', margin: '5px 0', color: '#d4af37', fontWeight: 'bold', textShadow: '1px 1px 2px rgba(0,0,0,0.1)' },
+  inviteRole: { color: '#7f1d1d', fontSize: '14px', fontWeight: 'normal', margin: '5px 0 15px' },
+  inviteDivider: { width: '80px', height: '2px', background: 'linear-gradient(90deg, transparent, #d4af37, transparent)', margin: '0 auto 15px' },
+  inviteEvent: { fontWeight: 'bold', fontSize: '15px', marginBottom: '15px', color: '#1e293b', textTransform: 'uppercase' },
+  inviteDetails: { backgroundColor: '#fff', padding: '15px', fontSize: '14px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #fde68a', boxShadow: '0 2px 5px rgba(0,0,0,0.03)' },
+  inviteDetailRow: { marginBottom: '8px', color: '#334155' },
+  inviteAgenda: { backgroundColor: '#fffcf2', padding: '15px', border: '1px solid #d4af37', borderRadius: '8px' },
 
-  rsvpActionBox: { marginTop: '10px', textAlign: 'center' },
-  btnConfirm: { backgroundColor: '#166534', color: 'white', padding: '8px 15px', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
-  btnDecline: { backgroundColor: '#fff', color: '#333', border: '1px solid #ccc', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer' },
+  rsvpActionBox: { marginTop: '15px', textAlign: 'center' },
+  btnConfirm: { background: 'linear-gradient(135deg, #166534 0%, #14532d 100%)', color: 'white', padding: '10px 25px', border: 'none', borderRadius: '25px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 10px rgba(22,101,52,0.3)' },
+  btnDecline: { backgroundColor: '#fff', color: '#64748b', border: '1px solid #cbd5e1', padding: '10px 20px', borderRadius: '25px', cursor: 'pointer' },
 
   // News Block
   newsBlock: {

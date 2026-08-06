@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import TaskCard from '../components/TaskCard';
 import TaskModal from '../components/TaskModal';
 import BulkDeadlineModal from '../components/BulkDeadlineModal';
+import KanbanBoard from '../components/KanbanBoard';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Printer, Calendar } from 'lucide-react';
@@ -260,38 +261,13 @@ export default function CommitteeView() {
               )}
             </div>
           ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(300px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-              {['pending', 'in_progress', 'completed'].map(statusKey => {
-                const statusName = statusKey === 'pending' ? 'Chưa bắt đầu' : statusKey === 'in_progress' ? 'Đang thực hiện' : 'Đã hoàn thành';
-                const statusColor = statusKey === 'pending' ? '#94a3b8' : statusKey === 'in_progress' ? '#f59e0b' : '#10b981';
-                return (
-                  <div key={statusKey} style={{ backgroundColor: '#f8fafc', padding: '15px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    <h3 style={{ margin: '0 0 15px 0', borderBottom: `2px solid ${statusColor}`, paddingBottom: '10px', fontSize: '16px', display: 'flex', justifyContent: 'space-between' }}>
-                      {statusName}
-                      <span style={{ backgroundColor: '#e2e8f0', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', color: '#475569' }}>
-                        {displayedTasks.filter(t => t.status === statusKey).length}
-                      </span>
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                      {displayedTasks.filter(t => t.status === statusKey).map(task => (
-                        <div key={task.id} style={{ position: 'relative' }}>
-                           <TaskCard 
-                            task={task} 
-                            onUpdate={fetchData} 
-                            onEdit={handleOpenEditTask}
-                            onDelete={handleDeleteTask}
-                            isAdmin={true} 
-                          />
-                        </div>
-                      ))}
-                      {displayedTasks.filter(t => t.status === statusKey).length === 0 && (
-                        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>Không có công việc</p>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <KanbanBoard 
+              tasks={displayedTasks} 
+              onUpdate={fetchData} 
+              onEdit={handleOpenEditTask}
+              onDelete={handleDeleteTask}
+              isAdmin={isAdminOrSecretary}
+            />
           )}
         </div>
       )}

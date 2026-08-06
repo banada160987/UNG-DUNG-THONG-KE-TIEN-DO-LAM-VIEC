@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { MapPin, User, CheckSquare, Clock, Edit2, Trash2, FileText } from 'lucide-react';
 
-export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin }) {
+import { CheckCircle, XCircle } from 'lucide-react';
+
+export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin, isKanban = false }) {
   const [progress, setProgress] = useState(task.progress);
   const [updating, setUpdating] = useState(false);
 
@@ -53,6 +55,7 @@ export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin }) 
           <span style={styles.statusBadge(isOverdue() ? 'overdue' : task.status)}>
             {isOverdue() ? 'Quá hạn' :
              task.status === 'completed' ? 'Hoàn thành' : 
+             task.status === 'in_review' ? 'Chờ duyệt' :
              task.status === 'in_progress' ? 'Đang làm' : 'Chưa bắt đầu'}
           </span>
           {isAdmin && (
@@ -95,7 +98,7 @@ export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin }) 
         )}
       </div>
 
-      {task.status !== 'completed' && (
+      {task.status !== 'completed' && !isKanban && (
         <div style={styles.progressSection}>
           <div style={styles.sliderHeader}>
             <label>Cập nhật tiến độ: {progress}%</label>
@@ -117,6 +120,42 @@ export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin }) 
               Lưu
             </button>
           </div>
+        </div>
+      )}
+
+      {task.status === 'in_review' && isAdmin && (
+        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+          <button 
+            onClick={async () => {
+              if(!window.confirm('Xác nhận Duyệt công việc này?')) return;
+              try {
+                await supabase.from('cbq_tasks').update({ status: 'completed', progress: 100 }).eq('id', task.id);
+                onUpdate();
+              } catch (e) { alert(e.message); }
+            }}
+            style={{ flex: 1, padding: '0.5rem', backgroundColor: '#10b981', color: 'white', border: 'none', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', cursor: 'pointer' }}
+          >
+            <CheckCircle size={16} /> Duyệt
+          </button>
+          <button 
+            onClick={async () => {
+              const reason = window.prompt('Nhập lý do từ chối để yêu cầu làm lại:');
+              if(!reason) return;
+              try {
+                await supabase.from('cbq_tasks').update({ status: 'in_progress' }).eq('id', task.id);
+                const { data: { user } } = await supabase.auth.getUser();
+                await supabase.from('cbq_task_comments').insert([{
+                  task_id: task.id,
+                  user_email: user?.email || 'Admin',
+                  content: 'Yêu cầu làm lại: ' + reason
+                }]);
+                onUpdate();
+              } catch (e) { alert(e.message); }
+            }}
+            style={{ flex: 1, padding: '0.5rem', backgroundColor: '#ef4444', color: 'white', border: 'none', borderRadius: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', cursor: 'pointer' }}
+          >
+            <XCircle size={16} /> Từ chối
+          </button>
         </div>
       )}
     </div>
@@ -150,9 +189,11 @@ const styles = {
     whiteSpace: 'nowrap',
     backgroundColor: status === 'completed' ? '#d1fae5' : 
                      status === 'overdue' ? '#fee2e2' :
+                     status === 'in_review' ? '#ede9fe' :
                      status === 'in_progress' ? '#dbeafe' : '#fef3c7',
     color: status === 'completed' ? '#059669' : 
            status === 'overdue' ? '#dc2626' :
+           status === 'in_review' ? '#8b5cf6' :
            status === 'in_progress' ? '#2563eb' : '#d97706',
   }),
   iconBtn: {
