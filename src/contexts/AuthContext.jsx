@@ -7,6 +7,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [committeeId, setCommitteeId] = useState(null);
+  const [committeeName, setCommitteeName] = useState(null);
+  const [permissions, setPermissions] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,6 +23,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setRole(null);
         setCommitteeId(null);
+        setCommitteeName(null);
+        setPermissions({});
       }
       setLoading(false);
     };
@@ -36,6 +40,8 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setRole(null);
         setCommitteeId(null);
+        setCommitteeName(null);
+        setPermissions({});
       }
       setLoading(false);
     });
@@ -47,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('cbq_user_roles')
-        .select('*')
+        .select('role, committee_id, cbq_committees(name)')
         .eq('user_id', userId)
         .single();
         
@@ -57,8 +63,23 @@ export const AuthProvider = ({ children }) => {
       }
       
       if (data) {
-        setRole(data.role);
-        setCommitteeId(data.committee_id);
+        const userRole = data.role;
+        const commId = data.committee_id;
+        const commName = data.cbq_committees?.name || null;
+
+        setRole(userRole);
+        setCommitteeId(commId);
+        setCommitteeName(commName);
+
+        // Define permissions
+        const perms = {
+          canViewSponsors: userRole === 'admin' || userRole === 'secretary' || commName === 'Tiểu ban tiếp nhận tài trợ',
+          canViewGuests: userRole === 'admin' || userRole === 'secretary' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Lễ tân, khánh tiết',
+          canViewNews: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Nội dung, biên tập tập san',
+          canViewPages: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông',
+          canViewDocs: userRole === 'admin' || commName === 'Tiểu ban Nội dung, biên tập tập san',
+        };
+        setPermissions(perms);
       }
     } catch (err) {
       console.error('Unexpected error fetching role:', err);
@@ -80,7 +101,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, committeeId, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, role, committeeId, committeeName, permissions, signIn, signOut, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );

@@ -17,7 +17,7 @@ import AdminDocs from './pages/AdminDocs';
 import AdminUsers from './pages/AdminUsers';
 
 function App() {
-  const { user, role, loading } = useAuth();
+  const { user, role, permissions = {}, loading } = useAuth();
 
   if (loading) {
     return <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center' }}>Đang tải hệ thống...</div>;
@@ -40,11 +40,11 @@ function App() {
         <>
           <Route path="/admin" element={(role === 'admin' || role === 'secretary') ? <Dashboard /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/committee" element={<CommitteeView />} />
-          <Route path="/admin/sponsors" element={(role === 'admin' || role === 'secretary') ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/news" element={role === 'admin' ? <AdminNews /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/guests" element={(role === 'admin' || role === 'secretary') ? <AdminGuests /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/pages" element={role === 'admin' ? <AdminPages /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/docs" element={role === 'admin' ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/news" element={permissions.canViewNews ? <AdminNews /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/guests" element={permissions.canViewGuests ? <AdminGuests /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/pages" element={permissions.canViewPages ? <AdminPages /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
         </>
       ) : (

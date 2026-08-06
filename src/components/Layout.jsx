@@ -1,14 +1,40 @@
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export default function Layout({ children, title }) {
-  const { signOut, user, role } = useAuth();
+  const { user, role, permissions = {}, signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const isAdmin = role === 'admin';
-  const isSecretary = role === 'secretary';
-  const isAdminOrSecretary = isAdmin || isSecretary;
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Lỗi đăng xuất:', error);
+    }
+  };
+
+  const menuItems = [
+    { path: '/admin', icon: Home, label: 'Tổng quan Lãnh đạo', group: 'TỔ CHỨC SỰ KIỆN', show: role === 'admin' || role === 'secretary' },
+    { path: '/admin/committee', icon: CheckSquare, label: 'Việc của Tiểu ban', group: 'TỔ CHỨC SỰ KIỆN', show: true },
+    { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewGuests },
+    { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewSponsors },
+    { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
+    { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
+    { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
+    { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: 'HỆ THỐNG', show: role === 'admin' },
+  ];
+
+  const visibleMenuItems = menuItems.filter(item => item.show);
+
+  // Group items
+  const groupedItems = visibleMenuItems.reduce((acc, item) => {
+    if (!acc[item.group]) acc[item.group] = [];
+    acc[item.group].push(item);
+    return acc;
+  }, {});
 
   const isActive = (path) => location.pathname === path;
 
@@ -38,35 +64,14 @@ export default function Layout({ children, title }) {
         </div>
 
         <div style={styles.navContainer}>
-          {isAdminOrSecretary && (
-            <>
-              <div style={styles.navGroup}>TỔ CHỨC SỰ KIỆN</div>
-              <NavItem to="/admin" icon={Home} label="Tổng quan Lãnh đạo" />
-            </>
-          )}
-          
-          {/* Tiểu ban thấy được mục này */}
-          <NavItem to="/admin/committee" icon={CheckSquare} label="Việc của Tiểu ban" />
-
-          {isAdminOrSecretary && (
-            <>
-              <div style={styles.navGroup}>QUẢN LÝ KHÁCH & TÀI TRỢ</div>
-              <NavItem to="/admin/guests" icon={Users} label="Quản lý Khách mời" />
-              <NavItem to="/admin/sponsors" icon={Gift} label="Quản lý Tài trợ" />
-            </>
-          )}
-
-          {isAdmin && (
-            <>
-              <div style={styles.navGroup}>NỘI DUNG WEB (PUBLIC)</div>
-              <NavItem to="/admin/news" icon={Image} label="Tin tức - Sự kiện" />
-              <NavItem to="/admin/pages" icon={Globe} label="Trang Giới thiệu" />
-              <NavItem to="/admin/docs" icon={FileText} label="Văn bản - Thông báo" />
-
-              <div style={styles.navGroup}>HỆ THỐNG</div>
-              <NavItem to="/admin/users" icon={Settings} label="Phân quyền Tài khoản" />
-            </>
-          )}
+          {Object.entries(groupedItems).map(([group, items]) => (
+            <div key={group}>
+              <div style={styles.navGroup}>{group}</div>
+              {items.map(item => (
+                <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
+              ))}
+            </div>
+          ))}
         </div>
 
         <div style={styles.sidebarBottom}>
