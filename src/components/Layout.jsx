@@ -1,11 +1,13 @@
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export default function Layout({ children, title }) {
   const { user, role, permissions = {}, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -41,6 +43,7 @@ export default function Layout({ children, title }) {
   const NavItem = ({ to, icon: Icon, label }) => (
     <Link 
       to={to} 
+      onClick={() => setIsSidebarOpen(false)}
       style={{
         ...styles.navItem, 
         backgroundColor: isActive(to) ? '#334155' : 'transparent',
@@ -53,8 +56,10 @@ export default function Layout({ children, title }) {
 
   return (
     <div style={styles.container}>
+      <div className={`layout-overlay ${isSidebarOpen ? 'open' : ''}`} onClick={() => setIsSidebarOpen(false)}></div>
+      
       {/* Sidebar */}
-      <aside style={styles.sidebar}>
+      <aside className={`layout-sidebar ${isSidebarOpen ? 'open' : ''}`} style={styles.sidebar}>
         <div style={styles.logoArea}>
           <div style={styles.logoCircle}>30</div>
           <div>
@@ -82,7 +87,12 @@ export default function Layout({ children, title }) {
       {/* Main Content Area */}
       <div style={styles.mainWrapper}>
         <header style={styles.header}>
-          <h1 style={styles.headerTitle}>{title}</h1>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+            <button className="hamburger-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+              <Menu size={24} />
+            </button>
+            <h1 className="header-title" style={styles.headerTitle}>{title}</h1>
+          </div>
           <div style={styles.headerRight}>
             <span style={styles.userInfo}>{user?.email || 'Admin User'}</span>
             <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
@@ -91,7 +101,7 @@ export default function Layout({ children, title }) {
           </div>
         </header>
         
-        <main style={styles.mainContent}>
+        <main className="main-content-area" style={styles.mainContent}>
           {children}
         </main>
       </div>

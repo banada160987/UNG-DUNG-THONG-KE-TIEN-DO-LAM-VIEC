@@ -177,3 +177,60 @@ input, select, textarea {
     justify-content: center !important;
   }
 }
+
+/* =========================================
+   MOBILE RESPONSIVENESS FOR ADMIN LAYOUT
+   ========================================= */
+.layout-sidebar {
+  transition: transform 0.3s ease;
+}
+
+.hamburger-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.layout-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 15;
+}
+
+@media (max-width: 768px) {
+  .layout-sidebar {
+    position: fixed !important;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    transform: translateX(-100%);
+  }
+  
+  .layout-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .hamburger-btn {
+    display: block;
+  }
+
+  .layout-overlay.open {
+    display: block;
+  }
+
+  .header-title {
+    font-size: 16px !important;
+  }
+
+  .main-content-area {
+    padding: 15px !important;
+  }
+}
