@@ -15,6 +15,7 @@ import AdminGuests from './pages/AdminGuests';
 import AdminPages from './pages/AdminPages';
 import AdminDocs from './pages/AdminDocs';
 import AdminUsers from './pages/AdminUsers';
+import PublicLayout from './components/PublicLayout';
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -27,13 +28,15 @@ function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <Login />} />
       
-      {/* Public Portal Routes */}
-      <Route path="/" element={<PublicHome />} />
-      <Route path="/gioi-thieu" element={<PublicAbout />} />
-      <Route path="/tin-tuc" element={<PublicNewsList />} />
-      <Route path="/van-ban" element={<PublicDocs />} />
-      <Route path="/bang-vang" element={<PublicSponsorsList />} />
-      <Route path="/thu-vien-anh" element={<PublicGallery />} />
+      {/* Public Portal Routes with Nested Routing */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<PublicHome />} />
+        <Route path="/gioi-thieu" element={<PublicAbout />} />
+        <Route path="/tin-tuc" element={<PublicNewsList />} />
+        <Route path="/van-ban" element={<PublicDocs />} />
+        <Route path="/bang-vang" element={<PublicSponsorsList />} />
+        <Route path="/thu-vien-anh" element={<PublicGallery />} />
+      </Route>
       
       {/* Protected Admin Routes */}
       {user ? (

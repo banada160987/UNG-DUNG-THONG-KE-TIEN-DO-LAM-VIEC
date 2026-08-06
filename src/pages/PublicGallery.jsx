@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
 import ImageUpload from '../components/ImageUpload';
 
 export default function PublicGallery() {
@@ -41,7 +40,6 @@ export default function PublicGallery() {
         <h1 style={styles.title}>Thư viện ảnh</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button onClick={() => setShowForm(true)} style={styles.uploadBtn}>Đóng góp ảnh</button>
-          <Link to="/" style={styles.backBtn}>← Về trang chủ</Link>
         </div>
       </div>
 
@@ -86,10 +84,9 @@ export default function PublicGallery() {
 }
 
 const styles = {
-  container: { maxWidth: '1000px', margin: '40px auto', padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  container: { maxWidth: '1000px', margin: '40px auto', padding: '30px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #166534', paddingBottom: '10px', marginBottom: '20px' },
-  title: { color: '#166534', margin: 0 },
-  backBtn: { textDecoration: 'none', color: '#d32f2f', fontWeight: 'bold' },
+  title: { color: '#166534', margin: 0, fontSize: '24px' },
   uploadBtn: { backgroundColor: '#166534', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '15px' },
   img: { width: '100%', height: '200px', objectFit: 'cover', borderRadius: '4px' },

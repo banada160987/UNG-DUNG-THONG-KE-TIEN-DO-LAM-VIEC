@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
 
 export default function PublicSponsorsList() {
   const [sponsors, setSponsors] = useState([]);
@@ -47,7 +46,6 @@ export default function PublicSponsorsList() {
         <h1 style={styles.title}>Bảng vàng tri ân</h1>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button onClick={() => setShowForm(true)} style={styles.donateBtn}>Đăng ký đóng góp</button>
-          <Link to="/" style={styles.backBtn}>← Về trang chủ</Link>
         </div>
       </div>
 
@@ -114,10 +112,9 @@ export default function PublicSponsorsList() {
 }
 
 const styles = {
-  container: { maxWidth: '1000px', margin: '40px auto', padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  container: { maxWidth: '1000px', margin: '40px auto', padding: '30px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #d32f2f', paddingBottom: '10px', marginBottom: '20px' },
-  title: { color: '#d32f2f', margin: 0 },
-  backBtn: { textDecoration: 'none', color: '#166534', fontWeight: 'bold' },
+  title: { color: '#d32f2f', margin: 0, fontSize: '24px' },
   donateBtn: { backgroundColor: '#166534', color: 'white', border: 'none', padding: '8px 15px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' },
   searchInput: { width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '14px' },
   table: { width: '100%', borderCollapse: 'collapse' },

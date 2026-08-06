@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Link } from 'react-router-dom';
 
 export default function PublicNewsList() {
   const [news, setNews] = useState([]);
@@ -15,7 +14,6 @@ export default function PublicNewsList() {
     <div style={styles.container}>
       <div style={styles.header}>
         <h1 style={styles.title}>Tin tức - Sự kiện</h1>
-        <Link to="/" style={styles.backBtn}>← Về trang chủ</Link>
       </div>
       <div style={styles.grid}>
         {news.map(n => (
@@ -31,10 +29,9 @@ export default function PublicNewsList() {
 }
 
 const styles = {
-  container: { maxWidth: '1000px', margin: '40px auto', padding: '20px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
+  container: { maxWidth: '1000px', margin: '40px auto', padding: '30px', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #166534', paddingBottom: '10px', marginBottom: '20px' },
-  title: { color: '#166534', margin: 0 },
-  backBtn: { textDecoration: 'none', color: '#d32f2f', fontWeight: 'bold' },
+  title: { color: '#166534', margin: 0, fontSize: '24px' },
   grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' },
   card: { border: '1px solid #eee', borderRadius: '8px', overflow: 'hidden' },
   img: { width: '100%', height: '150px', objectFit: 'cover' },
