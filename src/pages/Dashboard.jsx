@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign, PieChart as PieChartIcon, BarChart as BarChartIcon } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign, PieChart as PieChartIcon, BarChart as BarChartIcon, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import TaskModal from '../components/TaskModal';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
@@ -74,19 +75,103 @@ export default function Dashboard() {
     'Tiến độ (%)': getCommitteeProgress(c.id)
   }));
 
+  const handleExportBudget = () => {
+    const budgetTasks = tasks.filter(t => Number(t.budget_estimate) > 0);
+    const exportData = budgetTasks.map(t => {
+      const comm = committees.find(c => c.id === t.committee_id);
+      return {
+        'Tên công việc': t.title,
+        'Tiểu ban': comm ? comm.name : '',
+        'Người phụ trách': t.assignee,
+        'Người giám sát': t.reviewer_name || '',
+        'Dự toán kinh phí (VNĐ)': Number(t.budget_estimate),
+        'Trạng thái': t.status === 'completed' ? 'Hoàn thành' : (t.status === 'in_progress' ? 'Đang thực hiện' : 'Chưa xong'),
+        'Hạn chót': new Date(t.deadline).toLocaleDateString('vi-VN')
+      };
+    });
+    
+    // Add total row
+    exportData.push({
+      'Tên công việc': 'TỔNG CỘNG',
+      'Dự toán kinh phí (VNĐ)': totalBudget
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Dự toán kinh phí");
+    XLSX.writeFile(wb, "BaoCao_DuToanKinhPhi.xlsx");
+  };
+
+  const handleExportPerformance = () => {
+    // Group tasks by assignee
+    const assignees = {};
+    tasks.forEach(t => {
+      const name = t.assignee || 'Chưa phân công';
+      if (!assignees[name]) {
+        assignees[name] = { total: 0, completed: 0, overdue: 0, pending: 0, in_review: 0 };
+      }
+      assignees[name].total += 1;
+      if (t.status === 'completed') assignees[name].completed += 1;
+      else if (t.status === 'in_review') assignees[name].in_review += 1;
+      else if (new Date(t.deadline) < new Date()) assignees[name].overdue += 1;
+      else assignees[name].pending += 1;
+    });
+
+    const exportData = Object.keys(assignees).map(name => {
+      const stats = assignees[name];
+      const rate = stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0;
+      return {
+        'Họ và Tên': name,
+        'Tổng số việc được giao': stats.total,
+        'Đã hoàn thành': stats.completed,
+        'Chờ duyệt': stats.in_review,
+        'Đang làm / Chưa đến hạn': stats.pending,
+        'Trễ hạn': stats.overdue,
+        'Tỷ lệ hoàn thành (%)': Number(rate)
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hiệu suất cá nhân");
+    XLSX.writeFile(wb, "BaoCao_HieuSuatCaNhan.xlsx");
+  };
+
   return (
     <Layout title="Tổng quan Ban Tổ chức">
       {loading ? (
         <div style={{ textAlign: 'center', padding: '2rem' }}>Đang tải dữ liệu...</div>
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+            <button 
+              onClick={handleExportBudget}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                background: '#10b981', color: 'white', padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem', fontWeight: 'bold', boxShadow: 'var(--shadow-sm)', border: 'none', cursor: 'pointer'
+              }}
+            >
+              <Download size={20} />
+              Dự toán (Excel)
+            </button>
+            <button 
+              onClick={handleExportPerformance}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                background: '#3b82f6', color: 'white', padding: '0.75rem 1.5rem',
+                borderRadius: '0.5rem', fontWeight: 'bold', boxShadow: 'var(--shadow-sm)', border: 'none', cursor: 'pointer'
+              }}
+            >
+              <Download size={20} />
+              Hiệu suất (Excel)
+            </button>
             <button 
               onClick={() => setIsModalOpen(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '0.5rem',
                 background: 'var(--primary)', color: 'white', padding: '0.75rem 1.5rem',
-                borderRadius: '0.5rem', fontWeight: 'bold', boxShadow: 'var(--shadow-sm)'
+                borderRadius: '0.5rem', fontWeight: 'bold', boxShadow: 'var(--shadow-sm)', border: 'none', cursor: 'pointer'
               }}
             >
               <Plus size={20} />
