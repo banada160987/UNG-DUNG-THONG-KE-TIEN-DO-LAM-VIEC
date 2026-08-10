@@ -467,28 +467,7 @@ input, select, textarea {
   margin: 20px 0;
 }
 
-.logo-30 {
-  font-size: 60px;
-  font-weight: bold;
-  color: #dc2626;
-  line-height: 1;
-  text-shadow: 2px 2px 0px #fbbf24;
-  font-family: Arial, sans-serif;
-  position: relative;
-}
-.logo-30::after {
-  content: "CAO BÁ QUÁT";
-  position: absolute;
-  font-size: 9px;
-  background: #1e3a8a;
-  color: white;
-  padding: 2px 4px;
-  border-radius: 4px;
-  bottom: 8px;
-  right: -10px;
-  transform: rotate(-5deg);
-  white-space: nowrap;
-}
+
 
 .agenda-list {
   font-size: 13px;

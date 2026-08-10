@@ -306,7 +306,7 @@ export default function PublicHome() {
                       </div>
                       
                       <div className="logo-container">
-                        <div className="logo-30">30</div>
+                        <img src="/logo-30-nam.jpg" alt="Logo 30 năm" style={{ maxWidth: '120px', height: 'auto' }} />
                       </div>
                       
                       <div className="agenda-list">
