@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2, Mail } from 'lucide-react';
+import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2, Mail, DownloadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { QRCodeSVG } from 'qrcode.react';
 import QRScannerModal from '../components/QRScannerModal';
 import emailjs from '@emailjs/browser';
+import html2canvas from 'html2canvas';
 
 export default function AdminGuests() {
   const [guests, setGuests] = useState([]);
@@ -13,6 +14,9 @@ export default function AdminGuests() {
   const [showForm, setShowForm] = useState(false);
   const [showBulk, setShowBulk] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [inviteConfig, setInviteConfig] = useState(null);
+  const [downloadingGuest, setDownloadingGuest] = useState(null);
+  const hiddenInviteRef = useRef(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -24,7 +28,17 @@ export default function AdminGuests() {
 
   useEffect(() => {
     fetchGuests();
+    fetchInviteConfig();
   }, []);
+
+  const fetchInviteConfig = async () => {
+    const { data } = await supabase.from('cbq_pages').select('content').eq('slug', 'invite-config').single();
+    if (data) {
+      try {
+        setInviteConfig(JSON.parse(data.content));
+      } catch (e) { }
+    }
+  };
 
   const fetchGuests = async () => {
     setLoading(true);
@@ -151,6 +165,28 @@ export default function AdminGuests() {
     }
   };
 
+  const handleDownloadInvite = async (guest) => {
+    setDownloadingGuest(guest);
+    
+    // Đợi DOM render card ẩn
+    setTimeout(async () => {
+      if (!hiddenInviteRef.current) return;
+      try {
+        const canvas = await html2canvas(hiddenInviteRef.current, { scale: 2, useCORS: true });
+        const image = canvas.toDataURL("image/png", 1.0);
+        const link = document.createElement("a");
+        link.download = `ThiepMoi_${guest.name}.png`;
+        link.href = image;
+        link.click();
+      } catch (error) {
+        console.error("Lỗi khi tải ảnh:", error);
+        alert("Không thể tải ảnh. Vui lòng thử lại!");
+      } finally {
+        setDownloadingGuest(null);
+      }
+    }, 500);
+  };
+
   return (
     <Layout title="Quản lý Khách Mời & Lễ tân">
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
@@ -273,6 +309,14 @@ export default function AdminGuests() {
                           >
                             Gửi Email
                           </button>
+                          
+                          <button 
+                            onClick={() => handleDownloadInvite(g)}
+                            style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', marginLeft: '5px', color: '#16a34a' }}
+                            title="Tải Thiệp Về Máy"
+                          >
+                            {downloadingGuest?.id === g.id ? 'Đang tải...' : 'Tải Thiệp'}
+                          </button>
                         </div>
                       </div>
                     </td>
@@ -294,11 +338,100 @@ export default function AdminGuests() {
         )}
       </div>
 
-      <QRScannerModal 
-        isOpen={showScanner} 
-        onClose={() => setShowScanner(false)} 
-        onScanSuccess={() => fetchGuests()} 
-      />
+      {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
+      </div>
+
+      {/* Hidden Div cho Tải Thiệp */}
+      {downloadingGuest && (
+        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+          <div className="bifold-invite-container" ref={hiddenInviteRef} style={{ width: '800px', flexDirection: 'row', display: 'flex' }}>
+            
+            {/* TRANG TRÁI - Lời mời & Thông tin khách */}
+            <div className="bifold-page bifold-page-left">
+              <div className="invite-dept">
+                SỞ GIÁO DỤC VÀ ĐÀO TẠO
+                <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong>
+                <div className="invite-dept-line"></div>
+              </div>
+              
+              <div className="invite-greeting">Trân trọng kính mời:</div>
+              
+              <div className="guest-name-box">
+                {downloadingGuest.category && downloadingGuest.category !== 'Khách mời khác' && (
+                  <div className="guest-category-text">{downloadingGuest.category}</div>
+                )}
+                <div className="guest-name-text">{downloadingGuest.name}</div>
+                <div className="dotted-line"></div>
+              </div>
+              
+              <div className="invite-action-text">Đến tham dự</div>
+              
+              <div className="event-title-box">
+                <div className="event-title-line1">LỄ KỶ NIỆM 30 NĂM THÀNH LẬP</div>
+                <div className="event-title-line2">TRƯỜNG THPT CAO BÁ QUÁT</div>
+              </div>
+              
+              <div className="time-loc-table">
+                <div className="tl-row">
+                  <div className="tl-label">Thời gian:</div>
+                  <div className="tl-value">Vào lúc {inviteConfig?.time || '08:00, Chủ nhật, 15/11/2026'}</div>
+                </div>
+                <div className="tl-row">
+                  <div className="tl-label">Địa điểm:</div>
+                  <div className="tl-value">{inviteConfig?.location || 'Sân trường THPT Cao Bá Quát'}</div>
+                </div>
+              </div>
+              
+              <div className="honor-text">
+                Sự có mặt của quý vị là niềm vinh hạnh cho trường chúng tôi.
+              </div>
+              
+              <div className="signature-box">
+                <div>Hà Nội, ngày 09 tháng 11 năm 2026</div>
+                <div style={{fontWeight: 'bold'}}>HIỆU TRƯỞNG</div>
+                <div className="signature-stamp-placeholder">
+                  <div className="signature-handwriting">Lê Thị Thảo</div>
+                </div>
+              </div>
+            </div>
+
+            {/* TRANG PHẢI - Lịch trình & QR */}
+            <div className="bifold-page bifold-page-right">
+              <div className="agenda-title-box">
+                <div className="agenda-title">NỘI DUNG CHƯƠNG TRÌNH</div>
+                <div className="agenda-date">NGÀY 15/11/2026</div>
+              </div>
+              
+              <div className="logo-container">
+                <img src="/logo-30-nam.jpg" alt="Logo 30 năm" style={{ maxWidth: '120px', height: 'auto' }} />
+              </div>
+              
+              <div className="agenda-list">
+                <ul>
+                  {inviteConfig?.agenda ? inviteConfig.agenda.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                  )) : (
+                    <>
+                      <li>08:00 - 08:30: Đón tiếp đại biểu</li>
+                      <li>08:30 - 10:30: Lễ mít tinh kỷ niệm</li>
+                      <li>10:30 - 11:30: Giao lưu các thế hệ</li>
+                      <li>11:30: Tiệc thân mật</li>
+                    </>
+                  )}
+                </ul>
+              </div>
+              
+              <div className="qr-box">
+                <QRCodeSVG value={downloadingGuest.invitation_code} size={80} />
+                <div style={{ fontSize: '10px', marginTop: '5px', color: '#64748b' }}>Mã Check-in: {downloadingGuest.invitation_code}</div>
+              </div>
+              
+              <div className="closing-text">Rất vinh dự được đón tiếp!</div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
