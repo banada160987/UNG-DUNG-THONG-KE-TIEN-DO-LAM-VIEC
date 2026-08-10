@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2 } from 'lucide-react';
+import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2, Mail } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { QRCodeSVG } from 'qrcode.react';
 import QRScannerModal from '../components/QRScannerModal';
+import emailjs from '@emailjs/browser';
 
 export default function AdminGuests() {
   const [guests, setGuests] = useState([]);
@@ -17,6 +18,7 @@ export default function AdminGuests() {
     name: '',
     category: 'Cựu giáo viên',
     phone: '',
+    email: '',
     invitation_code: ''
   });
 
@@ -47,7 +49,7 @@ export default function AdminGuests() {
     const { error } = await supabase.from('cbq_guests').insert([{ ...formData, invitation_code: code }]);
     if (!error) {
       setShowForm(false);
-      setFormData({ name: '', category: 'Cựu giáo viên', phone: '', invitation_code: '' });
+      setFormData({ name: '', category: 'Cựu giáo viên', phone: '', email: '', invitation_code: '' });
       fetchGuests();
     } else {
       alert("Lỗi khi lưu! Có thể mã khách mời đã tồn tại.");
@@ -81,6 +83,7 @@ export default function AdminGuests() {
         name: row['Họ Tên'] || 'Khách ẩn danh',
         category: row['Phân loại'] || 'Khách mời khác',
         phone: row['Số điện thoại'] || '',
+        email: row['Email'] || '',
         invitation_code: generateCode(),
         rsvp_status: 'pending'
       }));
@@ -94,6 +97,7 @@ export default function AdminGuests() {
       'Họ Tên': g.name,
       'Phân loại': g.category,
       'Số điện thoại': g.phone,
+      'Email': g.email || '',
       'Mã Thư Mời': g.invitation_code,
       'Trạng thái': g.rsvp_status === 'pending' ? 'Chờ phản hồi' : (g.rsvp_status === 'attending' ? 'Tham dự' : 'Không tham dự')
     }));
@@ -107,11 +111,44 @@ export default function AdminGuests() {
     const ws = XLSX.utils.json_to_sheet([{
       'Họ Tên': 'Nguyễn Văn A',
       'Phân loại': 'Cựu giáo viên',
-      'Số điện thoại': '0901234567'
+      'Số điện thoại': '0901234567',
+      'Email': 'nguyenvana@gmail.com'
     }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_NhapKhachMoi.xlsx");
+  };
+
+  const handleSendEmail = async (guest) => {
+    if (!guest.email) {
+      alert("Khách mời này chưa có địa chỉ Email.");
+      return;
+    }
+    
+    // YÊU CẦU: Phải điền các KEY của EmailJS vào đây mới gửi được!
+    const SERVICE_ID = "YOUR_SERVICE_ID"; 
+    const TEMPLATE_ID = "YOUR_TEMPLATE_ID";
+    const PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+    
+    if (SERVICE_ID === "YOUR_SERVICE_ID") {
+      alert("Tính năng Gửi Email đã sẵn sàng, nhưng bạn cần điền SERVICE_ID, TEMPLATE_ID và PUBLIC_KEY của EmailJS vào file AdminGuests.jsx để hoạt động.");
+      return;
+    }
+
+    const templateParams = {
+      to_email: guest.email,
+      guest_name: guest.name,
+      invitation_link: `${window.location.origin}/?rsvp=${guest.invitation_code}`,
+      invitation_code: guest.invitation_code
+    };
+
+    try {
+      await emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams, PUBLIC_KEY);
+      alert(`Đã gửi email thành công tới ${guest.email}`);
+    } catch (error) {
+      console.error("Lỗi gửi email:", error);
+      alert("Gửi email thất bại. Hãy kiểm tra Console để biết chi tiết.");
+    }
   };
 
   return (
@@ -173,6 +210,10 @@ export default function AdminGuests() {
               <input type="text" name="phone" value={formData.phone} onChange={handleChange} style={styles.input} />
             </div>
             <div>
+              <label style={styles.label}>Email</label>
+              <input type="email" name="email" value={formData.email} onChange={handleChange} style={styles.input} />
+            </div>
+            <div>
               <label style={styles.label}>Mã Khách Mời (Bỏ trống để tự tạo)</label>
               <input type="text" name="invitation_code" value={formData.invitation_code} onChange={handleChange} placeholder="VD: CBQ-9999" style={styles.input} />
             </div>
@@ -200,7 +241,11 @@ export default function AdminGuests() {
               <tbody>
                 {guests.map(g => (
                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                    <td style={styles.td}><strong>{g.name}</strong><br/><small style={{color: '#64748b'}}>{g.phone}</small></td>
+                    <td style={styles.td}>
+                      <strong>{g.name}</strong><br/>
+                      <small style={{color: '#64748b'}}>{g.phone}</small>
+                      {g.email && <><br/><small style={{color: '#3b82f6'}}>{g.email}</small></>}
+                    </td>
                     <td style={styles.td}>{g.category}</td>
                     <td style={styles.td}>
                       <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -219,6 +264,14 @@ export default function AdminGuests() {
                             style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white' }}
                           >
                             Copy Link
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleSendEmail(g)}
+                            style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', marginLeft: '5px', color: '#0284c7' }}
+                            title="Gửi Email Thiệp Mời"
+                          >
+                            Gửi Email
                           </button>
                         </div>
                       </div>

@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Search, MapPin, Clock, ChevronRight } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronRight, Download } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
+import html2canvas from 'html2canvas';
 
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
@@ -9,6 +11,8 @@ export default function PublicHome() {
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
+  const [inviteConfig, setInviteConfig] = useState(null);
+  const inviteRef = useRef(null);
   
   const [totalDonation, setTotalDonation] = useState(0);
   const [attendingGuests, setAttendingGuests] = useState(0);
@@ -61,12 +65,23 @@ export default function PublicHome() {
   const fetchPublicData = async () => {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes, linksRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('rsvp_status'),
-        supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true })
+        supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true }),
+        supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single()
       ]);
+      
+      if (configRes.data && configRes.data.content) {
+        try {
+          const parsed = typeof configRes.data.content === 'string' ? JSON.parse(configRes.data.content) : configRes.data.content;
+          setInviteConfig(parsed);
+        } catch (e) {
+          console.error("Lỗi parse cấu hình thiệp", e);
+        }
+      }
+
       if (!sponsorsRes.error) {
         setSponsors(sponsorsRes.data || []);
         const total = (sponsorsRes.data || []).reduce((sum, s) => sum + (Number(s.donation_amount) || 0), 0);
@@ -115,6 +130,21 @@ export default function PublicHome() {
       }
     } catch (err) {
       alert('Có lỗi xảy ra, vui lòng thử lại.');
+    }
+  };
+
+  const handleDownloadInvite = async () => {
+    if (!inviteRef.current) return;
+    try {
+      const canvas = await html2canvas(inviteRef.current, { scale: 2, useCORS: true });
+      const image = canvas.toDataURL("image/png", 1.0);
+      const link = document.createElement("a");
+      link.download = `ThiepMoi_${rsvpResult.guest.name}.png`;
+      link.href = image;
+      link.click();
+    } catch (error) {
+      console.error("Lỗi khi tải ảnh:", error);
+      alert("Không thể tải ảnh. Vui lòng thử lại!");
     }
   };
 
@@ -216,7 +246,7 @@ export default function PublicHome() {
               {rsvpResult?.success && (
                 <div style={styles.inviteCardWrapper} className="invite-card-animated">
                   {/* Mặt thiệp */}
-                  <div style={styles.inviteCard}>
+                  <div style={styles.inviteCard} ref={inviteRef}>
                     <div style={styles.inviteCardInner}>
                       <div style={styles.inviteHeader}>
                         <div style={styles.inviteLogoSmall} className="invite-logo-animated">30</div>
@@ -229,25 +259,36 @@ export default function PublicHome() {
                         <p style={styles.inviteRole}>{rsvpResult.guest.category}</p>
 
                         <div style={styles.inviteDivider}></div>
-                        <p style={styles.inviteEvent}>Tới dự Lễ Kỷ Niệm 30 Năm Thành Lập Trường</p>
+                        <p style={styles.inviteEvent}>{inviteConfig?.event_name || 'Lễ Kỷ Niệm 30 Năm Thành Lập Trường'}</p>
 
                         <div style={styles.inviteDetails}>
                           <div style={styles.inviteDetailRow}>
-                            <Clock size={16} color="#b71c1c" /> <strong>Thời gian:</strong> 08:00, Chủ nhật, 15/11/2026
+                            <Clock size={16} color="#b71c1c" /> <strong>Thời gian:</strong> {inviteConfig?.time || '08:00, Chủ nhật, 15/11/2026'}
                           </div>
                           <div style={styles.inviteDetailRow}>
-                            <MapPin size={16} color="#b71c1c" /> <strong>Địa điểm:</strong> Sân trường THPT Cao Bá Quát
+                            <MapPin size={16} color="#b71c1c" /> <strong>Địa điểm:</strong> {inviteConfig?.location || 'Sân trường THPT Cao Bá Quát'}
                           </div>
                         </div>
 
                         <div style={styles.inviteAgenda}>
                           <p style={{ fontWeight: '700', marginBottom: '0.5rem', color: '#78350f' }}>Chương trình dự kiến:</p>
                           <ul style={{ textAlign: 'left', fontSize: '13px', color: '#475569', paddingLeft: '20px', margin: 0 }}>
-                            <li>08:00 - 08:30: Đón tiếp đại biểu</li>
-                            <li>08:30 - 10:30: Lễ mít tinh kỷ niệm</li>
-                            <li>10:30 - 11:30: Giao lưu các thế hệ</li>
-                            <li>11:30: Tiệc thân mật</li>
+                            {inviteConfig?.agenda ? inviteConfig.agenda.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            )) : (
+                              <>
+                                <li>08:00 - 08:30: Đón tiếp đại biểu</li>
+                                <li>08:30 - 10:30: Lễ mít tinh kỷ niệm</li>
+                                <li>10:30 - 11:30: Giao lưu các thế hệ</li>
+                                <li>11:30: Tiệc thân mật</li>
+                              </>
+                            )}
                           </ul>
+                        </div>
+                        
+                        <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                          <QRCodeSVG value={rsvpResult.guest.invitation_code} size={80} level="H" />
+                          <p style={{ fontSize: '11px', color: '#64748b', marginTop: '5px' }}>Mã Check-in: {rsvpResult.guest.invitation_code}</p>
                         </div>
                       </div>
                     </div>
@@ -270,6 +311,12 @@ export default function PublicHome() {
                           : '❌ Quý vị đã xác nhận không thể tham dự.'}
                       </div>
                     )}
+                    
+                    <div style={{ marginTop: '15px' }}>
+                      <button onClick={handleDownloadInvite} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <Download size={18} /> Tải Thiệp Về Máy
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

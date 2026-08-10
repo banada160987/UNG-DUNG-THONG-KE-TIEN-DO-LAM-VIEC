@@ -18,6 +18,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminLinks from './pages/AdminLinks';
 import AdminGallery from './pages/AdminGallery';
 import AdminAuditLog from './pages/AdminAuditLog';
+import AdminInviteConfig from './pages/AdminInviteConfig';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -55,6 +56,7 @@ function App() {
           <Route path="/admin/links" element={role === 'admin' ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
         </>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />

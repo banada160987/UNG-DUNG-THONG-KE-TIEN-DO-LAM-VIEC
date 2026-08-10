@@ -60,6 +60,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
+    { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
     { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
     { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: 'NỘI DUNG WEB (PUBLIC)', show: role === 'admin' },
     { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: 'HỆ THỐNG', show: role === 'admin' },
