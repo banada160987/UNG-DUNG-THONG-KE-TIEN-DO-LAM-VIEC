@@ -251,8 +251,8 @@ export default function PublicHome() {
                     {/* TRANG TRÁI - Lời mời & Thông tin khách */}
                     <div className="bifold-page bifold-page-left">
                       <div className="invite-dept">
-                        SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK
-                        <strong>TRƯỜNG THPT NGÔ GIA TỰ</strong>
+                        SỞ GIÁO DỤC VÀ ĐÀO TẠO
+                        <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong>
                         <div className="invite-dept-line"></div>
                       </div>
                       
@@ -270,7 +270,7 @@ export default function PublicHome() {
                       
                       <div className="event-title-box">
                         <div className="event-title-line1">LỄ KỶ NIỆM 30 NĂM THÀNH LẬP</div>
-                        <div className="event-title-line2">TRƯỜNG THPT NGÔ GIA TỰ (1990-2020)</div>
+                        <div className="event-title-line2">TRƯỜNG THPT CAO BÁ QUÁT</div>
                       </div>
                       
                       <div className="time-loc-table">
@@ -289,11 +289,11 @@ export default function PublicHome() {
                       </div>
                       
                       <div className="signature-box">
-                        <div>Ea Kar, ngày 09 tháng 11 năm 2026</div>
+                        <div>Hà Nội, ngày 09 tháng 11 năm 2026</div>
                         <div style={{fontWeight: 'bold'}}>HIỆU TRƯỞNG</div>
                         <div className="signature-stamp-placeholder">
                           {/* Chữ ký giả lập */}
-                          <div className="signature-handwriting">Ths. Phạm Thị Dinh</div>
+                          <div className="signature-handwriting">Lê Thị Thảo</div>
                         </div>
                       </div>
                     </div>

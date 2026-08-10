@@ -289,7 +289,7 @@ input, select, textarea {
 
 .bifold-page {
   flex: 1;
-  padding: 40px;
+  padding: 20px;
   position: relative;
   background: white;
   display: flex;
@@ -314,7 +314,7 @@ input, select, textarea {
     flex-direction: column;
   }
   .bifold-page {
-    padding: 25px;
+    padding: 15px;
   }
   .bifold-page-left {
     border-right: none;
@@ -324,13 +324,13 @@ input, select, textarea {
 
 .invite-dept {
   text-align: center;
-  font-size: 14px;
+  font-size: 13px;
   color: #6b21a8;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 .invite-dept strong {
   display: block;
-  font-size: 16px;
+  font-size: 14px;
   margin-top: 5px;
 }
 .invite-dept-line {
@@ -343,27 +343,27 @@ input, select, textarea {
 .invite-greeting {
   text-align: center;
   font-weight: bold;
-  font-size: 16px;
-  margin-top: 20px;
+  font-size: 14px;
+  margin-top: 10px;
 }
 
 .guest-name-box {
   text-align: center;
-  margin: 15px 0;
+  margin: 10px 0;
 }
 .guest-name-text {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: bold;
   color: #1e3a8a;
   display: inline-block;
-  padding: 0 20px;
+  padding: 0 10px;
   font-family: Arial, Helvetica, sans-serif;
 }
 .guest-category-text {
-  font-size: 16px;
+  font-size: 14px;
   color: #1e3a8a;
   font-family: Arial, Helvetica, sans-serif;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
 }
 .dotted-line {
   border-bottom: 1px dotted #94a3b8;
@@ -374,22 +374,22 @@ input, select, textarea {
 .invite-action-text {
   text-align: center;
   font-weight: bold;
-  font-size: 16px;
+  font-size: 14px;
   margin-bottom: 10px;
 }
 
 .event-title-box {
   text-align: center;
   color: #6b21a8;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 .event-title-line1 {
-  font-size: 18px;
+  font-size: 15px;
   font-weight: bold;
   text-transform: uppercase;
 }
 .event-title-line2 {
-  font-size: 22px;
+  font-size: 18px;
   font-weight: bold;
   text-transform: uppercase;
   margin-top: 5px;
@@ -397,17 +397,18 @@ input, select, textarea {
 
 .time-loc-table {
   width: 100%;
-  margin-bottom: 30px;
-  font-size: 15px;
+  margin-bottom: 20px;
+  font-size: 13px;
 }
 .tl-row {
   display: flex;
   margin-bottom: 8px;
 }
 .tl-label {
-  width: 80px;
+  width: 70px;
   font-weight: bold;
   text-decoration: underline;
+  flex-shrink: 0;
 }
 .tl-value {
   flex: 1;
@@ -415,22 +416,22 @@ input, select, textarea {
 
 .honor-text {
   text-align: center;
-  font-size: 15px;
+  font-size: 13px;
   font-style: italic;
-  margin-bottom: 30px;
+  margin-bottom: 20px;
 }
 
 .signature-box {
-  text-align: right;
-  font-size: 15px;
+  text-align: center;
+  font-size: 14px;
   margin-top: auto;
+  align-self: flex-end;
+  width: 100%;
 }
 .signature-stamp-placeholder {
-  width: 120px;
+  width: 100%;
   height: 60px;
-  margin-left: auto;
-  margin-top: 10px;
-  margin-bottom: 10px;
+  margin-top: 5px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -438,23 +439,23 @@ input, select, textarea {
 }
 .signature-handwriting {
   font-family: "Brush Script MT", "Comic Sans MS", cursive;
-  font-size: 24px;
+  font-size: 22px;
   color: #1e3a8a;
-  transform: rotate(-10deg);
+  transform: rotate(-5deg);
 }
 
 /* Page Right Elements */
 .agenda-title-box {
   text-align: center;
   color: #6b21a8;
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 .agenda-title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: bold;
 }
 .agenda-date {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: bold;
   margin-top: 5px;
 }
@@ -463,11 +464,11 @@ input, select, textarea {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 30px 0;
+  margin: 20px 0;
 }
 
 .logo-30 {
-  font-size: 80px;
+  font-size: 60px;
   font-weight: bold;
   color: #dc2626;
   line-height: 1;
@@ -476,50 +477,52 @@ input, select, textarea {
   position: relative;
 }
 .logo-30::after {
-  content: "NGÔ GIA TỰ";
+  content: "CAO BÁ QUÁT";
   position: absolute;
-  font-size: 10px;
+  font-size: 9px;
   background: #1e3a8a;
   color: white;
-  padding: 2px 5px;
+  padding: 2px 4px;
   border-radius: 4px;
-  bottom: 10px;
+  bottom: 8px;
   right: -10px;
-  transform: rotate(-10deg);
+  transform: rotate(-5deg);
   white-space: nowrap;
 }
 
 .agenda-list {
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
 }
 .agenda-list ul {
   list-style-type: none;
   padding: 0;
+  margin: 0;
 }
 .agenda-list li {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   position: relative;
-  padding-left: 15px;
+  padding-left: 12px;
+  text-align: left;
 }
 .agenda-list li::before {
   content: "■";
   position: absolute;
   left: 0;
   color: #333;
-  font-size: 10px;
+  font-size: 8px;
   top: 4px;
 }
 
 .closing-text {
   text-align: center;
   font-style: italic;
-  font-size: 15px;
+  font-size: 13px;
   margin-top: auto;
-  padding-top: 20px;
+  padding-top: 15px;
 }
 
 .qr-box {
   text-align: center;
-  margin-top: 20px;
+  margin-top: 15px;
 }
