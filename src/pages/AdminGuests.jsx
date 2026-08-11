@@ -339,7 +339,6 @@ export default function AdminGuests() {
       </div>
 
       {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
-      </div>
 
       {/* Hidden Div cho Tải Thiệp */}
       {downloadingGuest && (
