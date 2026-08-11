@@ -251,85 +251,103 @@ export default function PublicHome() {
                     {/* TRANG TRÁI - Lời mời & Thông tin khách */}
                     <div className="bifold-page bifold-page-left">
                       <div className="invite-dept">
-                        SỞ GIÁO DỤC VÀ ĐÀO TẠO
-                        <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong>
+                        <strong>{inviteConfig?.school_name || 'TRƯỜNG THPT CAO BÁ QUÁT'}</strong>
                         <div className="invite-dept-line"></div>
                       </div>
                       
-                      <div className="invite-greeting">Trân trọng kính mời:</div>
-                      
-                      <div className="guest-name-box">
-                        {rsvpResult.guest.category && rsvpResult.guest.category !== 'Khách mời khác' && (
-                          <div className="guest-category-text">{rsvpResult.guest.category}</div>
-                        )}
-                        <div className="guest-name-text">{rsvpResult.guest.name}</div>
-                        <div className="dotted-line"></div>
+                      <div className="invite-greeting">{inviteConfig?.invite_title1 || 'Trân trọng kính mời'}</div>
+                      <div className="invite-greeting-sub" style={{ textAlign: 'center', marginTop: '5px' }}>
+                        <span style={{ borderBottom: '1px solid #d4af37', paddingBottom: '2px', fontWeight: 'bold' }}>
+                           {inviteConfig?.invite_title2 || 'ĐẠI BIỂU THAM DỰ'}
+                        </span>
                       </div>
                       
-                      <div className="invite-action-text">Đến tham dự</div>
-                      
-                      <div className="event-title-box">
-                        <div className="event-title-line1">LỄ KỶ NIỆM 30 NĂM THÀNH LẬP</div>
-                        <div className="event-title-line2">TRƯỜNG THPT CAO BÁ QUÁT</div>
+                      <div className="event-title-box" style={{ marginTop: '30px' }}>
+                        <div className="event-title-line1" style={{ fontSize: '24px', color: '#b71c1c' }}>{inviteConfig?.event_name_main || 'LỄ KỶ NIỆM'}</div>
+                        <div className="event-title-line2" style={{ whiteSpace: 'pre-line', color: '#b71c1c', marginTop: '10px' }}>{inviteConfig?.event_name_sub || '30 NĂM THÀNH LẬP\nTRƯỜNG THPT CAO BÁ QUÁT\n(1996 - 2026)'}</div>
                       </div>
                       
                       <div className="time-loc-table">
-                        <div className="tl-row">
-                          <div className="tl-label">Thời gian:</div>
-                          <div className="tl-value">Vào lúc {inviteConfig?.time || '08:00, Chủ nhật, 15/11/2026'}</div>
+                        <div className="tl-row" style={{ alignItems: 'flex-start' }}>
+                          <div className="tl-icon">🕒</div>
+                          <div className="tl-label">THỜI GIAN:</div>
                         </div>
                         <div className="tl-row">
-                          <div className="tl-label">Địa điểm:</div>
-                          <div className="tl-value">{inviteConfig?.location || 'Sân trường THPT Cao Bá Quát'}</div>
+                          <div className="tl-value" style={{ marginLeft: '25px', fontWeight: 'bold' }}>{inviteConfig?.time || '07 giờ 30, ngày 03 tháng 9 năm 2026'}</div>
+                        </div>
+                        <div className="tl-row" style={{ alignItems: 'flex-start', marginTop: '10px' }}>
+                          <div className="tl-icon">📍</div>
+                          <div className="tl-label">ĐỊA ĐIỂM:</div>
+                        </div>
+                        <div className="tl-row">
+                          <div className="tl-value" style={{ marginLeft: '25px', whiteSpace: 'pre-line', fontWeight: 'bold' }}>{inviteConfig?.location || 'Trường THPT Cao Bá Quát\nTDP 9, phường Tân An, tỉnh Đắk Lắk'}</div>
                         </div>
                       </div>
                       
-                      <div className="honor-text">
-                        Sự có mặt của quý vị là niềm vinh hạnh cho trường chúng tôi.
+                      <div className="honor-text" style={{ whiteSpace: 'pre-line', fontStyle: 'italic', marginTop: '20px' }}>
+                        {inviteConfig?.footer_message || 'Sự hiện diện của Quý vị là niềm vinh dự,\ngóp phần làm nên thành công của buổi lễ.'}
                       </div>
                       
-                      <div className="signature-box">
-                        <div>Hà Nội, ngày 09 tháng 11 năm 2026</div>
-                        <div style={{fontWeight: 'bold'}}>HIỆU TRƯỞNG</div>
-                        <div className="signature-stamp-placeholder">
-                          {/* Chữ ký giả lập */}
-                          <div className="signature-handwriting">Lê Thị Thảo</div>
-                        </div>
+                      <div className="signature-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', paddingRight: '20px' }}>
+                        <div style={{ fontStyle: 'italic' }}>{inviteConfig?.sign_date || 'Tân An, ngày 10 tháng 8 năm 2026'}</div>
+                        <div style={{ fontWeight: 'bold', whiteSpace: 'pre-line', textAlign: 'center', marginTop: '5px' }}>{inviteConfig?.sign_title || 'TM. BAN TỔ CHỨC\nHIỆU TRƯỞNG'}</div>
+                        <div className="signature-stamp-placeholder" style={{ height: '50px' }}></div>
+                        <div className="signature-handwriting" style={{ fontFamily: '"Brush Script MT", cursive', fontSize: '20px', color: '#b71c1c', fontWeight: 'bold' }}>{inviteConfig?.sign_name || 'Lê Thị Thảo'}</div>
                       </div>
                     </div>
 
                     {/* TRANG PHẢI - Lịch trình & Mã QR */}
                     <div className="bifold-page bifold-page-right">
                       <div className="agenda-title-box">
-                        <div className="agenda-title">NỘI DUNG CHƯƠNG TRÌNH</div>
-                        <div className="agenda-date">NGÀY 21/11/2026</div>
+                        <div className="agenda-title" style={{ fontSize: '18px', color: '#b71c1c' }}>{inviteConfig?.program_title || 'CHƯƠNG TRÌNH LỄ KỶ NIỆM'}</div>
                       </div>
                       
-                      <div className="logo-container">
-                        <img src="/logo-30-nam.jpg" alt="Logo 30 năm" style={{ maxWidth: '120px', height: 'auto' }} />
+                      <div className="agenda-table-wrapper" style={{ margin: '15px 0' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                          <thead>
+                            <tr>
+                              <th style={{ color: '#b71c1c', borderBottom: '1px solid #94a3b8', padding: '8px', textAlign: 'left', width: '100px' }}>Thời gian</th>
+                              <th style={{ color: '#b71c1c', borderBottom: '1px solid #94a3b8', padding: '8px', textAlign: 'left' }}>Nội dung chương trình</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inviteConfig?.agenda && inviteConfig.agenda.length > 0 ? inviteConfig.agenda.map((item, idx) => {
+                              // Nếu agenda là kiểu cũ (chuỗi)
+                              if (typeof item === 'string') {
+                                const parts = item.split(': ');
+                                return (
+                                  <tr key={idx}>
+                                    <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', verticalAlign: 'top', color: '#b71c1c', fontWeight: 'bold' }}>{parts[0]}</td>
+                                    <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', verticalAlign: 'top', whiteSpace: 'pre-line' }}>{parts.slice(1).join(': ')}</td>
+                                  </tr>
+                                );
+                              }
+                              // Kiểu mới (object)
+                              return (
+                                <tr key={idx}>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', verticalAlign: 'top', color: '#b71c1c', fontWeight: 'bold' }}>{item.time}</td>
+                                  <td style={{ padding: '8px', borderBottom: '1px solid #e2e8f0', verticalAlign: 'top', whiteSpace: 'pre-line' }}>{item.content}</td>
+                                </tr>
+                              );
+                            }) : (
+                               <tr><td colSpan="2" style={{ padding: '8px' }}>Chưa cập nhật</td></tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                       
-                      <div className="agenda-list">
-                        <ul>
-                          {inviteConfig?.agenda ? inviteConfig.agenda.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          )) : (
-                            <>
-                              <li><span className="agenda-time">08:00 - 08:30:</span> Đón tiếp đại biểu</li>
-                              <li><span className="agenda-time">08:30 - 10:30:</span> Lễ mít tinh kỷ niệm</li>
-                              <li><span className="agenda-time">10:30 - 11:30:</span> Giao lưu các thế hệ</li>
-                              <li><span className="agenda-time">11:30:</span> Tiệc thân mật</li>
-                            </>
-                          )}
-                        </ul>
+                      <div className="qr-box-wrapper" style={{ border: '1px solid #fde68a', backgroundColor: '#fffbeb', borderRadius: '8px', padding: '15px', marginTop: 'auto' }}>
+                        <div style={{ whiteSpace: 'pre-line', fontSize: '12px', textAlign: 'center', fontStyle: 'italic', color: '#d32f2f', marginBottom: '10px' }}>
+                          {inviteConfig?.qr_message || 'Để khâu tiếp đón được chu đáo,\nQuý đại biểu vui lòng quét mã QR xác nhận thông tin\ntham dự Chương trình Lễ Kỷ niệm'}
+                        </div>
+                        <div className="qr-box" style={{ marginTop: '0', display: 'flex', justifyContent: 'center' }}>
+                          <QRCodeSVG value={rsvpResult.guest.invitation_code} size={80} level="H" fgColor="#000" />
+                        </div>
                       </div>
                       
-                      <div className="qr-box">
-                        <QRCodeSVG value={rsvpResult.guest.invitation_code} size={70} level="H" fgColor="#1e3a8a" />
-                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '5px' }}>Mã Check-in: {rsvpResult.guest.invitation_code}</p>
+                      <div className="closing-text" style={{ fontStyle: 'italic', color: '#b71c1c', fontSize: '15px', fontWeight: 'bold' }}>
+                        {inviteConfig?.ending_message || 'Rất hân hạnh được đón tiếp!'}
                       </div>
-                      
-                      <div className="closing-text">Rất vinh dự được đón tiếp.</div>
                     </div>
                   </div>
 
