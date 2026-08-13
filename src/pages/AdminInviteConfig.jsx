@@ -6,6 +6,7 @@ import { Save, Plus, Trash2 } from 'lucide-react';
 export default function AdminInviteConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [config, setConfig] = useState({
     school_name: 'TRƯỜNG THPT CAO BÁ QUÁT',
     logo_url: '/logo-30-nam.jpg',
@@ -116,6 +117,37 @@ export default function AdminInviteConfig() {
     const newGallery = [...(config.gallery_images || [])];
     newGallery.splice(index, 1);
     setConfig(prev => ({ ...prev, gallery_images: newGallery }));
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('gallery')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      alert("Lỗi upload ảnh: Khả năng cao bạn chưa chạy mã SQL tạo kho lưu trữ. Chi tiết lỗi: " + uploadError.message);
+      setUploadingImage(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      setConfig(prev => ({ 
+        ...prev, 
+        gallery_images: [...(prev.gallery_images || []), data.publicUrl] 
+      }));
+    }
+    
+    setUploadingImage(false);
+    e.target.value = ''; // Reset input
   };
 
   return (
@@ -241,9 +273,17 @@ export default function AdminInviteConfig() {
                       </button>
                     </div>
                   ))}
-                  <button onClick={addGalleryImage} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', marginTop: '5px' }}>
-                    <Plus size={16} /> Thêm ảnh
-                  </button>
+                  <div style={{display: 'flex', gap: '10px', marginTop: '15px'}}>
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', margin: 0, fontWeight: 'bold' }}>
+                        {uploadingImage ? '⏳ Đang tải lên...' : '📸 Tải ảnh lên từ máy'}
+                        <input type="file" accept="image/*" onChange={handleFileUpload} disabled={uploadingImage} style={{position: 'absolute', opacity: 0, width: 0, height: 0}} />
+                      </label>
+                    </div>
+                    <button onClick={addGalleryImage} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer' }}>
+                      <Plus size={16} /> Thêm link thủ công
+                    </button>
+                  </div>
                 </div>
 
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #cbd5e1' }}>
