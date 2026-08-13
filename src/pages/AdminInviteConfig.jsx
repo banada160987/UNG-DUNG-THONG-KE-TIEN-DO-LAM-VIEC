@@ -8,6 +8,7 @@ export default function AdminInviteConfig() {
   const [saving, setSaving] = useState(false);
   const [config, setConfig] = useState({
     school_name: 'TRƯỜNG THPT CAO BÁ QUÁT',
+    logo_url: '/logo-30-nam.jpg',
     invite_title1: 'Trân trọng kính mời',
     invite_title2: 'ĐẠI BIỂU THAM DỰ',
     event_name_main: 'LỄ KỶ NIỆM',
@@ -112,6 +113,10 @@ export default function AdminInviteConfig() {
                   <div>
                     <label style={styles.label}>Tên cơ quan/trường</label>
                     <input type="text" name="school_name" value={config.school_name} onChange={handleChange} style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Link Logo (tùy chọn)</label>
+                    <input type="text" name="logo_url" value={config.logo_url || ''} onChange={handleChange} style={styles.input} placeholder="/logo-30-nam.jpg" />
                   </div>
                   <div>
                     <label style={styles.label}>Tiêu đề mời (VD: Trân trọng kính mời)</label>

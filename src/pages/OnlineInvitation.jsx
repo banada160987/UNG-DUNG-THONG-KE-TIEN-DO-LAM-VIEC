@@ -439,7 +439,11 @@ export default function OnlineInvitation() {
             <div className="details-card">
               <div className="title-box">THÔNG TIN SỰ KIỆN</div>
               
-              <div style={{fontSize: '18px', fontWeight: 'bold', marginTop: '20px', textTransform: 'uppercase'}}>{config?.event_name_main}</div>
+              {(config?.logo_url || '/logo-30-nam.jpg') && (
+                <img src={config?.logo_url || '/logo-30-nam.jpg'} alt="Logo" style={{ maxWidth: '140px', maxHeight: '140px', objectFit: 'contain', marginTop: '15px' }} />
+              )}
+              
+              <div style={{fontSize: '18px', fontWeight: 'bold', marginTop: '15px', textTransform: 'uppercase'}}>{config?.event_name_main}</div>
               <div style={{fontSize: '14px', color: '#555', marginTop: '5px', whiteSpace: 'pre-line'}}>{config?.event_name_sub}</div>
               
               <div className="event-time">{config?.time}</div>
