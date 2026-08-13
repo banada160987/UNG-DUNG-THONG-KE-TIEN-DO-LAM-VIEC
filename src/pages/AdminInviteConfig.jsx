@@ -17,6 +17,7 @@ export default function AdminInviteConfig() {
     event_name_main: 'LỄ KỶ NIỆM',
     event_name_sub: '30 NĂM THÀNH LẬP\nTRƯỜNG THPT CAO BÁ QUÁT\n(1996 - 2026)',
     time: '07 giờ 30, ngày 03 tháng 9 năm 2026',
+    event_target_date: '2026-09-03T07:30',
     location: 'Trường THPT Cao Bá Quát\nTDP 9, phường Tân An, tỉnh Đắk Lắk',
     footer_message: 'Sự hiện diện của Quý vị là niềm vinh dự,\ngóp phần làm nên thành công của buổi lễ.',
     sign_date: 'Tân An, ngày 10 tháng 8 năm 2026',

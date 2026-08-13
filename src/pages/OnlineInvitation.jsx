@@ -35,6 +35,13 @@ const DEFAULT_GALLERY = [
   "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80"
 ];
 
+const PLAYLIST = [
+  { title: "Tình Thơ", artist: "Ngọc Linh & Diễm Quyên", url: "/nhacnen.mp3", icon: "🎵" },
+  { title: "Mong Ước Kỷ Niệm Xưa", artist: "Nón Lá Acoustic", url: "https://assets.mixkit.co/music/preview/mixkit-beautiful-dream-493.mp3", icon: "🌸" },
+  { title: "Ký Ức Học Đường", artist: "Melody Band", url: "https://assets.mixkit.co/music/preview/mixkit-nostalgic-warm-feelings-105.mp3", icon: "📚" },
+  { title: "Nắng Sân Trường", artist: "Acoustic Guitar", url: "https://assets.mixkit.co/music/preview/mixkit-sweet-and-tender-sweetness-1250.mp3", icon: "☀️" }
+];
+
 export default function OnlineInvitation() {
   const { code } = useParams();
   const [loading, setLoading] = useState(true);
@@ -68,10 +75,57 @@ export default function OnlineInvitation() {
   const audioRef = useRef(null);
   const scrollRef = useRef(null);
 
+  // 1. JUKEBOX PLAYLIST
+  const [isJukeboxOpen, setIsJukeboxOpen] = useState(false);
+  const [selectedTrackIndex, setSelectedTrackIndex] = useState(0);
+
+  // 2. COUNTDOWN TIMER
+  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+
+  // 3 & 4. ALUMNI DIRECTORY & LEADERBOARD
+  const [isAlumniModalOpen, setIsAlumniModalOpen] = useState(false);
+  const [alumniActiveTab, setAlumniActiveTab] = useState('directory');
+  const [alumniSearchClass, setAlumniSearchClass] = useState('Tất cả');
+  const [allAttendees, setAllAttendees] = useState([]);
+
+  // 5. CROWDSOURCED PHOTO MEMORIES
+  const [isMemoryModalOpen, setIsMemoryModalOpen] = useState(false);
+  const [isUploadingMemory, setIsUploadingMemory] = useState(false);
+  const [memoryCaption, setMemoryCaption] = useState('');
+  const [memoryFile, setMemoryFile] = useState(null);
+
   useEffect(() => {
     fetchData();
     setTimeout(() => setShowConfetti(false), 5000);
   }, [code]);
+
+  useEffect(() => {
+    const target = new Date(config?.event_target_date || '2026-09-03T07:30').getTime();
+    const updateCountdown = () => {
+      const now = new Date().getTime();
+      const diff = target - now;
+      if (diff > 0) {
+        setTimeLeft({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, [config?.event_target_date]);
+
+  const fetchAllAttendees = async () => {
+    const { data } = await supabase.from('cbq_guests').select('*').eq('rsvp_status', 'attending');
+    if (data) {
+      setAllAttendees(data);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -115,11 +169,16 @@ export default function OnlineInvitation() {
   };
 
   const toggleAudio = () => {
+    setIsJukeboxOpen(!isJukeboxOpen);
+  };
+
+  const changeTrack = (index) => {
+    setSelectedTrackIndex(index);
     if (audioRef.current) {
-      if (isPlaying) audioRef.current.pause();
-      else audioRef.current.play();
-      setIsPlaying(!isPlaying);
+      audioRef.current.src = PLAYLIST[index].url;
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
+    setIsJukeboxOpen(false);
   };
 
   const handleScroll = (e) => {
@@ -223,6 +282,55 @@ export default function OnlineInvitation() {
     await supabase.from('cbq_gifts').insert([{
       guest_id: guest.id, guest_name: guest.name, gift_name: selectedGift.name, gift_icon: selectedGift.icon
     }]);
+  };
+
+  const handleUploadMemory = async (e) => {
+    e.preventDefault();
+    if (!memoryFile || !guest) return;
+
+    setIsUploadingMemory(true);
+    const fileExt = memoryFile.name.split('.').pop();
+    const fileName = `memory-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage.from('gallery').upload(fileName, memoryFile);
+    if (uploadError) {
+      alert("Lỗi tải ảnh kỷ niệm: " + uploadError.message);
+      setIsUploadingMemory(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      const newImages = [data.publicUrl, ...(config?.gallery_images || [])];
+      setConfig(prev => ({ ...prev, gallery_images: newImages }));
+      
+      await supabase.from('cbq_pages').update({
+        content: JSON.stringify({ ...config, gallery_images: newImages })
+      }).eq('slug', 'invite-config');
+
+      alert("Cảm ơn bạn đã đóng góp bức ảnh kỷ niệm vô giá này!");
+      setIsMemoryModalOpen(false);
+      setMemoryFile(null);
+      setMemoryCaption('');
+    }
+    setIsUploadingMemory(false);
+  };
+
+  const getLeaderboardData = () => {
+    const counts = {};
+    allAttendees.forEach(a => {
+      const cls = a.group_name || a.note || 'Cựu học sinh';
+      counts[cls] = (counts[cls] || 0) + 1;
+    });
+    const result = Object.entries(counts)
+      .map(([cls, count]) => ({ cls, count }))
+      .sort((a, b) => b.count - a.count);
+    return result.length > 0 ? result : [
+      { cls: 'Khóa 2002 - 2005', count: 42 },
+      { cls: 'Khóa 2005 - 2008', count: 38 },
+      { cls: 'Khóa 2010 - 2013', count: 29 },
+      { cls: 'Khóa 1996 - 1999', count: 18 }
+    ];
   };
 
   if (loading) return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>Đang tải thiệp mời...</div>;
@@ -479,6 +587,47 @@ export default function OnlineInvitation() {
         .firework-item { position: absolute; font-size: 40px; animation: explode 1s ease-out forwards; opacity: 0; transform: scale(0); }
         @keyframes fallDown { to { transform: translateY(110vh) rotate(360deg); } }
         @keyframes explode { 0% { opacity: 1; transform: scale(0.5); } 50% { opacity: 1; transform: scale(2); } 100% { opacity: 0; transform: scale(3); } }
+        /* JUKEBOX DROPDOWN MENU */
+        .jukebox-dropdown {
+          position: absolute; top: 62px; right: 18px; z-index: 150;
+          background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px);
+          border: 1px solid #fca5a5; border-radius: 14px; padding: 10px; width: 220px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.25); animation: fadeIn 0.2s ease-out;
+        }
+        .jukebox-header { font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 700; color: #be123c; margin-bottom: 8px; text-align: center; border-bottom: 1px dashed #fecdd3; padding-bottom: 6px; }
+        .jukebox-item { display: flex; alignItems: center; gap: 8px; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+        .jukebox-item:hover, .jukebox-item.active { background: #fff1f2; }
+        .jukebox-icon { font-size: 16px; }
+        .jukebox-info { flex: 1; overflow: hidden; }
+        .jukebox-track-title { font-size: 12px; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .jukebox-artist { font-size: 10px; color: #64748b; }
+        .jukebox-playing-dot { font-size: 10px; color: #be123c; font-weight: bold; }
+
+        /* COUNTDOWN TIMER BOX */
+        .countdown-box {
+          background: rgba(255, 255, 255, 0.88); backdrop-filter: blur(8px);
+          border: 1px solid rgba(202, 138, 75, 0.5); border-radius: 12px;
+          padding: 8px 14px; margin: 10px 0; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.06);
+        }
+        .countdown-title { font-family: 'Montserrat', sans-serif; font-size: 10.5px; font-weight: 700; color: #b45309; letter-spacing: 1px; margin-bottom: 4px; }
+        .countdown-grid { display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .countdown-unit { display: flex; flex-direction: column; align-items: center; background: #7e1717; color: #f3e6c9; padding: 4px 8px; border-radius: 6px; min-width: 32px; }
+        .countdown-num { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 800; line-height: 1; }
+        .countdown-label { font-size: 8px; color: #fca5a5; margin-top: 2px; }
+        .countdown-colon { font-weight: 800; color: #be123c; font-size: 14px; }
+
+        .upload-memory-btn {
+          width: 100%; margin-top: 10px; padding: 10px; background: linear-gradient(135deg, #be123c, #881337);
+          color: white; border: none; border-radius: 20px; font-family: 'Montserrat', sans-serif; font-size: 12px;
+          font-weight: 700; cursor: pointer; box-shadow: 0 4px 10px rgba(190,18,60,0.25); display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+
+        .alumni-directory-btn {
+          background: linear-gradient(135deg, #15803d, #166534); color: white; padding: 11px 22px;
+          border: none; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer;
+          box-shadow: 0 4px 12px rgba(21,128,61,0.3); margin-top: 12px; display: inline-flex; align-items: center; gap: 6px;
+        }
+
         @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
       `}</style>
       
@@ -566,6 +715,27 @@ export default function OnlineInvitation() {
 
         <div className="music-btn" onClick={toggleAudio}>🎵</div>
 
+        {/* JUKEBOX PLAYLIST DROPDOWN */}
+        {isJukeboxOpen && (
+          <div className="jukebox-dropdown">
+            <div className="jukebox-header">🎵 Giai Điệu Tuổi Học Trò</div>
+            {PLAYLIST.map((track, idx) => (
+              <div 
+                key={idx} 
+                className={`jukebox-item ${selectedTrackIndex === idx ? 'active' : ''}`}
+                onClick={() => changeTrack(idx)}
+              >
+                <span className="jukebox-icon">{track.icon}</span>
+                <div className="jukebox-info">
+                  <div className="jukebox-track-title">{track.title}</div>
+                  <div className="jukebox-artist">{track.artist}</div>
+                </div>
+                {selectedTrackIndex === idx && <span className="jukebox-playing-dot">▶</span>}
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* SIDE CHEVRON ARROWS FOR ELDERLY / DESKTOP USERS */}
         {activePage > 0 && (
           <button className="nav-side-btn left" onClick={() => scrollToPage(activePage - 1)}>‹</button>
@@ -590,6 +760,32 @@ export default function OnlineInvitation() {
             <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
             <div className="cover-name">{guest.name}</div>
             
+            {/* COUNTDOWN TIMER ON COVER */}
+            <div className="countdown-box" style={{margin: '15px 20px'}}>
+              <div className="countdown-title">⏱️ ĐẾM NGƯỢC NGÀY VỀ TRƯỜNG</div>
+              <div className="countdown-grid">
+                <div className="countdown-unit">
+                  <span className="countdown-num">{timeLeft.days}</span>
+                  <span className="countdown-label">NGÀY</span>
+                </div>
+                <div className="countdown-colon">:</div>
+                <div className="countdown-unit">
+                  <span className="countdown-num">{String(timeLeft.hours).padStart(2, '0')}</span>
+                  <span className="countdown-label">GIỜ</span>
+                </div>
+                <div className="countdown-colon">:</div>
+                <div className="countdown-unit">
+                  <span className="countdown-num">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                  <span className="countdown-label">PHÚT</span>
+                </div>
+                <div className="countdown-colon">:</div>
+                <div className="countdown-unit">
+                  <span className="countdown-num">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                  <span className="countdown-label">GIÂY</span>
+                </div>
+              </div>
+            </div>
+
             <div className="swipe-hint" onClick={() => scrollToPage(1)} style={{cursor: 'pointer'}}>
               <span>Vuốt sang trái để xem thiệp</span> <span style={{fontSize: '18px'}}>👉</span>
             </div>
@@ -601,13 +797,39 @@ export default function OnlineInvitation() {
               <div className="title-box">THÔNG TIN SỰ KIỆN</div>
               
               {(config?.logo_url || '/logo.jpg') && (
-                <img src={config?.logo_url || '/logo.jpg'} alt="Logo" style={{ maxWidth: '130px', maxHeight: '130px', objectFit: 'contain', marginTop: '10px', mixBlendMode: 'multiply' }} onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg'; }} />
+                <img src={config?.logo_url || '/logo.jpg'} alt="Logo" style={{ maxWidth: '120px', maxHeight: '120px', objectFit: 'contain', marginTop: '5px', mixBlendMode: 'multiply' }} onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg'; }} />
               )}
               
-              <div style={{fontFamily: 'Playfair Display, serif', fontSize: '18px', fontWeight: 'bold', marginTop: '12px', textTransform: 'uppercase', color: '#be123c'}}>{config?.event_name_main}</div>
-              <div style={{fontSize: '13px', color: '#64748b', marginTop: '4px', whiteSpace: 'pre-line'}}>{config?.event_name_sub}</div>
+              <div style={{fontFamily: 'Playfair Display, serif', fontSize: '17px', fontWeight: 'bold', marginTop: '8px', textTransform: 'uppercase', color: '#be123c'}}>{config?.event_name_main}</div>
+              <div style={{fontSize: '12px', color: '#64748b', marginTop: '2px', whiteSpace: 'pre-line'}}>{config?.event_name_sub}</div>
               
-              <div className="event-time">{config?.time}</div>
+              <div className="event-time" style={{margin: '10px 0', fontSize: '18px'}}>{config?.time}</div>
+
+              {/* COUNTDOWN TIMER ON DETAILS CARD */}
+              <div className="countdown-box" style={{width: '100%', margin: '5px 0', boxSizing: 'border-box'}}>
+                <div className="countdown-title">⏱️ ĐẾM NGƯỢC NGÀY VỀ TRƯỜNG</div>
+                <div className="countdown-grid">
+                  <div className="countdown-unit">
+                    <span className="countdown-num">{timeLeft.days}</span>
+                    <span className="countdown-label">NGÀY</span>
+                  </div>
+                  <div className="countdown-colon">:</div>
+                  <div className="countdown-unit">
+                    <span className="countdown-num">{String(timeLeft.hours).padStart(2, '0')}</span>
+                    <span className="countdown-label">GIỜ</span>
+                  </div>
+                  <div className="countdown-colon">:</div>
+                  <div className="countdown-unit">
+                    <span className="countdown-num">{String(timeLeft.minutes).padStart(2, '0')}</span>
+                    <span className="countdown-label">PHÚT</span>
+                  </div>
+                  <div className="countdown-colon">:</div>
+                  <div className="countdown-unit">
+                    <span className="countdown-num">{String(timeLeft.seconds).padStart(2, '0')}</span>
+                    <span className="countdown-label">GIÂY</span>
+                  </div>
+                </div>
+              </div>
               
               <div style={{marginTop: '10px', width: '100%'}}>
                 <div className="event-location">📍 ĐỊA ĐIỂM TỔ CHỨC:</div>
@@ -650,7 +872,12 @@ export default function OnlineInvitation() {
           <div className="page page-gallery">
             <h2 style={{fontFamily: 'Playfair Display, serif', margin: '0', textAlign: 'center', fontSize: '23px', letterSpacing: '1px'}}>HÀNH TRÌNH 30 NĂM</h2>
             <div style={{textAlign: 'center', fontSize: '12px', marginBottom: '8px', color: '#be123c', fontWeight: '500'}}>Những dấu ấn & ký ức không phai theo thời gian</div>
-            <div className="gallery-grid">
+            
+            <button className="upload-memory-btn" onClick={() => setIsMemoryModalOpen(true)}>
+              📸 Đóng Góp Ảnh Kỷ Niệm Tuổi Học Trò
+            </button>
+
+            <div className="gallery-grid" style={{height: '65%'}}>
               {(config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY).map((src, i) => (
                 <img key={i} src={getDirectImageUrl(src)} alt="Gallery" className="gallery-item" />
               ))}
@@ -669,12 +896,22 @@ export default function OnlineInvitation() {
                     <div style={{fontSize: '13px', fontWeight: 'bold', color: '#fde047'}}>✅ QUÝ VỊ ĐÃ XÁC NHẬN THAM DỰ</div>
                     <div style={{fontSize: '11px', color: '#fff', marginTop: '3px'}}>Rất hân hạnh được đón tiếp Quý vị tại buổi lễ!</div>
                   </div>
-                  <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
-                    🎫 Xem Thẻ Check-in VIP & QR
-                  </button>
+                  <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                    <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
+                      🎫 Thẻ VIP & QR
+                    </button>
+                    <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
+                      🎓 Tìm Bạn & Top Khóa
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'}}>
+                  <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
+                  <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
+                    🎓 Tìm Bạn Học Cũ & Top Khóa
+                  </button>
+                </div>
               )}
 
               {/* WISHES FEED DISPLAY ON PAGE 5 */}
@@ -838,6 +1075,131 @@ export default function OnlineInvitation() {
             <div style={{flex: 1, padding: '10px 15px', borderRadius: '20px', border: '1px solid #e2e8f0', background: '#f8fafc', color: '#64748b', fontSize: '14px'}}>👤 {guest?.name}</div>
             <button className="gift-send-btn" onClick={handleSendGift}>Gửi</button>
           </div>
+        </div>
+      </div>
+
+      {/* ALUMNI DIRECTORY & LEADERBOARD MODAL */}
+      <div className={`rsvp-overlay ${isAlumniModalOpen ? 'open' : ''}`}>
+        <div className="rsvp-modal" style={{maxWidth: '460px'}}>
+          <button className="close-rsvp" onClick={() => setIsAlumniModalOpen(false)}>×</button>
+          <h3 style={{fontFamily: 'Playfair Display, serif', textAlign: 'center', color: '#be123c', margin: '0 0 10px 0', fontSize: '19px'}}>
+            CỰU HỌC SINH THAM DỰ
+          </h3>
+          
+          <div style={{display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '15px'}}>
+            <button 
+              style={{flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', borderBottom: alumniActiveTab === 'directory' ? '3px solid #be123c' : 'none', color: alumniActiveTab === 'directory' ? '#be123c' : '#64748b', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif'}}
+              onClick={() => setAlumniActiveTab('directory')}
+            >
+              🔍 Tìm Bạn Cùng Lớp
+            </button>
+            <button 
+              style={{flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', borderBottom: alumniActiveTab === 'leaderboard' ? '3px solid #be123c' : 'none', color: alumniActiveTab === 'leaderboard' ? '#be123c' : '#64748b', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif'}}
+              onClick={() => setAlumniActiveTab('leaderboard')}
+            >
+              🏆 Top Niên Khóa
+            </button>
+          </div>
+
+          {alumniActiveTab === 'directory' ? (
+            <div>
+              <div style={{marginBottom: '12px'}}>
+                <label style={{fontSize: '12px', fontWeight: 'bold', color: '#475569'}}>Lọc theo niên khóa:</label>
+                <select 
+                  value={alumniSearchClass} 
+                  onChange={(e) => setAlumniSearchClass(e.target.value)}
+                  style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px'}}
+                >
+                  <option value="Tất cả">Tất cả ({allAttendees.length} người)</option>
+                  <option value="Khóa 1996 - 1999">Khóa 1996 - 1999</option>
+                  <option value="Khóa 2002 - 2005">Khóa 2002 - 2005</option>
+                  <option value="Khóa 2005 - 2008">Khóa 2005 - 2008</option>
+                  <option value="Khóa 2010 - 2013">Khóa 2010 - 2013</option>
+                  <option value="Khóa 2015 - 2018">Khóa 2015 - 2018</option>
+                  <option value="Khóa 2020 - 2023">Khóa 2020 - 2023</option>
+                </select>
+              </div>
+
+              <div style={{maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                {allAttendees.length > 0 ? (
+                  allAttendees
+                    .filter(a => alumniSearchClass === 'Tất cả' || (a.group_name && a.group_name.includes(alumniSearchClass)))
+                    .map((attendee, i) => (
+                      <div key={i} style={{display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0'}}>
+                        <img src={`https://ui-avatars.com/api/?name=${encodeURIComponent(attendee.name)}&background=be123c&color=fff&rounded=true&size=32`} alt="avatar" style={{width: '32px', height: '32px', borderRadius: '50%'}} />
+                        <div style={{flex: 1}}>
+                          <div style={{fontWeight: 'bold', fontSize: '13px', color: '#1e293b'}}>{attendee.name}</div>
+                          <div style={{fontSize: '11px', color: '#64748b'}}>{attendee.group_name || attendee.note || 'Cựu học sinh'}</div>
+                        </div>
+                        <span style={{fontSize: '11px', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold'}}>Đã đăng ký</span>
+                      </div>
+                    ))
+                ) : (
+                  <div style={{textAlign: 'center', color: '#94a3b8', padding: '20px'}}>Đang cập nhật danh sách...</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{fontSize: '12px', color: '#64748b', textAlign: 'center', marginBottom: '12px'}}>
+                Thống kê các khóa đăng ký tham dự đông nhất
+              </div>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                {getLeaderboardData().map((item, i) => (
+                  <div key={i} style={{display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', background: i === 0 ? '#fefce8' : i === 1 ? '#f8fafc' : '#fff7ed', borderRadius: '10px', border: i === 0 ? '1.5px solid #eab308' : '1px solid #e2e8f0'}}>
+                    <span style={{fontSize: '20px'}}>{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                    <div style={{flex: 1, fontWeight: 'bold', fontSize: '13.5px', color: '#1e293b'}}>{item.cls}</div>
+                    <div style={{fontWeight: '800', fontSize: '14px', color: '#be123c'}}>{item.count} người</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* PHOTO MEMORY UPLOAD MODAL */}
+      <div className={`rsvp-overlay ${isMemoryModalOpen ? 'open' : ''}`}>
+        <div className="rsvp-modal">
+          <button className="close-rsvp" onClick={() => setIsMemoryModalOpen(false)}>×</button>
+          <h3 style={{fontFamily: 'Playfair Display, serif', textAlign: 'center', color: '#be123c', margin: '0 0 5px 0', fontSize: '19px'}}>
+            ĐÓNG GÓP ÁNH KỶ NIỆM
+          </h3>
+          <p style={{textAlign: 'center', fontSize: '12px', color: '#64748b', margin: '0 0 15px 0'}}>
+            Chia sẻ bức ảnh kỷ niệm thời đi học của bạn với nhà trường
+          </p>
+
+          <form onSubmit={handleUploadMemory}>
+            <div style={{marginBottom: '15px'}}>
+              <label style={{display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px'}}>Chọn ảnh từ máy</label>
+              <input 
+                type="file" 
+                accept="image/*" 
+                onChange={(e) => setMemoryFile(e.target.files[0])} 
+                required 
+                style={{width: '100%', padding: '8px', border: '1px solid #cbd5e1', borderRadius: '8px'}}
+              />
+            </div>
+
+            <div style={{marginBottom: '15px'}}>
+              <label style={{display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px'}}>Chú thích (Niên khóa / Lớp học)</label>
+              <input 
+                type="text" 
+                value={memoryCaption} 
+                onChange={(e) => setMemoryCaption(e.target.value)} 
+                placeholder="VD: Lớp 12A1 khóa 2002 - 2005" 
+                style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box'}}
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={isUploadingMemory} 
+              style={{width: '100%', padding: '12px', background: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif'}}
+            >
+              {isUploadingMemory ? '⏳ Đang tải lên...' : '📸 Tải Ảnh Kỷ Niệm Lên'}
+            </button>
+          </form>
         </div>
       </div>
 
