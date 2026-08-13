@@ -827,33 +827,7 @@ export default function OnlineInvitation() {
               <div style={{fontFamily: 'Playfair Display, serif', fontSize: '17px', fontWeight: 'bold', marginTop: '8px', textTransform: 'uppercase', color: '#be123c'}}>{config?.event_name_main}</div>
               <div style={{fontSize: '12px', color: '#64748b', marginTop: '2px', whiteSpace: 'pre-line'}}>{config?.event_name_sub}</div>
               
-              <div className="event-time" style={{margin: '10px 0', fontSize: '18px'}}>{config?.time}</div>
-
-              {/* COUNTDOWN TIMER ON DETAILS CARD */}
-              <div className="countdown-box" style={{width: '100%', margin: '5px 0', boxSizing: 'border-box'}}>
-                <div className="countdown-title">⏱️ ĐẾM NGƯỢC NGÀY VỀ TRƯỜNG</div>
-                <div className="countdown-grid">
-                  <div className="countdown-unit">
-                    <span className="countdown-num">{timeLeft.days}</span>
-                    <span className="countdown-label">NGÀY</span>
-                  </div>
-                  <div className="countdown-colon">:</div>
-                  <div className="countdown-unit">
-                    <span className="countdown-num">{String(timeLeft.hours).padStart(2, '0')}</span>
-                    <span className="countdown-label">GIỜ</span>
-                  </div>
-                  <div className="countdown-colon">:</div>
-                  <div className="countdown-unit">
-                    <span className="countdown-num">{String(timeLeft.minutes).padStart(2, '0')}</span>
-                    <span className="countdown-label">PHÚT</span>
-                  </div>
-                  <div className="countdown-colon">:</div>
-                  <div className="countdown-unit">
-                    <span className="countdown-num">{String(timeLeft.seconds).padStart(2, '0')}</span>
-                    <span className="countdown-label">GIÂY</span>
-                  </div>
-                </div>
-              </div>
+              <div className="event-time" style={{margin: '15px 0', fontSize: '20px'}}>{config?.time}</div>
               
               <div style={{marginTop: '10px', width: '100%'}}>
                 <div className="event-location">📍 ĐỊA ĐIỂM TỔ CHỨC:</div>
