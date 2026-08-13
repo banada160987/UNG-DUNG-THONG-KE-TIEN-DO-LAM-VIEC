@@ -27,7 +27,8 @@ export default function AdminInviteConfig() {
       { time: '10h30', content: '❖ Tham quan phòng Truyền thống\n❖ Mời đại biểu và cựu học sinh tham dự liên hoan thân mật' }
     ],
     qr_message: 'Để khâu tiếp đón được chu đáo,\nQuý đại biểu vui lòng quét mã QR xác nhận thông tin\ntham dự Chương trình Lễ Kỷ niệm',
-    ending_message: 'Rất hân hạnh được đón tiếp!'
+    ending_message: 'Rất hân hạnh được đón tiếp!',
+    bg_music: 'https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3'
   });
 
   useEffect(() => {
@@ -205,6 +206,12 @@ export default function AdminInviteConfig() {
                 <div style={{ marginTop: '1rem' }}>
                   <label style={styles.label}>Lời kết</label>
                   <input type="text" name="ending_message" value={config.ending_message} onChange={handleChange} style={styles.input} />
+                </div>
+                
+                <div style={{ marginTop: '1rem' }}>
+                  <label style={styles.label}>Link Nhạc nền (Audio URL từ Internet)</label>
+                  <input type="text" name="bg_music" value={config.bg_music} onChange={handleChange} style={styles.input} placeholder="VD: https://example.com/music.mp3" />
+                  <p style={{fontSize: '12px', color: '#64748b', marginTop: '5px'}}>Bạn có thể copy link file nhạc .mp3 từ các trang web (như Zing MP3, NCT, Nhaccuatui) và dán vào đây.</p>
                 </div>
               </div>
 

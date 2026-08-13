@@ -124,6 +124,14 @@ export default function OnlineInvitation() {
     setActivePage(pageIndex);
   };
 
+  const scrollToPage = (index) => {
+    if (scrollRef.current) {
+      const width = scrollRef.current.clientWidth;
+      scrollRef.current.scrollTo({ left: width * index, behavior: 'smooth' });
+      setActivePage(index);
+    }
+  };
+
   const submitRSVP = async (e) => {
     e.preventDefault();
     if (!guest) return;
@@ -258,8 +266,7 @@ export default function OnlineInvitation() {
 
         /* PAGE 3: GALLERY */
         .page-gallery {
-          background: #7e1717; color: #f3e6c9; padding: 20px; box-sizing: border-box;
-          background-image: url('https://www.transparenttextures.com/patterns/black-mamba.png');
+          background: #fff5f5; color: #e11d48; padding: 20px; box-sizing: border-box;
         }
         .gallery-grid {
           width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
@@ -267,29 +274,28 @@ export default function OnlineInvitation() {
           -ms-overflow-style: none; scrollbar-width: none;
         }
         .gallery-grid::-webkit-scrollbar { display: none; }
-        .gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 2px solid #ca8a4b; }
+        .gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 2px solid #f43f5e; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
         /* PAGE 4: INTERACTIVE (Wishes & RSVP) */
         .page-interactive {
-          background: linear-gradient(to bottom, #7e1717, #5a0000); color: white;
-          background-image: url('https://www.transparenttextures.com/patterns/black-mamba.png');
+          background: linear-gradient(to bottom, #ef4444, #b91c1c); color: white;
           position: relative;
         }
         .interactive-content {
           position: absolute; top: 15%; width: 90%; text-align: center; z-index: 10;
         }
         .rsvp-open-btn {
-          background: linear-gradient(135deg, #ca8a4b, #a66a32); color: white; padding: 15px 40px;
+          background: #fde047; color: #b45309; padding: 15px 40px;
           border: none; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer;
-          box-shadow: 0 5px 20px rgba(0,0,0,0.5); animation: pulseBtn 2s infinite; margin-top: 30px;
+          box-shadow: 0 5px 20px rgba(0,0,0,0.3); animation: pulseBtn 2s infinite; margin-top: 30px;
         }
 
         /* PAGINATION DOTS */
         .pagination {
-          position: absolute; bottom: 80px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; z-index: 100; pointer-events: none;
+          position: absolute; bottom: 80px; left: 0; right: 0; display: flex; justify-content: center; gap: 8px; z-index: 100;
         }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.4); transition: all 0.3s; }
-        .dot.active { background: white; transform: scale(1.3); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.5); transition: all 0.3s; cursor: pointer; }
+        .dot.active { background: white; transform: scale(1.3); box-shadow: 0 0 5px rgba(0,0,0,0.3); }
 
         /* ACTION BAR & OTHERS (Kept from previous) */
         .music-btn { position: absolute; top: 20px; right: 20px; z-index: 100; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 50%; border: 2px solid #ca8a4b; display: flex; justify-content: center; align-items: center; color: white; cursor: pointer; animation: ${isPlaying ? 'spin 4s linear infinite' : 'none'}; }
@@ -390,7 +396,7 @@ export default function OnlineInvitation() {
         ))}
       </div>
 
-      <audio ref={audioRef} loop src="https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3" preload="auto" />
+      <audio ref={audioRef} loop src={config?.bg_music || "https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3"} preload="auto" />
 
       <div className="mobile-container">
         <div className="music-btn" onClick={toggleAudio}>🎵</div>
@@ -453,7 +459,7 @@ export default function OnlineInvitation() {
         {/* PAGINATION DOTS */}
         <div className="pagination">
           {[0, 1, 2, 3].map(i => (
-            <div key={i} className={`dot ${activePage === i ? 'active' : ''}`} />
+            <div key={i} className={`dot ${activePage === i ? 'active' : ''}`} onClick={() => scrollToPage(i)} />
           ))}
         </div>
 
