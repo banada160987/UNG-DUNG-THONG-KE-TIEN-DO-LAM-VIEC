@@ -14,6 +14,11 @@ export default function PublicHome() {
   const [inviteConfig, setInviteConfig] = useState(null);
   const inviteRef = useRef(null);
   
+  // LIVE SEARCH SUGGESTIONS
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  
   const [totalDonation, setTotalDonation] = useState(0);
   const [attendingGuests, setAttendingGuests] = useState(0);
   const [externalLinks, setExternalLinks] = useState([]);
@@ -100,13 +105,55 @@ export default function PublicHome() {
     }
   };
 
+  const handleSearchInputChange = async (value) => {
+    setRsvpCode(value);
+    if (!value.trim() || value.trim().length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setShowDropdown(true);
+
+    try {
+      const q = value.trim();
+      const { data } = await supabase
+        .from('cbq_guests')
+        .select('*')
+        .or(`name.ilike.%${q}%,invitation_code.ilike.%${q}%,group_name.ilike.%${q}%`)
+        .limit(8);
+
+      setSearchResults(data || []);
+    } catch (err) {
+      console.error("Lỗi tìm kiếm khách mời:", err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleSelectGuest = (guestItem) => {
+    setRsvpCode(guestItem.invitation_code);
+    setRsvpResult({ success: true, guest: guestItem });
+    setShowDropdown(false);
+  };
+
   const handleRsvpSearch = async (e) => {
     e.preventDefault();
     if (!rsvpCode) return;
     try {
-      const { data, error } = await supabase.from('cbq_guests').select('*').eq('invitation_code', rsvpCode.trim()).single();
-      if (error || !data) setRsvpResult({ error: 'Không tìm thấy mã khách mời. Vui lòng kiểm tra lại mã số.' });
-      else setRsvpResult({ success: true, guest: data });
+      const { data, error } = await supabase
+        .from('cbq_guests')
+        .select('*')
+        .or(`invitation_code.eq.${rsvpCode.trim()},name.ilike.%${rsvpCode.trim()}%`)
+        .limit(1);
+
+      if (error || !data || data.length === 0) {
+        setRsvpResult({ error: 'Không tìm thấy thông tin khách mời. Vui lòng nhập tên hoặc mã thiệp khác.' });
+      } else {
+        setRsvpResult({ success: true, guest: data[0] });
+        setShowDropdown(false);
+      }
     } catch (err) {
       setRsvpResult({ error: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
     }
@@ -152,6 +199,19 @@ export default function PublicHome() {
 
   return (
     <div className="portal-main-grid">
+      <style>{`
+        .search-dropdown-menu {
+          position: absolute; top: 100%; left: 0; right: 0; z-index: 200;
+          background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.15); margin-top: 6px; max-height: 280px; overflow-y: auto;
+        }
+        .search-dropdown-item {
+          display: flex; align-items: center; justify-content: space-between; gap: 10px;
+          padding: 10px 14px; border-bottom: 1px solid #f1f5f9; cursor: pointer; transition: background 0.2s;
+        }
+        .search-dropdown-item:last-child { border-bottom: none; }
+        .search-dropdown-item:hover { background: #fff1f2; }
+      `}</style>
 
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
@@ -228,18 +288,67 @@ export default function PublicHome() {
           <div style={styles.rsvpHighlightBlock}>
             <div style={styles.rsvpHighlightHeader}>TRA CỨU THIỆP MỜI ĐIỆN TỬ</div>
             <div style={styles.rsvpHighlightBody}>
-              <p style={{ marginBottom: '10px', fontSize: '14px', color: '#475569' }}>Nhập mã số khách mời (được in trên thư mời bản cứng hoặc gửi qua tin nhắn) để xem phiên bản điện tử và gửi phản hồi xác nhận tham dự.</p>
+              <p style={{ marginBottom: '12px', fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>
+                Nhập <strong>Họ và Tên</strong> hoặc <strong>Mã số thiệp mời</strong> để tra cứu phiên bản điện tử và gửi phản hồi xác nhận tham dự.
+              </p>
 
-              <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
-                <input
-                  type="text"
-                  placeholder="Nhập mã khách mời (VD: CBQ-12345)"
-                  value={rsvpCode}
-                  onChange={(e) => setRsvpCode(e.target.value)}
-                  style={styles.searchInput}
-                />
-                <button type="submit" style={styles.searchBtn}>Tra Cứu</button>
-              </form>
+              <div style={{ position: 'relative', width: '100%' }}>
+                <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
+                  <input
+                    type="text"
+                    placeholder="Nhập Họ Tên hoặc Mã thiệp (VD: Nguyễn Văn A, 12A1 hoặc CBQ-12345)..."
+                    value={rsvpCode}
+                    onChange={(e) => handleSearchInputChange(e.target.value)}
+                    onFocus={() => { if(searchResults.length > 0) setShowDropdown(true); }}
+                    style={styles.searchInput}
+                  />
+                  <button type="submit" style={styles.searchBtn}>Tra Cứu</button>
+                </form>
+
+                {/* LIVE SEARCH DROPDOWN SUGGESTIONS LIST */}
+                {showDropdown && (
+                  <div className="search-dropdown-menu">
+                    {isSearching ? (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                        ⏳ Đang tìm kiếm khách mời...
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      searchResults.map((g) => (
+                        <div
+                          key={g.id}
+                          className="search-dropdown-item"
+                          onClick={() => handleSelectGuest(g)}
+                        >
+                          <div style={{ flex: 1, textAlign: 'left' }}>
+                            <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
+                              👤 {g.name}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                              {g.group_name || g.note || 'Cựu học sinh'} • Mã: <span style={{ color: '#b45309', fontWeight: 'bold' }}>{g.invitation_code}</span>
+                            </div>
+                          </div>
+                          <a 
+                            href={`/invite/${g.invitation_code}`} 
+                            target="_blank" 
+                            rel="noreferrer" 
+                            style={{
+                              fontSize: '11.5px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', padding: '6px 14px',
+                              borderRadius: '20px', textDecoration: 'none', fontWeight: 'bold', whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(190,18,60,0.25)'
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Mở Thiệp 5D ➔
+                          </a>
+                        </div>
+                      ))
+                    ) : (
+                      <div style={{ padding: '12px', textAlign: 'center', color: '#94a3b8', fontSize: '13px' }}>
+                        Không tìm thấy khách mời phù hợp với từ khóa "{rsvpCode}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Kết quả Thiệp Mời */}
               {rsvpResult?.error && <div style={styles.errorMsg}>{rsvpResult.error}</div>}

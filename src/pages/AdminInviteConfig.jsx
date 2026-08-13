@@ -9,6 +9,7 @@ export default function AdminInviteConfig() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingBg, setUploadingBg] = useState(false);
+  const [uploadingQr, setUploadingQr] = useState(false);
   const [config, setConfig] = useState({
     school_name: 'TRƯỜNG THPT CAO BÁ QUÁT',
     logo_url: '/logo.jpg',
@@ -173,6 +174,31 @@ export default function AdminInviteConfig() {
     }
     
     setUploadingBg(false);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleQrUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingQr(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `vietqr-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage.from('gallery').upload(fileName, file);
+
+    if (uploadError) {
+      alert("Lỗi upload mã QR: " + uploadError.message);
+      setUploadingQr(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      setConfig(prev => ({ ...prev, bank_qr_image: data.publicUrl }));
+    }
+    
+    setUploadingQr(false);
     e.target.value = ''; // Reset input
   };
 
@@ -346,6 +372,40 @@ export default function AdminInviteConfig() {
                 <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #cbd5e1' }}>
                   <label style={styles.label}>Lời nhắn QR Code (hỗ trợ xuống dòng)</label>
                   <textarea name="qr_message" value={config.qr_message} onChange={handleChange} style={{...styles.input, height: '80px'}} />
+                </div>
+
+                {/* THÔNG TIN TÀI KHOẢN & MÃ VIETQR */}
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #cbd5e1' }}>
+                  <h4 style={styles.sectionTitle}>Thông Tin Tài Khoản & Mã VietQR Tài Trợ</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <label style={styles.label}>Tên Ngân hàng (VD: MBBank, Vietcombank, BIDV)</label>
+                      <input type="text" name="bank_name" value={config.bank_name || ''} onChange={handleChange} style={styles.input} />
+                    </div>
+                    <div>
+                      <label style={styles.label}>Số tài khoản</label>
+                      <input type="text" name="bank_account_no" value={config.bank_account_no || ''} onChange={handleChange} style={styles.input} />
+                    </div>
+                  </div>
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={styles.label}>Tên chủ tài khoản</label>
+                    <input type="text" name="bank_account_holder" value={config.bank_account_holder || ''} onChange={handleChange} style={styles.input} />
+                  </div>
+                  <div>
+                    <label style={styles.label}>Tải ảnh Mã VietQR tùy chỉnh lên (Nếu có ảnh thiết kế sẵn)</label>
+                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                      <input type="text" name="bank_qr_image" value={config.bank_qr_image || ''} onChange={handleChange} style={{...styles.input, flex: 1}} placeholder="Link ảnh QR tự chọn hoặc tải ảnh từ máy bên dưới" />
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '8px', cursor: 'pointer', margin: 0, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                        {uploadingQr ? '⏳ Đang tải...' : '📲 Upload Ảnh VietQR'}
+                        <input type="file" accept="image/*" onChange={handleQrUpload} disabled={uploadingQr} style={{position: 'absolute', opacity: 0, width: 0, height: 0}} />
+                      </label>
+                    </div>
+                    {config.bank_qr_image && (
+                      <div style={{marginTop: '8px'}}>
+                        <img src={getDirectImageUrl(config.bank_qr_image)} alt="VietQR Preview" style={{maxHeight: '130px', borderRadius: '8px', border: '1px solid #ddd'}} />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ marginTop: '1rem' }}>
