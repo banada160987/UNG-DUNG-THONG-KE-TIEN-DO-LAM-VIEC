@@ -238,21 +238,21 @@ export default function OnlineInvitation() {
         /* ENTRANCE OVERLAY */
         .entrance-overlay {
           position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-          background-image: linear-gradient(rgba(126, 23, 23, 0.9), rgba(0, 0, 0, 0.9)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80');
-          background-size: cover; background-position: center;
-          z-index: 9999; display: flex; justify-content: center; align-items: center; text-align: center; color: white;
+          background: #ffffff;
+          background-image: radial-gradient(circle at center, #ffffff 0%, #fff1f2 100%);
+          z-index: 9999; display: flex; justify-content: center; align-items: center; text-align: center; color: #333;
           transition: opacity 1s ease-out, transform 1s ease-out;
         }
         .entrance-overlay.opened { opacity: 0; pointer-events: none; transform: scale(1.1); }
         .entrance-content { animation: fadeInUp 1s ease-out; display: flex; flex-direction: column; align-items: center; }
-        .entrance-logo { width: 140px; height: 140px; object-fit: contain; margin-bottom: 25px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
-        .entrance-title { font-size: 22px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; color: #f3e6c9; }
-        .entrance-subtitle { font-size: 16px; margin-bottom: 15px; font-style: italic; }
-        .entrance-guest { font-size: 38px; color: #ca8a4b; margin-bottom: 40px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-weight: bold; }
+        .entrance-logo { width: 140px; height: 140px; object-fit: contain; margin-bottom: 25px; mix-blend-mode: multiply; }
+        .entrance-title { font-size: 22px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; color: #be123c; }
+        .entrance-subtitle { font-size: 16px; margin-bottom: 15px; font-style: italic; color: #64748b; }
+        .entrance-guest { font-size: 38px; color: #b45309; margin-bottom: 40px; font-weight: bold; }
         .entrance-btn {
-          background: linear-gradient(135deg, #ca8a4b, #a66a32); color: white; padding: 15px 50px;
+          background: linear-gradient(135deg, #e11d48, #be123c); color: white; padding: 15px 50px;
           border: none; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer;
-          box-shadow: 0 5px 15px rgba(202,138,75,0.4); animation: pulseBtn 2s infinite;
+          box-shadow: 0 5px 15px rgba(225, 29, 72, 0.4); animation: pulseBtn 2s infinite;
         }
         @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -271,14 +271,14 @@ export default function OnlineInvitation() {
 
         /* PAGE 1: COVER */
         .page-cover {
-          background-image: linear-gradient(rgba(126, 23, 23, 0.7), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80');
-          background-size: cover; background-position: center; color: white; text-align: center;
+          background-image: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 241, 242, 0.9)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80');
+          background-size: cover; background-position: center; color: #333; text-align: center;
         }
-        .cover-title { font-size: 32px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
-        .cover-subtitle { font-size: 18px; font-style: italic; margin-bottom: 50px; color: #f3e6c9; }
+        .cover-title { font-size: 32px; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; color: #be123c; }
+        .cover-subtitle { font-size: 18px; font-style: italic; margin-bottom: 50px; color: #64748b; }
         .cover-guest { font-size: 20px; margin-bottom: 10px; }
-        .cover-name { font-size: 38px; color: #ca8a4b; font-weight: bold; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); margin-bottom: 50px; }
-        .swipe-hint { position: absolute; bottom: 90px; font-size: 14px; color: #f3e6c9; animation: bounceRight 2s infinite; display: flex; align-items: center; gap: 5px; }
+        .cover-name { font-size: 38px; color: #b45309; font-weight: bold; margin-bottom: 50px; }
+        .swipe-hint { position: absolute; bottom: 90px; font-size: 14px; color: #e11d48; font-weight: bold; animation: bounceRight 2s infinite; display: flex; align-items: center; gap: 5px; }
         @keyframes bounceRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(10px); } }
 
         /* PAGE 2: DETAILS */
@@ -485,7 +485,7 @@ export default function OnlineInvitation() {
               <div className="title-box">THÔNG TIN SỰ KIỆN</div>
               
               {(config?.logo_url || '/logo-30-nam.jpg') && (
-                <img src={config?.logo_url || '/logo-30-nam.jpg'} alt="Logo" style={{ maxWidth: '140px', maxHeight: '140px', objectFit: 'contain', marginTop: '15px' }} />
+                <img src={config?.logo_url || '/logo-30-nam.jpg'} alt="Logo" style={{ maxWidth: '140px', maxHeight: '140px', objectFit: 'contain', marginTop: '15px', mixBlendMode: 'multiply' }} />
               )}
               
               <div style={{fontSize: '18px', fontWeight: 'bold', marginTop: '15px', textTransform: 'uppercase'}}>{config?.event_name_main}</div>
