@@ -165,6 +165,29 @@ export default function AdminGuests() {
     }
   };
 
+  const handleSendZalo = (guest) => {
+    if (!guest.phone) {
+      alert("Khách mời này chưa có số điện thoại.");
+      return;
+    }
+    
+    const inviteLink = `${window.location.origin}/thiep/${guest.invitation_code}`;
+    const message = `Trân trọng kính mời ${guest.name} tới dự Lễ Kỷ niệm 30 năm thành lập trường THPT Cao Bá Quát.\n\nVui lòng xem Thiệp Mời và Xác nhận tham dự tại link sau:\n${inviteLink}`;
+    
+    navigator.clipboard.writeText(message);
+    
+    const phone = guest.phone.replace(/[^0-9]/g, '');
+    let formattedPhone = phone;
+    if (phone.startsWith('0')) {
+      formattedPhone = '84' + phone.substring(1); // Standardize for Zalo (84...)
+    }
+    
+    const zaloUrl = `https://zalo.me/${formattedPhone}`;
+    
+    alert("Đã COPY nội dung lời mời vào bộ nhớ tạm!\n\nHệ thống sẽ tự động chuyển sang trang Zalo của số điện thoại này. Bạn chỉ cần dán (Ctrl + V hoặc Nhấn giữ -> Dán) vào ô chat và ấn Gửi.");
+    window.open(zaloUrl, '_blank');
+  };
+
   const handleDownloadInvite = async (guest) => {
     setDownloadingGuest(guest);
     
@@ -308,6 +331,14 @@ export default function AdminGuests() {
                             title="Gửi Email Thiệp Mời"
                           >
                             Gửi Email
+                          </button>
+                          
+                          <button 
+                            onClick={() => handleSendZalo(g)}
+                            style={{ fontSize: '12px', padding: '2px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', marginLeft: '5px', color: '#2563eb' }}
+                            title="Gửi qua Zalo"
+                          >
+                            Gửi Zalo
                           </button>
                           
                           <button 
