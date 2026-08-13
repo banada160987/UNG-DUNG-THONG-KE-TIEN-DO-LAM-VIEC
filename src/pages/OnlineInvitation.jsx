@@ -408,9 +408,31 @@ export default function OnlineInvitation() {
         .send-btn { background: transparent; color: white; border: none; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .pill-btn { background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(5px); color: white; border-radius: 30px; padding: 7px 11px; display: flex; align-items: center; gap: 4px; font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
         
-        .danmaku-container { position: absolute; top: 0; left: 0; right: 0; bottom: 75px; pointer-events: none; z-index: 40; overflow: hidden; }
-        .danmaku-item { position: absolute; bottom: -50px; background: rgba(255, 255, 255, 0.92); color: #5a0000; padding: 7px 13px; border-radius: 20px; font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: bold; white-space: nowrap; display: flex; align-items: center; gap: 5px; animation: floatUp linear infinite; border: 1px solid rgba(202,138,75,0.5); }
-        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-80vh); opacity: 0; } }
+        /* ELEGANT TOP WISH TICKER (NON-OBSTRUCTIVE) */
+        .danmaku-container {
+          position: absolute; top: 14px; left: 15px; right: 65px; height: 38px;
+          pointer-events: none; z-index: 95; overflow: hidden;
+        }
+        .danmaku-item {
+          position: absolute; top: 2px; left: 100%;
+          background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px);
+          color: #881337; padding: 5px 13px; border-radius: 20px;
+          font-family: 'Montserrat', sans-serif; font-size: 11.5px; font-weight: 600;
+          white-space: nowrap; display: flex; align-items: center; gap: 7px;
+          box-shadow: 0 4px 14px rgba(190, 18, 60, 0.15);
+          border: 1px solid rgba(254, 205, 211, 0.9);
+          animation: slideTicker linear infinite;
+        }
+        .danmaku-avatar {
+          width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+        }
+        .danmaku-name { color: #b45309; font-weight: 700; }
+        @keyframes slideTicker {
+          0% { transform: translateX(0); opacity: 0; }
+          4% { opacity: 1; }
+          94% { opacity: 1; }
+          100% { transform: translateX(-150vw); opacity: 0; }
+        }
 
         .hearts-container { position: absolute; top: 0; left: 0; right: 0; bottom: 75px; pointer-events: none; z-index: 60; overflow: hidden; }
         .floating-heart { position: absolute; bottom: -20px; font-size: 24px; color: #ff3366; animation: flyHeart 4s ease-out forwards; }
@@ -635,10 +657,10 @@ export default function OnlineInvitation() {
               <p style={{fontSize: '13.5px', margin: '0 20px', color: '#fecdd3', lineHeight: '1.4'}}>Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của nhà trường.</p>
               
               {guest?.rsvp_status === 'attending' ? (
-                <div style={{marginTop: '20px'}}>
-                  <div style={{background: 'rgba(255,255,255,0.15)', padding: '15px', borderRadius: '16px', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.3)'}}>
-                    <div style={{fontSize: '14px', fontWeight: 'bold', color: '#fde047'}}>✅ BẠN ĐÃ XÁC NHẬN THAM DỰ</div>
-                    <div style={{fontSize: '12px', color: '#fff', marginTop: '4px'}}>Rất hân hạnh được đón tiếp bạn tại buổi lễ!</div>
+                <div style={{marginTop: '15px'}}>
+                  <div style={{background: 'rgba(255,255,255,0.15)', padding: '12px', borderRadius: '14px', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.3)'}}>
+                    <div style={{fontSize: '13px', fontWeight: 'bold', color: '#fde047'}}>✅ BẠN ĐÃ XÁC NHẬN THAM DỰ</div>
+                    <div style={{fontSize: '11px', color: '#fff', marginTop: '3px'}}>Rất hân hạnh được đón tiếp bạn tại buổi lễ!</div>
                   </div>
                   <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
                     🎫 Xem Thẻ Check-in VIP & QR
@@ -647,6 +669,20 @@ export default function OnlineInvitation() {
               ) : (
                 <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác nhận tham dự</button>
               )}
+
+              {/* WISHES FEED DISPLAY ON PAGE 5 */}
+              <div style={{marginTop: '18px', width: '100%', maxHeight: '130px', overflowY: 'auto', background: 'rgba(0,0,0,0.35)', padding: '10px 14px', borderRadius: '12px', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', textAlign: 'left', boxSizing: 'border-box'}}>
+                <div style={{fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fde047', fontWeight: 'bold', marginBottom: '6px'}}>💌 Sổ Lời Chúc ({wishes.length})</div>
+                {wishes.length > 0 ? (
+                  wishes.map((w, idx) => (
+                    <div key={idx} style={{fontSize: '12px', color: '#fff', marginBottom: '5px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '3px'}}>
+                      <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Hãy là người đầu tiên gửi lời chúc tới nhà trường!</div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -658,12 +694,23 @@ export default function OnlineInvitation() {
           ))}
         </div>
 
-        {/* GLOBAL DANMAKU & HEARTS */}
+        {/* ELEGANT TOP WISH TICKER */}
         <div className="danmaku-container">
           {floatingWishes.map((w, i) => (
-            <div key={`${w.id}-${i}`} className="danmaku-item" style={{ left: `${w.left}%`, animationDelay: `${w.delay}s`, animationDuration: `${w.duration}s` }}>
-              <img src="https://ui-avatars.com/api/?name=User&background=fff&color=d32f2f&rounded=true&size=20" alt="avatar" style={{borderRadius: '50%'}} />
-              <strong>{w.guest_name}:</strong> {w.message}
+            <div 
+              key={`${w.id}-${i}`} 
+              className="danmaku-item" 
+              style={{ 
+                animationDelay: `${i * 3.8}s`, 
+                animationDuration: `${random(14, 20)}s` 
+              }}
+            >
+              <img 
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(w.guest_name || 'K')}&background=be123c&color=fff&rounded=true&size=24`} 
+                alt="avatar" 
+                className="danmaku-avatar" 
+              />
+              <span>💌 <strong className="danmaku-name">{w.guest_name}:</strong> {w.message}</span>
             </div>
           ))}
         </div>
