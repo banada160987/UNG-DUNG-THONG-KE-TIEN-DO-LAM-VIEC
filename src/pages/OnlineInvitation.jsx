@@ -1,11 +1,20 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { CheckCircle, XCircle, ChevronLeft, Send, Heart } from 'lucide-react';
+import { ChevronLeft, Send, Heart, Gift } from 'lucide-react';
 import Confetti from 'react-confetti';
 
-// Hàm helper tạo số ngẫu nhiên
 const random = (min, max) => Math.random() * (max - min) + min;
+
+const GIFTS = [
+  { id: 'tim', name: 'Bắn tim', icon: '💖' },
+  { id: 'hoa', name: 'Hoa đào', icon: '🌸' },
+  { id: 'khoa', name: 'Khóa tình yêu', icon: '🔒' },
+  { id: 'banh', name: 'Bánh ngọt', icon: '🎂' },
+  { id: 'phao', name: 'Pháo mừng', icon: '🎉' },
+  { id: 'phao_hoa', name: 'Pháo hoa', icon: '🎆' },
+  { id: 'bo_hoa', name: 'Bó hoa', icon: '💐' }
+];
 
 export default function OnlineInvitation() {
   const { code } = useParams();
@@ -13,21 +22,33 @@ export default function OnlineInvitation() {
   const [guest, setGuest] = useState(null);
   const [config, setConfig] = useState(null);
   
-  const [isOpen, setIsOpen] = useState(false);
-  const [rsvpStatus, setRsvpStatus] = useState(null);
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(true); // Show on load
 
-  // Guestbook & Hearts
+  // Guestbook & Danmaku
   const [wishes, setWishes] = useState([]);
   const [newWish, setNewWish] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [hearts, setHearts] = useState([]);
-
-  // Floating Wishes Display (Danmaku)
+  const [isSubmittingWish, setIsSubmittingWish] = useState(false);
   const [floatingWishes, setFloatingWishes] = useState([]);
+
+  // Hearts & Gifts
+  const [hearts, setHearts] = useState([]);
+  const [isGiftModalOpen, setIsGiftModalOpen] = useState(false);
+  const [selectedGift, setSelectedGift] = useState(GIFTS[0]);
+  const [giftBanners, setGiftBanners] = useState([]);
+  const [activeGiftEffect, setActiveGiftEffect] = useState(null);
+
+  // RSVP Modal
+  const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
+  const [rsvpFormStatus, setRsvpFormStatus] = useState('attending');
+  const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
+
+  // Audio
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = useRef(null);
 
   useEffect(() => {
     fetchData();
+    setTimeout(() => setShowConfetti(false), 5000); // Stop initial confetti
   }, [code]);
 
   const fetchData = async () => {
@@ -36,7 +57,9 @@ export default function OnlineInvitation() {
       const guestRes = await supabase.from('cbq_guests').select('*').eq('invitation_code', code).single();
       if (guestRes.data) {
         setGuest(guestRes.data);
-        setRsvpStatus(guestRes.data.rsvp_status);
+        if(guestRes.data.rsvp_status && guestRes.data.rsvp_status !== 'pending') {
+          setRsvpFormStatus(guestRes.data.rsvp_status);
+        }
       }
 
       const configRes = await supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single();
@@ -53,6 +76,12 @@ export default function OnlineInvitation() {
       }
       
       await fetchWishes();
+      
+      // Try autoplay audio
+      if (audioRef.current) {
+        audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      }
+
     } catch (error) {
       console.error("Lỗi tải thiệp:", error);
     } finally {
@@ -64,50 +93,57 @@ export default function OnlineInvitation() {
     const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false }).limit(20);
     if (data) {
       setWishes(data);
-      // Initialize floating wishes with random delays and positions
       const floating = data.map((wish, i) => ({
         ...wish,
-        left: random(5, 75), // Random left position %
-        delay: random(0, 15), // Random start delay
-        duration: random(15, 25) // Random floating speed
+        left: random(2, 60),
+        delay: random(0, 15),
+        duration: random(15, 25)
       }));
       setFloatingWishes(floating);
     }
   };
 
-  const handleOpenEnvelope = () => {
-    if (isOpen) return;
-    setIsOpen(true);
-    setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 5000);
+  const toggleAudio = () => {
+    if (audioRef.current) {
+      if (isPlaying) audioRef.current.pause();
+      else audioRef.current.play();
+      setIsPlaying(!isPlaying);
+    }
   };
-  
-  const handleRSVP = async (status) => {
+
+  const submitRSVP = async (e) => {
+    e.preventDefault();
     if (!guest) return;
-    setRsvpStatus(status);
-    await supabase.from('cbq_guests').update({ rsvp_status: status }).eq('id', guest.id);
-    alert(status === 'attending' ? "Cảm ơn bạn đã xác nhận tham dự!" : "Rất tiếc vì bạn không thể tham dự.");
+    setIsSubmittingRsvp(true);
+    const { error } = await supabase.from('cbq_guests').update({ rsvp_status: rsvpFormStatus }).eq('id', guest.id);
+    setIsSubmittingRsvp(false);
+    
+    if (!error) {
+      alert("Cảm ơn bạn đã gửi xác nhận!");
+      setGuest({...guest, rsvp_status: rsvpFormStatus});
+      setIsRsvpModalOpen(false);
+    } else {
+      alert("Đã xảy ra lỗi khi gửi xác nhận.");
+    }
   };
   
   const submitWish = async (e) => {
     e.preventDefault();
     if (!newWish.trim() || !guest) return;
     
-    setIsSubmitting(true);
+    setIsSubmittingWish(true);
     const { data, error } = await supabase.from('cbq_wishes').insert([
       { guest_id: guest.id, guest_name: guest.name, message: newWish.trim() }
     ]).select();
     
-    setIsSubmitting(false);
+    setIsSubmittingWish(false);
     if (!error && data) {
       setNewWish('');
       const newWishData = data[0];
       setWishes([newWishData, ...wishes]);
-      
-      // Thêm ngay lập tức vào màn hình trôi nổi
       setFloatingWishes(prev => [
         ...prev, 
-        { ...newWishData, left: random(10, 70), delay: 0, duration: random(15, 20) }
+        { ...newWishData, left: random(5, 50), delay: 0, duration: random(15, 20) }
       ]);
     } else {
       alert("Lỗi khi gửi lời chúc: " + (error?.message || 'Không xác định'));
@@ -116,38 +152,59 @@ export default function OnlineInvitation() {
 
   const shootHeart = () => {
     const id = Date.now() + Math.random();
-    setHearts(prev => [...prev, { id, left: random(75, 95) }]); // Bay ở góc phải
-    // Xóa trái tim sau 4 giây (khi hiệu ứng xong)
+    setHearts(prev => [...prev, { id, left: random(75, 95) }]);
     setTimeout(() => {
       setHearts(prev => prev.filter(h => h.id !== id));
     }, 4000);
   };
 
+  const handleSendGift = async () => {
+    if (!selectedGift || !guest) return;
+    setIsGiftModalOpen(false);
+    
+    const bannerId = Date.now();
+    setGiftBanners(prev => [...prev, { id: bannerId, guestName: guest.name, gift: selectedGift }]);
+    setTimeout(() => setGiftBanners(prev => prev.filter(b => b.id !== bannerId)), 4000);
+
+    setActiveGiftEffect(selectedGift.id);
+    if(selectedGift.id === 'phao') {
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+    } else if (selectedGift.id === 'tim') {
+      for(let i=0; i<15; i++) setTimeout(shootHeart, i * 200);
+    }
+    setTimeout(() => setActiveGiftEffect(null), 5000);
+
+    await supabase.from('cbq_gifts').insert([{
+      guest_id: guest.id, guest_name: guest.name, gift_name: selectedGift.name, gift_icon: selectedGift.icon
+    }]);
+  };
+
   if (loading) {
-    return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#8b0000', color: 'gold'}}>Đang tải thiệp mời...</div>;
+    return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>Đang tải thiệp mời...</div>;
   }
 
   if (!guest) {
     return (
-      <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#8b0000', color: 'gold'}}>
+      <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>
         <h2>Không tìm thấy thiệp mời!</h2>
-        <p>Mã thiệp mời không hợp lệ hoặc đã bị xóa.</p>
-        <Link to="/" style={{marginTop: '20px', padding: '10px 20px', backgroundColor: '#daa520', color: '#8b0000', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold'}}>Về Trang Chủ</Link>
+        <Link to="/" style={{marginTop: '20px', padding: '10px 20px', backgroundColor: '#ca8a4b', color: 'white', textDecoration: 'none', borderRadius: '5px'}}>Về Trang Chủ</Link>
       </div>
     );
   }
 
   return (
-    <div className="premium-invitation">
+    <div className="modern-invitation">
       <style>{`
         body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
         
-        .premium-invitation {
+        .modern-invitation {
           position: relative;
           width: 100vw;
           height: 100vh;
           overflow: hidden;
-          background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+          background-color: #7e1717;
+          background-image: url('https://www.transparenttextures.com/patterns/black-mamba.png');
           font-family: 'Times New Roman', Times, serif;
           color: #333;
           display: flex;
@@ -155,445 +212,353 @@ export default function OnlineInvitation() {
           align-items: center;
         }
 
-        /* Nền hoa văn mờ */
-        .premium-invitation::before {
-          content: '';
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-image: url('https://www.transparenttextures.com/patterns/arabesque.png');
-          opacity: 0.2;
-          z-index: 1;
-        }
-
         .back-btn {
-          position: absolute;
-          top: 20px;
-          left: 20px;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          color: #ffd700;
-          text-decoration: none;
-          font-family: Arial, sans-serif;
-          z-index: 100;
-          font-weight: bold;
-          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+          position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 5px;
+          color: #f3e6c9; text-decoration: none; font-family: Arial, sans-serif; z-index: 100;
         }
 
-        /* Container khung hiển thị (Mobile First) */
+        .music-btn {
+          position: absolute; top: 20px; right: 20px; z-index: 100; cursor: pointer;
+          width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 50%;
+          border: 2px solid #ca8a4b; display: flex; justify-content: center; align-items: center;
+          color: white; animation: ${isPlaying ? 'spin 4s linear infinite' : 'none'};
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
         .mobile-container {
-          position: relative;
-          width: 100%;
-          max-width: 500px;
-          height: 100%;
-          max-height: 900px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          z-index: 10;
+          position: relative; width: 100%; max-width: 500px; height: 100%; max-height: 900px;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;
         }
 
-        /* Thiệp 3D */
-        .card-wrapper {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 85%;
-          height: 70%;
-          max-height: 700px;
-          perspective: 1000px;
-          z-index: 20;
-          cursor: pointer;
-        }
-
-        /* Nắp phong bì túi (Pocket Envelope) */
-        .pocket-front {
-          position: absolute;
-          bottom: 0;
-          left: -5%;
-          width: 110%;
-          height: 50%;
-          background: linear-gradient(to bottom, #990000, #550000);
-          clip-path: polygon(0 30%, 50% 0, 100% 30%, 100% 100%, 0 100%);
-          z-index: 25;
-          box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
-          transition: transform 1s ease;
-          display: flex;
-          justify-content: center;
-          align-items: flex-end;
-          padding-bottom: 20px;
-        }
-        
-        .pocket-front::after {
-          content: 'Mở Thiệp';
-          color: #ffd700;
-          font-family: Arial, sans-serif;
-          font-size: 14px;
-          font-weight: bold;
-          background: rgba(0,0,0,0.2);
-          padding: 8px 20px;
-          border-radius: 20px;
-          border: 1px solid #ffd700;
-          animation: pulse 2s infinite;
-        }
-
-        .card-wrapper.open .pocket-front {
-          transform: translateY(100vh); /* Rớt xuống biến mất */
-        }
-
-        /* Tấm thiệp chính */
+        /* TẤM THIỆP CHÍNH */
         .card-main {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: #fffcf8;
-          border-radius: 10px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-          z-index: 22;
-          overflow-y: auto;
-          overflow-x: hidden;
+          position: relative;
+          width: 90%;
+          height: 85%;
+          background: linear-gradient(to bottom, #fdfbfb, #f3e6c9);
+          border-radius: 4px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.6);
           padding: 30px 20px;
           box-sizing: border-box;
           text-align: center;
-          /* Viền vàng nổi bật */
-          border: 6px solid #daa520;
-          outline: 2px solid #8b0000;
-          outline-offset: -10px;
-          background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
-          transition: all 1s ease;
-          transform: translateY(20%); /* Nằm thấp bên trong túi */
-        }
-
-        .card-wrapper.open .card-main {
-          transform: translateY(0); /* Trồi lên giữa màn hình */
-          z-index: 30; /* Nổi lên trên cùng để dễ click RSVP */
-          height: 80%; /* Ngắn lại một chút chừa chỗ cho thanh công cụ */
-          top: 5%;
-        }
-
-        /* Nơ đỏ trang trí */
-        .ribbon {
-          position: absolute;
-          top: -15px;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 60px;
-          height: 60px;
-          background-image: url('https://img.icons8.com/color/96/000000/ribbon.png');
-          background-size: contain;
-          background-repeat: no-repeat;
-          z-index: 25;
-        }
-
-        .school-name {
-          font-size: 12px;
-          text-transform: uppercase;
-          color: #8b0000;
-          margin-bottom: 20px;
-          letter-spacing: 1px;
-          margin-top: 10px;
-        }
-
-        .invite-title {
-          font-size: 26px;
-          font-weight: bold;
-          color: #daa520; /* Vàng đồng */
-          margin-bottom: 10px;
-          text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
-        }
-
-        .guest-name {
-          font-size: 30px;
-          color: #8b0000;
-          font-weight: bold;
-          font-family: 'Dancing Script', cursive, serif;
-          margin: 15px 0;
-          padding: 10px;
-          border-bottom: 2px solid #daa520;
-          display: inline-block;
-          min-width: 200px;
-        }
-
-        .event-details {
-          margin: 20px 0;
-          color: #333;
-          line-height: 1.6;
-          font-size: 15px;
-        }
-        
-        /* RSVP Buttons */
-        .rsvp-section {
-          margin-top: 20px;
-          padding-top: 15px;
-          border-top: 1px solid #e2e8f0;
-        }
-
-        .rsvp-buttons {
-          display: flex;
-          gap: 10px;
-          justify-content: center;
-          margin-top: 10px;
-        }
-
-        .btn-rsvp {
-          padding: 8px 15px;
-          border: none;
-          border-radius: 20px;
-          cursor: pointer;
-          font-weight: bold;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          transition: transform 0.2s;
-          font-family: Arial, sans-serif;
-          font-size: 13px;
-        }
-        
-        .btn-yes { background: #daa520; color: #8b0000; border: 1px solid #8b0000; }
-        .btn-no { background: #e2e8f0; color: #475569; }
-
-        /* FLOATING DANMAKU (Lời chúc bay lơ lửng) */
-        .danmaku-container {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 80px;
-          pointer-events: none; /* Không che khuất click */
-          z-index: 50;
-          overflow: hidden;
-        }
-
-        .danmaku-item {
-          position: absolute;
-          bottom: -50px;
-          background: rgba(0, 0, 0, 0.6);
-          color: white;
-          padding: 6px 12px;
-          border-radius: 20px;
-          font-family: Arial, sans-serif;
-          font-size: 13px;
-          white-space: nowrap;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-          border: 1px solid rgba(255,215,0,0.3);
-          display: flex;
-          align-items: center;
-          gap: 5px;
-          animation: floatUp linear infinite;
-        }
-        
-        .danmaku-item strong {
-          color: #ffd700;
-        }
-
-        @keyframes floatUp {
-          0% { transform: translateY(0); opacity: 0; }
-          10% { opacity: 1; }
-          90% { opacity: 1; }
-          100% { transform: translateY(-100vh); opacity: 0; }
-        }
-
-        /* HEART ANIMATION */
-        .hearts-container {
-          position: absolute;
-          top: 0; left: 0; right: 0; bottom: 80px;
-          pointer-events: none;
-          z-index: 60;
-          overflow: hidden;
-        }
-        
-        .floating-heart {
-          position: absolute;
-          bottom: -20px;
-          font-size: 24px;
-          color: #ff3366;
-          animation: flyHeart 4s ease-out forwards;
-        }
-        
-        @keyframes flyHeart {
-          0% { transform: translateY(0) scale(1); opacity: 1; }
-          50% { transform: translateY(-200px) scale(1.5) rotate(15deg); opacity: 0.8; }
-          100% { transform: translateY(-400px) scale(1) rotate(-15deg); opacity: 0; }
-        }
-
-        /* BOTTOM ACTION BAR (Thanh công cụ dưới cùng) */
-        .action-bar {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 60px;
-          background: rgba(0, 0, 0, 0.7);
-          backdrop-filter: blur(5px);
-          display: flex;
-          align-items: center;
-          padding: 0 15px;
-          box-sizing: border-box;
-          z-index: 100;
-          gap: 10px;
-          transform: translateY(100%);
-          transition: transform 0.5s ease;
-        }
-        
-        .card-wrapper.open ~ .action-bar {
-          transform: translateY(0);
-        }
-
-        .wish-input {
-          flex: 1;
-          height: 36px;
-          border-radius: 18px;
-          border: 1px solid rgba(255,255,255,0.3);
-          background: rgba(255,255,255,0.1);
-          color: white;
-          padding: 0 15px;
-          font-family: Arial, sans-serif;
-          outline: none;
-        }
-        
-        .wish-input::placeholder { color: rgba(255,255,255,0.7); }
-        
-        .send-btn {
-          background: #daa520;
-          color: #8b0000;
-          border: none;
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-        }
-
-        .heart-btn {
-          background: transparent;
-          color: #ff3366;
-          border: none;
+          border: 1px solid #ca8a4b;
+          animation: fadeIn 1.5s ease-out;
           display: flex;
           flex-direction: column;
           align-items: center;
-          cursor: pointer;
-          font-size: 10px;
-          gap: 2px;
-          margin-left: 5px;
+          overflow-y: auto;
         }
         
-        .heart-btn svg {
-          fill: #ff3366;
-          animation: pulseHeart 1s infinite;
+        @keyframes fadeIn { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+
+        /* Họa tiết góc (Corner ornaments) */
+        .card-main::before, .card-main::after {
+          content: ''; position: absolute; width: 60px; height: 60px;
+          border: 2px solid #ca8a4b; pointer-events: none;
+        }
+        .card-main::before { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .card-main::after { bottom: 10px; right: 10px; border-left: none; border-top: none; }
+
+        .inner-border {
+          position: absolute; top: 16px; left: 16px; right: 16px; bottom: 16px;
+          border: 1px solid rgba(202, 138, 75, 0.4); pointer-events: none;
+        }
+
+        .title-box {
+          background: #7e1717; color: white; padding: 10px 30px;
+          font-size: 18px; font-weight: bold; border: 1px solid #ca8a4b;
+          margin-bottom: 25px; margin-top: 15px; letter-spacing: 1px;
+        }
+
+        .invite-text { color: #8b0000; font-size: 15px; margin-bottom: 10px; }
+        
+        .guest-name {
+          font-size: 32px; color: #d32f2f; font-weight: bold;
+          margin: 10px 0 25px 0; font-family: 'Times New Roman', serif;
+        }
+
+        .event-main { font-size: 16px; font-weight: bold; color: #333; margin-bottom: 5px; text-transform: uppercase; }
+        .event-sub { font-size: 14px; color: #555; white-space: pre-line; margin-bottom: 25px; }
+        
+        .event-time { font-size: 24px; color: #d32f2f; font-weight: bold; margin-bottom: 10px; }
+        .event-location { font-size: 15px; color: #7e1717; font-weight: bold; margin-bottom: 5px; }
+
+        .rsvp-open-btn {
+          margin-top: auto; margin-bottom: 20px;
+          background: linear-gradient(135deg, #d32f2f, #7e1717);
+          color: white; padding: 12px 30px; border: none; border-radius: 30px;
+          font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;
+          cursor: pointer; box-shadow: 0 4px 15px rgba(126,23,23,0.4);
+          animation: pulseBtn 2s infinite; z-index: 50;
+        }
+        @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+
+        /* DANMAKU */
+        .danmaku-container {
+          position: absolute; top: 0; left: 0; right: 0; bottom: 80px;
+          pointer-events: none; z-index: 40; overflow: hidden;
+        }
+        .danmaku-item {
+          position: absolute; bottom: -50px;
+          background: rgba(255, 230, 200, 0.85); color: #5a0000;
+          padding: 8px 15px; border-radius: 20px;
+          font-family: Arial, sans-serif; font-size: 13px; font-weight: bold;
+          white-space: nowrap; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          display: flex; align-items: center; gap: 5px;
+          animation: floatUp linear infinite; border: 1px solid rgba(202,138,75,0.3);
+        }
+        @keyframes floatUp { 0% { transform: translateY(0); opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { transform: translateY(-80vh); opacity: 0; } }
+
+        /* HEARTS */
+        .hearts-container { position: absolute; top: 0; left: 0; right: 0; bottom: 80px; pointer-events: none; z-index: 60; overflow: hidden; }
+        .floating-heart { position: absolute; bottom: -20px; font-size: 24px; color: #ff3366; animation: flyHeart 4s ease-out forwards; }
+        @keyframes flyHeart { 0% { transform: translateY(0) scale(1); opacity: 1; } 50% { transform: translateY(-200px) scale(1.5) rotate(15deg); opacity: 0.8; } 100% { transform: translateY(-400px) scale(1) rotate(-15deg); opacity: 0; } }
+
+        /* BOTTOM ACTION BAR (Floating Pills) */
+        .action-bar {
+          position: absolute; bottom: 20px; left: 10px; right: 10px;
+          display: flex; align-items: center; gap: 8px; z-index: 100;
         }
         
-        @keyframes pulseHeart {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.2); }
-          100% { transform: scale(1); }
+        .wish-input-wrapper {
+          flex: 1; display: flex; align-items: center; background: rgba(0,0,0,0.4);
+          border-radius: 30px; padding: 5px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px);
         }
+        .wish-input {
+          flex: 1; height: 32px; background: transparent; border: none; color: white; padding: 0 10px; font-family: Arial, sans-serif; outline: none;
+        }
+        .wish-input::placeholder { color: rgba(255,255,255,0.7); }
+        .send-btn { background: transparent; color: white; border: none; width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+
+        .pill-btn {
+          background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px);
+          color: white; border-radius: 30px; padding: 8px 12px; display: flex; align-items: center; gap: 5px;
+          font-family: Arial, sans-serif; font-size: 12px; font-weight: bold; cursor: pointer;
+        }
+        .pill-btn.heart .icon { color: #ff3366; animation: pulseHeart 1s infinite; }
+        .pill-btn.gift .icon { color: #facc15; }
+        @keyframes pulseHeart { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+
+        /* RSVP MODAL */
+        .rsvp-overlay {
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.6); z-index: 200; display: flex; justify-content: center; align-items: center;
+          opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .rsvp-overlay.open { opacity: 1; pointer-events: auto; }
+        .rsvp-modal {
+          background: white; width: 90%; max-width: 400px; border-radius: 12px; padding: 25px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.3); font-family: Arial, sans-serif; transform: scale(0.9); transition: transform 0.3s;
+          position: relative;
+        }
+        .rsvp-overlay.open .rsvp-modal { transform: scale(1); }
+        .rsvp-modal h3 { text-align: center; color: #333; margin: 0 0 20px 0; font-size: 20px; }
+        .close-rsvp { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; color: #999; cursor: pointer; }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-size: 13px; color: #555; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; color: #333; box-sizing: border-box; font-family: inherit; }
+        
+        .radio-group { display: flex; flex-direction: column; gap: 10px; }
+        .radio-label { display: flex; align-items: center; gap: 10px; font-size: 14px; color: #333; cursor: pointer; }
+        .radio-label input { width: 18px; height: 18px; accent-color: #ca8a4b; cursor: pointer; }
+        
+        .submit-rsvp-btn {
+          width: 100%; padding: 14px; background: #ca8a4b; color: white; border: none;
+          border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+
+        /* GIFT MODAL */
+        .gift-overlay {
+          position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+          background: rgba(0,0,0,0.5); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end;
+          opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        .gift-overlay.open { opacity: 1; pointer-events: auto; }
+        .gift-modal {
+          background: white; border-radius: 20px 20px 0 0; padding: 20px;
+          transform: translateY(100%); transition: transform 0.3s ease-out; font-family: Arial, sans-serif;
+        }
+        .gift-overlay.open .gift-modal { transform: translateY(0); }
+        .gift-modal h3 { text-align: center; color: #d32f2f; margin: 0 0 15px 0; font-size: 18px; }
+        .gift-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+        .gift-item { display: flex; flex-direction: column; align-items: center; padding: 10px 5px; border-radius: 12px; cursor: pointer; border: 2px solid transparent; transition: all 0.2s; }
+        .gift-item.selected { background: #fff1f2; border-color: #d32f2f; }
+        .gift-icon { font-size: 32px; margin-bottom: 5px; }
+        .gift-name { font-size: 11px; color: #475569; text-align: center; }
+        .gift-footer { display: flex; gap: 10px; }
+        .gift-user-info { flex: 1; padding: 10px 15px; border-radius: 20px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 14px; display: flex; align-items: center; }
+        .gift-send-btn { padding: 10px 30px; background: #d32f2f; color: white; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; }
+
+        /* BANNERS & EFFECTS */
+        .banner-container { position: absolute; top: 15vh; left: 0; width: 100%; display: flex; flex-direction: column; gap: 10px; align-items: center; z-index: 150; pointer-events: none; }
+        .gift-banner { background: linear-gradient(90deg, rgba(211,47,47,0.9), rgba(244,63,94,0.9)); color: white; padding: 8px 20px; border-radius: 30px; font-family: Arial, sans-serif; font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 10px; box-shadow: 0 4px 15px rgba(211,47,47,0.4); animation: slideInBanner 0.5s ease-out, fadeOutBanner 0.5s ease-in 3.5s forwards; }
+        .gift-banner-icon { font-size: 20px; background: white; width: 30px; height: 30px; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        @keyframes slideInBanner { 0% { transform: translateX(-100vw); } 100% { transform: translateX(0); } }
+        @keyframes fadeOutBanner { 0% { opacity: 1; } 100% { opacity: 0; transform: translateY(-20px); } }
+
+        .effect-layer { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index: 120; overflow: hidden; }
+        .falling-item { position: absolute; font-size: 24px; top: -50px; animation: fallDown linear forwards; }
+        .firework-item { position: absolute; font-size: 40px; animation: explode 1s ease-out forwards; opacity: 0; transform: scale(0); }
+        @keyframes fallDown { to { transform: translateY(110vh) rotate(360deg); } }
+        @keyframes explode { 0% { opacity: 1; transform: scale(0.5); } 50% { opacity: 1; transform: scale(2); } 100% { opacity: 0; transform: scale(3); } }
 
       `}</style>
       
       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={500} colors={['#ffd700', '#ff0000', '#ffffff', '#daa520']} />}
+      
+      {/* EFFECT LAYER */}
+      {activeGiftEffect === 'hoa' && (
+        <div className="effect-layer">
+          {Array.from({length: 30}).map((_, i) => (
+            <div key={i} className="falling-item" style={{left: `${random(0,100)}vw`, animationDuration: `${random(3,7)}s`, animationDelay: `${random(0,2)}s`}}>🌸</div>
+          ))}
+        </div>
+      )}
+      {activeGiftEffect === 'bo_hoa' && (
+        <div className="effect-layer">
+          {Array.from({length: 15}).map((_, i) => (
+            <div key={i} className="falling-item" style={{left: `${random(0,100)}vw`, fontSize: '40px', animationDuration: `${random(4,6)}s`, animationDelay: `${random(0,1)}s`}}>💐</div>
+          ))}
+        </div>
+      )}
+      {activeGiftEffect === 'banh' && (
+        <div className="effect-layer">
+          <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '120px', animation: 'explode 3s ease-out forwards'}}>🎂</div>
+        </div>
+      )}
+      {activeGiftEffect === 'khoa' && (
+        <div className="effect-layer">
+          <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '100px', animation: 'explode 3s ease-out forwards'}}>🔒</div>
+        </div>
+      )}
+      {activeGiftEffect === 'phao_hoa' && (
+        <div className="effect-layer">
+          {Array.from({length: 10}).map((_, i) => (
+            <div key={i} className="firework-item" style={{left: `${random(10,90)}vw`, top: `${random(10,50)}vh`, animationDelay: `${random(0,1.5)}s`}}>🎆</div>
+          ))}
+        </div>
+      )}
 
-      <Link to="/" className="back-btn"><ChevronLeft size={20} /> Về Trang chủ</Link>
+      {/* GIFT BANNERS */}
+      <div className="banner-container">
+        {giftBanners.map(b => (
+          <div key={b.id} className="gift-banner">
+            <div className="gift-banner-icon">{b.gift.icon}</div>
+            <span>{b.guestName} vừa tặng một {b.gift.name}!</span>
+          </div>
+        ))}
+      </div>
+
+      <audio ref={audioRef} loop src="https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3" preload="auto" />
+      <div className="music-btn" onClick={toggleAudio}>🎵</div>
 
       <div className="mobile-container">
-        
-        <div className={`card-wrapper ${isOpen ? 'open' : ''}`} onClick={handleOpenEnvelope}>
-          {/* Tấm thiệp mạ vàng nằm trong */}
-          <div className="card-main">
-            <div className="ribbon"></div>
-            {config && (
-              <>
-                <div className="school-name">{config.school_name}</div>
-                <div className="invite-title">{config.invite_title1}</div>
-                <div className="guest-name">{guest.name}</div>
-                
-                <div className="event-details">
-                  <strong style={{fontSize: '18px', color: '#8b0000'}}>{config.event_name_main}</strong><br/>
-                  <span style={{whiteSpace: 'pre-line', fontSize: '13px'}}>{config.event_name_sub}</span>
-                  
-                  <div style={{marginTop: '15px', fontSize: '13px'}}>
-                    <div><strong>🕒 Thời gian:</strong><br/> {config.time}</div>
-                    <div style={{marginTop: '10px'}}><strong>📍 Địa điểm:</strong><br/> <span style={{whiteSpace: 'pre-line'}}>{config.location}</span></div>
-                  </div>
-                </div>
-
-                <div className="rsvp-section">
-                  <p style={{margin: '0 0 10px 0', color: '#64748b', fontStyle: 'italic', fontSize: '12px'}}>Vui lòng xác nhận sự hiện diện của bạn để chúng tôi đón tiếp chu đáo nhất.</p>
-                  <div className="rsvp-buttons">
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleRSVP('attending'); }} 
-                      className="btn-rsvp btn-yes"
-                      style={{opacity: rsvpStatus === 'declined' ? 0.5 : 1}}
-                    >
-                      <CheckCircle size={16} /> Tham dự
-                    </button>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); handleRSVP('declined'); }} 
-                      className="btn-rsvp btn-no"
-                      style={{opacity: rsvpStatus === 'attending' ? 0.5 : 1}}
-                    >
-                      <XCircle size={16} /> Không đến
-                    </button>
-                  </div>
-                </div>
-              </>
-            )}
-          </div>
+        <div className="card-main">
+          <div className="inner-border"></div>
           
-          {/* Túi đỏ bên ngoài che thiệp */}
-          <div className="pocket-front"></div>
+          <div className="title-box">THƯ MỜI DỰ TIỆC</div>
+          
+          {config && (
+            <>
+              <div className="invite-text">Trân trọng kính mời</div>
+              <div className="guest-name">{guest.name}</div>
+              
+              <div className="event-main">Tham dự buổi tiệc</div>
+              <div className="event-sub">{config.event_name_main}<br/>{config.event_name_sub}</div>
+              
+              <div className="event-time">{config.time}</div>
+              
+              <div style={{marginTop: '20px'}}>
+                <div className="event-location">📍 TẠI ĐỊA ĐIỂM:</div>
+                <div style={{fontSize: '14px', whiteSpace: 'pre-line', color: '#555'}}>{config.location}</div>
+              </div>
+            </>
+          )}
+
+          <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác nhận tham dự</button>
         </div>
 
-        {/* Lời chúc lơ lửng (Chỉ hiện khi đã mở thiệp) */}
-        {isOpen && (
-          <div className="danmaku-container">
-            {floatingWishes.map((w, i) => (
-              <div 
-                key={`${w.id}-${i}`} 
-                className="danmaku-item" 
-                style={{ 
-                  left: `${w.left}%`, 
-                  animationDelay: `${w.delay}s`, 
-                  animationDuration: `${w.duration}s` 
-                }}
-              >
-                <strong>{w.guest_name}:</strong> {w.message}
+        <div className="danmaku-container">
+          {floatingWishes.map((w, i) => (
+            <div key={`${w.id}-${i}`} className="danmaku-item" style={{ left: `${w.left}%`, animationDelay: `${w.delay}s`, animationDuration: `${w.duration}s` }}>
+              <img src="https://ui-avatars.com/api/?name=User&background=fff&color=d32f2f&rounded=true&size=20" alt="avatar" style={{borderRadius: '50%'}} />
+              <strong>{w.guest_name}:</strong> {w.message}
+            </div>
+          ))}
+        </div>
+
+        <div className="hearts-container">
+          {hearts.map(h => (
+            <div key={h.id} className="floating-heart" style={{ left: `${h.left}%` }}>❤️</div>
+          ))}
+        </div>
+
+        <form onSubmit={submitWish} className="action-bar">
+          <div className="wish-input-wrapper">
+            <input type="text" className="wish-input" placeholder="Gửi lời chúc..." value={newWish} onChange={(e) => setNewWish(e.target.value)} required />
+            <button type="submit" className="send-btn" disabled={isSubmittingWish}><Send size={16} /></button>
+          </div>
+          
+          <button type="button" className="pill-btn heart" onClick={shootHeart}>
+            <span className="icon">❤️</span> Bắn tim
+          </button>
+          <button type="button" className="pill-btn gift" onClick={() => setIsGiftModalOpen(true)}>
+            <span className="icon">🎁</span> Tặng quà
+          </button>
+        </form>
+      </div>
+
+      {/* RSVP MODAL */}
+      <div className={`rsvp-overlay ${isRsvpModalOpen ? 'open' : ''}`}>
+        <div className="rsvp-modal">
+          <button className="close-rsvp" onClick={() => setIsRsvpModalOpen(false)}>×</button>
+          <h3>Xác nhận tham dự</h3>
+          
+          <div className="form-group">
+            <label className="form-label">Họ và tên</label>
+            <input type="text" className="form-input" value={guest.name} disabled />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Bạn sẽ tham dự chứ?</label>
+            <div className="radio-group">
+              <label className="radio-label">
+                <input type="radio" name="rsvpStatus" value="attending" checked={rsvpFormStatus === 'attending'} onChange={() => setRsvpFormStatus('attending')} />
+                Có, tôi sẽ tham dự
+              </label>
+              <label className="radio-label">
+                <input type="radio" name="rsvpStatus" value="declined" checked={rsvpFormStatus === 'declined'} onChange={() => setRsvpFormStatus('declined')} />
+                Tôi bận, rất tiếc không thể tham dự
+              </label>
+            </div>
+          </div>
+          
+          <button className="submit-rsvp-btn" onClick={submitRSVP} disabled={isSubmittingRsvp}>
+            {isSubmittingRsvp ? 'Đang gửi...' : 'Gửi xác nhận'}
+          </button>
+        </div>
+      </div>
+
+      {/* GIFT MODAL */}
+      <div className={`gift-overlay ${isGiftModalOpen ? 'open' : ''}`} onClick={(e) => { if(e.target === e.currentTarget) setIsGiftModalOpen(false); }}>
+        <div className="gift-modal">
+          <h3>Tặng Quà</h3>
+          <div className="gift-grid">
+            {GIFTS.map(gift => (
+              <div key={gift.id} className={`gift-item ${selectedGift.id === gift.id ? 'selected' : ''}`} onClick={() => setSelectedGift(gift)}>
+                <div className="gift-icon">{gift.icon}</div>
+                <div className="gift-name">{gift.name}</div>
               </div>
             ))}
           </div>
-        )}
-
-        {/* Hiệu ứng bắn tim */}
-        {isOpen && (
-          <div className="hearts-container">
-            {hearts.map(h => (
-              <div key={h.id} className="floating-heart" style={{ left: `${h.left}%` }}>❤️</div>
-            ))}
+          <div className="gift-footer">
+            <div className="gift-user-info">👤 {guest?.name}</div>
+            <button className="gift-send-btn" onClick={handleSendGift}>Gửi</button>
           </div>
-        )}
-
-        {/* Thanh công cụ nhập lời chúc */}
-        <form onSubmit={submitWish} className="action-bar">
-          <input 
-            type="text" 
-            className="wish-input" 
-            placeholder="Gửi lời chúc..." 
-            value={newWish}
-            onChange={(e) => setNewWish(e.target.value)}
-            required
-          />
-          <button type="submit" className="send-btn" disabled={isSubmitting}>
-            <Send size={16} />
-          </button>
-          
-          <button type="button" className="heart-btn" onClick={shootHeart}>
-            <Heart size={24} />
-            Bắn tim
-          </button>
-        </form>
-
+        </div>
       </div>
+
     </div>
   );
 }
