@@ -7,9 +7,10 @@ export default function AdminInviteConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [config, setConfig] = useState({
     school_name: 'TRƯỜNG THPT CAO BÁ QUÁT',
-    logo_url: '/logo-30-nam.jpg',
+    logo_url: '/logo.jpg',
     invite_title1: 'Trân trọng kính mời',
     invite_title2: 'ĐẠI BIỂU THAM DỰ',
     event_name_main: 'LỄ KỶ NIỆM',
@@ -117,6 +118,31 @@ export default function AdminInviteConfig() {
     const newGallery = [...(config.gallery_images || [])];
     newGallery.splice(index, 1);
     setConfig(prev => ({ ...prev, gallery_images: newGallery }));
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `logo-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage.from('gallery').upload(fileName, file);
+
+    if (uploadError) {
+      alert("Lỗi upload logo: " + uploadError.message);
+      setUploadingLogo(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      setConfig(prev => ({ ...prev, logo_url: data.publicUrl }));
+    }
+    
+    setUploadingLogo(false);
+    e.target.value = ''; // Reset input
   };
 
   const handleFileUpload = async (e) => {
@@ -295,8 +321,19 @@ export default function AdminInviteConfig() {
                   <label style={styles.label}>Lời kết</label>
                   <input type="text" name="ending_message" value={config.ending_message} onChange={handleChange} style={styles.input} />
                 </div>
-                
+
                 <div style={{ marginTop: '1rem' }}>
+                  <label style={styles.label}>Logo Trường (Link ảnh hoặc Tải lên)</label>
+                  <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                    <input type="text" name="logo_url" value={config.logo_url} onChange={handleChange} style={{...styles.input, flex: 1, margin: 0}} placeholder="Nhập link ảnh logo..." />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 15px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', margin: 0, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                      {uploadingLogo ? '⏳ Đang tải...' : '📸 Tải lên'}
+                      <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} style={{position: 'absolute', opacity: 0, width: 0, height: 0}} />
+                    </label>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '1.5rem' }}>
                   <label style={styles.label}>Link Nhạc nền (Audio URL từ Internet)</label>
                   <input type="text" name="bg_music" value={config.bg_music} onChange={handleChange} style={styles.input} placeholder="VD: https://example.com/music.mp3" />
                   <p style={{fontSize: '12px', color: '#64748b', marginTop: '5px'}}>Bạn có thể copy link file nhạc .mp3 từ các trang web (như Zing MP3, NCT, Nhaccuatui) và dán vào đây.</p>
