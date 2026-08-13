@@ -17,14 +17,12 @@ const GIFTS = [
   { id: 'sach', name: 'Sách vở', icon: '📚' }
 ];
 
-// Placeholder images for Gallery
-const GALLERY_IMAGES = [
+// Optional: Keep for fallback if config is empty
+const DEFAULT_GALLERY = [
   "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80",
   "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=500&q=80",
   "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=500&q=80",
-  "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80",
-  "https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=500&q=80",
-  "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=500&q=80"
+  "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80"
 ];
 
 export default function OnlineInvitation() {
@@ -480,7 +478,7 @@ export default function OnlineInvitation() {
             <h2 style={{margin: '0', textAlign: 'center'}}>THƯ VIỆN ẢNH</h2>
             <div style={{textAlign: 'center', fontSize: '13px', marginBottom: '10px'}}>Những khoảnh khắc đáng nhớ</div>
             <div className="gallery-grid">
-              {GALLERY_IMAGES.map((src, i) => (
+              {(config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY).map((src, i) => (
                 <img key={i} src={src} alt="Gallery" className="gallery-item" />
               ))}
             </div>

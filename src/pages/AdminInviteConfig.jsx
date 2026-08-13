@@ -28,7 +28,13 @@ export default function AdminInviteConfig() {
       { time: '10h30', content: '❖ Tham quan phòng Truyền thống\n❖ Mời đại biểu và cựu học sinh tham dự liên hoan thân mật' }
     ],
     ending_message: 'Rất hân hạnh được đón tiếp!',
-    bg_music: '/nhacnen.mp3'
+    bg_music: '/nhacnen.mp3',
+    gallery_images: [
+      "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80",
+      "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=500&q=80",
+      "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=500&q=80",
+      "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&q=80"
+    ]
   });
 
   useEffect(() => {
@@ -94,6 +100,22 @@ export default function AdminInviteConfig() {
     const newAgenda = [...config.agenda];
     newAgenda.splice(index, 1);
     setConfig(prev => ({ ...prev, agenda: newAgenda }));
+  };
+
+  const handleGalleryChange = (index, value) => {
+    const newGallery = [...(config.gallery_images || [])];
+    newGallery[index] = value;
+    setConfig(prev => ({ ...prev, gallery_images: newGallery }));
+  };
+
+  const addGalleryImage = () => {
+    setConfig(prev => ({ ...prev, gallery_images: [...(prev.gallery_images || []), ''] }));
+  };
+
+  const removeGalleryImage = (index) => {
+    const newGallery = [...(config.gallery_images || [])];
+    newGallery.splice(index, 1);
+    setConfig(prev => ({ ...prev, gallery_images: newGallery }));
   };
 
   return (
@@ -202,7 +224,29 @@ export default function AdminInviteConfig() {
                   <Plus size={16} /> Thêm mục
                 </button>
 
-                <div style={{ marginTop: '1.5rem' }}>
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #cbd5e1' }}>
+                  <label style={styles.label}>Thư viện ảnh (Gallery Links)</label>
+                  <p style={{fontSize: '12px', color: '#64748b', marginTop: '0', marginBottom: '10px'}}>Dán link ảnh (từ Google Drive, Imgur, Facebook, v.v...) vào đây. Ảnh sẽ hiển thị ở Trang 4 của thiệp.</p>
+                  {(config.gallery_images || []).map((url, index) => (
+                    <div key={index} style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                      <input 
+                        type="text" 
+                        value={url} 
+                        onChange={(e) => handleGalleryChange(index, e.target.value)} 
+                        style={{...styles.input, flex: 1}} 
+                        placeholder="Link ảnh (VD: https://imgur.com/anh.jpg)"
+                      />
+                      <button onClick={() => removeGalleryImage(index)} style={{ padding: '10px', background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', flexShrink: 0 }}>
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  ))}
+                  <button onClick={addGalleryImage} style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '8px 12px', background: '#f1f5f9', color: '#334155', border: '1px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', marginTop: '5px' }}>
+                    <Plus size={16} /> Thêm ảnh
+                  </button>
+                </div>
+
+                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px dashed #cbd5e1' }}>
                   <label style={styles.label}>Lời nhắn QR Code (hỗ trợ xuống dòng)</label>
                   <textarea name="qr_message" value={config.qr_message} onChange={handleChange} style={{...styles.input, height: '80px'}} />
                 </div>
