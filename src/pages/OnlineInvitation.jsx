@@ -6,6 +6,16 @@ import Confetti from 'react-confetti';
 
 const random = (min, max) => Math.random() * (max - min) + min;
 
+// Helper to convert Google Drive share links to direct image links
+const getDirectImageUrl = (url) => {
+  if (!url) return '';
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  }
+  return url;
+};
+
 const GIFTS = [
   { id: 'tim', name: 'Bắn tim', icon: '💖' },
   { id: 'bo_hoa', name: 'Bó hoa', icon: '💐' },
@@ -516,7 +526,7 @@ export default function OnlineInvitation() {
             <div style={{textAlign: 'center', fontSize: '13px', marginBottom: '10px'}}>Những khoảnh khắc đáng nhớ</div>
             <div className="gallery-grid">
               {(config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY).map((src, i) => (
-                <img key={i} src={src} alt="Gallery" className="gallery-item" />
+                <img key={i} src={getDirectImageUrl(src)} alt="Gallery" className="gallery-item" />
               ))}
             </div>
           </div>
