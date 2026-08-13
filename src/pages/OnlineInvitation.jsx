@@ -1,8 +1,11 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { CheckCircle, XCircle, ChevronLeft, Send, Volume2, VolumeX } from 'lucide-react';
+import { CheckCircle, XCircle, ChevronLeft, Send, Heart } from 'lucide-react';
 import Confetti from 'react-confetti';
+
+// Hàm helper tạo số ngẫu nhiên
+const random = (min, max) => Math.random() * (max - min) + min;
 
 export default function OnlineInvitation() {
   const { code } = useParams();
@@ -12,16 +15,16 @@ export default function OnlineInvitation() {
   
   const [isOpen, setIsOpen] = useState(false);
   const [rsvpStatus, setRsvpStatus] = useState(null);
-  
-  // Audio & Effects
-  const [isMuted, setIsMuted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const audioRef = useRef(null);
 
-  // Guestbook
+  // Guestbook & Hearts
   const [wishes, setWishes] = useState([]);
   const [newWish, setNewWish] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hearts, setHearts] = useState([]);
+
+  // Floating Wishes Display (Danmaku)
+  const [floatingWishes, setFloatingWishes] = useState([]);
 
   useEffect(() => {
     fetchData();
@@ -49,7 +52,7 @@ export default function OnlineInvitation() {
         setConfig(parsed);
       }
       
-      fetchWishes();
+      await fetchWishes();
     } catch (error) {
       console.error("Lỗi tải thiệp:", error);
     } finally {
@@ -58,35 +61,27 @@ export default function OnlineInvitation() {
   };
   
   const fetchWishes = async () => {
-    const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false });
-    if (data) setWishes(data);
+    const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false }).limit(20);
+    if (data) {
+      setWishes(data);
+      // Initialize floating wishes with random delays and positions
+      const floating = data.map((wish, i) => ({
+        ...wish,
+        left: random(5, 75), // Random left position %
+        delay: random(0, 15), // Random start delay
+        duration: random(15, 25) // Random floating speed
+      }));
+      setFloatingWishes(floating);
+    }
   };
 
   const handleOpenEnvelope = () => {
     if (isOpen) return;
     setIsOpen(true);
     setShowConfetti(true);
-    
-    if (audioRef.current && !isMuted) {
-      audioRef.current.play().catch(e => console.log("Trình duyệt chặn autoplay audio", e));
-    }
-    
-    setTimeout(() => {
-      setShowConfetti(false);
-    }, 8000);
+    setTimeout(() => setShowConfetti(false), 5000);
   };
   
-  const toggleAudio = () => {
-    if (audioRef.current) {
-      if (isMuted) {
-        audioRef.current.play();
-      } else {
-        audioRef.current.pause();
-      }
-    }
-    setIsMuted(!isMuted);
-  };
-
   const handleRSVP = async (status) => {
     if (!guest) return;
     setRsvpStatus(status);
@@ -106,38 +101,68 @@ export default function OnlineInvitation() {
     setIsSubmitting(false);
     if (!error && data) {
       setNewWish('');
-      setWishes([data[0], ...wishes]);
+      const newWishData = data[0];
+      setWishes([newWishData, ...wishes]);
+      
+      // Thêm ngay lập tức vào màn hình trôi nổi
+      setFloatingWishes(prev => [
+        ...prev, 
+        { ...newWishData, left: random(10, 70), delay: 0, duration: random(15, 20) }
+      ]);
     } else {
       alert("Lỗi khi gửi lời chúc: " + (error?.message || 'Không xác định'));
     }
   };
 
+  const shootHeart = () => {
+    const id = Date.now() + Math.random();
+    setHearts(prev => [...prev, { id, left: random(75, 95) }]); // Bay ở góc phải
+    // Xóa trái tim sau 4 giây (khi hiệu ứng xong)
+    setTimeout(() => {
+      setHearts(prev => prev.filter(h => h.id !== id));
+    }, 4000);
+  };
+
   if (loading) {
-    return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f1f5f9'}}>Đang tải thiệp mời...</div>;
+    return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#8b0000', color: 'gold'}}>Đang tải thiệp mời...</div>;
   }
 
   if (!guest) {
     return (
-      <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f1f5f9'}}>
+      <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#8b0000', color: 'gold'}}>
         <h2>Không tìm thấy thiệp mời!</h2>
         <p>Mã thiệp mời không hợp lệ hoặc đã bị xóa.</p>
-        <Link to="/" style={{marginTop: '20px', padding: '10px 20px', backgroundColor: '#1e293b', color: 'white', textDecoration: 'none', borderRadius: '5px'}}>Về Trang Chủ</Link>
+        <Link to="/" style={{marginTop: '20px', padding: '10px 20px', backgroundColor: '#daa520', color: '#8b0000', textDecoration: 'none', borderRadius: '5px', fontWeight: 'bold'}}>Về Trang Chủ</Link>
       </div>
     );
   }
 
   return (
-    <div className="invitation-container" style={{ overflowY: isOpen ? 'auto' : 'hidden' }}>
+    <div className="premium-invitation">
       <style>{`
-        .invitation-container {
-          min-height: 100vh;
-          background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          padding: 20px;
-          font-family: 'Times New Roman', Times, serif;
+        body { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+        
+        .premium-invitation {
           position: relative;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          background: linear-gradient(135deg, #8b0000 0%, #4a0000 100%);
+          font-family: 'Times New Roman', Times, serif;
+          color: #333;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        /* Nền hoa văn mờ */
+        .premium-invitation::before {
+          content: '';
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: url('https://www.transparenttextures.com/patterns/arabesque.png');
+          opacity: 0.2;
+          z-index: 1;
         }
 
         .back-btn {
@@ -147,189 +172,162 @@ export default function OnlineInvitation() {
           display: flex;
           align-items: center;
           gap: 5px;
-          color: #64748b;
+          color: #ffd700;
           text-decoration: none;
           font-family: Arial, sans-serif;
           z-index: 100;
-        }
-        
-        .audio-btn {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          background: white;
-          border: 1px solid #cbd5e1;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          cursor: pointer;
-          z-index: 100;
-          color: #64748b;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+          font-weight: bold;
+          text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
         }
 
-        .main-content {
-          margin-top: 10vh;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          width: 100%;
-          max-width: 600px;
-        }
-
-        .envelope-wrapper {
+        /* Container khung hiển thị (Mobile First) */
+        .mobile-container {
           position: relative;
           width: 100%;
           max-width: 500px;
-          height: 350px;
-          transition: transform 0.8s ease;
-          cursor: pointer;
-          margin: 0 auto;
-        }
-
-        .envelope-wrapper.open {
-          transform: translateY(150px);
-          cursor: default;
-          margin-bottom: 300px;
-        }
-
-        .envelope {
-          position: absolute;
-          width: 100%;
           height: 100%;
-          background: #b91c1c;
-          border-radius: 10px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          max-height: 900px;
           display: flex;
-          justify-content: center;
+          flex-direction: column;
           align-items: center;
           z-index: 10;
         }
 
-        .envelope::before {
-          content: '';
+        /* Thiệp 3D */
+        .card-wrapper {
           position: absolute;
-          top: 0;
-          border-left: 250px solid transparent;
-          border-right: 250px solid transparent;
-          border-top: 175px solid #dc2626;
-          transform-origin: top;
-          transition: transform 0.6s ease 0.2s, z-index 0.2s;
-          z-index: 12;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          width: 85%;
+          height: 70%;
+          max-height: 700px;
+          perspective: 1000px;
+          z-index: 20;
+          cursor: pointer;
         }
 
-        .envelope-wrapper.open .envelope::before {
-          transform: rotateX(180deg);
-          z-index: 5;
-        }
-
-        .envelope::after {
-          content: '';
+        /* Nắp phong bì túi (Pocket Envelope) */
+        .pocket-front {
           position: absolute;
           bottom: 0;
-          border-left: 250px solid transparent;
-          border-right: 250px solid transparent;
-          border-bottom: 175px solid #991b1b;
-          z-index: 11;
-        }
-
-        .envelope-seal {
-          position: absolute;
-          top: 155px;
-          width: 60px;
-          height: 60px;
-          background: #fef08a;
-          border-radius: 50%;
-          z-index: 13;
+          left: -5%;
+          width: 110%;
+          height: 50%;
+          background: linear-gradient(to bottom, #990000, #550000);
+          clip-path: polygon(0 30%, 50% 0, 100% 30%, 100% 100%, 0 100%);
+          z-index: 25;
+          box-shadow: 0 -10px 20px rgba(0,0,0,0.5);
+          transition: transform 1s ease;
           display: flex;
           justify-content: center;
-          align-items: center;
-          font-weight: bold;
-          color: #991b1b;
-          box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-          transition: opacity 0.3s;
-          font-family: Arial, sans-serif;
-          font-size: 14px;
-          text-align: center;
-          line-height: 1.2;
-          animation: pulse 2s infinite;
+          align-items: flex-end;
+          padding-bottom: 20px;
         }
         
-        @keyframes pulse {
-          0% { transform: scale(1); }
-          50% { transform: scale(1.1); box-shadow: 0 0 15px #fef08a; }
-          100% { transform: scale(1); }
+        .pocket-front::after {
+          content: 'Mở Thiệp';
+          color: #ffd700;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          font-weight: bold;
+          background: rgba(0,0,0,0.2);
+          padding: 8px 20px;
+          border-radius: 20px;
+          border: 1px solid #ffd700;
+          animation: pulse 2s infinite;
         }
 
-        .envelope-wrapper.open .envelope-seal {
-          opacity: 0;
+        .card-wrapper.open .pocket-front {
+          transform: translateY(100vh); /* Rớt xuống biến mất */
         }
 
-        .card-inner {
+        /* Tấm thiệp chính */
+        .card-main {
           position: absolute;
-          bottom: 10px;
-          left: 5%;
-          width: 90%;
-          height: 520px;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           background: #fffcf8;
-          border-radius: 8px;
-          box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
-          z-index: 8;
-          transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.5s;
-          padding: 30px;
-          box-sizing: border-box;
+          border-radius: 10px;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+          z-index: 22;
           overflow-y: auto;
+          overflow-x: hidden;
+          padding: 30px 20px;
+          box-sizing: border-box;
           text-align: center;
-          border: 2px solid #fef08a;
+          /* Viền vàng nổi bật */
+          border: 6px solid #daa520;
+          outline: 2px solid #8b0000;
+          outline-offset: -10px;
           background-image: url('https://www.transparenttextures.com/patterns/cream-paper.png');
+          transition: all 1s ease;
+          transform: translateY(20%); /* Nằm thấp bên trong túi */
         }
 
-        .envelope-wrapper.open .card-inner {
-          transform: translateY(-280px);
-          z-index: 15;
-          box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+        .card-wrapper.open .card-main {
+          transform: translateY(0); /* Trồi lên giữa màn hình */
+          z-index: 30; /* Nổi lên trên cùng để dễ click RSVP */
+          height: 80%; /* Ngắn lại một chút chừa chỗ cho thanh công cụ */
+          top: 5%;
+        }
+
+        /* Nơ đỏ trang trí */
+        .ribbon {
+          position: absolute;
+          top: -15px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 60px;
+          height: 60px;
+          background-image: url('https://img.icons8.com/color/96/000000/ribbon.png');
+          background-size: contain;
+          background-repeat: no-repeat;
+          z-index: 25;
         }
 
         .school-name {
-          font-size: 14px;
+          font-size: 12px;
           text-transform: uppercase;
-          color: #991b1b;
+          color: #8b0000;
           margin-bottom: 20px;
           letter-spacing: 1px;
+          margin-top: 10px;
         }
 
         .invite-title {
-          font-size: 24px;
+          font-size: 26px;
           font-weight: bold;
-          color: #1e293b;
-          margin-bottom: 5px;
+          color: #daa520; /* Vàng đồng */
+          margin-bottom: 10px;
+          text-shadow: 1px 1px 1px rgba(0,0,0,0.1);
         }
 
         .guest-name {
-          font-size: 28px;
-          color: #b91c1c;
+          font-size: 30px;
+          color: #8b0000;
           font-weight: bold;
           font-family: 'Dancing Script', cursive, serif;
           margin: 15px 0;
           padding: 10px;
-          border-bottom: 1px dashed #cbd5e1;
+          border-bottom: 2px solid #daa520;
           display: inline-block;
           min-width: 200px;
         }
 
         .event-details {
           margin: 20px 0;
-          color: #334155;
+          color: #333;
           line-height: 1.6;
-          font-size: 16px;
+          font-size: 15px;
         }
         
+        /* RSVP Buttons */
         .rsvp-section {
-          margin-top: 30px;
-          padding-top: 20px;
+          margin-top: 20px;
+          padding-top: 15px;
           border-top: 1px solid #e2e8f0;
         }
 
@@ -337,113 +335,173 @@ export default function OnlineInvitation() {
           display: flex;
           gap: 10px;
           justify-content: center;
-          margin-top: 15px;
+          margin-top: 10px;
         }
 
         .btn-rsvp {
-          padding: 10px 20px;
+          padding: 8px 15px;
           border: none;
-          border-radius: 30px;
+          border-radius: 20px;
           cursor: pointer;
           font-weight: bold;
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 5px;
           transition: transform 0.2s;
           font-family: Arial, sans-serif;
+          font-size: 13px;
         }
         
-        .btn-rsvp:hover {
-          transform: scale(1.05);
+        .btn-yes { background: #daa520; color: #8b0000; border: 1px solid #8b0000; }
+        .btn-no { background: #e2e8f0; color: #475569; }
+
+        /* FLOATING DANMAKU (Lời chúc bay lơ lửng) */
+        .danmaku-container {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 80px;
+          pointer-events: none; /* Không che khuất click */
+          z-index: 50;
+          overflow: hidden;
         }
 
-        .btn-yes {
-          background: #10b981;
+        .danmaku-item {
+          position: absolute;
+          bottom: -50px;
+          background: rgba(0, 0, 0, 0.6);
           color: white;
-        }
-        
-        .btn-no {
-          background: #ef4444;
-          color: white;
-        }
-        
-        .guestbook-section {
-          width: 100%;
-          max-width: 600px;
-          background: white;
-          border-radius: 12px;
-          padding: 20px;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-          margin-top: 40px;
-          margin-bottom: 40px;
+          padding: 6px 12px;
+          border-radius: 20px;
           font-family: Arial, sans-serif;
-          opacity: 0;
-          transform: translateY(20px);
-          transition: opacity 1s ease 1.5s, transform 1s ease 1.5s;
+          font-size: 13px;
+          white-space: nowrap;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,215,0,0.3);
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          animation: floatUp linear infinite;
         }
         
-        .envelope-wrapper.open ~ .guestbook-section {
-          opacity: 1;
+        .danmaku-item strong {
+          color: #ffd700;
+        }
+
+        @keyframes floatUp {
+          0% { transform: translateY(0); opacity: 0; }
+          10% { opacity: 1; }
+          90% { opacity: 1; }
+          100% { transform: translateY(-100vh); opacity: 0; }
+        }
+
+        /* HEART ANIMATION */
+        .hearts-container {
+          position: absolute;
+          top: 0; left: 0; right: 0; bottom: 80px;
+          pointer-events: none;
+          z-index: 60;
+          overflow: hidden;
+        }
+        
+        .floating-heart {
+          position: absolute;
+          bottom: -20px;
+          font-size: 24px;
+          color: #ff3366;
+          animation: flyHeart 4s ease-out forwards;
+        }
+        
+        @keyframes flyHeart {
+          0% { transform: translateY(0) scale(1); opacity: 1; }
+          50% { transform: translateY(-200px) scale(1.5) rotate(15deg); opacity: 0.8; }
+          100% { transform: translateY(-400px) scale(1) rotate(-15deg); opacity: 0; }
+        }
+
+        /* BOTTOM ACTION BAR (Thanh công cụ dưới cùng) */
+        .action-bar {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 60px;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(5px);
+          display: flex;
+          align-items: center;
+          padding: 0 15px;
+          box-sizing: border-box;
+          z-index: 100;
+          gap: 10px;
+          transform: translateY(100%);
+          transition: transform 0.5s ease;
+        }
+        
+        .card-wrapper.open ~ .action-bar {
           transform: translateY(0);
         }
 
-        .wish-list {
-          margin-top: 20px;
-          max-height: 300px;
-          overflow-y: auto;
-          padding-right: 10px;
+        .wish-input {
+          flex: 1;
+          height: 36px;
+          border-radius: 18px;
+          border: 1px solid rgba(255,255,255,0.3);
+          background: rgba(255,255,255,0.1);
+          color: white;
+          padding: 0 15px;
+          font-family: Arial, sans-serif;
+          outline: none;
         }
         
-        .wish-item {
-          background: #f8fafc;
-          padding: 15px;
-          border-radius: 8px;
-          margin-bottom: 10px;
-          border-left: 4px solid #fef08a;
-          text-align: left;
-        }
+        .wish-input::placeholder { color: rgba(255,255,255,0.7); }
         
-        .wish-author {
-          font-weight: bold;
-          color: #1e293b;
-          margin-bottom: 5px;
-        }
-        
-        .wish-content {
-          color: #475569;
-          font-size: 14px;
-          line-height: 1.5;
+        .send-btn {
+          background: #daa520;
+          color: #8b0000;
+          border: none;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          cursor: pointer;
         }
 
-        @media (max-width: 600px) {
-          .envelope::before { border-left-width: 45vw; border-right-width: 45vw; border-top-width: 35vw; }
-          .envelope::after { border-left-width: 45vw; border-right-width: 45vw; border-bottom-width: 35vw; }
-          .envelope-seal { top: 25vw; }
-          .envelope-wrapper.open { transform: translateY(100px); margin-bottom: 250px; }
-          .envelope-wrapper.open .card-inner { transform: translateY(-200px); }
-          .card-inner { height: 480px; padding: 20px; }
+        .heart-btn {
+          background: transparent;
+          color: #ff3366;
+          border: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          cursor: pointer;
+          font-size: 10px;
+          gap: 2px;
+          margin-left: 5px;
         }
+        
+        .heart-btn svg {
+          fill: #ff3366;
+          animation: pulseHeart 1s infinite;
+        }
+        
+        @keyframes pulseHeart {
+          0% { transform: scale(1); }
+          50% { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+
       `}</style>
       
-      {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={500} />}
-      
-      <audio ref={audioRef} loop src="https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3" preload="auto" />
+      {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={500} colors={['#ffd700', '#ff0000', '#ffffff', '#daa520']} />}
 
       <Link to="/" className="back-btn"><ChevronLeft size={20} /> Về Trang chủ</Link>
-      
-      {isOpen && (
-        <button onClick={toggleAudio} className="audio-btn">
-          {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-        </button>
-      )}
 
-      <div className="main-content">
-        <div className={`envelope-wrapper ${isOpen ? 'open' : ''}`} onClick={handleOpenEnvelope}>
-          <div className="envelope">
-            <div className="envelope-seal">Mở<br/>Thiệp</div>
-          </div>
-          
-          <div className="card-inner">
+      <div className="mobile-container">
+        
+        <div className={`card-wrapper ${isOpen ? 'open' : ''}`} onClick={handleOpenEnvelope}>
+          {/* Tấm thiệp mạ vàng nằm trong */}
+          <div className="card-main">
+            <div className="ribbon"></div>
             {config && (
               <>
                 <div className="school-name">{config.school_name}</div>
@@ -451,84 +509,90 @@ export default function OnlineInvitation() {
                 <div className="guest-name">{guest.name}</div>
                 
                 <div className="event-details">
-                  <strong style={{fontSize: '20px', color: '#1e293b'}}>{config.event_name_main}</strong><br/>
-                  <span style={{whiteSpace: 'pre-line'}}>{config.event_name_sub}</span>
+                  <strong style={{fontSize: '18px', color: '#8b0000'}}>{config.event_name_main}</strong><br/>
+                  <span style={{whiteSpace: 'pre-line', fontSize: '13px'}}>{config.event_name_sub}</span>
                   
-                  <div style={{marginTop: '20px'}}>
-                    <div><strong>Thời gian:</strong> {config.time}</div>
-                    <div style={{marginTop: '5px'}}><strong>Địa điểm:</strong><br/> <span style={{whiteSpace: 'pre-line'}}>{config.location}</span></div>
+                  <div style={{marginTop: '15px', fontSize: '13px'}}>
+                    <div><strong>🕒 Thời gian:</strong><br/> {config.time}</div>
+                    <div style={{marginTop: '10px'}}><strong>📍 Địa điểm:</strong><br/> <span style={{whiteSpace: 'pre-line'}}>{config.location}</span></div>
                   </div>
                 </div>
 
                 <div className="rsvp-section">
-                  <p style={{margin: '0 0 10px 0', color: '#64748b', fontStyle: 'italic', fontSize: '14px'}}>Vui lòng xác nhận sự hiện diện của bạn để chúng tôi chuẩn bị đón tiếp chu đáo nhất.</p>
+                  <p style={{margin: '0 0 10px 0', color: '#64748b', fontStyle: 'italic', fontSize: '12px'}}>Vui lòng xác nhận sự hiện diện của bạn để chúng tôi đón tiếp chu đáo nhất.</p>
                   <div className="rsvp-buttons">
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleRSVP('attending'); }} 
                       className="btn-rsvp btn-yes"
-                      style={{opacity: rsvpStatus === 'declined' ? 0.5 : 1, border: rsvpStatus === 'attending' ? '2px solid #047857' : 'none'}}
+                      style={{opacity: rsvpStatus === 'declined' ? 0.5 : 1}}
                     >
-                      <CheckCircle size={18} /> Tham dự
+                      <CheckCircle size={16} /> Tham dự
                     </button>
                     <button 
                       onClick={(e) => { e.stopPropagation(); handleRSVP('declined'); }} 
                       className="btn-rsvp btn-no"
-                      style={{opacity: rsvpStatus === 'attending' ? 0.5 : 1, border: rsvpStatus === 'declined' ? '2px solid #b91c1c' : 'none'}}
+                      style={{opacity: rsvpStatus === 'attending' ? 0.5 : 1}}
                     >
-                      <XCircle size={18} /> Không thể đến
+                      <XCircle size={16} /> Không đến
                     </button>
                   </div>
                 </div>
               </>
             )}
           </div>
+          
+          {/* Túi đỏ bên ngoài che thiệp */}
+          <div className="pocket-front"></div>
         </div>
-        
-        {/* Guestbook Section */}
-        <div className="guestbook-section">
-          <h3 style={{marginTop: 0, color: '#0f172a', textAlign: 'center'}}>Sổ Lưu Bút Kỷ Niệm 30 Năm</h3>
-          <p style={{color: '#64748b', fontSize: '14px', textAlign: 'center', marginBottom: '20px'}}>Hãy để lại những lời chúc tốt đẹp nhất dành cho nhà trường nhé!</p>
-          
-          <form onSubmit={submitWish} style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-            <textarea 
-              value={newWish}
-              onChange={(e) => setNewWish(e.target.value)}
-              placeholder={`Viết lời chúc của bạn, ${guest.name}...`}
-              style={{
-                width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', 
-                minHeight: '80px', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box'
-              }}
-              required
-            />
-            <button 
-              type="submit" 
-              disabled={isSubmitting}
-              style={{
-                alignSelf: 'flex-end', padding: '10px 20px', background: '#3b82f6', color: 'white', 
-                border: 'none', borderRadius: '30px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold'
-              }}
-            >
-              <Send size={16} /> {isSubmitting ? 'Đang gửi...' : 'Gửi lời chúc'}
-            </button>
-          </form>
-          
-          <div className="wish-list">
-            {wishes.map(wish => (
-              <div key={wish.id} className="wish-item">
-                <div className="wish-author">{wish.guest_name}</div>
-                <div className="wish-content">{wish.message}</div>
-                <div style={{fontSize: '11px', color: '#94a3b8', marginTop: '5px'}}>
-                  {new Date(wish.created_at).toLocaleString('vi-VN')}
-                </div>
+
+        {/* Lời chúc lơ lửng (Chỉ hiện khi đã mở thiệp) */}
+        {isOpen && (
+          <div className="danmaku-container">
+            {floatingWishes.map((w, i) => (
+              <div 
+                key={`${w.id}-${i}`} 
+                className="danmaku-item" 
+                style={{ 
+                  left: `${w.left}%`, 
+                  animationDelay: `${w.delay}s`, 
+                  animationDuration: `${w.duration}s` 
+                }}
+              >
+                <strong>{w.guest_name}:</strong> {w.message}
               </div>
             ))}
-            {wishes.length === 0 && (
-              <p style={{textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', marginTop: '20px'}}>
-                Chưa có lời chúc nào. Hãy là người đầu tiên gửi lời chúc nhé!
-              </p>
-            )}
           </div>
-        </div>
+        )}
+
+        {/* Hiệu ứng bắn tim */}
+        {isOpen && (
+          <div className="hearts-container">
+            {hearts.map(h => (
+              <div key={h.id} className="floating-heart" style={{ left: `${h.left}%` }}>❤️</div>
+            ))}
+          </div>
+        )}
+
+        {/* Thanh công cụ nhập lời chúc */}
+        <form onSubmit={submitWish} className="action-bar">
+          <input 
+            type="text" 
+            className="wish-input" 
+            placeholder="Gửi lời chúc..." 
+            value={newWish}
+            onChange={(e) => setNewWish(e.target.value)}
+            required
+          />
+          <button type="submit" className="send-btn" disabled={isSubmitting}>
+            <Send size={16} />
+          </button>
+          
+          <button type="button" className="heart-btn" onClick={shootHeart}>
+            <Heart size={24} />
+            Bắn tim
+          </button>
+        </form>
+
       </div>
     </div>
   );
