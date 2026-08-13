@@ -570,6 +570,26 @@ export default function OnlineInvitation() {
           100% { transform: translate3d(0, -102vh, 0); opacity: 0; }
         }
 
+        /* FALLING GOLD GLITTER FOR PAGES 1, 2, 3, 4 */
+        .glitter-overlay {
+          position: absolute; top: 0; left: 0; right: 0; bottom: 75px;
+          pointer-events: none; z-index: 45; overflow: hidden;
+        }
+        .glitter-dot {
+          position: absolute; top: -15px;
+          background: radial-gradient(circle, #fff3a0 0%, #ffd700 50%, #b45309 100%);
+          border-radius: 50%;
+          box-shadow: 0 0 8px #ffd700, 0 0 12px #d97706;
+          animation: fallGlitter linear infinite;
+          will-change: transform, opacity;
+        }
+        @keyframes fallGlitter {
+          0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 0; }
+          12% { opacity: 0.95; }
+          88% { opacity: 0.85; }
+          100% { transform: translate3d(25px, 102vh, 0) rotate(360deg); opacity: 0; }
+        }
+
         .hearts-container { position: absolute; top: 0; left: 0; right: 0; bottom: 75px; pointer-events: none; z-index: 60; overflow: hidden; }
         .floating-heart { position: absolute; bottom: -20px; font-size: 24px; color: #ff3366; animation: flyHeart 4s ease-out forwards; }
         @keyframes flyHeart { 0% { transform: translateY(0) scale(1); opacity: 1; } 50% { transform: translateY(-200px) scale(1.5) rotate(15deg); opacity: 0.8; } 100% { transform: translateY(-400px) scale(1) rotate(-15deg); opacity: 0; } }
@@ -936,10 +956,31 @@ export default function OnlineInvitation() {
           ))}
         </div>
 
-        {/* GENTLE WAVING FLOATING WISHES (MEMOIZED & 60FPS STABLE) */}
-        <div className="danmaku-container">
-          {renderedFloatingWishes}
-        </div>
+        {/* GENTLE WAVING FLOATING WISHES (PAGE 0 COVER ONLY) */}
+        {activePage === 0 && (
+          <div className="danmaku-container">
+            {renderedFloatingWishes}
+          </div>
+        )}
+
+        {/* FALLING GOLD GLITTER PARTICLES (PAGES 1, 2, 3, 4) */}
+        {activePage > 0 && (
+          <div className="glitter-overlay">
+            {Array.from({ length: 22 }).map((_, i) => (
+              <div 
+                key={i} 
+                className="glitter-dot" 
+                style={{
+                  left: `${(i * 19) % 94 + 3}%`,
+                  width: `${(i % 3) * 3 + 4}px`,
+                  height: `${(i % 3) * 3 + 4}px`,
+                  animationDuration: `${3.5 + (i % 5) * 1.2}s`,
+                  animationDelay: `${(i % 8) * 0.6}s`
+                }} 
+              />
+            ))}
+          </div>
+        )}
         <div className="hearts-container">
           {hearts.map(h => (
             <div key={h.id} className="floating-heart" style={{ left: `${h.left}%` }}>❤️</div>
