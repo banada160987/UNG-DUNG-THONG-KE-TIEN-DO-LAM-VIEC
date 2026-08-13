@@ -26,9 +26,8 @@ export default function AdminInviteConfig() {
       { time: '8h30 - 10h30', content: '❖ Chào cờ, tuyên bố lý do, giới thiệu đại biểu\n❖ Diễn văn Kỷ niệm 30 năm thành lập trường\n❖ Phát biểu của lãnh đạo cấp trên\n❖ Tặng hoa tri ân cho cựu CBQL, GV, NV của nhà trường và nhà tài trợ\n❖ Ra mắt Quỹ học bổng: "Chắp cánh ước mơ tuổi học trò"\n❖ Khen thưởng\n❖ Bế mạc và chụp hình lưu niệm' },
       { time: '10h30', content: '❖ Tham quan phòng Truyền thống\n❖ Mời đại biểu và cựu học sinh tham dự liên hoan thân mật' }
     ],
-    qr_message: 'Để khâu tiếp đón được chu đáo,\nQuý đại biểu vui lòng quét mã QR xác nhận thông tin\ntham dự Chương trình Lễ Kỷ niệm',
     ending_message: 'Rất hân hạnh được đón tiếp!',
-    bg_music: 'https://www.bensound.com/bensound-music/bensound-acousticbreeze.mp3'
+    bg_music: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
   });
 
   useEffect(() => {
