@@ -94,6 +94,17 @@ export default function OnlineInvitation() {
   const [memoryCaption, setMemoryCaption] = useState('');
   const [memoryFile, setMemoryFile] = useState(null);
 
+  // 6. SPONSORSHIP & VIETQR
+  const [isSponsorModalOpen, setIsSponsorModalOpen] = useState(false);
+  const [sponsorActiveTab, setSponsorActiveTab] = useState('donate');
+  const [sponsorName, setSponsorName] = useState('');
+  const [sponsorGroup, setSponsorGroup] = useState('');
+  const [sponsorAmount, setSponsorAmount] = useState('');
+  const [sponsorType, setSponsorType] = useState('Quỹ Học Bổng "Chắp Cánh Ước Mơ"');
+  const [sponsorItem, setSponsorItem] = useState('');
+  const [isSubmittingSponsor, setIsSubmittingSponsor] = useState(false);
+  const [sponsorsList, setSponsorsList] = useState([]);
+
   // MEMOIZED FLOATING WISHES TO PREVENT RE-ANIMATION STUTTER ON TIMER TICKS
   const renderedFloatingWishes = useMemo(() => {
     return floatingWishes.slice(0, 8).map((w, i) => (
@@ -167,6 +178,7 @@ export default function OnlineInvitation() {
       }
       
       await fetchWishes();
+      await fetchSponsorsList();
       // Wait for user interaction to play audio.
 
     } catch (error) {
@@ -353,6 +365,52 @@ export default function OnlineInvitation() {
       { cls: 'Khóa 2010 - 2013', count: 29 },
       { cls: 'Khóa 1996 - 1999', count: 18 }
     ];
+  };
+
+  const fetchSponsorsList = async () => {
+    const { data } = await supabase.from('cbq_sponsors').select('*').order('date_received', { ascending: false });
+    if (data) setSponsorsList(data);
+  };
+
+  const handleSubmitSponsor = async (e) => {
+    e.preventDefault();
+    const finalName = sponsorName.trim() || guest?.name || 'Vô danh';
+    if (!finalName) return;
+
+    setIsSubmittingSponsor(true);
+    const amountNum = parseFloat(sponsorAmount) || 0;
+    const itemText = sponsorItem.trim() ? `${sponsorType} (${sponsorItem.trim()})` : sponsorType;
+
+    const { data, error } = await supabase.from('cbq_sponsors').insert([{
+      name: `${finalName}${sponsorGroup.trim() ? ' - ' + sponsorGroup.trim() : ''}`,
+      donation_amount: amountNum,
+      donation_item: itemText,
+      is_public: true
+    }]).select();
+
+    setIsSubmittingSponsor(false);
+    if (!error) {
+      alert("Cảm ơn tấm lòng vàng của bạn đã tài trợ ủng hộ nhà trường!");
+      if (data && data[0]) {
+        setSponsorsList(prev => [data[0], ...prev]);
+      }
+      setSponsorActiveTab('honor');
+    } else {
+      alert("Lỗi khi lưu thông tin đóng góp: " + error.message);
+    }
+  };
+
+  const getVietQrUrl = () => {
+    const bank = config?.bank_name || 'MBBank';
+    const acc = config?.bank_account_no || '0966888999';
+    const holder = encodeURIComponent(config?.bank_account_holder || 'TRUONG THPT CAO BA QUAT');
+    const memo = encodeURIComponent(`Ung ho Quy 30 Nam ${sponsorName || guest?.name || ''}`);
+    const amount = sponsorAmount ? parseFloat(sponsorAmount) : 0;
+    return `https://img.vietqr.io/image/${bank}-${acc}-compact2.png?amount=${amount}&addInfo=${memo}&accountName=${holder}`;
+  };
+
+  const getTotalSponsorAmount = () => {
+    return sponsorsList.reduce((sum, item) => sum + (parseFloat(item.donation_amount) || 0), 0);
   };
 
   if (loading) return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>Đang tải thiệp mời...</div>;
@@ -669,7 +727,13 @@ export default function OnlineInvitation() {
         .alumni-directory-btn {
           background: linear-gradient(135deg, #15803d, #166534); color: white; padding: 11px 22px;
           border: none; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer;
-          box-shadow: 0 4px 12px rgba(21,128,61,0.3); margin-top: 12px; display: inline-flex; align-items: center; gap: 6px;
+          box-shadow: 0 4px 12px rgba(21,128,61,0.3); margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-family: 'Montserrat', sans-serif;
+        }
+
+        .sponsor-btn {
+          background: linear-gradient(135deg, #b45309, #d97706); color: white; padding: 11px 22px;
+          border: none; border-radius: 30px; font-size: 13px; font-weight: 700; cursor: pointer;
+          box-shadow: 0 4px 12px rgba(180,83,9,0.3); margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; font-family: 'Montserrat', sans-serif;
         }
 
         @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
@@ -914,21 +978,29 @@ export default function OnlineInvitation() {
                     <div style={{fontSize: '13px', fontWeight: 'bold', color: '#fde047'}}>✅ QUÝ VỊ ĐÃ XÁC NHẬN THAM DỰ</div>
                     <div style={{fontSize: '11px', color: '#fff', marginTop: '3px'}}>Rất hân hạnh được đón tiếp Quý vị tại buổi lễ!</div>
                   </div>
-                  <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                  <div style={{display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap', marginTop: '8px'}}>
                     <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
                       🎫 Thẻ VIP & QR
                     </button>
                     <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
                       🎓 Tìm Bạn & Top Khóa
                     </button>
+                    <button className="sponsor-btn" onClick={() => { fetchSponsorsList(); setIsSponsorModalOpen(true); }}>
+                      🌱 Đồng Hành Cùng Nhà Trường
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px'}}>
+                <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'}}>
                   <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
-                  <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
-                    🎓 Tìm Bạn Học Cũ & Top Khóa
-                  </button>
+                  <div style={{display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                    <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
+                      🎓 Tìm Bạn Cũ
+                    </button>
+                    <button className="sponsor-btn" onClick={() => { fetchSponsorsList(); setIsSponsorModalOpen(true); }}>
+                      🌱 Đồng Hành Cùng Nhà Trường
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -1222,6 +1294,148 @@ export default function OnlineInvitation() {
               {isUploadingMemory ? '⏳ Đang tải lên...' : '📸 Tải Ảnh Kỷ Niệm Lên'}
             </button>
           </form>
+        </div>
+      </div>
+
+      {/* SPONSORSHIP & VIETQR MODAL */}
+      <div className={`rsvp-overlay ${isSponsorModalOpen ? 'open' : ''}`}>
+        <div className="rsvp-modal" style={{maxWidth: '460px'}}>
+          <button className="close-rsvp" onClick={() => setIsSponsorModalOpen(false)}>×</button>
+          <h3 style={{fontFamily: 'Playfair Display, serif', textAlign: 'center', color: '#b45309', margin: '0 0 4px 0', fontSize: '19px'}}>
+            🌱 ĐỒNG HÀNH CÙNG MÁI TRƯỜNG
+          </h3>
+          <p style={{textAlign: 'center', fontSize: '11.5px', color: '#64748b', margin: '0 0 10px 0', fontStyle: 'italic', lineHeight: '1.4', background: '#fff7ed', padding: '8px 12px', borderRadius: '8px', border: '1px solid #ffedd5'}}>
+            💬 "Sự hiện diện của Quý vị là món quà quý giá nhất đối với Nhà trường. Mọi đóng góp ủng hộ (nếu có) đều hoàn toàn tự nguyện tùy tâm để chắp cánh cho thế hệ học sinh tiếp nối."
+          </p>
+
+          <div style={{display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '15px'}}>
+            <button 
+              style={{flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', borderBottom: sponsorActiveTab === 'donate' ? '3px solid #b45309' : 'none', color: sponsorActiveTab === 'donate' ? '#b45309' : '#64748b', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif'}}
+              onClick={() => setSponsorActiveTab('donate')}
+            >
+              📲 VietQR & Đăng Ký
+            </button>
+            <button 
+              style={{flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', borderBottom: sponsorActiveTab === 'honor' ? '3px solid #b45309' : 'none', color: sponsorActiveTab === 'honor' ? '#b45309' : '#64748b', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif'}}
+              onClick={() => { fetchSponsorsList(); setSponsorActiveTab('honor'); }}
+            >
+              🌟 Bảng Vàng Tri Ân ({sponsorsList.length})
+            </button>
+          </div>
+
+          {sponsorActiveTab === 'donate' ? (
+            <div style={{maxHeight: '70vh', overflowY: 'auto', paddingRight: '4px'}}>
+              {/* VIETQR CARD DISPLAY */}
+              <div style={{background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '12px', padding: '12px', textAlign: 'center', marginBottom: '15px'}}>
+                <div style={{fontSize: '11px', fontWeight: 'bold', color: '#b45309', textTransform: 'uppercase'}}>MÃ VIETQR CHUYỂN KHOẢN TỰ ĐỘNG</div>
+                <img 
+                  src={getVietQrUrl()} 
+                  alt="VietQR Bank" 
+                  style={{maxWidth: '180px', height: 'auto', margin: '8px auto', display: 'block', borderRadius: '8px', border: '1px solid #fef08a'}} 
+                />
+                <div style={{fontSize: '12px', fontWeight: 'bold', color: '#1e293b'}}>{config?.bank_name || 'MBBank'} - STK: {config?.bank_account_no || '0966888999'}</div>
+                <div style={{fontSize: '11px', color: '#64748b'}}>{config?.bank_account_holder || 'TRƯỜNG THPT CAO BÁ QUÁT'}</div>
+              </div>
+
+              <form onSubmit={handleSubmitSponsor}>
+                <div style={{marginBottom: '10px'}}>
+                  <label style={{fontSize: '12px', fontWeight: 'bold', color: '#475569'}}>Họ & Tên Người / Đơn Vị Ủng Hộ</label>
+                  <input 
+                    type="text" 
+                    value={sponsorName} 
+                    onChange={(e) => setSponsorName(e.target.value)} 
+                    placeholder="VD: Nguyễn Văn A" 
+                    required 
+                    style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '3px', boxSizing: 'border-box'}}
+                  />
+                </div>
+
+                <div style={{marginBottom: '10px'}}>
+                  <label style={{fontSize: '12px', fontWeight: 'bold', color: '#475569'}}>Niên khóa / Doanh nghiệp</label>
+                  <input 
+                    type="text" 
+                    value={sponsorGroup} 
+                    onChange={(e) => setSponsorGroup(e.target.value)} 
+                    placeholder="VD: Cựu học sinh Khóa 2002 - 2005" 
+                    style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '3px', boxSizing: 'border-box'}}
+                  />
+                </div>
+
+                <div style={{marginBottom: '10px'}}>
+                  <label style={{fontSize: '12px', fontWeight: 'bold', color: '#475569'}}>Hạng mục đóng góp / tài trợ</label>
+                  <select 
+                    value={sponsorType} 
+                    onChange={(e) => setSponsorType(e.target.value)}
+                    style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '3px', fontSize: '13px'}}
+                  >
+                    <option value='Quỹ Học Bổng "Chắp Cánh Ước Mơ"'>🎓 Quỹ Học Bổng "Chắp Cánh Ước Mơ"</option>
+                    <option value='Tài trợ Cây xanh / Công trình trường'>🌳 Tài trợ Cây xanh / Công trình trường</option>
+                    <option value='Tài trợ Thiết bị dạy học'>💻 Tài trợ Thiết bị dạy học</option>
+                    <option value='Ủng hộ kinh phí tổ chức lễ'>🧧 Ủng hộ kinh phí tổ chức lễ</option>
+                  </select>
+                </div>
+
+                <div style={{marginBottom: '10px'}}>
+                  <label style={{fontSize: '12px', fontWeight: 'bold', color: '#475569'}}>Số tiền ủng hộ (VNĐ) hoặc Vật phẩm</label>
+                  <input 
+                    type="number" 
+                    value={sponsorAmount} 
+                    onChange={(e) => setSponsorAmount(e.target.value)} 
+                    placeholder="VD: 5000000 (Nhập 0 nếu tài trợ hiện vật)" 
+                    style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '3px', boxSizing: 'border-box'}}
+                  />
+                  <input 
+                    type="text" 
+                    value={sponsorItem} 
+                    onChange={(e) => setSponsorItem(e.target.value)} 
+                    placeholder="Ghi chú thêm (VD: 5 cây phượng hoặc 2 tivi)" 
+                    style={{width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '6px', boxSizing: 'border-box', fontSize: '12px'}}
+                  />
+                </div>
+
+                <button 
+                  type="submit" 
+                  disabled={isSubmittingSponsor}
+                  style={{width: '100%', padding: '12px', background: 'linear-gradient(135deg, #b45309, #d97706)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontFamily: 'Montserrat, sans-serif', marginTop: '5px'}}
+                >
+                  {isSubmittingSponsor ? '⏳ Đang ghi nhận...' : '💝 Gửi Đăng Ký Tài Trợ & Lưu Bảng Vàng'}
+                </button>
+              </form>
+            </div>
+          ) : (
+            <div>
+              <div style={{background: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'center', marginBottom: '12px'}}>
+                <div style={{fontSize: '11px', color: '#64748b', textTransform: 'uppercase', fontWeight: 'bold'}}>TỔNG TÀI TRỢ & ĐÓNG GÓP TỚI NAY</div>
+                <div style={{fontSize: '20px', fontWeight: '800', color: '#b45309'}}>{getTotalSponsorAmount().toLocaleString('vi-VN')} VNĐ</div>
+              </div>
+
+              <div style={{maxHeight: '260px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px'}}>
+                {sponsorsList.length > 0 ? (
+                  sponsorsList.map((item, i) => {
+                    const amt = parseFloat(item.donation_amount) || 0;
+                    const badge = amt >= 50000000 ? '🥇 Kim Cương' : amt >= 10000000 ? '🥈 Vàng' : amt >= 2000000 ? '🥉 Bạc' : '💖 Tấm Lòng Vàng';
+                    const badgeBg = amt >= 50000000 ? '#fefce8' : amt >= 10000000 ? '#fef08a' : amt >= 2000000 ? '#f1f5f9' : '#fff1f2';
+                    const badgeColor = amt >= 50000000 ? '#854d0e' : amt >= 10000000 ? '#b45309' : amt >= 2000000 ? '#475569' : '#be123c';
+
+                    return (
+                      <div key={i} style={{padding: '10px 12px', background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.03)'}}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                          <div style={{fontWeight: 'bold', fontSize: '13.5px', color: '#1e293b'}}>{item.name}</div>
+                          <span style={{fontSize: '10.5px', background: badgeBg, color: badgeColor, padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold'}}>{badge}</span>
+                        </div>
+                        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '4px', fontSize: '12px'}}>
+                          <span style={{color: '#64748b'}}>{item.donation_item || 'Ủng hộ Quỹ Học Bổng'}</span>
+                          <span style={{fontWeight: 'bold', color: '#b45309'}}>{amt > 0 ? `${amt.toLocaleString('vi-VN')} VNĐ` : 'Hiện vật'}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div style={{textAlign: 'center', color: '#94a3b8', padding: '20px'}}>Chưa có danh sách nhà tài trợ...</div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

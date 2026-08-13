@@ -34,6 +34,9 @@ export default function AdminInviteConfig() {
     ending_message: 'Rất hân hạnh được đón tiếp!',
     bg_music: '/nhacnen.mp3',
     bg_image: '',
+    bank_name: 'MBBank',
+    bank_account_no: '0966888999',
+    bank_account_holder: 'TRUONG THPT CAO BA QUAT',
     gallery_images: [
       "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80",
       "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=500&q=80",
