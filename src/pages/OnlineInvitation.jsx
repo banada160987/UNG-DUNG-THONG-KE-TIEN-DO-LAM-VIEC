@@ -264,7 +264,24 @@ export default function OnlineInvitation() {
         .event-time { font-size: 24px; color: #d32f2f; font-weight: bold; margin: 20px 0; }
         .event-location { font-size: 16px; color: #7e1717; font-weight: bold; margin-bottom: 5px; }
 
-        /* PAGE 3: GALLERY */
+        /* PAGE 3: AGENDA (Timeline) */
+        .page-agenda {
+          background: #fdfbfb; color: #333; padding: 20px; box-sizing: border-box;
+          display: flex; flex-direction: column;
+        }
+        .timeline-container {
+          width: 90%; margin: 0 auto; overflow-y: auto; flex: 1; padding: 20px 0;
+          -ms-overflow-style: none; scrollbar-width: none;
+        }
+        .timeline-container::-webkit-scrollbar { display: none; }
+        .timeline-item { display: flex; gap: 15px; margin-bottom: 20px; }
+        .timeline-time { min-width: 85px; font-weight: bold; color: #d32f2f; text-align: right; font-size: 14px; }
+        .timeline-divider { width: 2px; background: #fca5a5; position: relative; margin-top: 5px; }
+        .timeline-divider::before { content: ''; position: absolute; top: -5px; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: #d32f2f; }
+        .timeline-content-text { flex: 1; font-size: 14px; white-space: pre-line; color: #475569; padding-bottom: 15px; border-bottom: 1px dashed #e2e8f0; }
+        .timeline-item:last-child .timeline-content-text { border-bottom: none; }
+
+        /* PAGE 4: GALLERY */
         .page-gallery {
           background: #fff5f5; color: #e11d48; padding: 20px; box-sizing: border-box;
         }
@@ -276,7 +293,7 @@ export default function OnlineInvitation() {
         .gallery-grid::-webkit-scrollbar { display: none; }
         .gallery-item { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 2px solid #f43f5e; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
-        /* PAGE 4: INTERACTIVE (Wishes & RSVP) */
+        /* PAGE 5: INTERACTIVE (Wishes & RSVP) */
         .page-interactive {
           background: linear-gradient(to bottom, #ef4444, #b91c1c); color: white;
           position: relative;
@@ -434,7 +451,27 @@ export default function OnlineInvitation() {
             </div>
           </div>
 
-          {/* PAGE 3: GALLERY */}
+          {/* PAGE 3: AGENDA (TIMELINE) */}
+          <div className="page page-agenda">
+             <div className="title-box" style={{margin: '0 auto 10px'}}>CHƯƠNG TRÌNH</div>
+             <div style={{textAlign: 'center', fontSize: '13px', color: '#64748b', marginBottom: '20px'}}>Các hoạt động chính trong buổi lễ</div>
+             
+             <div className="timeline-container">
+                 {config?.agenda && config.agenda.length > 0 ? (
+                   config.agenda.map((item, i) => (
+                      <div key={i} className="timeline-item">
+                          <div className="timeline-time">{item.time}</div>
+                          <div className="timeline-divider"></div>
+                          <div className="timeline-content-text">{item.content}</div>
+                      </div>
+                   ))
+                 ) : (
+                   <p style={{textAlign: 'center', color: '#999'}}>Đang cập nhật chương trình...</p>
+                 )}
+             </div>
+          </div>
+
+          {/* PAGE 4: GALLERY */}
           <div className="page page-gallery">
             <h2 style={{margin: '0', textAlign: 'center'}}>THƯ VIỆN ẢNH</h2>
             <div style={{textAlign: 'center', fontSize: '13px', marginBottom: '10px'}}>Những khoảnh khắc đáng nhớ</div>
@@ -445,7 +482,7 @@ export default function OnlineInvitation() {
             </div>
           </div>
 
-          {/* PAGE 4: RSVP & WISHES */}
+          {/* PAGE 5: RSVP & WISHES */}
           <div className="page page-interactive">
             <div className="interactive-content">
               <h2 style={{color: '#f3e6c9', marginBottom: '10px'}}>CHUNG VUI CÙNG CHÚNG TÔI</h2>
@@ -458,7 +495,7 @@ export default function OnlineInvitation() {
 
         {/* PAGINATION DOTS */}
         <div className="pagination">
-          {[0, 1, 2, 3].map(i => (
+          {[0, 1, 2, 3, 4].map(i => (
             <div key={i} className={`dot ${activePage === i ? 'active' : ''}`} onClick={() => scrollToPage(i)} />
           ))}
         </div>
