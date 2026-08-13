@@ -32,6 +32,7 @@ export default function PublicLayout() {
             <Link to="/van-ban" style={isActive('/van-ban') ? styles.navItemActive : styles.navItem}>Văn bản - Thông báo</Link>
             <Link to="/bang-vang" style={isActive('/bang-vang') ? styles.navItemActive : styles.navItem}>Bảng vàng</Link>
             <Link to="/thu-vien-anh" style={isActive('/thu-vien-anh') ? styles.navItemActive : styles.navItem}>Thư viện ảnh</Link>
+            <Link to="/cuoc-thi" style={isActive('/cuoc-thi') ? styles.navItemActive : styles.navItem}>🏆 Cuộc thi tìm hiểu</Link>
           </div>
           <Link to="/admin" style={styles.adminLoginBtn}>Đăng nhập BTC</Link>
         </div>

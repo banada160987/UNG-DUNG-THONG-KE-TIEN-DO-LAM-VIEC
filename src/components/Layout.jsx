@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -64,6 +64,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/committee', icon: CheckSquare, label: 'Việc của Tiểu ban', group: 'TỔ CHỨC SỰ KIỆN', show: true },
     { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewGuests },
     { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewSponsors },
+    { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi & Trao giải', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewNews },
     { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },

@@ -20,6 +20,8 @@ import AdminGallery from './pages/AdminGallery';
 import AdminAuditLog from './pages/AdminAuditLog';
 import AdminInviteConfig from './pages/AdminInviteConfig';
 import OnlineInvitation from './pages/OnlineInvitation';
+import PublicQuiz from './pages/PublicQuiz';
+import AdminQuiz from './pages/AdminQuiz';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -43,6 +45,7 @@ function App() {
         <Route path="/van-ban" element={<PublicDocs />} />
         <Route path="/bang-vang" element={<PublicSponsorsList />} />
         <Route path="/thu-vien-anh" element={<PublicGallery />} />
+        <Route path="/cuoc-thi" element={<PublicQuiz />} />
       </Route>
       
       {/* Protected Admin Routes */}
@@ -60,6 +63,7 @@ function App() {
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
         </>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />
