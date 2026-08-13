@@ -71,12 +71,27 @@ export default function PublicQuiz() {
   const [leaderboard, setLeaderboard] = useState([]);
   const [activeTab, setActiveTab] = useState('result'); // 'result' | 'leaderboard' | 'review'
 
+  // Contest Config State
+  const [quizConfig, setQuizConfig] = useState(null);
+
   const timerRef = useRef(null);
 
   useEffect(() => {
     fetchQuestions();
     fetchLeaderboard();
+    fetchQuizConfig();
   }, []);
+
+  const fetchQuizConfig = async () => {
+    try {
+      const { data } = await supabase.from('cbq_quizzes').select('*').limit(1);
+      if (data && data.length > 0) {
+        setQuizConfig(data[0]);
+      }
+    } catch (err) {
+      console.error("Lỗi tải cấu hình cuộc thi:", err);
+    }
+  };
 
   // Timer countdown
   useEffect(() => {
@@ -172,13 +187,34 @@ export default function PublicQuiz() {
       alert("Vui lòng nhập Họ và Tên của bạn.");
       return;
     }
+
+    if (quizConfig && quizConfig.is_active === false) {
+      alert("Cuộc thi hiện đang tạm dừng nhận bài làm. Vui lòng liên hệ Ban Tổ Chức.");
+      return;
+    }
+
+    const now = new Date();
+    if (quizConfig && quizConfig.start_time && new Date(quizConfig.start_time) > now) {
+      const startStr = new Date(quizConfig.start_time).toLocaleString('vi-VN');
+      alert(`Cuộc thi chưa mở! Vui lòng quay lại lúc ${startStr}.`);
+      return;
+    }
+
+    if (quizConfig && quizConfig.end_time && new Date(quizConfig.end_time) < now) {
+      const endStr = new Date(quizConfig.end_time).toLocaleString('vi-VN');
+      alert(`Cuộc thi đã kết thúc nhận bài vào lúc ${endStr}.`);
+      return;
+    }
+
     if (questions.length === 0) {
       alert("Hiện chưa có câu hỏi thi nào. Vui lòng liên hệ Ban Tổ Chức.");
       return;
     }
+
+    const durationMins = Number(quizConfig?.time_limit_minutes) || 15;
     setStep('quiz');
     setStartTime(Date.now());
-    setTimeLeft(900); // 15 mins
+    setTimeLeft(durationMins * 60);
   };
 
   const handleSelectOption = (questionId, optionIndex) => {

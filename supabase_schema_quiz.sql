@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS public.cbq_quizzes (
     title TEXT NOT NULL,
     description TEXT,
     time_limit_minutes INT DEFAULT 15,
+    start_time TEXT,
+    end_time TEXT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -44,10 +46,18 @@ CREATE TABLE IF NOT EXISTS public.cbq_quiz_submissions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- RLS POLICIES (BẢO MẬT & QUYỀN TRUY CẬP)
+-- RLS POLICIES (XÓA CHÍNH SÁCH CŨ NẾU CÓ ĐỂ TRÁNH LỖI DUPLICATE)
 ALTER TABLE public.cbq_quizzes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cbq_quiz_questions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cbq_quiz_submissions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Allow public read quizzes" ON public.cbq_quizzes;
+DROP POLICY IF EXISTS "Allow public read questions" ON public.cbq_quiz_questions;
+DROP POLICY IF EXISTS "Allow public insert submissions" ON public.cbq_quiz_submissions;
+DROP POLICY IF EXISTS "Allow public read submissions for leaderboard" ON public.cbq_quiz_submissions;
+DROP POLICY IF EXISTS "Allow admin all quizzes" ON public.cbq_quizzes;
+DROP POLICY IF EXISTS "Allow admin all questions" ON public.cbq_quiz_questions;
+DROP POLICY IF EXISTS "Allow admin all submissions" ON public.cbq_quiz_submissions;
 
 CREATE POLICY "Allow public read quizzes" ON public.cbq_quizzes FOR SELECT USING (true);
 CREATE POLICY "Allow public read questions" ON public.cbq_quiz_questions FOR SELECT USING (true);

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles } from 'lucide-react';
+import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock } from 'lucide-react';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
@@ -20,10 +20,65 @@ export default function AdminQuiz() {
   const [correctIdx, setCorrectIdx] = useState(0);
   const [points, setPoints] = useState(10);
 
+  // Quiz Config State
+  const [quizConfig, setQuizConfig] = useState({
+    title: 'Cuộc Thi Tìm Hiểu 30 Năm Thành Lập Trường THPT Cao Bá Quát',
+    description: 'Hành trình 30 năm chắp cánh ước mơ tuổi học trò (1996 - 2026)',
+    time_limit_minutes: 15,
+    start_time: '2026-08-01T08:00',
+    end_time: '2026-09-03T23:59',
+    is_active: true
+  });
+  const [savingConfig, setSavingConfig] = useState(false);
+
   useEffect(() => {
     fetchSubmissions();
     fetchQuestions();
+    fetchQuizConfig();
   }, []);
+
+  const fetchQuizConfig = async () => {
+    try {
+      const { data } = await supabase.from('cbq_quizzes').select('*').limit(1);
+      if (data && data.length > 0) {
+        setQuizConfig(data[0]);
+      }
+    } catch (err) {
+      console.error("Lỗi lấy cấu hình cuộc thi:", err);
+    }
+  };
+
+  const handleSaveQuizConfig = async (e) => {
+    e.preventDefault();
+    setSavingConfig(true);
+    try {
+      if (quizConfig.id) {
+        await supabase.from('cbq_quizzes').update({
+          title: quizConfig.title,
+          description: quizConfig.description,
+          time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
+          start_time: quizConfig.start_time,
+          end_time: quizConfig.end_time,
+          is_active: quizConfig.is_active
+        }).eq('id', quizConfig.id);
+      } else {
+        const newQ = await supabase.from('cbq_quizzes').insert([{
+          title: quizConfig.title,
+          description: quizConfig.description,
+          time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
+          start_time: quizConfig.start_time,
+          end_time: quizConfig.end_time,
+          is_active: quizConfig.is_active
+        }]).select().single();
+        if (newQ.data) setQuizConfig(newQ.data);
+      }
+      alert("Đã lưu cấu hình thời gian & thông tin cuộc thi thành công!");
+    } catch (err) {
+      alert("Lỗi lưu cấu hình: " + err.message);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const fetchSubmissions = async () => {
     setLoading(true);
@@ -135,6 +190,12 @@ export default function AdminQuiz() {
             style={styles.tabBtn(activeTab === 'questions')}
           >
             <Star size={18} /> Ngân Hàng Câu Hỏi ({questions.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('config')}
+            style={styles.tabBtn(activeTab === 'config')}
+          >
+            <Settings size={18} /> ⚙️ Cấu Hình Thời Gian & Cuộc Thi
           </button>
         </div>
 
@@ -305,6 +366,96 @@ export default function AdminQuiz() {
               </button>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* TAB 3: CONTEST CONFIG & TIME SETUP */}
+      {activeTab === 'config' && (
+        <div style={{ background: '#ffffff', padding: '24px', borderRadius: '14px', border: '1px solid #e2e8f0', maxWidth: '680px' }}>
+          <h3 style={{ margin: '0 0 15px 0', color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Clock size={20} /> Cài Đặt Thời Gian & Thể Lệ Cuộc Thi
+          </h3>
+
+          <form onSubmit={handleSaveQuizConfig}>
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Tên Cuộc Thi *</label>
+              <input 
+                type="text" 
+                required 
+                value={quizConfig.title || ''} 
+                onChange={e => setQuizConfig(prev => ({ ...prev, title: e.target.value }))} 
+                style={styles.input} 
+              />
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Mô Tả / Hướng Dẫn Thể Lệ Thi *</label>
+              <textarea 
+                rows={3} 
+                value={quizConfig.description || ''} 
+                onChange={e => setQuizConfig(prev => ({ ...prev, description: e.target.value }))} 
+                style={styles.input} 
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '14px' }}>
+              <div>
+                <label style={styles.label}>Thời Gian Làm Bài (Phút) *</label>
+                <input 
+                  type="number" 
+                  required 
+                  min={1} 
+                  max={180} 
+                  value={quizConfig.time_limit_minutes || 15} 
+                  onChange={e => setQuizConfig(prev => ({ ...prev, time_limit_minutes: e.target.value }))} 
+                  style={styles.input} 
+                />
+                <span style={{ fontSize: '12px', color: '#64748b' }}>VD: 15 phút (Đồng hồ đếm ngược)</span>
+              </div>
+
+              <div>
+                <label style={styles.label}>Trạng Thái Cuộc Thi</label>
+                <select 
+                  value={quizConfig.is_active ? 'true' : 'false'} 
+                  onChange={e => setQuizConfig(prev => ({ ...prev, is_active: e.target.value === 'true' }))} 
+                  style={styles.input}
+                >
+                  <option value="true">🟢 Đang mở cho thí sinh thi</option>
+                  <option value="false">🔴 Tạm đóng / Dừng nhận bài thi</option>
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+              <div>
+                <label style={styles.label}>Ngày Giờ Bắt Đầu Mở Thi</label>
+                <input 
+                  type="datetime-local" 
+                  value={quizConfig.start_time || ''} 
+                  onChange={e => setQuizConfig(prev => ({ ...prev, start_time: e.target.value }))} 
+                  style={styles.input} 
+                />
+              </div>
+
+              <div>
+                <label style={styles.label}>Ngày Giờ Kết Thúc / Khóa Đề</label>
+                <input 
+                  type="datetime-local" 
+                  value={quizConfig.end_time || ''} 
+                  onChange={e => setQuizConfig(prev => ({ ...prev, end_time: e.target.value }))} 
+                  style={styles.input} 
+                />
+              </div>
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={savingConfig} 
+              style={{ ...styles.submitBtn, padding: '12px 24px', fontSize: '14.5px', background: '#166534' }}
+            >
+              {savingConfig ? '⏳ Đang lưu...' : '💾 Lưu Cấu Hình Cuộc Thi'}
+            </button>
+          </form>
         </div>
       )}
     </Layout>
