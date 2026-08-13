@@ -406,7 +406,7 @@ export default function OnlineInvitation() {
         .wish-input { flex: 1; height: 32px; background: transparent; border: none; color: white; padding: 0 8px; outline: none; font-size: 13px; }
         .wish-input::placeholder { color: rgba(255,255,255,0.7); }
         .send-btn { background: transparent; color: white; border: none; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
-        .pill-btn { background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(5px); color: white; border-radius: 30px; padding: 7px 11px; display: flex; align-items: center; gap: 4px; font-family: 'Montserrat', sans-serif; font-size: 11px; font-weight: 700; cursor: pointer; }
+        .pill-btn { background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(5px); color: white; border-radius: 30px; padding: 7px 12px; display: flex; align-items: center; gap: 4px; font-family: 'Montserrat', sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
         
         /* ELEGANT TOP WISH TICKER (NON-OBSTRUCTIVE) */
         .danmaku-container {
@@ -580,11 +580,11 @@ export default function OnlineInvitation() {
             <h1 className="cover-title">Lễ Kỷ Niệm<br/>30 Năm</h1>
             <div className="cover-subtitle">{config?.school_name || "THPT CAO BÁ QUÁT"}</div>
             
-            <div className="cover-guest">Trân trọng kính mời</div>
+            <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
             <div className="cover-name">{guest.name}</div>
             
             <div className="swipe-hint" onClick={() => scrollToPage(1)} style={{cursor: 'pointer'}}>
-              <span>Vuốt sang trái để mở thiệp</span> <span style={{fontSize: '18px'}}>👉</span>
+              <span>Vuốt sang trái để xem thiệp</span> <span style={{fontSize: '18px'}}>👉</span>
             </div>
           </div>
 
@@ -603,17 +603,17 @@ export default function OnlineInvitation() {
               <div className="event-time">{config?.time}</div>
               
               <div style={{marginTop: '10px', width: '100%'}}>
-                <div className="event-location">📍 TẠI ĐỊA ĐIỂM:</div>
+                <div className="event-location">📍 ĐỊA ĐIỂM TỔ CHỨC:</div>
                 <div style={{fontSize: '14px', whiteSpace: 'pre-line', color: '#334155', lineHeight: '1.4'}}>{config?.location}</div>
               </div>
 
               {/* LOGISTICS ACTIONS (MAPS & CALENDAR) */}
               <div className="logistics-actions">
                 <button className="logistics-btn maps-btn" onClick={openGoogleMaps}>
-                  📍 Chỉ đường Google Maps
+                  📍 Xem Vị Trí Trên Bản Đồ
                 </button>
                 <button className="logistics-btn calendar-btn" onClick={addToCalendar}>
-                  📅 Thêm vào Lịch của tôi
+                  📅 Lưu Ngày Vào Lịch Của Tôi
                 </button>
               </div>
             </div>
@@ -621,8 +621,8 @@ export default function OnlineInvitation() {
 
           {/* PAGE 3: AGENDA (TIMELINE) */}
           <div className="page page-agenda">
-             <div className="title-box" style={{margin: '0 auto 8px'}}>CHƯƠNG TRÌNH</div>
-             <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', marginBottom: '15px'}}>Các hoạt động chính trong buổi lễ</div>
+             <div className="title-box" style={{margin: '0 auto 8px'}}>CHƯƠNG TRÌNH LỄ KỶ NIỆM</div>
+             <div style={{textAlign: 'center', fontSize: '12px', color: '#64748b', marginBottom: '15px'}}>Tiến trình các hoạt động trọng thể</div>
              
              <div className="timeline-container">
                  {config?.agenda && config.agenda.length > 0 ? (
@@ -641,8 +641,8 @@ export default function OnlineInvitation() {
 
           {/* PAGE 4: GALLERY */}
           <div className="page page-gallery">
-            <h2 style={{fontFamily: 'Playfair Display, serif', margin: '0', textAlign: 'center', fontSize: '24px'}}>THƯ VIỆN ẢNH</h2>
-            <div style={{textAlign: 'center', fontSize: '12px', marginBottom: '8px', color: '#e11d48'}}>Những khoảnh khắc đáng nhớ</div>
+            <h2 style={{fontFamily: 'Playfair Display, serif', margin: '0', textAlign: 'center', fontSize: '23px', letterSpacing: '1px'}}>HÀNH TRÌNH 30 NĂM</h2>
+            <div style={{textAlign: 'center', fontSize: '12px', marginBottom: '8px', color: '#be123c', fontWeight: '500'}}>Những dấu ấn & ký ức không phai theo thời gian</div>
             <div className="gallery-grid">
               {(config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY).map((src, i) => (
                 <img key={i} src={getDirectImageUrl(src)} alt="Gallery" className="gallery-item" />
@@ -653,26 +653,26 @@ export default function OnlineInvitation() {
           {/* PAGE 5: RSVP & WISHES */}
           <div className="page page-interactive">
             <div className="interactive-content">
-              <h2 style={{fontFamily: 'Playfair Display, serif', color: '#fde047', marginBottom: '8px', fontSize: '24px'}}>CHUNG VUI CÙNG CHÚNG TÔI</h2>
-              <p style={{fontSize: '13.5px', margin: '0 20px', color: '#fecdd3', lineHeight: '1.4'}}>Sự hiện diện của bạn là niềm vinh hạnh lớn nhất của nhà trường.</p>
+              <h2 style={{fontFamily: 'Playfair Display, serif', color: '#fde047', marginBottom: '8px', fontSize: '23px', letterSpacing: '1px'}}>HỘI NGỘ & TRI ÂN</h2>
+              <p style={{fontSize: '13.5px', margin: '0 15px', color: '#fecdd3', lineHeight: '1.4'}}>Sự hiện diện của Quý vị là niềm vinh hạnh to lớn cho Nhà trường.</p>
               
               {guest?.rsvp_status === 'attending' ? (
                 <div style={{marginTop: '15px'}}>
                   <div style={{background: 'rgba(255,255,255,0.15)', padding: '12px', borderRadius: '14px', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.3)'}}>
-                    <div style={{fontSize: '13px', fontWeight: 'bold', color: '#fde047'}}>✅ BẠN ĐÃ XÁC NHẬN THAM DỰ</div>
-                    <div style={{fontSize: '11px', color: '#fff', marginTop: '3px'}}>Rất hân hạnh được đón tiếp bạn tại buổi lễ!</div>
+                    <div style={{fontSize: '13px', fontWeight: 'bold', color: '#fde047'}}>✅ QUÝ VỊ ĐÃ XÁC NHẬN THAM DỰ</div>
+                    <div style={{fontSize: '11px', color: '#fff', marginTop: '3px'}}>Rất hân hạnh được đón tiếp Quý vị tại buổi lễ!</div>
                   </div>
                   <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
                     🎫 Xem Thẻ Check-in VIP & QR
                   </button>
                 </div>
               ) : (
-                <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác nhận tham dự</button>
+                <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
               )}
 
               {/* WISHES FEED DISPLAY ON PAGE 5 */}
               <div style={{marginTop: '18px', width: '100%', maxHeight: '130px', overflowY: 'auto', background: 'rgba(0,0,0,0.35)', padding: '10px 14px', borderRadius: '12px', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', textAlign: 'left', boxSizing: 'border-box'}}>
-                <div style={{fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fde047', fontWeight: 'bold', marginBottom: '6px'}}>💌 Sổ Lời Chúc ({wishes.length})</div>
+                <div style={{fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fde047', fontWeight: 'bold', marginBottom: '6px'}}>💌 Sổ Vàng Lời Chúc ({wishes.length})</div>
                 {wishes.length > 0 ? (
                   wishes.map((w, idx) => (
                     <div key={idx} style={{fontSize: '12px', color: '#fff', marginBottom: '5px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '3px'}}>
@@ -680,7 +680,7 @@ export default function OnlineInvitation() {
                     </div>
                   ))
                 ) : (
-                  <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Hãy là người đầu tiên gửi lời chúc tới nhà trường!</div>
+                  <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Hãy là người đầu tiên gửi lời chúc tới Nhà trường!</div>
                 )}
               </div>
             </div>
@@ -723,14 +723,14 @@ export default function OnlineInvitation() {
         {/* FIXED ACTION BAR */}
         <form onSubmit={submitWish} className="action-bar">
           <div className="wish-input-wrapper">
-            <input type="text" className="wish-input" placeholder="Gửi lời chúc..." value={newWish} onChange={(e) => setNewWish(e.target.value)} required />
-            <button type="submit" className="send-btn" disabled={isSubmittingWish}><Send size={16} /></button>
+            <input type="text" className="wish-input" placeholder="Nhập lời chúc tri ân..." value={newWish} onChange={(e) => setNewWish(e.target.value)} required />
+            <button type="submit" className="send-btn" disabled={isSubmittingWish}><Send size={15} /></button>
           </div>
           <button type="button" className="pill-btn" onClick={shootHeart}>
-            <span style={{color: '#ff3366'}}>❤️</span> Bắn tim
+            <span style={{color: '#ff3366'}}>💖</span> Gửi yêu thương
           </button>
           <button type="button" className="pill-btn" onClick={() => setIsGiftModalOpen(true)}>
-            <span>🎁</span> Tặng quà
+            <span>🎁</span> Gửi tri ân
           </button>
         </form>
       </div>
