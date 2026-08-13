@@ -16,6 +16,8 @@ export default function AdminGuests() {
   const [showScanner, setShowScanner] = useState(false);
   const [inviteConfig, setInviteConfig] = useState(null);
   const [downloadingGuest, setDownloadingGuest] = useState(null);
+  const [showPrintBadges, setShowPrintBadges] = useState(false);
+  const [badgeCategoryFilter, setBadgeCategoryFilter] = useState('All');
   const hiddenInviteRef = useRef(null);
   
   const [formData, setFormData] = useState({
@@ -215,6 +217,9 @@ export default function AdminGuests() {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', alignItems: 'center' }}>
         <p style={{color: '#64748b'}}>Quản lý danh sách đại biểu, xuất thư mời và theo dõi xác nhận tham dự.</p>
         <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
+          <button onClick={() => setShowPrintBadges(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#be123c' }}>
+            <DownloadCloud size={20} /> In Thẻ Đại Biểu Hàng Loạt
+          </button>
           <button onClick={() => setShowScanner(true)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#8b5cf6' }}>
             <ScanLine size={20} /> Quét mã Check-in
           </button>
@@ -459,6 +464,104 @@ export default function AdminGuests() {
               <div className="closing-text">Rất vinh dự được đón tiếp!</div>
             </div>
 
+          </div>
+        </div>
+      )}
+      {/* BATCH PRINT BADGES MODAL */}
+      {showPrintBadges && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 400, overflowY: 'auto', padding: '20px' }}>
+          <style>{`
+            @media print {
+              body * { visibility: hidden !important; }
+              #badge-printable-area, #badge-printable-area * { visibility: visible !important; }
+              #badge-printable-area { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; background: white !important; }
+              .badge-print-controls { display: none !important; }
+              .badge-card-item { page-break-inside: avoid !important; break-inside: avoid !important; }
+            }
+          `}</style>
+
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '1000px', margin: '0 auto', padding: '24px' }}>
+            <div className="badge-print-controls" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '15px', borderBottom: '2px solid #e2e8f0' }}>
+              <div>
+                <h2 style={{ margin: '0 0 4px 0', color: '#be123c' }}>🏷️ In Thẻ Đại Biểu Đeo Ngực Hàng Loạt</h2>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Bấm nút [Bấm In Thẻ] để máy in in chuẩn 8 thẻ / trang A4 có kèm mã QR Check-in.</p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <select 
+                  value={badgeCategoryFilter} 
+                  onChange={e => setBadgeCategoryFilter(e.target.value)} 
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+                >
+                  <option value="All">Tất cả phân loại ({guests.length})</option>
+                  <option value="Cựu giáo viên">Cựu giáo viên</option>
+                  <option value="Cựu học sinh">Cựu học sinh</option>
+                  <option value="Đại biểu">Đại biểu</option>
+                  <option value="Khách mời khác">Khách mời khác</option>
+                </select>
+
+                <button 
+                  onClick={() => window.print()} 
+                  style={{ padding: '10px 20px', background: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '14px' }}
+                >
+                  🖨️ BẤM IN HÀNG LOẠT (CTRL + P)
+                </button>
+
+                <button 
+                  onClick={() => setShowPrintBadges(false)} 
+                  style={{ padding: '10px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+
+            {/* PRINTABLE BADGES GRID */}
+            <div id="badge-printable-area" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
+              {guests
+                .filter(g => badgeCategoryFilter === 'All' || g.category === badgeCategoryFilter)
+                .map((g) => (
+                  <div 
+                    key={g.id} 
+                    className="badge-card-item"
+                    style={{
+                      border: '2px solid #b71c1c',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      background: 'linear-gradient(135deg, #fffdfa 0%, #fff7ed 100%)',
+                      textAlign: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                      position: 'relative',
+                      pageBreakInside: 'avoid'
+                    }}
+                  >
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#b71c1c', letterSpacing: '0.5px' }}>
+                      TRƯỜNG THPT CAO BÁ QUÁT
+                    </div>
+                    <div style={{ fontSize: '10px', color: '#881337', fontWeight: '600', marginBottom: '8px' }}>
+                      LỄ KỶ NIỆM 30 NĂM THÀNH LẬP (1996 - 2026)
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #fde047', borderBottom: '1px solid #fde047', padding: '8px 0', margin: '6px 0' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>
+                        {g.name}
+                      </div>
+                      <div style={{ fontSize: '11.5px', color: '#be123c', fontWeight: 'bold', marginTop: '2px' }}>
+                        {g.category || 'THẺ THAM DỰ'}
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', marginTop: '8px' }}>
+                      <QRCodeSVG value={g.invitation_code} size={55} level="M" />
+                      <div style={{ textAlign: 'left', fontSize: '11px', color: '#475569' }}>
+                        <div>Mã: <strong style={{ color: '#b45309' }}>{g.invitation_code}</strong></div>
+                        <div>SĐT: {g.phone || 'N/A'}</div>
+                        <div style={{ fontSize: '9px', fontStyle: 'italic', color: '#166534', marginTop: '2px' }}>✓ Quét mã tại cổng đón tiếp</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
           </div>
         </div>
       )}

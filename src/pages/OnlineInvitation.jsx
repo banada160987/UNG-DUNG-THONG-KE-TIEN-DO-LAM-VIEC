@@ -105,6 +105,50 @@ export default function OnlineInvitation() {
   const [isSubmittingSponsor, setIsSubmittingSponsor] = useState(false);
   const [sponsorsList, setSponsorsList] = useState([]);
 
+  // 7. DIVERSE LIGHTBOX PHOTO VIEWER
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const [lightboxRotation, setLightboxRotation] = useState(0);
+  const [lightboxScale, setLightboxScale] = useState(1);
+  const [isAutoPlaySlideshow, setIsAutoPlaySlideshow] = useState(false);
+
+  // AUTO PLAY SLIDESHOW TIMER
+  useEffect(() => {
+    let interval = null;
+    if (isAutoPlaySlideshow && lightboxIndex !== null) {
+      interval = setInterval(() => {
+        const galleryArr = config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY;
+        setLightboxIndex(prev => (prev + 1) % galleryArr.length);
+        setLightboxRotation(0);
+        setLightboxScale(1);
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isAutoPlaySlideshow, lightboxIndex, config]);
+
+  // KEYBOARD NAVIGATION FOR LIGHTBOX
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (lightboxIndex === null) return;
+      const galleryArr = config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY;
+      if (e.key === 'ArrowRight') {
+        setLightboxIndex(prev => (prev + 1) % galleryArr.length);
+        setLightboxRotation(0);
+        setLightboxScale(1);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex(prev => (prev - 1 + galleryArr.length) % galleryArr.length);
+        setLightboxRotation(0);
+        setLightboxScale(1);
+      } else if (e.key === 'Escape') {
+        setLightboxIndex(null);
+        setIsAutoPlaySlideshow(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [lightboxIndex, config]);
+
   // MEMOIZED FLOATING WISHES TO PREVENT RE-ANIMATION STUTTER ON TIMER TICKS
   const renderedFloatingWishes = useMemo(() => {
     return floatingWishes.slice(0, 8).map((w, i) => (
@@ -955,13 +999,26 @@ export default function OnlineInvitation() {
             <h2 style={{fontFamily: 'Playfair Display, serif', margin: '0', textAlign: 'center', fontSize: '23px', letterSpacing: '1px'}}>HÀNH TRÌNH 30 NĂM</h2>
             <div style={{textAlign: 'center', fontSize: '12px', marginBottom: '8px', color: '#be123c', fontWeight: '500'}}>Những dấu ấn & ký ức không phai theo thời gian</div>
             
-            <button className="upload-memory-btn" onClick={() => setIsMemoryModalOpen(true)}>
-              📸 Đóng Góp Ảnh Kỷ Niệm Tuổi Học Trò
-            </button>
+            <div style={{display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '10px', flexWrap: 'wrap'}}>
+              <button className="upload-memory-btn" onClick={() => setIsMemoryModalOpen(true)}>
+                📸 Đóng Góp Ảnh Kỷ Niệm
+              </button>
+              <button className="upload-memory-btn" style={{background: 'linear-gradient(135deg, #0284c7, #0369a1)'}} onClick={() => { setLightboxIndex(0); setIsAutoPlaySlideshow(true); }}>
+                ⏯️ Xem Trình Chiếu Auto-Play
+              </button>
+            </div>
 
-            <div className="gallery-grid" style={{height: '65%'}}>
+            <div className="gallery-grid" style={{height: '62%'}}>
               {(config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY).map((src, i) => (
-                <img key={i} src={getDirectImageUrl(src)} alt="Gallery" className="gallery-item" />
+                <img 
+                  key={i} 
+                  src={getDirectImageUrl(src)} 
+                  alt="Gallery" 
+                  className="gallery-item" 
+                  style={{cursor: 'pointer', transition: 'transform 0.2s ease'}}
+                  onClick={() => { setLightboxIndex(i); setLightboxRotation(0); setLightboxScale(1); }} 
+                  title="Bấm để xem phóng to HD"
+                />
               ))}
             </div>
           </div>
@@ -1439,6 +1496,120 @@ export default function OnlineInvitation() {
         </div>
       </div>
 
+      {/* DIVERSE LIGHTBOX PHOTO VIEWER MODAL */}
+      {lightboxIndex !== null && (() => {
+        const galleryArr = config?.gallery_images && config.gallery_images.length > 0 ? config.gallery_images : DEFAULT_GALLERY;
+        const currentSrc = galleryArr[lightboxIndex];
+        return (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.92)', zIndex: 9999,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+            padding: '15px', backdropFilter: 'blur(10px)'
+          }}>
+            {/* LIGHTBOX TOOLBAR */}
+            <div style={{
+              width: '100%', maxWidth: '900px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              color: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.2)', paddingBottom: '10px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fde047' }}>
+                📸 Kỷ Niệm 30 Năm ({lightboxIndex + 1} / {galleryArr.length})
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => setIsAutoPlaySlideshow(prev => !prev)} 
+                  style={{ background: isAutoPlaySlideshow ? '#be123c' : 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  {isAutoPlaySlideshow ? '⏸️ Tạm Dừng' : '⏯️ Tự Động Chiếu (3s)'}
+                </button>
+                <button 
+                  onClick={() => setLightboxScale(prev => Math.min(prev + 0.3, 2.5))} 
+                  style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}
+                  title="Phóng to"
+                >
+                  🔍+
+                </button>
+                <button 
+                  onClick={() => setLightboxScale(prev => Math.max(prev - 0.3, 0.7))} 
+                  style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}
+                  title="Thu nhỏ"
+                >
+                  🔍-
+                </button>
+                <button 
+                  onClick={() => setLightboxRotation(prev => (prev + 90) % 360)} 
+                  style={{ background: 'rgba(255,255,255,0.2)', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 10px', fontSize: '12px', cursor: 'pointer' }}
+                  title="Xoay ảnh 90 độ"
+                >
+                  🔄
+                </button>
+                <a 
+                  href={getDirectImageUrl(currentSrc)} 
+                  target="_blank" 
+                  download 
+                  rel="noreferrer" 
+                  style={{ background: '#166534', color: 'white', textDecoration: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '12px', fontWeight: 'bold' }}
+                >
+                  📥 Tải Ảnh
+                </a>
+                <button 
+                  onClick={() => { setLightboxIndex(null); setIsAutoPlaySlideshow(false); }} 
+                  style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: '6px', padding: '6px 12px', fontSize: '14px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  ✕ Đóng
+                </button>
+              </div>
+            </div>
+
+            {/* MAIN IMAGE DISPLAY AREA */}
+            <div style={{
+              flex: 1, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative', overflow: 'hidden', margin: '15px 0'
+            }}>
+              {/* PREVIOUS BUTTON */}
+              <button 
+                onClick={() => { setLightboxIndex((lightboxIndex - 1 + galleryArr.length) % galleryArr.length); setLightboxRotation(0); setLightboxScale(1); }}
+                style={{
+                  position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.6)', color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '50%', width: '44px', height: '44px', fontSize: '20px', cursor: 'pointer', zIndex: 10
+                }}
+              >
+                ❮
+              </button>
+
+              <img 
+                src={getDirectImageUrl(currentSrc)} 
+                alt="Enlarged Memory" 
+                style={{
+                  maxWidth: '85vw', maxHeight: '70vh', objectFit: 'contain',
+                  borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.8)',
+                  transform: `scale(${lightboxScale}) rotate(${lightboxRotation}deg)`,
+                  transition: 'transform 0.3s ease'
+                }}
+              />
+
+              {/* NEXT BUTTON */}
+              <button 
+                onClick={() => { setLightboxIndex((lightboxIndex + 1) % galleryArr.length); setLightboxRotation(0); setLightboxScale(1); }}
+                style={{
+                  position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.6)', color: 'white', border: '1px solid rgba(255,255,255,0.3)',
+                  borderRadius: '50%', width: '44px', height: '44px', fontSize: '20px', cursor: 'pointer', zIndex: 10
+                }}
+              >
+                ❯
+              </button>
+            </div>
+
+            {/* CAPTION FOOTER */}
+            <div style={{ color: '#cbd5e1', fontSize: '12.5px', textAlign: 'center', fontStyle: 'italic' }}>
+              💡 Dùng phím mũi tên ⬅️ ➡️ trên bàn phím để chuyển ảnh • Phím ESC để đóng
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
