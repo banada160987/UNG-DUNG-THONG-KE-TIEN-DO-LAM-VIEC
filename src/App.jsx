@@ -33,6 +33,7 @@ function App() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <Login />} />
       <Route path="/thiep/:code" element={<OnlineInvitation />} />
+      <Route path="/invite/:code" element={<OnlineInvitation />} />
       
       {/* Public Portal Routes with Nested Routing */}
       <Route element={<PublicLayout />}>

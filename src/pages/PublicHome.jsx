@@ -484,9 +484,17 @@ export default function PublicHome() {
                       </div>
                     )}
                     
-                    <div style={{ marginTop: '15px' }}>
-                      <button onClick={handleDownloadInvite} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px', backgroundColor: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
-                        <Download size={18} /> Tải Thiệp Về Máy
+                    <div style={{ marginTop: '15px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <a 
+                        href={`/thiep/${rsvpResult.guest.invitation_code}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', flex: 1, padding: '12px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', boxShadow: '0 4px 12px rgba(190,18,60,0.25)', minWidth: '200px' }}
+                      >
+                        ✨ Trải Nghiệm Thiệp Mời 5D Tương Tác ➔
+                      </a>
+                      <button onClick={handleDownloadInvite} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px 16px', backgroundColor: '#e2e8f0', color: '#1e293b', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        <Download size={18} /> Tải Về
                       </button>
                     </div>
                   </div>
