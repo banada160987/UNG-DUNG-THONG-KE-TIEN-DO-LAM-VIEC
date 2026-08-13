@@ -8,6 +8,7 @@ export default function AdminInviteConfig() {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBg, setUploadingBg] = useState(false);
   const [config, setConfig] = useState({
     school_name: 'TRƯỜNG THPT CAO BÁ QUÁT',
     logo_url: '/logo.jpg',
@@ -31,6 +32,7 @@ export default function AdminInviteConfig() {
     ],
     ending_message: 'Rất hân hạnh được đón tiếp!',
     bg_music: '/nhacnen.mp3',
+    bg_image: '',
     gallery_images: [
       "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&q=80",
       "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=500&q=80",
@@ -142,6 +144,31 @@ export default function AdminInviteConfig() {
     }
     
     setUploadingLogo(false);
+    e.target.value = ''; // Reset input
+  };
+
+  const handleBgUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingBg(true);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `bg-${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage.from('gallery').upload(fileName, file);
+
+    if (uploadError) {
+      alert("Lỗi upload ảnh nền: " + uploadError.message);
+      setUploadingBg(false);
+      return;
+    }
+
+    const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+    if (data && data.publicUrl) {
+      setConfig(prev => ({ ...prev, bg_image: data.publicUrl }));
+    }
+    
+    setUploadingBg(false);
     e.target.value = ''; // Reset input
   };
 
@@ -331,6 +358,18 @@ export default function AdminInviteConfig() {
                       <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploadingLogo} style={{position: 'absolute', opacity: 0, width: 0, height: 0}} />
                     </label>
                   </div>
+                </div>
+
+                <div style={{ marginTop: '1rem' }}>
+                  <label style={styles.label}>Ảnh Nền Thiệp Mời (Tùy chọn - Link hoặc Tải lên)</label>
+                  <div style={{display: 'flex', gap: '10px', alignItems: 'center'}}>
+                    <input type="text" name="bg_image" value={config.bg_image || ''} onChange={handleChange} style={{...styles.input, flex: 1, margin: 0}} placeholder="Nhập link ảnh nền tùy chỉnh..." />
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '10px 15px', background: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '8px', cursor: 'pointer', margin: 0, fontWeight: 'bold', whiteSpace: 'nowrap' }}>
+                      {uploadingBg ? '⏳ Đang tải...' : '📸 Tải ảnh nền'}
+                      <input type="file" accept="image/*" onChange={handleBgUpload} disabled={uploadingBg} style={{position: 'absolute', opacity: 0, width: 0, height: 0}} />
+                    </label>
+                  </div>
+                  <p style={{fontSize: '12px', color: '#64748b', marginTop: '5px'}}>Nếu để trống, hệ thống sẽ tự dùng họa tiết phông nền mặc định sang trọng.</p>
                 </div>
 
                 <div style={{ marginTop: '1.5rem' }}>

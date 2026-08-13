@@ -247,6 +247,7 @@ export default function OnlineInvitation() {
         .mobile-container {
           position: relative; width: 100%; max-width: 500px; height: 100%; max-height: 900px;
           background-color: #7e1717; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);
+          background-size: cover; background-position: center;
         }
 
         /* ENTRANCE OVERLAY */
@@ -408,30 +409,33 @@ export default function OnlineInvitation() {
         .send-btn { background: transparent; color: white; border: none; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .pill-btn { background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(5px); color: white; border-radius: 30px; padding: 7px 12px; display: flex; align-items: center; gap: 4px; font-family: 'Montserrat', sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
         
-        /* ELEGANT TOP WISH TICKER (NON-OBSTRUCTIVE) */
+        /* GENTLE WAVING FLOATING WISHES (BAY BỔNG LƯỢN LỜ) */
         .danmaku-container {
-          position: absolute; top: 14px; left: 15px; right: 65px; height: 38px;
-          pointer-events: none; z-index: 95; overflow: hidden;
+          position: absolute; top: 0; left: 0; right: 0; bottom: 75px;
+          pointer-events: none; z-index: 50; overflow: hidden;
         }
         .danmaku-item {
-          position: absolute; top: 2px; left: 100%;
-          background: rgba(255, 255, 255, 0.94); backdrop-filter: blur(10px);
-          color: #881337; padding: 5px 13px; border-radius: 20px;
-          font-family: 'Montserrat', sans-serif; font-size: 11.5px; font-weight: 600;
+          position: absolute; bottom: -60px;
+          background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px);
+          color: #881337; padding: 7px 15px; border-radius: 25px;
+          font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600;
           white-space: nowrap; display: flex; align-items: center; gap: 7px;
-          box-shadow: 0 4px 14px rgba(190, 18, 60, 0.15);
+          box-shadow: 0 6px 20px rgba(190, 18, 60, 0.15);
           border: 1px solid rgba(254, 205, 211, 0.9);
-          animation: slideTicker linear infinite;
+          animation: floatWavy linear infinite;
         }
         .danmaku-avatar {
-          width: 20px; height: 20px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+          width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
         }
         .danmaku-name { color: #b45309; font-weight: 700; }
-        @keyframes slideTicker {
-          0% { transform: translateX(0); opacity: 0; }
-          4% { opacity: 1; }
-          94% { opacity: 1; }
-          100% { transform: translateX(-150vw); opacity: 0; }
+        @keyframes floatWavy {
+          0% { transform: translateY(0) translateX(0) scale(0.85); opacity: 0; }
+          10% { opacity: 0.95; transform: translateY(-10vh) translateX(12px) scale(1); }
+          30% { transform: translateY(-30vh) translateX(-15px); }
+          50% { transform: translateY(-50vh) translateX(18px) scale(1.02); }
+          70% { transform: translateY(-70vh) translateX(-10px); }
+          90% { opacity: 0.9; transform: translateY(-85vh) translateX(12px) scale(0.95); }
+          100% { transform: translateY(-98vh) translateX(0) scale(0.9); opacity: 0; }
         }
 
         .hearts-container { position: absolute; top: 0; left: 0; right: 0; bottom: 75px; pointer-events: none; z-index: 60; overflow: hidden; }
@@ -530,7 +534,10 @@ export default function OnlineInvitation() {
 
       <audio ref={audioRef} loop src={config?.bg_music || "/nhacnen.mp3"} preload="auto" />
 
-      <div className="mobile-container">
+      <div 
+        className="mobile-container"
+        style={config?.bg_image ? { backgroundImage: `url(${getDirectImageUrl(config.bg_image)})` } : {}}
+      >
         {/* ENTRANCE OVERLAY WITH GOLD SPARKLES */}
         <div className={`entrance-overlay ${hasOpened ? 'opened' : ''}`}>
           <div className="sparkles-container">
@@ -694,15 +701,16 @@ export default function OnlineInvitation() {
           ))}
         </div>
 
-        {/* ELEGANT TOP WISH TICKER */}
+        {/* GENTLE WAVING FLOATING WISHES */}
         <div className="danmaku-container">
           {floatingWishes.map((w, i) => (
             <div 
               key={`${w.id}-${i}`} 
               className="danmaku-item" 
               style={{ 
-                animationDelay: `${i * 3.8}s`, 
-                animationDuration: `${random(14, 20)}s` 
+                left: `${(i * 37) % 55 + 5}%`, 
+                animationDelay: `${i * 2.8}s`, 
+                animationDuration: `${random(18, 25)}s` 
               }}
             >
               <img 
