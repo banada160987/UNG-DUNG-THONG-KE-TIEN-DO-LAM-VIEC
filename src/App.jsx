@@ -19,6 +19,7 @@ import AdminLinks from './pages/AdminLinks';
 import AdminGallery from './pages/AdminGallery';
 import AdminAuditLog from './pages/AdminAuditLog';
 import AdminInviteConfig from './pages/AdminInviteConfig';
+import OnlineInvitation from './pages/OnlineInvitation';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <Login />} />
+      <Route path="/thiep/:code" element={<OnlineInvitation />} />
       
       {/* Public Portal Routes with Nested Routing */}
       <Route element={<PublicLayout />}>

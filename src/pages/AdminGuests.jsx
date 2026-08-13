@@ -152,7 +152,7 @@ export default function AdminGuests() {
     const templateParams = {
       to_email: guest.email,
       guest_name: guest.name,
-      invitation_link: `${window.location.origin}/?rsvp=${guest.invitation_code}`,
+      invitation_link: `${window.location.origin}/thiep/${guest.invitation_code}`,
       invitation_code: guest.invitation_code
     };
 
@@ -290,7 +290,7 @@ export default function AdminGuests() {
                           <code style={{background: '#f1f5f9', padding: '4px 8px', borderRadius: '4px', display: 'block', marginBottom: '4px'}}>{g.invitation_code}</code>
                           <button 
                             onClick={(e) => {
-                              const link = `${window.location.origin}/?rsvp=${g.invitation_code}`;
+                              const link = `${window.location.origin}/thiep/${g.invitation_code}`;
                               navigator.clipboard.writeText(link);
                               e.currentTarget.innerHTML = '<span style="color:#10b981">Đã copy!</span>';
                               setTimeout(() => {
