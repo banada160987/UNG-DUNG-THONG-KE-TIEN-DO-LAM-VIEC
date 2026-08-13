@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import TaskCard from '../components/TaskCard';
 import TaskModal from '../components/TaskModal';
@@ -12,6 +13,7 @@ export default function CommitteeView() {
   const { role, committeeId } = useAuth();
   const isAdminOrSecretary = role === 'admin' || role === 'secretary';
   
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tasks, setTasks] = useState([]);
   const [allCommittees, setAllCommittees] = useState([]);
   const [selectedCommitteeId, setSelectedCommitteeId] = useState(isAdminOrSecretary ? 'all' : (committeeId || ''));
@@ -41,8 +43,20 @@ export default function CommitteeView() {
       if (tasksRes.error) throw tasksRes.error;
       if (commRes.error) throw commRes.error;
 
-      setTasks(tasksRes.data || []);
+      const fetchedTasks = tasksRes.data || [];
+      setTasks(fetchedTasks);
       setAllCommittees(commRes.data || []);
+
+      const taskIdFromUrl = searchParams.get('taskId');
+      if (taskIdFromUrl) {
+        const taskToOpen = fetchedTasks.find(t => t.id === taskIdFromUrl);
+        if (taskToOpen) {
+          setEditingTask(taskToOpen);
+          setIsModalOpen(true);
+          searchParams.delete('taskId');
+          setSearchParams(searchParams, { replace: true });
+        }
+      }
     } catch (error) {
       console.error('Error fetching committee data:', error);
     } finally {

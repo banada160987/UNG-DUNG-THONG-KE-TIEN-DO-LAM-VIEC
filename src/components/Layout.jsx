@@ -17,6 +17,13 @@ export default function Layout({ children, title }) {
   const targetDate = new Date('2026-09-03');
   const daysLeft = differenceInDays(targetDate, new Date());
 
+  const handleNotificationClick = (notif) => {
+    setShowNotifications(false);
+    if (notif.task_id) {
+      navigate(`/admin/committee?taskId=${notif.task_id}`);
+    }
+  };
+
   useEffect(() => {
     const fetchNotifs = async () => {
       const { data } = await supabase.from('cbq_notifications').select('*').order('created_at', { ascending: false }).limit(5);
@@ -153,7 +160,7 @@ export default function Layout({ children, title }) {
                   <div style={styles.notifHeader}>Thông báo mới nhất</div>
                   <div style={styles.notifList}>
                     {notifications.map(n => (
-                      <div key={n.id} style={styles.notifItem}>
+                      <div key={n.id} style={{...styles.notifItem, cursor: n.task_id ? 'pointer' : 'default'}} onClick={() => handleNotificationClick(n)}>
                         <div style={{fontSize: '0.85rem', fontWeight: 'bold'}}>{n.title}</div>
                         <div style={{fontSize: '0.8rem', color: '#64748b', marginTop: '0.25rem'}}>{n.message}</div>
                         <div style={{fontSize: '0.7rem', color: '#94a3b8', marginTop: '0.5rem'}}>{new Date(n.created_at).toLocaleString('vi-VN')}</div>
