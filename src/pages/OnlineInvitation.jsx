@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Send } from 'lucide-react';
@@ -93,6 +93,28 @@ export default function OnlineInvitation() {
   const [isUploadingMemory, setIsUploadingMemory] = useState(false);
   const [memoryCaption, setMemoryCaption] = useState('');
   const [memoryFile, setMemoryFile] = useState(null);
+
+  // MEMOIZED FLOATING WISHES TO PREVENT RE-ANIMATION STUTTER ON TIMER TICKS
+  const renderedFloatingWishes = useMemo(() => {
+    return floatingWishes.slice(0, 8).map((w, i) => (
+      <div 
+        key={w.id || i} 
+        className="danmaku-item" 
+        style={{ 
+          left: `${(i * 31) % 50 + 5}%`, 
+          animationDelay: `${i * 2.5}s`, 
+          animationDuration: `${20 + (i % 4) * 2}s` 
+        }}
+      >
+        <img 
+          src={`https://ui-avatars.com/api/?name=${encodeURIComponent(w.guest_name || 'K')}&background=be123c&color=fff&rounded=true&size=24`} 
+          alt="avatar" 
+          className="danmaku-avatar" 
+        />
+        <span>💌 <strong className="danmaku-name">{w.guest_name}:</strong> {w.message}</span>
+      </div>
+    ));
+  }, [floatingWishes]);
 
   useEffect(() => {
     fetchData();
@@ -940,26 +962,9 @@ export default function OnlineInvitation() {
           ))}
         </div>
 
-        {/* GENTLE WAVING FLOATING WISHES */}
+        {/* GENTLE WAVING FLOATING WISHES (MEMOIZED & 60FPS STABLE) */}
         <div className="danmaku-container">
-          {floatingWishes.slice(0, 8).map((w, i) => (
-            <div 
-              key={`${w.id}-${i}`} 
-              className="danmaku-item" 
-              style={{ 
-                left: `${(i * 37) % 55 + 5}%`, 
-                animationDelay: `${i * 3.2}s`, 
-                animationDuration: `${random(18, 25)}s` 
-              }}
-            >
-              <img 
-                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(w.guest_name || 'K')}&background=be123c&color=fff&rounded=true&size=24`} 
-                alt="avatar" 
-                className="danmaku-avatar" 
-              />
-              <span>💌 <strong className="danmaku-name">{w.guest_name}:</strong> {w.message}</span>
-            </div>
-          ))}
+          {renderedFloatingWishes}
         </div>
         <div className="hearts-container">
           {hearts.map(h => (
