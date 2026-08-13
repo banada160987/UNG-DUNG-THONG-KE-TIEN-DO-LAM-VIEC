@@ -5,6 +5,17 @@ import { Search, MapPin, Clock, ChevronRight, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 
+const removeAccents = (str) => {
+  if (!str) return '';
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    .trim();
+};
+
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
   const [news, setNews] = useState([]);
@@ -15,6 +26,7 @@ export default function PublicHome() {
   const inviteRef = useRef(null);
   
   // LIVE SEARCH SUGGESTIONS
+  const [allGuests, setAllGuests] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -73,7 +85,7 @@ export default function PublicHome() {
       const [sponsorsRes, newsRes, guestsRes, linksRes, configRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
-        supabase.from('cbq_guests').select('rsvp_status'),
+        supabase.from('cbq_guests').select('*'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single()
       ]);
@@ -94,7 +106,9 @@ export default function PublicHome() {
       }
       if (!newsRes.error) setNews(newsRes.data || []);
       if (!guestsRes.error) {
-        const attendingCount = (guestsRes.data || []).filter(g => g.rsvp_status === 'attending').length;
+        const guestData = guestsRes.data || [];
+        setAllGuests(guestData);
+        const attendingCount = guestData.filter(g => g.rsvp_status === 'attending').length;
         setAttendingGuests(attendingCount);
       }
       if (!linksRes.error) setExternalLinks(linksRes.data || []);
@@ -105,31 +119,25 @@ export default function PublicHome() {
     }
   };
 
-  const handleSearchInputChange = async (value) => {
+  const handleSearchInputChange = (value) => {
     setRsvpCode(value);
-    if (!value.trim() || value.trim().length < 2) {
+    const q = value.trim();
+    if (!q || q.length < 1) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
 
-    setIsSearching(true);
+    const qNorm = removeAccents(q);
+    const matches = allGuests.filter(g => {
+      const nameNorm = removeAccents(g.name);
+      const codeNorm = removeAccents(g.invitation_code);
+      const groupNorm = removeAccents(g.group_name || g.note || '');
+      return nameNorm.includes(qNorm) || codeNorm.includes(qNorm) || groupNorm.includes(qNorm);
+    }).slice(0, 10);
+
+    setSearchResults(matches);
     setShowDropdown(true);
-
-    try {
-      const q = value.trim();
-      const { data } = await supabase
-        .from('cbq_guests')
-        .select('*')
-        .or(`name.ilike.%${q}%,invitation_code.ilike.%${q}%,group_name.ilike.%${q}%`)
-        .limit(8);
-
-      setSearchResults(data || []);
-    } catch (err) {
-      console.error("Lỗi tìm kiếm khách mời:", err);
-    } finally {
-      setIsSearching(false);
-    }
   };
 
   const handleSelectGuest = (guestItem) => {
@@ -138,24 +146,22 @@ export default function PublicHome() {
     setShowDropdown(false);
   };
 
-  const handleRsvpSearch = async (e) => {
-    e.preventDefault();
-    if (!rsvpCode) return;
-    try {
-      const { data, error } = await supabase
-        .from('cbq_guests')
-        .select('*')
-        .or(`invitation_code.eq.${rsvpCode.trim()},name.ilike.%${rsvpCode.trim()}%`)
-        .limit(1);
+  const handleRsvpSearch = (e) => {
+    if (e) e.preventDefault();
+    const q = rsvpCode.trim();
+    if (!q) return;
 
-      if (error || !data || data.length === 0) {
-        setRsvpResult({ error: 'Không tìm thấy thông tin khách mời. Vui lòng nhập tên hoặc mã thiệp khác.' });
-      } else {
-        setRsvpResult({ success: true, guest: data[0] });
-        setShowDropdown(false);
-      }
-    } catch (err) {
-      setRsvpResult({ error: 'Có lỗi xảy ra, vui lòng thử lại sau.' });
+    const qNorm = removeAccents(q);
+    const match = allGuests.find(g => 
+      removeAccents(g.invitation_code) === qNorm || 
+      removeAccents(g.name).includes(qNorm)
+    );
+
+    if (match) {
+      setRsvpResult({ success: true, guest: match });
+      setShowDropdown(false);
+    } else {
+      setRsvpResult({ error: `Không tìm thấy thông tin khách mời phù hợp từ khóa "${rsvpCode}". Vui lòng kiểm tra lại.` });
     }
   };
 
