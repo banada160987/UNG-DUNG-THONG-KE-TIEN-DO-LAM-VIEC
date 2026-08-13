@@ -54,6 +54,7 @@ export default function OnlineInvitation() {
   // Audio & Pages
   const [isPlaying, setIsPlaying] = useState(false);
   const [activePage, setActivePage] = useState(0);
+  const [hasOpened, setHasOpened] = useState(false);
   const audioRef = useRef(null);
   const scrollRef = useRef(null);
 
@@ -80,10 +81,7 @@ export default function OnlineInvitation() {
       }
       
       await fetchWishes();
-      
-      if (audioRef.current) {
-        audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
-      }
+      // Wait for user interaction to play audio.
 
     } catch (error) {
       console.error("Lỗi tải thiệp:", error);
@@ -127,6 +125,13 @@ export default function OnlineInvitation() {
       const width = scrollRef.current.clientWidth;
       scrollRef.current.scrollTo({ left: width * index, behavior: 'smooth' });
       setActivePage(index);
+    }
+  };
+
+  const handleOpenInvitation = () => {
+    setHasOpened(true);
+    if (audioRef.current) {
+      audioRef.current.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
     }
   };
 
@@ -219,6 +224,27 @@ export default function OnlineInvitation() {
           position: relative; width: 100%; max-width: 500px; height: 100%; max-height: 900px;
           background-color: #7e1717; overflow: hidden; box-shadow: 0 0 50px rgba(0,0,0,0.5);
         }
+
+        /* ENTRANCE OVERLAY */
+        .entrance-overlay {
+          position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+          background-image: linear-gradient(rgba(126, 23, 23, 0.9), rgba(0, 0, 0, 0.9)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80');
+          background-size: cover; background-position: center;
+          z-index: 9999; display: flex; justify-content: center; align-items: center; text-align: center; color: white;
+          transition: opacity 1s ease-out, transform 1s ease-out;
+        }
+        .entrance-overlay.opened { opacity: 0; pointer-events: none; transform: scale(1.1); }
+        .entrance-content { animation: fadeInUp 1s ease-out; display: flex; flex-direction: column; align-items: center; }
+        .entrance-logo { width: 140px; height: 140px; object-fit: contain; margin-bottom: 25px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); }
+        .entrance-title { font-size: 22px; font-weight: bold; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 2px; color: #f3e6c9; }
+        .entrance-subtitle { font-size: 16px; margin-bottom: 15px; font-style: italic; }
+        .entrance-guest { font-size: 38px; color: #ca8a4b; margin-bottom: 40px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); font-weight: bold; }
+        .entrance-btn {
+          background: linear-gradient(135deg, #ca8a4b, #a66a32); color: white; padding: 15px 50px;
+          border: none; border-radius: 30px; font-size: 18px; font-weight: bold; cursor: pointer;
+          box-shadow: 0 5px 15px rgba(202,138,75,0.4); animation: pulseBtn 2s infinite;
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
 
         /* HORIZONTAL SCROLL SNAP */
         .pages-wrapper {
@@ -414,6 +440,17 @@ export default function OnlineInvitation() {
       <audio ref={audioRef} loop src={config?.bg_music || "/nhacnen.mp3"} preload="auto" />
 
       <div className="mobile-container">
+        {/* ENTRANCE OVERLAY */}
+        <div className={`entrance-overlay ${hasOpened ? 'opened' : ''}`}>
+          <div className="entrance-content">
+             <img src={config?.logo_url || '/logo-30-nam.jpg'} alt="Logo" className="entrance-logo" />
+             <h2 className="entrance-title">{config?.school_name}</h2>
+             <p className="entrance-subtitle">Trân trọng kính mời</p>
+             <h1 className="entrance-guest">{guest?.name}</h1>
+             <button className="entrance-btn" onClick={handleOpenInvitation}>MỞ THIỆP</button>
+          </div>
+        </div>
+
         <div className="music-btn" onClick={toggleAudio}>🎵</div>
 
         {/* FLIPBOOK PAGES */}
