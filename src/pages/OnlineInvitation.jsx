@@ -453,7 +453,7 @@ export default function OnlineInvitation() {
         {/* ENTRANCE OVERLAY */}
         <div className={`entrance-overlay ${hasOpened ? 'opened' : ''}`}>
           <div className="entrance-content">
-             <img src={config?.logo_url || '/logo.jpg'} alt="Logo" className="entrance-logo" />
+             <img src={config?.logo_url || '/logo.jpg'} alt="Logo" className="entrance-logo" onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg'; }} />
              <h2 className="entrance-title">{config?.school_name}</h2>
              <p className="entrance-subtitle">Trân trọng kính mời</p>
              <h1 className="entrance-guest">{guest?.name}</h1>
@@ -485,7 +485,7 @@ export default function OnlineInvitation() {
               <div className="title-box">THÔNG TIN SỰ KIỆN</div>
               
               {(config?.logo_url || '/logo.jpg') && (
-                <img src={config?.logo_url || '/logo.jpg'} alt="Logo" style={{ maxWidth: '140px', maxHeight: '140px', objectFit: 'contain', marginTop: '15px', mixBlendMode: 'multiply' }} />
+                <img src={config?.logo_url || '/logo.jpg'} alt="Logo" style={{ maxWidth: '140px', maxHeight: '140px', objectFit: 'contain', marginTop: '15px', mixBlendMode: 'multiply' }} onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg'; }} />
               )}
               
               <div style={{fontSize: '18px', fontWeight: 'bold', marginTop: '15px', textTransform: 'uppercase'}}>{config?.event_name_main}</div>
