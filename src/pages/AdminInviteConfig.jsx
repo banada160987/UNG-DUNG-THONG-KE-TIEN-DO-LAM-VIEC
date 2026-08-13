@@ -27,7 +27,7 @@ export default function AdminInviteConfig() {
       { time: '10h30', content: '❖ Tham quan phòng Truyền thống\n❖ Mời đại biểu và cựu học sinh tham dự liên hoan thân mật' }
     ],
     ending_message: 'Rất hân hạnh được đón tiếp!',
-    bg_music: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'
+    bg_music: '/nhacnen.mp3'
   });
 
   useEffect(() => {

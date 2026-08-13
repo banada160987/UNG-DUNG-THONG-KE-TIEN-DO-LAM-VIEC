@@ -413,7 +413,7 @@ export default function OnlineInvitation() {
         ))}
       </div>
 
-      <audio ref={audioRef} loop src={config?.bg_music || "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"} preload="auto" />
+      <audio ref={audioRef} loop src={config?.bg_music || "/nhacnen.mp3"} preload="auto" />
 
       <div className="mobile-container">
         <div className="music-btn" onClick={toggleAudio}>🎵</div>
