@@ -8,12 +8,13 @@ const random = (min, max) => Math.random() * (max - min) + min;
 
 const GIFTS = [
   { id: 'tim', name: 'Bắn tim', icon: '💖' },
-  { id: 'hoa', name: 'Hoa đào', icon: '🌸' },
-  { id: 'khoa', name: 'Khóa tình yêu', icon: '🔒' },
-  { id: 'banh', name: 'Bánh ngọt', icon: '🎂' },
+  { id: 'bo_hoa', name: 'Bó hoa', icon: '💐' },
   { id: 'phao', name: 'Pháo mừng', icon: '🎉' },
   { id: 'phao_hoa', name: 'Pháo hoa', icon: '🎆' },
-  { id: 'bo_hoa', name: 'Bó hoa', icon: '💐' }
+  { id: 'cup', name: 'Cúp vàng', icon: '🏆' },
+  { id: 'diem10', name: 'Điểm 10', icon: '💯' },
+  { id: 'mu', name: 'Mũ cử nhân', icon: '🎓' },
+  { id: 'sach', name: 'Sách vở', icon: '📚' }
 ];
 
 export default function OnlineInvitation() {
@@ -371,12 +372,13 @@ export default function OnlineInvitation() {
         /* GIFT MODAL */
         .gift-overlay {
           position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-          background: rgba(0,0,0,0.5); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end;
+          background: rgba(0,0,0,0.5); z-index: 200; display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
           opacity: 0; pointer-events: none; transition: opacity 0.3s;
         }
         .gift-overlay.open { opacity: 1; pointer-events: auto; }
         .gift-modal {
           background: white; border-radius: 20px 20px 0 0; padding: 20px;
+          width: 100%; max-width: 500px;
           transform: translateY(100%); transition: transform 0.3s ease-out; font-family: Arial, sans-serif;
         }
         .gift-overlay.open .gift-modal { transform: translateY(0); }
@@ -408,10 +410,10 @@ export default function OnlineInvitation() {
       {showConfetti && <Confetti width={window.innerWidth} height={window.innerHeight} recycle={false} numberOfPieces={500} colors={['#ffd700', '#ff0000', '#ffffff', '#daa520']} />}
       
       {/* EFFECT LAYER */}
-      {activeGiftEffect === 'hoa' && (
+      {activeGiftEffect === 'sach' && (
         <div className="effect-layer">
-          {Array.from({length: 30}).map((_, i) => (
-            <div key={i} className="falling-item" style={{left: `${random(0,100)}vw`, animationDuration: `${random(3,7)}s`, animationDelay: `${random(0,2)}s`}}>🌸</div>
+          {Array.from({length: 20}).map((_, i) => (
+            <div key={i} className="falling-item" style={{left: `${random(0,100)}vw`, animationDuration: `${random(3,7)}s`, animationDelay: `${random(0,2)}s`}}>📚</div>
           ))}
         </div>
       )}
@@ -422,14 +424,19 @@ export default function OnlineInvitation() {
           ))}
         </div>
       )}
-      {activeGiftEffect === 'banh' && (
+      {activeGiftEffect === 'diem10' && (
         <div className="effect-layer">
-          <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '120px', animation: 'explode 3s ease-out forwards'}}>🎂</div>
+          <div style={{position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '120px', animation: 'explode 3s ease-out forwards'}}>💯</div>
         </div>
       )}
-      {activeGiftEffect === 'khoa' && (
+      {activeGiftEffect === 'cup' && (
         <div className="effect-layer">
-          <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '100px', animation: 'explode 3s ease-out forwards'}}>🔒</div>
+          <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '100px', animation: 'explode 3s ease-out forwards'}}>🏆</div>
+        </div>
+      )}
+      {activeGiftEffect === 'mu' && (
+        <div className="effect-layer">
+          <div style={{position: 'absolute', top: '40%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '100px', animation: 'explode 3s ease-out forwards'}}>🎓</div>
         </div>
       )}
       {activeGiftEffect === 'phao_hoa' && (
