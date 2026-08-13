@@ -517,19 +517,22 @@ export default function OnlineInvitation() {
         .send-btn { background: transparent; color: white; border: none; width: 30px; height: 30px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
         .pill-btn { background: rgba(0,0,0,0.65); border: 1px solid rgba(255,255,255,0.3); backdrop-filter: blur(5px); color: white; border-radius: 30px; padding: 7px 12px; display: flex; align-items: center; gap: 4px; font-family: 'Montserrat', sans-serif; font-size: 11.5px; font-weight: 700; cursor: pointer; }
         
-        /* GENTLE WAVING FLOATING WISHES (BAY BỔNG LƯỢN LỜ) */
+        /* GENTLE WAVING FLOATING WISHES (GPU OPTIMIZED 60FPS) */
         .danmaku-container {
           position: absolute; top: 0; left: 0; right: 0; bottom: 75px;
           pointer-events: none; z-index: 50; overflow: hidden;
         }
         .danmaku-item {
           position: absolute; bottom: -60px;
-          background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(10px);
+          background: rgba(255, 255, 255, 0.96);
           color: #881337; padding: 7px 15px; border-radius: 25px;
           font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 600;
           white-space: nowrap; display: flex; align-items: center; gap: 7px;
-          box-shadow: 0 6px 20px rgba(190, 18, 60, 0.15);
-          border: 1px solid rgba(254, 205, 211, 0.9);
+          box-shadow: 0 4px 12px rgba(190, 18, 60, 0.12);
+          border: 1px solid #fecdd3;
+          will-change: transform, opacity;
+          transform: translateZ(0);
+          backface-visibility: hidden;
           animation: floatWavy linear infinite;
         }
         .danmaku-avatar {
@@ -537,13 +540,12 @@ export default function OnlineInvitation() {
         }
         .danmaku-name { color: #b45309; font-weight: 700; }
         @keyframes floatWavy {
-          0% { transform: translateY(0) translateX(0) scale(0.85); opacity: 0; }
-          10% { opacity: 0.95; transform: translateY(-10vh) translateX(12px) scale(1); }
-          30% { transform: translateY(-30vh) translateX(-15px); }
-          50% { transform: translateY(-50vh) translateX(18px) scale(1.02); }
-          70% { transform: translateY(-70vh) translateX(-10px); }
-          90% { opacity: 0.9; transform: translateY(-85vh) translateX(12px) scale(0.95); }
-          100% { transform: translateY(-98vh) translateX(0) scale(0.9); opacity: 0; }
+          0% { transform: translate3d(0, 0, 0); opacity: 0; }
+          8% { opacity: 0.95; }
+          25% { transform: translate3d(-14px, -25vh, 0); }
+          50% { transform: translate3d(14px, -50vh, 0); }
+          75% { transform: translate3d(-10px, -75vh, 0); opacity: 0.95; }
+          100% { transform: translate3d(0, -102vh, 0); opacity: 0; }
         }
 
         .hearts-container { position: absolute; top: 0; left: 0; right: 0; bottom: 75px; pointer-events: none; z-index: 60; overflow: hidden; }
@@ -940,13 +942,13 @@ export default function OnlineInvitation() {
 
         {/* GENTLE WAVING FLOATING WISHES */}
         <div className="danmaku-container">
-          {floatingWishes.map((w, i) => (
+          {floatingWishes.slice(0, 8).map((w, i) => (
             <div 
               key={`${w.id}-${i}`} 
               className="danmaku-item" 
               style={{ 
                 left: `${(i * 37) % 55 + 5}%`, 
-                animationDelay: `${i * 2.8}s`, 
+                animationDelay: `${i * 3.2}s`, 
                 animationDuration: `${random(18, 25)}s` 
               }}
             >
