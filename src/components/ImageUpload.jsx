@@ -23,24 +23,32 @@ export default function ImageUpload({ currentUrl, onUploadSuccess, onRemove }) {
       }
 
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${fileName}`;
+      const fileName = `user-upload-${Date.now()}.${fileExt}`;
 
+      // Try uploading to 'gallery' bucket
       const { error: uploadError } = await supabase.storage
-        .from('images')
-        .upload(filePath, file);
+        .from('gallery')
+        .upload(fileName, file);
 
-      if (uploadError) {
-        throw uploadError;
+      if (!uploadError) {
+        const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+        if (data && data.publicUrl) {
+          onUploadSuccess(data.publicUrl, fileName);
+          return;
+        }
       }
 
-      // Get public URL
-      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-      
-      onUploadSuccess(data.publicUrl, filePath);
+      // Fallback: Convert image to Data URL (Base64) if storage bucket is unavailable
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target && e.target.result) {
+          onUploadSuccess(e.target.result, fileName);
+        }
+      };
+      reader.readAsDataURL(file);
     } catch (err) {
       console.error(err);
-      setError('Lỗi tải ảnh lên: Bạn đã tạo bucket "images" public trên Supabase chưa?');
+      setError('Có lỗi khi đọc file ảnh. Vui lòng chọn file khác.');
     } finally {
       setUploading(false);
     }
@@ -55,7 +63,7 @@ export default function ImageUpload({ currentUrl, onUploadSuccess, onRemove }) {
       if (currentUrl) {
         const parts = currentUrl.split('/');
         const fileName = parts[parts.length - 1];
-        await supabase.storage.from('images').remove([fileName]);
+        await supabase.storage.from('gallery').remove([fileName]);
       }
       onRemove();
     } catch (err) {
