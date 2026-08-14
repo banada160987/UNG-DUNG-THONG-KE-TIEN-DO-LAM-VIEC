@@ -245,14 +245,14 @@ export default function AdminVoting() {
               <tr>
                 <td style="width: 50%;">
                   <br/>
-                  <strong>NGƯỜI LẬP BÁO CÁO THỐNG KÊ</strong><br/>
+                  <strong>TRƯỞNG TIỂU BAN NỘI DUNG & THI ĐUA</strong><br/>
                   <em>(Ký, ghi rõ họ tên)</em>
                   <br/><br/><br/><br/>
                   ......................................................
                 </td>
                 <td style="width: 50%;">
-                  <em>..., Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em><br/>
-                  <strong>HIỆU TRƯỞNG / TRƯỜNG BAN TỔ CHỨC</strong><br/>
+                  <em>Tân An, Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em><br/>
+                  <strong>HIỆU TRƯỞNG - TRƯỞNG BAN TỔ CHỨC</strong><br/>
                   <em>(Ký tên và đóng dấu)</em>
                   <br/><br/><br/><br/>
                   ......................................................
@@ -386,14 +386,14 @@ export default function AdminVoting() {
               <tr>
                 <td style="width: 50%;">
                   <br/>
-                  <strong>TRƯỜNG TIỂU BAN NỘI DUNG & THI ĐUỒNG</strong><br/>
+                  <strong>TRƯỞNG TIỂU BAN NỘI DUNG & THI ĐUA</strong><br/>
                   <em>(Ký, ghi rõ họ tên)</em>
                   <br/><br/><br/><br/>
                   ......................................................
                 </td>
                 <td style="width: 50%;">
-                  <em>..., Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em><br/>
-                  <strong>TRƯỜNG BAN TỔ CHỨC LỄ KỶ NIỆM</strong><br/>
+                  <em>Tân An, Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em><br/>
+                  <strong>HIỆU TRƯỞNG - TRƯỞNG BAN TỔ CHỨC</strong><br/>
                   <em>(Ký tên và đóng dấu)</em>
                   <br/><br/><br/><br/>
                   ......................................................

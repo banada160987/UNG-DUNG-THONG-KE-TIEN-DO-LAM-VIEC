@@ -110,7 +110,7 @@ export default function CertificateModal({ entry, awardRank = 'GIẢI NHẤT', o
 
             {/* SIGNATURE */}
             <div style={{ textAlign: 'center', minWidth: '220px' }}>
-              <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#64748b' }}>Hà Nội, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</div>
+              <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#64748b' }}>Tân An, Ngày {new Date().getDate()} tháng {new Date().getMonth() + 1} năm {new Date().getFullYear()}</div>
               <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase', marginTop: '2px' }}>HIỆU TRƯỞNG - TRƯỞNG BAN TỔ CHỨC</div>
               <div style={{ height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontFamily: 'Dancing Script, cursive, serif', fontSize: '20px', color: '#be123c', fontWeight: 'bold', transform: 'rotate(-5deg)' }}>Ban BGH Cao Bá Quát</span>
