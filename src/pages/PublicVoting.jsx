@@ -167,7 +167,7 @@ export default function PublicVoting() {
         if (isSameEntry) {
           // USER CLICKED VOTE ON THE SAME ENTRY THEY ALREADY VOTED FOR
           const confirmCancel = window.confirm(
-            `💖 BẠN ĐÃ THẢ TIM BÌNH CHỌN CHO TÁC PHẨM NÀY:\n\nBạn đã bình chọn cho tác phẩm "${votingEntry.title}" rồi!\n\nBạn có muốn HỦY lượt tim này để mở lại quyền bình chọn cho sản phẩm khác không?`
+            `💖 THÔNG BÁO BÌNH CHỌN:\n\nQuý vị đã bình chọn cho tác phẩm: "${votingEntry.title}".\n\nQuý vị có muốn HỦY lượt bình chọn này để chuyển sang bình chọn tác phẩm khác không?`
           );
 
           if (confirmCancel) {
@@ -180,7 +180,7 @@ export default function PublicVoting() {
           // USER IS SWITCHING VOTE TO A DIFFERENT ENTRY
           const oldTitle = existingVoteObj.cbq_voting_entries?.title || 'tác phẩm trước';
           const confirmSwitch = window.confirm(
-            `💡 BẠN ĐÃ BÌNH CHỌN CHO TÁC PHẨM KHÁC TRƯỚC ĐÓ:\n\nBạn từng thả tim cho tác phẩm: "${oldTitle}".\n\nBạn có muốn CHUYỂN LƯỢT TIM của mình sang cho tác phẩm mới "${votingEntry.title}" hay không?`
+            `💡 CHUYỂN LƯỢT BÌNH CHỌN:\n\nQuý vị hiện đang bình chọn cho tác phẩm: "${oldTitle}".\n\nQuý vị có muốn CHUYỂN LƯỢT BÌNH CHỌN sang tác phẩm mới "${votingEntry.title}" không?`
           );
 
           if (confirmSwitch) {
@@ -200,7 +200,7 @@ export default function PublicVoting() {
         .limit(1);
 
       if (existingNameVote && existingNameVote.length > 0) {
-        alert(`⛔ BẢO MẬT HỌ TÊN & LỚP:\nTên học sinh [${fullName}] thuộc [${studentClass}] đã từng được ghi nhận bình chọn trước đó!\n\nMỗi học sinh chỉ được thả tim 1 lần duy nhất.`);
+        alert(`⛔ HỆ THỐNG GHI NHẬN:\nHọ tên [${fullName}] thuộc [${studentClass}] đã thực hiện bình chọn trước đó.\n\nĐể bảo đảm tính khách quan, mỗi cá nhân chỉ bình chọn 01 lần duy nhất.`);
         setSubmittingVote(false);
         return;
       }
@@ -249,7 +249,7 @@ export default function PublicVoting() {
     if (!myCurrentVote) return;
     const oldTitle = myCurrentVote.cbq_voting_entries?.title || 'tác phẩm';
 
-    if (!window.confirm(`Bạn có chắc chắn muốn HỦY lượt bình chọn cho tác phẩm "${oldTitle}" để chọn thả tim cho sản phẩm khác không?`)) return;
+    if (!window.confirm(`Quý vị có chắc chắn muốn HỦY lượt bình chọn cho tác phẩm "${oldTitle}" không?`)) return;
 
     try {
       // 1. Delete vote record
@@ -268,10 +268,10 @@ export default function PublicVoting() {
       }
 
       setMyCurrentVote(null);
-      alert(`Đã hủy lượt thả tim cho tác phẩm "${oldTitle}" thành công! Bây giờ bạn có thể chọn thả tim cho tác phẩm khác.`);
+      alert(`Đã hủy lượt bình chọn cho tác phẩm "${oldTitle}". Quý vị có thể chọn bình chọn cho tác phẩm khác.`);
     } catch (err) {
       console.error("Lỗi khi hủy bình chọn:", err);
-      alert("Có lỗi xảy ra khi hủy bình chọn. Vui lòng thử lại!");
+      alert("Không thể hủy bình chọn. Vui lòng thử lại sau!");
     }
   };
 
@@ -311,10 +311,10 @@ export default function PublicVoting() {
 
       setVotingEntry(null);
       fetchMyVote();
-      alert(`🎉 CHUYỂN BÌNH CHỌN THÀNH CÔNG!\n\nBạn đã chuyển 1 lượt tim sang cho tác phẩm "${newEntry.title}".`);
+      alert(`🎉 CHUYỂN BÌNH CHỌN THÀNH CÔNG!\n\nHệ thống đã chuyển lượt bình chọn của Quý vị sang tác phẩm "${newEntry.title}".`);
     } catch (err) {
       console.error("Lỗi chuyển bình chọn:", err);
-      alert("Lỗi khi chuyển bình chọn. Vui lòng thử lại!");
+      alert("Không thể chuyển bình chọn. Vui lòng thử lại!");
     }
   };
 

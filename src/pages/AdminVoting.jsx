@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
-import { Plus, Heart, Trophy, Trash2, Edit2, ShieldCheck, Download, FileText, CheckCircle2, BarChart2, Users, AlertTriangle, Sparkles } from 'lucide-react';
+import { Plus, Heart, Trophy, Trash2, Edit2, ShieldCheck, Download, FileText, CheckCircle2, BarChart2, Users, AlertTriangle, Sparkles, Award } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import CertificateModal from '../components/CertificateModal';
 
 export default function AdminVoting() {
   const [entries, setEntries] = useState([]);
@@ -11,6 +12,9 @@ export default function AdminVoting() {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'audit' | 'stats'
+
+  // CERTIFICATE STATE
+  const [certModalData, setCertModalData] = useState(null); // { entry, rank }
 
   // Modal State for Entry Form
   const [showEntryModal, setShowEntryModal] = useState(false);
@@ -613,6 +617,19 @@ export default function AdminVoting() {
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <button 
+                        onClick={() => {
+                          let rank = 'GIẢI NGHỆ THUẬT SÁNG TẠO';
+                          if (idx === 0) rank = 'GIẢI NHẤT BÌNH CHỌN VÀNG';
+                          else if (idx === 1) rank = 'GIẢI NHÌ BÌNH CHỌN BẠC';
+                          else if (idx === 2) rank = 'GIẢI BA BÌNH CHỌN ĐỒNG';
+                          setCertModalData({ entry: item, rank });
+                        }} 
+                        style={{ padding: '6px 10px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde047', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }} 
+                        title="Tạo Giấy Khen Điện Tử"
+                      >
+                        <Award size={14} /> Giấy Khen
+                      </button>
                       <button onClick={() => handleOpenEditModal(item)} style={{ padding: '6px', background: '#f1f5f9', color: '#3b82f6', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Chỉnh sửa"><Edit2 size={16} /></button>
                       <button onClick={() => handleDeleteEntry(item.id)} style={{ padding: '6px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }} title="Xóa"><Trash2 size={16} /></button>
                     </div>
@@ -857,6 +874,14 @@ export default function AdminVoting() {
             </form>
           </div>
         </div>
+      )}
+      {/* CERTIFICATE MODAL INTEGRATION */}
+      {certModalData && (
+        <CertificateModal 
+          entry={certModalData.entry} 
+          awardRank={certModalData.rank} 
+          onClose={() => setCertModalData(null)} 
+        />
       )}
     </Layout>
   );
