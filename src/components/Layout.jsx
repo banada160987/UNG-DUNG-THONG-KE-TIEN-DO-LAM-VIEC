@@ -65,6 +65,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewGuests },
     { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewSponsors },
     { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi & Trao giải', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewNews },
+    { path: '/admin/voting', icon: Trophy, label: 'Bình chọn tác phẩm', group: 'QUẢN LÝ KHÁCH & TÀI TRỢ', show: !!permissions.canViewNews },
     { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewNews },
     { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
