@@ -103,40 +103,50 @@ export default function PublicVoting() {
     }
   ];
 
-  // GENERATE PERSISTENT DEVICE HARDWARE FINGERPRINT HASH
+  // CLASS NAME NORMALIZER
+  const normalizeClassName = (rawClass) => {
+    if (!rawClass) return 'KHÁC';
+    let clean = rawClass.trim().toUpperCase().replace(/\s+/g, '');
+    if (clean.startsWith('LOP')) clean = clean.replace('LOP', 'LỚP ');
+    else if (clean.startsWith('LỚP')) clean = clean.replace('LỚP', 'LỚP ');
+    else if (!clean.startsWith('LỚP') && !clean.startsWith('KHÓA')) clean = 'LỚP ' + clean;
+    return clean;
+  };
+
+  // HARDWARE DEVICE FINGERPRINT (RESISTANT TO INCOGNITO & CACHE CLEARING)
   const getDeviceFingerprint = () => {
-    let token = localStorage.getItem('cbq_device_vote_token');
-    if (!token) {
-      const screenInfo = `${window.screen.width}x${window.screen.height}`;
-      const userAgent = navigator.userAgent;
-      const lang = navigator.language || '';
-      const rawString = `${screenInfo}_${userAgent}_${lang}`;
-      let hash = 0;
-      for (let i = 0; i < rawString.length; i++) {
-        hash = (hash << 5) - hash + rawString.charCodeAt(i);
-        hash |= 0;
-      }
-      token = `DEV-${Math.abs(hash).toString(36).toUpperCase()}`;
-      localStorage.setItem('cbq_device_vote_token', token);
+    const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const hardware = `${navigator.hardwareConcurrency || 2}_${navigator.maxTouchPoints || 0}`;
+    const userAgent = navigator.userAgent || '';
+    const tz = new Date().getTimezoneOffset();
+    const rawString = `${screenInfo}_${hardware}_${userAgent}_${tz}`;
+    let hash = 0;
+    for (let i = 0; i < rawString.length; i++) {
+      hash = (hash << 5) - hash + rawString.charCodeAt(i);
+      hash |= 0;
     }
-    return token;
+    const deviceHash = `DEV-${Math.abs(hash).toString(36).toUpperCase()}`;
+    localStorage.setItem('cbq_device_vote_token', deviceHash);
+    return deviceHash;
   };
 
   // ANTI-FRAUD DEVICE-BASED VOTING LOGIC
   const handleConfirmVote = async (e) => {
     e.preventDefault();
+    if (submittingVote) return; // Prevent Double Click / Race condition Click Spamming
+
     if (!voterName.trim()) {
       alert("Vui lòng nhập Họ và Tên của bạn.");
       return;
     }
     if (!voterCode.trim()) {
-      alert("Vui lòng nhập Tên Lớp hoặc Khóa của bạn (VD: Lớp 12A1).");
+      alert("Vui lòng chọn hoặc nhập Tên Lớp/Khóa của bạn (VD: Lớp 12A1).");
       return;
     }
 
-    const studentClass = voterCode.trim();
+    const studentClass = normalizeClassName(voterCode);
     const fullName = voterName.trim();
-    const voterCodeGenerated = `${studentClass.toUpperCase()}-${fullName.toUpperCase()}`;
+    const voterCodeGenerated = `${studentClass}-${fullName.toUpperCase()}`;
     const deviceToken = getDeviceFingerprint();
 
     setSubmittingVote(true);
@@ -598,7 +608,7 @@ export default function PublicVoting() {
             <form onSubmit={handleConfirmVote}>
               <div style={{ marginBottom: '12px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-                  Họ và Tên Học Sinh (*)
+                  Họ và Tên Học Sinh / Khách Mời (*)
                 </label>
                 <input 
                   type="text" 
@@ -612,18 +622,31 @@ export default function PublicVoting() {
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-                  Lớp / Niên Khóa (*)
+                  Tên Lớp / Niên Khóa (*)
                 </label>
                 <input 
                   type="text" 
                   required
+                  list="class-suggestions"
                   placeholder="VD: Lớp 12A1 hoặc Khóa 2002-2005"
                   value={voterCode}
                   onChange={e => setVoterCode(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #be123c', fontSize: '14px', fontWeight: 'bold', color: '#be123c', boxSizing: 'border-box' }}
                 />
+                <datalist id="class-suggestions">
+                  <option value="Lớp 12A1" />
+                  <option value="Lớp 12A2" />
+                  <option value="Lớp 12A3" />
+                  <option value="Lớp 12A4" />
+                  <option value="Lớp 12A5" />
+                  <option value="Lớp 11A1" />
+                  <option value="Lớp 11A2" />
+                  <option value="Lớp 10A1" />
+                  <option value="Khóa 2023-2026" />
+                  <option value="Cựu Học Sinh" />
+                </datalist>
                 <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                  * Thiết bị máy điện thoại/máy tính của bạn được bảo mật tự động (1 máy = 1 tim).
+                  * Mã thiết bị điện thoại/máy tính của bạn được tự động mã hóa phần cứng (Chống Ẩn Danh & Chống Spam).
                 </span>
               </div>
 
