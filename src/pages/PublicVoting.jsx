@@ -13,6 +13,7 @@ export default function PublicVoting() {
 
   // MY CURRENT VOTE STATE
   const [myCurrentVote, setMyCurrentVote] = useState(null);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'compact'
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -403,30 +404,36 @@ export default function PublicVoting() {
         </div>
       </div>
 
-      {/* CATEGORY FILTER PILLS */}
-      {activeTab === 'all' && (
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', overflowX: 'auto', paddingBottom: '6px' }}>
-          {categories.map(cat => (
-            <button 
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '20px',
-                fontSize: '13px',
-                fontWeight: selectedCategory === cat ? 'bold' : '500',
-                cursor: 'pointer',
-                border: selectedCategory === cat ? '1px solid #be123c' : '1px solid #e2e8f0',
-                background: selectedCategory === cat ? '#fff1f2' : '#ffffff',
-                color: selectedCategory === cat ? '#be123c' : '#475569',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
+            {/* CATEGORY FILTER BUTTONS */}
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
+          {categories.map(cat => {
+            const count = cat === 'Tất cả' ? entries.length : entries.filter(e => e.category === cat).length;
+            const isSelected = selectedCategory === cat;
+            return (
+              <button 
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '20px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: isSelected ? 'none' : '1px solid #cbd5e1',
+                  background: isSelected ? '#be123c' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#475569',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isSelected ? '0 4px 12px rgba(190, 18, 60, 0.25)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                {cat} <span style={{ background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: isSelected ? 'white' : '#64748b', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>{count}</span>
+              </button>
+            );
+          })}
         </div>
-      )}
 
       {/* MAIN CONTENT TAB 1: ENTRY GRID */}
       {activeTab === 'all' && (
@@ -508,16 +515,68 @@ export default function PublicVoting() {
         )
       )}
 
-      {/* MAIN CONTENT TAB 2: LIVE LEADERBOARD */}
+      {/* MAIN TAB 2: LEADERBOARD WITH 3D PODIUM */}
       {activeTab === 'leaderboard' && (
-        <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.04)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #fef08a', paddingBottom: '12px' }}>
-            <Trophy size={26} color="#b45309" />
-            <div>
-              <h2 style={{ margin: 0, fontSize: '20px', color: '#881337' }}>BẢNG XẾP HẠNG TÁC PHẨM ĐỰỢC BÌNH CHỌN NHIỀU NHẤT</h2>
-              <p style={{ margin: 0, fontSize: '12.5px', color: '#64748b' }}>Thứ hạng tự động cập nhật theo số lượt thả tim realtime</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+          
+          {/* TOP 3 WINNERS PODIUM */}
+          {sortedLeaderboard.length >= 3 && (
+            <div style={{ background: 'linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)', borderRadius: '24px', padding: '30px 20px 20px 20px', color: 'white', textAlign: 'center', boxShadow: '0 15px 35px rgba(15, 23, 42, 0.3)' }}>
+              <div style={{ fontSize: '13px', color: '#fde047', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '4px' }}>
+                ✨ VINH DANH TOP 3 TÁC PHẨM DẪN ĐẦU BÌNH CHỌN
+              </div>
+              <h2 style={{ margin: '0 0 25px 0', fontFamily: 'Playfair Display, serif', fontSize: '24px', color: '#ffffff' }}>
+                👑 BỤC VINH DANH SÁNG TẠO 30 NĂM
+              </h2>
+
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', maxWidth: '700px', margin: '0 auto' }}>
+                
+                {/* RANK 2 (SILVER - LEFT) */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <img src={sortedLeaderboard[1]?.image_url} alt="" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #94a3b8', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '6px', color: '#e2e8f0', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{sortedLeaderboard[1]?.title}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{sortedLeaderboard[1]?.author_name}</div>
+                  <div style={{ background: 'linear-gradient(180deg, #64748b, #334155)', width: '100%', height: '90px', borderRadius: '12px 12px 0 0', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '24px' }}>🥈</div>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'white' }}>HẠNG NHÌ</div>
+                    <div style={{ fontSize: '12px', color: '#fef08a', fontWeight: 'bold' }}>❤️ {sortedLeaderboard[1]?.votes_count}</div>
+                  </div>
+                </div>
+
+                {/* RANK 1 (GOLD - CENTER - HIGHEST) */}
+                <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: '22px', marginBottom: '-6px' }}>👑</div>
+                  <img src={sortedLeaderboard[0]?.image_url} alt="" style={{ width: '90px', height: '90px', borderRadius: '50%', objectFit: 'cover', border: '4px solid #fde047', boxShadow: '0 0 20px rgba(253, 224, 71, 0.5)' }} />
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', marginTop: '6px', color: '#fde047', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{sortedLeaderboard[0]?.title}</div>
+                  <div style={{ fontSize: '12px', color: '#cbd5e1' }}>{sortedLeaderboard[0]?.author_name}</div>
+                  <div style={{ background: 'linear-gradient(180deg, #b45309, #78350f)', width: '100%', height: '120px', borderRadius: '14px 14px 0 0', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderTop: '3px solid #fde047' }}>
+                    <div style={{ fontSize: '28px' }}>🥇</div>
+                    <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#fde047' }}>GIẢI NHẤT</div>
+                    <div style={{ fontSize: '13px', color: '#ffffff', fontWeight: 'bold' }}>❤️ {sortedLeaderboard[0]?.votes_count} Tim</div>
+                  </div>
+                </div>
+
+                {/* RANK 3 (BRONZE - RIGHT) */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <img src={sortedLeaderboard[2]?.image_url} alt="" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #fdba74', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', marginTop: '6px', color: '#e2e8f0', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{sortedLeaderboard[2]?.title}</div>
+                  <div style={{ fontSize: '11px', color: '#94a3b8' }}>{sortedLeaderboard[2]?.author_name}</div>
+                  <div style={{ background: 'linear-gradient(180deg, #c2410c, #7c2d12)', width: '100%', height: '75px', borderRadius: '12px 12px 0 0', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontSize: '22px' }}>🥉</div>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: 'white' }}>HẠNG BA</div>
+                    <div style={{ fontSize: '12px', color: '#fef08a', fontWeight: 'bold' }}>❤️ {sortedLeaderboard[2]?.votes_count}</div>
+                  </div>
+                </div>
+
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* FULL RANKINGS LIST */}
+          <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Trophy size={20} color="#b45309" /> BẢNG THỐNG KÊ XẾP HẠNG CHI TIẾT
+            </h3>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {sortedLeaderboard.map((entry, rankIdx) => {
@@ -579,7 +638,8 @@ export default function PublicVoting() {
             })}
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ANTI-FRAUD VOTING CONFIRMATION MODAL */}
       {votingEntry && (
