@@ -138,8 +138,8 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
           </div>
           
           <div>
-            <label style={styles.label}>Ghi chú (Tùy chọn)</label>
-            <textarea name="notes" value={formData.notes} onChange={handleChange} style={{...styles.input, minHeight: '80px', resize: 'vertical'}} placeholder="Các lưu ý bổ sung..." />
+            <label style={styles.label}>Ghi chú / Lý do chưa hoàn thành / Đề xuất vướng mắc</label>
+            <textarea name="notes" value={formData.notes} onChange={handleChange} style={{...styles.input, minHeight: '80px', resize: 'vertical'}} placeholder="Nhập lý do chưa hoàn thành, nguyên nhân quá hạn hoặc đề xuất phương án giải quyết..." />
           </div>
 
           {task && (

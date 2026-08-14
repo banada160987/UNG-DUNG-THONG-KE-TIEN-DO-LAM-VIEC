@@ -113,85 +113,166 @@ export default function CommitteeView() {
     ? 'Tất cả công việc' 
     : allCommittees.find(c => c.id === selectedCommitteeId)?.name;
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    const html = `
-      <!DOCTYPE html>
-      <html>
+  const handleExportWord = () => {
+    const totalTasks = displayedTasks.length;
+    const completedTasks = displayedTasks.filter(t => t.status === 'completed').length;
+    const overdueTasks = displayedTasks.filter(t => t.status !== 'completed' && new Date(t.deadline) < new Date()).length;
+    const inProgressTasks = totalTasks - completedTasks;
+
+    const wordHtml = `
+      <html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
         <head>
-          <title>Báo Cáo Tiến Độ Tiểu Ban</title>
-          <meta charset="utf-8">
+          <meta charset='utf-8'>
+          <title>Báo Cáo Tiến Độ Công Việc - File Word Khổ Ngang</title>
+          <!--[if gte mso 9]>
+          <xml>
+           <w:WordDocument>
+            <w:View>Print</w:View>
+            <w:Zoom>100</w:Zoom>
+            <w:DoNotOptimizeForCustomXSL/>
+           </w:WordDocument>
+          </xml>
+          <![endif]-->
           <style>
-            body { font-family: 'Times New Roman', serif; padding: 40px; line-height: 1.5; }
-            .header { text-align: center; margin-bottom: 30px; }
-            h1 { font-size: 24px; text-transform: uppercase; margin-bottom: 5px; }
-            h3 { font-size: 18px; font-weight: normal; margin-top: 0; }
-            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-            th, td { border: 1px solid #000; padding: 8px 10px; text-align: left; }
-            th { font-weight: bold; background-color: #f8f9fa; }
-            .text-center { text-align: center; }
-            .footer { margin-top: 40px; text-align: right; padding-right: 50px; }
+            @page Section1 {
+              size: 841.9pt 595.3pt;
+              mso-page-orientation: landscape;
+              margin: 0.8in 0.8in 0.8in 0.8in;
+            }
+            div.Section1 { page: Section1; }
+            body { font-family: 'Times New Roman', serif; line-height: 1.4; color: #000000; }
+            .header-table { width: 100%; border: none; margin-bottom: 20px; }
+            .header-table td { border: none; padding: 0; }
+            .title-doc { font-size: 18pt; font-weight: bold; text-align: center; color: #b71c1c; text-transform: uppercase; margin: 15px 0 5px 0; }
+            .subtitle-doc { font-size: 13pt; font-style: italic; text-align: center; margin-bottom: 20px; }
+            .stats-box { border: 1px solid #1e3a8a; background-color: #f0f9ff; padding: 10px; margin-bottom: 20px; font-size: 11pt; }
+            table.data-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            table.data-table th, table.data-table td { border: 1px solid #000000; padding: 8px; font-size: 11pt; text-align: left; vertical-align: top; }
+            table.data-table th { background-color: #e2e8f0; font-weight: bold; text-align: center; }
+            .overdue-tag { color: #dc2626; font-weight: bold; }
+            .completed-tag { color: #166534; font-weight: bold; }
+            .note-cell { background-color: #fff7ed; color: #9a3412; font-weight: 500; }
+            .footer-table { width: 100%; border: none; margin-top: 40px; }
+            .footer-table td { border: none; text-align: center; vertical-align: top; font-size: 12pt; }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>BÁO CÁO TIẾN ĐỘ CÔNG VIỆC</h1>
-            <h3>Tiểu ban: ${selectedCommitteeName}</h3>
-            <p>Ngày xuất báo cáo: ${new Date().toLocaleDateString('vi-VN')}</p>
-          </div>
-          
-          <table>
-            <thead>
+          <div class="Section1">
+            <table class="header-table">
               <tr>
-                <th class="text-center" width="5%">STT</th>
-                <th width="25%">Tên công việc</th>
-                <th width="15%">Người làm</th>
-                <th width="15%">Người chịu trách nhiệm</th>
-                <th width="10%">Hạn chót</th>
-                <th class="text-center" width="10%">Tiến độ</th>
-                <th width="20%">Trạng thái</th>
+                <td style="width: 40%; text-align: center;">
+                  <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong><br/>
+                  <strong>BAN TỔ CHỨC LỄ KỶ NIỆM 30 NĂM</strong>
+                </td>
+                <td style="width: 60%; text-align: center;">
+                  <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+                  <u><strong>Độc lập - Tự do - Hạnh phúc</strong></u>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              ${displayedTasks.map((t, index) => {
-                const isTaskOverdue = t.status !== 'completed' && new Date(t.deadline) < new Date();
-                let statusText = '';
-                if (isTaskOverdue) statusText = 'Quá hạn';
-                else if (t.status === 'completed') statusText = 'Hoàn thành';
-                else if (t.status === 'in_progress') statusText = 'Đang thực hiện';
-                else statusText = 'Chưa bắt đầu';
+            </table>
 
-                return `
+            <div class="title-doc">BÁO CÁO CHI TIẾT TIẾN ĐỘ & LÝ DO CHƯA HOÀN THÀNH CÔNG VIỆC</div>
+            <div class="subtitle-doc">Phân mục: ${selectedCommitteeName} • Ngày xuất báo cáo: ${new Date().toLocaleDateString('vi-VN')}</div>
+
+            <div class="stats-box">
+              <strong>TỔNG QUAN TIẾN ĐỘ:</strong> Tổng số công việc: <strong>${totalTasks}</strong> | Đã hoàn thành: <strong style="color: #166534;">${completedTasks}</strong> (${totalTasks > 0 ? Math.round((completedTasks/totalTasks)*100) : 0}%) | Đang xử lý: <strong>${inProgressTasks}</strong> | Số công việc Bị Quá Hạn: <strong style="color: #dc2626;">${overdueTasks}</strong>
+            </div>
+
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <td class="text-center">${index + 1}</td>
-                  <td><strong>${t.title}</strong><br/><em>${t.expected_result}</em></td>
-                  <td>${t.assignee}</td>
-                  <td>${t.responsible}</td>
-                  <td>${new Date(t.deadline).toLocaleDateString('vi-VN')}</td>
-                  <td class="text-center">${t.progress}%</td>
-                  <td>${statusText}</td>
+                  <th style="width: 4%;">STT</th>
+                  <th style="width: 22%;">Tên Công Việc & Yêu Cầu</th>
+                  <th style="width: 14%;">Người Làm & Trách Nhiệm</th>
+                  <th style="width: 12%;">Hạn Chót & Vị Trí</th>
+                  <th style="width: 10%;">Tiến Độ & Trạng Thái</th>
+                  <th style="width: 38%;">GHI CHÚ / LÝ DO CHƯA HOÀN THÀNH / ĐỀ XUẤT VƯỚNG MẮC</th>
                 </tr>
-              `}).join('')}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                ${displayedTasks.map((t, idx) => {
+                  const isTaskOverdue = t.status !== 'completed' && new Date(t.deadline) < new Date();
+                  let statusHtml = '';
+                  if (isTaskOverdue) {
+                    statusHtml = `<span class="overdue-tag">⚠️ QUÁ HẠN</span>`;
+                  } else if (t.status === 'completed') {
+                    statusHtml = `<span class="completed-tag">✅ HOÀN THÀNH</span>`;
+                  } else {
+                    statusHtml = `<span>⏳ Đang làm (${t.progress}%)</span>`;
+                  }
 
-          <div class="footer">
-            <p><strong>Người lập biểu</strong></p>
-            <br/><br/><br/>
-            <p>.......................................</p>
+                  const noteContent = t.notes ? t.notes : (isTaskOverdue ? 'Chưa cập nhật lý do quá hạn' : 'Không có ghi chú');
+                  const commName = selectedCommitteeId === 'all' ? (allCommittees.find(c => c.id === t.committee_id)?.name || '') : '';
+
+                  return `
+                    <tr>
+                      <td style="text-align: center;"><strong>${idx + 1}</strong></td>
+                      <td>
+                        <strong>${t.title}</strong>
+                        ${commName ? `<br/><span style="font-size: 9pt; color: #475569;">[${commName}]</span>` : ''}
+                        <br/><em style="font-size: 10pt; color: #334155;">Kết quả YC: ${t.expected_result || 'N/A'}</em>
+                      </td>
+                      <td>
+                        <strong>Làm:</strong> ${t.assignee}<br/>
+                        <strong>Trách nhiệm:</strong> ${t.responsible}
+                      </td>
+                      <td>
+                        📅 ${new Date(t.deadline).toLocaleDateString('vi-VN')}<br/>
+                        📍 ${t.location || 'Tại trường'}
+                      </td>
+                      <td style="text-align: center;">
+                        <strong>${t.progress}%</strong><br/>
+                        ${statusHtml}
+                      </td>
+                      <td class="${isTaskOverdue || t.notes ? 'note-cell' : ''}">
+                        ${isTaskOverdue ? `<strong style="color: #b91c1c;">[CẢNH BÁO QUÁ HẠN]</strong><br/>` : ''}
+                        ${noteContent}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+
+            <table class="footer-table">
+              <tr>
+                <td style="width: 50%;">
+                  <br/>
+                  <strong>NGƯỜI LẬP BÁO CÁO</strong><br/>
+                  <em>(Ký, ghi rõ họ tên)</em>
+                  <br/><br/><br/><br/>
+                  ......................................................
+                </td>
+                <td style="width: 50%;">
+                  <em>..., Ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em><br/>
+                  <strong>TRƯỜNG BAN TỔ CHỨC LỄ KỶ NIỆM</strong><br/>
+                  <em>(Ký tên và đóng dấu)</em>
+                  <br/><br/><br/><br/>
+                  ......................................................
+                </td>
+              </tr>
+            </table>
           </div>
-
-          <script>
-            window.onload = function() { 
-              window.print(); 
-            }
-          </script>
         </body>
       </html>
     `;
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+
+    const blob = new Blob(['\ufeff' + wordHtml], {
+      type: 'application/msword'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `BaoCao_TienDo_LyDoQuaHan_${selectedCommitteeName.replace(/[^a-zA-Z0-9]/g, '_')}_A4_Ngang.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrint = () => {
+    handleExportWord();
   };
 
   return (
@@ -232,8 +313,8 @@ export default function CommitteeView() {
                   <Calendar size={18} /> Đổi Hạn chót loạt
                 </button>
               )}
-              <button onClick={handlePrint} style={{ ...styles.actionBtn, backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1' }}>
-                <Printer size={18} /> In Báo Cáo
+              <button onClick={handleExportWord} style={{ ...styles.actionBtn, backgroundColor: '#166534', color: 'white', border: 'none', fontWeight: 'bold' }}>
+                <Printer size={18} /> Xuất Báo Cáo Word (.doc)
               </button>
               <button onClick={handleOpenNewTask} style={{ ...styles.actionBtn, backgroundColor: 'var(--primary)', color: 'white', border: 'none' }}>
                 <Plus size={18} /> Giao việc mới

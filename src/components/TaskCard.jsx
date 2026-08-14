@@ -91,9 +91,18 @@ export default function TaskCard({ task, onUpdate, onEdit, onDelete, isAdmin, is
           <strong>Kết quả yêu cầu:</strong> {task.expected_result}
         </div>
         {task.notes && (
-          <div style={{ paddingTop: '0.5rem', borderTop: '1px dashed #cbd5e1', color: '#475569' }}>
-            <FileText size={14} style={{display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px'}} />
-            <strong>Ghi chú:</strong> {task.notes}
+          <div style={{ 
+            paddingTop: '0.6rem', 
+            marginTop: '0.5rem', 
+            borderTop: '1px dashed #cbd5e1', 
+            color: isOverdue() ? '#991b1b' : '#334155',
+            backgroundColor: isOverdue() ? '#fef2f2' : '#f8fafc',
+            padding: '8px 10px',
+            borderRadius: '6px',
+            borderLeft: isOverdue() ? '3px solid #ef4444' : '3px solid #3b82f6'
+          }}>
+            <FileText size={14} style={{display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px', color: isOverdue() ? '#dc2626' : '#2563eb'}} />
+            <strong>Ghi chú / Lý do chưa hoàn thành:</strong> {task.notes}
           </div>
         )}
       </div>
