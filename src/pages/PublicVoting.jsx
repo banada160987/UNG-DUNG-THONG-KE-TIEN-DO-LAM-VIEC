@@ -89,6 +89,26 @@ export default function PublicVoting() {
     setSubmittingVote(true);
 
     try {
+      // 0. Verification against cbq_guests table (if guests exist)
+      const { data: matchedGuest } = await supabase
+        .from('cbq_guests')
+        .select('*')
+        .or(`invitation_code.ilike.${cleanCode},phone.eq.${cleanCode}`)
+        .limit(1);
+
+      let finalVoterName = voterName.trim();
+      if (matchedGuest && matchedGuest.length > 0) {
+        finalVoterName = matchedGuest[0].name + ` (${matchedGuest[0].category || 'Học sinh'})`;
+      } else {
+        // Check if cbq_guests has any entries
+        const { count } = await supabase.from('cbq_guests').select('*', { count: 'exact', head: true });
+        if (count && count > 0) {
+          alert(`⛔ MÃ XÁC MINH KHÔNG HỢP LỆ:\nMã số hoặc SĐT [${cleanCode}] không tồn tại trong danh sách học sinh/khách mời THPT Cao Bá Quát!\n\nVui lòng kiểm tra lại Mã trên Thiệp điện tử (VD: CBQ-1234) hoặc Số điện thoại đã đăng ký.`);
+          setSubmittingVote(false);
+          return;
+        }
+      }
+
       // 1. Check if voter code already used in DB
       const { data: existingVote } = await supabase
         .from('cbq_votes')
@@ -111,7 +131,7 @@ export default function PublicVoting() {
         .from('cbq_votes')
         .insert([{
           entry_id: votingEntry.id,
-          voter_name: voterName.trim() || 'Học sinh / Khách mời',
+          voter_name: finalVoterName || voterName.trim() || 'Học sinh / Khách mời',
           voter_code: cleanCode,
           device_token: deviceToken
         }]);
