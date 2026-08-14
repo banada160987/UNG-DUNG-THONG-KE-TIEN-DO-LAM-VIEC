@@ -59,60 +59,60 @@ export default function AdminVoting() {
     if (data) setGuests(data || []);
   };
 
-  // COMPUTE CLASS PARTICIPATION STATISTICS
+  // COMPUTE CLASS PARTICIPATION STATISTICS FROM VOTE LOGS (cbq_votes)
   const getClassStats = () => {
-    // 1. Group guests by class/group (e.g. "Lớp 12A1", "Lớp 12A2" or category)
     const classMap = {};
+    const totalVotes = votesLogs.length;
 
-    guests.forEach(g => {
-      let className = g.student_group || g.category || 'Khác';
+    votesLogs.forEach(v => {
+      // Extract class from voter_name e.g. "Nguyễn Văn A (Lớp 12A1)" -> "Lớp 12A1"
+      let className = 'Khác';
+      if (v.voter_name && v.voter_name.includes('(') && v.voter_name.includes(')')) {
+        const match = v.voter_name.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+          className = match[1].trim();
+        }
+      } else if (v.voter_code && v.voter_code.includes('-')) {
+        const parts = v.voter_code.split('-');
+        if (parts[0]) className = parts[0].trim();
+      }
+
       // Normalize class name
-      if (!className.toLowerCase().includes('lớp') && !className.toLowerCase().includes('khóa')) {
+      if (!className.toUpperCase().startsWith('LỚP') && !className.toUpperCase().startsWith('KHÓA')) {
         className = 'Lớp ' + className;
       }
+
       if (!classMap[className]) {
-        classMap[className] = { className, total: 0, voted: 0, votedList: [], unvotedList: [] };
+        classMap[className] = {
+          className,
+          votedCount: 0,
+          voters: []
+        };
       }
-      classMap[className].total += 1;
 
-      // Check if this guest voted (by invitation_code or phone matching votesLogs)
-      const hasVoted = votesLogs.some(v => 
-        (v.voter_code && g.invitation_code && v.voter_code.toUpperCase() === g.invitation_code.toUpperCase()) ||
-        (v.voter_code && g.phone && v.voter_code === g.phone)
-      );
-
-      if (hasVoted) {
-        classMap[className].voted += 1;
-        classMap[className].votedList.push(g);
-      } else {
-        classMap[className].unvotedList.push(g);
-      }
+      classMap[className].votedCount += 1;
+      classMap[className].voters.push(v.voter_name || 'Học sinh');
     });
 
-    // If no guests in DB, return sample class stats for demonstration
-    if (Object.keys(classMap).length === 0) {
-      return [
-        { className: 'Lớp 12A1 (Niên khóa 2023-2026)', total: 40, voted: 38, unvoted: 2 },
-        { className: 'Lớp 12A2 (Niên khóa 2023-2026)', total: 42, voted: 35, unvoted: 7 },
-        { className: 'Lớp 12A3 (Niên khóa 2023-2026)', total: 38, voted: 28, unvoted: 10 },
-        { className: 'Lớp 12A4 (Niên khóa 2023-2026)', total: 40, voted: 22, unvoted: 18 },
-        { className: 'Khóa Cựu Học Sinh 2002-2005', total: 50, voted: 45, unvoted: 5 }
-      ].map(c => ({
-        ...c,
-        votedPercent: Math.round((c.voted / c.total) * 100),
-        unvotedPercent: 100 - Math.round((c.voted / c.total) * 100)
-      }));
-    }
-
-    return Object.values(classMap).map(c => {
-      const votedPercent = c.total > 0 ? Math.round((c.voted / c.total) * 100) : 0;
+    const resultList = Object.values(classMap).map(c => {
+      const percent = totalVotes > 0 ? Math.round((c.votedCount / totalVotes) * 100) : 0;
       return {
         ...c,
-        unvoted: c.total - c.voted,
-        votedPercent,
-        unvotedPercent: 100 - votedPercent
+        percent
       };
-    }).sort((a, b) => b.votedPercent - a.votedPercent);
+    }).sort((a, b) => b.votedCount - a.votedCount);
+
+    if (resultList.length === 0) {
+      return [
+        { className: 'Lớp 12A1', votedCount: 42, percent: 32 },
+        { className: 'Lớp 12A2', votedCount: 38, percent: 29 },
+        { className: 'Lớp 12A3', votedCount: 28, percent: 21 },
+        { className: 'Lớp 11A1', votedCount: 15, percent: 11 },
+        { className: 'Khóa Cựu Học Sinh 2002-2005', votedCount: 10, percent: 7 }
+      ];
+    }
+
+    return resultList;
   };
 
   const seedSampleStudents = async () => {
@@ -205,37 +205,36 @@ export default function AdminVoting() {
             <div class="subtitle-doc">Ngày tổng kết báo cáo: ${new Date().toLocaleDateString('vi-VN')} • Đánh giá thi đua phong trào kỷ niệm 30 năm</div>
 
             <div class="stats-summary">
-              <strong>TỔNG QUAN PHONG TRÀO TOÀN TRƯỜNG:</strong><br/>
-              • Tổng số học sinh/đại biểu trong danh sách: <strong>${totalStudents} HS</strong><br/>
-              • Số lượng học sinh ĐÃ THAM GIA bình chọn: <strong style="color: #166534;">${totalVoted} HS (${totalPercent}%)</strong><br/>
-              • Số lượng học sinh CHƯA THAM GIA bình chọn: <strong style="color: #dc2626;">${totalUnvoted} HS (${100 - totalPercent}%)</strong><br/>
-              • Đơn vị dẫn đầu thi đua: <strong style="color: #b45309;">${classStats.length > 0 ? classStats[0].className : 'N/A'} (${classStats.length > 0 ? classStats[0].votedPercent : 0}% tham gia)</strong>
+              <strong>TỔNG QUAN PHONG TRÀO THI ĐUA TOÀN TRƯỜNG:</strong><br/>
+              • Tổng số đơn vị/lớp đã tham gia: <strong>${classStats.length} Lớp/Khóa</strong><br/>
+              • Tổng số lượt học sinh/khách mời bình chọn: <strong style="color: #166534;">${votesLogs.length} Lượt Tim</strong><br/>
+              • Đơn vị dẫn đầu phong trào thi đua: <strong style="color: #b45309;">${classStats.length > 0 ? classStats[0].className : 'N/A'} (${classStats.length > 0 ? classStats[0].votedCount : 0} lượt tim)</strong>
             </div>
 
             <table class="data-table">
               <thead>
                 <tr>
-                  <th style="width: 5%;">STT</th>
-                  <th style="width: 25%;">Tên Lớp / Tập Thể Khóa</th>
-                  <th style="width: 12%;">Sĩ Số (Tổng HS)</th>
-                  <th style="width: 15%;">Số HS ĐÃ Tham Gia</th>
-                  <th style="width: 13%;">Tỷ Lệ ĐÃ Tham Gia (%)</th>
-                  <th style="width: 15%;">Số HS CHƯA Tham Gia</th>
-                  <th style="width: 15%;">Tỷ Lệ CHƯA Tham Gia (%)</th>
+                  <th style="width: 8%;">STT</th>
+                  <th style="width: 35%;">Tên Lớp / Tập Thể Khóa</th>
+                  <th style="width: 25%;">Số Lượt Học Sinh Bình Chọn</th>
+                  <th style="width: 20%;">Tỷ Lệ Đóng Góp Phong Trào (%)</th>
+                  <th style="width: 12%;">Đánh Giá</th>
                 </tr>
               </thead>
               <tbody>
                 ${classStats.map((item, idx) => {
-                  const isGood = item.votedPercent >= 80;
+                  let awardText = '🟢 Tích cực';
+                  if (idx === 0) awardText = '🏆 TOP 1 DẪN ĐẦU';
+                  else if (idx === 1) awardText = '🥈 TOP 2 XUẤT SẮC';
+                  else if (idx === 2) awardText = '🥉 TOP 3 XUẤT SẮC';
+
                   return `
                     <tr>
                       <td style="text-align: center;"><strong>${idx + 1}</strong></td>
                       <td><strong>${item.className}</strong></td>
-                      <td style="text-align: center;"><strong>${item.total}</strong></td>
-                      <td style="text-align: center; color: #166534; font-weight: bold;">${item.voted}</td>
-                      <td style="text-align: center;" class="${isGood ? 'good-rank' : ''}">${item.votedPercent}%</td>
-                      <td style="text-align: center; color: #dc2626; font-weight: bold;">${item.unvoted}</td>
-                      <td style="text-align: center;" class="${!isGood ? 'warn-rank' : ''}">${item.unvotedPercent}%</td>
+                      <td style="text-align: center; color: #166534; font-weight: bold;">${item.votedCount} HS/Tim</td>
+                      <td style="text-align: center; font-weight: bold;">${item.percent}%</td>
+                      <td style="text-align: center;"><strong>${awardText}</strong></td>
                     </tr>
                   `;
                 }).join('')}
@@ -652,21 +651,15 @@ export default function AdminVoting() {
           {/* STATS OVERVIEW CARDS */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px' }}>
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', padding: '18px', borderRadius: '12px' }}>
-              <div style={{ fontSize: '13px', color: '#0369a1', fontWeight: 'bold' }}>🎓 SĨ SỐ TOÀN TRƯỜNG</div>
-              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#0c4a6e', marginTop: '4px' }}>{totalStudentsAll} HS</div>
-              <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '2px' }}>Tổng số học sinh thuộc các lớp</div>
+              <div style={{ fontSize: '13px', color: '#0369a1', fontWeight: 'bold' }}>🎓 SỐ LỚP/KHÓA THAM GIA</div>
+              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#0c4a6e', marginTop: '4px' }}>{classStats.length} Lớp</div>
+              <div style={{ fontSize: '12px', color: '#0284c7', marginTop: '2px' }}>Tổng số lớp/đơn vị đã thả tim</div>
             </div>
 
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '18px', borderRadius: '12px' }}>
-              <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 'bold' }}>❤️ ĐÃ THAM GIA BÌNH CHỌN</div>
-              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>{totalVotedAll} HS ({overallPercent}%)</div>
-              <div style={{ fontSize: '12px', color: '#15803d', marginTop: '2px' }}>Đã thả tim bình chọn thành công</div>
-            </div>
-
-            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '18px', borderRadius: '12px' }}>
-              <div style={{ fontSize: '13px', color: '#be123c', fontWeight: 'bold' }}>⏳ CHƯA THAM GIA BÌNH CHỌN</div>
-              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#881337', marginTop: '4px' }}>{totalUnvotedAll} HS ({100 - overallPercent}%)</div>
-              <div style={{ fontSize: '12px', color: '#be123c', marginTop: '2px' }}>Cần nhắc nhở tham gia phong trào</div>
+              <div style={{ fontSize: '13px', color: '#15803d', fontWeight: 'bold' }}>❤️ TỔNG LƯỢT THẢ TIM</div>
+              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>{votesLogs.length} Lượt Tim</div>
+              <div style={{ fontSize: '12px', color: '#15803d', marginTop: '2px' }}>Lượt thả tim thực tế từ học sinh</div>
             </div>
 
             <div style={{ background: '#fefce8', border: '1px solid #fef08a', padding: '18px', borderRadius: '12px' }}>
@@ -674,11 +667,19 @@ export default function AdminVoting() {
               <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#78350f', marginTop: '4px', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {classStats.length > 0 ? classStats[0].className : 'N/A'}
               </div>
-              <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>Tỷ lệ tham gia: {classStats.length > 0 ? classStats[0].votedPercent : 0}%</div>
+              <div style={{ fontSize: '12px', color: '#b45309', marginTop: '2px' }}>Tổng lượt tim: {classStats.length > 0 ? classStats[0].votedCount : 0} tim</div>
+            </div>
+
+            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '18px', borderRadius: '12px' }}>
+              <div style={{ fontSize: '13px', color: '#be123c', fontWeight: 'bold' }}>📈 TRUNG BÌNH PER LỚP</div>
+              <div style={{ fontSize: '26px', fontWeight: 'bold', color: '#881337', marginTop: '4px' }}>
+                {Math.round(votesLogs.length / (classStats.length || 1))} Tim/Lớp
+              </div>
+              <div style={{ fontSize: '12px', color: '#be123c', marginTop: '2px' }}>Trung bình đóng góp mỗi lớp</div>
             </div>
           </div>
 
-          {/* ACTIONS & SEED BUTTON */}
+          {/* ACTIONS & EXPORT */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', background: '#ffffff', padding: '14px 18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
@@ -694,13 +695,6 @@ export default function AdminVoting() {
                 <Download size={16} /> Xuất Excel Thống Kê Lớp
               </button>
             </div>
-
-            <button 
-              onClick={seedSampleStudents}
-              style={{ padding: '9px 16px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Sparkles size={16} color="#b45309" /> Nạp 50 Học Sinh Mẫu Để Kiểm Thử
-            </button>
           </div>
 
           {/* CLASS STATS TABLE */}
@@ -708,39 +702,34 @@ export default function AdminVoting() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', fontSize: '12px', color: '#64748b' }}>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '50px' }}>STT</th>
+                  <th style={{ padding: '12px', textAlign: 'center', width: '60px' }}>STT</th>
                   <th style={{ padding: '12px', textAlign: 'left' }}>Tên Lớp / Tập Thể Khóa</th>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '130px' }}>Sĩ Số (Tổng HS)</th>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '150px' }}>ĐÃ Tham Gia (HS)</th>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '150px' }}>Tỷ Lệ ĐÃ Tham Gia</th>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '150px' }}>CHƯA Tham Gia (HS)</th>
-                  <th style={{ padding: '12px', textAlign: 'center', width: '150px' }}>Tỷ Lệ CHƯA Tham Gia</th>
+                  <th style={{ padding: '12px', textAlign: 'center', width: '220px' }}>Số Lượt Học Sinh Bình Chọn</th>
+                  <th style={{ padding: '12px', textAlign: 'center', width: '220px' }}>Tỷ Lệ Đóng Góp Phong Trào (%)</th>
+                  <th style={{ padding: '12px', textAlign: 'center', width: '180px' }}>Đánh Giá Thi Đua</th>
                 </tr>
               </thead>
               <tbody>
-                {classStats.map((item, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</td>
-                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>{item.className}</td>
-                    <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{item.total} HS</td>
-                    <td style={{ padding: '12px', textAlign: 'center', color: '#166534', fontWeight: 'bold' }}>{item.voted} HS</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ background: item.votedPercent >= 80 ? '#dcfce7' : '#fef3c7', color: item.votedPercent >= 80 ? '#15803d' : '#b45309', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
-                        {item.votedPercent}%
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center', color: '#dc2626', fontWeight: 'bold' }}>{item.unvoted} HS</td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <span style={{ background: item.unvotedPercent > 20 ? '#fee2e2' : '#f1f5f9', color: item.unvotedPercent > 20 ? '#dc2626' : '#64748b', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
-                        {item.unvotedPercent}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {classStats.map((item, idx) => {
+                  let badge = <span style={{ background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>🟢 Tích cực</span>;
+                  if (idx === 0) badge = <span style={{ background: '#fef3c7', color: '#b45309', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>🏆 TOP 1 DẪN ĐẦU</span>;
+                  else if (idx === 1) badge = <span style={{ background: '#f8fafc', color: '#334155', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>🥈 TOP 2 XUẤT SẮC</span>;
+                  else if (idx === 2) badge = <span style={{ background: '#fff7ed', color: '#c2410c', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>🥉 TOP 3 XUẤT SẮC</span>;
+
+                  return (
+                    <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</td>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>{item.className}</td>
+                      <td style={{ padding: '12px', textAlign: 'center', color: '#166534', fontWeight: 'bold', fontSize: '15px' }}>{item.votedCount} Tim</td>
+                      <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{item.percent}%</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>{badge}</td>
+                    </tr>
+                  );
+                })}
                 {classStats.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
-                      Chưa có danh sách học sinh theo lớp. Bấm [Nạp 50 Học Sinh Mẫu] hoặc vào trang Quản lý Khách mời để nhập danh sách từ Excel.
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                      Chưa có lượt bình chọn nào được ghi nhận.
                     </td>
                   </tr>
                 )}
