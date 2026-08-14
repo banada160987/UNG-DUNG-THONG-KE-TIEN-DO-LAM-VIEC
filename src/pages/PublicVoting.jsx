@@ -77,6 +77,25 @@ export default function PublicVoting() {
     }
   ];
 
+  // GENERATE PERSISTENT DEVICE HARDWARE FINGERPRINT HASH
+  const getDeviceFingerprint = () => {
+    let token = localStorage.getItem('cbq_device_vote_token');
+    if (!token) {
+      const screenInfo = `${window.screen.width}x${window.screen.height}`;
+      const userAgent = navigator.userAgent;
+      const lang = navigator.language || '';
+      const rawString = `${screenInfo}_${userAgent}_${lang}`;
+      let hash = 0;
+      for (let i = 0; i < rawString.length; i++) {
+        hash = (hash << 5) - hash + rawString.charCodeAt(i);
+        hash |= 0;
+      }
+      token = `DEV-${Math.abs(hash).toString(36).toUpperCase()}`;
+      localStorage.setItem('cbq_device_vote_token', token);
+    }
+    return token;
+  };
+
   // ANTI-FRAUD TRIPLE-LOCK VOTING LOGIC
   const handleConfirmVote = async (e) => {
     e.preventDefault();
@@ -122,9 +141,19 @@ export default function PublicVoting() {
         return;
       }
 
-      // 2. Device token check
-      const deviceToken = localStorage.getItem('cbq_device_vote_token') || 'DEV-' + Math.random().toString(36).substring(2, 9);
-      localStorage.setItem('cbq_device_vote_token', deviceToken);
+      // 2. Strict Device Fingerprint check against DB
+      const deviceToken = getDeviceFingerprint();
+      const { data: existingDeviceVote } = await supabase
+        .from('cbq_votes')
+        .select('*')
+        .eq('device_token', deviceToken)
+        .limit(1);
+
+      if (existingDeviceVote && existingDeviceVote.length > 0) {
+        alert(`⛔ BẢO MẬT MÃ THIẾT BỊ MÁY:\nĐiện thoại / Máy tính này (${deviceToken}) đã từng thực hiện bình chọn trên hệ thống vào lúc ${new Date(existingDeviceVote[0].created_at).toLocaleString('vi-VN')}!\n\nĐể đảm bảo tuyệt đối tính công bằng, mỗi thiết bị máy chỉ được bình chọn 1 lần duy nhất.`);
+        setSubmittingVote(false);
+        return;
+      }
 
       // 3. Insert vote into database
       const { error: insertErr } = await supabase
