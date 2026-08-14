@@ -161,18 +161,33 @@ export default function PublicVoting() {
         .limit(1);
 
       if (existingDeviceVote && existingDeviceVote.length > 0) {
-        const oldTitle = existingDeviceVote[0].cbq_voting_entries?.title || 'tác phẩm trước';
-        // Ask user if they want to switch vote to the new entry
-        const confirmSwitch = window.confirm(
-          `💡 BẠN ĐÃ BÌNH CHỌN TRƯỚC ĐÓ:\n\nBạn từng thả tim cho tác phẩm: "${oldTitle}".\n\nBạn có muốn CHUYỂN LƯỢT TIM của mình sang cho tác phẩm mới "${votingEntry.title}" hay không?`
-        );
+        const existingVoteObj = existingDeviceVote[0];
+        const isSameEntry = existingVoteObj.entry_id === votingEntry.id;
 
-        if (confirmSwitch) {
-          await handleSwitchVote(existingDeviceVote[0], votingEntry);
+        if (isSameEntry) {
+          // USER CLICKED VOTE ON THE SAME ENTRY THEY ALREADY VOTED FOR
+          const confirmCancel = window.confirm(
+            `💖 BẠN ĐÃ THẢ TIM BÌNH CHỌN CHO TÁC PHẨM NÀY:\n\nBạn đã bình chọn cho tác phẩm "${votingEntry.title}" rồi!\n\nBạn có muốn HỦY lượt tim này để mở lại quyền bình chọn cho sản phẩm khác không?`
+          );
+
+          if (confirmCancel) {
+            await handleCancelMyVote();
+          }
           setSubmittingVote(false);
+          setVotingEntry(null);
           return;
         } else {
+          // USER IS SWITCHING VOTE TO A DIFFERENT ENTRY
+          const oldTitle = existingVoteObj.cbq_voting_entries?.title || 'tác phẩm trước';
+          const confirmSwitch = window.confirm(
+            `💡 BẠN ĐÃ BÌNH CHỌN CHO TÁC PHẨM KHÁC TRƯỚC ĐÓ:\n\nBạn từng thả tim cho tác phẩm: "${oldTitle}".\n\nBạn có muốn CHUYỂN LƯỢT TIM của mình sang cho tác phẩm mới "${votingEntry.title}" hay không?`
+          );
+
+          if (confirmSwitch) {
+            await handleSwitchVote(existingVoteObj, votingEntry);
+          }
           setSubmittingVote(false);
+          setVotingEntry(null);
           return;
         }
       }
@@ -502,12 +517,22 @@ export default function PublicVoting() {
                   >
                     <Eye size={15} /> Chi Tiết
                   </button>
-                  <button 
-                    onClick={() => setVotingEntry(entry)}
-                    style={{ flex: 1.4, padding: '9px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.3)' }}
-                  >
-                    <Heart size={16} fill="white" /> BÌNH CHỌN
-                  </button>
+                  {myCurrentVote?.entry_id === entry.id ? (
+                    <button 
+                      onClick={handleCancelMyVote}
+                      style={{ flex: 1.4, padding: '9px', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fca5a5', borderRadius: '10px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
+                      title="Bấm để Hủy lượt bình chọn này"
+                    >
+                      <Heart size={16} fill="#dc2626" /> ĐÃ THẢ TIM
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={() => setVotingEntry(entry)}
+                      style={{ flex: 1.4, padding: '9px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.3)' }}
+                    >
+                      <Heart size={16} fill="white" /> BÌNH CHỌN
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
