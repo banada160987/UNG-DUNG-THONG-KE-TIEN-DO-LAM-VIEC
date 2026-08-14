@@ -1039,6 +1039,9 @@ export default function OnlineInvitation() {
                     <button className="vip-pass-btn" onClick={() => setIsRsvpModalOpen(true)}>
                       🎫 Thẻ VIP & QR
                     </button>
+                    <a href={`/binh-chon?code=${guest?.invitation_code || ''}`} className="alumni-directory-btn" style={{background: 'linear-gradient(135deg, #b45309, #d97706)', textDecoration: 'none', color: 'white', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+                      🏆 Bình Chọn Tác Phẩm
+                    </a>
                     <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
                       🎓 Tìm Bạn & Top Khóa
                     </button>
@@ -1051,6 +1054,9 @@ export default function OnlineInvitation() {
                 <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'}}>
                   <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
                   <div style={{display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                    <a href={`/binh-chon?code=${guest?.invitation_code || ''}`} className="alumni-directory-btn" style={{background: 'linear-gradient(135deg, #b45309, #d97706)', textDecoration: 'none', color: 'white', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+                      🏆 Bình Chọn Tác Phẩm
+                    </a>
                     <button className="alumni-directory-btn" onClick={() => { fetchAllAttendees(); setIsAlumniModalOpen(true); }}>
                       🎓 Tìm Bạn Cũ
                     </button>

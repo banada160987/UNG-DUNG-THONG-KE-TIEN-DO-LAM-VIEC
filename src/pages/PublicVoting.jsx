@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Heart, Trophy, Sparkles, Search, Eye, CheckCircle2, ShieldCheck, AlertCircle, X, Award, Share2 } from 'lucide-react';
+import { Heart, Trophy, Sparkles, Search, Eye, CheckCircle2, ShieldCheck, AlertCircle, X, Award, KeyRound } from 'lucide-react';
 
 export default function PublicVoting() {
+  const [searchParams] = useSearchParams();
+  const codeFromUrl = searchParams.get('code') || '';
+
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'leaderboard'
@@ -23,7 +27,10 @@ export default function PublicVoting() {
 
   useEffect(() => {
     fetchEntries();
-  }, []);
+    if (codeFromUrl) {
+      setVoterCode(codeFromUrl.toUpperCase());
+    }
+  }, [codeFromUrl]);
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -96,53 +103,27 @@ export default function PublicVoting() {
     return token;
   };
 
-  // ANTI-FRAUD TRIPLE-LOCK VOTING LOGIC
+  // ANTI-FRAUD DEVICE-BASED VOTING LOGIC
   const handleConfirmVote = async (e) => {
     e.preventDefault();
+    if (!voterName.trim()) {
+      alert("Vui lòng nhập Họ và Tên của bạn.");
+      return;
+    }
     if (!voterCode.trim()) {
-      alert("Vui lòng nhập Mã Học Sinh / Mã Số Thiệp / SĐT của bạn.");
+      alert("Vui lòng nhập Tên Lớp hoặc Khóa của bạn (VD: Lớp 12A1).");
       return;
     }
 
-    const cleanCode = voterCode.trim().toUpperCase();
+    const studentClass = voterCode.trim();
+    const fullName = voterName.trim();
+    const voterCodeGenerated = `${studentClass.toUpperCase()}-${fullName.toUpperCase()}`;
+    const deviceToken = getDeviceFingerprint();
+
     setSubmittingVote(true);
 
     try {
-      // 0. Verification against cbq_guests table (if guests exist)
-      const { data: matchedGuest } = await supabase
-        .from('cbq_guests')
-        .select('*')
-        .or(`invitation_code.ilike.${cleanCode},phone.eq.${cleanCode}`)
-        .limit(1);
-
-      let finalVoterName = voterName.trim();
-      if (matchedGuest && matchedGuest.length > 0) {
-        finalVoterName = matchedGuest[0].name + ` (${matchedGuest[0].category || 'Học sinh'})`;
-      } else {
-        // Check if cbq_guests has any entries
-        const { count } = await supabase.from('cbq_guests').select('*', { count: 'exact', head: true });
-        if (count && count > 0) {
-          alert(`⛔ MÃ XÁC MINH KHÔNG HỢP LỆ:\nMã số hoặc SĐT [${cleanCode}] không tồn tại trong danh sách học sinh/khách mời THPT Cao Bá Quát!\n\nVui lòng kiểm tra lại Mã trên Thiệp điện tử (VD: CBQ-1234) hoặc Số điện thoại đã đăng ký.`);
-          setSubmittingVote(false);
-          return;
-        }
-      }
-
-      // 1. Check if voter code already used in DB
-      const { data: existingVote } = await supabase
-        .from('cbq_votes')
-        .select('*')
-        .eq('voter_code', cleanCode)
-        .limit(1);
-
-      if (existingVote && existingVote.length > 0) {
-        alert(`⛔ BẢO MẬT CHỐNG GIAN LẬN:\nMã số [${cleanCode}] đã thực hiện bình chọn cho một tác phẩm trước đó vào lúc ${new Date(existingVote[0].created_at).toLocaleString('vi-VN')}!\n\nĐể đảm bảo công bằng, mỗi người chỉ được thả tim bình chọn 1 lần duy nhất.`);
-        setSubmittingVote(false);
-        return;
-      }
-
-      // 2. Strict Device Fingerprint check against DB
-      const deviceToken = getDeviceFingerprint();
+      // 1. Strict Device Fingerprint check against DB (1 device = 1 vote)
       const { data: existingDeviceVote } = await supabase
         .from('cbq_votes')
         .select('*')
@@ -150,7 +131,20 @@ export default function PublicVoting() {
         .limit(1);
 
       if (existingDeviceVote && existingDeviceVote.length > 0) {
-        alert(`⛔ BẢO MẬT MÃ THIẾT BỊ MÁY:\nĐiện thoại / Máy tính này (${deviceToken}) đã từng thực hiện bình chọn trên hệ thống vào lúc ${new Date(existingDeviceVote[0].created_at).toLocaleString('vi-VN')}!\n\nĐể đảm bảo tuyệt đối tính công bằng, mỗi thiết bị máy chỉ được bình chọn 1 lần duy nhất.`);
+        alert(`⛔ BẢO MẬT MÃ THIẾT BỊ MÁY:\nĐiện thoại / Máy tính này (${deviceToken}) đã từng thực hiện bình chọn trên hệ thống trước đó!\n\nĐể đảm bảo tuyệt đối tính công bằng, mỗi thiết bị máy chỉ được thả tim bình chọn 1 lần duy nhất trong toàn bộ cuộc thi.`);
+        setSubmittingVote(false);
+        return;
+      }
+
+      // 2. Check if name+class code already used
+      const { data: existingNameVote } = await supabase
+        .from('cbq_votes')
+        .select('*')
+        .eq('voter_code', voterCodeGenerated)
+        .limit(1);
+
+      if (existingNameVote && existingNameVote.length > 0) {
+        alert(`⛔ BẢO MẬT HỌ TÊN & LỚP:\nTên học sinh [${fullName}] thuộc [${studentClass}] đã từng được ghi nhận bình chọn trước đó!\n\nMỗi học sinh chỉ được thả tim 1 lần duy nhất.`);
         setSubmittingVote(false);
         return;
       }
@@ -160,17 +154,14 @@ export default function PublicVoting() {
         .from('cbq_votes')
         .insert([{
           entry_id: votingEntry.id,
-          voter_name: finalVoterName || voterName.trim() || 'Học sinh / Khách mời',
-          voter_code: cleanCode,
+          voter_name: `${fullName} (${studentClass})`,
+          voter_code: voterCodeGenerated,
           device_token: deviceToken
         }]);
 
       if (insertErr) {
-        if (insertErr.code === '23505' || insertErr.message.includes('unique')) {
-          alert(`⛔ BẢO MẬT CHỐNG GIAN LẬN:\nMã số [${cleanCode}] đã được sử dụng để bình chọn trước đó. Mỗi học sinh chỉ được bình chọn 1 lần!`);
-        } else {
-          alert("Lỗi khi lưu bình chọn. Vui lòng thử lại!");
-        }
+        console.error(insertErr);
+        alert("Có lỗi khi lưu bình chọn. Vui lòng thử lại!");
         setSubmittingVote(false);
         return;
       }
@@ -471,33 +462,34 @@ export default function PublicVoting() {
             </div>
 
             <form onSubmit={handleConfirmVote}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  Họ và Tên người bình chọn
+              <div style={{ marginBottom: '12px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                  Họ và Tên Học Sinh (*)
                 </label>
                 <input 
                   type="text" 
-                  placeholder="VD: Nguyễn Văn Anh (Lớp 12A1)"
+                  required
+                  placeholder="VD: Nguyễn Văn Anh"
                   value={voterName}
                   onChange={e => setVoterName(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  Mã Học Sinh / Mã Số Thiệp / Số Điện Thoại (*)
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                  Lớp / Niên Khóa (*)
                 </label>
                 <input 
                   type="text" 
                   required
-                  placeholder="VD: 12A1-05 hoặc CBQ-1234"
+                  placeholder="VD: Lớp 12A1 hoặc Khóa 2002-2005"
                   value={voterCode}
                   onChange={e => setVoterCode(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #be123c', fontSize: '14px', fontWeight: 'bold', color: '#be123c', boxSizing: 'border-box' }}
                 />
                 <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
-                  * Mã số này sẽ được CSDL kiểm tra để chống bình chọn gian lận lặp lại.
+                  * Thiết bị máy điện thoại/máy tính của bạn được bảo mật tự động (1 máy = 1 tim).
                 </span>
               </div>
 
