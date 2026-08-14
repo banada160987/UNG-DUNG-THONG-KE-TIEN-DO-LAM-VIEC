@@ -10,6 +10,9 @@ export default function PublicVoting() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all'); // 'all' | 'leaderboard'
+
+  // MY CURRENT VOTE STATE
+  const [myCurrentVote, setMyCurrentVote] = useState(null);
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -27,10 +30,26 @@ export default function PublicVoting() {
 
   useEffect(() => {
     fetchEntries();
+    fetchMyVote();
     if (codeFromUrl) {
       setVoterCode(codeFromUrl.toUpperCase());
     }
   }, [codeFromUrl]);
+
+  const fetchMyVote = async () => {
+    const deviceToken = getDeviceFingerprint();
+    const { data } = await supabase
+      .from('cbq_votes')
+      .select('*, cbq_voting_entries(title, author_name)')
+      .eq('device_token', deviceToken)
+      .limit(1);
+
+    if (data && data.length > 0) {
+      setMyCurrentVote(data[0]);
+    } else {
+      setMyCurrentVote(null);
+    }
+  };
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -126,14 +145,25 @@ export default function PublicVoting() {
       // 1. Strict Device Fingerprint check against DB (1 device = 1 vote)
       const { data: existingDeviceVote } = await supabase
         .from('cbq_votes')
-        .select('*')
+        .select('*, cbq_voting_entries(title)')
         .eq('device_token', deviceToken)
         .limit(1);
 
       if (existingDeviceVote && existingDeviceVote.length > 0) {
-        alert(`⛔ BẢO MẬT MÃ THIẾT BỊ MÁY:\nĐiện thoại / Máy tính này (${deviceToken}) đã từng thực hiện bình chọn trên hệ thống trước đó!\n\nĐể đảm bảo tuyệt đối tính công bằng, mỗi thiết bị máy chỉ được thả tim bình chọn 1 lần duy nhất trong toàn bộ cuộc thi.`);
-        setSubmittingVote(false);
-        return;
+        const oldTitle = existingDeviceVote[0].cbq_voting_entries?.title || 'tác phẩm trước';
+        // Ask user if they want to switch vote to the new entry
+        const confirmSwitch = window.confirm(
+          `💡 BẠN ĐÃ BÌNH CHỌN TRƯỚC ĐÓ:\n\nBạn từng thả tim cho tác phẩm: "${oldTitle}".\n\nBạn có muốn CHUYỂN LƯỢT TIM của mình sang cho tác phẩm mới "${votingEntry.title}" hay không?`
+        );
+
+        if (confirmSwitch) {
+          await handleSwitchVote(existingDeviceVote[0], votingEntry);
+          setSubmittingVote(false);
+          return;
+        } else {
+          setSubmittingVote(false);
+          return;
+        }
       }
 
       // 2. Check if name+class code already used
@@ -179,11 +209,86 @@ export default function PublicVoting() {
       setVotingEntry(null);
       setVoterCode('');
       setVoteSuccessModal(true);
+      fetchMyVote();
 
     } catch (err) {
       console.error("Lỗi bình chọn:", err);
       alert("Có lỗi xảy ra khi xử lý bình chọn.");
       setSubmittingVote(false);
+    }
+  };
+
+  // CANCEL MY VOTE FUNCTION
+  const handleCancelMyVote = async () => {
+    if (!myCurrentVote) return;
+    const oldTitle = myCurrentVote.cbq_voting_entries?.title || 'tác phẩm';
+
+    if (!window.confirm(`Bạn có chắc chắn muốn HỦY lượt bình chọn cho tác phẩm "${oldTitle}" để chọn thả tim cho sản phẩm khác không?`)) return;
+
+    try {
+      // 1. Delete vote record
+      await supabase.from('cbq_votes').delete().eq('id', myCurrentVote.id);
+
+      // 2. Decrement votes_count in target entry
+      const targetEntry = entries.find(e => e.id === myCurrentVote.entry_id);
+      if (targetEntry && targetEntry.votes_count > 0) {
+        const newCount = targetEntry.votes_count - 1;
+        await supabase
+          .from('cbq_voting_entries')
+          .update({ votes_count: newCount })
+          .eq('id', targetEntry.id);
+
+        setEntries(prev => prev.map(e => e.id === targetEntry.id ? { ...e, votes_count: newCount } : e));
+      }
+
+      setMyCurrentVote(null);
+      alert(`Đã hủy lượt thả tim cho tác phẩm "${oldTitle}" thành công! Bây giờ bạn có thể chọn thả tim cho tác phẩm khác.`);
+    } catch (err) {
+      console.error("Lỗi khi hủy bình chọn:", err);
+      alert("Có lỗi xảy ra khi hủy bình chọn. Vui lòng thử lại!");
+    }
+  };
+
+  // SWITCH VOTE FUNCTION
+  const handleSwitchVote = async (oldVoteRecord, newEntry) => {
+    try {
+      // 1. Decrement old entry count
+      const oldEntry = entries.find(e => e.id === oldVoteRecord.entry_id);
+      if (oldEntry && oldEntry.votes_count > 0) {
+        await supabase
+          .from('cbq_voting_entries')
+          .update({ votes_count: oldEntry.votes_count - 1 })
+          .eq('id', oldEntry.id);
+      }
+
+      // 2. Increment new entry count
+      const newCount = (newEntry.votes_count || 0) + 1;
+      await supabase
+        .from('cbq_voting_entries')
+        .update({ votes_count: newCount })
+        .eq('id', newEntry.id);
+
+      // 3. Update vote record entry_id
+      await supabase
+        .from('cbq_votes')
+        .update({
+          entry_id: newEntry.id,
+          created_at: new Date().toISOString()
+        })
+        .eq('id', oldVoteRecord.id);
+
+      setEntries(prev => prev.map(e => {
+        if (e.id === oldVoteRecord.entry_id) return { ...e, votes_count: Math.max(0, (e.votes_count || 0) - 1) };
+        if (e.id === newEntry.id) return { ...e, votes_count: newCount };
+        return e;
+      }));
+
+      setVotingEntry(null);
+      fetchMyVote();
+      alert(`🎉 CHUYỂN BÌNH CHỌN THÀNH CÔNG!\n\nBạn đã chuyển 1 lượt tim sang cho tác phẩm "${newEntry.title}".`);
+    } catch (err) {
+      console.error("Lỗi chuyển bình chọn:", err);
+      alert("Lỗi khi chuyển bình chọn. Vui lòng thử lại!");
     }
   };
 
@@ -228,6 +333,35 @@ export default function PublicVoting() {
           <ShieldCheck size={16} /> Hệ Thống Khóa Đúp Anti-Spam • Bảo Đảm Công Bằng 100%
         </div>
       </div>
+
+      {/* MY ACTIVE VOTE CALLOUT BANNER */}
+      {myCurrentVote && (
+        <div style={{ background: '#fef2f2', border: '2px dashed #be123c', borderRadius: '16px', padding: '16px 20px', marginBottom: '25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ background: '#be123c', color: 'white', padding: '10px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Heart size={22} fill="white" />
+            </div>
+            <div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#be123c', textTransform: 'uppercase' }}>
+                💖 BẠN ĐÃ THẢ TIM BÌNH CHỌN CHO TÁC PHẨM:
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', marginTop: '2px' }}>
+                "{myCurrentVote.cbq_voting_entries?.title || 'Tác phẩm'}" • {myCurrentVote.voter_name}
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                Bạn có thể Hủy lượt tim này bất cứ lúc nào hoặc bấm nút [BÌNH CHỌN] ở bài thi khác để chuyển tim sang bài mới!
+              </div>
+            </div>
+          </div>
+
+          <button 
+            onClick={handleCancelMyVote}
+            style={{ padding: '8px 16px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+          >
+            💔 Hủy Lượt Bình Chọn Này
+          </button>
+        </div>
+      )}
 
       {/* NAVIGATION TABS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
