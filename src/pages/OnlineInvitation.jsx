@@ -180,6 +180,13 @@ export default function OnlineInvitation() {
   useEffect(() => {
     fetchData();
     setTimeout(() => setShowConfetti(false), 5000);
+
+    // Auto-sync wishes every 10 seconds to pull deletes from Admin
+    const wishesInterval = setInterval(() => {
+      fetchWishes();
+    }, 10000);
+
+    return () => clearInterval(wishesInterval);
   }, [code]);
 
   useEffect(() => {
@@ -402,15 +409,23 @@ export default function OnlineInvitation() {
     }
   };
 
-  const handleDeleteWish = async (wishId) => {
+  const handleDeleteWish = async (wishItem) => {
     const confirmDel = window.confirm("🗑️ Bạn có chắc chắn muốn xóa lời chúc này không?");
     if (!confirmDel) return;
 
-    const { error } = await supabase.from('cbq_wishes').delete().eq('id', wishId);
+    let error = null;
+    if (wishItem.id) {
+      const res = await supabase.from('cbq_wishes').delete().eq('id', wishItem.id);
+      error = res.error;
+    } else if (wishItem.guest_name && wishItem.message) {
+      const res = await supabase.from('cbq_wishes').delete().eq('guest_name', wishItem.guest_name).eq('message', wishItem.message);
+      error = res.error;
+    }
+
     if (!error) {
-      setWishes(prev => prev.filter(w => w.id !== wishId));
-      setFloatingWishes(prev => prev.filter(w => w.id !== wishId));
-      alert("Đã xóa lời chúc thành công!");
+      setWishes(prev => prev.filter(w => (wishItem.id ? w.id !== wishItem.id : w.message !== wishItem.message)));
+      setFloatingWishes(prev => prev.filter(w => (wishItem.id ? w.id !== wishItem.id : w.message !== wishItem.message)));
+      alert("🎉 ĐÃ XÓA LỜI CHÚC THÀNH CÔNG!");
     } else {
       alert("Không thể xóa lời chúc: " + error.message);
     }
@@ -1225,7 +1240,7 @@ export default function OnlineInvitation() {
                         <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
                       </div>
                       <button 
-                        onClick={() => handleDeleteWish(w.id)}
+                        onClick={() => handleDeleteWish(w)}
                         style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #fca5a5', color: '#fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', lineHeight: '1', flexShrink: 0 }}
                         title="Xóa lời chúc này"
                       >

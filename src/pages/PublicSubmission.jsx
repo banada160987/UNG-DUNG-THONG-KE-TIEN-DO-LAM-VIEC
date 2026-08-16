@@ -76,10 +76,10 @@ export default function PublicSubmission() {
           <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM THPT CAO BÁ QUÁT
         </div>
 
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '26px', fontFamily: 'Playfair Display, Georgia, serif' }}>
+        <h1 style={{ margin: '0 0 10px 0', fontSize: '26px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 10px rgba(0,0,0,0.7)', fontWeight: '800' }}>
           📤 CỔNG NỘP BÀI THI & SẢN PHẨM SÁNG TẠO ONLINE
         </h1>
-        <p style={{ margin: '0 auto', maxWidth: '650px', fontSize: '13.5px', color: '#cbd5e1', lineHeight: '1.5' }}>
+        <p style={{ margin: '0 auto', maxWidth: '650px', fontSize: '14px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', fontWeight: '500', lineHeight: '1.6' }}>
           Học sinh các lớp và cựu học sinh gửi trực tiếp sản phẩm dự thi (Tranh vẽ, Video, Mô hình, Thơ bài viết) lên hệ thống chào mừng 30 năm thành lập Trường.
         </p>
       </div>

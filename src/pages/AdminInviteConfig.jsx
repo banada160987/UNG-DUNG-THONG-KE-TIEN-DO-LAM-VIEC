@@ -93,12 +93,37 @@ export default function AdminInviteConfig() {
     const confirmDelete = window.confirm(`🗑️ XÁC NHẬN XÓA LỜI CHÚC:\n\nBạn có chắc chắn muốn xóa lời chúc của "${wish.guest_name}"?\nNội dung: "${wish.message}"`);
     if (!confirmDelete) return;
 
-    const { error } = await supabase.from('cbq_wishes').delete().eq('id', wish.id);
+    let error = null;
+    if (wish.id) {
+      const res = await supabase.from('cbq_wishes').delete().eq('id', wish.id);
+      error = res.error;
+    } else {
+      const res = await supabase.from('cbq_wishes').delete().eq('guest_name', wish.guest_name).eq('message', wish.message);
+      error = res.error;
+    }
+
     if (!error) {
       alert("Đã xóa lời chúc thành công!");
-      setWishesList(prev => prev.filter(w => w.id !== wish.id));
+      setWishesList(prev => prev.filter(w => (wish.id ? w.id !== wish.id : w.message !== wish.message)));
     } else {
       alert("Lỗi khi xóa lời chúc: " + error.message);
+    }
+  };
+
+  const handleClearAllDemoWishes = async () => {
+    const confirmClear = window.confirm("⚠️ XÁC NHẬN XÓA TẤT CẢ LỜI CHÚC THỬ NGHIỆM:\n\nBạn có chắc chắn muốn xóa TẤT CẢ lời chúc mẫu (chứa tên 'Nguyễn Văn B' hoặc 'Khách mời') khỏi hệ thống không?");
+    if (!confirmClear) return;
+
+    const { error } = await supabase
+      .from('cbq_wishes')
+      .delete()
+      .or('guest_name.eq.Nguyễn Văn B,guest_name.ilike.%Nguyễn Văn B%,guest_name.eq.Khách mời');
+
+    if (!error) {
+      alert("🎉 ĐÃ XÓA SẠCH TOÀN BỘ LỜI CHÚC THỬ NGHIỆM THÀNH CÔNG!");
+      fetchWishesList();
+    } else {
+      alert("Lỗi khi xóa lời chúc mẫu: " + error.message);
     }
   };
 
@@ -490,12 +515,21 @@ export default function AdminInviteConfig() {
             <h3 style={{ margin: 0, color: '#be123c', fontFamily: 'Playfair Display, serif' }}>
               💌 Quản Lý Sổ Vàng Lời Chúc ({wishesList.length} lời chúc)
             </h3>
-            <button 
-              onClick={fetchWishesList} 
-              style={{ padding: '6px 14px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
-            >
-              🔄 Làm mới danh sách
-            </button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={handleClearAllDemoWishes} 
+                style={{ padding: '6px 14px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer' }}
+                title="Xóa tất cả các lời chúc mẫu thử nghiệm chứa tên Nguyễn Văn B"
+              >
+                🗑️ Xóa Lời Chúc Mẫu
+              </button>
+              <button 
+                onClick={fetchWishesList} 
+                style={{ padding: '6px 14px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+              >
+                🔄 Làm mới danh sách
+              </button>
+            </div>
           </div>
 
           <p style={{ color: '#64748b', fontSize: '14px', marginTop: 0, marginBottom: '1rem' }}>
