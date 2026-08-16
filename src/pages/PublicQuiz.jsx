@@ -345,6 +345,17 @@ export default function PublicQuiz() {
     return () => clearInterval(timerRef.current);
   }, [step, timeLeft]);
 
+  const parseOptions = (opts) => {
+    if (Array.isArray(opts)) return opts;
+    if (typeof opts === 'string') {
+      try {
+        const p = JSON.parse(opts);
+        if (Array.isArray(p)) return p;
+      } catch (e) {}
+    }
+    return [];
+  };
+
   const fetchQuestions = async () => {
     setLoading(true);
     try {
@@ -354,7 +365,11 @@ export default function PublicQuiz() {
         .order('order_index', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        setQuestions(data);
+        const parsed = data.map(q => ({
+          ...q,
+          options: parseOptions(q.options)
+        }));
+        setQuestions(parsed);
       } else {
         setQuestions([]);
       }
@@ -650,16 +665,41 @@ export default function PublicQuiz() {
                   })}
                 </div>
               ) : (
-                /* ESSAY TEXTAREA */
-                <div>
-                  <textarea
-                    rows={6}
-                    value={essayAnswer}
-                    onChange={e => setEssayAnswer(e.target.value)}
-                    placeholder="Viết cảm nghĩ, kỷ niệm sâu sắc nhất của bạn về mái trường THPT Cao Bá Quát tại đây..."
-                    style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '14.5px', lineHeight: '1.6', boxSizing: 'border-box' }}
-                  />
-                </div>
+                /* ESSAY / TIE-BREAKER PREDICTION INPUT */
+                currentQuestion?.question_text?.includes('dự đoán') || currentQuestion?.question_text?.includes('DỰ ĐOÁN') ? (
+                  <div style={{ background: '#fefce8', border: '2px dashed #eab308', padding: '20px', borderRadius: '16px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#854d0e', fontWeight: 'bold', fontSize: '15px', marginBottom: '10px' }}>
+                      <Sparkles size={20} color="#ca8a04" /> CÂU DỰ ĐOÁN PHỤ XẾP HẠNG BAN TỔ CHỨC
+                    </div>
+                    <label style={{ display: 'block', fontSize: '14px', color: '#713f12', fontWeight: '600', marginBottom: '10px' }}>
+                      Vui lòng nhập số lượng thí sinh bạn dự đoán sẽ trả lời đúng cả 30/30 câu hỏi:
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <input
+                        type="number"
+                        min="0"
+                        value={essayAnswer}
+                        onChange={e => setEssayAnswer(e.target.value)}
+                        placeholder="Nhập số người dự đoán (Ví dụ: 125)"
+                        style={{ flex: 1, padding: '14px 18px', borderRadius: '10px', border: '2px solid #ca8a04', fontSize: '18px', fontWeight: 'bold', color: '#854d0e', background: '#ffffff', boxSizing: 'border-box' }}
+                      />
+                      <span style={{ fontWeight: 'bold', color: '#854d0e', fontSize: '16px' }}>người</span>
+                    </div>
+                    <p style={{ fontSize: '12.5px', color: '#a16207', marginTop: '10px', marginBottom: 0, lineHeight: '1.5' }}>
+                      💡 <em>Lưu ý: Đáp án dự đoán này là căn cứ xét giải Nhất, Nhì, Ba khi có nhiều thí sinh đạt cùng số điểm và cùng thời gian làm bài!</em>
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <textarea
+                      rows={6}
+                      value={essayAnswer}
+                      onChange={e => setEssayAnswer(e.target.value)}
+                      placeholder="Viết cảm nghĩ, kỷ niệm sâu sắc nhất của bạn về mái trường THPT Cao Bá Quát tại đây..."
+                      style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '14.5px', lineHeight: '1.6', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                )
               )}
             </div>
           )}

@@ -90,12 +90,29 @@ export default function AdminQuiz() {
     setLoading(false);
   };
 
+  const parseOptions = (opts) => {
+    if (Array.isArray(opts)) return opts;
+    if (typeof opts === 'string') {
+      try {
+        const p = JSON.parse(opts);
+        if (Array.isArray(p)) return p;
+      } catch (e) {}
+    }
+    return [];
+  };
+
   const fetchQuestions = async () => {
     const { data } = await supabase
       .from('cbq_quiz_questions')
       .select('*')
       .order('order_index', { ascending: true });
-    if (data) setQuestions(data);
+    if (data) {
+      const parsed = data.map(q => ({
+        ...q,
+        options: parseOptions(q.options)
+      }));
+      setQuestions(parsed);
+    }
   };
 
   const OFFICIAL_30_QUESTIONS = [
@@ -147,7 +164,7 @@ export default function AdminQuiz() {
       const rowsToInsert = OFFICIAL_30_QUESTIONS.map((q, idx) => ({
         question_text: q.question_text,
         question_type: q.question_type,
-        options: JSON.stringify(q.options),
+        options: q.options,
         correct_option_index: q.correct_option_index,
         points: q.points,
         order_index: idx + 1
@@ -156,7 +173,7 @@ export default function AdminQuiz() {
       const { error } = await supabase.from('cbq_quiz_questions').insert(rowsToInsert);
       if (!error) {
         alert("🎉 ĐÃ NẠP THÀNH CÔNG TRỌN BỘ 30 CÂU HỎI CHÍNH THỨC VÀO CSDL!");
-        fetchQuestions();
+        await fetchQuestions();
       } else {
         alert("Lỗi khi nạp bộ câu hỏi: " + error.message);
       }
@@ -356,10 +373,10 @@ export default function AdminQuiz() {
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', textTransform: 'uppercase', fontSize: '12px', color: '#475569' }}>
                 <th style={{ padding: '12px', textAlign: 'left' }}>Thí sinh / Lớp</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Điểm Trắc Nghiệm</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Điểm Tự Luận</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Điểm Trắc Nghiệm (300đ)</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>🎯 Dự Đoán Thí Sinh 30/30</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Chấm Điểm Phụ</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>Tổng Điểm</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Bài Làm Tự Luận</th>
                 <th style={{ padding: '12px', textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
@@ -370,8 +387,17 @@ export default function AdminQuiz() {
                     <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{sub.student_name}</div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>{sub.student_group} • 📞 {sub.phone || 'N/A'}</div>
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#166534' }}>
-                    {sub.score || 0}
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#166534', fontSize: '16px' }}>
+                    {sub.score || 0}/300
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '13px' }}>
+                    {sub.essay_answer ? (
+                      <div style={{ background: '#fefce8', padding: '6px 12px', borderRadius: '8px', border: '1px solid #fef08a', color: '#854d0e', fontWeight: 'bold', display: 'inline-block' }}>
+                        🎯 Dự đoán: <span style={{ color: '#ca8a04', fontSize: '15px' }}>{sub.essay_answer}</span> người
+                      </div>
+                    ) : (
+                      <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Chưa nhập</span>
+                    )}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
                     <input
@@ -381,17 +407,8 @@ export default function AdminQuiz() {
                       style={{ width: '60px', padding: '4px', textAlign: 'center', borderRadius: '4px', border: '1px solid #cbd5e1' }}
                     />
                   </td>
-                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#be123c', fontSize: '15px' }}>
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#be123c', fontSize: '16px' }}>
                     {sub.total_score || sub.score}
-                  </td>
-                  <td style={{ padding: '12px', maxWidth: '300px', fontSize: '12.5px', color: '#334155' }}>
-                    {sub.essay_answer ? (
-                      <div style={{ background: '#fff7ed', padding: '6px 10px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
-                        "{sub.essay_answer}"
-                      </div>
-                    ) : (
-                      <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Không viết tự luận</span>
-                    )}
                   </td>
                   <td style={{ padding: '12px', textAlign: 'center' }}>
                     <button onClick={() => handleDeleteSubmission(sub.id)} style={{ padding: '6px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
