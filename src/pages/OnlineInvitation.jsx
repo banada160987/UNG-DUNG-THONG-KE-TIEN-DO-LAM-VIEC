@@ -588,8 +588,10 @@ export default function OnlineInvitation() {
           background-image: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 241, 242, 0.92)), url('https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&q=80');
           background-size: cover; background-position: center; color: #333; text-align: center; padding: 20px; box-sizing: border-box;
         }
-        .cover-title { font-family: 'Playfair Display', serif; font-size: 34px; font-weight: 800; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; color: #be123c; line-height: 1.2; }
-        .cover-subtitle { font-family: 'Montserrat', sans-serif; font-size: 16px; font-weight: 600; margin-bottom: 35px; color: #64748b; letter-spacing: 1px; }
+        .cover-title { font-family: 'Playfair Display', serif; margin-bottom: 16px; text-transform: uppercase; color: #be123c; line-height: 1.3; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 10px; box-sizing: border-box; }
+        .cover-title-main { font-size: clamp(20px, 5.8vw, 28px); font-weight: 800; letter-spacing: 1px; color: #be123c; text-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .cover-title-sub { font-size: clamp(17px, 4.8vw, 22px); font-weight: 700; letter-spacing: 1.5px; color: #b45309; }
+        .cover-subtitle { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 25px; color: #64748b; letter-spacing: 1px; }
         .cover-guest { font-family: 'Montserrat', sans-serif; font-size: 15px; margin-bottom: 8px; color: #475569; text-transform: uppercase; letter-spacing: 1px; }
         .cover-name { font-family: 'Great Vibes', cursive; font-size: 46px; color: #b45309; font-weight: 400; margin-bottom: 45px; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
         .swipe-hint { position: absolute; bottom: 85px; font-size: 13px; color: #be123c; font-weight: 700; animation: bounceRight 2s infinite; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.9); padding: 8px 18px; border-radius: 20px; border: 1px solid #fecdd3; box-shadow: 0 4px 12px rgba(225,29,72,0.15); }
@@ -1001,7 +1003,10 @@ export default function OnlineInvitation() {
                 <div key={i} className="sparkle-dot" style={{top: `${random(10, 85)}%`, left: `${random(10, 85)}%`, width: `${random(4, 7)}px`, height: `${random(4, 7)}px`, animationDelay: `${random(0, 3)}s` }} />
               ))}
             </div>
-            <h1 className="cover-title">Lễ Kỷ Niệm<br/>30 Năm Ngày Thành Lập</h1>
+            <h1 className="cover-title">
+              <span className="cover-title-main">LỄ KỶ NIỆM 30 NĂM</span>
+              <span className="cover-title-sub">NGÀY THÀNH LẬP</span>
+            </h1>
             <div className="cover-subtitle">{config?.school_name || "THPT CAO BÁ QUÁT"}</div>
             
             <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
