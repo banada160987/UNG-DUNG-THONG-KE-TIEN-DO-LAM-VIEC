@@ -25,7 +25,7 @@ export default function PublicLayout() {
       {/* 2. Horizontal Navigation */}
       <nav style={styles.navbar}>
         <div style={styles.navContainer}>
-          <div className="portal-nav-links" style={{ display: 'flex', flexWrap: 'wrap' }}>
+          <div className="portal-nav-links" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto' }}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
             <Link to="/tin-tuc" style={isActive('/tin-tuc') ? styles.navItemActive : styles.navItem}>Tin tức - Sự kiện</Link>
@@ -36,7 +36,7 @@ export default function PublicLayout() {
             <Link to="/binh-chon" style={isActive('/binh-chon') ? styles.navItemActive : styles.navItem}>🗳️ Bình chọn tác phẩm</Link>
             <Link to="/nop-bai-thi" style={isActive('/nop-bai-thi') ? styles.navItemActive : styles.navItem}>📤 Nộp bài thi</Link>
           </div>
-          <Link to="/admin" style={styles.adminLoginBtn}>Đăng nhập BTC</Link>
+          <Link to="/admin" style={styles.adminLoginBtn}>🔑 Đăng nhập BTC</Link>
         </div>
       </nav>
 
@@ -108,33 +108,36 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
   },
   navItem: {
     color: 'white',
     textDecoration: 'none',
-    padding: '12px 15px',
-    fontSize: '14px',
+    padding: '12px 10px',
+    fontSize: '13px',
     fontWeight: 'bold',
+    whiteSpace: 'nowrap',
     borderRight: '1px solid #14532d',
     transition: 'background 0.2s',
   },
   navItemActive: {
     color: 'white',
     textDecoration: 'none',
-    padding: '12px 15px',
-    fontSize: '14px',
+    padding: '12px 10px',
+    fontSize: '13px',
     fontWeight: 'bold',
+    whiteSpace: 'nowrap',
     borderRight: '1px solid #14532d',
     backgroundColor: '#14532d',
   },
   adminLoginBtn: {
-    color: '#fbbf24',
+    color: '#ffffff',
     textDecoration: 'none',
-    padding: '12px 15px',
-    fontSize: '14px',
+    padding: '12px 14px',
+    fontSize: '13px',
     fontWeight: 'bold',
-    backgroundColor: '#d32f2f',
+    whiteSpace: 'nowrap',
+    backgroundColor: '#be123c',
   },
   topBar: {
     maxWidth: '1200px',
