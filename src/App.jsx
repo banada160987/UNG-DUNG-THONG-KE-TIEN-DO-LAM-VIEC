@@ -25,6 +25,8 @@ import AdminQuiz from './pages/AdminQuiz';
 import PublicVoting from './pages/PublicVoting';
 import AdminVoting from './pages/AdminVoting';
 import PublicSubmission from './pages/PublicSubmission';
+import StudentRegister from './pages/StudentRegister';
+import StudentLogin from './pages/StudentLogin';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -51,6 +53,8 @@ function App() {
         <Route path="/cuoc-thi" element={<PublicQuiz />} />
         <Route path="/binh-chon" element={<PublicVoting />} />
         <Route path="/nop-bai-thi" element={<PublicSubmission />} />
+        <Route path="/dang-ky" element={<StudentRegister />} />
+        <Route path="/dang-nhap" element={<StudentLogin />} />
       </Route>
       
       {/* Protected Admin Routes */}

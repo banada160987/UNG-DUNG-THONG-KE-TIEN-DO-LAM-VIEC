@@ -40,11 +40,13 @@ export default function PublicVoting() {
   }, [codeFromUrl]);
 
   const fetchMyVote = async () => {
-    const deviceToken = getDeviceFingerprint();
+    const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
+    const voterKey = currentStudent ? `USER-${currentStudent.username}` : getDeviceFingerprint();
+
     const { data } = await supabase
       .from('cbq_votes')
       .select('*, cbq_voting_entries(title, author_name)')
-      .eq('device_token', deviceToken)
+      .or(`device_token.eq.${voterKey},voter_code.eq.${voterKey}`)
       .limit(1);
 
     if (data && data.length > 0) {
@@ -140,21 +142,22 @@ export default function PublicVoting() {
       alert("🔒 CỔNG BÌNH CHỌN ĐÃ KHÓA!\n\nBan Tổ Chức đã chốt kết quả đợt bình chọn.");
       return;
     }
-    if (submittingVote) return; // Prevent Double Click / Race condition Click Spamming
+    if (submittingVote) return;
 
-    if (!voterName.trim()) {
-      alert("Vui lòng nhập Họ và Tên của bạn.");
+    const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
+    let fullName = voterName.trim();
+    let studentClass = normalizeClassName(voterCode);
+
+    if (currentStudent) {
+      fullName = currentStudent.full_name;
+      studentClass = currentStudent.student_class;
+    } else if (!fullName || !studentClass) {
+      alert("Vui lòng ĐĂNG NHẬP tài khoản học sinh hoặc điền Họ tên & Lớp trước khi bình chọn!");
       return;
     }
-    if (!voterCode.trim()) {
-      alert("Vui lòng chọn hoặc nhập Tên Lớp/Khóa của bạn (VD: Lớp 12A1).");
-      return;
-    }
 
-    const studentClass = normalizeClassName(voterCode);
-    const fullName = voterName.trim();
-    const voterCodeGenerated = `${studentClass}-${fullName.toUpperCase()}`;
-    const deviceToken = getDeviceFingerprint();
+    const voterCodeGenerated = currentStudent ? `USER-${currentStudent.username}` : `${studentClass}-${fullName.toUpperCase()}`;
+    const deviceToken = currentStudent ? `USER-${currentStudent.username}` : getDeviceFingerprint();
 
     setSubmittingVote(true);
 

@@ -36,7 +36,34 @@ export default function PublicLayout() {
             <Link to="/binh-chon" style={isActive('/binh-chon') ? styles.navItemActive : styles.navItem}>🗳️ Bình chọn tác phẩm</Link>
             <Link to="/nop-bai-thi" style={isActive('/nop-bai-thi') ? styles.navItemActive : styles.navItem}>📤 Nộp bài thi</Link>
           </div>
-          <Link to="/admin" style={styles.adminLoginBtn}>Đăng nhập BTC</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            {(() => {
+              const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
+              if (currentStudent) {
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.15)', padding: '5px 12px', borderRadius: '20px', fontSize: '12px', color: 'white' }}>
+                    <span style={{ fontWeight: 'bold' }}>🎓 {currentStudent.full_name} ({currentStudent.student_class})</span>
+                    <button 
+                      onClick={() => {
+                        localStorage.removeItem('cbq_current_student');
+                        window.location.reload();
+                      }}
+                      style={{ background: '#be123c', color: 'white', border: 'none', borderRadius: '12px', padding: '2px 8px', fontSize: '11px', cursor: 'pointer', fontWeight: 'bold' }}
+                    >
+                      Đăng xuất
+                    </button>
+                  </div>
+                );
+              }
+              return (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <Link to="/dang-nhap" style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '6px', fontSize: '12px', textDecoration: 'none', fontWeight: 'bold' }}>🔐 Đăng nhập</Link>
+                  <Link to="/dang-ky" style={{ padding: '6px 12px', background: '#be123c', color: 'white', borderRadius: '6px', fontSize: '12px', textDecoration: 'none', fontWeight: 'bold' }}>👤 Đăng ký</Link>
+                </div>
+              );
+            })()}
+            <Link to="/admin" style={styles.adminLoginBtn}>BTC</Link>
+          </div>
         </div>
       </nav>
 

@@ -9,9 +9,10 @@ import CertificateModal from '../components/CertificateModal';
 export default function AdminVoting() {
   const [entries, setEntries] = useState([]);
   const [votesLogs, setVotesLogs] = useState([]);
+  const [studentUsers, setStudentUsers] = useState([]);
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'audit' | 'stats'
+  const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'audit' | 'stats' | 'users'
   const [isVotingLocked, setIsVotingLocked] = useState(() => localStorage.getItem('cbq_voting_locked') === 'true');
 
   // CERTIFICATE STATE
@@ -34,8 +35,19 @@ export default function AdminVoting() {
   useEffect(() => {
     fetchEntries();
     fetchVotesLogs();
+    fetchStudentUsers();
     fetchGuests();
   }, []);
+
+  const fetchStudentUsers = async () => {
+    const { data } = await supabase.from('cbq_student_users').select('*').order('created_at', { ascending: false });
+    const localUsers = JSON.parse(localStorage.getItem('cbq_student_accounts') || '[]');
+    const combined = [...(data || []), ...localUsers];
+    // Unique by username
+    const uniqueMap = {};
+    combined.forEach(u => uniqueMap[u.username] = u);
+    setStudentUsers(Object.values(uniqueMap));
+  };
 
   const fetchEntries = async () => {
     setLoading(true);
@@ -581,6 +593,12 @@ export default function AdminVoting() {
         >
           <ShieldCheck size={16} /> 🛡️ Nhật Ký Thả Tim ({votesLogs.length})
         </button>
+        <button 
+          onClick={() => setActiveTab('users')} 
+          style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: activeTab === 'users' ? '#1e293b' : '#f1f5f9', color: activeTab === 'users' ? 'white' : '#475569', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+        >
+          <Users size={16} /> 👥 Tài Khoản Học Sinh ({studentUsers.length})
+        </button>
       </div>
 
       {/* TAB 1: ENTRIES LIST */}
@@ -876,7 +894,71 @@ export default function AdminVoting() {
           </div>
         </div>
       )}
-      {/* CERTIFICATE MODAL INTEGRATION */}
+      {/* TAB 4: STUDENT ACCOUNTS MANAGEMENT */}
+      {activeTab === 'users' && (
+        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Users size={20} color="#be123c" /> DANH SÁCH TÀI KHOẢN HỌC SINH ĐÃ ĐĂNG KÝ ({studentUsers.length})
+            </h3>
+            <span style={{ fontSize: '12.5px', color: '#64748b' }}>Hỗ trợ Admin Reset Mật khẩu khi Học sinh quên</span>
+          </div>
+
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+            <thead>
+              <tr style={{ background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', fontSize: '12px', color: '#64748b' }}>
+                <th style={{ padding: '12px', textAlign: 'center', width: '50px' }}>STT</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Tên Đăng Nhập / SĐT</th>
+                <th style={{ padding: '12px', textAlign: 'left' }}>Họ và Tên Học Sinh</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Lớp / Khóa</th>
+                <th style={{ padding: '12px', textAlign: 'center' }}>Mật Khẩu Hiển Thị</th>
+                <th style={{ padding: '12px', textAlign: 'center', width: '150px' }}>Hành Động</th>
+              </tr>
+            </thead>
+            <tbody>
+              {studentUsers.map((u, idx) => (
+                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</td>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#be123c' }}>{u.username}</td>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0f172a' }}>{u.full_name}</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <span style={{ background: '#f1f5f9', color: '#334155', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12px' }}>
+                      {u.student_class}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center', fontMonospace: 'true', color: '#64748b' }}>
+                    {u.password || '******'}
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    <button 
+                      onClick={() => {
+                        const newPass = prompt(`Nhập mật khẩu mới cho học sinh [${u.full_name}]:`, '123456');
+                        if (newPass) {
+                          const localAccounts = JSON.parse(localStorage.getItem('cbq_student_accounts') || '[]');
+                          const updated = localAccounts.map(acc => acc.username === u.username ? { ...acc, password: newPass } : acc);
+                          localStorage.setItem('cbq_student_accounts', JSON.stringify(updated));
+                          alert(`🔑 ĐÃ KHÔI PHỤC MẬT KHẨU THÀNH CÔNG!\n\nMật khẩu mới của ${u.full_name} là: ${newPass}`);
+                          fetchStudentUsers();
+                        }
+                      }}
+                      style={{ padding: '6px 12px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde047', borderRadius: '6px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                    >
+                      🔑 Reset Mật Khẩu
+                    </button>
+                  </td>
+                </tr>
+              ))}
+              {studentUsers.length === 0 && (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                    Chưa có học sinh nào đăng ký tài khoản.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
       {certModalData && (
         <CertificateModal 
           entry={certModalData.entry} 
