@@ -431,11 +431,35 @@ export default function PublicQuiz() {
     }
   };
 
-  const handleStartQuiz = (e) => {
+  const handleStartQuiz = async (e) => {
     e.preventDefault();
     if (!studentName.trim()) {
       alert("Vui lòng nhập Họ và Tên của bạn.");
       return;
+    }
+
+    const cleanPhone = studentPhone.trim().replace(/\s+/g, '');
+
+    if (!cleanPhone) {
+      alert("Vui lòng nhập Số Điện Thoại liên hệ để Ban Tổ Chức có thể liên hệ trao giải khi bạn đạt giải.");
+      return;
+    }
+
+    // CHECK IF THIS PHONE HAS ALREADY COMPLETED A SUBMISSION
+    try {
+      const { data: existingSubmissions, error: checkError } = await supabase
+        .from('cbq_quiz_submissions')
+        .select('id, student_name, created_at')
+        .or(`phone.eq.${cleanPhone},phone.eq.${studentPhone.trim()}`);
+
+      if (!checkError && existingSubmissions && existingSubmissions.length > 0) {
+        const prevSub = existingSubmissions[0];
+        const dateStr = prevSub.created_at ? new Date(prevSub.created_at).toLocaleString('vi-VN') : '';
+        alert(`⚠️ SỐ ĐIỆN THOẠI ĐÃ THAM GIA THI!\n\nSố điện thoại "${studentPhone}" (Thí sinh: ${prevSub.student_name}) đã hoàn thành 01 lượt thi vào lúc ${dateStr}.\n\nTheo quy định của Ban Tổ Chức, mỗi số điện thoại chỉ được phép tham gia thi 01 LẦN DUY NHẤT.`);
+        return;
+      }
+    } catch (err) {
+      console.error("Lỗi kiểm tra trùng số điện thoại:", err);
     }
 
     if (quizConfig && quizConfig.is_active === false) {
@@ -568,10 +592,11 @@ export default function PublicQuiz() {
             </div>
 
             <div style={{ marginBottom: '20px' }}>
-              <label style={styles.label}>Số Điện Thoại Liên Hệ (Tùy chọn nhận giải)</label>
+              <label style={styles.label}>Số Điện Thoại Liên Hệ (*) (Để Ban Tổ Chức liên hệ trao giải)</label>
               <input
                 type="tel"
-                placeholder="VD: 0987 654 321"
+                required
+                placeholder="VD: 0987 654 321 hoặc 0975609590"
                 value={studentPhone}
                 onChange={e => setStudentPhone(e.target.value)}
                 style={styles.input}

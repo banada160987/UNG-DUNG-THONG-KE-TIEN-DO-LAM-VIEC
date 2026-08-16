@@ -188,6 +188,16 @@ export default function AdminQuiz() {
     fetchSubmissions();
   };
 
+  const handleUpdateQuestionPoints = async (questionId, newPoints) => {
+    const pts = parseFloat(newPoints) || 10;
+    await supabase
+      .from('cbq_quiz_questions')
+      .update({ points: pts })
+      .eq('id', questionId);
+
+    setQuestions(prev => prev.map(q => q.id === questionId ? { ...q, points: pts } : q));
+  };
+
   const handleDeleteQuestion = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa câu hỏi này?")) return;
     await supabase.from('cbq_quiz_questions').delete().eq('id', id);
@@ -208,25 +218,60 @@ export default function AdminQuiz() {
     fetchSubmissions();
   };
 
-  const handleAddQuestion = async (e) => {
+  const [editingQuestion, setEditingQuestion] = useState(null);
+
+  const handleOpenAddModal = () => {
+    setEditingQuestion(null);
+    setQText('');
+    setQType('multiple_choice');
+    setOptA(''); setOptB(''); setOptC(''); setOptD('');
+    setCorrectIdx(0);
+    setPoints(10);
+    setShowQuestionModal(true);
+  };
+
+  const handleOpenEditQuestion = (q) => {
+    setEditingQuestion(q);
+    setQText(q.question_text || '');
+    setQType(q.question_type || 'multiple_choice');
+    const opts = parseOptions(q.options);
+    setOptA(opts[0] || '');
+    setOptB(opts[1] || '');
+    setOptC(opts[2] || '');
+    setOptD(opts[3] || '');
+    setCorrectIdx(q.correct_option_index || 0);
+    setPoints(q.points || 10);
+    setShowQuestionModal(true);
+  };
+
+  const handleSaveQuestion = async (e) => {
     e.preventDefault();
     if (!qText.trim()) return;
 
     const options = qType === 'multiple_choice' ? [optA, optB, optC, optD] : [];
 
-    await supabase.from('cbq_quiz_questions').insert([{
-      question_text: qText.trim(),
-      question_type: qType,
-      options: options,
-      correct_option_index: Number(correctIdx),
-      points: Number(points),
-      order_index: questions.length
-    }]);
+    if (editingQuestion) {
+      await supabase.from('cbq_quiz_questions').update({
+        question_text: qText.trim(),
+        question_type: qType,
+        options: options,
+        correct_option_index: Number(correctIdx),
+        points: Number(points)
+      }).eq('id', editingQuestion.id);
+    } else {
+      await supabase.from('cbq_quiz_questions').insert([{
+        question_text: qText.trim(),
+        question_type: qType,
+        options: options,
+        correct_option_index: Number(correctIdx),
+        points: Number(points),
+        order_index: questions.length + 1
+      }]);
+    }
 
     fetchQuestions();
     setShowQuestionModal(false);
-    setQText('');
-    setOptA(''); setOptB(''); setOptC(''); setOptD('');
+    setEditingQuestion(null);
   };
 
   const exportToExcel = () => {
@@ -293,7 +338,7 @@ export default function AdminQuiz() {
               >
                 <Sparkles size={18} /> Nạp 30 Câu Hỏi BTC
               </button>
-              <button onClick={() => setShowQuestionModal(true)} style={styles.addBtn}>
+              <button onClick={handleOpenAddModal} style={styles.addBtn}>
                 <Plus size={18} /> Thêm Câu Hỏi Mới
               </button>
             </div>
@@ -308,8 +353,10 @@ export default function AdminQuiz() {
       {showQuestionModal && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
-            <h3 style={{ margin: '0 0 15px 0', color: '#be123c' }}>Thêm câu hỏi mới</h3>
-            <form onSubmit={handleAddQuestion}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#be123c' }}>
+              {editingQuestion ? '✏️ Chỉnh Sửa Nội Dung Câu Hỏi' : '➕ Thêm Câu Hỏi Mới'}
+            </h3>
+            <form onSubmit={handleSaveQuestion}>
               <div style={{ marginBottom: '12px' }}>
                 <label style={styles.label}>Nội dung câu hỏi *</label>
                 <textarea
@@ -359,7 +406,9 @@ export default function AdminQuiz() {
 
               <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                 <button type="button" onClick={() => setShowQuestionModal(false)} style={styles.cancelBtn}>Hủy</button>
-                <button type="submit" style={styles.submitBtn}>Lưu Câu Hỏi</button>
+                <button type="submit" style={styles.submitBtn}>
+                  {editingQuestion ? '💾 Lưu Cập Nhật Câu Hỏi' : 'Lưu Câu Hỏi'}
+                </button>
               </div>
             </form>
           </div>
@@ -438,8 +487,19 @@ export default function AdminQuiz() {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontWeight: 'bold', color: '#be123c', fontSize: '14px' }}>Câu {idx + 1}:</span>
                   <span style={{ background: q.question_type === 'essay' ? '#ffedd5' : '#dcfce7', color: q.question_type === 'essay' ? '#c2410c' : '#15803d', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px' }}>
-                    {q.question_type === 'essay' ? 'Tự luận' : `Trắc nghiệm (${q.points || 10}đ)`}
+                    {q.question_type === 'essay' ? 'Tự luận' : 'Trắc nghiệm'}
                   </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', background: '#f1f5f9', padding: '2px 8px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    <span style={{ fontWeight: 'bold', color: '#475569' }}>Điểm:</span>
+                    <input 
+                      type="number" 
+                      defaultValue={q.points || 10} 
+                      onBlur={(e) => handleUpdateQuestionPoints(q.id, e.target.value)}
+                      style={{ width: '45px', padding: '2px 4px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #94a3b8', borderRadius: '4px', color: '#be123c' }}
+                      title="Bấm để thay đổi điểm số câu hỏi này"
+                    />
+                    <span style={{ color: '#475569', fontWeight: 'bold' }}>đ</span>
+                  </div>
                 </div>
                 <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
                   {q.question_text}
@@ -454,9 +514,22 @@ export default function AdminQuiz() {
                   </div>
                 )}
               </div>
-              <button onClick={() => handleDeleteQuestion(q.id)} style={{ padding: '6px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-                <Trash2 size={16} />
-              </button>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                <button 
+                  onClick={() => handleOpenEditQuestion(q)} 
+                  style={{ padding: '6px 12px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                  title="Chỉnh sửa nội dung & đáp án câu hỏi"
+                >
+                  ✏️ Sửa
+                </button>
+                <button 
+                  onClick={() => handleDeleteQuestion(q.id)} 
+                  style={{ padding: '6px 10px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '6px', cursor: 'pointer' }}
+                  title="Xóa câu hỏi này"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
