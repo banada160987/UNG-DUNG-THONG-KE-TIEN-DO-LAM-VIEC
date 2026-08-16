@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Heart, Trophy, Sparkles, Search, Eye, CheckCircle2, ShieldCheck, AlertCircle, X, Award, KeyRound } from 'lucide-react';
+import { Heart, Search, Eye, Trophy, Award, Sparkles, Filter, X, ShieldCheck, CheckCircle2, RefreshCw, KeyRound, AlertCircle } from 'lucide-react';
+import InteractiveProductViewer from '../components/InteractiveProductViewer';
 
 export default function PublicVoting() {
   const [searchParams] = useSearchParams();
@@ -769,13 +770,13 @@ export default function PublicVoting() {
       {/* ENTRY DETAIL LIGHTBOX MODAL */}
       {detailEntry && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 1000, overflowY: 'auto', padding: '20px', backdropFilter: 'blur(8px)' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '800px', margin: '30px auto', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
-            <div style={{ position: 'relative', maxHeight: '450px', background: '#0f172a' }}>
-              <img src={detailEntry.image_url} alt={detailEntry.title} style={{ width: '100%', maxHeight: '450px', objectFit: 'contain' }} />
-              <button onClick={() => setDetailEntry(null)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.6)', color: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <X size={20} />
-              </button>
-            </div>
+          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '850px', margin: '30px auto', overflow: 'hidden', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <button onClick={() => setDetailEntry(null)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'rgba(0,0,0,0.7)', color: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+              <X size={20} />
+            </button>
+
+            {/* INTERACTIVE 360 / 3D PRODUCT VIEWER */}
+            <InteractiveProductViewer entry={detailEntry} />
 
             <div style={{ padding: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>

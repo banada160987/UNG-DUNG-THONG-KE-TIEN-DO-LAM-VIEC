@@ -12,6 +12,9 @@ export default function PublicSubmission() {
     phone: '',
     category: 'Tranh vẽ',
     image_url: '',
+    image_url_angle2: '',
+    video_url: '',
+    model_3d_url: '',
     description: ''
   });
 
@@ -38,6 +41,9 @@ export default function PublicSubmission() {
           author_name: fullAuthor,
           category: formData.category,
           image_url: formData.image_url,
+          image_url_angle2: formData.image_url_angle2,
+          video_url: formData.video_url,
+          model_3d_url: formData.model_3d_url,
           description: formData.description.trim(),
           is_active: false, // Default pending approval by Admin
           votes_count: 0
@@ -192,13 +198,39 @@ export default function PublicSubmission() {
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                Tải Ảnh / Video Sản Phẩm HD (Ngoại trừ Thơ bài viết)
+                📷 Ảnh Tác Phẩm Chính Diện (Mặt Trước *)
               </label>
               <ImageUpload 
                 currentUrl={formData.image_url}
                 onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image_url: url }))}
                 onRemove={() => setFormData(prev => ({ ...prev, image_url: '' }))}
               />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  📐 Ảnh Góc Nghiêng / Mặt Sau (Để xem 360°)
+                </label>
+                <ImageUpload 
+                  currentUrl={formData.image_url_angle2}
+                  onUploadSuccess={(url) => setFormData(prev => ({ ...prev, image_url_angle2: url }))}
+                  onRemove={() => setFormData(prev => ({ ...prev, image_url_angle2: '' }))}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  🎥 Link Video / YouTube / Shorts Thuyết Minh
+                </label>
+                <input 
+                  type="url" 
+                  placeholder="https://youtube.com/watch?v=..."
+                  value={formData.video_url}
+                  onChange={e => setFormData(prev => ({ ...prev, video_url: e.target.value }))}
+                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+              </div>
             </div>
 
             <div>
