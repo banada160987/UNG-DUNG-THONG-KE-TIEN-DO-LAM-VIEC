@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Heart, Search, Eye, Trophy, Award, Sparkles, Filter, X, ShieldCheck, CheckCircle2, RefreshCw, KeyRound, AlertCircle } from 'lucide-react';
 import InteractiveProductViewer from '../components/InteractiveProductViewer';
