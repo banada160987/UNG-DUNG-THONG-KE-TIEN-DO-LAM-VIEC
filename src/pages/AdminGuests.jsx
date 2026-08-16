@@ -108,20 +108,24 @@ export default function AdminGuests() {
       .eq('id', editingGuest.id);
 
     if (!error) {
-      // ĐỒNG BỘ TÊN MỚI SANG LỜI CHÚC (WISHES) VÀ QUÀ TẶNG (GIFTS) NẾU TÊN THAY ĐỔI!
-      if (editFormData.name && editFormData.name.trim() !== editingGuest.name) {
+      // ĐỒNG BỘ TÊN MỚI SANG LỜI CHÚC (WISHES) VÀ QUÀ TẶNG (GIFTS) NẾU TÊN THAY ĐỔI HOẶC CHỨA TÊN MẪU
+      if (editFormData.name) {
         const newName = editFormData.name.trim();
         const oldName = editingGuest.name;
 
         await Promise.all([
           // 1. Cập nhật lời chúc theo ID khách
           supabase.from('cbq_wishes').update({ guest_name: newName }).eq('guest_id', editingGuest.id),
-          // 2. Cập nhật lời chúc theo tên cũ (nếu guest_id null)
+          // 2. Cập nhật lời chúc theo tên cũ
           supabase.from('cbq_wishes').update({ guest_name: newName }).eq('guest_name', oldName),
-          // 3. Cập nhật quà tặng theo ID khách
+          // 3. Thay thế tên mẫu 'Nguyễn Văn B' trong bảng lời chúc
+          supabase.from('cbq_wishes').update({ guest_name: newName }).eq('guest_name', 'Nguyễn Văn B'),
+          // 4. Cập nhật quà tặng theo ID khách
           supabase.from('cbq_gifts').update({ guest_name: newName }).eq('guest_id', editingGuest.id),
-          // 4. Cập nhật quà tặng theo tên cũ
-          supabase.from('cbq_gifts').update({ guest_name: newName }).eq('guest_name', oldName)
+          // 5. Cập nhật quà tặng theo tên cũ
+          supabase.from('cbq_gifts').update({ guest_name: newName }).eq('guest_name', oldName),
+          // 6. Thay thế tên mẫu 'Nguyễn Văn B' trong quà tặng
+          supabase.from('cbq_gifts').update({ guest_name: newName }).eq('guest_name', 'Nguyễn Văn B')
         ]);
       }
 

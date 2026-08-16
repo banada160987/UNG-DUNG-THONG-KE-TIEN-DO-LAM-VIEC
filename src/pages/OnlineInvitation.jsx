@@ -263,8 +263,16 @@ export default function OnlineInvitation() {
   const fetchWishes = async () => {
     const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false }).limit(20);
     if (data) {
-      setWishes(data);
-      const floating = data.map((wish) => ({
+      // TỰ ĐỘNG CẬP NHẬT TÊN ĐỒNG BỘ NẾU KHÁCH MỜI ĐÃ ĐƯỢC ĐỔI TÊN TRONG ADMIN
+      const syncedWishes = data.map(wish => {
+        if (guest && !guest.is_public_card && (wish.guest_id === guest.id || wish.guest_name === 'Nguyễn Văn B')) {
+          return { ...wish, guest_name: guest.name };
+        }
+        return wish;
+      });
+
+      setWishes(syncedWishes);
+      const floating = syncedWishes.map((wish) => ({
         ...wish,
         left: random(2, 60),
         delay: random(0, 15),
