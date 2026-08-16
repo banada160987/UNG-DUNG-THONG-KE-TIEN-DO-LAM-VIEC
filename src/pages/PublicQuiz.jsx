@@ -4,46 +4,281 @@ import { Trophy, Clock, CheckCircle2, Award, Sparkles, Send, ArrowRight, RotateC
 
 const DEFAULT_SAMPLE_QUESTIONS = [
   {
-    question_text: "Trường THPT Cao Bá Quát được chính thức thành lập vào năm nào?",
+    question_text: "Câu 1. Trường THPT Cao Bá Quát được thành lập vào năm nào?",
     question_type: "multiple_choice",
-    options: ["Năm 1994", "Năm 1996", "Năm 1998", "Năm 2000"],
+    options: ["1994", "1996", "1998", "2000"],
     correct_option_index: 1,
     points: 10
   },
   {
-    question_text: "Danh nhân văn hóa Cao Bá Quát nổi tiếng trong lịch sử Việt Nam với biệt danh/tài năng gì?",
+    question_text: "Câu 2. Số điện thoại của trường THPT Cao Bá Quát hiện tại là số nào?",
     question_type: "multiple_choice",
-    options: ["Thần Siêu Mẫu Hạ", "Thánh Thơ - Văn như Siêu Quát", "Thi Sĩ Đất Thần Kinh", "Bình Ngô Đại Cáo"],
+    options: ["02623.863043", "02623.868686", "02623.867899", "02623.456789"],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 3. Trường THPT Cao Bá Quát tọa lạc trên vùng ngoại ô của thành phố nào (theo tên gọi cũ)?",
+    question_type: "multiple_choice",
+    options: ["Thành phố Buôn Ma Thuột", "Thành phố Pleiku", "Thành phố Đà Lạt", "Thành phố Nha Trang"],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 4. Tên gọi ban đầu của nhà trường là gì?",
+    question_type: "multiple_choice",
+    options: [
+      "Trường THCS Cao Bá Quát",
+      "Trường Phổ thông cấp II - III Cao Bá Quát",
+      "Trường THPT Cao Bá Quát",
+      "Trường Phổ thông Dân tộc nội trú Cao Bá Quát"
+    ],
     correct_option_index: 1,
     points: 10
   },
   {
-    question_text: "Địa chỉ hiện tại của trường THPT Cao Bá Quát thuộc phường nào tại tỉnh Đắk Lắk?",
+    question_text: "Câu 5. Ai là Hiệu trưởng đầu tiên của Trường THPT Cao Bá Quát?",
     question_type: "multiple_choice",
-    options: ["Phường Tân Hòa", "Phường Tân An", "Phường Tự An", "Phường Thành Công"],
+    options: ["Nguyễn Hoa Nam", "Nguyễn Thành Công", "Lê Văn Kiệt", "Lê Thị Thảo"],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 6. Hiệu trưởng hiện tại của nhà trường là ai?",
+    question_type: "multiple_choice",
+    options: ["Nguyễn Thành Công", "Lê Văn Kiệt", "Nguyễn Hoa Nam", "Lê Thị Thảo"],
+    correct_option_index: 3,
+    points: 10
+  },
+  {
+    question_text: "Câu 7. Slogan của Trường THPT Cao Bá Quát là gì?",
+    question_type: "multiple_choice",
+    options: [
+      "Sáng tạo - Kỷ cương - Nhân văn - Vươn xa",
+      "Tự hào truyền thống - Vững bước vươn xa",
+      "Đoàn kết - Sáng tạo - Hội nhập - Thành công",
+      "Dạy tốt - Học tốt - Vươn tới tương lai"
+    ],
     correct_option_index: 1,
     points: 10
   },
   {
-    question_text: "Khóa học sinh đầu tiên của nhà trường tốt nghiệp vào khoảng năm nào?",
+    question_text: "Câu 8. Tổng số giáo viên hiện tại của nhà trường là bao nhiêu?",
     question_type: "multiple_choice",
-    options: ["Năm 1997", "Năm 1999", "Năm 2001", "Năm 2003"],
-    correct_option_index: 1,
-    points: 10
-  },
-  {
-    question_text: "Năm 2026 ghi dấu mốc kỷ niệm bao nhiêu năm thành lập Trường THPT Cao Bá Quát?",
-    question_type: "multiple_choice",
-    options: ["20 Năm", "25 Năm", "30 Năm", "35 Năm"],
+    options: ["73", "78", "83", "88"],
     correct_option_index: 2,
     points: 10
   },
   {
-    question_text: "[Cảm Xúc Tự Luận] Hãy chia sẻ ngắn gọn một kỷ niệm sâu sắc nhất hoặc lời chúc ý nghĩa của bạn gửi tới Trường THPT Cao Bá Quát nhân dịp Kỷ niệm 30 năm thành lập?",
+    question_text: "Câu 9. Năm học 2026 – 2027, trường THPT Cao Bá Quát có tổng số lớp là bao nhiêu?",
+    question_type: "multiple_choice",
+    options: ["32", "33", "34", "35"],
+    correct_option_index: 2,
+    points: 10
+  },
+  {
+    question_text: "Câu 10. Tỷ lệ đậu tốt nghiệp của nhà trường trong năm học 2025–2026 là bao nhiêu?",
+    question_type: "multiple_choice",
+    options: ["98%", "99%", "99,5%", "100%"],
+    correct_option_index: 3,
+    points: 10
+  },
+  {
+    question_text: "Câu 11. Số lượng học sinh đạt học sinh giỏi tỉnh trong năm học 2025–2026 là bao nhiêu?",
+    question_type: "multiple_choice",
+    options: ["24", "25", "27", "30"],
+    correct_option_index: 2,
+    points: 10
+  },
+  {
+    question_text: "Câu 12. Ai là Hiệu trưởng thứ hai của trường THPT Cao Bá Quát?",
+    question_type: "multiple_choice",
+    options: ["Nguyễn Hoa Nam", "Nguyễn Thành Công", "Lê Văn Kiệt", "Lê Thị Thảo"],
+    correct_option_index: 1,
+    points: 10
+  },
+  {
+    question_text: "Câu 13. Tổng số lớp cấp III (THPT) năm 1996 của trường là bao nhiêu?",
+    question_type: "multiple_choice",
+    options: ["01", "02", "03", "04"],
+    correct_option_index: 1,
+    points: 10
+  },
+  {
+    question_text: "Câu 14. Khi mới thành lập, quy mô đào tạo của Trường Phổ thông cấp II - III Cao Bá Quát được xác định trong khoảng nào?",
+    question_type: "multiple_choice",
+    options: ["600 - 800 học sinh", "800 - 1.000 học sinh", "1.000 - 1.200 học sinh", "1.200 - 1.500 học sinh"],
+    correct_option_index: 3,
+    points: 10
+  },
+  {
+    question_text: "Câu 15. Những ngày đầu hoạt động, nhà trường tận dụng cơ sở vật chất cũ của đơn vị nào?",
+    question_type: "multiple_choice",
+    options: [
+      "Trường Trung học Nông Lâm nghiệp tỉnh",
+      "Trường Cao đẳng Sư phạm Đắk Lắk",
+      "Trường THPT Buôn Ma Thuột",
+      "Trung tâm Giáo dục thường xuyên tỉnh"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 16. Không gian sư phạm của nhà trường hiện rộng hơn bao nhiêu m²?",
+    question_type: "multiple_choice",
+    options: ["12.000 m²", "22.000 m²", "32.000 m²", "42.000 m²"],
+    correct_option_index: 2,
+    points: 10
+  },
+  {
+    question_text: "Câu 17. Nhà trường hiện có bao nhiêu phòng học kiên cố?",
+    question_type: "multiple_choice",
+    options: ["27 phòng", "32 phòng", "37 phòng", "42 phòng"],
+    correct_option_index: 2,
+    points: 10
+  },
+  {
+    question_text: "Câu 18. Tỷ lệ giáo viên đạt chuẩn của trường THPT Cao Bá Quát là bao nhiêu?",
+    question_type: "multiple_choice",
+    options: ["95%", "97%", "98,5%", "100%"],
+    correct_option_index: 3,
+    points: 10
+  },
+  {
+    question_text: "Câu 19. Tỷ lệ giáo viên đạt trình độ trên chuẩn của nhà trường là mức nào?",
+    question_type: "multiple_choice",
+    options: ["Hơn 21,7%", "Hơn 26,7%", "Hơn 31,7%", "Hơn 41,7%"],
+    correct_option_index: 2,
+    points: 10
+  },
+  {
+    question_text: "Câu 20. Phương châm xây dựng môi trường giáo dục của trường THPT Cao Bá Quát là gì?",
+    question_type: "multiple_choice",
+    options: [
+      "Sáng tạo - Kỷ cương - Nhân văn - Vươn xa",
+      "Tự hào truyền thống - Vững bước vươn xa",
+      "Trách nhiệm - Đoàn kết - Hội nhập - Thành công",
+      "Kỷ luật - Tự tin - Hợp tác - Phát triển"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 21. Phương án nào sắp xếp đúng thứ tự các đời Hiệu trưởng từ đầu tiên đến hiện tại?",
+    question_type: "multiple_choice",
+    options: [
+      "Nguyễn Hoa Nam → Nguyễn Thành Công → Lê Văn Kiệt → Huỳnh Thị Kim Huệ → Lê Thị Thảo",
+      "Nguyễn Hoa Nam → Lê Văn Kiệt → Nguyễn Thành Công → Huỳnh Thị Kim Huệ → Lê Thị Thảo",
+      "Nguyễn Thành Công → Nguyễn Hoa Nam → Lê Văn Kiệt → Lê Thị Thảo → Huỳnh Thị Kim Huệ",
+      "Nguyễn Hoa Nam → Nguyễn Thành Công → Huỳnh Thị Kim Huệ → Lê Văn Kiệt → Lê Thị Thảo"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 22. Trong những ngày đầu xây dựng trường, hoạt động nào dưới đây phản ánh đúng nỗ lực của thầy và trò trường THPT Cao Bá Quát?",
+    question_type: "multiple_choice",
+    options: [
+      "Chỉ tập trung tuyển sinh, chưa cải tạo cơ sở vật chất",
+      "Vừa dạy và học, vừa cải tạo phòng học, mua sắm trang thiết bị, trồng cây xanh",
+      "Chuyển toàn bộ hoạt động sang cơ sở thuê bên ngoài",
+      "Tạm dừng giảng dạy để xây dựng cơ sở mới hoàn toàn"
+    ],
+    correct_option_index: 1,
+    points: 10
+  },
+  {
+    question_text: "Câu 23. Phương án nào mô tả đúng nhất hệ thống cơ sở vật chất hiện tại của trường THPT Cao Bá Quát?",
+    question_type: "multiple_choice",
+    options: [
+      "37 phòng học kiên cố; phòng thực hành Lý - Hóa - Sinh; phòng tin học; phòng ngoại ngữ; nhà đa năng và khu thể dục thể thao",
+      "25 phòng học; chỉ có phòng tin học và thư viện",
+      "45 phòng học; không có phòng thực hành chuyên môn",
+      "30 phòng học; chỉ có nhà đa năng và sân vận động"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 24. Phương châm xây dựng môi trường giáo dục của trường THPT Cao Bá Quát là gì?",
+    question_type: "multiple_choice",
+    options: [
+      "“Tự hào truyền thống - Vững bước vươn xa”",
+      "“Sáng tạo - Kỷ cương - Nhân văn - Vươn xa”",
+      "“Học, học nữa, học mãi”",
+      "“Sáng tạo - Kỷ cương – Tình thương – Trách nhiệm”"
+    ],
+    correct_option_index: 1,
+    points: 10
+  },
+  {
+    question_text: "Câu 25. Cao Bá Quát sống trong khoảng thời gian nào và quê ở đâu?",
+    question_type: "multiple_choice",
+    options: [
+      "1809-1855; làng Phú Thị, huyện Gia Lâm, tỉnh Bắc Ninh, nay thuộc Hà Nội",
+      "1788-1858; làng Tiên Điền, Hà Tĩnh",
+      "1810-1870; làng Vị Xuyên, Nam Định",
+      "1802-1862; làng Mộ Trạch, Hải Dương"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 26. Tự và hiệu của Cao Bá Quát là gì?",
+    question_type: "multiple_choice",
+    options: [
+      "Tự Chu Thần; hiệu Cúc Đường và Mẫn Hiên",
+      "Tự Tố Như; hiệu Thanh Hiên",
+      "Tự Hy Văn; hiệu Uy Viễn",
+      "Tự Mộng Liên; hiệu Bạch Vân"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 27. Cao Bá Quát được người đời tôn xưng là gì?",
+    question_type: "multiple_choice",
+    options: ["Thánh Quát", "Trạng Trình", "Thi Thánh", "La Sơn Phu Tử"],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 28. Năm 1832, Cao Bá Quát đạt thành tích nào tại trường thi Hà Nội?",
+    question_type: "multiple_choice",
+    options: ["Đỗ Tiến sĩ", "Đỗ Á Nguyên", "Đỗ Trạng nguyên", "Đỗ Phó bảng"],
+    correct_option_index: 1,
+    points: 10
+  },
+  {
+    question_text: "Câu 29. Khi quyết tâm học tập và luyện chữ, Cao Bá Quát đã làm gì để tự rèn ý chí, không bỏ cuộc?",
+    question_type: "multiple_choice",
+    options: [
+      "Buộc tóc lên xà nhà để chống buồn ngủ và buộc chân vào cạnh bàn để tự nhắc mình không bỏ cuộc",
+      "Chỉ luyện viết vào ban ngày và dừng học khi cảm thấy mệt",
+      "Nhờ người khác viết hộ để dành thời gian học văn thơ",
+      "Chỉ đọc sách mà không luyện chữ vì cho rằng chữ viết không quan trọng"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "Câu 30. Câu nói nào thường được nhắc đến khi nói về khí phách của Cao Bá Quát?",
+    question_type: "multiple_choice",
+    options: [
+      "“Nhất sinh đê thủ bái mai hoa”",
+      "“Nhất sinh đê thủ bái liên hoa”",
+      "“Nhất sinh ngẩng thủ bái mai hoa”",
+      "“Nhất thế đê thủ bái mai hoa”"
+    ],
+    correct_option_index: 0,
+    points: 10
+  },
+  {
+    question_text: "[PHẦN IV: CÂU DỰ ĐOÁN XẾP HẠNG] Theo bạn, có bao nhiêu thí sinh tham gia cuộc thi sẽ trả lời đúng cả 30/30 câu hỏi?",
     question_type: "essay",
     options: [],
     correct_option_index: 0,
-    points: 50
+    points: 30
   }
 ];
 
