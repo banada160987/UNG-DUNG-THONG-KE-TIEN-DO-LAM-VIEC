@@ -67,6 +67,12 @@ export default function OnlineInvitation() {
   const [isRsvpModalOpen, setIsRsvpModalOpen] = useState(false);
   const [rsvpFormStatus, setRsvpFormStatus] = useState('attending');
   const [isSubmittingRsvp, setIsSubmittingRsvp] = useState(false);
+  
+  // GENERAL PUBLIC CARD RSVP FIELDS
+  const [publicGuestName, setPublicGuestName] = useState('');
+  const [publicGuestPhone, setPublicGuestPhone] = useState('');
+  const [publicGuestCategory, setPublicGuestCategory] = useState('Cựu học sinh (Đại diện khóa)');
+  const [publicGuestGroup, setPublicGuestGroup] = useState('');
 
   // Audio & Pages
   const [isPlaying, setIsPlaying] = useState(false);
@@ -207,11 +213,34 @@ export default function OnlineInvitation() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const guestRes = await supabase.from('cbq_guests').select('*').eq('invitation_code', code).single();
-      if (guestRes.data) {
-        setGuest(guestRes.data);
-        if(guestRes.data.rsvp_status && guestRes.data.rsvp_status !== 'pending') {
-          setRsvpFormStatus(guestRes.data.rsvp_status);
+      const isPublicCode = !code || ['chung', 'khach-moi', 'public', 'all'].includes(code.toLowerCase());
+
+      if (isPublicCode) {
+        setGuest({
+          id: 'public-card',
+          name: 'Quý Lãnh đạo, Đại biểu & Quý Thầy Cô, Cựu Học Sinh',
+          category: 'Thiệp Mời Chung',
+          invitation_code: 'CHUNG',
+          is_public_card: true,
+          rsvp_status: 'pending'
+        });
+      } else {
+        const guestRes = await supabase.from('cbq_guests').select('*').eq('invitation_code', code).single();
+        if (guestRes.data) {
+          setGuest(guestRes.data);
+          if (guestRes.data.rsvp_status && guestRes.data.rsvp_status !== 'pending') {
+            setRsvpFormStatus(guestRes.data.rsvp_status);
+          }
+        } else {
+          // Fallback to Public Card if code not found
+          setGuest({
+            id: 'public-card',
+            name: 'Quý Lãnh đạo, Đại biểu & Quý Thầy Cô, Cựu Học Sinh',
+            category: 'Thiệp Mời Chung',
+            invitation_code: 'CHUNG',
+            is_public_card: true,
+            rsvp_status: 'pending'
+          });
         }
       }
 
@@ -223,7 +252,6 @@ export default function OnlineInvitation() {
       
       await fetchWishes();
       await fetchSponsorsList();
-      // Wait for user interaction to play audio.
 
     } catch (error) {
       console.error("Lỗi tải thiệp:", error);
@@ -299,15 +327,49 @@ export default function OnlineInvitation() {
     e.preventDefault();
     if (!guest) return;
     setIsSubmittingRsvp(true);
-    const { error } = await supabase.from('cbq_guests').update({ rsvp_status: rsvpFormStatus }).eq('id', guest.id);
-    setIsSubmittingRsvp(false);
-    
-    if (!error) {
-      alert("Cảm ơn bạn đã gửi xác nhận!");
-      setGuest({...guest, rsvp_status: rsvpFormStatus});
-      setIsRsvpModalOpen(false);
+
+    if (guest.is_public_card) {
+      // SELF-REGISTRATION RSVP FOR GENERAL PUBLIC CARD
+      if (!publicGuestName.trim()) {
+        alert("Vui lòng nhập Họ và Tên của bạn.");
+        setIsSubmittingRsvp(false);
+        return;
+      }
+
+      const generatedCode = 'CBQ-' + Math.floor(1000 + Math.random() * 9000);
+      const newGuestData = {
+        name: publicGuestName.trim(),
+        category: publicGuestCategory,
+        phone: publicGuestPhone.trim(),
+        invitation_code: generatedCode,
+        rsvp_status: rsvpFormStatus,
+        note: publicGuestGroup.trim() ? `Lớp/Khóa: ${publicGuestGroup.trim()}` : ''
+      };
+
+      const { data, error } = await supabase.from('cbq_guests').insert([newGuestData]).select();
+      setIsSubmittingRsvp(false);
+
+      if (!error && data && data[0]) {
+        const registered = data[0];
+        alert(`🎉 ĐÃ XÁC NHẬN THAM DỰ THÀNH CÔNG!\n\nMã Check-in QR Cá Nhân của bạn là: ${registered.invitation_code}.\nHệ thống đã tạo Thẻ Tham Dự Điện Tử cho bạn.`);
+        setGuest(registered);
+        setIsRsvpModalOpen(false);
+      } else {
+        alert("Đã xảy ra lỗi khi tạo mã đăng ký cá nhân.");
+      }
+
     } else {
-      alert("Đã xảy ra lỗi khi gửi xác nhận.");
+      // INDIVIDUAL CARD RSVP UPDATE
+      const { error } = await supabase.from('cbq_guests').update({ rsvp_status: rsvpFormStatus }).eq('id', guest.id);
+      setIsSubmittingRsvp(false);
+      
+      if (!error) {
+        alert("Cảm ơn bạn đã gửi xác nhận!");
+        setGuest({...guest, rsvp_status: rsvpFormStatus});
+        setIsRsvpModalOpen(false);
+      } else {
+        alert("Đã xảy ra lỗi khi gửi xác nhận.");
+      }
     }
   };
   
@@ -860,7 +922,19 @@ export default function OnlineInvitation() {
              <img src={config?.logo_url || '/logo.jpg'} alt="Logo" className="entrance-logo" onError={(e) => { e.target.onerror = null; e.target.src = '/logo.jpg'; }} />
              <h2 className="entrance-title">{config?.school_name}</h2>
              <p className="entrance-subtitle">Trân trọng kính mời</p>
-             <h1 className="entrance-guest">{guest?.name}</h1>
+             
+             {guest?.is_public_card ? (
+               <div style={{ background: '#fffdfa', border: '1.5px solid #ca8a4b', borderRadius: '16px', padding: '14px 18px', margin: '0 0 25px 0', maxWidth: '380px', color: '#1e293b', textAlign: 'left', fontSize: '13.5px', lineHeight: '1.6', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' }}>
+                 <div style={{ color: '#be123c', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px', textTransform: 'uppercase', fontFamily: 'Playfair Display, serif' }}>
+                   Kính gửi:
+                 </div>
+                 <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý Lãnh đạo, Đại biểu, Khách quý;</div>
+                 <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý CBQL, GV, NV, HS và quý Cha mẹ học sinh.</div>
+               </div>
+             ) : (
+               <h1 className="entrance-guest">{guest?.name}</h1>
+             )}
+
              <button className="entrance-btn" onClick={handleOpenInvitation}>✨ MỞ THIỆP</button>
           </div>
         </div>
@@ -910,7 +984,16 @@ export default function OnlineInvitation() {
             <div className="cover-subtitle">{config?.school_name || "THPT CAO BÁ QUÁT"}</div>
             
             <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
-            <div className="cover-name">{guest.name}</div>
+            
+            {guest?.is_public_card ? (
+              <div style={{ background: 'rgba(255, 255, 255, 0.95)', border: '1px solid #fecdd3', borderRadius: '14px', padding: '12px 16px', margin: '0 auto 20px auto', maxWidth: '340px', color: '#1e293b', textAlign: 'left', fontSize: '12.5px', lineHeight: '1.5', boxShadow: '0 4px 12px rgba(190, 18, 60, 0.1)' }}>
+                <div style={{ color: '#be123c', fontWeight: 'bold', fontSize: '13px', marginBottom: '2px' }}>Kính gửi:</div>
+                <div>• Quý Lãnh đạo, Đại biểu, Khách quý;</div>
+                <div>• Quý CBQL, GV, NV, HS & quý Cha mẹ học sinh.</div>
+              </div>
+            ) : (
+              <div className="cover-name">{guest.name}</div>
+            )}
             
             {/* COUNTDOWN TIMER ON COVER */}
             <div className="countdown-box" style={{margin: '15px 20px'}}>
@@ -1189,10 +1272,64 @@ export default function OnlineInvitation() {
                 Xác nhận tham dự
               </h3>
               
-              <div style={{marginBottom: '16px'}}>
-                <label style={{display: 'block', fontSize: '13px', color: '#555', marginBottom: '6px', fontWeight: '600'}}>Họ và tên khách mời</label>
-                <input type="text" style={{width: '100%', padding: '11px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9', boxSizing: 'border-box', fontWeight: 'bold', color: '#333'}} value={guest.name} disabled />
-              </div>
+              {guest?.is_public_card ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{display: 'block', fontSize: '13px', color: '#334155', marginBottom: '4px', fontWeight: 'bold'}}>Họ và Tên Của Bạn (*)</label>
+                    <input 
+                      type="text" 
+                      required
+                      placeholder="VD: Nguyễn Văn C" 
+                      style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box', fontSize: '14px'}} 
+                      value={publicGuestName} 
+                      onChange={e => setPublicGuestName(e.target.value)} 
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{display: 'block', fontSize: '12.5px', color: '#334155', marginBottom: '4px', fontWeight: 'bold'}}>Phân Loại (*)</label>
+                      <select 
+                        value={publicGuestCategory}
+                        onChange={e => setPublicGuestCategory(e.target.value)}
+                        style={{width: '100%', padding: '10px 6px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box', fontSize: '12.5px'}}
+                      >
+                        <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh</option>
+                        <option value="Cựu giáo viên">Cựu giáo viên</option>
+                        <option value="Cha mẹ học sinh">Cha mẹ học sinh</option>
+                        <option value="Khách mời khác">Khách mời khác</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{display: 'block', fontSize: '12.5px', color: '#334155', marginBottom: '4px', fontWeight: 'bold'}}>Số Điện Thoại</label>
+                      <input 
+                        type="text" 
+                        placeholder="0912345678" 
+                        style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box', fontSize: '13px'}} 
+                        value={publicGuestPhone} 
+                        onChange={e => setPublicGuestPhone(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{display: 'block', fontSize: '12.5px', color: '#334155', marginBottom: '4px', fontWeight: 'bold'}}>Lớp / Niên Khóa (Nhiệm kỳ)</label>
+                    <input 
+                      type="text" 
+                      placeholder="VD: Khóa 2005 - 2008 (Lớp 12A2)" 
+                      style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box', fontSize: '13px'}} 
+                      value={publicGuestGroup} 
+                      onChange={e => setPublicGuestGroup(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div style={{marginBottom: '16px'}}>
+                  <label style={{display: 'block', fontSize: '13px', color: '#555', marginBottom: '6px', fontWeight: '600'}}>Họ và tên khách mời</label>
+                  <input type="text" style={{width: '100%', padding: '11px', border: '1px solid #ddd', borderRadius: '8px', background: '#f9f9f9', boxSizing: 'border-box', fontWeight: 'bold', color: '#333'}} value={guest.name} disabled />
+                </div>
+              )}
               
               <div style={{marginBottom: '20px'}}>
                 <label style={{display: 'block', fontSize: '13px', color: '#555', marginBottom: '10px', fontWeight: '600'}}>Bạn sẽ tham dự cùng chúng tôi chứ?</label>
