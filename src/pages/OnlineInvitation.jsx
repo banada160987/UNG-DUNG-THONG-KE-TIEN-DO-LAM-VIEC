@@ -906,7 +906,7 @@ export default function OnlineInvitation() {
                 <div key={i} className="sparkle-dot" style={{top: `${random(10, 85)}%`, left: `${random(10, 85)}%`, width: `${random(4, 7)}px`, height: `${random(4, 7)}px`, animationDelay: `${random(0, 3)}s` }} />
               ))}
             </div>
-            <h1 className="cover-title">Lễ Kỷ Niệm<br/>30 Năm</h1>
+            <h1 className="cover-title">Lễ Kỷ Niệm<br/>30 Năm Ngày Thành Lập</h1>
             <div className="cover-subtitle">{config?.school_name || "THPT CAO BÁ QUÁT"}</div>
             
             <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
