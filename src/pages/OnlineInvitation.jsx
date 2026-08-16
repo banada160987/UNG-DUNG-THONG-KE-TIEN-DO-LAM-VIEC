@@ -402,6 +402,20 @@ export default function OnlineInvitation() {
     }
   };
 
+  const handleDeleteWish = async (wishId) => {
+    const confirmDel = window.confirm("🗑️ Bạn có chắc chắn muốn xóa lời chúc này không?");
+    if (!confirmDel) return;
+
+    const { error } = await supabase.from('cbq_wishes').delete().eq('id', wishId);
+    if (!error) {
+      setWishes(prev => prev.filter(w => w.id !== wishId));
+      setFloatingWishes(prev => prev.filter(w => w.id !== wishId));
+      alert("Đã xóa lời chúc thành công!");
+    } else {
+      alert("Không thể xóa lời chúc: " + error.message);
+    }
+  };
+
   const shootHeart = () => {
     const id = Date.now() + Math.random();
     setHearts(prev => [...prev, { id, left: random(75, 95) }]);
@@ -1199,16 +1213,28 @@ export default function OnlineInvitation() {
               )}
 
               {/* WISHES FEED DISPLAY ON PAGE 5 */}
-              <div style={{marginTop: '18px', width: '100%', maxHeight: '130px', overflowY: 'auto', background: 'rgba(0,0,0,0.35)', padding: '10px 14px', borderRadius: '12px', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', textAlign: 'left', boxSizing: 'border-box'}}>
-                <div style={{fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fde047', fontWeight: 'bold', marginBottom: '6px'}}>💌 Sổ Vàng Lời Chúc ({wishes.length})</div>
+              <div style={{marginTop: '18px', width: '100%', maxHeight: '140px', overflowY: 'auto', background: 'rgba(0,0,0,0.4)', padding: '10px 14px', borderRadius: '12px', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.2)', textAlign: 'left', boxSizing: 'border-box'}}>
+                <div style={{fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', color: '#fde047', fontWeight: 'bold', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span>💌 SỔ VÀNG LỜI CHÚC ({wishes.length})</span>
+                  <span style={{fontSize: '10px', color: '#fecdd3', textTransform: 'none', fontWeight: 'normal'}}>Bấm 🗑️ để xóa lời chúc nhập sai</span>
+                </div>
                 {wishes.length > 0 ? (
                   wishes.map((w, idx) => (
-                    <div key={idx} style={{fontSize: '12px', color: '#fff', marginBottom: '5px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '3px'}}>
-                      <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
+                    <div key={w.id || idx} style={{fontSize: '12px', color: '#fff', marginBottom: '6px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px'}}>
+                      <div style={{flex: 1}}>
+                        <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
+                      </div>
+                      <button 
+                        onClick={() => handleDeleteWish(w.id)}
+                        style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #fca5a5', color: '#fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', lineHeight: '1', flexShrink: 0 }}
+                        title="Xóa lời chúc này"
+                      >
+                        🗑️ Xóa
+                      </button>
                     </div>
                   ))
                 ) : (
-                  <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Hãy là người đầu tiên gửi lời chúc tới Nhà trường!</div>
+                  <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Chưa có lời chúc nào. Hãy gửi lời chúc đầu tiên!</div>
                 )}
               </div>
             </div>

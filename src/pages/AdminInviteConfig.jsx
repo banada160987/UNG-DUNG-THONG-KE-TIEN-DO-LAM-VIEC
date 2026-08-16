@@ -46,8 +46,12 @@ export default function AdminInviteConfig() {
     ]
   });
 
+  const [wishesList, setWishesList] = useState([]);
+  const [loadingWishes, setLoadingWishes] = useState(false);
+
   useEffect(() => {
     fetchConfig();
+    fetchWishesList();
   }, []);
 
   const fetchConfig = async () => {
@@ -74,6 +78,28 @@ export default function AdminInviteConfig() {
       }
     }
     setLoading(false);
+  };
+
+  const fetchWishesList = async () => {
+    setLoadingWishes(true);
+    const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false });
+    if (data) {
+      setWishesList(data);
+    }
+    setLoadingWishes(false);
+  };
+
+  const handleDeleteWishAdmin = async (wish) => {
+    const confirmDelete = window.confirm(`🗑️ XÁC NHẬN XÓA LỜI CHÚC:\n\nBạn có chắc chắn muốn xóa lời chúc của "${wish.guest_name}"?\nNội dung: "${wish.message}"`);
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from('cbq_wishes').delete().eq('id', wish.id);
+    if (!error) {
+      alert("Đã xóa lời chúc thành công!");
+      setWishesList(prev => prev.filter(w => w.id !== wish.id));
+    } else {
+      alert("Lỗi khi xóa lời chúc: " + error.message);
+    }
   };
 
   const handleSave = async () => {
@@ -457,6 +483,71 @@ export default function AdminInviteConfig() {
             </div>
           </div>
         )}
+
+        {/* WISHES MANAGEMENT SECTION FOR BTC ADMIN */}
+        <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', marginTop: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ margin: 0, color: '#be123c', fontFamily: 'Playfair Display, serif' }}>
+              💌 Quản Lý Sổ Vàng Lời Chúc ({wishesList.length} lời chúc)
+            </h3>
+            <button 
+              onClick={fetchWishesList} 
+              style={{ padding: '6px 14px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+            >
+              🔄 Làm mới danh sách
+            </button>
+          </div>
+
+          <p style={{ color: '#64748b', fontSize: '14px', marginTop: 0, marginBottom: '1rem' }}>
+            Dưới đây là danh sách lời chúc do cựu học sinh & đại biểu gửi tới nhà trường. Admin có thể xóa những lời chúc nhập nhầm hoặc vi phạm.
+          </p>
+
+          {loadingWishes ? <p>Đang tải danh sách lời chúc...</p> : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '0.5rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
+                    <th style={{ padding: '12px', fontSize: '14px', width: '22%' }}>Người Gửi</th>
+                    <th style={{ padding: '12px', fontSize: '14px' }}>Nội Dung Lời Chúc</th>
+                    <th style={{ padding: '12px', fontSize: '14px', width: '20%' }}>Thời Gian</th>
+                    <th style={{ padding: '12px', fontSize: '14px', textAlign: 'center', width: '100px' }}>Hành Động</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wishesList.map(w => (
+                    <tr key={w.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                      <td style={{ padding: '12px', fontWeight: 'bold', color: '#be123c' }}>
+                        {w.guest_name || 'Khách mời'}
+                      </td>
+                      <td style={{ padding: '12px', color: '#1e293b', lineHeight: '1.5' }}>
+                        {w.message}
+                      </td>
+                      <td style={{ padding: '12px', color: '#64748b', fontSize: '13px' }}>
+                        {w.created_at ? new Date(w.created_at).toLocaleString('vi-VN') : 'Mới đây'}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <button 
+                          onClick={() => handleDeleteWishAdmin(w)}
+                          style={{ padding: '6px 12px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                          title="Xóa lời chúc này khỏi hệ thống"
+                        >
+                          🗑️ Xóa
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {wishesList.length === 0 && (
+                    <tr>
+                      <td colSpan="4" style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                        Chưa có lời chúc nào trong hệ thống.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
     </Layout>
   );

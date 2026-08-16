@@ -10,17 +10,23 @@ export default function StudentRegister() {
     password: '',
     confirm_password: '',
     full_name: '',
-    student_class: 'Lớp 12A1'
+    student_class: 'Lớp 12A01'
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   const classList = [
-    'Lớp 12A1', 'Lớp 12A2', 'Lớp 12A3', 'Lớp 12A4', 'Lớp 12A5', 'Lớp 12A6',
-    'Lớp 11A1', 'Lớp 11A2', 'Lớp 11A3', 'Lớp 11A4', 'Lớp 11A5',
-    'Lớp 10A1', 'Lớp 10A2', 'Lớp 10A3', 'Lớp 10A4',
-    'Cựu Học Sinh', 'Khách Mời / Đại Biểu'
+    // Khối 12: 12A01 -> 12A11
+    'Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05', 'Lớp 12A06', 'Lớp 12A07', 'Lớp 12A08', 'Lớp 12A09', 'Lớp 12A10', 'Lớp 12A11',
+    // Khối 11: 11A01 -> 11A10
+    'Lớp 11A01', 'Lớp 11A02', 'Lớp 11A03', 'Lớp 11A04', 'Lớp 11A05', 'Lớp 11A06', 'Lớp 11A07', 'Lớp 11A08', 'Lớp 11A09', 'Lớp 11A10',
+    // Khối 10: 10A01 -> 10A15
+    'Lớp 10A01', 'Lớp 10A02', 'Lớp 10A03', 'Lớp 10A04', 'Lớp 10A05', 'Lớp 10A06', 'Lớp 10A07', 'Lớp 10A08', 'Lớp 10A09', 'Lớp 10A10', 'Lớp 10A11', 'Lớp 10A12', 'Lớp 10A13', 'Lớp 10A14', 'Lớp 10A15',
+    // Cán bộ / Giáo viên
+    'Cán Bộ / Giáo Viên / Nhân Viên',
+    // Khác
+    'Cựu Học Sinh', 'Phụ Huynh Học Sinh', 'Khách Mời / Đại Biểu'
   ];
 
   const handleRegister = async (e) => {
