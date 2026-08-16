@@ -336,8 +336,50 @@ export default function PublicVoting() {
 
   const sortedLeaderboard = [...entries].sort((a, b) => (b.votes_count || 0) - (a.votes_count || 0));
 
+  const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
+
+  if (!currentStudent) {
+    return (
+      <div style={{ maxWidth: '650px', margin: '60px auto', padding: '0 16px', textAlign: 'center' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '24px',
+          border: '1px solid #fecdd3',
+          padding: '40px 24px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.08)'
+        }}>
+          <div style={{ width: '70px', height: '70px', background: '#fff1f2', color: '#be123c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+            <KeyRound size={36} />
+          </div>
+
+          <h2 style={{ margin: '0 0 10px 0', fontSize: '24px', color: '#0f172a', fontFamily: 'Playfair Display, Georgia, serif' }}>
+            🔒 YÊU CẦU ĐĂNG NHẬP TÀI KHOẢN HỌC SINH
+          </h2>
+          <p style={{ margin: '0 auto 28px auto', maxWidth: '500px', fontSize: '14.5px', color: '#475569', lineHeight: '1.6' }}>
+            Để đảm bảo tính công bằng 100% cho Cuộc Thi Bình Chọn Kỷ Niệm 30 Năm THPT Cao Bá Quát, Quý vị và các bạn Học sinh vui lòng Đăng Nhập hoặc Đăng Ký Tài Khoản trước khi truy cập Cổng Bình Chọn.
+          </p>
+
+          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link 
+              to="/dang-nhap"
+              style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' }}
+            >
+              🔐 ĐĂNG NHẬP NGAY
+            </Link>
+            <Link 
+              to="/dang-ky"
+              style={{ padding: '12px 28px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+            >
+              👤 ĐĂNG KÝ TÀI KHOẢN MỚI
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
       
       {/* BANNER HEADER */}
       <div style={{
