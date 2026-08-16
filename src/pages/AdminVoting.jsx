@@ -12,6 +12,7 @@ export default function AdminVoting() {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'audit' | 'stats'
+  const [isVotingLocked, setIsVotingLocked] = useState(() => localStorage.getItem('cbq_voting_locked') === 'true');
 
   // CERTIFICATE STATE
   const [certModalData, setCertModalData] = useState(null); // { entry, rank }
@@ -527,10 +528,21 @@ export default function AdminVoting() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={() => {
+              const newLockState = !isVotingLocked;
+              setIsVotingLocked(newLockState);
+              localStorage.setItem('cbq_voting_locked', newLockState ? 'true' : 'false');
+              alert(newLockState ? "🔒 ĐÃ KHÓA CỔNG BÌNH CHỌN!\n\nKhán giả không thể thả tim thêm." : "🔓 ĐÃ MỞ LẠI CỔNG BÌNH CHỌN!");
+            }} 
+            style={{ padding: '10px 16px', background: isVotingLocked ? '#dc2626' : '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            {isVotingLocked ? '🔒 Cổng Đang Khóa (Mở Lại)' : '🔓 Khóa Cổng Bình Chọn'}
+          </button>
           <button 
             onClick={handleExportAwardWord} 
-            style={{ padding: '10px 16px', background: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ padding: '10px 16px', background: '#475569', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <FileText size={16} /> Xuất Bảng Vàng Word (.doc)
           </button>

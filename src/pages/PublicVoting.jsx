@@ -24,6 +24,7 @@ export default function PublicVoting() {
   const [voterCode, setVoterCode] = useState('');
   const [submittingVote, setSubmittingVote] = useState(false);
   const [voteSuccessModal, setVoteSuccessModal] = useState(false);
+  const isVotingLocked = localStorage.getItem('cbq_voting_locked') === 'true';
 
   // Entry Detail Lightbox Modal State
   const [detailEntry, setDetailEntry] = useState(null);
@@ -135,6 +136,10 @@ export default function PublicVoting() {
   // ANTI-FRAUD DEVICE-BASED VOTING LOGIC
   const handleConfirmVote = async (e) => {
     e.preventDefault();
+    if (isVotingLocked) {
+      alert("🔒 CỔNG BÌNH CHỌN ĐÃ KHÓA!\n\nBan Tổ Chức đã chốt kết quả đợt bình chọn.");
+      return;
+    }
     if (submittingVote) return; // Prevent Double Click / Race condition Click Spamming
 
     if (!voterName.trim()) {
@@ -525,6 +530,13 @@ export default function PublicVoting() {
                       title="Bấm để Hủy lượt bình chọn này"
                     >
                       <Heart size={16} fill="#dc2626" /> ĐÃ THẢ TIM
+                    </button>
+                  ) : isVotingLocked ? (
+                    <button 
+                      disabled
+                      style={{ flex: 1.4, padding: '9px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: '10px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                    >
+                      🔒 ĐÃ KHÓA BÌNH CHỌN
                     </button>
                   ) : (
                     <button 
