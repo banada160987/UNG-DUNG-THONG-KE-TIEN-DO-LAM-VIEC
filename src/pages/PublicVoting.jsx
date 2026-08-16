@@ -20,11 +20,21 @@ export default function PublicVoting() {
 
   // Voting Modal State
   const [votingEntry, setVotingEntry] = useState(null);
+  const [showAuthRequiredModal, setShowAuthRequiredModal] = useState(false);
   const [voterName, setVoterName] = useState('');
   const [voterCode, setVoterCode] = useState('');
   const [submittingVote, setSubmittingVote] = useState(false);
   const [voteSuccessModal, setVoteSuccessModal] = useState(false);
   const isVotingLocked = localStorage.getItem('cbq_voting_locked') === 'true';
+
+  const handleVoteClick = (entry) => {
+    const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
+    if (!currentStudent) {
+      setShowAuthRequiredModal(true);
+      return;
+    }
+    setVotingEntry(entry);
+  };
 
   // Entry Detail Lightbox Modal State
   const [detailEntry, setDetailEntry] = useState(null);
@@ -571,7 +581,7 @@ export default function PublicVoting() {
                     </button>
                   ) : (
                     <button 
-                      onClick={() => setVotingEntry(entry)}
+                      onClick={() => handleVoteClick(entry)}
                       style={{ flex: 1.4, padding: '9px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.3)' }}
                     >
                       <Heart size={16} fill="white" /> BÌNH CHỌN
@@ -696,7 +706,7 @@ export default function PublicVoting() {
                       <Heart size={18} fill="#be123c" /> {entry.votes_count || 0} Lượt Tim
                     </div>
                     <button 
-                      onClick={() => setVotingEntry(entry)}
+                      onClick={() => handleVoteClick(entry)}
                       style={{ padding: '7px 14px', background: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                     >
                       Bình chọn
@@ -847,10 +857,46 @@ export default function PublicVoting() {
                 <button onClick={() => setDetailEntry(null)} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}>
                   Đóng
                 </button>
-                <button onClick={() => { const e = detailEntry; setDetailEntry(null); setVotingEntry(e); }} style={{ padding: '10px 24px', background: '#be123c', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button onClick={() => { const e = detailEntry; setDetailEntry(null); handleVoteClick(e); }} style={{ padding: '10px 24px', background: '#be123c', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Heart size={18} fill="white" /> BÌNH CHỌN CHO TÁC PHẨM NÀY
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* AUTH REQUIRED POPUP MODAL */}
+      {showAuthRequiredModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.8)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(6px)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '460px', width: '100%', padding: '30px 24px', textAlign: 'center', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <button onClick={() => setShowAuthRequiredModal(false)} style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+              <X size={20} />
+            </button>
+
+            <div style={{ width: '64px', height: '64px', background: '#fff1f2', color: '#be123c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+              <KeyRound size={32} />
+            </div>
+
+            <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '20px', fontFamily: 'Playfair Display, Georgia, serif' }}>
+              🔒 YÊU CẦU ĐĂNG NHẬP HỌC SINH
+            </h3>
+            <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
+              Để bảo đảm tính công bằng 100%, bạn vui lòng Đăng Nhập hoặc Đăng Ký Tài Khoản Học Sinh trước khi thả tim bình chọn cho sản phẩm!
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
+              <Link 
+                to="/dang-nhap"
+                style={{ padding: '11px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', borderRadius: '10px', fontWeight: 'bold', fontSize: '14.5px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                🔐 ĐẮNG NHẬP NGAY (10 Giây)
+              </Link>
+              <Link 
+                to="/dang-ky"
+                style={{ padding: '11px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 'bold', fontSize: '14.5px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                👤 ĐĂNG KÝ TÀI KHOẢN MỚI
+              </Link>
             </div>
           </div>
         </div>
