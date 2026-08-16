@@ -28,6 +28,7 @@ export default function PublicLayout() {
           <div className="portal-nav-links" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto' }}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
+            <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
             <Link to="/tin-tuc" style={isActive('/tin-tuc') ? styles.navItemActive : styles.navItem}>Tin tức - Sự kiện</Link>
             <Link to="/van-ban" style={isActive('/van-ban') ? styles.navItemActive : styles.navItem}>Văn bản - Thông báo</Link>
             <Link to="/bang-vang" style={isActive('/bang-vang') ? styles.navItemActive : styles.navItem}>Bảng vàng</Link>

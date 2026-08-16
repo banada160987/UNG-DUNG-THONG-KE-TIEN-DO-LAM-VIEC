@@ -27,6 +27,7 @@ import AdminVoting from './pages/AdminVoting';
 import PublicSubmission from './pages/PublicSubmission';
 import StudentRegister from './pages/StudentRegister';
 import StudentLogin from './pages/StudentLogin';
+import PublicGuide from './pages/PublicGuide';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
       <Route element={<PublicLayout />}>
         <Route path="/" element={<PublicHome />} />
         <Route path="/gioi-thieu" element={<PublicAbout />} />
+        <Route path="/huong-dan" element={<PublicGuide />} />
         <Route path="/tin-tuc" element={<PublicNewsList />} />
         <Route path="/van-ban" element={<PublicDocs />} />
         <Route path="/bang-vang" element={<PublicSponsorsList />} />
