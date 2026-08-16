@@ -924,12 +924,33 @@ export default function OnlineInvitation() {
              <p className="entrance-subtitle">Trân trọng kính mời</p>
              
              {guest?.is_public_card ? (
-               <div style={{ background: '#fffdfa', border: '1.5px solid #ca8a4b', borderRadius: '16px', padding: '14px 18px', margin: '0 0 25px 0', maxWidth: '380px', color: '#1e293b', textAlign: 'left', fontSize: '13.5px', lineHeight: '1.6', boxShadow: '0 4px 15px rgba(0,0,0,0.06)' }}>
-                 <div style={{ color: '#be123c', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px', textTransform: 'uppercase', fontFamily: 'Playfair Display, serif' }}>
+               <div style={{ 
+                 background: 'linear-gradient(135deg, #fffdfa 0%, #fff1f2 100%)', 
+                 border: '1.5px solid #ca8a4b', 
+                 borderRadius: '16px', 
+                 padding: '16px 20px', 
+                 margin: '0 auto 22px auto', 
+                 maxWidth: '360px', 
+                 color: '#1e293b', 
+                 textAlign: 'left', 
+                 boxShadow: '0 8px 25px rgba(202, 138, 75, 0.15)'
+               }}>
+                 <div style={{ 
+                   color: '#be123c', 
+                   fontWeight: 'bold', 
+                   fontSize: '15px', 
+                   marginBottom: '6px', 
+                   fontFamily: 'Playfair Display, Georgia, serif',
+                   letterSpacing: '1px',
+                   borderBottom: '1px dashed #fca5a5',
+                   paddingBottom: '4px'
+                 }}>
                    Kính gửi:
                  </div>
-                 <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý Lãnh đạo, Đại biểu, Khách quý;</div>
-                 <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý CBQL, GV, NV, HS và quý Cha mẹ học sinh.</div>
+                 <div style={{ color: '#0f172a', fontWeight: '600', fontSize: '13.5px', lineHeight: '1.7' }}>
+                   • Quý Lãnh đạo, Đại biểu, Khách quý;<br/>
+                   • Quý CBQL, GV, NV, HS & quý Cha mẹ học sinh.
+                 </div>
                </div>
              ) : (
                <h1 className="entrance-guest">{guest?.name}</h1>
@@ -986,10 +1007,24 @@ export default function OnlineInvitation() {
             <div className="cover-guest">TRÂN TRỌNG KÍNH MỜI</div>
             
             {guest?.is_public_card ? (
-              <div style={{ background: 'rgba(255, 255, 255, 0.95)', border: '1px solid #fecdd3', borderRadius: '14px', padding: '12px 16px', margin: '0 auto 20px auto', maxWidth: '340px', color: '#1e293b', textAlign: 'left', fontSize: '12.5px', lineHeight: '1.5', boxShadow: '0 4px 12px rgba(190, 18, 60, 0.1)' }}>
-                <div style={{ color: '#be123c', fontWeight: 'bold', fontSize: '13px', marginBottom: '2px' }}>Kính gửi:</div>
-                <div>• Quý Lãnh đạo, Đại biểu, Khách quý;</div>
-                <div>• Quý CBQL, GV, NV, HS & quý Cha mẹ học sinh.</div>
+              <div style={{ 
+                background: 'rgba(255, 253, 250, 0.96)', 
+                border: '1.5px solid #ca8a4b', 
+                borderRadius: '16px', 
+                padding: '14px 18px', 
+                margin: '0 auto 20px auto', 
+                maxWidth: '340px', 
+                color: '#1e293b', 
+                textAlign: 'left', 
+                fontSize: '13px', 
+                lineHeight: '1.6', 
+                boxShadow: '0 6px 20px rgba(202, 138, 75, 0.12)' 
+              }}>
+                <div style={{ color: '#be123c', fontWeight: 'bold', fontSize: '14px', marginBottom: '4px', fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '0.5px', borderBottom: '1px dashed #fecdd3', paddingBottom: '3px' }}>
+                  Kính gửi:
+                </div>
+                <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý Lãnh đạo, Đại biểu, Khách quý;</div>
+                <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý CBQL, GV, NV, HS & quý Cha mẹ học sinh.</div>
               </div>
             ) : (
               <div className="cover-name">{guest.name}</div>
@@ -1174,8 +1209,8 @@ export default function OnlineInvitation() {
           ))}
         </div>
 
-        {/* GENTLE WAVING FLOATING WISHES (PAGE 0 COVER ONLY) */}
-        {activePage === 0 && (
+        {/* GENTLE WAVING FLOATING WISHES (PAGES 1, 2, 3, 4) */}
+        {activePage > 0 && (
           <div className="danmaku-container">
             {renderedFloatingWishes}
           </div>
