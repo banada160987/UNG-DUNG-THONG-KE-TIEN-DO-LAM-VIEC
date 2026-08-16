@@ -392,10 +392,10 @@ export default function PublicVoting() {
           ) : (
             <div style={{ display: 'flex', gap: '10px' }}>
               <Link to="/dang-nhap" style={{ padding: '8px 20px', background: '#ffffff', color: '#be123c', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-                🔐 Đăng Nhập Học Sinh
+                🔐 Đăng Nhập
               </Link>
               <Link to="/dang-ky" style={{ padding: '8px 20px', background: 'rgba(255,255,255,0.25)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}>
-                👤 Đăng Ký Tài Khoản
+                👤 Đăng Ký
               </Link>
             </div>
           )}
@@ -878,10 +878,10 @@ export default function PublicVoting() {
             </div>
 
             <h3 style={{ margin: '0 0 8px 0', color: '#0f172a', fontSize: '20px', fontFamily: 'Playfair Display, Georgia, serif' }}>
-              🔒 YÊU CẦU ĐĂNG NHẬP HỌC SINH
+              🔒 YÊU CẦU ĐĂNG NHẬP
             </h3>
             <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#475569', lineHeight: '1.6' }}>
-              Để bảo đảm tính công bằng 100%, bạn vui lòng Đăng Nhập hoặc Đăng Ký Tài Khoản Học Sinh trước khi thả tim bình chọn cho sản phẩm!
+              Để bảo đảm tính công bằng 100%, bạn vui lòng Đăng Nhập hoặc Đăng Ký Tài Khoản trước khi thả tim bình chọn cho sản phẩm!
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
@@ -889,7 +889,7 @@ export default function PublicVoting() {
                 to="/dang-nhap"
                 style={{ padding: '11px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', borderRadius: '10px', fontWeight: 'bold', fontSize: '14.5px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
-                🔐 ĐẮNG NHẬP NGAY (10 Giây)
+                🔐 ĐĂNG NHẬP NGAY
               </Link>
               <Link 
                 to="/dang-ky"

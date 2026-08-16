@@ -76,7 +76,7 @@ export default function StudentLogin() {
           <Sparkles size={14} color="#fde047" /> THPT CAO BÁ QUÁT - 30 NĂM
         </div>
         <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', fontFamily: 'Playfair Display, Georgia, serif' }}>
-          🔐 ĐĂNG NHẬP HỌC SINH
+          🔐 ĐĂNG NHẬP TÀI KHOẢN
         </h2>
         <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
           Đăng nhập tài khoản để thả tim bình chọn cho sản phẩm sáng tạo

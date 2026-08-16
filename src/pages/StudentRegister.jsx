@@ -111,7 +111,7 @@ export default function StudentRegister() {
           <Sparkles size={14} color="#fde047" /> THPT CAO BÁ QUÁT - 30 NĂM
         </div>
         <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', fontFamily: 'Playfair Display, Georgia, serif' }}>
-          👤 ĐĂNG KÝ TÀI KHOẢN HỌC SINH
+          👤 ĐĂNG KÝ TÀI KHOẢN
         </h2>
         <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
           Tạo tài khoản cá nhân chính thức để tham gia bình chọn sản phẩm Kỷ niệm 30 năm
@@ -147,7 +147,7 @@ export default function StudentRegister() {
 
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Họ và Tên Học Sinh (*)
+              Họ và Tên (*)
             </label>
             <div style={{ position: 'relative' }}>
               <GraduationCap size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -216,7 +216,7 @@ export default function StudentRegister() {
             disabled={submitting}
             style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' }}
           >
-            <UserPlus size={18} /> {submitting ? 'Đang tạo tài khoản...' : 'TẠO TÀI KHOẢN HỌC SINH'}
+            <UserPlus size={18} /> {submitting ? 'Đang tạo tài khoản...' : 'TẠO TÀI KHOẢN'}
           </button>
         </form>
 
