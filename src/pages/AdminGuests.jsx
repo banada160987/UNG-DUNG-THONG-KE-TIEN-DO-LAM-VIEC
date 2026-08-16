@@ -18,6 +18,19 @@ export default function AdminGuests() {
   const [downloadingGuest, setDownloadingGuest] = useState(null);
   const [showPrintBadges, setShowPrintBadges] = useState(false);
   const [badgeCategoryFilter, setBadgeCategoryFilter] = useState('All');
+  
+  // EDIT & DELETE GUEST STATE
+  const [editingGuest, setEditingGuest] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: '',
+    category: 'Cựu giáo viên',
+    phone: '',
+    email: '',
+    invitation_code: '',
+    rsvp_status: 'pending'
+  });
+  
   const hiddenInviteRef = useRef(null);
   
   const [formData, setFormData] = useState({
@@ -69,6 +82,51 @@ export default function AdminGuests() {
       fetchGuests();
     } else {
       alert("Lỗi khi lưu! Có thể mã khách mời đã tồn tại.");
+    }
+  };
+
+  const handleOpenEdit = (guest) => {
+    setEditingGuest(guest);
+    setEditFormData({
+      name: guest.name || '',
+      category: guest.category || 'Cựu giáo viên',
+      phone: guest.phone || '',
+      email: guest.email || '',
+      invitation_code: guest.invitation_code || '',
+      rsvp_status: guest.rsvp_status || 'pending'
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateGuest = async (e) => {
+    e.preventDefault();
+    if (!editingGuest) return;
+
+    const { error } = await supabase
+      .from('cbq_guests')
+      .update(editFormData)
+      .eq('id', editingGuest.id);
+
+    if (!error) {
+      alert("🎉 ĐÃ CẬP NHẬT THÔNG TIN KHÁCH MỜI THÀNH CÔNG!");
+      setShowEditModal(false);
+      setEditingGuest(null);
+      fetchGuests();
+    } else {
+      alert("Lỗi khi cập nhật thông tin: " + error.message);
+    }
+  };
+
+  const handleDeleteGuest = async (guest) => {
+    const confirmDelete = window.confirm(`🗑️ XÁC NHẬN XÓA KHÁCH MỜI:\n\nBạn có chắc chắn muốn xóa khách mời "${guest.name}" (${guest.invitation_code}) khỏi hệ thống không?`);
+    if (!confirmDelete) return;
+
+    const { error } = await supabase.from('cbq_guests').delete().eq('id', guest.id);
+    if (!error) {
+      alert("Đã xóa khách mời thành công!");
+      fetchGuests();
+    } else {
+      alert("Lỗi khi xóa: " + error.message);
     }
   };
 
@@ -300,6 +358,7 @@ export default function AdminGuests() {
                   <th style={styles.th}>Phân loại</th>
                   <th style={styles.th}>Mã Thư Mời</th>
                   <th style={styles.th}>Trạng thái RSVP</th>
+                  <th style={{ ...styles.th, textAlign: 'center', width: '130px' }}>Hành Động</th>
                 </tr>
               </thead>
               <tbody>
@@ -361,11 +420,29 @@ export default function AdminGuests() {
                       {g.rsvp_status === 'attending' && <span style={{color: '#10b981', fontWeight: 'bold'}}>Sẽ tham dự ✅</span>}
                       {g.rsvp_status === 'not_attending' && <span style={{color: '#ef4444', fontWeight: 'bold'}}>Không tham dự ❌</span>}
                     </td>
+                    <td style={{ ...styles.td, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                        <button 
+                          onClick={() => handleOpenEdit(g)}
+                          style={{ padding: '5px 10px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde047', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                          title="Sửa thông tin khách mời"
+                        >
+                          ✏️ Sửa
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteGuest(g)}
+                          style={{ padding: '5px 10px', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                          title="Xóa khách mời"
+                        >
+                          🗑️ Xóa
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
                 {guests.length === 0 && (
                   <tr>
-                    <td colSpan="4" style={{textAlign: 'center', padding: '2rem'}}>Chưa có khách mời nào.</td>
+                    <td colSpan="5" style={{textAlign: 'center', padding: '2rem'}}>Chưa có khách mời nào.</td>
                   </tr>
                 )}
               </tbody>
@@ -375,6 +452,107 @@ export default function AdminGuests() {
       </div>
 
       {showScanner && <QRScannerModal onClose={() => setShowScanner(false)} />}
+
+      {/* EDIT GUEST MODAL */}
+      {showEditModal && editingGuest && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', maxWidth: '520px', width: '100%', padding: '24px', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', position: 'relative' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px', color: '#be123c', fontFamily: 'Playfair Display, serif' }}>
+              ✏️ CHỈNH SỬA THÔNG TIN KHÁCH MỜI
+            </h3>
+
+            <form onSubmit={handleUpdateGuest} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={styles.label}>Họ và Tên Khách Mời (*)</label>
+                <input 
+                  type="text" 
+                  required 
+                  value={editFormData.name} 
+                  onChange={e => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                  style={styles.input} 
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={styles.label}>Phân loại (*)</label>
+                  <select 
+                    value={editFormData.category} 
+                    onChange={e => setEditFormData(prev => ({ ...prev, category: e.target.value }))}
+                    style={styles.input}
+                  >
+                    <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+                    <option value="Cựu giáo viên">Cựu giáo viên</option>
+                    <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh (Đại diện khóa)</option>
+                    <option value="Khách mời khác">Khách mời khác</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>Số điện thoại</label>
+                  <input 
+                    type="text" 
+                    value={editFormData.phone} 
+                    onChange={e => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    style={styles.input} 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={styles.label}>Email</label>
+                  <input 
+                    type="email" 
+                    value={editFormData.email} 
+                    onChange={e => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                    style={styles.input} 
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>Trạng thái RSVP</label>
+                  <select 
+                    value={editFormData.rsvp_status} 
+                    onChange={e => setEditFormData(prev => ({ ...prev, rsvp_status: e.target.value }))}
+                    style={styles.input}
+                  >
+                    <option value="pending">Chờ phản hồi ⏳</option>
+                    <option value="attending">Sẽ tham dự ✅</option>
+                    <option value="not_attending">Không tham dự ❌</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Mã Thư Mời (QR Code)</label>
+                <input 
+                  type="text" 
+                  value={editFormData.invitation_code} 
+                  onChange={e => setEditFormData(prev => ({ ...prev, invitation_code: e.target.value }))}
+                  style={styles.input} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px', justifyContent: 'flex-end' }}>
+                <button 
+                  type="button" 
+                  onClick={() => { setShowEditModal(false); setEditingGuest(null); }}
+                  style={{ padding: '9px 18px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ padding: '9px 24px', background: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.3)' }}
+                >
+                  💾 Lưu Cập Nhật
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Hidden Div cho Tải Thiệp */}
       {downloadingGuest && (
