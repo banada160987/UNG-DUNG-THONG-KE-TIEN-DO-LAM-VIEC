@@ -339,8 +339,8 @@ export default function PublicVoting() {
 
   const filteredEntries = entries.filter(e => {
     const matchCategory = selectedCategory === 'Tất cả' || e.category === selectedCategory;
-    const matchSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                        e.author_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchSearch = e.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      e.author_name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
   });
 
@@ -350,7 +350,7 @@ export default function PublicVoting() {
 
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
-      
+
       {/* BANNER HEADER */}
       <div style={{
         background: 'linear-gradient(135deg, #881337 0%, #be123c 50%, #b45309 100%)',
@@ -364,14 +364,14 @@ export default function PublicVoting() {
         overflow: 'hidden'
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 16px', borderRadius: '30px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '12px' }}>
-          <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM THPT CAO BÁ QUÁT (1996 - 2026)
+          <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM NGÀY THÀNH LẬP THPT CAO BÁ QUÁT (1996 - 2026)
         </div>
 
         <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 12px rgba(0,0,0,0.7)', fontWeight: '800', letterSpacing: '0.5px' }}>
           🏆 CUỘC THI BÌNH CHỌN TÁC PHẨM & SẢN PHẨM SÁNG TẠO
         </h1>
         <p style={{ margin: '0 auto 16px auto', maxWidth: '750px', fontSize: '14.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', fontWeight: '500', lineHeight: '1.6' }}>
-          Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh & cựu học sinh! Kết quả 100% dựa trên bình chọn công khai.
+          Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh! Kết quả 100% dựa trên bình chọn công khai.
         </p>
 
         {/* STUDENT AUTH STATE BAR INSIDE VOTING PAGE */}
@@ -379,7 +379,7 @@ export default function PublicVoting() {
           {currentStudent ? (
             <div style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', padding: '8px 18px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13.5px' }}>
               <span>🎓 Tài Khoản: <strong>{currentStudent.full_name}</strong> ({currentStudent.student_class})</span>
-              <button 
+              <button
                 onClick={() => {
                   localStorage.removeItem('cbq_current_student');
                   window.location.reload();
@@ -427,7 +427,7 @@ export default function PublicVoting() {
             </div>
           </div>
 
-          <button 
+          <button
             onClick={handleCancelMyVote}
             style={{ padding: '8px 16px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
           >
@@ -439,14 +439,14 @@ export default function PublicVoting() {
       {/* NAVIGATION TABS */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button 
-            onClick={() => setActiveTab('all')} 
+          <button
+            onClick={() => setActiveTab('all')}
             style={{ padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', border: 'none', background: activeTab === 'all' ? '#be123c' : '#f1f5f9', color: activeTab === 'all' ? 'white' : '#475569' }}
           >
             🖼️ Tất Cả Bài Dự Thi ({entries.length})
           </button>
-          <button 
-            onClick={() => setActiveTab('leaderboard')} 
+          <button
+            onClick={() => setActiveTab('leaderboard')}
             style={{ padding: '10px 20px', borderRadius: '10px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', border: 'none', background: activeTab === 'leaderboard' ? '#b45309' : '#f1f5f9', color: activeTab === 'leaderboard' ? 'white' : '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             <Trophy size={18} color="#fde047" /> Bảng Xếp Hạng Top 1-2-3
@@ -456,9 +456,9 @@ export default function PublicVoting() {
         {/* SEARCH BOX */}
         <div style={{ position: 'relative', width: '280px' }}>
           <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-          <input 
-            type="text" 
-            placeholder="Tìm tên bài thi, lớp, tác giả..." 
+          <input
+            type="text"
+            placeholder="Tìm tên bài thi, lớp, tác giả..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
             style={{ width: '100%', padding: '9px 12px 9px 38px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none', boxSizing: 'border-box' }}
@@ -466,36 +466,36 @@ export default function PublicVoting() {
         </div>
       </div>
 
-            {/* CATEGORY FILTER BUTTONS */}
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
-          {categories.map(cat => {
-            const count = cat === 'Tất cả' ? entries.length : entries.filter(e => e.category === cat).length;
-            const isSelected = selectedCategory === cat;
-            return (
-              <button 
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '20px',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  border: isSelected ? 'none' : '1px solid #cbd5e1',
-                  background: isSelected ? '#be123c' : '#ffffff',
-                  color: isSelected ? '#ffffff' : '#475569',
-                  whiteSpace: 'nowrap',
-                  boxShadow: isSelected ? '0 4px 12px rgba(190, 18, 60, 0.25)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                {cat} <span style={{ background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: isSelected ? 'white' : '#64748b', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>{count}</span>
-              </button>
-            );
-          })}
-        </div>
+      {/* CATEGORY FILTER BUTTONS */}
+      <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
+        {categories.map(cat => {
+          const count = cat === 'Tất cả' ? entries.length : entries.filter(e => e.category === cat).length;
+          const isSelected = selectedCategory === cat;
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '20px',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                border: isSelected ? 'none' : '1px solid #cbd5e1',
+                background: isSelected ? '#be123c' : '#ffffff',
+                color: isSelected ? '#ffffff' : '#475569',
+                whiteSpace: 'nowrap',
+                boxShadow: isSelected ? '0 4px 12px rgba(190, 18, 60, 0.25)' : 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+            >
+              {cat} <span style={{ background: isSelected ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: isSelected ? 'white' : '#64748b', padding: '2px 8px', borderRadius: '10px', fontSize: '11px' }}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {/* MAIN CONTENT TAB 1: ENTRY GRID */}
       {activeTab === 'all' && (
@@ -508,7 +508,7 @@ export default function PublicVoting() {
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '22px' }}>
             {filteredEntries.map((entry, idx) => (
-              <div 
+              <div
                 key={entry.id}
                 style={{
                   background: '#ffffff',
@@ -525,10 +525,10 @@ export default function PublicVoting() {
                 <div>
                   {/* ENTRY THUMBNAIL */}
                   <div style={{ position: 'relative', height: '210px', overflow: 'hidden', background: '#f8fafc' }}>
-                    <img 
-                      src={entry.image_url || 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80'} 
+                    <img
+                      src={entry.image_url || 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80'}
                       alt={entry.title}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
 
                     {/* CATEGORY TAG */}
@@ -558,14 +558,14 @@ export default function PublicVoting() {
 
                 {/* ENTRY CARD ACTIONS */}
                 <div style={{ padding: '12px 18px 18px 18px', display: 'flex', gap: '10px' }}>
-                  <button 
+                  <button
                     onClick={() => setDetailEntry(entry)}
                     style={{ flex: 1, padding: '9px', background: '#f1f5f9', color: '#334155', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                   >
                     <Eye size={15} /> Chi Tiết
                   </button>
                   {myCurrentVote?.entry_id === entry.id ? (
-                    <button 
+                    <button
                       onClick={handleCancelMyVote}
                       style={{ flex: 1.4, padding: '9px', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fca5a5', borderRadius: '10px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
                       title="Bấm để Hủy lượt bình chọn này"
@@ -573,14 +573,14 @@ export default function PublicVoting() {
                       <Heart size={16} fill="#dc2626" /> ĐÃ THẢ TIM
                     </button>
                   ) : isVotingLocked ? (
-                    <button 
+                    <button
                       disabled
                       style={{ flex: 1.4, padding: '9px', background: '#e2e8f0', color: '#64748b', border: 'none', borderRadius: '10px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                     >
                       🔒 ĐÃ KHÓA BÌNH CHỌN
                     </button>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => handleVoteClick(entry)}
                       style={{ flex: 1.4, padding: '9px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(190, 18, 60, 0.3)' }}
                     >
@@ -597,7 +597,7 @@ export default function PublicVoting() {
       {/* MAIN TAB 2: LEADERBOARD WITH 3D PODIUM */}
       {activeTab === 'leaderboard' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-          
+
           {/* TOP 3 WINNERS PODIUM */}
           {sortedLeaderboard.length >= 3 && (
             <div style={{ background: 'linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)', borderRadius: '24px', padding: '30px 20px 20px 20px', color: 'white', textAlign: 'center', boxShadow: '0 15px 35px rgba(15, 23, 42, 0.3)' }}>
@@ -609,7 +609,7 @@ export default function PublicVoting() {
               </h2>
 
               <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '15px', maxWidth: '700px', margin: '0 auto' }}>
-                
+
                 {/* RANK 2 (SILVER - LEFT) */}
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <img src={sortedLeaderboard[1]?.image_url} alt="" style={{ width: '70px', height: '70px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #94a3b8', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }} />
@@ -657,68 +657,68 @@ export default function PublicVoting() {
               <Trophy size={20} color="#b45309" /> BẢNG THỐNG KÊ XẾP HẠNG CHI TIẾT
             </h3>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {sortedLeaderboard.map((entry, rankIdx) => {
-              let rankBadge = null;
-              let bgStyle = '#ffffff';
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {sortedLeaderboard.map((entry, rankIdx) => {
+                let rankBadge = null;
+                let bgStyle = '#ffffff';
 
-              if (rankIdx === 0) {
-                rankBadge = <span style={{ fontSize: '20px' }}>🥇</span>;
-                bgStyle = 'linear-gradient(135deg, #fefce8 0%, #fff7ed 100%)';
-              } else if (rankIdx === 1) {
-                rankBadge = <span style={{ fontSize: '20px' }}>🥈</span>;
-                bgStyle = '#f8fafc';
-              } else if (rankIdx === 2) {
-                rankBadge = <span style={{ fontSize: '20px' }}>🥉</span>;
-                bgStyle = '#fff7ed';
-              } else {
-                rankBadge = <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b', width: '24px', textAlign: 'center' }}>#{rankIdx + 1}</span>;
-              }
+                if (rankIdx === 0) {
+                  rankBadge = <span style={{ fontSize: '20px' }}>🥇</span>;
+                  bgStyle = 'linear-gradient(135deg, #fefce8 0%, #fff7ed 100%)';
+                } else if (rankIdx === 1) {
+                  rankBadge = <span style={{ fontSize: '20px' }}>🥈</span>;
+                  bgStyle = '#f8fafc';
+                } else if (rankIdx === 2) {
+                  rankBadge = <span style={{ fontSize: '20px' }}>🥉</span>;
+                  bgStyle = '#fff7ed';
+                } else {
+                  rankBadge = <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b', width: '24px', textAlign: 'center' }}>#{rankIdx + 1}</span>;
+                }
 
-              return (
-                <div 
-                  key={entry.id}
-                  style={{
-                    background: bgStyle,
-                    padding: '14px 18px',
-                    borderRadius: '12px',
-                    border: rankIdx < 3 ? '2px solid #fde047' : '1px solid #e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justify: 'space-between',
-                    gap: '15px',
-                    flexWrap: 'wrap'
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    {rankBadge}
-                    <img src={entry.image_url} alt="" style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
-                    <div>
-                      <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a' }}>{entry.title}</h4>
-                      <div style={{ fontSize: '12.5px', color: '#be123c', fontWeight: 'bold', marginTop: '2px' }}>
-                        👤 {entry.author_name} ({entry.category || 'Tác phẩm'})
+                return (
+                  <div
+                    key={entry.id}
+                    style={{
+                      background: bgStyle,
+                      padding: '14px 18px',
+                      borderRadius: '12px',
+                      border: rankIdx < 3 ? '2px solid #fde047' : '1px solid #e2e8f0',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justify: 'space-between',
+                      gap: '15px',
+                      flexWrap: 'wrap'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      {rankBadge}
+                      <img src={entry.image_url} alt="" style={{ width: '50px', height: '50px', borderRadius: '8px', objectFit: 'cover' }} />
+                      <div>
+                        <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a' }}>{entry.title}</h4>
+                        <div style={{ fontSize: '12.5px', color: '#be123c', fontWeight: 'bold', marginTop: '2px' }}>
+                          👤 {entry.author_name} ({entry.category || 'Tác phẩm'})
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <Heart size={18} fill="#be123c" /> {entry.votes_count || 0} Lượt Tim
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                      <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Heart size={18} fill="#be123c" /> {entry.votes_count || 0} Lượt Tim
+                      </div>
+                      <button
+                        onClick={() => handleVoteClick(entry)}
+                        style={{ padding: '7px 14px', background: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        Bình chọn
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => handleVoteClick(entry)}
-                      style={{ padding: '7px 14px', background: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      Bình chọn
-                    </button>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
       {/* ANTI-FRAUD VOTING CONFIRMATION MODAL */}
       {votingEntry && (
@@ -749,8 +749,8 @@ export default function PublicVoting() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
                   Họ và Tên Học Sinh / Khách Mời (*)
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   placeholder="VD: Nguyễn Văn Anh"
                   value={voterName}
@@ -763,8 +763,8 @@ export default function PublicVoting() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
                   Tên Lớp / Niên Khóa (*)
                 </label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   list="class-suggestions"
                   placeholder="VD: Lớp 12A1 hoặc Khóa 2002-2005"
@@ -885,13 +885,13 @@ export default function PublicVoting() {
             </p>
 
             <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-              <Link 
+              <Link
                 to="/dang-nhap"
                 style={{ padding: '11px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', borderRadius: '10px', fontWeight: 'bold', fontSize: '14.5px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
                 🔐 ĐĂNG NHẬP NGAY
               </Link>
-              <Link 
+              <Link
                 to="/dang-ky"
                 style={{ padding: '11px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 'bold', fontSize: '14.5px', textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
