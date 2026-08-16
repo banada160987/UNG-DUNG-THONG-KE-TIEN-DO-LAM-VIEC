@@ -596,7 +596,7 @@ export default function PublicQuiz() {
       )}
 
       {/* QUIZ TAKING SCREEN */}
-      {step === 'quiz' && (
+      {step === 'quiz' && questions[currentQuestionIndex] && (
         <div style={styles.card}>
           {/* HEADER TIMER & PROGRESS */}
           <div style={styles.quizHeader}>
@@ -615,58 +615,66 @@ export default function PublicQuiz() {
           </div>
 
           {/* QUESTION CONTENT */}
-          {questions[currentQuestionIndex] && (
-            <div style={{ margin: '20px 0' }}>
-              <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #be123c', marginBottom: '20px' }}>
-                <span style={{ background: '#be123c', color: 'white', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase', marginRight: '8px' }}>
-                  {questions[currentQuestionIndex].question_type === 'essay' ? 'Cảm Xúc Tự Luận' : `Trắc Nghiệm (${questions[currentQuestionIndex].points || 10} điểm)`}
-                </span>
-                <h3 style={{ fontSize: '17px', color: '#0f172a', margin: '8px 0 0 0', lineHeight: '1.5' }}>
-                  {questions[currentQuestionIndex].question_text}
-                </h3>
-              </div>
+          {(() => {
+            const q = questions[currentQuestionIndex];
+            const isPrediction = q.question_type === 'essay' || 
+              (q.question_text && (
+                q.question_text.toLowerCase().includes('dự đoán') || 
+                q.question_text.toLowerCase().includes('bao nhiêu')
+              ));
+            const optionsList = parseOptions(q.options);
 
-              {/* OPTIONS FOR MULTIPLE CHOICE */}
-              {questions[currentQuestionIndex].question_type === 'multiple_choice' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {questions[currentQuestionIndex].options.map((opt, oIdx) => {
-                    const isSelected = selectedAnswers[questions[currentQuestionIndex].id] === oIdx;
-                    return (
-                      <div
-                        key={oIdx}
-                        onClick={() => handleSelectOption(questions[currentQuestionIndex].id, oIdx)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '12px',
-                          padding: '14px 18px',
-                          borderRadius: '12px',
-                          border: isSelected ? '2px solid #be123c' : '1px solid #e2e8f0',
-                          background: isSelected ? '#fff1f2' : '#ffffff',
-                          cursor: 'pointer',
-                          transition: 'all 0.2s ease',
-                          boxShadow: isSelected ? '0 4px 12px rgba(190,18,60,0.12)' : 'none'
-                        }}
-                      >
-                        <div style={{
-                          width: '28px', height: '28px', borderRadius: '50%',
-                          background: isSelected ? '#be123c' : '#f1f5f9',
-                          color: isSelected ? '#ffffff' : '#475569',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontWeight: 'bold', fontSize: '13px'
-                        }}>
-                          {String.fromCharCode(65 + oIdx)}
-                        </div>
-                        <div style={{ fontSize: '15px', color: isSelected ? '#881337' : '#334155', fontWeight: isSelected ? 'bold' : 'normal', flex: 1 }}>
-                          {opt}
-                        </div>
-                      </div>
-                    );
-                  })}
+            return (
+              <div style={{ margin: '20px 0' }}>
+                <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '12px', borderLeft: '4px solid #be123c', marginBottom: '20px' }}>
+                  <span style={{ background: isPrediction ? '#ca8a04' : '#be123c', color: 'white', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', textTransform: 'uppercase', marginRight: '8px' }}>
+                    {isPrediction ? 'Dự Đoán Phụ Xếp Hạng' : `Trắc Nghiệm (${q.points || 10} điểm)`}
+                  </span>
+                  <h3 style={{ fontSize: '17px', color: '#0f172a', margin: '8px 0 0 0', lineHeight: '1.5' }}>
+                    {q.question_text}
+                  </h3>
                 </div>
-              ) : (
-                /* ESSAY / TIE-BREAKER PREDICTION INPUT */
-                currentQuestion?.question_text?.includes('dự đoán') || currentQuestion?.question_text?.includes('DỰ ĐOÁN') ? (
+
+                {/* OPTIONS FOR MULTIPLE CHOICE */}
+                {q.question_type === 'multiple_choice' && optionsList.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {optionsList.map((opt, oIdx) => {
+                      const isSelected = selectedAnswers[q.id || currentQuestionIndex] === oIdx;
+                      return (
+                        <div
+                          key={oIdx}
+                          onClick={() => handleSelectOption(q.id || currentQuestionIndex, oIdx)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '14px 18px',
+                            borderRadius: '12px',
+                            border: isSelected ? '2px solid #be123c' : '1px solid #e2e8f0',
+                            background: isSelected ? '#fff1f2' : '#ffffff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: isSelected ? '0 4px 12px rgba(190,18,60,0.12)' : 'none'
+                          }}
+                        >
+                          <div style={{
+                            width: '28px', height: '28px', borderRadius: '50%',
+                            background: isSelected ? '#be123c' : '#f1f5f9',
+                            color: isSelected ? '#ffffff' : '#475569',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontWeight: 'bold', fontSize: '13px'
+                          }}>
+                            {String.fromCharCode(65 + oIdx)}
+                          </div>
+                          <div style={{ fontSize: '15px', color: isSelected ? '#881337' : '#334155', fontWeight: isSelected ? 'bold' : 'normal', flex: 1 }}>
+                            {opt}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* ESSAY / TIE-BREAKER PREDICTION INPUT */
                   <div style={{ background: '#fefce8', border: '2px dashed #eab308', padding: '20px', borderRadius: '16px', marginTop: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#854d0e', fontWeight: 'bold', fontSize: '15px', marginBottom: '10px' }}>
                       <Sparkles size={20} color="#ca8a04" /> CÂU DỰ ĐOÁN PHỤ XẾP HẠNG BAN TỔ CHỨC
@@ -689,20 +697,10 @@ export default function PublicQuiz() {
                       💡 <em>Lưu ý: Đáp án dự đoán này là căn cứ xét giải Nhất, Nhì, Ba khi có nhiều thí sinh đạt cùng số điểm và cùng thời gian làm bài!</em>
                     </p>
                   </div>
-                ) : (
-                  <div>
-                    <textarea
-                      rows={6}
-                      value={essayAnswer}
-                      onChange={e => setEssayAnswer(e.target.value)}
-                      placeholder="Viết cảm nghĩ, kỷ niệm sâu sắc nhất của bạn về mái trường THPT Cao Bá Quát tại đây..."
-                      style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1.5px solid #cbd5e1', fontSize: '14.5px', lineHeight: '1.6', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                )
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })()}
 
           {/* NAVIGATION BUTTONS */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px', paddingTop: '15px', borderTop: '1px solid #e2e8f0' }}>
