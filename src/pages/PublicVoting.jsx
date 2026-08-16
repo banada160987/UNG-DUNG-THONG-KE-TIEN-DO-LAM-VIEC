@@ -367,10 +367,10 @@ export default function PublicVoting() {
           <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM THPT CAO BÁ QUÁT (1996 - 2026)
         </div>
 
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif' }}>
+        <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 12px rgba(0,0,0,0.7)', fontWeight: '800', letterSpacing: '0.5px' }}>
           🏆 CUỘC THI BÌNH CHỌN TÁC PHẨM & SẢN PHẨM SÁNG TẠO
         </h1>
-        <p style={{ margin: '0 auto 16px auto', maxWidth: '750px', fontSize: '14px', color: '#fecdd3', lineHeight: '1.6' }}>
+        <p style={{ margin: '0 auto 16px auto', maxWidth: '750px', fontSize: '14.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', fontWeight: '500', lineHeight: '1.6' }}>
           Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh & cựu học sinh! Kết quả 100% dựa trên bình chọn công khai.
         </p>
 

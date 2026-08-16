@@ -75,10 +75,10 @@ export default function StudentLogin() {
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.2)', padding: '4px 14px', borderRadius: '30px', fontSize: '12px', fontWeight: 'bold', marginBottom: '10px' }}>
           <Sparkles size={14} color="#fde047" /> THPT CAO BÁ QUÁT - 30 NĂM
         </div>
-        <h2 style={{ margin: '0 0 6px 0', fontSize: '24px', fontFamily: 'Playfair Display, Georgia, serif' }}>
+        <h2 style={{ margin: '0 0 6px 0', fontSize: '25px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 10px rgba(0,0,0,0.6)', fontWeight: '800' }}>
           🔐 ĐĂNG NHẬP TÀI KHOẢN
         </h2>
-        <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
+        <p style={{ margin: 0, fontSize: '13.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.4)', fontWeight: '500' }}>
           Đăng nhập tài khoản để thả tim bình chọn cho sản phẩm sáng tạo
         </p>
       </div>
