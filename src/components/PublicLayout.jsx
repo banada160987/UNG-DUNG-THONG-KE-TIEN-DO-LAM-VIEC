@@ -25,18 +25,46 @@ export default function PublicLayout() {
       {/* 2. Horizontal Navigation */}
       <nav style={styles.navbar}>
         <div style={styles.navContainer}>
-          <div className="portal-nav-links" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', overflowX: 'auto' }}>
+          <div className="portal-nav-links" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
             <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
-            <Link to="/tin-tuc" style={isActive('/tin-tuc') ? styles.navItemActive : styles.navItem}>Tin tức - Sự kiện</Link>
-            <Link to="/van-ban" style={isActive('/van-ban') ? styles.navItemActive : styles.navItem}>Văn bản - Thông báo</Link>
-            <Link to="/bang-vang" style={isActive('/bang-vang') ? styles.navItemActive : styles.navItem}>Bảng vàng</Link>
-            <Link to="/thu-vien-anh" style={isActive('/thu-vien-anh') ? styles.navItemActive : styles.navItem}>Thư viện ảnh</Link>
-            <Link to="/cuoc-thi" style={isActive('/cuoc-thi') ? styles.navItemActive : styles.navItem}>🏆 Cuộc thi tìm hiểu</Link>
-            <Link to="/binh-chon" style={isActive('/binh-chon') ? styles.navItemActive : styles.navItem}>🗳️ Bình chọn tác phẩm</Link>
-            <Link to="/nop-bai-thi" style={isActive('/nop-bai-thi') ? styles.navItemActive : styles.navItem}>📤 Nộp bài thi</Link>
+            
+            {/* DROPDOWN 1: HOẠT ĐỘNG KỶ NIỆM */}
+            <div className="nav-dropdown">
+              <span style={(isActive('/cuoc-thi') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}>
+                🏆 Hoạt động kỷ niệm ▾
+              </span>
+              <div className="nav-dropdown-content">
+                <Link to="/cuoc-thi" className="nav-dropdown-item">🏆 Cuộc thi tìm hiểu 30 năm</Link>
+                <Link to="/binh-chon" className="nav-dropdown-item">🗳️ Bình chọn tác phẩm</Link>
+                <Link to="/nop-bai-thi" className="nav-dropdown-item">📤 Nộp bài thi sáng tạo</Link>
+              </div>
+            </div>
+
+            {/* DROPDOWN 2: TIN TỨC & VĂN BẢN */}
+            <div className="nav-dropdown">
+              <span style={(isActive('/tin-tuc') || isActive('/van-ban')) ? styles.navItemActive : styles.navItem}>
+                📰 Tin tức & Văn bản ▾
+              </span>
+              <div className="nav-dropdown-content">
+                <Link to="/tin-tuc" className="nav-dropdown-item">📰 Tin tức - Sự kiện</Link>
+                <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
+              </div>
+            </div>
+
+            {/* DROPDOWN 3: THƯ VIỆN & BẢNG VÀNG */}
+            <div className="nav-dropdown">
+              <span style={(isActive('/bang-vang') || isActive('/thu-vien-anh')) ? styles.navItemActive : styles.navItem}>
+                ⭐ Thư viện & Bảng vàng ▾
+              </span>
+              <div className="nav-dropdown-content">
+                <Link to="/bang-vang" className="nav-dropdown-item">🎖️ Bảng vàng kỷ niệm</Link>
+                <Link to="/thu-vien-anh" className="nav-dropdown-item">📸 Thư viện ảnh 30 năm</Link>
+              </div>
+            </div>
           </div>
+
           <Link to="/admin" style={styles.adminLoginBtn}>🔑 Đăng nhập BTC</Link>
         </div>
       </nav>
@@ -114,22 +142,30 @@ const styles = {
   navItem: {
     color: 'white',
     textDecoration: 'none',
-    padding: '12px 10px',
-    fontSize: '13px',
+    padding: '13px 14px',
+    fontSize: '13.5px',
     fontWeight: 'bold',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid #14532d',
-    transition: 'background 0.2s',
+    borderRight: '1px solid rgba(255,255,255,0.12)',
+    transition: 'all 0.2s ease',
+    display: 'inline-flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    userSelect: 'none'
   },
   navItemActive: {
-    color: 'white',
+    color: '#fde047',
     textDecoration: 'none',
-    padding: '12px 10px',
-    fontSize: '13px',
+    padding: '13px 14px',
+    fontSize: '13.5px',
     fontWeight: 'bold',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid #14532d',
+    borderRight: '1px solid rgba(255,255,255,0.12)',
     backgroundColor: '#14532d',
+    display: 'inline-flex',
+    alignItems: 'center',
+    cursor: 'pointer',
+    userSelect: 'none'
   },
   adminLoginBtn: {
     color: '#ffffff',
