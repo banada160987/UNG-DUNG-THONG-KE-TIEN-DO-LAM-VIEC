@@ -338,46 +338,6 @@ export default function PublicVoting() {
 
   const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
 
-  if (!currentStudent) {
-    return (
-      <div style={{ maxWidth: '650px', margin: '60px auto', padding: '0 16px', textAlign: 'center' }}>
-        <div style={{
-          background: '#ffffff',
-          borderRadius: '24px',
-          border: '1px solid #fecdd3',
-          padding: '40px 24px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.08)'
-        }}>
-          <div style={{ width: '70px', height: '70px', background: '#fff1f2', color: '#be123c', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-            <KeyRound size={36} />
-          </div>
-
-          <h2 style={{ margin: '0 0 10px 0', fontSize: '24px', color: '#0f172a', fontFamily: 'Playfair Display, Georgia, serif' }}>
-            🔒 YÊU CẦU ĐĂNG NHẬP TÀI KHOẢN HỌC SINH
-          </h2>
-          <p style={{ margin: '0 auto 28px auto', maxWidth: '500px', fontSize: '14.5px', color: '#475569', lineHeight: '1.6' }}>
-            Để đảm bảo tính công bằng 100% cho Cuộc Thi Bình Chọn Kỷ Niệm 30 Năm THPT Cao Bá Quát, Quý vị và các bạn Học sinh vui lòng Đăng Nhập hoặc Đăng Ký Tài Khoản trước khi truy cập Cổng Bình Chọn.
-          </p>
-
-          <div style={{ display: 'flex', gap: '14px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link 
-              to="/dang-nhap"
-              style={{ padding: '12px 28px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' }}
-            >
-              🔐 ĐĂNG NHẬP NGAY
-            </Link>
-            <Link 
-              to="/dang-ky"
-              style={{ padding: '12px 28px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
-            >
-              👤 ĐĂNG KÝ TÀI KHOẢN MỚI
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
       
@@ -393,17 +353,43 @@ export default function PublicVoting() {
         position: 'relative',
         overflow: 'hidden'
       }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '6px 16px', borderRadius: '30px', fontSize: '13px', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '12px', backdropFilter: 'blur(5px)' }}>
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 16px', borderRadius: '30px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '12px' }}>
           <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM THPT CAO BÁ QUÁT (1996 - 2026)
         </div>
 
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif', letterSpacing: '0.5px' }}>
+        <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif' }}>
           🏆 CUỘC THI BÌNH CHỌN TÁC PHẨM & SẢN PHẨM SÁNG TẠO
         </h1>
-        <p style={{ margin: '0 auto', maxWidth: '750px', fontSize: '14.5px', color: '#fef08a', lineHeight: '1.6' }}>
-          Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh & cựu học sinh! 
-          Mỗi mã học sinh/thiệp được **bình chọn 1 lần duy nhất** để đảm bảo tính công bằng.
+        <p style={{ margin: '0 auto 16px auto', maxWidth: '750px', fontSize: '14px', color: '#fecdd3', lineHeight: '1.6' }}>
+          Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh & cựu học sinh! Kết quả 100% dựa trên bình chọn công khai.
         </p>
+
+        {/* STUDENT AUTH STATE BAR INSIDE VOTING PAGE */}
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          {currentStudent ? (
+            <div style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', padding: '8px 18px', borderRadius: '30px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '13.5px' }}>
+              <span>🎓 Tài Khoản: <strong>{currentStudent.full_name}</strong> ({currentStudent.student_class})</span>
+              <button 
+                onClick={() => {
+                  localStorage.removeItem('cbq_current_student');
+                  window.location.reload();
+                }}
+                style={{ background: '#ffffff', color: '#be123c', border: 'none', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                🚪 Đăng Xuất & Cho Bạn Tiếp Theo
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <Link to="/dang-nhap" style={{ padding: '8px 20px', background: '#ffffff', color: '#be123c', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+                🔐 Đăng Nhập Học Sinh
+              </Link>
+              <Link to="/dang-ky" style={{ padding: '8px 20px', background: 'rgba(255,255,255,0.25)', color: '#ffffff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none' }}>
+                👤 Đăng Ký Tài Khoản
+              </Link>
+            </div>
+          )}
+        </div>
 
         {/* SECURITY ANTI-FRAUD BADGE */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#166534', padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginTop: '16px' }}>

@@ -10,6 +10,7 @@ export default function AdminVoting() {
   const [entries, setEntries] = useState([]);
   const [votesLogs, setVotesLogs] = useState([]);
   const [studentUsers, setStudentUsers] = useState([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('entries'); // 'entries' | 'audit' | 'stats' | 'users'
@@ -897,11 +898,18 @@ export default function AdminVoting() {
       {/* TAB 4: STUDENT ACCOUNTS MANAGEMENT */}
       {activeTab === 'users' && (
         <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-          <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '16px 20px', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Users size={20} color="#be123c" /> DANH SÁCH TÀI KHOẢN HỌC SINH ĐÃ ĐĂNG KÝ ({studentUsers.length})
             </h3>
-            <span style={{ fontSize: '12.5px', color: '#64748b' }}>Hỗ trợ Admin Reset Mật khẩu khi Học sinh quên</span>
+            
+            <input 
+              type="text" 
+              placeholder="🔍 Tìm tên học sinh, lớp, SĐT..."
+              value={userSearchQuery}
+              onChange={e => setUserSearchQuery(e.target.value)}
+              style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', width: '250px' }}
+            />
           </div>
 
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
@@ -916,7 +924,14 @@ export default function AdminVoting() {
               </tr>
             </thead>
             <tbody>
-              {studentUsers.map((u, idx) => (
+              {studentUsers
+                .filter(u => 
+                  !userSearchQuery || 
+                  u.full_name?.toLowerCase().includes(userSearchQuery.toLowerCase()) || 
+                  u.student_class?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+                  u.username?.toLowerCase().includes(userSearchQuery.toLowerCase())
+                )
+                .map((u, idx) => (
                 <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{idx + 1}</td>
                   <td style={{ padding: '12px', fontWeight: 'bold', color: '#be123c' }}>{u.username}</td>
