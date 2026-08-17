@@ -410,7 +410,15 @@ export default function OnlineInvitation() {
   };
 
   const handleDeleteWish = async (wishItem) => {
-    const confirmDel = window.confirm("🗑️ Bạn có chắc chắn muốn xóa lời chúc này không?");
+    const isMyWish = (wishItem.guest_id && guest?.id && wishItem.guest_id === guest.id) || 
+                     (wishItem.guest_name && guest?.name && wishItem.guest_name === guest.name);
+
+    if (!isMyWish) {
+      alert("⚠️ Bạn chỉ có thể xóa lời chúc do chính bản thân bạn viết ra!");
+      return;
+    }
+
+    const confirmDel = window.confirm("🗑️ Bạn có chắc chắn muốn xóa lời chúc do chính bạn viết ra không?");
     if (!confirmDel) return;
 
     let error = null;
@@ -1234,20 +1242,26 @@ export default function OnlineInvitation() {
                   <span style={{fontSize: '10px', color: '#fecdd3', textTransform: 'none', fontWeight: 'normal'}}>Bấm 🗑️ để xóa lời chúc nhập sai</span>
                 </div>
                 {wishes.length > 0 ? (
-                  wishes.map((w, idx) => (
-                    <div key={w.id || idx} style={{fontSize: '12px', color: '#fff', marginBottom: '6px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px'}}>
-                      <div style={{flex: 1}}>
-                        <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
+                  wishes.map((w, idx) => {
+                    const isMyWish = (w.guest_id && guest?.id && w.guest_id === guest.id) || 
+                                     (w.guest_name && guest?.name && w.guest_name === guest.name);
+                    return (
+                      <div key={w.id || idx} style={{fontSize: '12px', color: '#fff', marginBottom: '6px', borderBottom: '1px dashed rgba(255,255,255,0.15)', paddingBottom: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px'}}>
+                        <div style={{flex: 1}}>
+                          <strong style={{color: '#fef08a'}}>{w.guest_name}:</strong> {w.message}
+                        </div>
+                        {isMyWish && (
+                          <button 
+                            onClick={() => handleDeleteWish(w)}
+                            style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #fca5a5', color: '#fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', lineHeight: '1', flexShrink: 0 }}
+                            title="Xóa lời chúc nhập sai của chính bạn"
+                          >
+                            🗑️ Xóa
+                          </button>
+                        )}
                       </div>
-                      <button 
-                        onClick={() => handleDeleteWish(w)}
-                        style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid #fca5a5', color: '#fca5a5', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', padding: '2px 6px', lineHeight: '1', flexShrink: 0 }}
-                        title="Xóa lời chúc này"
-                      >
-                        🗑️ Xóa
-                      </button>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <div style={{fontSize: '12px', color: '#fca5a5', fontStyle: 'italic'}}>Chưa có lời chúc nào. Hãy gửi lời chúc đầu tiên!</div>
                 )}
