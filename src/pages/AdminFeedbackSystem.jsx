@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, CheckCircle2, Clock, Building2, Layers, Edit, ToggleLeft, ToggleRight, X, Lock, Unlock } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, CheckCircle2, Clock, Building2, Layers, Edit, ToggleLeft, ToggleRight, X, Lock, Unlock, CheckSquare, AlertTriangle, UserCheck } from 'lucide-react';
 
 const DEFAULT_ORGANIZATIONS = [
   'BCH Đảng ủy trường THPT Cao Bá Quát',
@@ -100,7 +100,6 @@ export default function AdminFeedbackSystem() {
 
       let activeTopics = data || [];
       if (error || activeTopics.length === 0) {
-        console.warn("Fallback LocalStorage cho Admin Chủ đề");
         const localTopics = JSON.parse(localStorage.getItem('cbq_local_feedback_topics') || '[]');
         if (localTopics.length === 0) {
           activeTopics = [SEED_TOPIC];
@@ -111,7 +110,7 @@ export default function AdminFeedbackSystem() {
       }
 
       setTopics(activeTopics);
-      if (activeTopics.length > 0) {
+      if (activeTopics.length > 0 && !selectedTopicId) {
         const firstId = activeTopics[0].id;
         setSelectedTopicId(firstId);
         fetchResponses(firstId);
@@ -122,7 +121,7 @@ export default function AdminFeedbackSystem() {
       setSelectedTopicId(SEED_TOPIC.id);
       fetchResponses(SEED_TOPIC.id);
     } finally {
-      setLoading(false);
+      if (isFirstLoad) setLoading(false);
     }
   };
 
@@ -166,6 +165,27 @@ export default function AdminFeedbackSystem() {
   const handleTopicChange = (newId) => {
     setSelectedTopicId(newId);
     fetchResponses(newId);
+  };
+
+  // TOGGLE VERIFIED (ADMIN APPROVAL)
+  const handleToggleVerified = async (id, currentStatus) => {
+    const newStatus = !currentStatus;
+    try {
+      await supabase
+        .from('cbq_feedback_responses')
+        .update({ is_verified: newStatus })
+        .eq('id', id);
+
+      setResponses(prev => prev.map(r => r.id === id ? { ...r, is_verified: newStatus } : r));
+
+      const localKey = `cbq_local_feedback_res_${selectedTopicId}`;
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const updatedLocal = local.map(r => r.id === id ? { ...r, is_verified: newStatus } : r);
+      localStorage.setItem(localKey, JSON.stringify(updatedLocal));
+
+    } catch (err) {
+      console.error("Lỗi duyệt ý kiến:", err);
+    }
   };
 
   // CREATE TOPIC
@@ -227,7 +247,7 @@ export default function AdminFeedbackSystem() {
 
   // OPEN EDIT MODAL
   const openEditTopicModal = () => {
-    const topicToEdit = topics.find(t => t.id === selectedTopicId);
+    const topicToEdit = topics.find(t => t.id === selectedTopicId) || topics[0];
     if (!topicToEdit) return;
 
     setEditingTopic(topicToEdit);
@@ -328,17 +348,13 @@ export default function AdminFeedbackSystem() {
       const updatedLocal = local.filter(item => item.id !== id);
       localStorage.setItem(localKey, JSON.stringify(updatedLocal));
 
-      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      const updatedLegacy = legacyLocal.filter(item => item.id !== id);
-      localStorage.setItem('cbq_local_scholarship_feedbacks', JSON.stringify(updatedLegacy));
-
     } catch (err) {
       console.error("Lỗi xóa ý kiến:", err);
       alert("Không thể xóa. Vui lòng thử lại!");
     }
   };
 
-  // EXPORT OFFICIAL WORD REPORT (.doc / .docx)
+  // EXPORT OFFICIAL WORD REPORT (.doc / .docx) WITH EXPERT SECTIONS
   const exportWordDoc = () => {
     if (responses.length === 0) {
       alert("Không có dữ liệu đóng góp ý kiến để xuất file Word!");
@@ -351,11 +367,43 @@ export default function AdminFeedbackSystem() {
     const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
     const yearStr = today.getFullYear();
 
-    const tableRowsHtml = filteredResponses.map((item, idx) => `
+    // Split responses into Department Official Feedbacks vs Individual Teacher Feedbacks
+    const deptResponses = filteredResponses.filter(r => r.organization_unit !== 'Cá nhân Giáo viên / Nhân viên' && r.organization_unit !== 'Đơn vị khác');
+    const teacherResponses = filteredResponses.filter(r => r.organization_unit === 'Cá nhân Giáo viên / Nhân viên' || r.organization_unit === 'Đơn vị khác');
+
+    // Agreement Level Stats
+    const totalResp = filteredResponses.length;
+    const countThongNhat = filteredResponses.filter(r => !r.agreement_level || r.agreement_level === 'thong_nhat').length;
+    const countSuaDoi = filteredResponses.filter(r => r.agreement_level === 'sua_doi').length;
+    const countKhongThongNhat = filteredResponses.filter(r => r.agreement_level === 'khong_thong_nhat').length;
+
+    const percentThongNhat = Math.round((countThongNhat / totalResp) * 100);
+    const percentSuaDoi = Math.round((countSuaDoi / totalResp) * 100);
+    const percentKhongThongNhat = Math.round((countKhongThongNhat / totalResp) * 100);
+
+    const getAgreementLabel = (level) => {
+      if (level === 'sua_doi') return '<span style="color: #854d0e; font-weight: bold;">🟡 Đề xuất sửa đổi</span>';
+      if (level === 'khong_thong_nhat') return '<span style="color: #dc2626; font-weight: bold;">🔴 Không thống nhất</span>';
+      return '<span style="color: #166534; font-weight: bold;">🟢 Thống nhất</span>';
+    };
+
+    const deptTableRowsHtml = deptResponses.map((item, idx) => `
       <tr>
         <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
         <td><strong>${item.organization_unit || ''}</strong></td>
         <td><strong>${item.representative_name || ''}</strong><br/><span style="color: #475569; font-size: 11pt;">${item.phone || ''}</span></td>
+        <td style="text-align: center;">${getAgreementLabel(item.agreement_level)}</td>
+        <td style="text-align: justify;">${(item.feedback_content || '').replace(/\n/g, '<br/>')}</td>
+        <td style="text-align: center;">${item.attached_file_url ? `<a href="${item.attached_file_url}" target="_blank">Xem File</a>` : '-'}</td>
+      </tr>
+    `).join('');
+
+    const teacherTableRowsHtml = teacherResponses.map((item, idx) => `
+      <tr>
+        <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+        <td><strong>${item.representative_name || ''}</strong><br/><span style="color: #475569; font-size: 11pt;">${item.organization_unit || ''}</span></td>
+        <td style="text-align: center; color: #0369a1; font-family: monospace;">${item.phone || ''}</td>
+        <td style="text-align: center;">${getAgreementLabel(item.agreement_level)}</td>
         <td style="text-align: justify;">${(item.feedback_content || '').replace(/\n/g, '<br/>')}</td>
         <td style="text-align: center;">${item.attached_file_url ? `<a href="${item.attached_file_url}" target="_blank">Xem File</a>` : '-'}</td>
       </tr>
@@ -365,7 +413,7 @@ export default function AdminFeedbackSystem() {
       <html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
       <head>
       <meta charset='utf-8'>
-      <title>BÁO CÁO TỔNG HỢP Ý KIẾN GÓP Ý</title>
+      <title>BÁO CÁO TỔNG HỢP Ý KIẾN GÓP Ý CHÍNH THỨC</title>
       <style>
         @page WordSection1 {
           size: 21.0cm 29.7cm;
@@ -376,8 +424,8 @@ export default function AdminFeedbackSystem() {
         }
         div.WordSection1 { page: WordSection1; }
         body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.4; color: #000000; }
-        table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 15px; }
-        th, td { border: 1px solid #000000; padding: 6pt 8pt; vertical-align: top; font-size: 12pt; }
+        table { border-collapse: collapse; width: 100%; margin-top: 12px; margin-bottom: 16px; }
+        th, td { border: 1px solid #000000; padding: 6pt 8pt; vertical-align: top; font-size: 11.5pt; }
         th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
         .header-table { border: none; width: 100%; margin-bottom: 20px; }
         .header-table td { border: none; padding: 0; text-align: center; }
@@ -412,35 +460,60 @@ export default function AdminFeedbackSystem() {
         <p><strong>Kính gửi:</strong> Ban Giám hiệu Trường THPT Cao Bá Quát</p>
 
         <p style="text-indent: 1cm; text-align: justify;">
-          Căn cứ Kế hoạch công tác của Nhà trường, Tổ Văn phòng đã tiến hành thu thập và tổng hợp ý kiến góp ý của BCH Đảng ủy, Ban Thường vụ Đoàn trường, các Tổ chuyên môn và Tổ Văn phòng đối với <strong>"${currentTopicObj?.title || 'Dự thảo công việc'}"</strong>. Kết quả tổng hợp cụ thể như sau:
+          Căn cứ Kế hoạch công tác của Nhà trường, Tổ Văn phòng đã tiến hành thu thập, tổng hợp và phân loại ý kiến góp ý của BCH Đảng ủy, Ban Thường vụ Đoàn trường, các Tổ chuyên môn và Giáo viên / Nhân viên đối với <strong>"${currentTopicObj?.title || 'Dự thảo công việc'}"</strong>. Kết quả tổng hợp cụ thể như sau:
         </p>
 
-        <h3>I. THỐNG KÊ TIẾN ĐỘ THU NHẬP Ý KIẾN</h3>
+        <h3>I. THỐNG KÊ TIẾN ĐỘ THU NHẬP Ý KIẾN VÀ MỨC ĐỘ THỐNG NHẤT</h3>
         <p style="margin-left: 0.5cm;">
-          - <strong>Tổng số Đơn vị / Tổ chuyên môn thuộc danh sách:</strong> 12 đơn vị.<br/>
+          - <strong>Tổng số Đơn vị / Tổ chuyên môn thuộc danh sách chính thức:</strong> 12 đơn vị.<br/>
           - <strong>Số lượng Đơn vị đã gửi góp ý chính thức:</strong> ${submittedCount} / 12 đơn vị (${Math.round((submittedCount/12)*100)}%).<br/>
-          - <strong>Số lượng Đơn vị chưa gửi:</strong> ${12 - submittedCount} đơn vị.
+          - <strong>Tổng số lượt góp ý đã ghi nhận:</strong> ${totalResp} lượt đóng góp.<br/>
+          - <strong>Tỷ lệ Thống nhất hoàn toàn (Đồng ý 100%):</strong> ${countThongNhat} / ${totalResp} lượt (${percentThongNhat}%).<br/>
+          - <strong>Tỷ lệ Thống nhất nhưng có Đề xuất sửa đổi:</strong> ${countSuaDoi} / ${totalResp} lượt (${percentSuaDoi}%).<br/>
+          - <strong>Tỷ lệ Chưa thống nhất:</strong> ${countKhongThongNhat} / ${totalResp} lượt (${percentKhongThongNhat}%).
         </p>
 
-        <h3>II. BẢNG TỔNG HỢP CHI TIẾT Ý KIẾN GÓP Ý THEO TỔ / ĐƠN VỊ</h3>
+        <h3>II. BẢNG TỔNG HỢP Ý KIẾN CHÍNH THỨC CỦA CÁC TỔ CHUYÊN MÔN / ĐƠN VỊ</h3>
+        ${deptResponses.length === 0 ? '<p><em>Chưa có góp ý từ Tổ chuyên môn.</em></p>' : `
         <table>
           <thead>
             <tr>
               <th style="width: 5%;">STT</th>
-              <th style="width: 25%;">Tổ / Đơn vị góp ý</th>
-              <th style="width: 20%;">Người đại diện & SĐT</th>
-              <th style="width: 40%;">Nội dung đóng góp chi tiết</th>
-              <th style="width: 10%;">Tệp đính kèm</th>
+              <th style="width: 22%;">Tổ / Đơn vị góp ý</th>
+              <th style="width: 18%;">Đại diện & SĐT</th>
+              <th style="width: 15%;">Mức độ thống nhất</th>
+              <th style="width: 32%;">Nội dung đóng góp chi tiết</th>
+              <th style="width: 8%;">File đính kèm</th>
             </tr>
           </thead>
           <tbody>
-            ${tableRowsHtml}
+            ${deptTableRowsHtml}
           </tbody>
         </table>
+        `}
 
-        <h3>III. ĐÁNH GIÁ CHUNG VÀ ĐỀ XUẤT</h3>
+        <h3>III. BẢNG TỔNG HỢP Ý KIẾN ĐÓNG GÓP CÁ NHÂN CỦA GIÁO VIÊN / NHÂN VIÊN</h3>
+        ${teacherResponses.length === 0 ? '<p><em>Không có đóng góp ý kiến cá nhân riêng lẻ.</em></p>' : `
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 5%;">STT</th>
+              <th style="width: 25%;">Họ và tên Giáo viên / Đơn vị</th>
+              <th style="width: 15%;">Số điện thoại</th>
+              <th style="width: 15%;">Mức độ thống nhất</th>
+              <th style="width: 32%;">Nội dung đóng góp chi tiết</th>
+              <th style="width: 8%;">File đính kèm</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${teacherTableRowsHtml}
+          </tbody>
+        </table>
+        `}
+
+        <h3>IV. ĐÁNH GIÁ CHUNG VÀ ĐỀ XUẤT HƯỚNG XỬ LÝ</h3>
         <p style="text-indent: 1cm; text-align: justify;">
-          Qua tổng hợp ý kiến từ các Tổ chuyên môn và Đơn vị, các ý kiến đóng góp đã thể hiện tinh thần trách nhiệm cao đối với công tác chung của Nhà trường. Tất cả các ý kiến chi tiết trên đã được ghi nhận đầy đủ để Kính trình Ban Giám Hiệu xem xét, chỉ đạo và hoàn thiện văn bản chính thức.
+          Qua tổng hợp ý kiến từ các Tổ chuyên môn và cá nhân Giáo viên, hầu hết các ý kiến đóng góp đều thể hiện tinh thần trách nhiệm cao đối với công tác chung của Nhà trường. Tất cả các ý kiến chi tiết trên đã được phân loại đầy đủ để Kính trình Ban Giám Hiệu xem xét, chỉ đạo và hoàn thiện văn bản chính thức.
         </p>
 
         <table class="signature-table">
@@ -482,15 +555,17 @@ export default function AdminFeedbackSystem() {
     }
 
     const currentTopicObj = topics.find(t => t.id === selectedTopicId);
-    let csvContent = "\uFEFFSTT,ĐƠN VỊ GÓP Ý,NGƯỜI ĐẠI DIỆN,SỐ ĐIỆN THOẠI,EMAIL,NỘI DUNG GÓP Ý CHI TIẾT,LINK TỆP ĐÍNH KÈM,NGÀY GỬI\n";
+    let csvContent = "\uFEFFSTT,ĐƠN VỊ GÓP Ý,NGƯỜI ĐẠI DIỆN,SỐ ĐIỆN THOẠI,EMAIL,MỨC ĐỘ THỐNG NHẤT,NỘI DUNG GÓP Ý CHI TIẾT,LINK TỆP ĐÍNH KÈM,NGÀY GỬI\n";
     
     filteredResponses.forEach((item, idx) => {
+      const levelLabel = item.agreement_level === 'sua_doi' ? 'Đề xuất sửa đổi' : (item.agreement_level === 'khong_thong_nhat' ? 'Không thống nhất' : 'Thống nhất hoàn toàn');
       const row = [
         idx + 1,
         `"${item.organization_unit || ''}"`,
         `"${item.representative_name || ''}"`,
         `"${item.phone || ''}"`,
         `"${item.email || ''}"`,
+        `"${levelLabel}"`,
         `"${(item.feedback_content || '').replace(/"/g, '""')}"`,
         `"${item.attached_file_url || ''}"`,
         `"${new Date(item.created_at).toLocaleDateString('vi-VN')}"`
@@ -509,7 +584,11 @@ export default function AdminFeedbackSystem() {
   };
 
   const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
-  const submittedCount = DEFAULT_ORGANIZATIONS.filter(org => isOrgSubmitted(org, responses)).length;
+  
+  // Submitted Count for Official Departments
+  const submittedCount = DEFAULT_ORGANIZATIONS
+    .filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác')
+    .filter(org => isOrgSubmitted(org, responses)).length;
 
   const filteredResponses = responses.filter(item => {
     const matchSearch = (item.organization_unit || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -528,7 +607,7 @@ export default function AdminFeedbackSystem() {
             <FileText size={26} color="#166534" /> TỔNG HỢP & QUẢN LÝ GÓP Ý CÔNG VIỆC
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: '#64748b' }}>
-            Hệ thống cấu hình các dự thảo/công việc và tổng hợp ý kiến từ BCH Đảng ủy, Đoàn trường & các Tổ chuyên môn
+            Hệ thống cấu hình các dự thảo/công việc và tổng hợp ý kiến từ BCH Đảng ủy, Đoàn trường, Tổ chuyên môn & Giáo viên
           </p>
         </div>
 
@@ -610,7 +689,7 @@ export default function AdminFeedbackSystem() {
       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #cbd5e1', padding: '18px', marginBottom: '22px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Building2 size={18} color="#166534" /> TIẾN ĐỘ THU NHẬP Ý KIẾN THEO TỔ/ĐƠN VỊ ({submittedCount} / {DEFAULT_ORGANIZATIONS.length} ĐÃ NỘP)
+            <Building2 size={18} color="#166534" /> TIẾN ĐỘ THU NỘP VĂN BẢN CHÍNH THỨC CỦA CÁC TỔ/ĐƠN VỊ ({submittedCount} / 12 ĐÃ NỘP)
           </div>
           {currentTopicObj && (
             <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '600' }}>
@@ -620,7 +699,7 @@ export default function AdminFeedbackSystem() {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
-          {DEFAULT_ORGANIZATIONS.map(org => {
+          {DEFAULT_ORGANIZATIONS.filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác').map(org => {
             const hasSubmitted = isOrgSubmitted(org, responses);
             return (
               <div key={org} style={{ background: hasSubmitted ? '#f0fdf4' : '#f8fafc', border: `1px solid ${hasSubmitted ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
@@ -659,53 +738,84 @@ export default function AdminFeedbackSystem() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Đang tải danh sách góp ý...</div>
         ) : filteredResponses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Chưa có đơn vị nào gửi ý kiến góp ý cho công việc này.</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Chưa có đơn vị hay giáo viên nào gửi ý kiến góp ý cho công việc này.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ background: '#166534', color: '#ffffff' }}>
-                  <th style={{ padding: '12px 10px', textAlign: 'center', width: '50px' }}>STT</th>
-                  <th style={{ padding: '12px 10px' }}>ĐƠN VỊ GÓP Ý</th>
-                  <th style={{ padding: '12px 10px' }}>NGƯỜI ĐẠI DIỆN / TỔ TRƯỞNG</th>
-                  <th style={{ padding: '12px 10px' }}>SỐ ĐIỆN THOẠI</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', width: '40px' }}>STT</th>
+                  <th style={{ padding: '12px 10px' }}>ĐƠN VỊ / LOẠI GÓP Ý</th>
+                  <th style={{ padding: '12px 10px' }}>NGƯỜI ĐẠI DIỆN / GIÁO VIÊN</th>
+                  <th style={{ padding: '12px 10px' }}>MỨC ĐỘ THỐNG NHẤT</th>
                   <th style={{ padding: '12px 10px' }}>NỘI DUNG GÓP Ý CHI TIẾT</th>
                   <th style={{ padding: '12px 10px' }}>TỆP ĐÍNH KÈM</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>THAO TÁC</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>XÁC NHẬN / PHÊ DUYỆT</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>XÓA</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredResponses.map((item, idx) => (
-                  <tr key={item.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                    <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-                    <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#166534' }}>
-                      {item.organization_unit}
-                    </td>
-                    <td style={{ padding: '12px 10px', fontWeight: '600', color: '#1e293b' }}>{item.representative_name}</td>
-                    <td style={{ padding: '12px 10px', color: '#0369a1', fontFamily: 'monospace' }}>{item.phone}</td>
-                    <td style={{ padding: '12px 10px', color: '#334155', maxWidth: '380px' }}>
-                      <div style={{ background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.5' }}>
-                        {item.feedback_content}
-                      </div>
-                    </td>
-                    <td style={{ padding: '12px 10px' }}>
-                      {item.attached_file_url ? (
-                        <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline' }}>
-                          Xem File
-                        </a>
-                      ) : '-'}
-                    </td>
-                    <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleDeleteResponse(item.id)}
-                        style={{ padding: '6px 10px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                        title="Xóa ý kiến này"
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredResponses.map((item, idx) => {
+                  const isVerified = item.is_verified !== false;
+                  return (
+                    <tr key={item.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 'bold', color: item.organization_unit === 'Cá nhân Giáo viên / Nhân viên' ? '#0369a1' : '#166534' }}>
+                        {item.organization_unit}
+                      </td>
+                      <td style={{ padding: '12px 10px', fontWeight: '600', color: '#1e293b' }}>
+                        {item.representative_name}
+                        {item.phone && <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'normal' }}>SĐT: {item.phone}</div>}
+                      </td>
+                      <td style={{ padding: '12px 10px' }}>
+                        {item.agreement_level === 'khong_thong_nhat' ? (
+                          <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '3px 8px', borderRadius: '12px', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-block' }}>
+                            🔴 Không thống nhất
+                          </span>
+                        ) : item.agreement_level === 'sua_doi' ? (
+                          <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', padding: '3px 8px', borderRadius: '12px', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-block' }}>
+                            🟡 Đề xuất sửa đổi
+                          </span>
+                        ) : (
+                          <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '3px 8px', borderRadius: '12px', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-block' }}>
+                            🟢 Thống nhất 100%
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 10px', color: '#334155', maxWidth: '360px' }}>
+                        <div style={{ background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.5' }}>
+                          {item.feedback_content}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px 10px' }}>
+                        {item.attached_file_url ? (
+                          <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline' }}>
+                            Xem File
+                          </a>
+                        ) : '-'}
+                      </td>
+                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleToggleVerified(item.id, isVerified)}
+                          style={{ padding: '4px 10px', borderRadius: '16px', border: 'none', background: isVerified ? '#dcfce7' : '#fef9c3', color: isVerified ? '#166534' : '#854d0e', fontWeight: 'bold', fontSize: '11.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          title="Bấm để duyệt hoặc bỏ duyệt đưa vào Báo cáo Word"
+                        >
+                          {isVerified ? <CheckCircle2 size={13} /> : <Clock size={13} />}
+                          {isVerified ? '✅ Đã duyệt' : '⏳ Chờ duyệt'}
+                        </button>
+                      </td>
+                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => handleDeleteResponse(item.id)}
+                          style={{ padding: '6px 10px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                          title="Xóa ý kiến này"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

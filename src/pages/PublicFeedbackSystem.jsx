@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { FileText, Send, Calendar, Phone, CheckCircle2, AlertCircle, Building2, Clock, Sparkles, FileCheck, Layers, Link as LinkIcon } from 'lucide-react';
+import { FileText, Send, Calendar, Phone, CheckCircle2, AlertCircle, Building2, Clock, Sparkles, FileCheck, Layers, Link as LinkIcon, FileEdit as FileEditIcon, CheckSquare, AlertTriangle, XCircle } from 'lucide-react';
 
 const DEFAULT_ORGANIZATIONS = [
   'BCH Đảng ủy trường THPT Cao Bá Quát',
@@ -48,6 +48,7 @@ export default function PublicFeedbackSystem() {
   const [representativeName, setRepresentativeName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [agreementLevel, setAgreementLevel] = useState('thong_nhat');
   const [feedbackContent, setFeedbackContent] = useState('');
   const [attachedFileUrl, setAttachedFileUrl] = useState('');
 
@@ -73,7 +74,6 @@ export default function PublicFeedbackSystem() {
 
       let activeTopics = topicData || [];
       if (topicErr || activeTopics.length === 0) {
-        console.warn("Dùng fallback LocalStorage cho Chủ đề công việc");
         const localTopics = JSON.parse(localStorage.getItem('cbq_local_feedback_topics') || '[]');
         if (localTopics.length === 0) {
           activeTopics = [SEED_TOPIC];
@@ -100,7 +100,7 @@ export default function PublicFeedbackSystem() {
       setSelectedTopic(SEED_TOPIC);
       fetchResponses(SEED_TOPIC.id);
     } finally {
-      setLoading(false);
+      if (isFirstLoad) setLoading(false);
     }
   };
 
@@ -168,6 +168,7 @@ export default function PublicFeedbackSystem() {
       representative_name: representativeName.trim(),
       phone: phone.trim(),
       email: email.trim() || '',
+      agreement_level: agreementLevel || 'thong_nhat',
       feedback_content: feedbackContent.trim(),
       attached_file_url: attachedFileUrl.trim() || '',
       created_at: new Date().toISOString()
@@ -193,58 +194,47 @@ export default function PublicFeedbackSystem() {
       localStorage.setItem(localKey, JSON.stringify(updatedLocal));
 
       setResponses(prev => [itemToSave, ...prev.filter(r => r.organization_unit !== organizationUnit)]);
-      setSuccessMsg(`🎉 Cảm ơn bạn! Ý kiến đóng góp của ${organizationUnit} đã được ghi nhận lên hệ thống.`);
+      setSuccessMsg(`🎉 Cảm ơn bạn! Ý kiến đóng góp của ${organizationUnit} (Đại diện: ${representativeName}) đã được ghi nhận lên hệ thống.`);
       
       // Reset form
       setRepresentativeName('');
       setPhone('');
       setEmail('');
+      setAgreementLevel('thong_nhat');
       setFeedbackContent('');
       setAttachedFileUrl('');
 
     } catch (err) {
       console.error("Lỗi gửi góp ý:", err);
-      alert("Không thể gửi góp ý. Vui lòng thử lại!");
+      alert("Không thể gửi góp ý. Vui lòng kiểm tra kết nối!");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) {
-    return <div style={{ textAlign: 'center', padding: '50px', color: '#64748b' }}>Đang tải hệ thống góp ý công việc...</div>;
-  }
-
-  const isDeadlinePassed = selectedTopic ? new Date(selectedTopic.deadline) < new Date() : false;
+  const isDeadlinePassed = selectedTopic ? new Date() > new Date(selectedTopic.deadline) : false;
 
   return (
-    <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '20px 15px' }}>
+    <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '20px 15px', fontFamily: 'system-ui, sans-serif' }}>
       
-      {/* HEADER BANNER CHÍNH THỨC */}
-      <div style={{
-        background: 'linear-gradient(135deg, #166534 0%, #14532d 50%, #064e3b 100%)',
-        borderRadius: '20px',
-        padding: '28px 22px',
-        color: '#ffffff',
-        textAlign: 'center',
-        boxShadow: '0 10px 25px rgba(22, 101, 52, 0.25)',
-        marginBottom: '25px'
-      }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 16px', borderRadius: '30px', fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>
-          <Sparkles size={16} color="#fde047" /> HỆ THỐNG THU THẬP & TỔNG HỢP Ý KIẾN GÓP Ý CÔNG VIỆC
+      {/* HEADER BAR */}
+      <div style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)', color: '#ffffff', padding: '24px 28px', borderRadius: '20px', marginBottom: '25px', boxShadow: '0 10px 25px rgba(22,101,52,0.2)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+          <Building2 size={32} color="#86efac" />
+          <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, letterSpacing: '-0.3px' }}>
+            HỆ THỐNG GÓP Ý DỰ THẢO VĂN BẢN & CÔNG VIỆC
+          </h1>
         </div>
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '24px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 8px rgba(0,0,0,0.5)', lineHeight: '1.4' }}>
-          ✍️ CỔNG ĐÓNG GÓP Ý KIẾN CHỦ ĐỀ CÔNG VIỆC & ĐỀ ÁN TRƯỜNG THPT CAO BÁ QUÁT
-        </h1>
-        <p style={{ margin: '0 auto', maxWidth: '850px', fontSize: '14px', color: '#dcfce7', lineHeight: '1.6' }}>
-          Gửi đóng góp ý kiến từ BCH Đảng ủy, BTV Đoàn trường, các Tổ chuyên môn & Tổ Văn phòng cho các văn bản, kế hoạch, đề án của Nhà trường.
+        <p style={{ margin: 0, opacity: 0.9, fontSize: '14.5px', lineHeight: '1.5' }}>
+          Trường THPT Cao Bá Quát - Thu nhận ý kiến đóng góp từ BCH Đảng ủy, Đoàn trường, các Tổ chuyên môn & Giáo viên
         </p>
       </div>
 
-      {/* COMPONENT 1: CHỌN CÔNG VIỆC / CHỦ ĐỀ CẦN GÓP Ý */}
-      <div style={{ background: '#ffffff', padding: '18px 22px', borderRadius: '16px', border: '1.5px solid #cbd5e1', marginBottom: '22px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Layers size={18} color="#166534" /> CHỌN CÔNG VIỆC / VĂN BẢN CẦN GÓP Ý ({topics.length} ĐỀ ÁN VÀNG HỆ THỐNG):
-        </div>
+      {/* COMPONENT 1: CHỌN CÔNG VIỆC / DỰ THẢO CẦN GÓP Ý */}
+      <div style={{ background: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #cbd5e1', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+        <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 'bold', color: '#166534', marginBottom: '8px' }}>
+          📌 CHỌN VĂN BẢN / CÔNG VIỆC BẠN MUỐN ĐÓNG GÓP Ý KIẾN:
+        </label>
         <select
           value={selectedTopic?.id || ''}
           onChange={e => handleTopicChange(e.target.value)}
@@ -329,7 +319,7 @@ export default function PublicFeedbackSystem() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
             <FileEditIcon size={22} color="#166534" />
             <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#166534' }}>
-              PHIẾU GÓP Ý TỔ / ĐƠN VỊ
+              PHIẾU GÓP Ý TỔ / ĐƠN VỊ / CÁ NHÂN
             </h3>
           </div>
 
@@ -399,14 +389,55 @@ export default function PublicFeedbackSystem() {
                 </div>
               </div>
 
+              {/* MỨC ĐỘ THỐNG NHẤT */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  5. Nội Dung Ý Kiến Đóng Góp Chi Tiết *
+                  5. Mức Độ Thống Nhất Đối Với Dự Thảo *
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'thong_nhat' ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'thong_nhat' ? '#86efac' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#166534' }}>
+                    <input
+                      type="radio"
+                      name="agreement_level"
+                      value="thong_nhat"
+                      checked={agreementLevel === 'thong_nhat'}
+                      onChange={() => setAgreementLevel('thong_nhat')}
+                    />
+                    🟢 Thống nhất hoàn toàn (Đồng ý 100%)
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'sua_doi' ? '#fef9c3' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'sua_doi' ? '#fde047' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#854d0e' }}>
+                    <input
+                      type="radio"
+                      name="agreement_level"
+                      value="sua_doi"
+                      checked={agreementLevel === 'sua_doi'}
+                      onChange={() => setAgreementLevel('sua_doi')}
+                    />
+                    🟡 Thống nhất nhưng có đề xuất sửa đổi / bổ sung
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'khong_thong_nhat' ? '#fef2f2' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'khong_thong_nhat' ? '#fca5a5' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#dc2626' }}>
+                    <input
+                      type="radio"
+                      name="agreement_level"
+                      value="khong_thong_nhat"
+                      checked={agreementLevel === 'khong_thong_nhat'}
+                      onChange={() => setAgreementLevel('khong_thong_nhat')}
+                    />
+                    🔴 Không thống nhất / Đề nghị xem xét lại
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  6. Nội Dung Ý Kiến Đóng Góp Chi Tiết *
                 </label>
                 <textarea
                   rows={5}
                   required
-                  placeholder="Nhập ý kiến góp ý chi tiết của đơn vị đối với các điều khoản, kế hoạch hoặc dự thảo..."
+                  placeholder="Nhập ý kiến góp ý chi tiết của đơn vị hoặc cá nhân đối với các điều khoản, kế hoạch hoặc dự thảo..."
                   value={feedbackContent}
                   onChange={e => setFeedbackContent(e.target.value)}
                   style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', lineHeight: '1.5', resize: 'vertical' }}
@@ -415,7 +446,7 @@ export default function PublicFeedbackSystem() {
 
               <div style={{ marginBottom: '22px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  6. Link Văn Bản / Tệp Đính Kèm (Nếu có)
+                  7. Link Văn Bản / Tệp Đính Kèm (Nếu có)
                 </label>
                 <input
                   type="url"
@@ -443,66 +474,85 @@ export default function PublicFeedbackSystem() {
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '8px',
-                  boxShadow: '0 4px 14px rgba(22,101,52,0.3)'
+                  boxShadow: '0 6px 16px rgba(22,101,52,0.25)'
                 }}
               >
-                {submitting ? '⏳ Đang gửi lên Cơ sở Dữ liệu...' : '🚀 XÁC NHẬN GỬI Ý KIẾN GÓP Ý'}
+                <Send size={18} /> {submitting ? 'Đang gửi ý kiến...' : '🚀 GỬI Ý KIẾN GÓP Ý CHÍNH THỨC'}
               </button>
             </form>
           )}
         </div>
 
-        {/* COL 2: DANH SÁCH CÁC ĐƠN VỊ ĐÃ GÓP Ý */}
+        {/* COL 2: DANH SÁCH ĐƠN VỊ ĐÃ NỘP GÓP Ý */}
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Building2 size={22} color="#166534" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FileCheck size={22} color="#166534" />
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#166534' }}>
-                TỔNG HỢP CÁC ĐƠN VỊ ĐÃ GÓP Ý ({responses.length})
+                DANH SÁCH ĐƠN VỊ ĐÃ NỘP ({responses.length})
               </h3>
             </div>
+            <span style={{ fontSize: '12px', background: '#f1f5f9', color: '#475569', padding: '4px 10px', borderRadius: '12px', fontWeight: 'bold' }}>
+              Bảo mật nội dung
+            </span>
           </div>
 
-          <div style={{ maxHeight: '520px', overflowY: 'auto', paddingRight: '4px' }}>
-            {responses.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 10px', color: '#94a3b8', fontSize: '13.5px' }}>
-                Chưa có đơn vị nào gửi ý kiến cho chủ đề này. Hãy là đơn vị đầu tiên đóng góp ý kiến!
-              </div>
-            ) : (
-              responses.map((item, idx) => (
-                <div key={item.id || idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                    <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '14px' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>Đang tải danh sách...</div>
+          ) : responses.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '14px' }}>
+              Chưa có đơn vị nào gửi ý kiến cho công việc này.
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
+              {responses.map((item, idx) => (
+                <div
+                  key={item.id || idx}
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '14.5px', marginBottom: '2px' }}>
                       {item.organization_unit}
                     </div>
-                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
-                      {new Date(item.created_at).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: '12.5px', color: '#475569' }}>
-                    Đại diện: <strong>{item.representative_name}</strong>
-                  </div>
-
-                  {item.attached_file_url && (
-                    <div style={{ marginTop: '8px', fontSize: '12px' }}>
-                      <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline' }}>
-                        🔗 Xem tệp đính kèm của đơn vị
-                      </a>
+                    <div style={{ fontSize: '13px', color: '#475569' }}>
+                      Đại diện: <strong>{item.representative_name}</strong>
                     </div>
-                  )}
+                    <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
+                      Ngày gửi: {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right' }}>
+                    {item.agreement_level === 'khong_thong_nhat' ? (
+                      <span style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                        🔴 Không thống nhất
+                      </span>
+                    ) : item.agreement_level === 'sua_doi' ? (
+                      <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                        🟡 Đề xuất sửa đổi
+                      </span>
+                    ) : (
+                      <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                        🟢 Thống nhất
+                      </span>
+                    )}
+                  </div>
                 </div>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
       </div>
 
     </div>
   );
-}
-
-function FileEditIcon(props) {
-  return <FileText {...props} />;
 }
