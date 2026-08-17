@@ -343,7 +343,7 @@ export default function PublicFeedbackSystem() {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  1. Tổ Chuyên Môn / Đơn Vị Góp Ý *
+                  1. Tổ Chuyên Môn / Đơn Vị / Cá Nhân Góp Ý *
                 </label>
                 <select
                   value={organizationUnit}
@@ -358,12 +358,12 @@ export default function PublicFeedbackSystem() {
 
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  2. Họ và Tên Người Đại Diện / Tổ Trưởng *
+                  2. Họ và Tên Người Đại Diện / Giáo Viên Góp Ý *
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Thầy Nguyễn Văn A (Tổ trưởng)"
+                  placeholder="VD: Thầy Nguyễn Văn A (Giáo viên / Tổ trưởng)"
                   value={representativeName}
                   onChange={e => setRepresentativeName(e.target.value)}
                   style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
