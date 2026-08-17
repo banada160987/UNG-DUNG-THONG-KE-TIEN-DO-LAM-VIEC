@@ -29,7 +29,6 @@ const SEED_TOPIC = {
   is_active: true
 };
 
-// Helper chuẩn hóa chuỗi tiếng Việt so sánh tổ/đơn vị chính xác 100%
 const normalizeOrg = (str) => {
   if (!str) return '';
   return str
@@ -348,6 +347,143 @@ export default function AdminFeedbackSystem() {
     }
   };
 
+  // EXPORT OFFICIAL WORD REPORT (.doc / .docx)
+  const exportWordDoc = () => {
+    if (responses.length === 0) {
+      alert("Không có dữ liệu đóng góp ý kiến để xuất file Word!");
+      return;
+    }
+
+    const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
+    const today = new Date();
+    const dayStr = today.getDate().toString().padStart(2, '0');
+    const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+    const yearStr = today.getFullYear();
+
+    const tableRowsHtml = filteredResponses.map((item, idx) => `
+      <tr>
+        <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+        <td><strong>${item.organization_unit || ''}</strong></td>
+        <td><strong>${item.representative_name || ''}</strong><br/><span style="color: #475569; font-size: 11pt;">${item.phone || ''}</span></td>
+        <td style="text-align: justify;">${(item.feedback_content || '').replace(/\n/g, '<br/>')}</td>
+        <td style="text-align: center;">${item.attached_file_url ? `<a href="${item.attached_file_url}" target="_blank">Xem File</a>` : '-'}</td>
+      </tr>
+    `).join('');
+
+    const wordContent = `
+      <html xmlns:o='urn:schemas-microsoft-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+      <meta charset='utf-8'>
+      <title>BÁO CÁO TỔNG HỢP Ý KIẾN GÓP Ý</title>
+      <style>
+        @page WordSection1 {
+          size: 21.0cm 29.7cm;
+          margin: 2.0cm 2.0cm 2.0cm 3.0cm;
+          mso-header-margin: 36.0pt;
+          mso-footer-margin: 36.0pt;
+          mso-paper-source: 0;
+        }
+        div.WordSection1 { page: WordSection1; }
+        body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.4; color: #000000; }
+        table { border-collapse: collapse; width: 100%; margin-top: 15px; margin-bottom: 15px; }
+        th, td { border: 1px solid #000000; padding: 6pt 8pt; vertical-align: top; font-size: 12pt; }
+        th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+        .header-table { border: none; width: 100%; margin-bottom: 20px; }
+        .header-table td { border: none; padding: 0; text-align: center; }
+        .title { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; margin-top: 20px; margin-bottom: 6px; }
+        .subtitle { font-size: 13pt; font-style: italic; text-align: center; margin-bottom: 20px; }
+        .signature-table { border: none; width: 100%; margin-top: 30px; }
+        .signature-table td { border: none; padding: 0; text-align: center; vertical-align: top; }
+      </style>
+      </head>
+      <body>
+      <div class="WordSection1">
+        <table class="header-table">
+          <tr>
+            <td style="width: 45%; text-align: center;">
+              <strong>SỞ GIÁO DỤC VÀ ĐÀO TẠO LONG AN</strong><br/>
+              <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong><br/>
+              -------------------<br/>
+              Số: ...... /BC-TrTHPTCBQ
+            </td>
+            <td style="width: 55%; text-align: center;">
+              <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+              <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
+              -----------------------------------<br/>
+              <em>Đức Hòa, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</em>
+            </td>
+          </tr>
+        </table>
+
+        <div class="title">BÁO CÁO TỔNG HỢP Ý KIẾN GÓP Ý</div>
+        <div class="subtitle">Về việc: ${currentTopicObj?.title || 'Dự thảo công việc'}<br/>${currentTopicObj?.dispatch_number ? `(${currentTopicObj.dispatch_number})` : ''}</div>
+
+        <p><strong>Kính gửi:</strong> Ban Giám hiệu Trường THPT Cao Bá Quát</p>
+
+        <p style="text-indent: 1cm; text-align: justify;">
+          Căn cứ Kế hoạch công tác của Nhà trường, Tổ Văn phòng đã tiến hành thu thập và tổng hợp ý kiến góp ý của BCH Đảng ủy, Ban Thường vụ Đoàn trường, các Tổ chuyên môn và Tổ Văn phòng đối với <strong>"${currentTopicObj?.title || 'Dự thảo công việc'}"</strong>. Kết quả tổng hợp cụ thể như sau:
+        </p>
+
+        <h3>I. THỐNG KÊ TIẾN ĐỘ THU NHẬP Ý KIẾN</h3>
+        <p style="margin-left: 0.5cm;">
+          - <strong>Tổng số Đơn vị / Tổ chuyên môn thuộc danh sách:</strong> 12 đơn vị.<br/>
+          - <strong>Số lượng Đơn vị đã gửi góp ý chính thức:</strong> ${submittedCount} / 12 đơn vị (${Math.round((submittedCount/12)*100)}%).<br/>
+          - <strong>Số lượng Đơn vị chưa gửi:</strong> ${12 - submittedCount} đơn vị.
+        </p>
+
+        <h3>II. BẢNG TỔNG HỢP CHI TIẾT Ý KIẾN GÓP Ý THEO TỔ / ĐƠN VỊ</h3>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 5%;">STT</th>
+              <th style="width: 25%;">Tổ / Đơn vị góp ý</th>
+              <th style="width: 20%;">Người đại diện & SĐT</th>
+              <th style="width: 40%;">Nội dung đóng góp chi tiết</th>
+              <th style="width: 10%;">Tệp đính kèm</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHtml}
+          </tbody>
+        </table>
+
+        <h3>III. ĐÁNH GIÁ CHUNG VÀ ĐỀ XUẤT</h3>
+        <p style="text-indent: 1cm; text-align: justify;">
+          Qua tổng hợp ý kiến từ các Tổ chuyên môn và Đơn vị, các ý kiến đóng góp đã thể hiện tinh thần trách nhiệm cao đối với công tác chung của Nhà trường. Tất cả các ý kiến chi tiết trên đã được ghi nhận đầy đủ để Kính trình Ban Giám Hiệu xem xét, chỉ đạo và hoàn thiện văn bản chính thức.
+        </p>
+
+        <table class="signature-table">
+          <tr>
+            <td style="width: 50%; text-align: left;">
+              <strong>Nơi nhận:</strong><br/>
+              - Ban Giám hiệu (để b/c);<br/>
+              - Các Tổ chuyên môn;<br/>
+              - Lưu: VT, Tổ VP.
+            </td>
+            <td style="width: 50%; text-align: center;">
+              <strong>NGƯỜI LẬP BÁO CÁO</strong><br/>
+              <em>(Ký, ghi rõ họ tên)</em><br/><br/><br/><br/><br/>
+              <strong>Đ/c Nghiêm Xuân Bảo</strong>
+            </td>
+          </tr>
+        </table>
+      </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', wordContent], {
+      type: 'application/msword;charset=utf-8'
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `BAO_CAO_GOP_Y_${(currentTopicObj?.title || 'CONG_VIEC').slice(0,30)}_${yearStr}${monthStr}${dayStr}.doc`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const exportCSV = () => {
     if (responses.length === 0) {
       alert("Không có dữ liệu đóng góp ý kiến để xuất file!");
@@ -421,10 +557,19 @@ export default function AdminFeedbackSystem() {
           </button>
           
           <button
+            onClick={exportWordDoc}
+            style={{ padding: '9px 16px', background: '#1e3a8a', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(30,58,138,0.25)' }}
+            title="Tải File Báo Cáo Chuẩn Văn Bản Hành Chính (.doc / .docx)"
+          >
+            <FileText size={16} /> 📄 Xuất Báo Cáo Word (.doc)
+          </button>
+
+          <button
             onClick={exportCSV}
             style={{ padding: '9px 16px', background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2,132,199,0.2)' }}
+            title="Tải File Bảng Tính Excel (.csv)"
           >
-            <Download size={16} /> Xuất File Tổng Hợp (Excel / CSV)
+            <Download size={16} /> 📊 Xuất File Excel (.csv)
           </button>
         </div>
       </div>
