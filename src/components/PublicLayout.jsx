@@ -77,6 +77,7 @@ export default function PublicLayout() {
               <div className="nav-dropdown-content">
                 <Link to="/tin-tuc" className="nav-dropdown-item">📰 Tin tức - Sự kiện</Link>
                 <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
+                <Link to="/gop-y-quy-hoc-bong" className="nav-dropdown-item">✍️ Góp ý Đề án Quỹ học bổng</Link>
               </div>
             </div>
 
