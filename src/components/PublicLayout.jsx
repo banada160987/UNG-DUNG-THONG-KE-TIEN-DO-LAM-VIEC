@@ -1,11 +1,23 @@
+import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
 
 export default function PublicLayout() {
   const location = useLocation();
   const currentDate = new Date().toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
 
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
   const isActive = (path) => location.pathname === path;
+
+  const toggleDropdown = (name) => {
+    setActiveDropdown(prev => prev === name ? null : name);
+  };
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setActiveDropdown(null);
+  }, [location.pathname]);
 
   return (
     <div style={styles.portalContainer}>
@@ -25,14 +37,25 @@ export default function PublicLayout() {
       {/* 2. Horizontal Navigation */}
       <nav style={styles.navbar}>
         <div style={styles.navContainer}>
-          <div className="portal-nav-links" style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap' }}>
+          {/* Mobile Hamburger Toggle */}
+          <button 
+            className="mobile-menu-toggle"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? '✖ Đóng Menu' : '☰ Menu Danh Mục'}
+          </button>
+
+          <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
             <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
             
             {/* DROPDOWN 1: HOẠT ĐỘNG KỶ NIỆM */}
-            <div className="nav-dropdown">
-              <span style={(isActive('/cuoc-thi') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}>
+            <div className={`nav-dropdown ${activeDropdown === 'activity' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={() => toggleDropdown('activity')}
+                style={(isActive('/cuoc-thi') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}
+              >
                 🏆 Hoạt động kỷ niệm ▾
               </span>
               <div className="nav-dropdown-content">
@@ -43,8 +66,11 @@ export default function PublicLayout() {
             </div>
 
             {/* DROPDOWN 2: TIN TỨC & VĂN BẢN */}
-            <div className="nav-dropdown">
-              <span style={(isActive('/tin-tuc') || isActive('/van-ban')) ? styles.navItemActive : styles.navItem}>
+            <div className={`nav-dropdown ${activeDropdown === 'news' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={() => toggleDropdown('news')}
+                style={(isActive('/tin-tuc') || isActive('/van-ban')) ? styles.navItemActive : styles.navItem}
+              >
                 📰 Tin tức & Văn bản ▾
               </span>
               <div className="nav-dropdown-content">
@@ -54,8 +80,11 @@ export default function PublicLayout() {
             </div>
 
             {/* DROPDOWN 3: THƯ VIỆN & BẢNG VÀNG */}
-            <div className="nav-dropdown">
-              <span style={(isActive('/bang-vang') || isActive('/thu-vien-anh')) ? styles.navItemActive : styles.navItem}>
+            <div className={`nav-dropdown ${activeDropdown === 'library' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={() => toggleDropdown('library')}
+                style={(isActive('/bang-vang') || isActive('/thu-vien-anh')) ? styles.navItemActive : styles.navItem}
+              >
                 ⭐ Thư viện & Bảng vàng ▾
               </span>
               <div className="nav-dropdown-content">

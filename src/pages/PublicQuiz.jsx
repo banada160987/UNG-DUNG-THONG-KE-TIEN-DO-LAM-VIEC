@@ -969,6 +969,8 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: '10px',
     paddingBottom: '15px',
     borderBottom: '1px solid #e2e8f0'
   }
