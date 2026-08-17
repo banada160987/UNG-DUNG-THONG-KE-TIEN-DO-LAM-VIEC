@@ -179,6 +179,21 @@ export default function Dashboard() {
             </button>
           </div>
           <div style={styles.grid}>
+          {/* Sports Management Quick Access Card */}
+          <Link to="/admin/the-thao" className="glass" style={{ ...styles.card, gridColumn: '1 / -1', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '18px 22px' }}>
+            <div>
+              <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#fde047', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                ⚽ QUẢN LÝ THỂ THAO & BỐC THĂM BẢNG ĐẤU 30 NĂM
+              </h2>
+              <p style={{ margin: 0, fontSize: '13.5px', color: '#e0f2fe' }}>
+                Xem danh sách VĐV đăng ký, quản lý kinh phí 300k, xuất file Excel & bốc thăm chia bảng đấu tự động cho BTC.
+              </p>
+            </div>
+            <span style={{ padding: '8px 18px', background: '#ffffff', color: '#0369a1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px' }}>
+              Truy Cập Ngay ➔
+            </span>
+          </Link>
+
           {/* Red Alert Section */}
           <div className="glass" style={{...styles.card, gridColumn: '1 / -1'}}>
             <h2 style={styles.cardTitle}>
