@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, CheckCircle2, Clock, Building2, Layers, ToggleLeft, ToggleRight, X } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, CheckCircle2, Clock, Building2, Layers, Edit, ToggleLeft, ToggleRight, X, Lock, Unlock } from 'lucide-react';
 
 const DEFAULT_ORGANIZATIONS = [
   'BCH Đảng ủy trường THPT Cao Bá Quát',
@@ -34,7 +34,7 @@ export default function AdminFeedbackSystem() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modal State
+  // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDispatchNo, setNewDispatchNo] = useState('');
@@ -42,6 +42,17 @@ export default function AdminFeedbackSystem() {
   const [newDeadline, setNewDeadline] = useState('2026-08-19T23:59');
   const [newContactInfo, setNewContactInfo] = useState('');
   const [newAttachedDocUrl, setNewAttachedDocUrl] = useState('');
+
+  // Edit Modal State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTopic, setEditingTopic] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editDispatchNo, setEditDispatchNo] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editDeadline, setEditDeadline] = useState('');
+  const [editContactInfo, setEditContactInfo] = useState('');
+  const [editAttachedDocUrl, setEditAttachedDocUrl] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
 
   useEffect(() => {
     fetchTopics();
@@ -105,6 +116,7 @@ export default function AdminFeedbackSystem() {
     fetchResponses(newId);
   };
 
+  // CREATE TOPIC
   const handleCreateTopic = async (e) => {
     e.preventDefault();
     if (!newTitle.trim() || !newDescription.trim() || !newDeadline) {
@@ -145,7 +157,6 @@ export default function AdminFeedbackSystem() {
       setSelectedTopicId(createdTopic.id);
       fetchResponses(createdTopic.id);
 
-      // Reset form
       setNewTitle('');
       setNewDispatchNo('');
       setNewDescription('');
@@ -155,6 +166,100 @@ export default function AdminFeedbackSystem() {
     } catch (err) {
       console.error("Lỗi tạo công việc:", err);
       alert("Không thể tạo công việc. Vui lòng thử lại!");
+    }
+  };
+
+  // OPEN EDIT MODAL
+  const openEditTopicModal = () => {
+    const topicToEdit = topics.find(t => t.id === selectedTopicId);
+    if (!topicToEdit) return;
+
+    setEditingTopic(topicToEdit);
+    setEditTitle(topicToEdit.title || '');
+    setEditDispatchNo(topicToEdit.dispatch_number || '');
+    setEditDescription(topicToEdit.description || '');
+    
+    // Format date for datetime-local input
+    if (topicToEdit.deadline) {
+      const d = new Date(topicToEdit.deadline);
+      const formatted = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+      setEditDeadline(formatted);
+    } else {
+      setEditDeadline('2026-08-19T23:59');
+    }
+
+    setEditContactInfo(topicToEdit.contact_info || '');
+    setEditAttachedDocUrl(topicToEdit.attached_doc_url || '');
+    setEditIsActive(topicToEdit.is_active !== false);
+
+    setShowEditModal(true);
+  };
+
+  // SAVE EDITED TOPIC
+  const handleSaveEditedTopic = async (e) => {
+    e.preventDefault();
+    if (!editingTopic) return;
+
+    const updatedData = {
+      title: editTitle.trim(),
+      dispatch_number: editDispatchNo.trim(),
+      description: editDescription.trim(),
+      deadline: new Date(editDeadline).toISOString(),
+      contact_info: editContactInfo.trim(),
+      attached_doc_url: editAttachedDocUrl.trim(),
+      is_active: editIsActive
+    };
+
+    try {
+      // 1. Update Supabase
+      const { error } = await supabase
+        .from('cbq_feedback_topics')
+        .update(updatedData)
+        .eq('id', editingTopic.id);
+
+      if (error) console.warn("Lỗi update Supabase topic:", error);
+
+      // 2. Update Local state & LocalStorage
+      const updatedTopics = topics.map(t => t.id === editingTopic.id ? { ...t, ...updatedData } : t);
+      setTopics(updatedTopics);
+      localStorage.setItem('cbq_local_feedback_topics', JSON.stringify(updatedTopics));
+
+      alert("🎉 ĐÃ CẬP NHẬT THÔNG TIN CÔNG VIỆC THÀNH CÔNG!");
+      setShowEditModal(false);
+
+    } catch (err) {
+      console.error("Lỗi cập nhật công việc:", err);
+      alert("Không thể cập nhật. Vui lòng thử lại!");
+    }
+  };
+
+  // DELETE TOPIC
+  const handleDeleteTopic = async () => {
+    const topicToDelete = topics.find(t => t.id === selectedTopicId);
+    if (!topicToDelete) return;
+
+    if (!window.confirm(`⚠️ BẠN CÓ CHẮC CHẮN MUỐN XÓA CÔNG VIỆC:\n"${topicToDelete.title}"?\n\nTất cả ý kiến đóng góp của công việc này sẽ bị xóa khỏi hệ thống.`)) {
+      return;
+    }
+
+    try {
+      await supabase.from('cbq_feedback_topics').delete().eq('id', selectedTopicId);
+
+      const updatedTopics = topics.filter(t => t.id !== selectedTopicId);
+      setTopics(updatedTopics);
+      localStorage.setItem('cbq_local_feedback_topics', JSON.stringify(updatedTopics));
+
+      alert("🗑️ Đã xóa công việc khỏi hệ thống!");
+      if (updatedTopics.length > 0) {
+        setSelectedTopicId(updatedTopics[0].id);
+        fetchResponses(updatedTopics[0].id);
+      } else {
+        setSelectedTopicId('');
+        setResponses([]);
+      }
+    } catch (err) {
+      console.error("Lỗi xóa công việc:", err);
+      alert("Không thể xóa. Vui lòng thử lại!");
     }
   };
 
@@ -257,19 +362,44 @@ export default function AdminFeedbackSystem() {
         </div>
       </div>
 
-      {/* CHỌN CÔNG VIỆC ĐỂ XEM BÁO CÁO */}
-      <div style={{ background: '#ffffff', padding: '16px 20px', borderRadius: '14px', border: '1.5px solid #cbd5e1', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-        <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Layers size={16} color="#166534" /> CHỌN CÔNG VIỆC / ĐỀ ÁN CẦN TỔNG HỢP:
+      {/* CHỌN & ĐIỀU CHỈNH CÔNG VIỆC / ĐỀ ÁN CẦN TỔNG HỢP */}
+      <div style={{ background: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #cbd5e1', marginBottom: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Layers size={18} color="#166534" /> CHỌN CÔNG VIỆC / ĐỀ ÁN CẦN TỔNG HỢP VÀ ĐIỀU CHỈNH:
+          </div>
+
+          {currentTopicObj && (
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              {/* NÚT SỬA CÔNG VIỆC NÀY */}
+              <button
+                onClick={openEditTopicModal}
+                style={{ padding: '6px 14px', background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Chỉnh sửa tên công việc, trích yếu, hạn chót..."
+              >
+                <Edit size={15} /> ✏️ Chỉnh Sửa Công Việc Này
+              </button>
+
+              {/* NÚT XÓA CÔNG VIỆC NÀY */}
+              <button
+                onClick={handleDeleteTopic}
+                style={{ padding: '6px 12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Xóa công việc này khỏi hệ thống"
+              >
+                <Trash2 size={15} /> 🗑️ Xóa
+              </button>
+            </div>
+          )}
         </div>
+
         <select
           value={selectedTopicId}
           onChange={e => handleTopicChange(e.target.value)}
-          style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #166534', fontSize: '14px', fontWeight: 'bold', color: '#14532d', background: '#f0fdf4' }}
+          style={{ width: '100%', padding: '11px 14px', borderRadius: '10px', border: '2px solid #166534', fontSize: '14.5px', fontWeight: 'bold', color: '#14532d', background: '#f0fdf4' }}
         >
           {topics.map(t => (
             <option key={t.id} value={t.id}>
-              {t.title} {t.dispatch_number ? `(${t.dispatch_number})` : ''}
+              {t.title} {t.dispatch_number ? `(${t.dispatch_number})` : ''} {!t.is_active ? ' [ĐÃ ĐÓNG]' : ''}
             </option>
           ))}
         </select>
@@ -472,6 +602,113 @@ export default function AdminFeedbackSystem() {
                 style={{ width: '100%', padding: '12px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}
               >
                 🚀 XÁC NHẬN TẠO CÔNG VIỆC MỚI
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CHỈNH SỬA CÔNG VIỆC ĐÃ TẠO */}
+      {showEditModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '650px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#854d0e', fontWeight: 'bold', fontSize: '18px' }}>
+                <Edit size={22} color="#854d0e" /> ✏️ CHỈNH SỬA THÔNG TIN CÔNG VIỆC / ĐỀ ÁN
+              </div>
+              <button onClick={() => setShowEditModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={22} color="#64748b" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedTopic}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Tên Công Việc / Đề Án / Kế Hoạch *</label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={e => setEditTitle(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Số Hiệu Văn Bản / Căn Cứ</label>
+                <input
+                  type="text"
+                  value={editDispatchNo}
+                  onChange={e => setEditDispatchNo(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Trích Yếu Nội Dung & Hướng Dẫn Đóng Góp *</label>
+                <textarea
+                  rows={4}
+                  required
+                  value={editDescription}
+                  onChange={e => setEditDescription(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', resize: 'vertical' }}
+                />
+              </div>
+
+              <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '14px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Hạn Chót Nhận Góp Ý *</label>
+                  <input
+                    type="datetime-local"
+                    required
+                    value={editDeadline}
+                    onChange={e => setEditDeadline(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Cán Bộ Phụ Trách Tiếp Nhận *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editContactInfo}
+                    onChange={e => setEditContactInfo(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Link Tệp Văn Bản / Dự Thảo Kèm Theo</label>
+                <input
+                  type="url"
+                  value={editAttachedDocUrl}
+                  onChange={e => setEditAttachedDocUrl(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ marginBottom: '20px', background: '#f8fafc', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <strong style={{ fontSize: '13.5px', color: '#334155' }}>Trạng Thái Nhận Góp Ý:</strong>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Cho phép hoặc ngưng nhận ý kiến đóng góp mới</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditIsActive(!editIsActive)}
+                  style={{ padding: '6px 14px', borderRadius: '20px', border: 'none', background: editIsActive ? '#dcfce7' : '#fee2e2', color: editIsActive ? '#166534' : '#dc2626', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  {editIsActive ? <Unlock size={15} /> : <Lock size={15} />}
+                  {editIsActive ? '🟢 ĐANG MỞ NHẬN GÓP Ý' : '🔴 ĐÃ ĐÓNG GÓP Ý'}
+                </button>
+              </div>
+
+              <button
+                type="submit"
+                style={{ width: '100%', padding: '12px', background: '#854d0e', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}
+              >
+                💾 LƯU THAY ĐỔI CÔNG VIỆC
               </button>
             </form>
           </div>
