@@ -75,11 +75,21 @@ export default function AdminFeedbackSystem() {
   const [editIsActive, setEditIsActive] = useState(true);
 
   useEffect(() => {
-    fetchTopics();
-  }, []);
+    fetchTopics(true);
 
-  const fetchTopics = async () => {
-    setLoading(true);
+    // Tự động đồng bộ dữ liệu mới sau mỗi 15 giây (Realtime Auto-Sync)
+    const interval = setInterval(() => {
+      fetchTopics(false);
+      if (selectedTopicId) {
+        fetchResponses(selectedTopicId);
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [selectedTopicId]);
+
+  const fetchTopics = async (isFirstLoad = false) => {
+    if (isFirstLoad) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('cbq_feedback_topics')
@@ -94,7 +104,17 @@ export default function AdminFeedbackSystem() {
           activeTopics = [SEED_TOPIC];
           localStorage.setItem('cbq_local_feedback_topics', JSON.stringify([SEED_TOPIC]));
         } else {
-          activeTopics = localTopics;
+          activeTopics = localTopics.map(t => {
+            if (t.id === SEED_TOPIC_ID || t.id === 'default-topic-1') {
+              return {
+                ...t,
+                id: SEED_TOPIC_ID,
+                deadline: '2026-08-19T23:59:59+07:00'
+              };
+            }
+            return t;
+          });
+          localStorage.setItem('cbq_local_feedback_topics', JSON.stringify(activeTopics));
         }
       }
 
