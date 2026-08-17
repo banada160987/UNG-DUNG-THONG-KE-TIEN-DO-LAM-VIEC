@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { AlertTriangle, CheckCircle, Clock, Plus, DollarSign, PieChart as PieChartIcon, BarChart as BarChartIcon, Download } from 'lucide-react';
