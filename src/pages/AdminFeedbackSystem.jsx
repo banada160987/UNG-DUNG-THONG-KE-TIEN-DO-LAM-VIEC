@@ -613,18 +613,6 @@ export default function AdminFeedbackSystem() {
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
-            onClick={() => {
-              const text = `📢 THÔNG BÁO GỬI Ý KIẾN GÓP Ý DỰ THẢO CÔNG VIỆC\n📌 ${currentTopicObj?.title || 'Dự thảo công việc'}\n🕒 Hạn chót: ${new Date(currentTopicObj?.deadline).toLocaleDateString('vi-VN')} (${new Date(currentTopicObj?.deadline).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})})\n👉 Kính mời các đồng chí Tổ trưởng & Giáo viên gửi góp ý tại: https://lekyniem30nam.vercel.app/gop-y`;
-              navigator.clipboard.writeText(text);
-              alert("📋 Đã copy mẫu thông báo Zalo/Email vào bộ nhớ tạm! Bạn có thể dán (Ctrl+V) gửi cho các Tổ chuyên môn.");
-            }}
-            style={{ padding: '9px 14px', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
-            title="Copy Mẫu Thông Báo Nhắc Nộp Góp Ý Gửi Group Zalo Trường"
-          >
-            💬 Copy Mẫu Nhắc Zalo
-          </button>
-
-          <button
             onClick={() => setShowCreateModal(true)}
             style={{ padding: '9px 16px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22,101,52,0.2)' }}
           >
@@ -709,32 +697,58 @@ export default function AdminFeedbackSystem() {
         </select>
       </div>
 
-      {/* STATS CHECKLIST OF ORGANIZATIONS FOR SELECTED TASK */}
-      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #cbd5e1', padding: '18px', marginBottom: '22px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-          <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Building2 size={18} color="#166534" /> TIẾN ĐỘ THU NỘP VĂN BẢN CHÍNH THỨC CỦA CÁC TỔ/ĐƠN VỊ ({submittedCount} / 12 ĐÃ NỘP)
+      {/* STATS CHECKLIST OF ORGANIZATIONS FOR SELECTED TASK - ULTRA COMPACT & SLEEK */}
+      <div style={{ background: '#ffffff', borderRadius: '14px', border: '1.5px solid #cbd5e1', padding: '14px 18px', marginBottom: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Building2 size={16} color="#166534" /> TIẾN ĐỘ THU NỘP Ý KIẾN CHÍNH THỨC CẤP TỔ:
+            </div>
+            <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 10px', borderRadius: '12px', fontWeight: 'bold', fontSize: '12.5px' }}>
+              {submittedCount} / 12 Tổ đã nộp ({Math.round((submittedCount/12)*100)}%)
+            </span>
           </div>
+
+          {/* VISUAL PROGRESS BAR */}
+          <div style={{ flex: '1', maxWidth: '200px', minWidth: '120px', background: '#e2e8f0', borderRadius: '10px', height: '7px', overflow: 'hidden' }}>
+            <div style={{ width: `${(submittedCount/12)*100}%`, background: 'linear-gradient(90deg, #166534 0%, #22c55e 100%)', height: '100%', transition: 'width 0.4s ease' }} />
+          </div>
+
           {currentTopicObj && (
-            <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '600' }}>
-              Hạn chót: <span style={{ color: '#dc2626', fontWeight: 'bold' }}>{new Date(currentTopicObj.deadline).toLocaleDateString('vi-VN')}</span>
+            <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>
+              Hạn chót: <span style={{ color: '#dc2626' }}>{new Date(currentTopicObj.deadline).toLocaleDateString('vi-VN')}</span>
             </div>
           )}
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+        {/* ULTRA COMPACT CHIPS GRID */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(175px, 1fr))', gap: '6px' }}>
           {DEFAULT_ORGANIZATIONS.filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác').map(org => {
             const hasSubmitted = isOrgSubmitted(org, responses);
             return (
-              <div key={org} style={{ background: hasSubmitted ? '#f0fdf4' : '#f8fafc', border: `1px solid ${hasSubmitted ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
-                <span style={{ fontWeight: 'bold', color: hasSubmitted ? '#166534' : '#64748b' }}>{org}</span>
+              <div
+                key={org}
+                style={{
+                  background: hasSubmitted ? '#f0fdf4' : '#f8fafc',
+                  border: `1px solid ${hasSubmitted ? '#86efac' : '#e2e8f0'}`,
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justify: 'space-between',
+                  fontSize: '11.5px'
+                }}
+              >
+                <span style={{ fontWeight: hasSubmitted ? 'bold' : '500', color: hasSubmitted ? '#166534' : '#475569', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '125px' }} title={org}>
+                  {org}
+                </span>
                 {hasSubmitted ? (
-                  <span style={{ color: '#166534', fontWeight: 'bold', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <CheckCircle2 size={12} /> Đã gửi
+                  <span style={{ color: '#166534', fontWeight: 'bold', fontSize: '10.5px', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                    <CheckCircle2 size={11} /> Đã gửi
                   </span>
                 ) : (
-                  <span style={{ color: '#854d0e', fontWeight: '600', background: '#fef9c3', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                    <Clock size={12} /> Chưa gửi
+                  <span style={{ color: '#94a3b8', fontSize: '10.5px' }}>
+                    ⚪ Chưa
                   </span>
                 )}
               </div>
