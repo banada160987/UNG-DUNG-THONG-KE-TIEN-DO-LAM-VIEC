@@ -104,12 +104,12 @@ export default function AdminFeedbackSystem() {
           activeTopics = [SEED_TOPIC];
           localStorage.setItem('cbq_local_feedback_topics', JSON.stringify([SEED_TOPIC]));
         } else {
-          activeTopics = localTopics.map(t => {
-            if (t.id === SEED_TOPIC_ID || t.id === 'default-topic-1') {
+          activeTopics = localTopics.map((t, index) => {
+            if (index === 0 || t.id === SEED_TOPIC_ID || t.id === 'default-topic-1' || (t.title && t.title.includes('Quỹ Học bổng'))) {
               return {
                 ...t,
                 id: SEED_TOPIC_ID,
-                deadline: '2026-08-19T23:59:59+07:00'
+                deadline: (t.deadline && !t.deadline.includes('2026-08-18')) ? t.deadline : '2026-08-19T23:59:59+07:00'
               };
             }
             return t;
