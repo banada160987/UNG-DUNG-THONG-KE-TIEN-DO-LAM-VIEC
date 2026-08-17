@@ -16,6 +16,7 @@ const DEFAULT_ORGANIZATIONS = [
   'Tổ Ngoại ngữ',
   'Tổ GDTC - QPAN',
   'Tổ Văn phòng',
+  'Cá nhân Giáo viên / Nhân viên',
   'Đơn vị khác'
 ];
 

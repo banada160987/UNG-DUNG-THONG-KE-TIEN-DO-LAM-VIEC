@@ -14,7 +14,9 @@ const DEFAULT_ORGANIZATIONS = [
   'Tổ Sử - Địa - GDKTPL',
   'Tổ Ngoại ngữ',
   'Tổ GDTC - QPAN',
-  'Tổ Văn phòng'
+  'Tổ Văn phòng',
+  'Cá nhân Giáo viên / Nhân viên',
+  'Đơn vị khác'
 ];
 
 const SEED_TOPIC_ID = 'a1b2c3d4-e5f6-7890-abcd-1234567890ab';
