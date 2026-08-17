@@ -524,12 +524,8 @@ export default function PublicFeedbackSystem() {
                     </span>
                   </div>
 
-                  <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '8px' }}>
-                    Đại diện: <strong>{item.representative_name}</strong> ({item.phone})
-                  </div>
-
-                  <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#1e293b', fontStyle: 'italic', lineHeight: '1.5' }}>
-                    "{item.feedback_content}"
+                  <div style={{ fontSize: '12.5px', color: '#475569' }}>
+                    Đại diện: <strong>{item.representative_name}</strong>
                   </div>
 
                   {item.attached_file_url && (
