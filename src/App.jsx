@@ -27,6 +27,8 @@ import AdminVoting from './pages/AdminVoting';
 import PublicSubmission from './pages/PublicSubmission';
 import StudentRegister from './pages/StudentRegister';
 import StudentLogin from './pages/StudentLogin';
+import PublicSportsRegister from './pages/PublicSportsRegister';
+import AdminSports from './pages/AdminSports';
 import PublicGuide from './pages/PublicGuide';
 import PublicLayout from './components/PublicLayout';
 
@@ -55,6 +57,7 @@ function App() {
         <Route path="/cuoc-thi" element={<PublicQuiz />} />
         <Route path="/binh-chon" element={<PublicVoting />} />
         <Route path="/nop-bai-thi" element={<PublicSubmission />} />
+        <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
         <Route path="/dang-ky" element={<StudentRegister />} />
         <Route path="/dang-nhap" element={<StudentLogin />} />
       </Route>
@@ -76,6 +79,7 @@ function App() {
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewNews ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/the-thao" element={permissions.canViewNews ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
         </>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />

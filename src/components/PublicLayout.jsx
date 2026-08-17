@@ -60,6 +60,7 @@ export default function PublicLayout() {
               </span>
               <div className="nav-dropdown-content">
                 <Link to="/cuoc-thi" className="nav-dropdown-item">🏆 Cuộc thi tìm hiểu 30 năm</Link>
+                <Link to="/dang-ky-the-thao" className="nav-dropdown-item">⚽ Đăng ký thi đấu thể thao</Link>
                 <Link to="/binh-chon" className="nav-dropdown-item">🗳️ Bình chọn tác phẩm</Link>
                 <Link to="/nop-bai-thi" className="nav-dropdown-item">📤 Nộp bài thi sáng tạo</Link>
               </div>

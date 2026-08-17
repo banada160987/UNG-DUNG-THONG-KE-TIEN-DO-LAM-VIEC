@@ -44,6 +44,12 @@ export default function PublicGuide() {
           <Trophy size={16} /> Cuộc Thi Tìm Hiểu
         </button>
         <button 
+          onClick={() => setActiveTab('sports')}
+          style={activeTab === 'sports' ? styles.tabBtnActive : styles.tabBtn}
+        >
+          ⚽ Giải Thể Thao Giao Lưu
+        </button>
+        <button 
           onClick={() => setActiveTab('invite')}
           style={activeTab === 'invite' ? styles.tabBtnActive : styles.tabBtn}
         >
@@ -189,6 +195,54 @@ export default function PublicGuide() {
                 • <strong>Cơ cấu Giải thưởng:</strong> 01 Giải Tác Phẩm Xung Kích • 01 Giải Tác Phẩm Yêu Thích Nhất (Nhiều lượt thả tim nhất) • 01 Giải Ý Tưởng Sáng Tạo.
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SECTION 2B: GIẢI THỂ THAO GIAO LƯU KỶ NIỆM 30 NĂM */}
+      {(activeTab === 'all' || activeTab === 'sports') && (
+        <div style={{ ...styles.sectionCard, borderLeft: '4px solid #0284c7' }}>
+          <div style={styles.sectionHeader}>
+            <span style={{ fontSize: '22px' }}>⚽</span>
+            <h2 style={{ color: '#0369a1' }}>GIẢI THỂ THAO GIAO LƯU "CAO BÁ QUÁT CHAMPIONS CUP 2026"</h2>
+          </div>
+          <p style={styles.descText}>
+            Giải thể thao giao lưu chào mừng Lễ Kỷ Niệm 30 Năm Thành Lập Trường THPT Cao Bá Quát là hoạt động thể thao lớn nhằm nâng cao sức khỏe, tạo không khí giao lưu đoàn kết giữa Cán bộ Giáo viên, Học sinh và các thế hệ Cựu học sinh các thời kỳ.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px', margin: '20px 0' }}>
+            <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+              <h4 style={{ color: '#0369a1' }}>⚽ 1. Bóng Đá Giao Lưu (Nam & Nữ)</h4>
+              <ul style={styles.bulletList}>
+                <li><strong>Thể thức:</strong> Thi đấu giao lưu 7 người (Sân cỏ nhân tạo nhà trường).</li>
+                <li><strong>Đội hình:</strong> Đội Cựu Học Sinh Các Niên Khóa vs Đội Thầy Cô Giáo vs Đội Học Sinh Khối 12.</li>
+              </ul>
+            </div>
+
+            <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+              <h4 style={{ color: '#0369a1' }}>🏸 2. Cầu Lông & Bóng Bàn</h4>
+              <ul style={styles.bulletList}>
+                <li><strong>Thể thức:</strong> Thi đấu Đôi Nam, Đôi Nữ và Đôi Nam Nữ kết hợp.</li>
+                <li><strong>Địa điểm:</strong> Nhà thi đấu đa năng Trường THPT Cao Bá Quát.</li>
+              </ul>
+            </div>
+
+            <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+              <h4 style={{ color: '#0369a1' }}>🏃 3. Fun Run "30 Năm - 3.000 Bước Chân"</h4>
+              <ul style={styles.bulletList}>
+                <li><strong>Cự ly:</strong> 3.0km chạy việt dã phong trào dành cho mọi lứa tuổi.</li>
+                <li><strong>Độ tuổi:</strong> Mở rộng cho toàn thể Thầy cô, Học sinh, Phụ huynh & Cựu học sinh.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div style={{ background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: '12px', padding: '16px 20px', color: '#0369a1', fontSize: '13.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <strong>🏆 Cơ cấu Giải thưởng Hội thao:</strong> Cúp Vô Địch <strong>Cao Bá Quát Champions Cup 2026</strong> + Huy chương Vàng, Bạc, Đồng từng bộ môn + 01 Giải VĐV Ấn Tượng Nhất + 01 Giải Đội Cổ Vũ Sung Sức Nhất.
+            </div>
+            <Link to="/dang-ky-the-thao" style={{ padding: '8px 16px', background: '#0284c7', color: '#ffffff', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none', boxShadow: '0 2px 8px rgba(2,132,199,0.3)' }}>
+              🚀 Đăng Ký VĐV Thi Đấu Ngay ➔
+            </Link>
           </div>
         </div>
       )}
