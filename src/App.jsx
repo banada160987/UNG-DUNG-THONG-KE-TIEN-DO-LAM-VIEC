@@ -29,8 +29,8 @@ import StudentRegister from './pages/StudentRegister';
 import StudentLogin from './pages/StudentLogin';
 import PublicSportsRegister from './pages/PublicSportsRegister';
 import AdminSports from './pages/AdminSports';
-import PublicScholarshipFeedback from './pages/PublicScholarshipFeedback';
-import AdminScholarshipFeedback from './pages/AdminScholarshipFeedback';
+import PublicFeedbackSystem from './pages/PublicFeedbackSystem';
+import AdminFeedbackSystem from './pages/AdminFeedbackSystem';
 import PublicGuide from './pages/PublicGuide';
 import PublicLayout from './components/PublicLayout';
 
@@ -60,7 +60,8 @@ function App() {
         <Route path="/binh-chon" element={<PublicVoting />} />
         <Route path="/nop-bai-thi" element={<PublicSubmission />} />
         <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
-        <Route path="/gop-y-quy-hoc-bong" element={<PublicScholarshipFeedback />} />
+        <Route path="/gop-y" element={<PublicFeedbackSystem />} />
+        <Route path="/gop-y-quy-hoc-bong" element={<PublicFeedbackSystem />} />
         <Route path="/dang-ky" element={<StudentRegister />} />
         <Route path="/dang-nhap" element={<StudentLogin />} />
       </Route>
@@ -83,7 +84,8 @@ function App() {
           <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewNews ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/the-thao" element={permissions.canViewNews ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/gop-y-quy-hoc-bong" element={permissions.canViewDocs ? <AdminScholarshipFeedback /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/gop-y" element={permissions.canViewDocs ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/gop-y-quy-hoc-bong" element={permissions.canViewDocs ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
         </>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />

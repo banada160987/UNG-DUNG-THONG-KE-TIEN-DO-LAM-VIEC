@@ -72,7 +72,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
     { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewPages },
     { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
-    { path: '/admin/gop-y-quy-hoc-bong', icon: FileText, label: '✍️ Góp ý Đề án Quỹ Học Bổng', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
+    { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: 'NỘI DUNG WEB (PUBLIC)', show: !!permissions.canViewDocs },
     { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: 'NỘI DUNG WEB (PUBLIC)', show: role === 'admin' },
     { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: 'HỆ THỐNG', show: role === 'admin' },
     { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: 'HỆ THỐNG', show: role === 'admin' },
