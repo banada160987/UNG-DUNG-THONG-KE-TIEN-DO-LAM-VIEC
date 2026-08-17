@@ -61,7 +61,7 @@ function App() {
         <Route path="/nop-bai-thi" element={<PublicSubmission />} />
         <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
         <Route path="/gop-y" element={<PublicFeedbackSystem />} />
-        <Route path="/gop-y-quy-hoc-bong" element={<PublicFeedbackSystem />} />
+        <Route path="/gop-y-quy-hoc-bong" element={<Navigate to="/gop-y" replace />} />
         <Route path="/dang-ky" element={<StudentRegister />} />
         <Route path="/dang-nhap" element={<StudentLogin />} />
       </Route>
@@ -85,7 +85,7 @@ function App() {
           <Route path="/admin/voting" element={permissions.canViewNews ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/the-thao" element={permissions.canViewNews ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gop-y" element={permissions.canViewDocs ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/gop-y-quy-hoc-bong" element={permissions.canViewDocs ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/gop-y-quy-hoc-bong" element={<Navigate to="/admin/gop-y" replace />} />
         </>
       ) : (
         <Route path="/admin/*" element={<Navigate to="/login" replace />} />
