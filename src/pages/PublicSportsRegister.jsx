@@ -216,7 +216,7 @@ export default function PublicSportsRegister() {
               {selectedCategoryObj.fee === 0 ? (
                 <span>🎉 <strong>HỌC SINH ĐANG HỌC:</strong> Đăng ký Bảng B <strong>MIỄN PHÍ 100%</strong> (Nhà trường vận động tài trợ cúp cờ).</span>
               ) : (
-                <span>💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương). Quý VĐV vui lòng chuyển khoản theo hình ảnh tài khoản bên dưới hoặc gửi thầy Nguyễn Công Sự (SĐT/Zalo: <strong>0366190199</strong>).</span>
+                <span>💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương). Quý VĐV vui lòng chuyển khoản theo hình ảnh tài khoản bên dưới.</span>
               )}
             </div>
 
