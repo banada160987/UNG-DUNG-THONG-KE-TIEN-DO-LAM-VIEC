@@ -27,6 +27,25 @@ const SEED_TOPIC = {
   is_active: true
 };
 
+// Helper chuẩn hóa chuỗi tiếng Việt so sánh tổ/đơn vị chính xác 100%
+const normalizeOrg = (str) => {
+  if (!str) return '';
+  return str
+    .normalize('NFC')
+    .toLowerCase()
+    .replace(/[\s\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]+/g, ' ')
+    .trim();
+};
+
+const isOrgSubmitted = (orgName, responseList) => {
+  const normOrg = normalizeOrg(orgName);
+  if (!normOrg) return false;
+  return responseList.some(r => {
+    const normResp = normalizeOrg(r.organization_unit);
+    return normResp.includes(normOrg) || normOrg.includes(normResp);
+  });
+};
+
 export default function AdminFeedbackSystem() {
   const [topics, setTopics] = useState([]);
   const [selectedTopicId, setSelectedTopicId] = useState('');
@@ -96,18 +115,59 @@ export default function AdminFeedbackSystem() {
 
   const fetchResponses = async (topicId) => {
     try {
-      const { data, error } = await supabase
+      let combined = [];
+
+      // 1. Fetch from cbq_feedback_responses
+      const { data: respData } = await supabase
         .from('cbq_feedback_responses')
         .select('*')
         .eq('topic_id', topicId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setResponses(data || []);
+      if (respData && respData.length > 0) {
+        combined = [...respData];
+      }
+
+      // 2. Fetch from legacy cbq_scholarship_feedback table if default topic or empty
+      if (topicId === 'default-topic-1' || topicId === 'a1b2c3d4-e5f6-7890-abcd-1234567890ab' || combined.length === 0) {
+        const { data: legacyData } = await supabase
+          .from('cbq_scholarship_feedback')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (legacyData && legacyData.length > 0) {
+          const existingIds = new Set(combined.map(c => c.id));
+          legacyData.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              combined.push(item);
+            }
+          });
+        }
+      }
+
+      // 3. LocalStorage fallback merge
+      const localResKey = `cbq_local_feedback_res_${topicId}`;
+      const localRes = JSON.parse(localStorage.getItem(localResKey) || '[]');
+      const legacyLocalRes = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      
+      const allLocal = [...localRes, ...legacyLocalRes];
+      const existingIds = new Set(combined.map(c => c.id || (c.organization_unit + c.created_at)));
+      
+      allLocal.forEach(item => {
+        const itemKey = item.id || (item.organization_unit + item.created_at);
+        if (!existingIds.has(itemKey)) {
+          combined.push(item);
+          existingIds.add(itemKey);
+        }
+      });
+
+      setResponses(combined);
     } catch (err) {
       console.warn("Fallback LocalStorage cho Admin Phản hồi:", err);
-      const local = JSON.parse(localStorage.getItem(`cbq_local_feedback_res_${topicId}`) || '[]');
-      setResponses(local);
+      const localResKey = `cbq_local_feedback_res_${topicId}`;
+      const localRes = JSON.parse(localStorage.getItem(localResKey) || '[]');
+      const legacyLocalRes = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      setResponses([...localRes, ...legacyLocalRes]);
     }
   };
 
@@ -179,7 +239,6 @@ export default function AdminFeedbackSystem() {
     setEditDispatchNo(topicToEdit.dispatch_number || '');
     setEditDescription(topicToEdit.description || '');
     
-    // Format date for datetime-local input
     if (topicToEdit.deadline) {
       const d = new Date(topicToEdit.deadline);
       const formatted = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
@@ -211,7 +270,6 @@ export default function AdminFeedbackSystem() {
     };
 
     try {
-      // 1. Update Supabase
       const { error } = await supabase
         .from('cbq_feedback_topics')
         .update(updatedData)
@@ -219,7 +277,6 @@ export default function AdminFeedbackSystem() {
 
       if (error) console.warn("Lỗi update Supabase topic:", error);
 
-      // 2. Update Local state & LocalStorage
       const updatedTopics = topics.map(t => t.id === editingTopic.id ? { ...t, ...updatedData } : t);
       setTopics(updatedTopics);
       localStorage.setItem('cbq_local_feedback_topics', JSON.stringify(updatedTopics));
@@ -274,6 +331,11 @@ export default function AdminFeedbackSystem() {
       const local = JSON.parse(localStorage.getItem(localKey) || '[]');
       const updatedLocal = local.filter(item => item.id !== id);
       localStorage.setItem(localKey, JSON.stringify(updatedLocal));
+
+      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      const updatedLegacy = legacyLocal.filter(item => item.id !== id);
+      localStorage.setItem('cbq_local_scholarship_feedbacks', JSON.stringify(updatedLegacy));
+
     } catch (err) {
       console.error("Lỗi xóa ý kiến:", err);
       alert("Không thể xóa. Vui lòng thử lại!");
@@ -314,8 +376,7 @@ export default function AdminFeedbackSystem() {
   };
 
   const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
-  const submittedOrgNames = responses.map(r => r.organization_unit);
-  const submittedCount = DEFAULT_ORGANIZATIONS.filter(org => submittedOrgNames.some(name => name.includes(org))).length;
+  const submittedCount = DEFAULT_ORGANIZATIONS.filter(org => isOrgSubmitted(org, responses)).length;
 
   const filteredResponses = responses.filter(item => {
     const matchSearch = (item.organization_unit || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -371,7 +432,6 @@ export default function AdminFeedbackSystem() {
 
           {currentTopicObj && (
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-              {/* NÚT SỬA CÔNG VIỆC NÀY */}
               <button
                 onClick={openEditTopicModal}
                 style={{ padding: '6px 14px', background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
@@ -380,7 +440,6 @@ export default function AdminFeedbackSystem() {
                 <Edit size={15} /> ✏️ Chỉnh Sửa Công Việc Này
               </button>
 
-              {/* NÚT XÓA CÔNG VIỆC NÀY */}
               <button
                 onClick={handleDeleteTopic}
                 style={{ padding: '6px 12px', background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
@@ -420,7 +479,7 @@ export default function AdminFeedbackSystem() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
           {DEFAULT_ORGANIZATIONS.map(org => {
-            const hasSubmitted = submittedOrgNames.some(name => name.includes(org));
+            const hasSubmitted = isOrgSubmitted(org, responses);
             return (
               <div key={org} style={{ background: hasSubmitted ? '#f0fdf4' : '#f8fafc', border: `1px solid ${hasSubmitted ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
                 <span style={{ fontWeight: 'bold', color: hasSubmitted ? '#166534' : '#64748b' }}>{org}</span>
