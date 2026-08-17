@@ -401,7 +401,7 @@ export default function AdminFeedbackSystem() {
         <table class="header-table">
           <tr>
             <td style="width: 45%; text-align: center;">
-              <strong>SỞ GIÁO DỤC VÀ ĐÀO TẠO LONG AN</strong><br/>
+              <strong>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</strong><br/>
               <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong><br/>
               -------------------<br/>
               Số: ...... /BC-TrTHPTCBQ
@@ -410,7 +410,7 @@ export default function AdminFeedbackSystem() {
               <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
               <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
               -----------------------------------<br/>
-              <em>Đức Hòa, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</em>
+              <em>Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</em>
             </td>
           </tr>
         </table>
