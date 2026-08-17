@@ -613,6 +613,18 @@ export default function AdminFeedbackSystem() {
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
+            onClick={() => {
+              const text = `📢 THÔNG BÁO GỬI Ý KIẾN GÓP Ý DỰ THẢO CÔNG VIỆC\n📌 ${currentTopicObj?.title || 'Dự thảo công việc'}\n🕒 Hạn chót: ${new Date(currentTopicObj?.deadline).toLocaleDateString('vi-VN')} (${new Date(currentTopicObj?.deadline).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})})\n👉 Kính mời các đồng chí Tổ trưởng & Giáo viên gửi góp ý tại: https://lekyniem30nam.vercel.app/gop-y`;
+              navigator.clipboard.writeText(text);
+              alert("📋 Đã copy mẫu thông báo Zalo/Email vào bộ nhớ tạm! Bạn có thể dán (Ctrl+V) gửi cho các Tổ chuyên môn.");
+            }}
+            style={{ padding: '9px 14px', background: '#059669', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(5,150,105,0.2)' }}
+            title="Copy Mẫu Thông Báo Nhắc Nộp Góp Ý Gửi Group Zalo Trường"
+          >
+            💬 Copy Mẫu Nhắc Zalo
+          </button>
+
+          <button
             onClick={() => setShowCreateModal(true)}
             style={{ padding: '9px 16px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22,101,52,0.2)' }}
           >
