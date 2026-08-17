@@ -17,8 +17,10 @@ const DEFAULT_ORGANIZATIONS = [
   'Tổ Văn phòng'
 ];
 
+const SEED_TOPIC_ID = 'a1b2c3d4-e5f6-7890-abcd-1234567890ab';
+
 const SEED_TOPIC = {
-  id: 'default-topic-1',
+  id: SEED_TOPIC_ID,
   title: 'Dự thảo Đề án Thành lập Quỹ Học bổng "Chắp cánh ước mơ tuổi học trò" Trường THPT Cao Bá Quát',
   dispatch_number: 'Công văn số 409/SGDĐT-VP & Kế hoạch 53/KH-TrTHPTCBQ',
   description: 'Căn cứ Công văn 409/SGDĐT-VP ngày 11/02/2026 của Sở GD&ĐT và Kế hoạch 53/KH-TrTHPTCBQ ngày 12/3/2026. Đề nghị BCH Đảng ủy, BTV Đoàn trường, các Tổ chuyên môn & Tổ Văn phòng gửi góp ý về dự thảo Đề án Quỹ học bổng.',
@@ -184,8 +186,12 @@ export default function AdminFeedbackSystem() {
       return;
     }
 
+    const generatedUuid = typeof crypto !== 'undefined' && crypto.randomUUID 
+      ? crypto.randomUUID() 
+      : 'b' + Date.now().toString(16) + '-1234-4567-89ab-' + Math.floor(Math.random()*1000000000000).toString(16).padStart(12, '0');
+
     const createdTopic = {
-      id: 'topic-' + Date.now(),
+      id: generatedUuid,
       title: newTitle.trim(),
       dispatch_number: newDispatchNo.trim() || '',
       description: newDescription.trim(),

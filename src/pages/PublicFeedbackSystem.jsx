@@ -19,8 +19,10 @@ const DEFAULT_ORGANIZATIONS = [
   'Đơn vị khác'
 ];
 
+const SEED_TOPIC_ID = 'a1b2c3d4-e5f6-7890-abcd-1234567890ab';
+
 const SEED_TOPIC = {
-  id: 'default-topic-1',
+  id: SEED_TOPIC_ID,
   title: 'Dự thảo Đề án Thành lập Quỹ Học bổng "Chắp cánh ước mơ tuổi học trò" Trường THPT Cao Bá Quát',
   dispatch_number: 'Công văn số 409/SGDĐT-VP & Kế hoạch 53/KH-TrTHPTCBQ',
   description: 'Căn cứ Công văn 409/SGDĐT-VP ngày 11/02/2026 của Sở GD&ĐT và Kế hoạch 53/KH-TrTHPTCBQ ngày 12/3/2026. Đề nghị BCH Đảng ủy, BTV Đoàn trường, các Tổ chuyên môn & Tổ Văn phòng gửi góp ý về dự thảo Đề án Quỹ học bổng.',
@@ -96,18 +98,59 @@ export default function PublicFeedbackSystem() {
 
   const fetchResponses = async (topicId) => {
     try {
-      const { data, error } = await supabase
+      let combined = [];
+
+      // 1. Fetch from cbq_feedback_responses
+      const validTopicId = (topicId && topicId.length === 36 && topicId.includes('-')) ? topicId : SEED_TOPIC_ID;
+      const { data: respData } = await supabase
         .from('cbq_feedback_responses')
         .select('*')
-        .eq('topic_id', topicId)
+        .eq('topic_id', validTopicId)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setResponses(data || []);
+      if (respData && respData.length > 0) {
+        combined = [...respData];
+      }
+
+      // 2. Fetch from legacy cbq_scholarship_feedback
+      if (topicId === SEED_TOPIC_ID || topicId === 'default-topic-1' || combined.length === 0) {
+        const { data: legacyData } = await supabase
+          .from('cbq_scholarship_feedback')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (legacyData && legacyData.length > 0) {
+          const existingIds = new Set(combined.map(c => c.id));
+          legacyData.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              combined.push(item);
+            }
+          });
+        }
+      }
+
+      // 3. LocalStorage fallback merge
+      const localKey = `cbq_local_feedback_res_${topicId}`;
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      const allLocal = [...local, ...legacyLocal];
+
+      const existingIds = new Set(combined.map(c => c.id || (c.organization_unit + c.created_at)));
+      allLocal.forEach(item => {
+        const itemKey = item.id || (item.organization_unit + item.created_at);
+        if (!existingIds.has(itemKey)) {
+          combined.push(item);
+          existingIds.add(itemKey);
+        }
+      });
+
+      setResponses(combined);
     } catch (err) {
       console.warn("Fallback LocalStorage cho Phản hồi:", err);
-      const local = JSON.parse(localStorage.getItem(`cbq_local_feedback_res_${topicId}`) || '[]');
-      setResponses(local);
+      const localKey = `cbq_local_feedback_res_${topicId}`;
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      setResponses([...local, ...legacyLocal]);
     }
   };
 
@@ -132,8 +175,12 @@ export default function PublicFeedbackSystem() {
     setSubmitting(true);
     setSuccessMsg('');
 
+    const validTopicUuid = (selectedTopic.id && selectedTopic.id.length === 36 && selectedTopic.id.includes('-')) 
+      ? selectedTopic.id 
+      : SEED_TOPIC_ID;
+
     const newResponse = {
-      topic_id: selectedTopic.id,
+      topic_id: validTopicUuid,
       organization_unit: organizationUnit,
       representative_name: representativeName.trim(),
       phone: phone.trim(),
@@ -144,23 +191,53 @@ export default function PublicFeedbackSystem() {
     };
 
     try {
-      const { data, error } = await supabase
+      let isInsertedToSupabase = false;
+      let insertedRecord = null;
+
+      // 1. Dual Insert into Supabase table cbq_feedback_responses
+      const { data: data1, error: err1 } = await supabase
         .from('cbq_feedback_responses')
         .insert([newResponse])
         .select();
 
-      if (error) {
-        console.warn("Supabase insert fallback sang LocalStorage:", error);
-        const localKey = `cbq_local_feedback_res_${selectedTopic.id}`;
-        const local = JSON.parse(localStorage.getItem(localKey) || '[]');
-        const updatedLocal = [newResponse, ...local];
-        localStorage.setItem(localKey, JSON.stringify(updatedLocal));
-        setResponses(updatedLocal);
-      } else if (data) {
-        setResponses(prev => [data[0], ...prev]);
+      if (!err1 && data1 && data1.length > 0) {
+        isInsertedToSupabase = true;
+        insertedRecord = data1[0];
       }
 
-      setSuccessMsg(`🎉 GỬI Ý KIẾN GÓP Ý THÀNH CÔNG!\nHệ thống đã ghi nhận ý kiến của ${organizationUnit} (Đại diện: ${representativeName}) cho nội dung "${selectedTopic.title}".`);
+      // 2. Fallback / Dual Insert into cbq_scholarship_feedback table
+      const legacyObj = {
+        organization_unit: organizationUnit,
+        representative_name: representativeName.trim(),
+        phone: phone.trim(),
+        email: email.trim() || '',
+        feedback_content: feedbackContent.trim(),
+        attached_file_url: attachedFileUrl.trim() || '',
+        created_at: newResponse.created_at
+      };
+
+      const { data: data2, error: err2 } = await supabase
+        .from('cbq_scholarship_feedback')
+        .insert([legacyObj])
+        .select();
+
+      if (!isInsertedToSupabase && !err2 && data2 && data2.length > 0) {
+        isInsertedToSupabase = true;
+        insertedRecord = data2[0];
+      }
+
+      // 3. LocalStorage sync & state update
+      const localKey = `cbq_local_feedback_res_${selectedTopic.id}`;
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const updatedLocal = [insertedRecord || newResponse, ...local];
+      localStorage.setItem(localKey, JSON.stringify(updatedLocal));
+
+      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
+      localStorage.setItem('cbq_local_scholarship_feedbacks', JSON.stringify([insertedRecord || legacyObj, ...legacyLocal]));
+
+      setResponses(prev => [insertedRecord || newResponse, ...prev]);
+
+      setSuccessMsg(`🎉 GỬI Ý KIẾN GÓP Ý THÀNH CÔNG!\nHệ thống đã ghi nhận ý kiến của ${organizationUnit} (Đại diện: ${representativeName}) lên Cơ sở Dữ liệu Nhà trường.`);
       
       // Reset form
       setRepresentativeName('');
@@ -225,76 +302,97 @@ export default function PublicFeedbackSystem() {
         </select>
       </div>
 
-      {/* COMPONENT 2: CHI TIẾT CÔNG VIỆC ĐƯỢC CHỌN */}
+      {/* COMPONENT 2: CHI TIẾT VĂN BẢN VÀ ĐẾM HẠN CHÓT */}
       {selectedTopic && (
-        <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '16px', padding: '22px', marginBottom: '25px', color: '#1e293b', lineHeight: '1.7', fontSize: '14px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderBottom: '1px solid #cbd5e1', paddingBottom: '10px', marginBottom: '14px' }}>
-            <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={20} color="#166534" /> {selectedTopic.title}
+        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '22px', border: '1.5px solid #bbf7d0', marginBottom: '25px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+            <div style={{ flex: 1, minWidth: '280px' }}>
+              <span style={{ background: '#dcfce7', color: '#166534', fontSize: '12px', fontWeight: 'bold', padding: '4px 12px', borderRadius: '20px', display: 'inline-block', marginBottom: '8px' }}>
+                📄 {selectedTopic.dispatch_number || 'VĂN BẢN DỰ THẢO CHÍNH THỨC'}
+              </span>
+              <h2 style={{ fontSize: '19px', fontWeight: 'bold', color: '#14532d', margin: 0, lineHeight: '1.4' }}>
+                {selectedTopic.title}
+              </h2>
             </div>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+
+            {/* BOX ĐẾM THỜI GIAN */}
+            <div style={{ background: isDeadlinePassed ? '#fef2f2' : '#f0fdf4', border: `1.5px solid ${isDeadlinePassed ? '#fca5a5' : '#86efac'}`, padding: '12px 18px', borderRadius: '14px', textAlign: 'right', minWidth: '200px' }}>
+              <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px' }}>
+                <Clock size={14} color={isDeadlinePassed ? '#dc2626' : '#166534'} /> HẠN CHÓT NHẬN GÓP Ý:
+              </div>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: isDeadlinePassed ? '#dc2626' : '#15803d', marginTop: '3px' }}>
+                {new Date(selectedTopic.deadline).toLocaleDateString('vi-VN')} ({new Date(selectedTopic.deadline).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })})
+              </div>
               {isDeadlinePassed ? (
-                <span style={{ background: '#fee2e2', color: '#dc2626', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-                  🚫 Hạn chót đã qua ({new Date(selectedTopic.deadline).toLocaleDateString('vi-VN')})
-                </span>
+                <span style={{ fontSize: '11px', color: '#dc2626', fontWeight: 'bold' }}>⚠️ ĐÃ HẾT THỜI HẠN NHẬN GÓP Ý</span>
               ) : (
-                <span style={{ background: '#dcfce7', color: '#166534', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-                  ⏳ Đang mở nhận góp ý (Đến {new Date(selectedTopic.deadline).toLocaleDateString('vi-VN')})
-                </span>
+                <span style={{ fontSize: '11px', color: '#166534', fontWeight: '600' }}>🟢 ĐANG MỞ NHẬN GÓP Ý TRỰC TUYẾN</span>
               )}
             </div>
           </div>
 
-          {selectedTopic.dispatch_number && (
-            <div style={{ fontSize: '13px', color: '#0369a1', fontWeight: 'bold', marginBottom: '8px' }}>
-              📌 Căn cứ / Số hiệu văn bản: {selectedTopic.dispatch_number}
-            </div>
-          )}
-
-          <p style={{ margin: '0 0 12px 0', color: '#334155' }}>
+          <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', color: '#334155', fontSize: '13.5px', lineHeight: '1.6', marginBottom: '15px' }}>
+            <div style={{ fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>📌 CĂN CỨ VÀ HƯỚNG DẪN ĐÓNG GÓP:</div>
             {selectedTopic.description}
-          </p>
+          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', background: '#ffffff', padding: '12px 16px', borderRadius: '10px', borderLeft: '4px solid #166534', fontSize: '13px' }}>
-            <div><Phone size={15} color="#166534" style={{ verticalAlign: 'middle', marginRight: '6px' }} /> <strong>Cán bộ / Đơn vị phụ trách:</strong> {selectedTopic.contact_info || 'Văn phòng nhà trường'}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '13px' }}>
+            <div style={{ color: '#475569' }}>
+              📞 Cán bộ phụ trách tiếp nhận: <strong style={{ color: '#166534' }}>{selectedTopic.contact_info}</strong>
+            </div>
+
             {selectedTopic.attached_doc_url && (
-              <a href={selectedTopic.attached_doc_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <LinkIcon size={14} /> Xem File Văn Bản / Dự Thảo Kèm Theo
+              <a
+                href={selectedTopic.attached_doc_url}
+                target="_blank"
+                rel="noreferrer"
+                style={{ background: '#0284c7', color: '#ffffff', padding: '7px 16px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <LinkIcon size={14} /> Xem File Văn Bản Đính Kèm
               </a>
             )}
           </div>
         </div>
       )}
 
-      {/* COMPONENT 3: MAIN FORM & SUBMITTED RESPONSES GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '25px', alignItems: 'start' }}>
+      {/* SUCCESS NOTIFICATION */}
+      {successMsg && (
+        <div style={{ background: '#f0fdf4', border: '2px solid #22c55e', borderRadius: '16px', padding: '18px 22px', marginBottom: '25px', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 4px 14px rgba(34,197,94,0.15)' }}>
+          <CheckCircle2 size={28} color="#166534" style={{ flexShrink: 0, marginTop: '2px' }} />
+          <div style={{ whiteSpace: 'pre-line', color: '#14532d', fontSize: '14.5px', fontWeight: 'bold', lineHeight: '1.6' }}>
+            {successMsg}
+          </div>
+        </div>
+      )}
+
+      {/* GRID LAYOUT: FORM & LIST OF SUBMITTED FEEDBACK */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '25px', alignItems: 'start' }}>
         
-        {/* FORM ĐÓNG GÓP Ý KIẾN */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#166534', fontWeight: 'bold', fontSize: '17px', marginBottom: '16px', borderBottom: '1.5px solid #dcfce7', paddingBottom: '10px' }}>
-            <Send size={22} color="#166534" /> FORM ĐÓNG GÓP Ý KIẾN CHO CÔNG VIỆC (*)
+        {/* COL 1: FORM NỘP GÓP Ý */}
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
+            <FileEditIcon size={22} color="#166534" />
+            <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#166534' }}>
+              PHIẾU GÓP Ý TỔ / ĐƠN VỊ
+            </h3>
           </div>
 
-          {successMsg && (
-            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', padding: '14px', borderRadius: '10px', fontSize: '13.5px', marginBottom: '18px', whiteSpace: 'pre-line' }}>
-              {successMsg}
-            </div>
-          )}
-
-          {isDeadlinePassed ? (
-            <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', color: '#be123c', padding: '16px', borderRadius: '12px', textAlign: 'center', fontSize: '14px' }}>
-              ⛔ <strong>CÔNG VIỆC ĐÃ HẾT THỜI HẠN NHẬN GÓP Ý.</strong><br />
-              Cảm ơn các đơn vị đã quan tâm đóng góp ý kiến.
+          {!selectedTopic?.is_active || isDeadlinePassed ? (
+            <div style={{ background: '#fef2f2', border: '1px solid #fca5a5', padding: '20px', borderRadius: '12px', textAlign: 'center', color: '#dc2626' }}>
+              <AlertCircle size={32} style={{ margin: '0 auto 8px auto' }} />
+              <div style={{ fontWeight: 'bold', fontSize: '15px' }}>ĐÃ KHÓA NHẬN GÓP Ý</div>
+              <div style={{ fontSize: '13px', marginTop: '4px' }}>Công việc này đã hết thời hạn tiếp nhận hoặc đã được Admin khóa lại.</div>
             </div>
           ) : (
             <form onSubmit={handleSubmit}>
-              {/* Đơn vị góp ý */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Tổ Chuyên Môn / Đơn Vị Góp Ý *</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  1. Tổ Chuyên Môn / Đơn Vị Góp Ý *
+                </label>
                 <select
                   value={organizationUnit}
                   onChange={e => setOrganizationUnit(e.target.value)}
-                  style={styles.select}
+                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#1e293b', background: '#f8fafc' }}
                 >
                   {DEFAULT_ORGANIZATIONS.map(org => (
                     <option key={org} value={org}>{org}</option>
@@ -302,156 +400,157 @@ export default function PublicFeedbackSystem() {
                 </select>
               </div>
 
-              {/* Họ và Tên */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Họ và Tên Người Đại Diện / Tổ Trưởng *</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  2. Họ và Tên Người Đại Diện / Tổ Trưởng *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Nguyễn Văn A - Tổ trưởng"
+                  placeholder="VD: Thầy Nguyễn Văn A (Tổ trưởng)"
                   value={representativeName}
                   onChange={e => setRepresentativeName(e.target.value)}
-                  style={styles.input}
+                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              {/* Số Điện Thoại */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Số Điện Thoại Liên Hệ *</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="VD: 0912 345 678"
-                  value={phone}
-                  onChange={e => setPhone(e.target.value)}
-                  style={styles.input}
-                />
+              <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    3. Số Điện Thoại *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="0912345678"
+                    value={phone}
+                    onChange={e => setPhone(e.target.value)}
+                    style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    4. Email Liên Hệ
+                  </label>
+                  <input
+                    type="email"
+                    placeholder="thayA@thptcaobaquat.edu.vn"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
 
-              {/* Email */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Email Liên Hệ (Nếu có)</label>
-                <input
-                  type="email"
-                  placeholder="VD: totruong@caobaquat.edu.vn"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              {/* Nội dung Góp ý */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Nội Dung Góp Ý Chi Tiết Cho Công Việc *</label>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  5. Nội Dung Ý Kiến Đóng Góp Chi Tiết *
+                </label>
                 <textarea
                   rows={5}
                   required
-                  placeholder="VD: Nhất trí cao với các nội dung dự thảo. Đề nghị bổ sung thêm..."
+                  placeholder="Nhập ý kiến góp ý chi tiết của đơn vị đối với các điều khoản, kế hoạch hoặc dự thảo..."
                   value={feedbackContent}
                   onChange={e => setFeedbackContent(e.target.value)}
-                  style={{ ...styles.input, resize: 'vertical' }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', lineHeight: '1.5', resize: 'vertical' }}
                 />
               </div>
 
-              {/* File đính kèm / Link văn bản có dấu đỏ */}
-              <div style={{ marginBottom: '18px' }}>
-                <label style={styles.label}>Link Tệp Văn Bản Có Chữ Ký / Dấu Đỏ (Google Drive/Dropbox)</label>
+              <div style={{ marginBottom: '22px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  6. Link Văn Bản / Tệp Đính Kèm (Nếu có)
+                </label>
                 <input
                   type="url"
-                  placeholder="VD: https://drive.google.com/file/d/..."
+                  placeholder="Link Google Drive, Dropbox chứa file Word/PDF..."
                   value={attachedFileUrl}
                   onChange={e => setAttachedFileUrl(e.target.value)}
-                  style={styles.input}
+                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' }}
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={submitting}
-                style={styles.submitBtn}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  background: submitting ? '#94a3b8' : 'linear-gradient(135deg, #166534 0%, #15803d 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 'bold',
+                  fontSize: '15.5px',
+                  cursor: submitting ? 'not-allowed' : 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 14px rgba(22,101,52,0.3)'
+                }}
               >
-                {submitting ? 'Đang gửi góp ý...' : '🚀 XÁC NHẬN GỬI Ý KIẾN GÓP Ý'}
+                {submitting ? '⏳ Đang gửi lên Cơ sở Dữ liệu...' : '🚀 XÁC NHẬN GỬI Ý KIẾN GÓP Ý'}
               </button>
             </form>
           )}
         </div>
 
-        {/* TỔNG HỢP CÁC Ý KIẾN ĐÃ GỬI CỦA CÔNG VIỆC NÀY */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '16.5px', marginBottom: '16px', borderBottom: '1.5px solid #dcfce7', paddingBottom: '10px' }}>
-            <FileCheck size={20} color="#166534" /> TỔNG HỢP CÁC ĐƠN VỊ ĐÃ GÓP Ý ({responses.length})
+        {/* COL 2: DANH SÁCH CÁC ĐƠN VỊ ĐÃ GÓP Ý */}
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Building2 size={22} color="#166534" />
+              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#166534' }}>
+                TỔNG HỢP CÁC ĐƠN VỊ ĐÃ GÓP Ý ({responses.length})
+              </h3>
+            </div>
           </div>
 
-          {responses.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '30px 15px', color: '#94a3b8', background: '#f8fafc', borderRadius: '10px' }}>
-              Chưa có đơn vị nào gửi ý kiến trực tuyến cho công việc này.
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {responses.map((fb, idx) => (
-                <div key={fb.id || idx} style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <strong style={{ color: '#166534', fontSize: '13.5px' }}>{fb.organization_unit}</strong>
-                    <span style={{ fontSize: '11px', color: '#64748b' }}>{new Date(fb.created_at).toLocaleDateString('vi-VN')}</span>
+          <div style={{ maxHeight: '520px', overflowY: 'auto', paddingRight: '4px' }}>
+            {responses.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 10px', color: '#94a3b8', fontSize: '13.5px' }}>
+                Chưa có đơn vị nào gửi ý kiến cho chủ đề này. Hãy là đơn vị đầu tiên đóng góp ý kiến!
+              </div>
+            ) : (
+              responses.map((item, idx) => (
+                <div key={item.id || idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px', marginBottom: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '14px' }}>
+                      {item.organization_unit}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#94a3b8' }}>
+                      {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                    </span>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b' }}>
-                    Đại diện: {fb.representative_name} ({fb.phone})
+
+                  <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '8px' }}>
+                    Đại diện: <strong>{item.representative_name}</strong> ({item.phone})
                   </div>
-                  <p style={{ fontSize: '12.5px', color: '#475569', margin: '6px 0 0 0', background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                    "{fb.feedback_content}"
-                  </p>
-                  {fb.attached_file_url && (
-                    <div style={{ marginTop: '6px', fontSize: '12px' }}>
-                      📎 <a href={fb.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold' }}>Xem Tệp Đính Kèm</a>
+
+                  <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', color: '#1e293b', fontStyle: 'italic', lineHeight: '1.5' }}>
+                    "{item.feedback_content}"
+                  </div>
+
+                  {item.attached_file_url && (
+                    <div style={{ marginTop: '8px', fontSize: '12px' }}>
+                      <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline' }}>
+                        🔗 Xem tệp đính kèm của đơn vị
+                      </a>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
       </div>
+
     </div>
   );
 }
 
-const styles = {
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 'bold',
-    color: '#334155',
-    marginBottom: '5px'
-  },
-  input: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1.5px solid #cbd5e1',
-    fontSize: '14px',
-    boxSizing: 'border-box'
-  },
-  select: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1.5px solid #cbd5e1',
-    fontSize: '14px',
-    background: '#ffffff',
-    boxSizing: 'border-box'
-  },
-  submitBtn: {
-    width: '100%',
-    padding: '13px',
-    background: 'linear-gradient(135deg, #166534 0%, #14532d 100%)',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '10px',
-    fontWeight: 'bold',
-    fontSize: '15.5px',
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(22, 101, 52, 0.3)',
-    transition: 'all 0.2s ease'
-  }
-};
+function FileEditIcon(props) {
+  return <FileText {...props} />;
+}
