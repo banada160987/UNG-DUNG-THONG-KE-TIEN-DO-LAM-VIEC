@@ -367,12 +367,25 @@ export default function PublicVoting() {
           <Sparkles size={16} color="#fde047" /> KỶ NIỆM 30 NĂM NGÀY THÀNH LẬP THPT CAO BÁ QUÁT (1996 - 2026)
         </div>
 
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '28px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 12px rgba(0,0,0,0.7)', fontWeight: '800', letterSpacing: '0.5px' }}>
-          🏆 CUỘC THI BÌNH CHỌN TÁC PHẨM & SẢN PHẨM SÁNG TẠO
+        <h1 style={{ margin: '0 0 10px 0', fontSize: '26px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 12px rgba(0,0,0,0.7)', fontWeight: '800', letterSpacing: '0.5px' }}>
+          🏆 CUỘC THI 2: SÁNG TẠO TÁC PHẨM & BÌNH CHỌN "GỬI NẮNG SÂN TRƯỜNG"
         </h1>
-        <p style={{ margin: '0 auto 16px auto', maxWidth: '750px', fontSize: '14.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', fontWeight: '500', lineHeight: '1.6' }}>
-          Hãy cùng thả tim tôn vinh những tác phẩm xuất sắc nhất của các bạn học sinh! Kết quả 100% dựa trên bình chọn công khai.
+        <p style={{ margin: '0 auto 16px auto', maxWidth: '800px', fontSize: '14.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.5)', fontWeight: '500', lineHeight: '1.6' }}>
+          Cuộc thi sáng tạo Video clip, Bài viết tri ân, Ảnh kỷ niệm và Mô hình hướng tới Lễ Kỷ Niệm 30 Năm Trường THPT Cao Bá Quát.
         </p>
+
+        {/* CHUYÊN GIA TỔ CHỨC: THỂ LỆ CUỘC THI 2 CHUẨN MỰC */}
+        <div style={{ background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(8px)', border: '1px solid rgba(253, 224, 71, 0.4)', borderRadius: '14px', padding: '16px 20px', margin: '0 auto 20px auto', maxWidth: '850px', textAlign: 'left' }}>
+          <div style={{ fontWeight: 'bold', color: '#fde047', fontSize: '15px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Award size={18} color="#fde047" /> QUY CHẾ BÌNH CHỌN & ĐÁNH GIÁ TÁC PHẨM CHÍNH THỨC
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px', fontSize: '13px', color: '#ffffff' }}>
+            <div><strong>🎬 Loại hình tác phẩm:</strong> Video, Bài viết, Tranh vẽ, Mô hình</div>
+            <div><strong>🗳️ Tiêu chí xếp hạng:</strong> 100% dựa trên tổng số lượt thả tim công khai</div>
+            <div><strong>🗳️ Quy tắc bình chọn:</strong> Mỗi tài khoản được thả tim tác phẩm yêu thích</div>
+            <div><strong>🎁 Giải thưởng:</strong> 01 Giải Tác Phẩm Xung Kích • 01 Giải Yêu Thích Nhất</div>
+          </div>
+        </div>
 
         {/* STUDENT AUTH STATE BAR INSIDE VOTING PAGE */}
         <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', flexWrap: 'wrap' }}>

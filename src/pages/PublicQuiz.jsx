@@ -558,12 +558,30 @@ export default function PublicQuiz() {
         <div style={styles.card}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={styles.badge}>
-              🏆 THI TRỰC TUYẾN 30 NĂM CAO BÁ QUÁT
+              🏆 CUỘC THI TOÀN TRƯỜNG KỶ NIỆM 30 NĂM (1996 - 2026)
             </div>
-            <h1 style={styles.title}>Cuộc Thi Tìm Hiểu Lịch Sử & Kỷ Niệm Trường</h1>
+            <h1 style={styles.title}>CUỘC THI 1: "CAO BÁ QUÁT - 30 NĂM CHẮP CÁNH ƯỚC MƠ"</h1>
             <p style={styles.subtitle}>
-              Chào mừng bạn tham gia cuộc thi trắc nghiệm & chia sẻ cảm xúc hướng tới Lễ Kỷ Niệm 30 Năm Thành Lập Trường THPT Cao Bá Quát (1996 - 2026).
+              Cuộc thi tìm hiểu lịch sử, truyền thống và thành tựu Trường THPT Cao Bá Quát hướng tới Lễ Kỷ Niệm 30 Năm Ngày Thành Lập.
             </p>
+          </div>
+
+          {/* CHUYÊN GIA TỔ CHỨC: BẢNG THỂ LỆ & QUY CHẾ THI CHUẨN MỰC */}
+          <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '14px', padding: '18px 20px', marginBottom: '25px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#be123c', fontWeight: 'bold', fontSize: '15.5px', marginBottom: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+              <Award size={20} color="#be123c" /> THỂ LỆ & QUY CHẾ CHÍNH THỨC TỪ BAN TỔ CHỨC
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '13.5px', color: '#334155' }}>
+              <div><strong>⏱️ Thời gian làm bài:</strong> 15 Phút</div>
+              <div><strong>📝 Cấu trúc đề thi:</strong> 30 Câu Trắc Nghiệm (300đ)</div>
+              <div><strong>🎯 Câu dự đoán xếp hạng:</strong> Dự đoán số người 30/30</div>
+              <div><strong>🔒 Quy định an toàn:</strong> Mỗi SĐT chỉ thi 01 LẦN DUY NHẤT</div>
+            </div>
+
+            <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#166534', fontWeight: 'bold' }}>
+              🎁 Cơ cấu Giải Thưởng: 01 Giải Đặc Biệt • 01 Giải Nhất • 02 Giải Nhì • 03 Giải Ba • 10 Giải Khuyến Khích & 01 Giải Tập Thể Đông Thí Sinh Nhất.
+            </div>
           </div>
 
           <form onSubmit={handleStartQuiz} style={{ maxWidth: '440px', margin: '0 auto' }}>

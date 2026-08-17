@@ -112,46 +112,82 @@ export default function PublicGuide() {
         </div>
       )}
 
-      {/* SECTION 2: CUỘC THI TRỰC TUYẾN TÌM HIỂU 30 NĂM */}
-      {(activeTab === 'all' || activeTab === 'quiz') && (
+      {/* SECTION 2: QUY CHẾ VÀ HƯỚNG DẪN 02 CUỘC THI CHÍNH THỨC */}
+      {(activeTab === 'all' || activeTab === 'quiz' || activeTab === 'voting') && (
         <div style={styles.sectionCard}>
           <div style={styles.sectionHeader}>
             <Trophy size={24} color="#be123c" />
-            <h2>2. HƯỚNG DẪN THAM GIA CUỘC THI TÌM HIỂU 30 NĂM TRƯỜNG THPT CAO BÁ QUÁT</h2>
-          </div>
-          <p style={styles.descText}>
-            Cuộc thi trực tuyến là sân chơi bổ ích dành cho toàn thể học sinh đang theo học, cựu học sinh các thời kỳ và cán bộ giáo viên nhà trường nhằm ôn lại truyền thống 30 năm chắp cánh ước mơ.
-          </p>
-
-          <div style={styles.stepGrid}>
-            <div style={styles.stepCard}>
-              <div style={styles.stepBadge}>Bước 1</div>
-              <h4>Đăng Ký Thông Tin Dự Thi</h4>
-              <p>Truy cập vào mục <strong>"🏆 Cuộc thi tìm hiểu"</strong> (`/cuoc-thi`). Điền đầy đủ Họ và Tên (*), Lớp/Niên khóa (*) và **Số điện thoại liên hệ (*)**.</p>
-            </div>
-
-            <div style={styles.stepCard}>
-              <div style={styles.stepBadge}>Bước 2</div>
-              <h4>Làm 30 Câu Trắc Nghiệm</h4>
-              <p>Trong thời gian tối đa 15 phút, trả lời 30 câu hỏi trắc nghiệm (mỗi câu 10 điểm, tổng 300 điểm) về lịch sử, thầy cô và thành tựu nhà trường.</p>
-            </div>
-
-            <div style={styles.stepCard}>
-              <div style={styles.stepBadge}>Bước 3</div>
-              <h4>Dự Đoán Phụ Xếp Hạng</h4>
-              <p>Ở câu số 31, nhập số lượng thí sinh bạn dự đoán sẽ trả lời đúng 30/30 câu. Đây là căn cứ xếp hạng giải Nhất, Nhì, Ba khi bằng điểm.</p>
-            </div>
+            <h2>2. THỂ LỆ VÀ HƯỚNG DẪN CHÍNH THỨC 02 CUỘC THI KỶ NIỆM 30 NĂM</h2>
           </div>
 
-          {/* IMPORTANT RULES ALERT */}
-          <div style={styles.alertBox}>
-            <AlertCircle size={22} color="#991b1b" />
-            <div>
-              <strong>Quy định quan trọng từ Ban Tổ Chức:</strong>
-              <ul style={{ margin: '5px 0 0 18px', padding: 0 }}>
-                <li><strong>Mỗi số điện thoại chỉ được phép thi 01 LẦN DUY NHẤT:</strong> Hệ thống tự động chặn các lượt cố tình thi lại bằng cùng 1 SĐT.</li>
-                <li><strong>Tiêu chí xếp hạng giải thưởng:</strong> Tổng điểm cao nhất ➔ Sai số câu dự đoán ít nhất ➔ Thời gian hoàn thành nhanh nhất (tính theo giây).</li>
-              </ul>
+          {/* CUỘC THI 1 */}
+          <div style={{ background: '#fff1f2', border: '1.5px solid #fecdd3', borderRadius: '14px', padding: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#be123c', fontWeight: 'bold', fontSize: '17px', marginBottom: '8px' }}>
+              <Award size={22} color="#be123c" /> CUỘC THI 1: "CAO BÁ QUÁT - 30 NĂM CHẮP CÁNH ƯỚC MƠ" (THI TRỰC TUYẾN)
+            </div>
+            <p style={{ fontSize: '14px', color: '#881337', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+              <strong>Đối tượng tham gia:</strong> Hợp lệ cho toàn thể Học sinh đang theo học, Cựu học sinh các niên khóa (1996 - 2026) và Cán bộ, Giáo viên, Nhân viên nhà trường.
+            </p>
+
+            <div style={styles.stepGrid}>
+              <div style={styles.stepCard}>
+                <div style={styles.stepBadge}>Bước 1: Khởi Động</div>
+                <h4>Đăng Ký Thông Tin</h4>
+                <p>Vào mục <strong>"🏆 Cuộc thi tìm hiểu"</strong> (`/cuoc-thi`). Điền Họ tên (*), Lớp/Niên khóa (*) và **Số điện thoại (*)**.</p>
+              </div>
+
+              <div style={styles.stepCard}>
+                <div style={styles.stepBadge}>Bước 2: Vượt Thách Thức</div>
+                <h4>30 Câu Trắc Nghiệm (15 Phút)</h4>
+                <p>Trả lời 30 câu hỏi trắc nghiệm (mỗi câu 10 điểm, tổng 300 điểm) ôn lại truyền thống 30 năm chắp cánh ước mơ.</p>
+              </div>
+
+              <div style={styles.stepCard}>
+                <div style={styles.stepBadge}>Bước 3: Phân Thứ Hạng</div>
+                <h4>Dự Đoán Câu 31 Phụ</h4>
+                <p>Nhập số lượng thí sinh bạn dự đoán sẽ đạt 30/30 điểm tuyệt đối. Đây là căn cứ xét giải Nhất, Nhì, Ba khi bằng điểm.</p>
+              </div>
+            </div>
+
+            <div style={styles.alertBox}>
+              <AlertCircle size={22} color="#991b1b" />
+              <div>
+                <strong>Quy chế & Cơ cấu Giải thưởng Cuộc thi 1:</strong>
+                <ul style={{ margin: '5px 0 0 18px', padding: 0 }}>
+                  <li><strong>🔒 Quy tắc bảo mật:</strong> Mỗi Số điện thoại chỉ được thi <strong>01 LẦN DUY NHẤT</strong>.</li>
+                  <li><strong>🏆 Thang xét giải:</strong> 01 Giải Đặc Biệt (5.000.000đ + Cờ lưu niệm) • 01 Giải Nhất (3.000.000đ) • 02 Giải Nhì (2.000.000đ/giải) • 03 Giải Ba (1.000.000đ/giải) • 10 Giải Khuyến Khích & 01 Giải Tập Thể cho Lớp có tỷ lệ dự thi đông nhất.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* CUỘC THI 2 */}
+          <div style={{ background: '#fefce8', border: '1.5px solid #fde047', borderRadius: '14px', padding: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#854d0e', fontWeight: 'bold', fontSize: '17px', marginBottom: '8px' }}>
+              <Sparkles size={22} color="#ca8a04" /> CUỘC THI 2: SÁNG TẠO TÁC PHẨM & BÌNH CHỌN "GỬI NẮNG SÂN TRƯỜNG"
+            </div>
+            <p style={{ fontSize: '14px', color: '#713f12', margin: '0 0 12px 0', lineHeight: '1.5' }}>
+              <strong>Đối tượng tham gia:</strong> Các chi đoàn học sinh các khối 10, 11, 12 và các tập thể cựu học sinh gửi Video clip kỷ yếu, bài viết tri ân, thơ/tranh vẽ hoặc mô hình kỷ niệm.
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px', margin: '15px 0' }}>
+              <div style={styles.featureBox}>
+                <h4 style={{ color: '#854d0e' }}>📤 Nộp Tác Phẩm (`/nop-bai-thi`)</h4>
+                <p style={{ fontSize: '13px', color: '#713f12' }}>Nhập thông tin tác giả, tiêu đề tác phẩm và đính kèm link Ảnh/Video/Kỷ yếu tri ân.</p>
+              </div>
+
+              <div style={styles.featureBox}>
+                <h4 style={{ color: '#854d0e' }}>🗳️ Bình Chọn Thả Tim (`/binh-chon`)</h4>
+                <p style={{ fontSize: '13px', color: '#713f12' }}>Khán giả toàn quốc đăng nhập thả tim tôn vinh tác phẩm xuất sắc nhất.</p>
+              </div>
+            </div>
+
+            <div style={{ background: '#ffffff', border: '1px solid #fef08a', borderRadius: '10px', padding: '14px 18px', fontSize: '13.5px', color: '#713f12' }}>
+              <strong>🗳️ Tiêu chí xét giải & Cơ cấu Giải thưởng Cuộc thi 2:</strong>
+              <div style={{ marginTop: '4px' }}>
+                • <strong>Thang điểm:</strong> Kết quả xét thưởng dựa <strong>100% trên tổng số lượt thả tim bình chọn công khai</strong> của khán giả trên hệ thống.<br/>
+                • <strong>Cơ cấu Giải thưởng:</strong> 01 Giải Tác Phẩm Xung Kích • 01 Giải Tác Phẩm Yêu Thích Nhất (Nhiều lượt thả tim nhất) • 01 Giải Ý Tưởng Sáng Tạo.
+              </div>
             </div>
           </div>
         </div>
