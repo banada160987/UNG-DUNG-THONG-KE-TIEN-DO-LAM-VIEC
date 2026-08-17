@@ -128,7 +128,7 @@ export default function AdminFeedbackSystem() {
     try {
       let combined = [];
 
-      // 1. Fetch from cbq_feedback_responses
+      // Fetch directly from single table cbq_feedback_responses
       const { data: respData } = await supabase
         .from('cbq_feedback_responses')
         .select('*')
@@ -139,32 +139,12 @@ export default function AdminFeedbackSystem() {
         combined = [...respData];
       }
 
-      // 2. Fetch from legacy cbq_scholarship_feedback table if default topic or empty
-      if (topicId === 'default-topic-1' || topicId === 'a1b2c3d4-e5f6-7890-abcd-1234567890ab' || combined.length === 0) {
-        const { data: legacyData } = await supabase
-          .from('cbq_scholarship_feedback')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (legacyData && legacyData.length > 0) {
-          const existingIds = new Set(combined.map(c => c.id));
-          legacyData.forEach(item => {
-            if (!existingIds.has(item.id)) {
-              combined.push(item);
-            }
-          });
-        }
-      }
-
-      // 3. LocalStorage fallback merge
+      // LocalStorage fallback merge
       const localResKey = `cbq_local_feedback_res_${topicId}`;
       const localRes = JSON.parse(localStorage.getItem(localResKey) || '[]');
-      const legacyLocalRes = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      
-      const allLocal = [...localRes, ...legacyLocalRes];
       const existingIds = new Set(combined.map(c => c.id || (c.organization_unit + c.created_at)));
       
-      allLocal.forEach(item => {
+      localRes.forEach(item => {
         const itemKey = item.id || (item.organization_unit + item.created_at);
         if (!existingIds.has(itemKey)) {
           combined.push(item);
@@ -174,11 +154,10 @@ export default function AdminFeedbackSystem() {
 
       setResponses(combined);
     } catch (err) {
-      console.warn("Fallback LocalStorage cho Admin Phản hồi:", err);
+      console.warn("Lỗi tải danh sách phản hồi Admin:", err);
       const localResKey = `cbq_local_feedback_res_${topicId}`;
       const localRes = JSON.parse(localStorage.getItem(localResKey) || '[]');
-      const legacyLocalRes = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      setResponses([...localRes, ...legacyLocalRes]);
+      setResponses(localRes);
     }
   };
 

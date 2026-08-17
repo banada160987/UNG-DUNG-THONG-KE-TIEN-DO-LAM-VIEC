@@ -33,13 +33,20 @@ ALTER TABLE cbq_feedback_topics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_feedback_responses ENABLE ROW LEVEL SECURITY;
 
 -- Policies for Topics
+DROP POLICY IF EXISTS "Public read topics" ON cbq_feedback_topics;
+DROP POLICY IF EXISTS "Admin manage topics" ON cbq_feedback_topics;
+
 CREATE POLICY "Public read topics" ON cbq_feedback_topics FOR SELECT USING (true);
-CREATE POLICY "Admin manage topics" ON cbq_feedback_topics FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Admin manage topics" ON cbq_feedback_topics FOR ALL USING (true);
 
 -- Policies for Responses
+DROP POLICY IF EXISTS "Public read responses" ON cbq_feedback_responses;
+DROP POLICY IF EXISTS "Public insert responses" ON cbq_feedback_responses;
+DROP POLICY IF EXISTS "Admin manage responses" ON cbq_feedback_responses;
+
 CREATE POLICY "Public read responses" ON cbq_feedback_responses FOR SELECT USING (true);
 CREATE POLICY "Public insert responses" ON cbq_feedback_responses FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admin manage responses" ON cbq_feedback_responses FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Admin manage responses" ON cbq_feedback_responses FOR ALL USING (true);
 
 -- SEED CHỦ ĐỀ MẶC ĐỊNH: ĐỀ ÁN QUỸ HỌC BỔNG "CHẮP CÁNH ƯỚC MƠ TUỔI HỌC TRÒ"
 INSERT INTO cbq_feedback_topics (id, title, dispatch_number, description, deadline, contact_info, is_active)
@@ -52,4 +59,4 @@ VALUES (
     'Đồng chí Nghiêm Xuân Bảo – Nhân viên Tổ Văn phòng',
     true
 )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (id) DO NOTHING;

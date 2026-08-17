@@ -106,9 +106,8 @@ export default function PublicFeedbackSystem() {
   const fetchResponses = async (topicId) => {
     try {
       let combined = [];
-
-      // 1. Fetch from cbq_feedback_responses
       const validTopicId = (topicId && topicId.length === 36 && topicId.includes('-')) ? topicId : SEED_TOPIC_ID;
+      
       const { data: respData } = await supabase
         .from('cbq_feedback_responses')
         .select('*')
@@ -119,31 +118,12 @@ export default function PublicFeedbackSystem() {
         combined = [...respData];
       }
 
-      // 2. Fetch from legacy cbq_scholarship_feedback
-      if (topicId === SEED_TOPIC_ID || topicId === 'default-topic-1' || combined.length === 0) {
-        const { data: legacyData } = await supabase
-          .from('cbq_scholarship_feedback')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (legacyData && legacyData.length > 0) {
-          const existingIds = new Set(combined.map(c => c.id));
-          legacyData.forEach(item => {
-            if (!existingIds.has(item.id)) {
-              combined.push(item);
-            }
-          });
-        }
-      }
-
-      // 3. LocalStorage fallback merge
+      // LocalStorage fallback merge for offline support
       const localKey = `cbq_local_feedback_res_${topicId}`;
-      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      const allLocal = [...local, ...legacyLocal];
-
+      const localRes = JSON.parse(localStorage.getItem(localKey) || '[]');
       const existingIds = new Set(combined.map(c => c.id || (c.organization_unit + c.created_at)));
-      allLocal.forEach(item => {
+      
+      localRes.forEach(item => {
         const itemKey = item.id || (item.organization_unit + item.created_at);
         if (!existingIds.has(itemKey)) {
           combined.push(item);
@@ -153,11 +133,10 @@ export default function PublicFeedbackSystem() {
 
       setResponses(combined);
     } catch (err) {
-      console.warn("Fallback LocalStorage cho Phản hồi:", err);
+      console.warn("Lỗi tải danh sách phản hồi:", err);
       const localKey = `cbq_local_feedback_res_${topicId}`;
       const local = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      setResponses([...local, ...legacyLocal]);
+      setResponses(local);
     }
   };
 
@@ -182,12 +161,8 @@ export default function PublicFeedbackSystem() {
     setSubmitting(true);
     setSuccessMsg('');
 
-    const validTopicUuid = (selectedTopic.id && selectedTopic.id.length === 36 && selectedTopic.id.includes('-')) 
-      ? selectedTopic.id 
-      : SEED_TOPIC_ID;
-
     const newResponse = {
-      topic_id: validTopicUuid,
+      topic_id: selectedTopic.id,
       organization_unit: organizationUnit,
       representative_name: representativeName.trim(),
       phone: phone.trim(),
@@ -198,53 +173,26 @@ export default function PublicFeedbackSystem() {
     };
 
     try {
-      let isInsertedToSupabase = false;
       let insertedRecord = null;
 
-      // 1. Dual Insert into Supabase table cbq_feedback_responses
-      const { data: data1, error: err1 } = await supabase
+      // Insert directly into single table cbq_feedback_responses
+      const { data, error } = await supabase
         .from('cbq_feedback_responses')
         .insert([newResponse])
         .select();
 
-      if (!err1 && data1 && data1.length > 0) {
-        isInsertedToSupabase = true;
-        insertedRecord = data1[0];
+      if (!error && data && data.length > 0) {
+        insertedRecord = data[0];
       }
 
-      // 2. Fallback / Dual Insert into cbq_scholarship_feedback table
-      const legacyObj = {
-        organization_unit: organizationUnit,
-        representative_name: representativeName.trim(),
-        phone: phone.trim(),
-        email: email.trim() || '',
-        feedback_content: feedbackContent.trim(),
-        attached_file_url: attachedFileUrl.trim() || '',
-        created_at: newResponse.created_at
-      };
-
-      const { data: data2, error: err2 } = await supabase
-        .from('cbq_scholarship_feedback')
-        .insert([legacyObj])
-        .select();
-
-      if (!isInsertedToSupabase && !err2 && data2 && data2.length > 0) {
-        isInsertedToSupabase = true;
-        insertedRecord = data2[0];
-      }
-
-      // 3. LocalStorage sync & state update
+      const itemToSave = insertedRecord || newResponse;
       const localKey = `cbq_local_feedback_res_${selectedTopic.id}`;
-      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const updatedLocal = [insertedRecord || newResponse, ...local];
+      const localRes = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const updatedLocal = [itemToSave, ...localRes];
       localStorage.setItem(localKey, JSON.stringify(updatedLocal));
 
-      const legacyLocal = JSON.parse(localStorage.getItem('cbq_local_scholarship_feedbacks') || '[]');
-      localStorage.setItem('cbq_local_scholarship_feedbacks', JSON.stringify([insertedRecord || legacyObj, ...legacyLocal]));
-
-      setResponses(prev => [insertedRecord || newResponse, ...prev]);
-
-      setSuccessMsg(`🎉 GỬI Ý KIẾN GÓP Ý THÀNH CÔNG!\nHệ thống đã ghi nhận ý kiến của ${organizationUnit} (Đại diện: ${representativeName}) lên Cơ sở Dữ liệu Nhà trường.`);
+      setResponses(prev => [itemToSave, ...prev.filter(r => r.organization_unit !== organizationUnit)]);
+      setSuccessMsg(`🎉 Cảm ơn bạn! Ý kiến đóng góp của ${organizationUnit} đã được ghi nhận lên hệ thống.`);
       
       // Reset form
       setRepresentativeName('');
