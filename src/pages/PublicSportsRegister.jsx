@@ -212,13 +212,32 @@ export default function PublicSportsRegister() {
             </div>
 
             {/* Thông báo kinh phí tổ chức */}
-            <div style={{ background: selectedCategoryObj.fee === 0 ? '#f0fdf4' : '#fffbebe6', border: `1px solid ${selectedCategoryObj.fee === 0 ? '#bbf7d0' : '#fde047'}`, padding: '10px 14px', borderRadius: '10px', fontSize: '13px', color: selectedCategoryObj.fee === 0 ? '#166534' : '#854d0e', marginBottom: '14px' }}>
+            <div style={{ background: selectedCategoryObj.fee === 0 ? '#f0fdf4' : '#fffbebe6', border: `1px solid ${selectedCategoryObj.fee === 0 ? '#bbf7d0' : '#fde047'}`, padding: '12px 14px', borderRadius: '10px', fontSize: '13px', color: selectedCategoryObj.fee === 0 ? '#166534' : '#854d0e', marginBottom: '14px' }}>
               {selectedCategoryObj.fee === 0 ? (
                 <span>🎉 <strong>HỌC SINH ĐANG HỌC:</strong> Đăng ký Bảng B <strong>MIỄN PHÍ 100%</strong> (Nhà trường vận động tài trợ cúp cờ).</span>
               ) : (
-                <span>💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương). Vui lòng chuyển kinh phí cho Thầy Nguyễn Công Sự (SĐT/Zalo: <strong>0366190199</strong>).</span>
+                <span>💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương). Quý VĐV vui lòng chuyển khoản theo hình ảnh tài khoản bên dưới hoặc gửi thầy Nguyễn Công Sự (SĐT/Zalo: <strong>0366190199</strong>).</span>
               )}
             </div>
+
+            {/* HÌNH ẢNH THÔNG TIN TÀI KHOẢN KINH PHÍ THỂ THAO */}
+            {selectedCategoryObj.fee > 0 && (
+              <div style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc', borderRadius: '12px', padding: '14px', marginBottom: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0369a1', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  💳 THÔNG TIN TÀI KHOẢN NỘP KINH PHÍ (300.000đ/VĐV)
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px' }}>
+                  <img
+                    src="/tkthethao.png"
+                    alt="Thông tin tài khoản kinh phí giải thể thao"
+                    style={{ maxWidth: '100%', maxHeight: '260px', borderRadius: '10px', boxShadow: '0 6px 16px rgba(0,0,0,0.12)', border: '1px solid #cbd5e1' }}
+                  />
+                </div>
+                <div style={{ fontSize: '12px', color: '#0369a1', background: '#ffffff', padding: '6px 12px', borderRadius: '20px', display: 'inline-block', border: '1px solid #bae6fd', fontWeight: '500' }}>
+                  📌 Cú pháp chuyển khoản gợi ý: <strong>[Họ tên VĐV] - [SĐT] - [Môn thi đấu]</strong>
+                </div>
+              </div>
+            )}
 
             {/* Họ và Tên */}
             <div style={{ marginBottom: '14px' }}>
