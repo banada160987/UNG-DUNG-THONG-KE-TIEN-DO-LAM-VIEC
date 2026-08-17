@@ -1,21 +1,25 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { Trophy, Award, CheckCircle2, Search, Filter, Sparkles, UserCheck, ShieldCheck } from 'lucide-react';
+import { Trophy, Award, CheckCircle2, Search, Filter, Sparkles, UserCheck, ShieldCheck, AlertCircle, Phone, Calendar, HeartHandshake } from 'lucide-react';
 
-const OFFICIAL_SPORTS = [
-  'Kéo co (nam - phối hợp)',
-  'Pickleball (đôi nam)',
-  'Pickleball (đôi nữ)',
-  'Pickleball (đôi nam - nữ)',
-  'Bóng đá Futsal Nam',
-  'Bóng chuyền hơi Nữ'
+const DIVISION_A_SPORTS = [
+  'Bóng đá Futsal Nam (2 hiệp x 20 phút)',
+  'Kéo co Nam Nữ phối hợp (5 Nam, 5 Nữ)',
+  'Bóng chuyền hơi Nữ (dự kiến 6 đội)',
+  'Pickleball (đôi Nam)',
+  'Pickleball (đôi Nữ)',
+  'Pickleball (đôi Nam - Nữ)'
+];
+
+const DIVISION_B_SPORTS = [
+  'Bóng chuyền Nam - Nữ phối hợp (3 Nam, 3 Nữ - Thi đấu theo lớp)'
 ];
 
 const USER_CATEGORIES = [
-  'Cựu học sinh',
-  'Khách mời đại biểu',
-  'Học sinh đang học',
-  'Cán bộ / Giáo viên / Nhân viên'
+  { label: 'Cựu học sinh các niên khóa (Bảng A - 300.000đ)', division: 'A', fee: 300000 },
+  { label: 'Giáo viên / Cựu giáo viên (Bảng A - 300.000đ)', division: 'A', fee: 300000 },
+  { label: 'Học sinh đang học tại trường (Bảng B - Miễn phí)', division: 'B', fee: 0 },
+  { label: 'Khách mời Đại biểu / Đội khách (300.000đ)', division: 'A', fee: 300000 }
 ];
 
 export default function PublicSportsRegister() {
@@ -25,17 +29,29 @@ export default function PublicSportsRegister() {
   const [successMsg, setSuccessMsg] = useState('');
 
   // Form State
-  const [userCategory, setUserCategory] = useState('Cựu học sinh');
+  const [selectedCategoryObj, setSelectedCategoryObj] = useState(USER_CATEGORIES[0]);
   const [fullName, setFullName] = useState('');
-  const [sportName, setSportName] = useState('Kéo co (nam - phối hợp)');
+  const [sportName, setSportName] = useState(DIVISION_A_SPORTS[0]);
   const [phone, setPhone] = useState('');
   const [cohortYear, setCohortYear] = useState('');
   const [unitName, setUnitName] = useState('');
   const [notes, setNotes] = useState('');
+  const [healthAgreed, setHealthAgreed] = useState(true);
 
   // Filter & Search State
   const [selectedSportFilter, setSelectedSportFilter] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Update default sport when category changes
+  const handleCategoryChange = (e) => {
+    const found = USER_CATEGORIES.find(c => c.label === e.target.value) || USER_CATEGORIES[0];
+    setSelectedCategoryObj(found);
+    if (found.division === 'B') {
+      setSportName(DIVISION_B_SPORTS[0]);
+    } else {
+      setSportName(DIVISION_A_SPORTS[0]);
+    }
+  };
 
   useEffect(() => {
     fetchRegistrations();
@@ -52,7 +68,7 @@ export default function PublicSportsRegister() {
       if (error) throw error;
       setRegistrations(data || []);
     } catch (err) {
-      console.warn("Chưa có bảng Supabase cbq_sports_registrations hoặc dùng LocalStorage fallback:", err);
+      console.warn("Dùng LocalStorage fallback:", err);
       const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
       setRegistrations(local);
     } finally {
@@ -67,8 +83,15 @@ export default function PublicSportsRegister() {
       return;
     }
 
+    if (!healthAgreed) {
+      alert("Vui lòng tích chọn cam kết tự chịu trách nhiệm sức khỏe khi thi đấu.");
+      return;
+    }
+
     setSubmitting(true);
     setSuccessMsg('');
+
+    const isStudent = selectedCategoryObj.fee === 0;
 
     const newReg = {
       full_name: fullName.trim(),
@@ -77,7 +100,9 @@ export default function PublicSportsRegister() {
       cohort_year: cohortYear.trim() || 'Không có',
       unit_name: unitName.trim(),
       notes: notes.trim() || '',
-      user_category: userCategory,
+      user_category: selectedCategoryObj.label,
+      fee_amount: selectedCategoryObj.fee,
+      payment_status: isStudent ? 'Miễn phí (Học sinh)' : 'Chờ nộp kinh phí (300.000đ)',
       created_at: new Date().toISOString()
     };
 
@@ -97,9 +122,13 @@ export default function PublicSportsRegister() {
         setRegistrations(prev => [data[0], ...prev]);
       }
 
-      setSuccessMsg(`🎉 ĐĂNG KÝ THÀNH CÔNG!\nXin chúc mừng VĐV ${fullName} (${unitName}) đã đăng ký môn "${sportName}". Ban Tổ Chức sẽ liên hệ qua SĐT ${phone} để xác nhận lịch thi đấu.`);
+      const msg = isStudent 
+        ? `🎉 ĐĂNG KÝ THÀNH CÔNG (BẢNG B - MIỄN PHÍ)!\nVĐV ${fullName} (${unitName}) đã hoàn tất đăng ký môn "${sportName}". Ban Tổ Chức sẽ liên hệ Zalo/SĐT ${phone} để xếp lịch thi đấu.`
+        : `🎉 ĐĂNG KÝ THÀNH CÔNG (BẢNG A)!\nVĐV ${fullName} (${unitName}) đã hoàn tất đăng ký môn "${sportName}".\n\n📌 LƯU Ý KINH PHÍ TỔ CHỨC: 300.000đ/VĐV.\nVui lòng liên hệ / chuyển khoản cho Thầy Nguyễn Công Sự (SĐT/Zalo: 0366190199) để BTC xác nhận vị trí thi đấu chính thức.`;
+
+      setSuccessMsg(msg);
       
-      // Reset form fields
+      // Reset input fields
       setFullName('');
       setPhone('');
       setCohortYear('');
@@ -113,6 +142,8 @@ export default function PublicSportsRegister() {
     }
   };
 
+  const allAvailableSports = [...DIVISION_A_SPORTS, ...DIVISION_B_SPORTS];
+
   const filteredRegistrations = registrations.filter(item => {
     const matchSport = selectedSportFilter === 'Tất cả' || item.sport_name === selectedSportFilter;
     const matchSearch = (item.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -122,35 +153,41 @@ export default function PublicSportsRegister() {
   });
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '20px 15px' }}>
+    <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '20px 15px' }}>
       
-      {/* HEADER BANNER */}
+      {/* HEADER BANNER CHÍNH THỨC BAN TỔ CHỨC */}
       <div style={{
         background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 50%, #1e3a8a 100%)',
         borderRadius: '20px',
-        padding: '30px 20px',
+        padding: '30px 22px',
         color: '#ffffff',
         textAlign: 'center',
         boxShadow: '0 10px 25px rgba(2, 132, 199, 0.25)',
         marginBottom: '25px'
       }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 16px', borderRadius: '30px', fontSize: '13px', fontWeight: 'bold', marginBottom: '10px' }}>
-          <Sparkles size={16} color="#fde047" /> HOẠT ĐỘNG THỂ THAO KỶ NIỆM 30 NĂM THÀNH LẬP THPT CAO BÁ QUÁT
+          <Sparkles size={16} color="#fde047" /> LỄ KỶ NIỆM 30 NĂM THÀNH LẬP THPT CAO BÁ QUÁT (1996 - 2026)
         </div>
         <h1 style={{ margin: '0 0 8px 0', fontSize: '26px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>
-          ⚽ DANG KÝ THI ĐẤU GIẢI THỂ THAO GIAO LƯU 2026
+          ⚽ CỔNG ĐĂNG KÝ THI ĐẤU GIẢI THỂ THAO GIAO LƯU 2026
         </h1>
-        <p style={{ margin: '0 auto', maxWidth: '750px', fontSize: '14.5px', color: '#e0f2fe', lineHeight: '1.6' }}>
-          Trân trọng kính mời Cựu Học Sinh, Khách Mời Đại Biểu, Thầy Cô Giáo và Học Sinh Đang Theo Học đăng ký tham gia thi đấu giao lưu 06 bộ môn thể thao chính thức!
+        <p style={{ margin: '0 auto 15px auto', maxWidth: '800px', fontSize: '14.5px', color: '#e0f2fe', lineHeight: '1.6' }}>
+          Hội thao truyền thống thắt chặt tình thân giữa Thầy Cô Giáo, Cựu Học Sinh các niên khóa (Bảng A) và Học Sinh đang học (Bảng B).
         </p>
+
+        {/* THÔNG TIN THỜI GIAN & TỔ TRƯỞNG PHỤ TRÁCH */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', background: 'rgba(255, 255, 255, 0.15)', backdropFilter: 'blur(6px)', padding: '14px 18px', borderRadius: '14px', textAlign: 'left', border: '1px solid rgba(253,224,71,0.4)', fontSize: '13.5px' }}>
+          <div><Calendar size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} /> <strong>Thời gian đăng ký:</strong> Từ 15/8/2026 đến 26/8/2026</div>
+          <div><Phone size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} /> <strong>Thầy Nguyễn Công Sự (Tổ GDTC):</strong> SĐT/Zalo: <strong>0366190199</strong></div>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '25px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '25px', alignItems: 'start' }}>
         
         {/* FORM ĐĂNG KÝ VẬN ĐỘNG VIÊN */}
         <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0369a1', fontWeight: 'bold', fontSize: '17px', marginBottom: '18px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
-            <UserCheck size={22} color="#0369a1" /> FORM ĐĂNG KÝ VẬN ĐỘNG VIÊN (*)
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0369a1', fontWeight: 'bold', fontSize: '17px', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
+            <UserCheck size={22} color="#0369a1" /> FORM ĐĂNG KÝ THI ĐẤU CHÍNH THỨC (*)
           </div>
 
           {successMsg && (
@@ -164,14 +201,23 @@ export default function PublicSportsRegister() {
             <div style={{ marginBottom: '14px' }}>
               <label style={styles.label}>Đối Tượng Dự Thi *</label>
               <select
-                value={userCategory}
-                onChange={e => setUserCategory(e.target.value)}
+                value={selectedCategoryObj.label}
+                onChange={handleCategoryChange}
                 style={styles.select}
               >
                 {USER_CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
+                  <option key={cat.label} value={cat.label}>{cat.label}</option>
                 ))}
               </select>
+            </div>
+
+            {/* Thông báo kinh phí tổ chức */}
+            <div style={{ background: selectedCategoryObj.fee === 0 ? '#f0fdf4' : '#fffbebe6', border: `1px solid ${selectedCategoryObj.fee === 0 ? '#bbf7d0' : '#fde047'}`, padding: '10px 14px', borderRadius: '10px', fontSize: '13px', color: selectedCategoryObj.fee === 0 ? '#166534' : '#854d0e', marginBottom: '14px' }}>
+              {selectedCategoryObj.fee === 0 ? (
+                <span>🎉 <strong>HỌC SINH ĐANG HỌC:</strong> Đăng ký Bảng B <strong>MIỄN PHÍ 100%</strong> (Nhà trường vận động tài trợ cúp cờ).</span>
+              ) : (
+                <span>💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương). Vui lòng chuyển kinh phí cho Thầy Nguyễn Công Sự (SĐT/Zalo: <strong>0366190199</strong>).</span>
+              )}
             </div>
 
             {/* Họ và Tên */}
@@ -195,15 +241,17 @@ export default function PublicSportsRegister() {
                 onChange={e => setSportName(e.target.value)}
                 style={{ ...styles.select, fontWeight: 'bold', color: '#0369a1', background: '#f0f9ff' }}
               >
-                {OFFICIAL_SPORTS.map(sp => (
-                  <option key={sp} value={sp}>🏅 {sp}</option>
-                ))}
+                {selectedCategoryObj.division === 'B' ? (
+                  DIVISION_B_SPORTS.map(sp => <option key={sp} value={sp}>🏅 {sp}</option>)
+                ) : (
+                  DIVISION_A_SPORTS.map(sp => <option key={sp} value={sp}>🏅 {sp}</option>)
+                )}
               </select>
             </div>
 
             {/* Số Điện Thoại */}
             <div style={{ marginBottom: '14px' }}>
-              <label style={styles.label}>Số Điện Thoại Liên Hệ *</label>
+              <label style={styles.label}>Số Điện Thoại / Zalo Liên Hệ *</label>
               <input
                 type="tel"
                 required
@@ -219,7 +267,7 @@ export default function PublicSportsRegister() {
               <label style={styles.label}>Niên Khóa / Lớp</label>
               <input
                 type="text"
-                placeholder="VD: 2005 - 2008 / Lớp 12A1"
+                placeholder="VD: 2005 - 2008 / Lớp 12A1 / Tổ Giáo Viên"
                 value={cohortYear}
                 onChange={e => setCohortYear(e.target.value)}
                 style={styles.input}
@@ -228,7 +276,7 @@ export default function PublicSportsRegister() {
 
             {/* Đơn Vị */}
             <div style={{ marginBottom: '14px' }}>
-              <label style={styles.label}>Đơn Vị Đăng Ký / Chi Đoàn *</label>
+              <label style={styles.label}>Đơn Vị Đăng Ký / Khóa / Chi Đoàn *</label>
               <input
                 type="text"
                 required
@@ -240,15 +288,28 @@ export default function PublicSportsRegister() {
             </div>
 
             {/* Ghi Chú */}
-            <div style={{ marginBottom: '18px' }}>
-              <label style={styles.label}>Ghi Chú Thêm (Đồng đội / Vị trí thi đấu)</label>
+            <div style={{ marginBottom: '14px' }}>
+              <label style={styles.label}>Ghi Chú Thêm (Tên đồng đội / Vị trí)</label>
               <textarea
                 rows={2}
-                placeholder="VD: Đánh đôi Pickleball cùng VĐV Trần Văn Bình / Đội hình kéo co 8 người..."
+                placeholder="VD: Đánh đôi Pickleball cùng VĐV Trần Văn Bình / Đội hình kéo co 5 Nam 5 Nữ..."
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 style={{ ...styles.input, resize: 'vertical' }}
               />
+            </div>
+
+            {/* CAM KẾT TỰ CHỊU TRÁCH NHIỆM SỨC KHỎE */}
+            <div style={{ marginBottom: '18px', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={healthAgreed}
+                  onChange={e => setHealthAgreed(e.target.checked)}
+                  style={{ marginTop: '2px' }}
+                />
+                <span><strong>Cam kết sức khỏe (*):</strong> Tôi cam kết tự chịu trách nhiệm về sức khỏe của bản thân trong quá trình tham gia thi đấu giải theo đúng kế hoạch của Ban Tổ Chức.</span>
+              </label>
             </div>
 
             <button
@@ -265,7 +326,7 @@ export default function PublicSportsRegister() {
         <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '16.5px' }}>
-              <Trophy size={20} color="#166534" /> DANH SÁCH VĐV ĐĂNG KÝ ({filteredRegistrations.length})
+              <Trophy size={20} color="#166534" /> DANH SÁCH VĐV ĐÃ ĐĂNG KÝ ({filteredRegistrations.length})
             </div>
             
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', width: '100%' }}>
@@ -286,7 +347,7 @@ export default function PublicSportsRegister() {
                 style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
               >
                 <option value="Tất cả">Tất cả môn ({registrations.length})</option>
-                {OFFICIAL_SPORTS.map(sp => (
+                {allAvailableSports.map(sp => (
                   <option key={sp} value={sp}>{sp}</option>
                 ))}
               </select>
@@ -310,6 +371,7 @@ export default function PublicSportsRegister() {
                     <th style={{ padding: '10px 8px' }}>SỐ ĐIỆN THOẠI</th>
                     <th style={{ padding: '10px 8px' }}>NIÊN KHÓA</th>
                     <th style={{ padding: '10px 8px' }}>ĐƠN VỊ</th>
+                    <th style={{ padding: '10px 8px' }}>TRẠNG THÁI</th>
                     <th style={{ padding: '10px 8px' }}>GHI CHÚ</th>
                   </tr>
                 </thead>
@@ -317,7 +379,9 @@ export default function PublicSportsRegister() {
                   {filteredRegistrations.map((item, idx) => (
                     <tr key={item.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                       <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-                      <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#1e293b' }}>{item.full_name}</td>
+                      <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#1e293b' }}>
+                        {item.full_name}
+                      </td>
                       <td style={{ padding: '10px 8px' }}>
                         <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', fontWeight: 'bold', fontSize: '11.5px' }}>
                           {item.sport_name}
@@ -326,6 +390,11 @@ export default function PublicSportsRegister() {
                       <td style={{ padding: '10px 8px', color: '#475569', fontFamily: 'monospace' }}>{item.phone ? item.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***'}</td>
                       <td style={{ padding: '10px 8px', color: '#64748b' }}>{item.cohort_year || '-'}</td>
                       <td style={{ padding: '10px 8px', fontWeight: '600', color: '#334155' }}>{item.unit_name}</td>
+                      <td style={{ padding: '10px 8px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px', background: item.fee_amount === 0 ? '#dcfce7' : '#fef9c3', color: item.fee_amount === 0 ? '#166534' : '#854d0e' }}>
+                          {item.payment_status || (item.fee_amount === 0 ? 'Miễn phí' : '300.000đ')}
+                        </span>
+                      </td>
                       <td style={{ padding: '10px 8px', color: '#64748b', fontSize: '12px' }}>{item.notes || '-'}</td>
                     </tr>
                   ))}

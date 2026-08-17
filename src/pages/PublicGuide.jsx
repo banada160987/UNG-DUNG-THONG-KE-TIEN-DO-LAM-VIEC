@@ -199,46 +199,51 @@ export default function PublicGuide() {
         </div>
       )}
 
-      {/* SECTION 2B: GIẢI THỂ THAO GIAO LƯU KỶ NIỆM 30 NĂM */}
+      {/* SECTION 2B: KẾ HOẠCH TỔ CHỨC GIẢI THỂ THAO GIAO LƯU KỶ NIỆM 30 NĂM */}
       {(activeTab === 'all' || activeTab === 'sports') && (
         <div style={{ ...styles.sectionCard, borderLeft: '4px solid #0284c7' }}>
           <div style={styles.sectionHeader}>
             <span style={{ fontSize: '22px' }}>⚽</span>
-            <h2 style={{ color: '#0369a1' }}>GIẢI THỂ THAO GIAO LƯU "CAO BÁ QUÁT CHAMPIONS CUP 2026"</h2>
+            <h2 style={{ color: '#0369a1' }}>KẾ HOẠCH TỔ CHỨC GIẢI THỂ THAO GIAO LƯU KỶ NIỆM 30 NĂM</h2>
           </div>
           <p style={styles.descText}>
-            Giải thể thao giao lưu chào mừng Lễ Kỷ Niệm 30 Năm Thành Lập Trường THPT Cao Bá Quát là hoạt động thể thao lớn nhằm nâng cao sức khỏe, tạo không khí giao lưu đoàn kết giữa Cán bộ Giáo viên, Học sinh và các thế hệ Cựu học sinh các thời kỳ.
+            Giải thể thao giao lưu chào mừng Lễ Kỷ Niệm 30 Năm Thành Lập Trường THPT Cao Bá Quát được phân chia theo 2 Bảng thi đấu chính thức (Bảng A & Bảng B).
           </p>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '15px', margin: '20px 0' }}>
+          {/* DÁNH CHO 2 BẢNG THI ĐẤU */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '15px', margin: '20px 0' }}>
+            {/* BẢNG A */}
             <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-              <h4 style={{ color: '#0369a1' }}>⚽ 1. Bóng Đá Giao Lưu (Nam & Nữ)</h4>
+              <h4 style={{ color: '#0369a1' }}>🏆 BẢNG A: Giáo Viên & Cựu Học Sinh</h4>
+              <p style={{ fontSize: '13px', color: '#0369a1', fontWeight: 'bold' }}>💰 Kinh phí: 300.000 VNĐ / 1 Vận động viên</p>
               <ul style={styles.bulletList}>
-                <li><strong>Thể thức:</strong> Thi đấu giao lưu 7 người (Sân cỏ nhân tạo nhà trường).</li>
-                <li><strong>Đội hình:</strong> Đội Cựu Học Sinh Các Niên Khóa vs Đội Thầy Cô Giáo vs Đội Học Sinh Khối 12.</li>
+                <li><strong>Bóng đá Futsal Nam:</strong> 2 hiệp × 20 phút.</li>
+                <li><strong>Kéo co Nam Nữ phối hợp:</strong> 5 Nam, 5 Nữ (không phân chia hạng cân).</li>
+                <li><strong>Bóng chuyền hơi Nữ:</strong> Dự kiến 6 đội nữ.</li>
+                <li><strong>Pickleball:</strong> Đôi Nam, đôi Nữ, đôi Nam - Nữ.</li>
               </ul>
             </div>
 
-            <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-              <h4 style={{ color: '#0369a1' }}>🏸 2. Cầu Lông & Bóng Bàn</h4>
+            {/* BẢNG B */}
+            <div style={{ ...styles.featureBox, background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+              <h4 style={{ color: '#166534' }}>🎓 BẢNG B: Học Sinh Đang Học Tại Trường</h4>
+              <p style={{ fontSize: '13px', color: '#166534', fontWeight: 'bold' }}>🎉 Kinh phí: MIỄN PHÍ 100% (Nhà trường vận động cúp cờ)</p>
               <ul style={styles.bulletList}>
-                <li><strong>Thể thức:</strong> Thi đấu Đôi Nam, Đôi Nữ và Đôi Nam Nữ kết hợp.</li>
-                <li><strong>Địa điểm:</strong> Nhà thi đấu đa năng Trường THPT Cao Bá Quát.</li>
+                <li><strong>Bóng chuyền Nam Nữ phối hợp:</strong> 3 Nam, 3 Nữ (Thi đấu theo đơn vị lớp).</li>
+                <li><strong>Quy chế:</strong> Áp dụng theo luật bóng chuyền hiện hành.</li>
               </ul>
             </div>
+          </div>
 
-            <div style={{ ...styles.featureBox, background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-              <h4 style={{ color: '#0369a1' }}>🏃 3. Fun Run "30 Năm - 3.000 Bước Chân"</h4>
-              <ul style={styles.bulletList}>
-                <li><strong>Cự ly:</strong> 3.0km chạy việt dã phong trào dành cho mọi lứa tuổi.</li>
-                <li><strong>Độ tuổi:</strong> Mở rộng cho toàn thể Thầy cô, Học sinh, Phụ huynh & Cựu học sinh.</li>
-              </ul>
-            </div>
+          {/* THỜI GIAN ĐĂNG KÝ & LIÊN HỆ */}
+          <div style={{ background: '#fffbebe6', border: '1px solid #fde047', borderRadius: '12px', padding: '14px 18px', color: '#854d0e', fontSize: '13.5px', marginBottom: '15px' }}>
+            📅 <strong>Thời gian đăng ký chính thức:</strong> Từ ngày <strong>15/8/2026 đến ngày 26/8/2026</strong>.<br/>
+            📞 <strong>Phụ trách nhận đăng ký:</strong> Thầy <strong>Nguyễn Công Sự</strong> - Tổ trưởng tổ GDTC – QPAN (SĐT / Zalo: <strong>0366190199</strong>).
           </div>
 
           <div style={{ background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: '12px', padding: '16px 20px', color: '#0369a1', fontSize: '13.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div>
-              <strong>🏆 Cơ cấu Giải thưởng Hội thao:</strong> Cúp Vô Địch <strong>Cao Bá Quát Champions Cup 2026</strong> + Huy chương Vàng, Bạc, Đồng từng bộ môn + 01 Giải VĐV Ấn Tượng Nhất + 01 Giải Đội Cổ Vũ Sung Sức Nhất.
+              <strong>🏆 Cơ cấu Giải thưởng:</strong> Cúp Vô Địch + Huy chương Vàng, Bạc, Đồng từng bộ môn + 01 Giải VĐV Ấn Tượng Nhất + 01 Giải Đội Cổ Vũ Sung Sức Nhất.
             </div>
             <Link to="/dang-ky-the-thao" style={{ padding: '8px 16px', background: '#0284c7', color: '#ffffff', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none', boxShadow: '0 2px 8px rgba(2,132,199,0.3)' }}>
               🚀 Đăng Ký VĐV Thi Đấu Ngay ➔

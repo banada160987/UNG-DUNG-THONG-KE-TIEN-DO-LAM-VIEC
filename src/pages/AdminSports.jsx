@@ -171,6 +171,7 @@ export default function AdminSports() {
                   <th style={{ padding: '12px 10px' }}>SỐ ĐIỆN THOẠI</th>
                   <th style={{ padding: '12px 10px' }}>NIÊN KHÓA</th>
                   <th style={{ padding: '12px 10px' }}>ĐƠN VỊ</th>
+                  <th style={{ padding: '12px 10px' }}>TRẠNG THÁI KINH PHÍ</th>
                   <th style={{ padding: '12px 10px' }}>GHI CHÚ</th>
                   <th style={{ padding: '12px 10px', textAlign: 'center' }}>THAO TÁC</th>
                 </tr>
@@ -191,6 +192,23 @@ export default function AdminSports() {
                     <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#0369a1', fontFamily: 'monospace' }}>{item.phone}</td>
                     <td style={{ padding: '12px 10px', color: '#475569' }}>{item.cohort_year || '-'}</td>
                     <td style={{ padding: '12px 10px', fontWeight: '600', color: '#334155' }}>{item.unit_name}</td>
+                    <td style={{ padding: '12px 10px' }}>
+                      <button
+                        onClick={async () => {
+                          const newStatus = (item.payment_status || '').includes('Đã nộp') ? 'Chờ nộp kinh phí (300.000đ)' : 'Đã nộp kinh phí (300.000đ)';
+                          setRegistrations(prev => prev.map(r => r.id === item.id ? { ...r, payment_status: newStatus } : r));
+                          try {
+                            await supabase.from('cbq_sports_registrations').update({ payment_status: newStatus }).eq('id', item.id);
+                          } catch (e) {
+                            console.warn("Update local fallback:", e);
+                          }
+                        }}
+                        style={{ padding: '4px 10px', borderRadius: '12px', border: 'none', background: (item.payment_status || '').includes('Miễn phí') ? '#dcfce7' : (item.payment_status || '').includes('Đã nộp') ? '#dcfce7' : '#fef9c3', color: (item.payment_status || '').includes('Miễn phí') ? '#166534' : (item.payment_status || '').includes('Đã nộp') ? '#166534' : '#854d0e', fontWeight: 'bold', fontSize: '11.5px', cursor: 'pointer' }}
+                        title="Click để đổi trạng thái nộp kinh phí"
+                      >
+                        {item.payment_status || (item.fee_amount === 0 ? 'Miễn phí' : 'Chờ nộp kinh phí (300.000đ)')}
+                      </button>
+                    </td>
                     <td style={{ padding: '12px 10px', color: '#64748b', fontSize: '12px' }}>{item.notes || '-'}</td>
                     <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                       <button
