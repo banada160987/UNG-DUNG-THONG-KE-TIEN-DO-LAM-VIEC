@@ -1,6 +1,18 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { FileText, Download, Trash2, Search, Filter, RefreshCw, Printer, CheckCircle2, UserCheck } from 'lucide-react';
+import { FileText, Download, Trash2, Search, Filter, RefreshCw, Printer, CheckCircle2, AlertCircle, Clock, Building2 } from 'lucide-react';
+
+const REQUIRED_ORGANIZATIONS = [
+  'BCH Đảng ủy trường THPT Cao Bá Quát',
+  'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
+  'Tổ Ngữ văn',
+  'Tổ Toán',
+  'Tổ Lý - Hóa - Sinh',
+  'Tổ Sử - Địa - GDCD',
+  'Tổ Ngoại ngữ',
+  'Tổ GDTC - QPAN',
+  'Tổ Văn phòng'
+];
 
 export default function AdminScholarshipFeedback() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -77,6 +89,9 @@ export default function AdminScholarshipFeedback() {
     document.body.removeChild(link);
   };
 
+  const submittedOrgNames = feedbacks.map(f => f.organization_unit);
+  const submittedCount = REQUIRED_ORGANIZATIONS.filter(org => submittedOrgNames.some(name => name.includes(org))).length;
+
   const filteredFeedbacks = feedbacks.filter(item => {
     const matchSearch = (item.organization_unit || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.representative_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -85,7 +100,7 @@ export default function AdminScholarshipFeedback() {
   });
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '20px', maxWidth: '1250px', margin: '0 auto' }}>
       
       {/* HEADER & TOOLBAR */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '20px' }}>
@@ -94,11 +109,11 @@ export default function AdminScholarshipFeedback() {
             <FileText size={26} color="#166534" /> TỔNG HỢP Ý KIẾN GÓP Ý ĐỀ ÁN QUỸ HỌC BỔNG ({feedbacks.length})
           </h1>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: '#64748b' }}>
-            Tổng hợp ý kiến Đảng ủy, Đoàn trường & các Tổ chuyên môn để Văn phòng trình Sở GD&ĐT phê duyệt
+            Công cụ tổng hợp tự động dành cho Văn phòng nhà trường (Đ/c Nghiêm Xuân Bảo) trình Sở GD&ĐT
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
             onClick={fetchFeedbacks}
             style={{ padding: '9px 14px', background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -112,6 +127,36 @@ export default function AdminScholarshipFeedback() {
           >
             <Download size={16} /> Xuất File Tổng Hợp (Excel / CSV)
           </button>
+        </div>
+      </div>
+
+      {/* STATS CHECKLIST OF ORGANIZATIONS */}
+      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1.5px solid #cbd5e1', padding: '18px', marginBottom: '22px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Building2 size={18} color="#166534" /> THỐNG KÊ TIẾN ĐỘ GỬI GÓP Ý CỦA CÁC TỔ / ĐƠN VỊ ({submittedCount} / {REQUIRED_ORGANIZATIONS.length} ĐÃ NỘP)
+          </div>
+          <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '600' }}>Hạn chót: <span style={{ color: '#dc2626' }}>19/8/2026</span></div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+          {REQUIRED_ORGANIZATIONS.map(org => {
+            const hasSubmitted = submittedOrgNames.some(name => name.includes(org));
+            return (
+              <div key={org} style={{ background: hasSubmitted ? '#f0fdf4' : '#f8fafc', border: `1px solid ${hasSubmitted ? '#bbf7d0' : '#e2e8f0'}`, borderRadius: '10px', padding: '10px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12.5px' }}>
+                <span style={{ fontWeight: 'bold', color: hasSubmitted ? '#166534' : '#64748b' }}>{org}</span>
+                {hasSubmitted ? (
+                  <span style={{ color: '#166534', fontWeight: 'bold', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={12} /> Đã gửi
+                  </span>
+                ) : (
+                  <span style={{ color: '#854d0e', fontWeight: '600', background: '#fef9c3', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={12} /> Chưa gửi
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
