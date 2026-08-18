@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import Layout from '../components/Layout';
 import TaskCard from '../components/TaskCard';
 import TaskModal from '../components/TaskModal';
@@ -31,6 +32,8 @@ export default function CommitteeView() {
     }
     fetchData();
   }, [isAdminOrSecretary, committeeId]);
+
+  useAutoRefresh(fetchData, 60000);
 
   const fetchData = async () => {
     setLoading(true);

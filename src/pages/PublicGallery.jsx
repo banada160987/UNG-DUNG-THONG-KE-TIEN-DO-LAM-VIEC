@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
 import { Play, Pause, ZoomIn, ZoomOut, RotateCw, Download, X, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
@@ -18,6 +19,8 @@ export default function PublicGallery() {
   useEffect(() => {
     fetchImages();
   }, []);
+
+  useAutoRefresh(fetchImages, 60000);
 
   // AUTO PLAY SLIDESHOW
   useEffect(() => {

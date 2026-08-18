@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import Layout from '../components/Layout';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { Plus, Download, FileSpreadsheet, ScanLine, Link as LinkIcon, CheckCircle2, Mail, DownloadCloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -46,6 +47,8 @@ export default function AdminGuests() {
     fetchGuests();
     fetchInviteConfig();
   }, []);
+
+  useAutoRefresh(fetchGuests, 60000);
 
   const fetchInviteConfig = async () => {
     const { data } = await supabase.from('cbq_pages').select('content').eq('slug', 'invite-config').single();

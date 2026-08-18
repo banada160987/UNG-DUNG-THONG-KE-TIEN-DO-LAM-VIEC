@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { Plus, Download, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -20,6 +21,8 @@ export default function AdminSponsors() {
   useEffect(() => {
     fetchSponsors();
   }, []);
+
+  useAutoRefresh(fetchSponsors, 60000);
 
   const fetchSponsors = async () => {
     setLoading(true);

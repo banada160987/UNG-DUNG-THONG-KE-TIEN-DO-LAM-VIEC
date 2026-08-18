@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { FileText, Send, Calendar, Phone, CheckCircle2, AlertCircle, Building2, Clock, Sparkles, FileCheck, Layers, Link as LinkIcon, FileEdit as FileEditIcon, CheckSquare, AlertTriangle, XCircle } from 'lucide-react';
 
@@ -54,14 +55,12 @@ export default function PublicFeedbackSystem() {
 
   useEffect(() => {
     fetchTopicsAndResponses(true);
-
-    // Tự động tải lại dữ liệu mới sau mỗi 15 giây (Realtime Auto Polling)
-    const interval = setInterval(() => {
-      fetchTopicsAndResponses(false);
-    }, 15000);
-
-    return () => clearInterval(interval);
   }, [topicIdFromUrl]);
+
+  // Tự động tải lại dữ liệu mới sau mỗi 60 giây (Realtime Auto Polling)
+  useAutoRefresh(() => {
+    fetchTopicsAndResponses(false);
+  }, 60000);
 
   const fetchTopicsAndResponses = async (isFirstLoad = false) => {
     if (isFirstLoad) setLoading(true);

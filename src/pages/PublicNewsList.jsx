@@ -1,14 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 
 export default function PublicNewsList() {
   const [news, setNews] = useState([]);
 
+  const fetchNews = async () => {
+    const { data } = await supabase.from('cbq_news').select('*').order('published_at', { ascending: false });
+    if(data) setNews(data);
+  };
+
   useEffect(() => {
-    supabase.from('cbq_news').select('*').order('published_at', { ascending: false }).then(({data}) => {
-      if(data) setNews(data);
-    });
+    fetchNews();
   }, []);
+
+  useAutoRefresh(fetchNews, 60000);
 
   return (
     <div style={styles.container}>

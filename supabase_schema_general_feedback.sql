@@ -23,8 +23,10 @@ CREATE TABLE IF NOT EXISTS cbq_feedback_responses (
     representative_name TEXT NOT NULL,
     phone TEXT NOT NULL,
     email TEXT,
+    agreement_level TEXT DEFAULT 'thong_nhat',
     feedback_content TEXT NOT NULL,
     attached_file_url TEXT,
+    is_verified BOOLEAN DEFAULT true,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 

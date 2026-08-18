@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, CheckCircle2, Clock, Building2, Layers, Edit, ToggleLeft, ToggleRight, X, Lock, Unlock, CheckSquare, AlertTriangle, UserCheck } from 'lucide-react';
 
@@ -78,17 +79,15 @@ export default function AdminFeedbackSystem() {
 
   useEffect(() => {
     fetchTopics(true);
-
-    // Tự động đồng bộ dữ liệu mới sau mỗi 15 giây (Realtime Auto-Sync)
-    const interval = setInterval(() => {
-      fetchTopics(false);
-      if (selectedTopicId) {
-        fetchResponses(selectedTopicId);
-      }
-    }, 15000);
-
-    return () => clearInterval(interval);
   }, [selectedTopicId]);
+
+  // Tự động đồng bộ dữ liệu mới sau mỗi 60 giây (Realtime Auto-Sync)
+  useAutoRefresh(() => {
+    fetchTopics(false);
+    if (selectedTopicId) {
+      fetchResponses(selectedTopicId);
+    }
+  }, 60000);
 
   const fetchTopics = async (isFirstLoad = false) => {
     if (isFirstLoad) setLoading(true);

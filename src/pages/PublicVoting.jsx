@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { Heart, Search, Eye, Trophy, Award, Sparkles, Filter, X, ShieldCheck, CheckCircle2, RefreshCw, KeyRound, AlertCircle } from 'lucide-react';
 import InteractiveProductViewer from '../components/InteractiveProductViewer';
@@ -48,6 +49,8 @@ export default function PublicVoting() {
       setVoterCode(codeFromUrl.toUpperCase());
     }
   }, [codeFromUrl]);
+
+  useAutoRefresh(fetchEntries, 60000);
 
   const fetchMyVote = async () => {
     const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');

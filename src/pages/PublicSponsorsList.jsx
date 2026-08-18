@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 
 export default function PublicSponsorsList() {
@@ -9,11 +10,16 @@ export default function PublicSponsorsList() {
     name: '', donation_amount: '', donation_item: '', is_public: false
   });
 
+  const fetchSponsors = async () => {
+    const { data } = await supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false });
+    if(data) setSponsors(data);
+  };
+
   useEffect(() => {
-    supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }).then(({data}) => {
-      if(data) setSponsors(data);
-    });
+    fetchSponsors();
   }, []);
+
+  useAutoRefresh(fetchSponsors, 60000);
 
   const filteredSponsors = sponsors.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase())

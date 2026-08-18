@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
 import { Plus, Heart, Trophy, Trash2, Edit2, ShieldCheck, Download, FileText, CheckCircle2, BarChart2, Users, AlertTriangle, Sparkles, Award } from 'lucide-react';
@@ -39,6 +40,11 @@ export default function AdminVoting() {
     fetchStudentUsers();
     fetchGuests();
   }, []);
+
+  useAutoRefresh(() => {
+    fetchEntries();
+    fetchVotesLogs();
+  }, 60000);
 
   const fetchStudentUsers = async () => {
     const { data } = await supabase.from('cbq_student_users').select('*').order('created_at', { ascending: false });

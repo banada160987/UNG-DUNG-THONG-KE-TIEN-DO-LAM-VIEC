@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
@@ -17,6 +18,8 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useAutoRefresh(fetchData, 60000);
 
   const fetchData = async () => {
     setLoading(true);
