@@ -106,8 +106,8 @@ export default function PublicGuestbook() {
           <p style={styles.heroSubtitle}>
             Nơi lưu giữ những dòng cảm xúc, những kỷ niệm đẹp và những lời chúc ý nghĩa gửi đến trường THPT Cao Bá Quát.
           </p>
-          <button style={styles.writeBtn} onClick={() => setShowForm(true)}>
-            <PenTool size={20} />
+          <button className="write-btn-hover" style={styles.writeBtn} onClick={() => setShowForm(true)}>
+            <PenTool size={22} />
             Viết Lưu Bút
           </button>
         </div>
@@ -283,6 +283,12 @@ export default function PublicGuestbook() {
           column-gap: 20px;
         }
         
+        .write-btn-hover:hover {
+          transform: translateY(-3px) scale(1.02);
+          box-shadow: 0 15px 30px rgba(253, 224, 71, 0.5) !important;
+          background-color: #fef08a !important;
+        }
+        
         @media (max-width: 992px) {
           .masonry-grid-custom { column-count: 2; }
         }
@@ -307,56 +313,60 @@ const styles = {
     overflow: 'hidden',
     marginTop: '30px',
     marginBottom: '40px',
-    padding: '60px 30px',
+    padding: '80px 30px',
     textAlign: 'center',
-    backgroundImage: 'url("https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=2070&auto=format&fit=crop")',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    boxShadow: '0 20px 40px rgba(0,0,0,0.1)',
+    background: 'linear-gradient(135deg, #166534 0%, #064e3b 100%)',
+    boxShadow: '0 20px 40px rgba(22, 101, 52, 0.2)',
   },
   heroOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    backdropFilter: 'blur(2px)',
+    backgroundImage: 'url("https://www.transparenttextures.com/patterns/stardust.png")',
+    opacity: 0.4,
   },
   heroContent: {
     position: 'relative',
     zIndex: 1,
-    maxWidth: '700px',
+    maxWidth: '800px',
     margin: '0 auto',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
   },
   heroTitle: {
-    color: '#ffffff',
-    fontSize: 'clamp(28px, 5vw, 42px)',
-    fontWeight: '800',
-    marginBottom: '16px',
-    fontFamily: '"Playfair Display", serif',
-    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+    color: '#fde047',
+    fontSize: 'clamp(32px, 6vw, 56px)',
+    fontWeight: '900',
+    marginBottom: '20px',
+    fontFamily: '"Playfair Display", "Times New Roman", serif',
+    textShadow: '0 4px 12px rgba(0,0,0,0.4)',
+    letterSpacing: '1px',
+    lineHeight: '1.2',
   },
   heroSubtitle: {
     color: '#e2e8f0',
-    fontSize: 'clamp(16px, 2vw, 18px)',
-    lineHeight: '1.6',
-    marginBottom: '32px',
+    fontSize: 'clamp(16px, 2.5vw, 20px)',
+    lineHeight: '1.8',
+    marginBottom: '40px',
+    fontWeight: '500',
+    textShadow: '0 2px 4px rgba(0,0,0,0.2)',
   },
   writeBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    backgroundColor: '#be123c',
-    color: 'white',
+    gap: '12px',
+    backgroundColor: '#fde047',
+    color: '#064e3b',
     border: 'none',
-    padding: '14px 28px',
+    padding: '16px 36px',
     borderRadius: '50px',
-    fontSize: '18px',
+    fontSize: '20px',
     fontWeight: 'bold',
     cursor: 'pointer',
-    boxShadow: '0 10px 25px rgba(190, 18, 60, 0.4)',
-    transition: 'transform 0.2s, background 0.2s',
+    boxShadow: '0 10px 25px rgba(253, 224, 71, 0.3)',
+    transition: 'all 0.3s ease',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   },
   
   masonryContainer: {
