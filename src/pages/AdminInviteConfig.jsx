@@ -3,6 +3,15 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Save, Plus, Trash2 } from 'lucide-react';
 
+const getDirectImageUrl = (url) => {
+  if (!url) return '';
+  const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) {
+    return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+  }
+  return url;
+};
+
 export default function AdminInviteConfig() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
