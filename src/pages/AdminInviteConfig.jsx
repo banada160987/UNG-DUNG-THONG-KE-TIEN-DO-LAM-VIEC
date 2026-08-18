@@ -131,7 +131,8 @@ export default function AdminInviteConfig() {
     setSaving(true);
     const { error } = await supabase
       .from('cbq_pages')
-      .upsert({ slug: 'invite-config', title: 'Cấu hình Thiệp Mời Điện Tử', content: JSON.stringify(config), updated_at: new Date() }, { onConflict: 'slug' });
+      .update({ title: 'Cấu hình Thiệp Mời Điện Tử', content: JSON.stringify(config) })
+      .eq('slug', 'invite-config');
       
     setSaving(false);
     if (!error) {
