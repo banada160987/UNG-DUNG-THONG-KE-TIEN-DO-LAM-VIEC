@@ -132,6 +132,7 @@ export default function PublicGuestbook() {
               <div key={entry.id} style={styles.card}>
                 {entry.image_url && (
                   <div style={styles.cardImageContainer}>
+                    <div style={styles.tape}></div>
                     <img src={entry.image_url} alt="Kỷ niệm" style={styles.cardImage} loading="lazy" />
                   </div>
                 )}
@@ -262,6 +263,8 @@ export default function PublicGuestbook() {
       
       {/* CSS for Masonry & Animations */}
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap');
+        
         .spinner {
           width: 40px;
           height: 40px;
@@ -380,20 +383,40 @@ const styles = {
   card: {
     display: 'inline-block',
     width: '100%',
-    marginBottom: '20px',
+    marginBottom: '30px',
     backgroundColor: '#ffffff',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
-    border: '1px solid #f1f5f9',
+    borderRadius: '4px',
+    position: 'relative',
+    boxShadow: '3px 5px 15px rgba(0,0,0,0.1), -1px 0 2px rgba(0,0,0,0.05)',
     transition: 'transform 0.3s, box-shadow 0.3s',
     animation: 'fadeIn 0.5s ease-out forwards',
     breakInside: 'avoid',
+    backgroundImage: 'linear-gradient(90deg, transparent 40px, rgba(239, 68, 68, 0.4) 40px, rgba(239, 68, 68, 0.4) 42px, transparent 42px), linear-gradient(transparent 27px, #bae6fd 27px, #bae6fd 28px, transparent 28px)',
+    backgroundSize: '100% 100%, 100% 28px',
+    paddingTop: '20px',
   },
   cardImageContainer: {
-    width: '100%',
-    maxHeight: '350px',
-    overflow: 'hidden',
+    width: 'calc(100% - 75px)',
+    marginLeft: '55px',
+    marginBottom: '10px',
+    position: 'relative',
+    transform: 'rotate(-2deg)',
+    boxShadow: '0 4px 8px rgba(0,0,0,0.15)',
+    border: '6px solid #fff',
+    borderBottomWidth: '20px',
+    backgroundColor: '#fff',
+  },
+  tape: {
+    position: 'absolute',
+    top: '-15px',
+    left: '50%',
+    transform: 'translateX(-50%) rotate(3deg)',
+    width: '80px',
+    height: '24px',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+    zIndex: 2,
+    border: '1px solid rgba(0,0,0,0.05)',
   },
   cardImage: {
     width: '100%',
@@ -402,21 +425,24 @@ const styles = {
     objectFit: 'cover',
   },
   cardBody: {
-    padding: '24px',
+    padding: '0 20px 20px 55px',
   },
   cardContent: {
-    fontSize: '16px',
-    lineHeight: '1.6',
-    color: '#334155',
-    margin: '0 0 24px 0',
-    fontStyle: 'italic',
+    fontSize: '22px',
+    lineHeight: '28px',
+    color: '#0f172a',
+    margin: '0 0 20px 0',
+    fontFamily: '"Patrick Hand", cursive',
+    whiteSpace: 'pre-wrap',
+    paddingTop: '4px', // Align with blue lines
   },
   cardFooter: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-end',
-    borderTop: '1px solid #f1f5f9',
+    borderTop: '1px dashed #94a3b8',
     paddingTop: '16px',
+    fontFamily: 'sans-serif',
   },
   authorInfo: {
     display: 'flex',
