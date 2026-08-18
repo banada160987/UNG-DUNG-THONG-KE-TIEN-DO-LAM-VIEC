@@ -188,12 +188,14 @@ export default function AdminGuests() {
   };
 
   const handleExport = () => {
+    const baseUrl = window.location.origin;
     const exportData = guests.map(g => ({
       'Họ Tên': g.name,
       'Phân loại': g.category,
       'Số điện thoại': g.phone,
       'Email': g.email || '',
       'Mã Thư Mời': g.invitation_code,
+      'Link thiệp mời': `${baseUrl}/thiep/${g.invitation_code}`,
       'Trạng thái': g.rsvp_status === 'pending' ? 'Chờ phản hồi' : (g.rsvp_status === 'attending' ? 'Tham dự' : 'Không tham dự')
     }));
     const ws = XLSX.utils.json_to_sheet(exportData);
