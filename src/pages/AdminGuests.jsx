@@ -18,7 +18,8 @@ export default function AdminGuests() {
   const [downloadingGuest, setDownloadingGuest] = useState(null);
   const [showPrintBadges, setShowPrintBadges] = useState(false);
   const [badgeCategoryFilter, setBadgeCategoryFilter] = useState('All');
-  
+  const [filterStatus, setFilterStatus] = useState('All');
+  const [searchTerm, setSearchTerm] = useState('');
   // EDIT & DELETE GUEST STATE
   const [editingGuest, setEditingGuest] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -189,7 +190,12 @@ export default function AdminGuests() {
 
   const handleExport = () => {
     const baseUrl = 'https://lekyniem30nam.vercel.app';
-    const exportData = guests.map(g => ({
+    const filteredToExport = guests.filter(g => {
+      if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
+      if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+      return true;
+    });
+    const exportData = filteredToExport.map(g => ({
       'Họ Tên': g.name,
       'Phân loại': g.category,
       'Số điện thoại': g.phone,
@@ -371,7 +377,34 @@ export default function AdminGuests() {
       )}
 
       <div className="glass" style={{ padding: '2rem', borderRadius: '1rem' }}>
-        <h3>Danh sách Đại biểu ({guests.length} người)</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
+          <h3>Danh sách Đại biểu ({guests.filter(g => {
+            if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
+            if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+            return true;
+          }).length} người)</h3>
+          
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            <input 
+              type="text" 
+              placeholder="Tìm tên hoặc mã thư mời..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', width: '250px' }}
+            />
+            <select 
+              value={filterStatus} 
+              onChange={(e) => setFilterStatus(e.target.value)}
+              style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+            >
+              <option value="All">Tất cả trạng thái</option>
+              <option value="pending">Chờ phản hồi</option>
+              <option value="attending">Tham dự</option>
+              <option value="declined">Không tham dự</option>
+            </select>
+          </div>
+        </div>
+
         {loading ? <p>Đang tải...</p> : (
           <div style={{overflowX: 'auto'}}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem', minWidth: '600px' }}>
@@ -385,7 +418,11 @@ export default function AdminGuests() {
                 </tr>
               </thead>
               <tbody>
-                {guests.map(g => (
+                {guests.filter(g => {
+                  if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
+                  if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+                  return true;
+                }).map(g => (
                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={styles.td}>
                       <strong>{g.name}</strong><br/>
