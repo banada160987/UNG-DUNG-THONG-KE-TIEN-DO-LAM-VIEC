@@ -26,7 +26,7 @@ export default function AdminScholarshipFeedback() {
     fetchFeedbacks();
   }, []);
 
-  const fetchFeedbacks = async () => {
+  async function fetchFeedbacks() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -237,3 +237,4 @@ export default function AdminScholarshipFeedback() {
     </div>
   );
 }
+

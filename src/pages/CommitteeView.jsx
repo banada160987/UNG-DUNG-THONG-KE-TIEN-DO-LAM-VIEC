@@ -35,7 +35,7 @@ export default function CommitteeView() {
 
   useAutoRefresh(fetchData, 60000);
 
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     try {
       const [tasksRes, commRes] = await Promise.all([
@@ -421,3 +421,4 @@ const styles = {
     boxShadow: 'var(--shadow-sm)'
   }
 };
+

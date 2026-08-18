@@ -22,7 +22,7 @@ export default function AdminNews() {
     fetchNews();
   }, []);
 
-  const fetchNews = async () => {
+  async function fetchNews() {
     setLoading(true);
     const { data, error } = await supabase.from('cbq_news').select('*').order('published_at', { ascending: false });
     if (!error) setNews(data || []);
@@ -158,3 +158,4 @@ const styles = {
     border: '1px solid var(--border)',
   }
 };
+

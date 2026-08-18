@@ -52,7 +52,7 @@ export default function PublicVoting() {
 
   useAutoRefresh(fetchEntries, 60000);
 
-  const fetchMyVote = async () => {
+  async function fetchMyVote() {
     const currentStudent = JSON.parse(localStorage.getItem('cbq_current_student') || 'null');
     const voterKey = currentStudent ? `USER-${currentStudent.username}` : getDeviceFingerprint();
 
@@ -69,7 +69,7 @@ export default function PublicVoting() {
     }
   };
 
-  const fetchEntries = async () => {
+  async function fetchEntries() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -920,3 +920,4 @@ export default function PublicVoting() {
     </div>
   );
 }
+

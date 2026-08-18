@@ -50,7 +50,7 @@ export default function AdminGuests() {
 
   useAutoRefresh(fetchGuests, 60000);
 
-  const fetchInviteConfig = async () => {
+  async function fetchInviteConfig() {
     const { data } = await supabase.from('cbq_pages').select('content').eq('slug', 'invite-config').single();
     if (data) {
       try {
@@ -59,7 +59,7 @@ export default function AdminGuests() {
     }
   };
 
-  const fetchGuests = async () => {
+  async function fetchGuests() {
     setLoading(true);
     const { data, error } = await supabase.from('cbq_guests').select('*').order('name', { ascending: true });
     if (!error) setGuests(data || []);
@@ -825,3 +825,4 @@ const styles = {
   th: { padding: '1rem 0.5rem', color: '#64748b' },
   td: { padding: '1rem 0.5rem' }
 };
+

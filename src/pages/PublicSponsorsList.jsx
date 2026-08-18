@@ -10,7 +10,7 @@ export default function PublicSponsorsList() {
     name: '', donation_amount: '', donation_item: '', is_public: false
   });
 
-  const fetchSponsors = async () => {
+  async function fetchSponsors() {
     const { data } = await supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false });
     if(data) setSponsors(data);
   };
@@ -133,3 +133,4 @@ const styles = {
   cancelBtn: { padding: '8px 15px', border: '1px solid #ccc', backgroundColor: 'white', borderRadius: '4px', cursor: 'pointer' },
   submitBtn: { padding: '8px 15px', border: 'none', backgroundColor: '#d32f2f', color: 'white', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }
 };
+

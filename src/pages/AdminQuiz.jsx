@@ -37,7 +37,7 @@ export default function AdminQuiz() {
     fetchQuizConfig();
   }, []);
 
-  const fetchQuizConfig = async () => {
+  async function fetchQuizConfig() {
     try {
       const { data } = await supabase.from('cbq_quizzes').select('*').limit(1);
       if (data && data.length > 0) {
@@ -80,7 +80,7 @@ export default function AdminQuiz() {
     }
   };
 
-  const fetchSubmissions = async () => {
+  async function fetchSubmissions() {
     setLoading(true);
     const { data } = await supabase
       .from('cbq_quiz_submissions')
@@ -101,7 +101,7 @@ export default function AdminQuiz() {
     return [];
   };
 
-  const fetchQuestions = async () => {
+  async function fetchQuestions() {
     const { data } = await supabase
       .from('cbq_quiz_questions')
       .select('*')
@@ -689,3 +689,4 @@ const styles = {
   cancelBtn: { padding: '9px 16px', backgroundColor: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
   submitBtn: { padding: '9px 18px', backgroundColor: '#be123c', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }
 };
+

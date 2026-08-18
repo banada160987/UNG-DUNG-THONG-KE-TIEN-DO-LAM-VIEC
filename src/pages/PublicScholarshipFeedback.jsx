@@ -36,7 +36,7 @@ export default function PublicScholarshipFeedback() {
     fetchFeedbacks();
   }, []);
 
-  const fetchFeedbacks = async () => {
+  async function fetchFeedbacks() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -342,3 +342,4 @@ const styles = {
     transition: 'all 0.2s ease'
   }
 };
+

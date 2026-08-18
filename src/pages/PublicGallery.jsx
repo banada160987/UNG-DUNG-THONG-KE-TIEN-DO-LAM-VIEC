@@ -58,7 +58,7 @@ export default function PublicGallery() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [lightboxIndex, images]);
 
-  const fetchImages = async () => {
+  async function fetchImages() {
     const { data } = await supabase.from('cbq_gallery').select('*').eq('is_approved', true).order('created_at', { ascending: false });
     if (data) setImages(data);
   };
@@ -280,3 +280,4 @@ const styles = {
   cancelBtn: { padding: '8px 15px', border: '1px solid #ccc', backgroundColor: 'white', borderRadius: '6px', cursor: 'pointer' },
   submitBtn: { padding: '8px 15px', border: 'none', backgroundColor: '#166534', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }
 };
+

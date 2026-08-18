@@ -79,7 +79,7 @@ export default function PublicHome() {
     }
   };
 
-  const fetchPublicData = async () => {
+  async function fetchPublicData() {
     setLoading(true);
     try {
       const [sponsorsRes, newsRes, guestsRes, linksRes, configRes] = await Promise.all([
@@ -800,3 +800,4 @@ const styles = {
     fontWeight: '500',
   },
 };
+

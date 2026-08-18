@@ -28,7 +28,7 @@ export default function AdminSports() {
     fetchRegistrations();
   }, []);
 
-  const fetchRegistrations = async () => {
+  async function fetchRegistrations() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -406,3 +406,4 @@ export default function AdminSports() {
     </div>
   );
 }
+

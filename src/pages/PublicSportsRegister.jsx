@@ -57,7 +57,7 @@ export default function PublicSportsRegister() {
     fetchRegistrations();
   }, []);
 
-  const fetchRegistrations = async () => {
+  async function fetchRegistrations() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -467,3 +467,4 @@ const styles = {
     transition: 'all 0.2s ease'
   }
 };
+

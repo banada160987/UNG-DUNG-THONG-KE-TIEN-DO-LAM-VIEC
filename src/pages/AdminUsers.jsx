@@ -26,7 +26,7 @@ export default function AdminUsers() {
     }
   }, []);
 
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     try {
       // Fetch users from Auth
@@ -255,3 +255,4 @@ const styles = {
   label: { display: 'block', fontSize: '14px', marginBottom: '5px', fontWeight: '500', color: '#334155' },
   input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }
 };
+

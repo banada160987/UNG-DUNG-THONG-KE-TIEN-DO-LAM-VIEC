@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabase';
 export default function PublicNewsList() {
   const [news, setNews] = useState([]);
 
-  const fetchNews = async () => {
+  async function fetchNews() {
     const { data } = await supabase.from('cbq_news').select('*').order('published_at', { ascending: false });
     if(data) setNews(data);
   };
@@ -44,3 +44,4 @@ const styles = {
   cardTitle: { padding: '10px', margin: 0, fontSize: '15px', color: '#1e293b' },
   date: { padding: '0 10px 10px', margin: 0, fontSize: '12px', color: '#64748b' }
 };
+

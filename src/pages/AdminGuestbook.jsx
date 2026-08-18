@@ -8,7 +8,7 @@ export default function AdminGuestbook() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchEntries = async () => {
+  async function fetchEntries() {
     setLoading(true);
     const { data, error } = await supabase
       .from('cbq_guestbook')
@@ -121,3 +121,4 @@ export default function AdminGuestbook() {
     </Layout>
   );
 }
+

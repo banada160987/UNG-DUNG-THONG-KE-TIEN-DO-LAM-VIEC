@@ -63,7 +63,7 @@ export default function AdminInviteConfig() {
     fetchWishesList();
   }, []);
 
-  const fetchConfig = async () => {
+  async function fetchConfig() {
     setLoading(true);
     const { data, error } = await supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single();
     if (data && data.content) {
@@ -89,7 +89,7 @@ export default function AdminInviteConfig() {
     setLoading(false);
   };
 
-  const fetchWishesList = async () => {
+  async function fetchWishesList() {
     setLoadingWishes(true);
     const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false });
     if (data) {
@@ -637,3 +637,4 @@ const styles = {
     gap: '1rem'
   }
 };
+

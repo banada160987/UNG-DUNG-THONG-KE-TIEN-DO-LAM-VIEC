@@ -21,7 +21,7 @@ export default function Dashboard() {
 
   useAutoRefresh(fetchData, 60000);
 
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     try {
       const [tasksRes, committeesRes, sponsorsRes] = await Promise.all([
@@ -444,3 +444,4 @@ const styles = {
     transition: 'width 0.5s ease-out',
   }
 };
+

@@ -12,7 +12,7 @@ export default function AdminPages() {
     fetchPage();
   }, []);
 
-  const fetchPage = async () => {
+  async function fetchPage() {
     setLoading(true);
     const { data } = await supabase.from('cbq_pages').select('*').eq('slug', 'gioi-thieu').single();
     if (data) {
@@ -69,3 +69,4 @@ export default function AdminPages() {
     </Layout>
   );
 }
+

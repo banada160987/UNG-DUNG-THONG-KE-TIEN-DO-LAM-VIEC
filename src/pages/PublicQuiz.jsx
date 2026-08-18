@@ -317,7 +317,7 @@ export default function PublicQuiz() {
     fetchQuizConfig();
   }, []);
 
-  const fetchQuizConfig = async () => {
+  async function fetchQuizConfig() {
     try {
       const { data } = await supabase.from('cbq_quizzes').select('*').limit(1);
       if (data && data.length > 0) {
@@ -356,7 +356,7 @@ export default function PublicQuiz() {
     return [];
   };
 
-  const fetchQuestions = async () => {
+  async function fetchQuestions() {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -380,7 +380,7 @@ export default function PublicQuiz() {
     }
   };
 
-  const fetchLeaderboard = async () => {
+  async function fetchLeaderboard() {
     try {
       const { data } = await supabase
         .from('cbq_quiz_submissions')
@@ -993,3 +993,4 @@ const styles = {
     borderBottom: '1px solid #e2e8f0'
   }
 };
+

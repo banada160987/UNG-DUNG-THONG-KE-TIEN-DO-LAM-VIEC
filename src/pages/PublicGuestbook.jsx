@@ -18,7 +18,7 @@ export default function PublicGuestbook() {
   
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchEntries = async () => {
+  async function fetchEntries() {
     const { data, error } = await supabase
       .from('cbq_guestbook')
       .select('*')
@@ -674,3 +674,4 @@ export default function PublicGuestbook() {
     </div>
   );
 }
+

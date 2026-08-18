@@ -46,7 +46,7 @@ export default function AdminVoting() {
     fetchVotesLogs();
   }, 60000);
 
-  const fetchStudentUsers = async () => {
+  async function fetchStudentUsers() {
     const { data } = await supabase.from('cbq_student_users').select('*').order('created_at', { ascending: false });
     const localUsers = JSON.parse(localStorage.getItem('cbq_student_accounts') || '[]');
     const combined = [...(data || []), ...localUsers];
@@ -56,7 +56,7 @@ export default function AdminVoting() {
     setStudentUsers(Object.values(uniqueMap));
   };
 
-  const fetchEntries = async () => {
+  async function fetchEntries() {
     setLoading(true);
     const { data } = await supabase
       .from('cbq_voting_entries')
@@ -66,7 +66,7 @@ export default function AdminVoting() {
     setLoading(false);
   };
 
-  const fetchVotesLogs = async () => {
+  async function fetchVotesLogs() {
     const { data } = await supabase
       .from('cbq_votes')
       .select('*, cbq_voting_entries(title)')
@@ -74,7 +74,7 @@ export default function AdminVoting() {
     if (data) setVotesLogs(data || []);
   };
 
-  const fetchGuests = async () => {
+  async function fetchGuests() {
     const { data } = await supabase.from('cbq_guests').select('*').order('name', { ascending: true });
     if (data) setGuests(data || []);
   };
@@ -990,3 +990,4 @@ export default function AdminVoting() {
     </Layout>
   );
 }
+

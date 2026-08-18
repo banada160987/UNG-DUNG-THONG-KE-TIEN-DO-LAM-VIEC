@@ -13,7 +13,7 @@ export default function AdminDocs() {
     fetchDocs();
   }, []);
 
-  const fetchDocs = async () => {
+  async function fetchDocs() {
     setLoading(true);
     const { data } = await supabase.from('cbq_documents').select('*').order('published_date', { ascending: false });
     if (data) setDocs(data);
@@ -104,3 +104,4 @@ export default function AdminDocs() {
 const styles = {
   input: { width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid #e2e8f0', marginTop: '5px' }
 };
+

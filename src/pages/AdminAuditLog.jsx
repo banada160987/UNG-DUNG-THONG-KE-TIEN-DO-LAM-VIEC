@@ -11,7 +11,7 @@ export default function AdminAuditLog() {
     fetchLogs();
   }, []);
 
-  const fetchLogs = async () => {
+  async function fetchLogs() {
     setLoading(true);
     const { data } = await supabase.from('cbq_audit_log').select('*').order('created_at', { ascending: false }).limit(100);
     if (data) setLogs(data);
@@ -58,3 +58,4 @@ export default function AdminAuditLog() {
     </Layout>
   );
 }
+

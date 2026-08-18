@@ -13,7 +13,7 @@ export default function AdminLinks() {
     fetchLinks();
   }, []);
 
-  const fetchLinks = async () => {
+  async function fetchLinks() {
     setLoading(true);
     const { data } = await supabase.from('cbq_external_links').select('*').order('order_index', { ascending: true });
     if (data) setLinks(data);
@@ -152,3 +152,4 @@ const styles = {
     fontFamily: 'inherit'
   }
 };
+

@@ -210,14 +210,14 @@ export default function OnlineInvitation() {
     return () => clearInterval(interval);
   }, [config?.event_target_date]);
 
-  const fetchAllAttendees = async () => {
+  async function fetchAllAttendees() {
     const { data } = await supabase.from('cbq_guests').select('*').eq('rsvp_status', 'attending');
     if (data) {
       setAllAttendees(data);
     }
   };
 
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     try {
       const isPublicCode = !code || ['chung', 'khach-moi', 'public', 'all'].includes(code.toLowerCase());
@@ -267,7 +267,7 @@ export default function OnlineInvitation() {
     }
   };
   
-  const fetchWishes = async () => {
+  async function fetchWishes() {
     const { data } = await supabase.from('cbq_wishes').select('*').order('created_at', { ascending: false }).limit(20);
     if (data) {
       // TỰ ĐỘNG CẬP NHẬT TÊN ĐỒNG BỘ NẾU KHÁCH MỜI ĐÃ ĐƯỢC ĐỔI TÊN TRONG ADMIN
@@ -518,7 +518,7 @@ export default function OnlineInvitation() {
     ];
   };
 
-  const fetchSponsorsList = async () => {
+  async function fetchSponsorsList() {
     const { data } = await supabase.from('cbq_sponsors').select('*').order('date_received', { ascending: false });
     if (data) setSponsorsList(data);
   };
@@ -1859,3 +1859,4 @@ export default function OnlineInvitation() {
     </div>
   );
 }
+

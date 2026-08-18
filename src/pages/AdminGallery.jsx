@@ -26,7 +26,7 @@ export default function AdminGallery() {
     fetchImages();
   }, []);
 
-  const fetchImages = async () => {
+  async function fetchImages() {
     setLoading(true);
     const { data, error } = await supabase.from('cbq_gallery').select('*').order('created_at', { ascending: false });
     if (!error && data) setImages(data);
@@ -424,3 +424,4 @@ const styles = {
     cursor: 'pointer'
   }
 };
+

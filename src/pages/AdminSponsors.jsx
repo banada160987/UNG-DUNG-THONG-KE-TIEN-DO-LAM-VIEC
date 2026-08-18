@@ -24,7 +24,7 @@ export default function AdminSponsors() {
 
   useAutoRefresh(fetchSponsors, 60000);
 
-  const fetchSponsors = async () => {
+  async function fetchSponsors() {
     setLoading(true);
     const { data, error } = await supabase.from('cbq_sponsors').select('*').order('date_received', { ascending: false });
     if (!error) setSponsors(data || []);
@@ -215,3 +215,4 @@ const styles = {
   th: { padding: '1rem 0.5rem', color: '#64748b' },
   td: { padding: '1rem 0.5rem' }
 };
+
