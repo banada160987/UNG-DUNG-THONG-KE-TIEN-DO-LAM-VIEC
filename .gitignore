@@ -25,3 +25,4 @@ dist-ssr
 
 .vercel
 .env*
+supabase_schema_invitation.sql
