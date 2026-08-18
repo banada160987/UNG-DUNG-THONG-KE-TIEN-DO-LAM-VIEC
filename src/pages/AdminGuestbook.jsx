@@ -40,8 +40,8 @@ export default function AdminGuestbook() {
   };
 
   const filteredEntries = entries.filter(e => 
-    e.author_name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    e.content.toLowerCase().includes(searchTerm.toLowerCase())
+    (e.author_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (e.content || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -81,9 +81,9 @@ export default function AdminGuestbook() {
                 {filteredEntries.map(entry => (
                   <tr key={entry.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '1rem', verticalAlign: 'top', width: '200px' }}>
-                      <strong style={{ display: 'block', marginBottom: '4px' }}>{entry.author_name}</strong>
+                      <strong style={{ display: 'block', marginBottom: '4px' }}>{entry.author_name || 'Vô danh'}</strong>
                       <span style={{ backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>
-                        {entry.author_category}
+                        {entry.author_category || 'Khách'}
                       </span>
                       <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '6px' }}>
                         {new Date(entry.created_at).toLocaleString('vi-VN')}

@@ -130,12 +130,12 @@ export default function PublicGuestbook() {
                   <div className="glass-card-footer">
                     <div className="author-info">
                       <div className="author-avatar">
-                        {entry.author_name.charAt(0).toUpperCase()}
+                        {(entry.author_name || 'V').charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="author-name">{entry.author_name}</div>
+                        <div className="author-name">{entry.author_name || 'Vô danh'}</div>
                         <div className="author-meta">
-                          <span className="glass-badge">{entry.author_category}</span>
+                          <span className="glass-badge">{entry.author_category || 'Khách'}</span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
                             <Clock size={12} /> {formatDate(entry.created_at)}
                           </span>
