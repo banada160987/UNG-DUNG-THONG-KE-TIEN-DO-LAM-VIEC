@@ -188,7 +188,7 @@ export default function AdminGuests() {
   };
 
   const handleExport = () => {
-    const baseUrl = window.location.origin;
+    const baseUrl = 'https://lekyniem30nam.vercel.app';
     const exportData = guests.map(g => ({
       'Họ Tên': g.name,
       'Phân loại': g.category,
