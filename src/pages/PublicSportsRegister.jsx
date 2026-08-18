@@ -182,10 +182,10 @@ export default function PublicSportsRegister() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(330px, 1fr))', gap: '25px', alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '25px', alignItems: 'flex-start' }}>
         
         {/* FORM ĐĂNG KÝ VẬN ĐỘNG VIÊN */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
+        <div style={{ flex: '1 1 350px', maxWidth: '100%', background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#0369a1', fontWeight: 'bold', fontSize: '17px', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
             <UserCheck size={22} color="#0369a1" /> FORM ĐĂNG KÝ THI ĐẤU CHÍNH THỨC (*)
           </div>
@@ -342,7 +342,7 @@ export default function PublicSportsRegister() {
         </div>
 
         {/* BẢNG DANH SÁCH VĐV ĐÃ ĐĂNG KÝ CÔNG KHAI */}
-        <div style={{ background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
+        <div style={{ flex: '2 1 600px', minWidth: 0, background: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 8px 24px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '16.5px' }}>
               <Trophy size={20} color="#166534" /> DANH SÁCH VĐV ĐÃ ĐĂNG KÝ ({filteredRegistrations.length})
@@ -384,37 +384,37 @@ export default function PublicSportsRegister() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9', color: '#334155', borderBottom: '2px solid #cbd5e1' }}>
-                    <th style={{ padding: '10px 8px', textAlign: 'center' }}>STT</th>
-                    <th style={{ padding: '10px 8px' }}>HỌ VÀ TÊN</th>
-                    <th style={{ padding: '10px 8px' }}>MÔN</th>
-                    <th style={{ padding: '10px 8px' }}>SỐ ĐIỆN THOẠI</th>
-                    <th style={{ padding: '10px 8px' }}>NIÊN KHÓA</th>
-                    <th style={{ padding: '10px 8px' }}>ĐƠN VỊ</th>
-                    <th style={{ padding: '10px 8px' }}>TRẠNG THÁI</th>
-                    <th style={{ padding: '10px 8px' }}>GHI CHÚ</th>
+                    <th style={{ padding: '12px 10px', textAlign: 'center', whiteSpace: 'nowrap' }}>STT</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>HỌ VÀ TÊN</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>MÔN</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>SỐ ĐIỆN THOẠI</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>NIÊN KHÓA</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>ĐƠN VỊ</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>TRẠNG THÁI</th>
+                    <th style={{ padding: '12px 10px', whiteSpace: 'nowrap' }}>GHI CHÚ</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredRegistrations.map((item, idx) => (
                     <tr key={item.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-                      <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#1e293b' }}>
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#1e293b' }}>
                         {item.full_name}
                       </td>
-                      <td style={{ padding: '10px 8px' }}>
-                        <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', fontWeight: 'bold', fontSize: '11.5px' }}>
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{ display: 'inline-block', padding: '4px 10px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', fontWeight: 'bold', fontSize: '12px', whiteSpace: 'nowrap' }}>
                           {item.sport_name}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 8px', color: '#475569', fontFamily: 'monospace' }}>{item.phone ? item.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***'}</td>
-                      <td style={{ padding: '10px 8px', color: '#64748b' }}>{item.cohort_year || '-'}</td>
-                      <td style={{ padding: '10px 8px', fontWeight: '600', color: '#334155' }}>{item.unit_name}</td>
-                      <td style={{ padding: '10px 8px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '10px', background: item.fee_amount === 0 ? '#dcfce7' : '#fef9c3', color: item.fee_amount === 0 ? '#166534' : '#854d0e' }}>
+                      <td style={{ padding: '12px 10px', color: '#475569', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{item.phone ? item.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***'}</td>
+                      <td style={{ padding: '12px 10px', color: '#64748b', whiteSpace: 'nowrap' }}>{item.cohort_year || '-'}</td>
+                      <td style={{ padding: '12px 10px', fontWeight: '600', color: '#334155' }}>{item.unit_name}</td>
+                      <td style={{ padding: '12px 10px' }}>
+                        <span style={{ display: 'inline-block', fontSize: '11.5px', fontWeight: 'bold', padding: '4px 10px', borderRadius: '10px', background: item.fee_amount === 0 ? '#dcfce7' : '#fef9c3', color: item.fee_amount === 0 ? '#166534' : '#854d0e', whiteSpace: 'nowrap' }}>
                           {item.payment_status || (item.fee_amount === 0 ? 'Miễn phí' : '300.000đ')}
                         </span>
                       </td>
-                      <td style={{ padding: '10px 8px', color: '#64748b', fontSize: '12px' }}>{item.notes || '-'}</td>
+                      <td style={{ padding: '12px 10px', color: '#64748b', fontSize: '12px', minWidth: '150px' }}>{item.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

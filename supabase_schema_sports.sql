@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS cbq_sports_registrations (
     unit_name TEXT NOT NULL,
     notes TEXT,
     user_category TEXT DEFAULT 'Cựu học sinh',
+    fee_amount INTEGER DEFAULT 0,
+    payment_status TEXT DEFAULT 'Chờ nộp kinh phí',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
