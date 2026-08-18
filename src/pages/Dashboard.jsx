@@ -198,6 +198,21 @@ export default function Dashboard() {
             </span>
           </Link>
 
+          {/* Guestbook Quick Access Card */}
+          <Link to="/admin/luu-but" className="glass" style={{ ...styles.card, gridColumn: '1 / -1', background: 'linear-gradient(135deg, #be123c 0%, #881337 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '18px 22px', marginTop: '10px' }}>
+            <div>
+              <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#fde047', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                💖 QUẢN LÝ SỔ LƯU BÚT
+              </h2>
+              <p style={{ margin: 0, fontSize: '13.5px', color: '#ffe4e6' }}>
+                Xem, duyệt và quản lý các bài đăng lưu bút của cựu học sinh và giáo viên.
+              </p>
+            </div>
+            <span style={{ padding: '8px 18px', background: '#ffffff', color: '#be123c', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px' }}>
+              Truy Cập Ngay ➔
+            </span>
+          </Link>
+
           {/* Red Alert Section */}
           <div className="glass" style={{...styles.card, gridColumn: '1 / -1'}}>
             <h2 style={styles.cardTitle}>

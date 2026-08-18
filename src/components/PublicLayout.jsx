@@ -49,6 +49,7 @@ export default function PublicLayout() {
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
             <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
+            <Link to="/luu-but" style={isActive('/luu-but') ? styles.navItemActive : styles.navItem}>💖 Sổ lưu bút</Link>
             
             {/* DROPDOWN 1: HOẠT ĐỘNG KỶ NIỆM */}
             <div className={`nav-dropdown ${activeDropdown === 'activity' ? 'active-touch' : ''}`}>

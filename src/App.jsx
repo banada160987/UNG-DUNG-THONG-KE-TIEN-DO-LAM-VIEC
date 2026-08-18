@@ -9,9 +9,11 @@ import PublicNewsList from './pages/PublicNewsList';
 import PublicDocs from './pages/PublicDocs';
 import PublicSponsorsList from './pages/PublicSponsorsList';
 import PublicGallery from './pages/PublicGallery';
+import PublicGuestbook from './pages/PublicGuestbook';
 import AdminSponsors from './pages/AdminSponsors';
 import AdminNews from './pages/AdminNews';
 import AdminGuests from './pages/AdminGuests';
+import AdminGuestbook from './pages/AdminGuestbook';
 import AdminPages from './pages/AdminPages';
 import AdminDocs from './pages/AdminDocs';
 import AdminUsers from './pages/AdminUsers';
@@ -56,6 +58,7 @@ function App() {
         <Route path="/van-ban" element={<PublicDocs />} />
         <Route path="/bang-vang" element={<PublicSponsorsList />} />
         <Route path="/thu-vien-anh" element={<PublicGallery />} />
+        <Route path="/luu-but" element={<PublicGuestbook />} />
         <Route path="/cuoc-thi" element={<PublicQuiz />} />
         <Route path="/binh-chon" element={<PublicVoting />} />
         <Route path="/nop-bai-thi" element={<PublicSubmission />} />
@@ -74,6 +77,7 @@ function App() {
           <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/news" element={permissions.canViewNews ? <AdminNews /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/guests" element={permissions.canViewGuests ? <AdminGuests /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/luu-but" element={permissions.canViewNews ? <AdminGuestbook /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/pages" element={permissions.canViewPages ? <AdminPages /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
