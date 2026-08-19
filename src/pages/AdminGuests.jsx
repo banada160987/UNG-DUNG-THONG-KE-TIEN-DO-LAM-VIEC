@@ -20,7 +20,15 @@ export default function AdminGuests() {
   const [showPrintBadges, setShowPrintBadges] = useState(false);
   const [badgeCategoryFilter, setBadgeCategoryFilter] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [filterCategory, setFilterCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredGuests = guests.filter(g => {
+    if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
+    if (filterCategory !== 'All' && g.category !== filterCategory) return false;
+    if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    return true;
+  });
   // EDIT & DELETE GUEST STATE
   const [editingGuest, setEditingGuest] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -241,12 +249,11 @@ export default function AdminGuests() {
 
   const handleExport = () => {
     const baseUrl = 'https://lekyniem30nam.vercel.app';
-    const filteredToExport = guests.filter(g => {
-      if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
-      if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-      return true;
-    });
-    const exportData = filteredToExport.map(g => ({
+    if (filteredGuests.length === 0) {
+      alert("Không có dữ liệu phù hợp với bộ lọc hiện tại để xuất file Excel!");
+      return;
+    }
+    const exportData = filteredGuests.map(g => ({
       'Họ Tên': g.name,
       'Phân loại': g.category,
       'Số điện thoại': g.phone,
@@ -258,7 +265,9 @@ export default function AdminGuests() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Khách mời");
-    XLSX.writeFile(wb, "DanhSachKhachMoi.xlsx");
+
+    const categoryName = filterCategory !== 'All' ? `_${filterCategory.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+    XLSX.writeFile(wb, `DanhSachKhachMoi${categoryName}.xlsx`);
   };
 
   const handleDownloadTemplate = () => {
@@ -432,11 +441,7 @@ export default function AdminGuests() {
 
       <div className="glass" style={{ padding: '2rem', borderRadius: '1rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1rem' }}>
-          <h3>Danh sách Đại biểu ({guests.filter(g => {
-            if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
-            if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-            return true;
-          }).length} người)</h3>
+          <h3>Danh sách Đại biểu ({filteredGuests.length} người)</h3>
           
           <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
             <input 
@@ -446,6 +451,18 @@ export default function AdminGuests() {
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', width: '250px' }}
             />
+            <select 
+              value={filterCategory} 
+              onChange={(e) => setFilterCategory(e.target.value)}
+              style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+            >
+              <option value="All">Tất cả phân loại</option>
+              <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+              <option value="Đại diện Lãnh đạo trường THPT">Đại diện Lãnh đạo trường THPT</option>
+              <option value="Cựu giáo viên">Cựu giáo viên</option>
+              <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh (Đại diện khóa)</option>
+              <option value="Khách mời khác">Khách mời khác</option>
+            </select>
             <select 
               value={filterStatus} 
               onChange={(e) => setFilterStatus(e.target.value)}
@@ -472,11 +489,7 @@ export default function AdminGuests() {
                 </tr>
               </thead>
               <tbody>
-                {guests.filter(g => {
-                  if (filterStatus !== 'All' && g.rsvp_status !== filterStatus) return false;
-                  if (searchTerm && !g.name.toLowerCase().includes(searchTerm.toLowerCase()) && !g.invitation_code.toLowerCase().includes(searchTerm.toLowerCase())) return false;
-                  return true;
-                }).map(g => (
+                {filteredGuests.map(g => (
                   <tr key={g.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
                     <td style={styles.td}>
                       <strong>{g.name}</strong><br/>
