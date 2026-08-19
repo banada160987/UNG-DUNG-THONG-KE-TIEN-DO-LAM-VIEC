@@ -1296,6 +1296,9 @@ export default function OnlineInvitation() {
                 <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px'}}>
                   <button className="rsvp-open-btn" onClick={() => setIsRsvpModalOpen(true)}>Xác Nhận Tham Dự</button>
                   <div style={{display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap'}}>
+                    <a href="/tap-san" target="_blank" rel="noreferrer" className="alumni-directory-btn" style={{background: 'linear-gradient(135deg, #be123c, #881337)', textDecoration: 'none', color: 'white', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
+                      📖 Đọc Tập San 30 Năm
+                    </a>
                     <a href={`/binh-chon?code=${guest?.invitation_code || ''}`} className="alumni-directory-btn" style={{background: 'linear-gradient(135deg, #b45309, #d97706)', textDecoration: 'none', color: 'white', display: 'inline-flex', alignItems: 'center', gap: '4px'}}>
                       🏆 Bình Chọn Tác Phẩm
                     </a>

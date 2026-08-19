@@ -34,6 +34,8 @@ import AdminSports from './pages/AdminSports';
 import PublicFeedbackSystem from './pages/PublicFeedbackSystem';
 import AdminFeedbackSystem from './pages/AdminFeedbackSystem';
 import PublicGuide from './pages/PublicGuide';
+import PublicMagazine from './pages/PublicMagazine';
+import AdminMagazine from './pages/AdminMagazine';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -54,6 +56,7 @@ function App() {
         <Route path="/" element={<PublicHome />} />
         <Route path="/gioi-thieu" element={<PublicAbout />} />
         <Route path="/huong-dan" element={<PublicGuide />} />
+        <Route path="/tap-san" element={<PublicMagazine />} />
         <Route path="/tin-tuc" element={<PublicNewsList />} />
         <Route path="/van-ban" element={<PublicDocs />} />
         <Route path="/bang-vang" element={<PublicSponsorsList />} />
@@ -80,6 +83,7 @@ function App() {
           <Route path="/admin/luu-but" element={permissions.canViewNews ? <AdminGuestbook /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/pages" element={permissions.canViewPages ? <AdminPages /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/tap-san" element={permissions.canViewDocs ? <AdminMagazine /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/links" element={role === 'admin' ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />

@@ -48,6 +48,7 @@ export default function PublicLayout() {
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
             <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
+            <Link to="/tap-san" style={isActive('/tap-san') ? styles.navItemActive : styles.navItem}>📖 Tập san 30 năm</Link>
             <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
             <Link to="/luu-but" style={isActive('/luu-but') ? styles.navItemActive : styles.navItem}>💖 Sổ lưu bút</Link>
             

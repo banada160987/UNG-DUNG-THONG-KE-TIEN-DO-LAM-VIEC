@@ -339,16 +339,28 @@ export default function AdminGuests() {
   };
 
   const handleDownloadInvite = async (guest) => {
+    if (!guest) return;
     setDownloadingGuest(guest);
     
     // Đợi DOM render card ẩn
     setTimeout(async () => {
-      if (!hiddenInviteRef.current) return;
+      if (!hiddenInviteRef.current) {
+        setDownloadingGuest(null);
+        alert("Không tìm thấy khung thiệp. Vui lòng thử lại!");
+        return;
+      }
       try {
-        const canvas = await html2canvas(hiddenInviteRef.current, { scale: 2, useCORS: true });
+        const canvas = await html2canvas(hiddenInviteRef.current, { 
+          scale: 2, 
+          useCORS: true, 
+          allowTaint: true, 
+          logging: false,
+          backgroundColor: '#ffffff'
+        });
         const image = canvas.toDataURL("image/png", 1.0);
         const link = document.createElement("a");
-        link.download = `ThiepMoi_${guest.name}.png`;
+        const safeName = (guest.name || 'KhachMoi').replace(/[^a-zA-Z0-9À-ỹ\s]/g, '_').trim();
+        link.download = `ThiepMoi_${safeName}.png`;
         link.href = image;
         link.click();
       } catch (error) {
@@ -357,7 +369,7 @@ export default function AdminGuests() {
       } finally {
         setDownloadingGuest(null);
       }
-    }, 500);
+    }, 400);
   };
 
   return (
@@ -684,7 +696,7 @@ export default function AdminGuests() {
 
       {/* Hidden Div cho Tải Thiệp */}
       {downloadingGuest && (
-        <div style={{ position: 'absolute', top: '-9999px', left: '-9999px' }}>
+        <div style={{ position: 'fixed', left: 0, top: 0, zIndex: -9999, opacity: 1, pointerEvents: 'none', background: '#ffffff' }}>
           <div className="bifold-invite-container" ref={hiddenInviteRef} style={{ width: '800px', flexDirection: 'row', display: 'flex' }}>
             
             {/* TRANG TRÁI - Lời mời & Thông tin khách */}
@@ -701,7 +713,7 @@ export default function AdminGuests() {
                 {downloadingGuest.category && downloadingGuest.category !== 'Khách mời khác' && (
                   <div className="guest-category-text">{downloadingGuest.category}</div>
                 )}
-                {downloadingGuest.name.includes(' - ') || downloadingGuest.name.includes(' – ') ? (
+                {downloadingGuest.name && (downloadingGuest.name.includes(' - ') || downloadingGuest.name.includes(' – ')) ? (
                   <div style={{ padding: '4px 0' }}>
                     <div className="guest-name-text" style={{ fontSize: '20px', color: '#be123c', fontFamily: 'Playfair Display, serif' }}>
                       {downloadingGuest.name.split(/\s*[-–]\s*/)[0]}
@@ -711,8 +723,8 @@ export default function AdminGuests() {
                     </div>
                   </div>
                 ) : (
-                  <div className="guest-name-text" style={downloadingGuest.name.length > 28 ? { fontSize: '20px' } : {}}>
-                    {downloadingGuest.name}
+                  <div className="guest-name-text" style={(downloadingGuest?.name?.length || 0) > 28 ? { fontSize: '20px' } : {}}>
+                    {downloadingGuest?.name || 'Khách mời'}
                   </div>
                 )}
                 <div className="dotted-line"></div>
@@ -757,7 +769,7 @@ export default function AdminGuests() {
               </div>
               
               <div className="logo-container">
-                <img src="/logo-30-nam.jpg" alt="Logo 30 năm" style={{ maxWidth: '120px', height: 'auto' }} />
+                <img src="/logo.jpg" alt="Logo 30 năm" style={{ maxWidth: '120px', height: 'auto' }} onError={(e) => { e.target.style.display = 'none'; }} />
               </div>
               
               <div className="agenda-list">
@@ -776,8 +788,8 @@ export default function AdminGuests() {
               </div>
               
               <div className="qr-box">
-                <QRCodeSVG value={downloadingGuest.invitation_code} size={80} />
-                <div style={{ fontSize: '10px', marginTop: '5px', color: '#64748b' }}>Mã Check-in: {downloadingGuest.invitation_code}</div>
+                <QRCodeSVG value={downloadingGuest.invitation_code || downloadingGuest.id || 'CBQ-0000'} size={80} />
+                <div style={{ fontSize: '10px', marginTop: '5px', color: '#64748b' }}>Mã Check-in: {downloadingGuest.invitation_code || downloadingGuest.id}</div>
               </div>
               
               <div className="closing-text">Rất vinh dự được đón tiếp!</div>
