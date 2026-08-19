@@ -160,11 +160,21 @@ export default function AdminGuests() {
     const { error } = await supabase.from('cbq_guests').insert(newGuests);
     if (!error) {
       setShowBulk(false);
-      alert(`Đã thêm thành công ${newGuests.length} khách mời từ Excel!`);
+      alert(`🎉 Đã NHẬP THÊM thành công ${newGuests.length} khách mời từ file Excel vào hệ thống!\n\n(Lưu ý: Dữ liệu cũ được giữ nguyên 100%, không bị ghi đè).`);
       fetchGuests();
     } else {
-      alert("Lỗi khi nhập hàng loạt.");
+      console.error("Lỗi khi nhập hàng loạt:", error);
+      alert("Lỗi khi nhập hàng loạt: " + error.message);
     }
+  };
+
+  const generateUniqueCode = (existingCodes) => {
+    let code = '';
+    do {
+      code = 'CBQ-' + Math.floor(1000 + Math.random() * 9000);
+    } while (existingCodes.has(code));
+    existingCodes.add(code);
+    return code;
   };
 
   const handleFileUpload = (e) => {
@@ -172,21 +182,59 @@ export default function AdminGuests() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const data = XLSX.utils.sheet_to_json(ws);
-      
-      const newGuests = data.map(row => ({
-        name: row['Họ Tên'] || 'Khách ẩn danh',
-        category: row['Phân loại'] || 'Khách mời khác',
-        phone: row['Số điện thoại'] || '',
-        email: row['Email'] || '',
-        invitation_code: generateCode(),
-        rsvp_status: 'pending'
-      }));
-      insertBulkGuests(newGuests);
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+        
+        if (!data || data.length === 0) {
+          alert("File Excel trống hoặc không đúng định dạng!");
+          return;
+        }
+
+        // Tap hop cac ma da ton tai trong he thong
+        const existingCodes = new Set(guests.map(g => g.invitation_code).filter(Boolean));
+
+        const newGuests = [];
+        for (const row of data) {
+          const name = (row['Họ Tên'] || row['Họ và Tên'] || row['Tên'] || '').toString().trim();
+          if (!name) continue;
+
+          const category = (row['Phân loại'] || 'Khách mời khác').toString().trim();
+          const phone = (row['Số điện thoại'] || row['SĐT'] || '').toString().trim();
+          const email = (row['Email'] || '').toString().trim();
+          let code = (row['Mã Thư Mời'] || row['Mã Khách Mời'] || row['Mã'] || '').toString().trim();
+
+          if (!code || existingCodes.has(code)) {
+            code = generateUniqueCode(existingCodes);
+          } else {
+            existingCodes.add(code);
+          }
+
+          newGuests.push({
+            name,
+            category,
+            phone,
+            email,
+            invitation_code: code,
+            rsvp_status: 'pending'
+          });
+        }
+
+        if (newGuests.length === 0) {
+          alert("Không tìm thấy dữ liệu khách mời hợp lệ trong file Excel!");
+          return;
+        }
+
+        insertBulkGuests(newGuests);
+      } catch (err) {
+        console.error("Lỗi đọc file Excel:", err);
+        alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng file!");
+      } finally {
+        e.target.value = '';
+      }
     };
     reader.readAsBinaryString(file);
   };
@@ -218,7 +266,8 @@ export default function AdminGuests() {
       'Họ Tên': 'Nguyễn Văn A',
       'Phân loại': 'Cựu giáo viên',
       'Số điện thoại': '0901234567',
-      'Email': 'nguyenvana@gmail.com'
+      'Email': 'nguyenvana@gmail.com',
+      'Mã Thư Mời': 'CBQ-1001 (Bỏ trống để tự tạo)'
     }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
@@ -327,10 +376,11 @@ export default function AdminGuests() {
 
       {showBulk && (
         <div className="glass" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '1rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981' }}>
-          <h3 style={{color: '#047857'}}>Nhập danh sách từ Excel</h3>
-          <p style={{marginBottom: '1rem', color: '#065f46'}}>
+          <h3 style={{color: '#047857'}}>📥 Nhập danh sách từ Excel (Tự động Nhập thêm)</h3>
+          <p style={{marginBottom: '1rem', color: '#065f46', fontSize: '14px', lineHeight: '1.6'}}>
+            📌 <strong>Lưu ý:</strong> Chức năng này sẽ <strong>NHẬP THÊM (Append)</strong> các khách mời từ file Excel vào danh sách hiện tại mà <strong>KHÔNG GHI ĐÈ hay làm mất</strong> dữ liệu có sẵn.<br/>
             1. Tải file mẫu về máy và điền thông tin.<br/>
-            2. Bấm "Chọn file" để tải lên hệ thống.
+            2. Bấm "Chọn file" để tải dữ liệu lên hệ thống.
           </p>
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', alignItems: 'center' }}>
             <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '0.5rem 1rem', backgroundColor: '#34d399', color: '#064e3b' }}>
@@ -354,6 +404,7 @@ export default function AdminGuests() {
               <label style={styles.label}>Phân loại</label>
               <select name="category" value={formData.category} onChange={handleChange} style={styles.input}>
                 <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+                <option value="Đại diện Lãnh đạo trường THPT">Đại diện Lãnh đạo trường THPT</option>
                 <option value="Cựu giáo viên">Cựu giáo viên</option>
                 <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh (Đại diện khóa)</option>
                 <option value="Khách mời khác">Khách mời khác</option>
@@ -545,6 +596,7 @@ export default function AdminGuests() {
                     style={styles.input}
                   >
                     <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+                    <option value="Đại diện Lãnh đạo trường THPT">Đại diện Lãnh đạo trường THPT</option>
                     <option value="Cựu giáo viên">Cựu giáo viên</option>
                     <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh (Đại diện khóa)</option>
                     <option value="Khách mời khác">Khách mời khác</option>
@@ -735,9 +787,10 @@ export default function AdminGuests() {
                   style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
                 >
                   <option value="All">Tất cả phân loại ({guests.length})</option>
+                  <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+                  <option value="Đại diện Lãnh đạo trường THPT">Đại diện Lãnh đạo trường THPT</option>
                   <option value="Cựu giáo viên">Cựu giáo viên</option>
                   <option value="Cựu học sinh">Cựu học sinh</option>
-                  <option value="Đại biểu">Đại biểu</option>
                   <option value="Khách mời khác">Khách mời khác</option>
                 </select>
 

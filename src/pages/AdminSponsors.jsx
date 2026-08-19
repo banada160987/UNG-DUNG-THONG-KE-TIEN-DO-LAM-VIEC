@@ -56,10 +56,11 @@ export default function AdminSponsors() {
     const { error } = await supabase.from('cbq_sponsors').insert(newSponsors);
     if (!error) {
       setShowBulk(false);
-      alert(`Đã thêm thành công ${newSponsors.length} nhà tài trợ từ Excel!`);
+      alert(`🎉 Đã NHẬP THÊM thành công ${newSponsors.length} nhà tài trợ từ file Excel!\n\n(Dữ liệu cũ được giữ nguyên 100%, không bị ghi đè).`);
       fetchSponsors();
     } else {
-      alert("Lỗi khi nhập hàng loạt.");
+      console.error("Lỗi khi nhập hàng loạt:", error);
+      alert("Lỗi khi nhập hàng loạt: " + error.message);
     }
   };
 
@@ -68,19 +69,37 @@ export default function AdminSponsors() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const bstr = evt.target.result;
-      const wb = XLSX.read(bstr, { type: 'binary' });
-      const wsname = wb.SheetNames[0];
-      const ws = wb.Sheets[wsname];
-      const data = XLSX.utils.sheet_to_json(ws);
-      
-      const newSponsors = data.map(row => ({
-        name: row['Tên / Đơn vị'] || 'Ẩn danh',
-        donation_amount: Number(row['Tiền mặt (VNĐ)']) || 0,
-        donation_item: row['Hiện vật'] || '',
-        is_public: true
-      }));
-      insertBulkSponsors(newSponsors);
+      try {
+        const bstr = evt.target.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws);
+
+        if (!data || data.length === 0) {
+          alert("File Excel trống hoặc không đúng định dạng!");
+          return;
+        }
+        
+        const newSponsors = data.map(row => ({
+          name: (row['Tên / Đơn vị'] || row['Tên'] || 'Ẩn danh').toString().trim(),
+          donation_amount: Number(row['Tiền mặt (VNĐ)'] || row['Tiền mặt'] || 0),
+          donation_item: (row['Hiện vật'] || '').toString().trim(),
+          is_public: true
+        })).filter(s => s.name && s.name !== 'Ẩn danh');
+
+        if (newSponsors.length === 0) {
+          alert("Không tìm thấy dữ liệu nhà tài trợ hợp lệ trong file Excel!");
+          return;
+        }
+
+        insertBulkSponsors(newSponsors);
+      } catch (err) {
+        console.error("Lỗi khi đọc file Excel:", err);
+        alert("Lỗi khi đọc file Excel. Vui lòng kiểm tra lại định dạng!");
+      } finally {
+        e.target.value = '';
+      }
     };
     reader.readAsBinaryString(file);
   };
@@ -129,10 +148,11 @@ export default function AdminSponsors() {
 
       {showBulk && (
         <div className="glass" style={{ padding: '2rem', marginBottom: '2rem', borderRadius: '1rem', backgroundColor: '#ecfdf5', border: '1px solid #10b981' }}>
-          <h3 style={{color: '#047857'}}>Nhập danh sách từ Excel</h3>
-          <p style={{marginBottom: '1rem', color: '#065f46'}}>
+          <h3 style={{color: '#047857'}}>📥 Nhập danh sách từ Excel (Tự động Nhập thêm)</h3>
+          <p style={{marginBottom: '1rem', color: '#065f46', fontSize: '14px', lineHeight: '1.6'}}>
+            📌 <strong>Lưu ý:</strong> Chức năng này sẽ <strong>NHẬP THÊM (Append)</strong> các nhà tài trợ từ file Excel vào danh sách mà <strong>KHÔNG GHI ĐÈ dữ liệu có sẵn</strong>.<br/>
             1. Tải file mẫu về máy và điền thông tin.<br/>
-            2. Bấm "Chọn file" để tải lên hệ thống.
+            2. Bấm "Chọn file" để tải dữ liệu lên hệ thống.
           </p>
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', alignItems: 'center' }}>
             <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '0.5rem 1rem', backgroundColor: '#34d399', color: '#064e3b' }}>

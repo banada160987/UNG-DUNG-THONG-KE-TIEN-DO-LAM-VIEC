@@ -1399,6 +1399,8 @@ export default function OnlineInvitation() {
                       >
                         <option value="Cựu học sinh (Đại diện khóa)">Cựu học sinh</option>
                         <option value="Cựu giáo viên">Cựu giáo viên</option>
+                        <option value="Đại biểu Sở/Ban/Ngành">Đại biểu Sở/Ban/Ngành</option>
+                        <option value="Đại diện Lãnh đạo trường THPT">Đại diện Lãnh đạo trường THPT</option>
                         <option value="Cha mẹ học sinh">Cha mẹ học sinh</option>
                         <option value="Khách mời khác">Khách mời khác</option>
                       </select>
