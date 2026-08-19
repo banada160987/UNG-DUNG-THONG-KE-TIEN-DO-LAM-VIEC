@@ -564,6 +564,42 @@ export default function OnlineInvitation() {
     return sponsorsList.reduce((sum, item) => sum + (parseFloat(item.donation_amount) || 0), 0);
   };
 
+  const renderCoverName = (name, mode = 'cover') => {
+    if (!name) return null;
+    const str = name.trim();
+
+    // 1. Tên / Chức danh có dấu gạch ngang (VD: "Đại diện lãnh đạo - Tiểu học Lê Đại Hành - Phường Tân An")
+    if (str.includes(' - ') || str.includes(' – ') || str.includes(' -') || str.includes('- ')) {
+      const parts = str.split(/\s*[-–]\s*/);
+      const mainTitle = parts[0];
+      const subTitle = parts.slice(1).join(' - ');
+
+      return (
+        <div className="cover-name-container">
+          <div className="cover-name-main-title">{mainTitle}</div>
+          <div className="cover-name-sub-title">{subTitle}</div>
+        </div>
+      );
+    }
+
+    // 2. Tên quá dài (> 32 ký tự) không dấu gạch ngang
+    if (str.length > 32) {
+      return (
+        <div className="cover-name-container">
+          <div className="cover-name-long">{str}</div>
+        </div>
+      );
+    }
+
+    // 3. Tên dài vừa (21-32 ký tự)
+    if (str.length > 20) {
+      return <div className={mode === 'entrance' ? "entrance-guest cover-name-medium" : "cover-name cover-name-medium"}>{str}</div>;
+    }
+
+    // 4. Tên ngắn (<= 20 ký tự, VD: "Nguyễn Văn A")
+    return <div className={mode === 'entrance' ? "entrance-guest" : "cover-name"}>{str}</div>;
+  };
+
   if (loading) return <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>Đang tải thiệp mời...</div>;
   if (!guest) return (
     <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#7e1717', color: '#f3e6c9'}}>
@@ -638,7 +674,45 @@ export default function OnlineInvitation() {
         .cover-title-sub { font-size: clamp(17px, 4.8vw, 22px); font-weight: 700; letter-spacing: 1.5px; color: #b45309; }
         .cover-subtitle { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 600; margin-bottom: 25px; color: #64748b; letter-spacing: 1px; }
         .cover-guest { font-family: 'Montserrat', sans-serif; font-size: 15px; margin-bottom: 8px; color: #475569; text-transform: uppercase; letter-spacing: 1px; }
-        .cover-name { font-family: 'Great Vibes', cursive; font-size: 46px; color: #b45309; font-weight: 400; margin-bottom: 45px; line-height: 1.2; text-shadow: 1px 1px 2px rgba(0,0,0,0.1); }
+        .cover-name { font-family: 'Great Vibes', cursive; font-size: clamp(32px, 7vw, 44px); color: #b45309; font-weight: 400; margin-bottom: 25px; line-height: 1.25; text-shadow: 1px 1px 2px rgba(0,0,0,0.08); padding: 0 15px; word-break: break-word; }
+        .cover-name-medium { font-size: clamp(24px, 5.5vw, 32px); line-height: 1.3; margin-bottom: 20px; }
+        .cover-name-container {
+          margin: 5px auto 20px auto;
+          max-width: 360px;
+          width: 90%;
+          padding: 12px 18px;
+          background: rgba(255, 253, 250, 0.95);
+          border: 1.5px solid #ca8a4b;
+          border-radius: 16px;
+          box-shadow: 0 4px 15px rgba(202, 138, 75, 0.15);
+          text-align: center;
+          box-sizing: border-box;
+        }
+        .cover-name-main-title {
+          font-family: 'Great Vibes', cursive;
+          font-size: clamp(26px, 6vw, 36px);
+          color: #be123c;
+          font-weight: 500;
+          line-height: 1.25;
+        }
+        .cover-name-sub-title {
+          font-family: 'Montserrat', sans-serif;
+          font-size: 13px;
+          font-weight: 600;
+          color: #475569;
+          line-height: 1.45;
+          border-top: 1px dashed #fcd34d;
+          padding-top: 6px;
+          margin-top: 6px;
+        }
+        .cover-name-long {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(16px, 4.2vw, 20px);
+          font-weight: 700;
+          color: #9a3412;
+          line-height: 1.4;
+          letter-spacing: 0.3px;
+        }
         .swipe-hint { position: absolute; bottom: 85px; font-size: 13px; color: #be123c; font-weight: 700; animation: bounceRight 2s infinite; display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.9); padding: 8px 18px; border-radius: 20px; border: 1px solid #fecdd3; box-shadow: 0 4px 12px rgba(225,29,72,0.15); }
         @keyframes bounceRight { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(8px); } }
 
@@ -1000,7 +1074,7 @@ export default function OnlineInvitation() {
                  </div>
                </div>
              ) : (
-               <h1 className="entrance-guest">{guest?.name}</h1>
+                renderCoverName(guest?.name, 'entrance')
              )}
 
              <button className="entrance-btn" onClick={handleOpenInvitation}>✨ MỞ THIỆP</button>
@@ -1077,7 +1151,7 @@ export default function OnlineInvitation() {
                 <div style={{ color: '#0f172a', fontWeight: '600' }}>• Quý CBQL, GV, NV, HS & quý Cha mẹ học sinh.</div>
               </div>
             ) : (
-              <div className="cover-name">{guest.name}</div>
+               renderCoverName(guest?.name, 'cover')
             )}
             
             {/* COUNTDOWN TIMER ON COVER */}

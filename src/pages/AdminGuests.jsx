@@ -701,7 +701,20 @@ export default function AdminGuests() {
                 {downloadingGuest.category && downloadingGuest.category !== 'Khách mời khác' && (
                   <div className="guest-category-text">{downloadingGuest.category}</div>
                 )}
-                <div className="guest-name-text">{downloadingGuest.name}</div>
+                {downloadingGuest.name.includes(' - ') || downloadingGuest.name.includes(' – ') ? (
+                  <div style={{ padding: '4px 0' }}>
+                    <div className="guest-name-text" style={{ fontSize: '20px', color: '#be123c', fontFamily: 'Playfair Display, serif' }}>
+                      {downloadingGuest.name.split(/\s*[-–]\s*/)[0]}
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold', marginTop: '2px' }}>
+                      {downloadingGuest.name.split(/\s*[-–]\s*/).slice(1).join(' - ')}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="guest-name-text" style={downloadingGuest.name.length > 28 ? { fontSize: '20px' } : {}}>
+                    {downloadingGuest.name}
+                  </div>
+                )}
                 <div className="dotted-line"></div>
               </div>
               
