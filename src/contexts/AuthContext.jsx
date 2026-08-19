@@ -71,13 +71,16 @@ export const AuthProvider = ({ children }) => {
         setCommitteeId(commId);
         setCommitteeName(commName);
 
+        const isSecretaryOrAdmin = userRole === 'admin' || userRole === 'secretary' || (commName && commName.toLowerCase().includes('thư ký'));
+
         // Define permissions
         const perms = {
-          canViewSponsors: userRole === 'admin' || userRole === 'secretary' || commName === 'Tiểu ban tiếp nhận tài trợ',
-          canViewGuests: userRole === 'admin' || userRole === 'secretary' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Lễ tân, khánh tiết',
+          canViewSponsors: isSecretaryOrAdmin || commName === 'Tiểu ban tiếp nhận tài trợ',
+          canViewGuests: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Lễ tân, khánh tiết',
           canViewNews: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Nội dung, biên tập tập san',
           canViewPages: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông',
           canViewDocs: userRole === 'admin' || commName === 'Tiểu ban Nội dung, biên tập tập san',
+          canViewSports: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || (commName && commName.toLowerCase().includes('thể thao')),
         };
         setPermissions(perms);
       }

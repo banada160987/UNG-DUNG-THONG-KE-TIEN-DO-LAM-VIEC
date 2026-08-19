@@ -87,7 +87,7 @@ function App() {
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewNews ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/the-thao" element={permissions.canViewNews ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/the-thao" element={permissions.canViewSports ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gop-y" element={permissions.canViewDocs ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gop-y-quy-hoc-bong" element={<Navigate to="/admin/gop-y" replace />} />
         </>
