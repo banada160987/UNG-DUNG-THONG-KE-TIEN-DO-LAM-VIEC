@@ -45,19 +45,19 @@ export default function AdminMagazine() {
       const { data, error } = await supabase
         .from('cbq_magazines')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (!error && data) {
-        setMagazine(data);
-        setTitle(data.title || '');
-        setDescription(data.description || '');
-        setPdfUrl(data.pdf_url || '');
-        setCoverImage(data.cover_image || '');
-        setIsPublished(data.is_published ?? true);
-        setPages(data.pages || []);
-        setToc(data.toc || []);
+      if (!error && data && data.length > 0) {
+        const item = data[0];
+        setMagazine(item);
+        setTitle(item.title || '');
+        setDescription(item.description || '');
+        setPdfUrl(item.pdf_url || '');
+        setCoverImage(item.cover_image || '');
+        setIsPublished(item.is_published ?? true);
+        setPages(item.pages || []);
+        setToc(item.toc || []);
       }
     } catch (err) {
       console.error("Lỗi nạp thông tin tập san:", err);
@@ -172,7 +172,9 @@ export default function AdminMagazine() {
         const updated = [...pages];
         updated[index] = { ...updated[index], image_url: url };
         setPages(updated);
-        alert(`Đã thay thế ảnh cho Trang ${index + 1} thành công!`);
+        setUploading(false);
+        // Auto-save to Supabase immediately so the public page updates
+        await handleSaveMagazine(null, updated);
       }
     } catch (err) {
       alert("Lỗi thay ảnh: " + err.message);
@@ -211,8 +213,10 @@ export default function AdminMagazine() {
         }
       }
 
-      setPages(prev => [...prev, ...newPagesList]);
-      alert(`🎉 ĐÃ TẢI LÊN THÀNH CÔNG BỘ ${newPagesList.length} TRANG TẬP SAN!`);
+      const allPages = [...pages, ...newPagesList];
+      setPages(allPages);
+      setUploading(false);
+      await handleSaveMagazine(null, allPages);
     } catch (err) {
       alert("Lỗi khi tải bộ ảnh: " + err.message);
     } finally {
@@ -222,16 +226,17 @@ export default function AdminMagazine() {
     }
   };
 
-  const handleSaveMagazine = async (e) => {
+  const handleSaveMagazine = async (e = null, customPages = null) => {
     e?.preventDefault();
     setSaving(true);
+    const pagesToSave = customPages || pages;
     try {
       const payload = {
         title,
         description,
         pdf_url: pdfUrl,
         cover_image: coverImage,
-        pages,
+        pages: pagesToSave,
         toc,
         is_published: isPublished,
         updated_at: new Date().toISOString()
@@ -255,7 +260,7 @@ export default function AdminMagazine() {
         setMagazine(data);
       }
 
-      alert("🎉 ĐÃ LƯU & CẬP NHẬT TẬP SAN THÀNH CÔNG!");
+      alert("🎉 ĐÃ LƯU & CẬP NHẬT TẬP SAN LÊN TRANG CÔNG KHAI THÀNH CÔNG!");
       fetchMagazine();
     } catch (err) {
       console.error("Lỗi khi lưu tập san:", err);

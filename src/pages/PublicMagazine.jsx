@@ -74,17 +74,17 @@ export default function PublicMagazine() {
         .from('cbq_magazines')
         .select('*')
         .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .order('updated_at', { ascending: false })
+        .limit(1);
 
-      if (!error && data) {
-        setMagazine(data);
-        if (data.pages && Array.isArray(data.pages) && data.pages.length > 0) {
-          setPages(data.pages);
+      if (!error && data && data.length > 0) {
+        const item = data[0];
+        setMagazine(item);
+        if (item.pages && Array.isArray(item.pages) && item.pages.length > 0) {
+          setPages(item.pages);
         }
-        if (data.toc && Array.isArray(data.toc) && data.toc.length > 0) {
-          setToc(data.toc);
+        if (item.toc && Array.isArray(item.toc) && item.toc.length > 0) {
+          setToc(item.toc);
         }
       }
     } catch (err) {
