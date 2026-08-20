@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { BookOpen, Plus, Save, Trash2, Edit3, Eye, FileText, CheckCircle2, AlertCircle, ArrowUp, ArrowDown, Upload } from 'lucide-react';
+import { 
+  BookOpen, Plus, Save, Trash2, Edit3, Eye, FileText, CheckCircle2, 
+  AlertCircle, ArrowUp, ArrowDown, Upload, Image as ImageIcon, FolderPlus, RefreshCw
+} from 'lucide-react';
 
 export default function AdminMagazine() {
   const [magazine, setMagazine] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgressText, setUploadProgressText] = useState('');
 
   // Form States
   const [title, setTitle] = useState('');
@@ -17,14 +22,18 @@ export default function AdminMagazine() {
   const [pages, setPages] = useState([]);
   const [toc, setToc] = useState([]);
 
-  // New Item States
+  // New Single Page State
   const [newPageTitle, setNewPageTitle] = useState('');
   const [newPageImageUrl, setNewPageImageUrl] = useState('');
+  
+  // New TOC State
   const [newTocTitle, setNewTocTitle] = useState('');
   const [newTocPage, setNewTocPage] = useState(1);
 
-  // Editing State
-  const [editingPageIdx, setEditingPageIdx] = useState(null);
+  // Edit Page Row State
+  const [editingIndex, setEditingIndex] = useState(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
 
   useEffect(() => {
     fetchMagazine();
@@ -57,8 +66,164 @@ export default function AdminMagazine() {
     }
   }
 
+  // --- FILE UPLOAD HELPER (Supabase Storage with Base64 Fallback) ---
+  const uploadSingleFile = async (file) => {
+    if (!file) return null;
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `magazine-${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('gallery')
+        .upload(fileName, file);
+
+      if (!uploadError) {
+        const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+        if (data && data.publicUrl) {
+          return data.publicUrl;
+        }
+      }
+    } catch (err) {
+      console.warn("Storage upload warn, fallback Base64:", err);
+    }
+
+    // Fallback to Base64 Data URL if Supabase Storage bucket is not available
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // Upload Cover Image
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadProgressText('Đang tải ảnh bìa lên...');
+    try {
+      const url = await uploadSingleFile(file);
+      if (url) {
+        setCoverImage(url);
+        alert("Đã tải ảnh bìa lên thành công!");
+      }
+    } catch (err) {
+      alert("Lỗi tải ảnh bìa: " + err.message);
+    } finally {
+      setUploading(false);
+      setUploadProgressText('');
+      e.target.value = '';
+    }
+  };
+
+  // Upload PDF File
+  const handlePdfUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadProgressText('Đang tải file PDF tập san...');
+    try {
+      const url = await uploadSingleFile(file);
+      if (url) {
+        setPdfUrl(url);
+        alert("Đã tải tệp PDF lên thành công!");
+      }
+    } catch (err) {
+      alert("Lỗi tải PDF: " + err.message);
+    } finally {
+      setUploading(false);
+      setUploadProgressText('');
+      e.target.value = '';
+    }
+  };
+
+  // Upload Single Image for "Thêm Trang Mới"
+  const handleNewPageImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadProgressText('Đang nạp ảnh trang...');
+    try {
+      const url = await uploadSingleFile(file);
+      if (url) {
+        setNewPageImageUrl(url);
+        if (!newPageTitle) {
+          setNewPageTitle(`Trang ${pages.length + 1}`);
+        }
+      }
+    } catch (err) {
+      alert("Lỗi tải ảnh: " + err.message);
+    } finally {
+      setUploading(false);
+      setUploadProgressText('');
+      e.target.value = '';
+    }
+  };
+
+  // Replace image for an EXISTING page row
+  const handleReplaceRowImage = async (index, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadProgressText(`Đang thay ảnh Trang ${index + 1}...`);
+    try {
+      const url = await uploadSingleFile(file);
+      if (url) {
+        const updated = [...pages];
+        updated[index] = { ...updated[index], image_url: url };
+        setPages(updated);
+        alert(`Đã thay thế ảnh cho Trang ${index + 1} thành công!`);
+      }
+    } catch (err) {
+      alert("Lỗi thay ảnh: " + err.message);
+    } finally {
+      setUploading(false);
+      setUploadProgressText('');
+      e.target.value = '';
+    }
+  };
+
+  // Batch Upload Multiple Files at Once (Select 10-50 images)
+  const handleBatchImagesUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Sort files by name naturally (e.g. page1, page2, page10...)
+    files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }));
+
+    setUploading(true);
+    setUploadProgressText(`Đang xử lý ${files.length} ảnh tập san...`);
+
+    try {
+      const newPagesList = [];
+      let startNum = pages.length + 1;
+
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgressText(`Đang tải trang ${i + 1} / ${files.length}...`);
+        const url = await uploadSingleFile(files[i]);
+        if (url) {
+          const pageTitle = files[i].name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+          newPagesList.push({
+            page_number: startNum + i,
+            title: pageTitle || `Trang ${startNum + i}`,
+            image_url: url
+          });
+        }
+      }
+
+      setPages(prev => [...prev, ...newPagesList]);
+      alert(`🎉 ĐÃ TẢI LÊN THÀNH CÔNG BỘ ${newPagesList.length} TRANG TẬP SAN!`);
+    } catch (err) {
+      alert("Lỗi khi tải bộ ảnh: " + err.message);
+    } finally {
+      setUploading(false);
+      setUploadProgressText('');
+      e.target.value = '';
+    }
+  };
+
   const handleSaveMagazine = async (e) => {
-    e.preventDefault();
+    e?.preventDefault();
     setSaving(true);
     try {
       const payload = {
@@ -102,7 +267,7 @@ export default function AdminMagazine() {
 
   const handleAddPage = () => {
     if (!newPageImageUrl.trim()) {
-      alert("Vui lòng nhập đường dẫn hình ảnh cho trang tập san!");
+      alert("Vui lòng tải ảnh từ máy tính hoặc dán đường dẫn ảnh!");
       return;
     }
     const nextNum = pages.length + 1;
@@ -117,7 +282,7 @@ export default function AdminMagazine() {
   };
 
   const handleDeletePage = (index) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa trang này khỏi tập san?")) return;
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa Trang ${index + 1}?`)) return;
     const updated = pages.filter((_, idx) => idx !== index).map((p, idx) => ({
       ...p,
       page_number: idx + 1
@@ -133,12 +298,28 @@ export default function AdminMagazine() {
     updated[index] = updated[targetIdx];
     updated[targetIdx] = temp;
 
-    // Re-index page numbers
     const reindexed = updated.map((p, idx) => ({
       ...p,
       page_number: idx + 1
     }));
     setPages(reindexed);
+  };
+
+  const startEditRow = (index) => {
+    setEditingIndex(index);
+    setEditTitle(pages[index].title);
+    setEditImageUrl(pages[index].image_url);
+  };
+
+  const saveEditRow = (index) => {
+    const updated = [...pages];
+    updated[index] = {
+      ...updated[index],
+      title: editTitle.trim() || `Trang ${index + 1}`,
+      image_url: editImageUrl.trim()
+    };
+    setPages(updated);
+    setEditingIndex(null);
   };
 
   const handleAddToc = () => {
@@ -166,7 +347,7 @@ export default function AdminMagazine() {
             <BookOpen size={24} color="#be123c" /> Biên tập & Xuất bản Tập san Kỷ niệm
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Dành cho Tiểu ban Nội dung, biên tập tập san và Ban Giám Hiệu duyệt ấn phẩm.
+            Hỗ trợ Tải ảnh trực tiếp từ máy tính (từng trang hoặc cả bộ ảnh), chỉnh sửa & xuất bản Tập san 3D.
           </p>
         </div>
 
@@ -182,7 +363,7 @@ export default function AdminMagazine() {
           </a>
           <button 
             onClick={handleSaveMagazine} 
-            disabled={saving}
+            disabled={saving || uploading}
             className="btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', backgroundColor: '#be123c' }}
           >
@@ -190,6 +371,12 @@ export default function AdminMagazine() {
           </button>
         </div>
       </div>
+
+      {uploading && (
+        <div style={{ padding: '12px 20px', background: '#dbeafe', color: '#1e40af', borderRadius: '10px', fontWeight: 'bold', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '10px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+          <RefreshCw size={20} className="animate-spin" /> {uploadProgressText || 'Đang xử lý tải tệp...'}
+        </div>
+      )}
 
       {loading ? <p>Đang nạp dữ liệu tập san...</p> : (
         <form onSubmit={handleSaveMagazine} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -237,39 +424,59 @@ export default function AdminMagazine() {
               </div>
 
               <div>
-                <label style={styles.label}>Đường dẫn File PDF Tập san HD (Link tải về)</label>
-                <input 
-                  type="text" 
-                  value={pdfUrl} 
-                  onChange={e => setPdfUrl(e.target.value)}
-                  style={styles.input} 
-                  placeholder="https://.../tap-san-30-nam.pdf hoặc /tap-san-30-nam.pdf"
-                />
+                <label style={styles.label}>File PDF Tập san HD (Link tải về)</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    value={pdfUrl} 
+                    onChange={e => setPdfUrl(e.target.value)}
+                    style={styles.input} 
+                    placeholder="Dán link PDF hoặc bấm Tải File bên cạnh ->"
+                  />
+                  <label style={{ padding: '8px 14px', background: '#0284c7', color: 'white', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Upload size={16} /> Tải PDF
+                    <input type="file" accept="application/pdf" onChange={handlePdfUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
               </div>
 
               <div>
-                <label style={styles.label}>Đường dẫn Ảnh Bìa tập san</label>
-                <input 
-                  type="text" 
-                  value={coverImage} 
-                  onChange={e => setCoverImage(e.target.value)}
-                  style={styles.input} 
-                  placeholder="https://.../cover.jpg"
-                />
+                <label style={styles.label}>Ảnh Bìa tập san</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    value={coverImage} 
+                    onChange={e => setCoverImage(e.target.value)}
+                    style={styles.input} 
+                    placeholder="Link ảnh bìa hoặc chọn file bên cạnh ->"
+                  />
+                  <label style={{ padding: '8px 14px', background: '#166534', color: 'white', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Upload size={16} /> Chọn Ảnh
+                    <input type="file" accept="image/*" onChange={handleCoverUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* SECTION 2: PAGES MANAGEMENT */}
+          {/* SECTION 2: PAGES MANAGEMENT WITH DIRECT FILE UPLOADS */}
           <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-              <h3 style={{ margin: 0, color: '#be123c' }}>
-                📄 2. Danh sách các Trang Tập san ({pages.length} trang)
-              </h3>
-              <span style={{ fontSize: '13px', color: '#64748b' }}>Hệ thống tự sắp xếp trang theo thứ tự từ 1 đến hết</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#be123c' }}>
+                  📄 2. Danh sách các Trang Tập san ({pages.length} trang)
+                </h3>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>Hỗ trợ nạp từng trang hoặc tải lên cả bộ ảnh từ máy tính</span>
+              </div>
+
+              {/* BATCH MULTIPLE FILE UPLOAD BUTTON */}
+              <label style={{ padding: '10px 18px', background: 'linear-gradient(135deg, #166534, #15803d)', color: 'white', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13.5px', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.25)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <FolderPlus size={18} /> 📁 TẢI HÀNG LOẠT BỘ ẢNH (Chọn nhiều ảnh cùng lúc)
+                <input type="file" accept="image/*" multiple onChange={handleBatchImagesUpload} style={{ display: 'none' }} />
+              </label>
             </div>
 
-            {/* Add New Page Form */}
+            {/* Add Single New Page Form */}
             <div style={{ padding: '15px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1', marginBottom: '20px', display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: '10px', alignItems: 'end' }}>
               <div>
                 <label style={styles.label}>Tên / Tiêu đề trang</label>
@@ -283,21 +490,27 @@ export default function AdminMagazine() {
               </div>
 
               <div>
-                <label style={styles.label}>Đường dẫn hình ảnh trang HD (*)</label>
-                <input 
-                  type="text" 
-                  value={newPageImageUrl} 
-                  onChange={e => setNewPageImageUrl(e.target.value)}
-                  placeholder="Dán link ảnh trang (VD: https://.../trang-1.jpg)"
-                  style={styles.input}
-                />
+                <label style={styles.label}>Hình ảnh trang HD (Chọn file từ máy HOẶC Dán link)</label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input 
+                    type="text" 
+                    value={newPageImageUrl} 
+                    onChange={e => setNewPageImageUrl(e.target.value)}
+                    placeholder="Dán link ảnh hoặc chọn file từ máy tính bên cạnh ->"
+                    style={styles.input}
+                  />
+                  <label style={{ padding: '8px 14px', background: '#475569', color: 'white', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap', fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Upload size={16} /> Chọn File
+                    <input type="file" accept="image/*" onChange={handleNewPageImageUpload} style={{ display: 'none' }} />
+                  </label>
+                </div>
               </div>
 
               <button 
                 type="button" 
                 onClick={handleAddPage}
                 className="btn-primary" 
-                style={{ padding: '10px 18px', backgroundColor: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '10px 18px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 <Plus size={18} /> Thêm Trang
               </button>
@@ -307,64 +520,144 @@ export default function AdminMagazine() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '13.5px' }}>
-                    <th style={{ padding: '10px' }}>STT</th>
-                    <th style={{ padding: '10px' }}>Hình ảnh xem trước</th>
-                    <th style={{ padding: '10px' }}>Tên trang</th>
-                    <th style={{ padding: '10px' }}>Đường dẫn ảnh HD</th>
-                    <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+                  <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '13.5px', background: '#f8fafc' }}>
+                    <th style={{ padding: '12px 10px' }}>STT</th>
+                    <th style={{ padding: '12px 10px' }}>Hình ảnh xem trước</th>
+                    <th style={{ padding: '12px 10px' }}>Tên trang</th>
+                    <th style={{ padding: '12px 10px' }}>Thay thế & Đường dẫn ảnh HD</th>
+                    <th style={{ padding: '12px 10px', textAlign: 'right' }}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
                   {pages.map((page, index) => (
                     <tr key={index} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '13.5px' }}>
-                      <td style={{ padding: '10px', fontWeight: 'bold' }}>Trang {page.page_number}</td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>Trang {page.page_number}</td>
                       <td style={{ padding: '10px' }}>
                         <img 
                           src={page.image_url} 
                           alt={page.title} 
-                          style={{ width: '50px', height: '65px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }} 
+                          style={{ width: '55px', height: '72px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.1)' }} 
                           onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/100x140?text=No+Image'; }}
                         />
                       </td>
-                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{page.title}</td>
-                      <td style={{ padding: '10px', color: '#3b82f6', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {page.image_url}
-                      </td>
-                      <td style={{ padding: '10px', textAlign: 'right' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                          <button 
-                            type="button" 
-                            onClick={() => handleMovePage(index, -1)}
-                            disabled={index === 0}
-                            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc', cursor: index === 0 ? 'not-allowed' : 'pointer' }}
-                            title="Lên trên"
-                          >
-                            <ArrowUp size={14} />
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => handleMovePage(index, 1)}
-                            disabled={index === pages.length - 1}
-                            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc', cursor: index === pages.length - 1 ? 'not-allowed' : 'pointer' }}
-                            title="Xuống dưới"
-                          >
-                            <ArrowDown size={14} />
-                          </button>
-                          <button 
-                            type="button" 
-                            onClick={() => handleDeletePage(index)}
-                            style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}
-                            title="Xóa trang"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
+                      
+                      {/* EDITING MODE VS DISPLAY MODE */}
+                      {editingIndex === index ? (
+                        <>
+                          <td style={{ padding: '10px' }}>
+                            <input 
+                              type="text" 
+                              value={editTitle} 
+                              onChange={e => setEditTitle(e.target.value)}
+                              style={styles.input}
+                            />
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <input 
+                              type="text" 
+                              value={editImageUrl} 
+                              onChange={e => setEditImageUrl(e.target.value)}
+                              style={styles.input}
+                            />
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            <button 
+                              type="button" 
+                              onClick={() => saveEditRow(index)}
+                              style={{ padding: '6px 12px', background: '#166534', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginRight: '6px' }}
+                            >
+                              Lưu
+                            </button>
+                            <button 
+                              type="button" 
+                              onClick={() => setEditingIndex(null)}
+                              style={{ padding: '6px 12px', background: '#94a3b8', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                            >
+                              Hủy
+                            </button>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{page.title}</td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              {/* DIRECT FILE REPLACEMENT BUTTON FOR THIS ROW */}
+                              <label 
+                                style={{
+                                  padding: '5px 10px',
+                                  background: '#fff1f2',
+                                  color: '#be123c',
+                                  border: '1px solid #fecdd3',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: 'bold',
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                title="Bấm vào đây để chọn ảnh từ máy tính thay thế cho trang này"
+                              >
+                                <Upload size={13} /> 📸 Tải Ảnh Thay Thế
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  onChange={(e) => handleReplaceRowImage(index, e)} 
+                                  style={{ display: 'none' }} 
+                                />
+                              </label>
+
+                              <span style={{ fontSize: '11px', color: '#64748b', maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {page.image_url}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button 
+                                type="button" 
+                                onClick={() => startEditRow(index)}
+                                style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}
+                                title="Sửa tiêu đề & URL"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => handleMovePage(index, -1)}
+                                disabled={index === 0}
+                                style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', cursor: index === 0 ? 'not-allowed' : 'pointer' }}
+                                title="Di chuyển lên trên"
+                              >
+                                <ArrowUp size={14} />
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => handleMovePage(index, 1)}
+                                disabled={index === pages.length - 1}
+                                style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', cursor: index === pages.length - 1 ? 'not-allowed' : 'pointer' }}
+                                title="Di chuyển xuống dưới"
+                              >
+                                <ArrowDown size={14} />
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => handleDeletePage(index)}
+                                style={{ padding: '5px 9px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}
+                                title="Xóa trang này"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))}
                   {pages.length === 0 && (
-                    <tr><td colSpan="5" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Chưa có trang tập san nào được thêm.</td></tr>
+                    <tr><td colSpan="5" style={{ padding: '25px', textAlign: 'center', color: '#64748b' }}>Chưa có trang tập san nào được thêm. Hãy chọn <b>"TẢI HÀNG LOẠT BỘ ẢNH"</b> hoặc <b>"Thêm Trang"</b> ở trên.</td></tr>
                   )}
                 </tbody>
               </table>
