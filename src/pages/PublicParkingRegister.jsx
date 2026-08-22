@@ -37,6 +37,9 @@ export default function PublicParkingRegister() {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowSuggestions(false);
       }
+      if (classDropdownRef.current && !classDropdownRef.current.contains(e.target)) {
+        setShowClassSuggestions(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -90,7 +93,11 @@ export default function PublicParkingRegister() {
     }
   }
 
-  // Handle Autocomplete Search
+  const [classSuggestions, setClassSuggestions] = useState([]);
+  const [showClassSuggestions, setShowClassSuggestions] = useState(false);
+  const classDropdownRef = useRef(null);
+
+  // Handle Autocomplete Search for Name
   const handleNameChange = (val) => {
     setStudentName(val);
     setIsVerifiedStudent(false);
@@ -101,13 +108,47 @@ export default function PublicParkingRegister() {
     }
 
     const clean = val.trim().toLowerCase();
-    const matches = studentRoster.filter(s => 
-      s.student_name.toLowerCase().includes(clean) ||
-      s.student_code.toLowerCase().includes(clean)
-    ).slice(0, 6);
+    const cleanClass = studentClass.trim().toLowerCase();
 
+    // Prioritize students in current class if class is entered
+    let matches = studentRoster.filter(s => {
+      const matchNameOrCode = s.student_name.toLowerCase().includes(clean) || s.student_code.toLowerCase().includes(clean);
+      return matchNameOrCode;
+    });
+
+    if (cleanClass) {
+      matches.sort((a, b) => {
+        const aInClass = a.student_class.toLowerCase() === cleanClass;
+        const bInClass = b.student_class.toLowerCase() === cleanClass;
+        if (aInClass && !bInClass) return -1;
+        if (!aInClass && bInClass) return 1;
+        return 0;
+      });
+    }
+
+    matches = matches.slice(0, 8);
     setSuggestions(matches);
     setShowSuggestions(matches.length > 0);
+  };
+
+  // Handle Autocomplete Search for Class
+  const handleClassChange = (val) => {
+    setStudentClass(val);
+    if (!val.trim()) {
+      setClassSuggestions([]);
+      setShowClassSuggestions(false);
+      return;
+    }
+
+    const clean = val.trim().toLowerCase();
+    // Find all students in matching class or class names
+    const matchingStudents = studentRoster.filter(s => 
+      s.student_class.toLowerCase().includes(clean) ||
+      s.student_class.toLowerCase() === clean
+    ).slice(0, 8);
+
+    setClassSuggestions(matchingStudents);
+    setShowClassSuggestions(matchingStudents.length > 0);
   };
 
   const handleSelectSuggestion = (student) => {
@@ -116,6 +157,7 @@ export default function PublicParkingRegister() {
     setStudentCode(student.student_code);
     setIsVerifiedStudent(true);
     setShowSuggestions(false);
+    setShowClassSuggestions(false);
   };
 
   const calculateEndDate = (startDateStr, monthsCount) => {
@@ -311,16 +353,38 @@ export default function PublicParkingRegister() {
               )}
             </div>
 
-            <div>
+            {/* AUTOCOMPLETE CLASS FIELD */}
+            <div style={{ position: 'relative' }} ref={classDropdownRef}>
               <label style={styles.label}>Lớp học (*)</label>
               <input 
                 type="text" 
                 required 
-                placeholder="VD: 11A1, 10A5, 12A2..."
+                placeholder="Gõ Lớp (VD: 10A5, 11A1) để chọn HS..."
                 value={studentClass}
-                onChange={e => setStudentClass(e.target.value)}
+                onChange={e => handleClassChange(e.target.value)}
                 style={styles.input}
               />
+
+              {/* CLASS AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+              {showClassSuggestions && classSuggestions.length > 0 && (
+                <div style={styles.suggestionsDropdown}>
+                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', borderBottom: '1px solid #fca5a5' }}>
+                    🏫 HỌC SINH THUỘC LỚP {studentClass.toUpperCase()} (Bấm để chọn):
+                  </div>
+                  {classSuggestions.map((st, idx) => (
+                    <div 
+                      key={st.id || idx}
+                      onClick={() => handleSelectSuggestion(st)}
+                      style={styles.suggestionItem}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{st.student_name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Lớp: <strong style={{ color: '#be123c' }}>{st.student_class}</strong> • Mã HS: {st.student_code}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>

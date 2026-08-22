@@ -131,18 +131,34 @@ export default function AdminStudents() {
           }
         });
 
-        // Merge with current state & save to LocalStorage immediately (onConflict overwrite)
+        // Merge with current state & save to LocalStorage immediately (student_code is primary unique key)
         setStudents(prev => {
           const map = new Map();
-          // Existing first, then new formattedList overwrites
+          // Existing items first
           prev.forEach(item => map.set(item.student_code, item));
-          formattedList.forEach(item => map.set(item.student_code, item));
+          
+          // Overwrite with new file items while preserving existing database ID if present
+          formattedList.forEach(newItem => {
+            const existing = map.get(newItem.student_code);
+            if (existing) {
+              map.set(newItem.student_code, {
+                ...existing,
+                student_name: newItem.student_name,
+                student_class: newItem.student_class,
+                grade_level: newItem.grade_level,
+                is_active: true
+              });
+            } else {
+              map.set(newItem.student_code, newItem);
+            }
+          });
+
           const newList = Array.from(map.values());
           localStorage.setItem('cbq_students_data', JSON.stringify(newList));
           return newList;
         });
 
-        // Try upserting to Supabase in background
+        // Try upserting to Supabase in background (onConflict: student_code)
         try {
           await supabase
             .from('cbq_students')
@@ -152,12 +168,13 @@ export default function AdminStudents() {
         }
 
         let reportMsg = `🎉 IMPORT DỮ LIỆU HỌC SINH THÀNH CÔNG!\n\n`;
-        reportMsg += `✨ Học sinh Thêm mới: ${newCount} em\n`;
+        reportMsg += `🔑 Khóa chính duy nhất: Mã Học Sinh (Student Code)\n\n`;
+        reportMsg += `✨ Thêm mới: ${newCount} học sinh\n`;
         if (updateCount > 0) {
-          reportMsg += `🔄 Trùng Mã HS & Đã Cập Nhật Lại (Ghi Đè): ${updateCount} em\n`;
-          reportMsg += `   (Ví dụ các Mã HS được cập nhật: ${updatedCodesList.join(', ')}${updateCount > 5 ? '...' : ''})\n`;
+          reportMsg += `🔄 Phát hiện trùng Mã HS & ĐÃ CẬP NHẬT THEO THÔNG TIN MỚI: ${updateCount} học sinh\n`;
+          reportMsg += `   (Ví dụ các Mã HS được cập nhật thông tin mới: ${updatedCodesList.join(', ')}${updateCount > 5 ? '...' : ''})\n`;
         }
-        reportMsg += `\n👉 Cơ chế an toàn: Hệ thống tự động CẬP NHẬT GHI ĐÈ thông tin mới nhất và BẢO ĐẢM KHÔNG TẠO DÒNG TRÙNG LẶP trong CSDL!`;
+        reportMsg += `\n👉 Đảm bảo: Thông tin tên, lớp, khối mới nhất từ file đã được cập nhật chuẩn xác theo Mã học sinh và KHÔNG bị trùng lặp!`;
 
         alert(reportMsg);
       } catch (err) {
