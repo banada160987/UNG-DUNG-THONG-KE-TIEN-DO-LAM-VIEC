@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode } from 'lucide-react';
+import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const DEFAULT_PARKING_LIST = [
@@ -10,8 +10,18 @@ const DEFAULT_PARKING_LIST = [
   { id: '3', ticket_code: 'PARK-10A2-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A2-12', student_class: '10A2', grade_level: 'Khối 10', license_plate: '29K1-345.12', vehicle_type: 'Xe máy điện', vehicle_color: 'Xanh dương', package_type: 'month', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 50000, status: 'active' }
 ];
 
+const DEFAULT_PACKAGES = [
+  { id: 'p1', package_key: 'month', title: 'Đăng ký Theo Tháng', months_count: 1, fee_amount: 50000, description: 'Thời hạn 1 tháng (50.000 VNĐ)', sort_order: 1, is_active: true },
+  { id: 'p2', package_key: 'quarter', title: 'Đăng ký Theo Quý (3 tháng)', months_count: 3, fee_amount: 130000, description: 'Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)', sort_order: 2, is_active: true },
+  { id: 'p3', package_key: 'term', title: 'Đăng ký Theo Học Kỳ (5 tháng)', months_count: 5, fee_amount: 200000, description: 'Thời hạn 1 Học kỳ (Tiết kiệm 50.000 VNĐ)', sort_order: 3, is_active: true },
+  { id: 'p4', package_key: 'year', title: 'Đăng ký Cả Năm Học (9 tháng)', months_count: 9, fee_amount: 400000, description: 'Thời hạn trọn cả năm học (Tiết kiệm 50.000 VNĐ)', sort_order: 4, is_active: true }
+];
+
 export default function AdminParking() {
+  const [activeTab, setActiveTab] = useState('list'); // 'list', 'config', 'checkin', 'alerts'
+  
   const [parkingList, setParkingList] = useState(DEFAULT_PARKING_LIST);
+  const [packages, setPackages] = useState(DEFAULT_PACKAGES);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
@@ -19,23 +29,39 @@ export default function AdminParking() {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [selectedTicketToPrint, setSelectedTicketToPrint] = useState(null);
 
+  // Package Form State
+  const [showPkgForm, setShowPkgForm] = useState(false);
+  const [editingPkgId, setEditingPkgId] = useState(null);
+  const [pkgKey, setPkgKey] = useState('');
+  const [pkgTitle, setPkgTitle] = useState('');
+  const [pkgMonths, setPkgMonths] = useState(1);
+  const [pkgFee, setPkgFee] = useState(50000);
+  const [pkgDesc, setPkgDesc] = useState('');
+
+  // Security Check-in Terminal Query
+  const [checkinQuery, setCheckinQuery] = useState('');
+  const [checkinResult, setCheckinResult] = useState(null);
+
   useEffect(() => {
-    fetchParkingData();
+    fetchData();
   }, []);
 
-  async function fetchParkingData() {
+  async function fetchData() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('cbq_parking_registrations')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [parkingRes, pkgRes] = await Promise.all([
+        supabase.from('cbq_parking_registrations').select('*').order('created_at', { ascending: false }),
+        supabase.from('cbq_parking_packages').select('*').order('sort_order', { ascending: true })
+      ]);
 
-      if (!error && data && data.length > 0) {
-        setParkingList(data);
+      if (!parkingRes.error && parkingRes.data && parkingRes.data.length > 0) {
+        setParkingList(parkingRes.data);
+      }
+      if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
+        setPackages(pkgRes.data);
       }
     } catch (err) {
-      console.warn("Dùng dữ liệu danh sách xe mẫu:", err);
+      console.warn("Dùng dữ liệu xe mẫu:", err);
     } finally {
       setLoading(false);
     }
@@ -68,6 +94,86 @@ export default function AdminParking() {
     totalFees: parkingList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
   };
 
+  // Check-in terminal search function
+  const handleCheckinSearch = (q) => {
+    setCheckinQuery(q);
+    if (!q.trim()) {
+      setCheckinResult(null);
+      return;
+    }
+    const cleanQ = q.trim().toLowerCase();
+    const found = parkingList.find(i => 
+      i.license_plate?.toLowerCase().includes(cleanQ) ||
+      i.ticket_code?.toLowerCase().includes(cleanQ) ||
+      i.student_code?.toLowerCase().includes(cleanQ)
+    );
+
+    if (found) {
+      const today = new Date();
+      const endDate = new Date(found.end_date);
+      const isExpired = endDate < today;
+      const isBlocked = found.status === 'blocked';
+
+      setCheckinResult({
+        ...found,
+        checkinStatus: isBlocked ? 'BLOCKED' : isExpired ? 'EXPIRED' : 'VALID'
+      });
+    } else {
+      setCheckinResult({ checkinStatus: 'UNREGISTERED', searchKey: q });
+    }
+  };
+
+  // Save Configured Package
+  const handleSavePackage = async (e) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        package_key: pkgKey || `pkg_${Date.now()}`,
+        title: pkgTitle,
+        months_count: Number(pkgMonths) || 1,
+        fee_amount: Number(pkgFee) || 0,
+        description: pkgDesc,
+        is_active: true
+      };
+
+      if (editingPkgId) {
+        await supabase.from('cbq_parking_packages').update(payload).eq('id', editingPkgId);
+      } else {
+        await supabase.from('cbq_parking_packages').insert([payload]);
+      }
+
+      alert("🎉 ĐÃ LƯU CẤU HÌNH GÓI VÉ THÀNH CÔNG!");
+      setShowPkgForm(false);
+      fetchData();
+    } catch (err) {
+      alert("Lỗi lưu gói vé: " + err.message);
+    }
+  };
+
+  // Toggle Package Active Status
+  const handleTogglePkgActive = async (pkg) => {
+    try {
+      await supabase.from('cbq_parking_packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id);
+      fetchData();
+    } catch (err) {
+      alert("Lỗi: " + err.message);
+    }
+  };
+
+  // Toggle Suspend / Block Ticket Status
+  const handleToggleBlock = async (item) => {
+    const newStatus = item.status === 'blocked' ? 'active' : 'blocked';
+    const msg = newStatus === 'blocked' ? `Bạn có chắc muốn KHÓA vé xe của học sinh ${item.student_name}?` : `Kích hoạt lại vé xe cho ${item.student_name}?`;
+    if (!window.confirm(msg)) return;
+
+    try {
+      await supabase.from('cbq_parking_registrations').update({ status: newStatus }).eq('id', item.id);
+      setParkingList(parkingList.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
+    } catch (err) {
+      alert("Lỗi: " + err.message);
+    }
+  };
+
   const handleExportExcel = () => {
     const dataToExport = filteredList.map(item => ({
       "Mã Thẻ Xe": item.ticket_code,
@@ -81,7 +187,7 @@ export default function AdminParking() {
       "Ngày Bắt Đầu": item.start_date,
       "Ngày Kết Thúc": item.end_date,
       "Lệ Phí (VNĐ)": item.fee_amount,
-      "Trạng Thái": item.status === 'active' ? 'Đang hoạt động' : 'Hết hạn'
+      "Trạng Thái": item.status === 'blocked' ? 'Bị khóa' : item.status === 'active' ? 'Đang hoạt động' : 'Hết hạn'
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
@@ -93,8 +199,7 @@ export default function AdminParking() {
   const handleDeleteItem = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa lượt đăng ký xe này?")) return;
     try {
-      const { error } = await supabase.from('cbq_parking_registrations').delete().eq('id', id);
-      if (error) throw error;
+      await supabase.from('cbq_parking_registrations').delete().eq('id', id);
       setParkingList(parkingList.filter(i => i.id !== id));
     } catch (err) {
       alert("Lỗi khi xóa: " + err.message);
@@ -148,7 +253,7 @@ export default function AdminParking() {
             <Bike size={26} color="#be123c" /> Quản Lý Phương Tiện Xe Máy Học Sinh
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Thống kê số lượng, theo dõi đăng ký biển số xe, in thẻ gửi xe và quản lý thời hạn
+            Thống kê số lượng, cấu hình mức phí, kiểm soát an ninh cổng xe và in thẻ gửi xe
           </p>
         </div>
 
@@ -172,142 +277,352 @@ export default function AdminParking() {
         </div>
       </div>
 
-      {/* STATISTICS CARDS (PANEL) */}
-      <div style={styles.statsGrid} className="no-print">
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>TỔNG SỐ XE ĐĂNG KÝ</div>
-          <div style={styles.statNumber}>{stats.total} <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>xe</span></div>
-          <div style={styles.statSub}>Tất cả khối lớp</div>
-        </div>
-
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>THỐNG KÊ THEO KHỐI LỚP</div>
-          <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
-            <div>Khối 10: <strong>{stats.grade10}</strong> xe</div>
-            <div>Khối 11: <strong>{stats.grade11}</strong> xe</div>
-            <div>Khối 12: <strong>{stats.grade12}</strong> xe</div>
-          </div>
-        </div>
-
-        <div style={styles.statCard}>
-          <div style={styles.statLabel}>THỐNG KÊ GÓI ĐĂNG KÝ</div>
-          <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
-            <div>Theo Học Kỳ: <strong>{stats.pkgTerm}</strong> xe</div>
-            <div>Theo Tháng: <strong>{stats.pkgMonth}</strong> xe</div>
-            <div>Cả Năm Học: <strong>{stats.pkgYear}</strong> xe</div>
-          </div>
-        </div>
-
-        <div style={{ ...styles.statCard, borderLeft: '4px solid #be123c' }}>
-          <div style={styles.statLabel}>TỔNG LỆ PHÍ THU DỰ KIẾN</div>
-          <div style={{ fontSize: '20px', fontWeight: '900', color: '#be123c', marginTop: '4px' }}>
-            {stats.totalFees.toLocaleString()} <span style={{ fontSize: '13px' }}>VNĐ</span>
-          </div>
-          <div style={styles.statSub}>Đã nộp cho Ban Bảo vệ</div>
-        </div>
+      {/* 4 FEATURE NAVIGATION TABS */}
+      <div style={styles.tabContainer} className="no-print">
+        <button 
+          onClick={() => setActiveTab('list')} 
+          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'list' ? '#be123c' : '#ffffff', color: activeTab === 'list' ? '#ffffff' : '#334155' }}
+        >
+          <Bike size={16} /> 🛵 Danh Sách & In Vé Xe ({parkingList.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('config')} 
+          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'config' ? '#be123c' : '#ffffff', color: activeTab === 'config' ? '#ffffff' : '#334155' }}
+        >
+          <Settings size={16} /> ⚙️ Cấu Hình Gói Vé & Mức Phí ({packages.length})
+        </button>
+        <button 
+          onClick={() => setActiveTab('checkin')} 
+          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'checkin' ? '#be123c' : '#ffffff', color: activeTab === 'checkin' ? '#ffffff' : '#334155' }}
+        >
+          <ShieldCheck size={16} /> 🔍 Trạm Kiểm Soát Check-in Cổng Xe
+        </button>
       </div>
 
-      {/* SEARCH & FILTERS BAR */}
-      <div className="glass no-print" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
-          <Search size={18} color="#64748b" />
-          <input 
-            type="text" 
-            placeholder="Tìm theo Biển số xe (29B1-...), Họ tên học sinh, Lớp..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '13.5px' }}
-          />
-        </div>
+      {/* ==================== TAB 1: LIST & PRINT ==================== */}
+      {activeTab === 'list' && (
+        <>
+          {/* STATISTICS CARDS PANEL */}
+          <div style={styles.statsGrid} className="no-print">
+            <div style={styles.statCard}>
+              <div style={styles.statLabel}>TỔNG SỐ XE ĐĂNG KÝ</div>
+              <div style={styles.statNumber}>{stats.total} <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>xe</span></div>
+              <div style={styles.statSub}>Tất cả khối lớp</div>
+            </div>
 
-        <select value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)} style={styles.filterSelect}>
-          <option value="ALL">Tất cả Khối lớp</option>
-          <option value="Khối 10">Khối 10</option>
-          <option value="Khối 11">Khối 11</option>
-          <option value="Khối 12">Khối 12</option>
-        </select>
+            <div style={styles.statCard}>
+              <div style={styles.statLabel}>THỐNG KÊ THEO KHỐI LỚP</div>
+              <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
+                <div>Khối 10: <strong>{stats.grade10}</strong> xe</div>
+                <div>Khối 11: <strong>{stats.grade11}</strong> xe</div>
+                <div>Khối 12: <strong>{stats.grade12}</strong> xe</div>
+              </div>
+            </div>
 
-        <select value={selectedPackage} onChange={e => setSelectedPackage(e.target.value)} style={styles.filterSelect}>
-          <option value="ALL">Tất cả Gói thời hạn</option>
-          <option value="month">Gói Theo Tháng</option>
-          <option value="term">Gói Theo Học Kỳ</option>
-          <option value="year">Gói Cả Năm</option>
-        </select>
-      </div>
+            <div style={styles.statCard}>
+              <div style={styles.statLabel}>THỐNG KÊ GÓI ĐĂNG KÝ</div>
+              <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
+                <div>Theo Học Kỳ: <strong>{stats.pkgTerm}</strong> xe</div>
+                <div>Theo Tháng: <strong>{stats.pkgMonth}</strong> xe</div>
+                <div>Cả Năm Học: <strong>{stats.pkgYear}</strong> xe</div>
+              </div>
+            </div>
 
-      {/* DATA TABLE */}
-      <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-        <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-          🛵 Danh sách Học sinh Đăng ký Xe máy ({filteredList.length} xe)
-        </h3>
+            <div style={{ ...styles.statCard, borderLeft: '4px solid #be123c' }}>
+              <div style={styles.statLabel}>TỔNG LỆ PHÍ THU GIỮ XE</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#be123c', marginTop: '4px' }}>
+                {stats.totalFees.toLocaleString()} <span style={{ fontSize: '13px' }}>VNĐ</span>
+              </div>
+              <div style={styles.statSub}>Bảo vệ quản lý trực tiếp</div>
+            </div>
+          </div>
 
-        {loading ? <p>Đang nạp dữ liệu xe máy...</p> : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
-                  <th style={{ padding: '10px' }}>Mã Thẻ</th>
-                  <th style={{ padding: '10px' }}>Họ tên học sinh</th>
-                  <th style={{ padding: '10px' }}>Lớp</th>
-                  <th style={{ padding: '10px' }}>Biển Số Xe</th>
-                  <th style={{ padding: '10px' }}>Loại xe</th>
-                  <th style={{ padding: '10px' }}>Gói thời hạn</th>
-                  <th style={{ padding: '10px' }}>Thời hạn áp dụng</th>
-                  <th style={{ padding: '10px' }}>Lệ phí</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+          {/* SEARCH & FILTERS BAR */}
+          <div className="glass no-print" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
+              <Search size={18} color="#64748b" />
+              <input 
+                type="text" 
+                placeholder="Tìm theo Biển số xe (29B1-...), Họ tên học sinh, Lớp..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '13.5px' }}
+              />
+            </div>
+
+            <select value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Khối lớp</option>
+              <option value="Khối 10">Khối 10</option>
+              <option value="Khối 11">Khối 11</option>
+              <option value="Khối 12">Khối 12</option>
+            </select>
+
+            <select value={selectedPackage} onChange={e => setSelectedPackage(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Gói thời hạn</option>
+              <option value="month">Gói Theo Tháng</option>
+              <option value="term">Gói Theo Học Kỳ</option>
+              <option value="year">Gói Cả Năm</option>
+            </select>
+          </div>
+
+          {/* DATA TABLE */}
+          <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
+              🛵 Danh sách Học sinh Đăng ký Xe máy ({filteredList.length} xe)
+            </h3>
+
+            {loading ? <p>Đang nạp dữ liệu xe máy...</p> : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
+                      <th style={{ padding: '10px' }}>Mã Thẻ</th>
+                      <th style={{ padding: '10px' }}>Họ tên học sinh</th>
+                      <th style={{ padding: '10px' }}>Lớp</th>
+                      <th style={{ padding: '10px' }}>Biển Số Xe</th>
+                      <th style={{ padding: '10px' }}>Loại xe</th>
+                      <th style={{ padding: '10px' }}>Gói thời hạn</th>
+                      <th style={{ padding: '10px' }}>Thời hạn áp dụng</th>
+                      <th style={{ padding: '10px' }}>Lệ phí</th>
+                      <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredList.map((item, idx) => (
+                      <tr key={item.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{item.ticket_code}</td>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{item.student_name}</td>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>{item.student_class}</td>
+                        <td style={{ padding: '10px' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534', backgroundColor: '#f0fdf4', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                            {item.license_plate}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px', color: '#475569' }}>{item.vehicle_type}</td>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#b45309' }}>
+                          {item.package_type === 'month' ? 'Tháng' : item.package_type === 'term' ? 'Học kỳ' : 'Cả năm'}
+                        </td>
+                        <td style={{ padding: '10px', fontSize: '12.5px', color: '#64748b' }}>
+                          Từ {item.start_date} <br />Đến {item.end_date}
+                        </td>
+                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>
+                          {(Number(item.fee_amount) || 0).toLocaleString()} VNĐ
+                        </td>
+                        <td style={{ padding: '10px', textAlign: 'right' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                            <button type="button" onClick={() => handlePrintCard(item)} title="In Thẻ Gửi Xe" style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#1e293b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', fontWeight: 'bold' }}>
+                              <Printer size={14} color="#be123c" /> In Vé Xe
+                            </button>
+                            <button type="button" onClick={() => handleToggleBlock(item)} title={item.status === 'blocked' ? 'Mở khóa' : 'Khóa thẻ xe'} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: item.status === 'blocked' ? '#fef2f2' : '#ffffff', color: item.status === 'blocked' ? '#ef4444' : '#64748b', cursor: 'pointer' }}>
+                              {item.status === 'blocked' ? <Lock size={14} /> : <Unlock size={14} />}
+                            </button>
+                            <button type="button" onClick={() => handleDeleteItem(item.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ==================== TAB 2: FEE & PACKAGE CONFIGURATION ==================== */}
+      {activeTab === 'config' && (
+        <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Giữ Xe</h3>
+              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>Thiết lập số tiền lệ phí và thời hạn các gói vé cho học sinh đăng ký</p>
+            </div>
+            <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
+              <Plus size={16} /> Thêm Gói Vé Mới
+            </button>
+          </div>
+
+          {/* PACKAGE EDIT FORM */}
+          {showPkgForm && (
+            <form onSubmit={handleSavePackage} style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '25px' }}>
+              <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>{editingPkgId ? '📝 Sửa Gói Vé' : '➕ Tạo Gói Vé Mới'}</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div>
+                  <label style={styles.label}>Tên Gói Vé (*)</label>
+                  <input type="text" required value={pkgTitle} onChange={e => setPkgTitle(e.target.value)} style={styles.input} placeholder="VD: Đăng ký Theo Quý" />
+                </div>
+                <div>
+                  <label style={styles.label}>Mã Gói (Key)</label>
+                  <input type="text" value={pkgKey} onChange={e => setPkgKey(e.target.value)} style={styles.input} placeholder="VD: quarter, month..." />
+                </div>
+                <div>
+                  <label style={styles.label}>Số Tháng Hiệu Lực (*)</label>
+                  <input type="number" required value={pkgMonths} onChange={e => setPkgMonths(e.target.value)} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Mức Phí Lệ Phí (VNĐ) (*)</label>
+                  <input type="number" required value={pkgFee} onChange={e => setPkgFee(e.target.value)} style={{ ...styles.input, fontWeight: 'bold', color: '#be123c' }} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Mô Tả Gói Vé</label>
+                  <input type="text" value={pkgDesc} onChange={e => setPkgDesc(e.target.value)} style={styles.input} placeholder="VD: Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)..." />
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px' }}>
+                <button type="button" onClick={() => setShowPkgForm(false)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
+                <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#be123c' }}>
+                  <Save size={16} /> Lưu Cấu Hình Gói
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* PACKAGES LIST TABLE */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f1f5f9' }}>
+                <th style={{ padding: '10px' }}>Thứ tự</th>
+                <th style={{ padding: '10px' }}>Tên Gói Vé</th>
+                <th style={{ padding: '10px' }}>Số tháng</th>
+                <th style={{ padding: '10px' }}>Mức phí lệ phí (VNĐ)</th>
+                <th style={{ padding: '10px' }}>Mô tả</th>
+                <th style={{ padding: '10px' }}>Trạng thái</th>
+                <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {packages.map((pkg, idx) => (
+                <tr key={pkg.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '10px', fontWeight: 'bold' }}>#{idx + 1}</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{pkg.title}</td>
+                  <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{pkg.months_count} tháng</td>
+                  <td style={{ padding: '10px', fontWeight: '900', color: '#be123c', fontSize: '15px' }}>
+                    {(Number(pkg.fee_amount) || 0).toLocaleString()} VNĐ
+                  </td>
+                  <td style={{ padding: '10px', color: '#64748b' }}>{pkg.description || '-'}</td>
+                  <td style={{ padding: '10px' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: pkg.is_active ? '#f0fdf4' : '#fef2f2', color: pkg.is_active ? '#166534' : '#ef4444' }}>
+                      {pkg.is_active ? 'Đang áp dụng' : 'Đã ẩn'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={() => handleTogglePkgActive(pkg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                        {pkg.is_active ? 'Ẩn gói' : 'Mở lại'}
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filteredList.map((item, idx) => (
-                  <tr key={item.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{item.ticket_code}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{item.student_name}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>{item.student_class}</td>
-                    <td style={{ padding: '10px' }}>
-                      <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534', backgroundColor: '#f0fdf4', padding: '3px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                        {item.license_plate}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px', color: '#475569' }}>{item.vehicle_type}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#b45309' }}>
-                      {item.package_type === 'month' ? 'Tháng' : item.package_type === 'term' ? 'Học kỳ' : 'Cả năm'}
-                    </td>
-                    <td style={{ padding: '10px', fontSize: '12.5px', color: '#64748b' }}>
-                      Từ {item.start_date} <br />Đến {item.end_date}
-                    </td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>
-                      {(Number(item.fee_amount) || 0).toLocaleString()} VNĐ
-                    </td>
-                    <td style={{ padding: '10px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        <button type="button" onClick={() => handlePrintCard(item)} title="In Thẻ Gửi Xe" style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#1e293b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', fontWeight: 'bold' }}>
-                          <Printer size={14} color="#be123c" /> In Vé Xe
-                        </button>
-                        <button type="button" onClick={() => handleDeleteItem(item.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-                {filteredList.length === 0 && (
-                  <tr>
-                    <td colSpan="9" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
-                      Chưa có dữ liệu xe máy học sinh phù hợp.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+      {/* ==================== TAB 3: SECURITY CHECK-IN TERMINAL ==================== */}
+      {activeTab === 'checkin' && (
+        <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white', maxWidth: '700px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: '25px' }}>
+            <ShieldCheck size={48} color="#be123c" />
+            <h3 style={{ margin: '10px 0 4px 0', color: '#1e293b' }}>TRẠM KIỂM SOÁT BẢO VỆ CỔNG XE</h3>
+            <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b' }}>Gõ Biển Số Xe / Mã Vé / Mã Học sinh để kiểm tra thời hạn và thông tin gửi xe</p>
           </div>
-        )}
-      </div>
+
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '25px' }}>
+            <input 
+              type="text" 
+              placeholder="Nhập Biển Số Xe (VD: 29B1-567.89), Mã Thẻ Xe (PARK-...), hoặc Mã HS..." 
+              value={checkinQuery}
+              onChange={e => handleCheckinSearch(e.target.value)}
+              style={{ flex: 1, padding: '14px', borderRadius: '10px', border: '2px solid #be123c', fontSize: '16px', fontWeight: 'bold', outline: 'none' }}
+              autoFocus
+            />
+          </div>
+
+          {/* CHECK-IN STATUS ALERT RESULT CARD */}
+          {checkinResult && (
+            <div style={{ padding: '25px', borderRadius: '16px', border: '2px solid', ...getCheckinCardStyle(checkinResult.checkinStatus) }}>
+              {checkinResult.checkinStatus === 'VALID' && (
+                <div style={{ textAlign: 'center' }}>
+                  <CheckCircle2 size={56} color="#166534" />
+                  <h2 style={{ margin: '8px 0 0 0', color: '#166534', fontSize: '22px' }}>🟢 XE HỢP LỆ & ĐỦ ĐIỀU KIỆN GỬI</h2>
+                  <div style={{ fontSize: '14px', color: '#15803d', marginTop: '4px' }}>Vé đang trong thời hạn hiệu lực</div>
+                </div>
+              )}
+
+              {checkinResult.checkinStatus === 'EXPIRED' && (
+                <div style={{ textAlign: 'center' }}>
+                  <AlertTriangle size={56} color="#dc2626" />
+                  <h2 style={{ margin: '8px 0 0 0', color: '#dc2626', fontSize: '22px' }}>🔴 XE ĐÃ HẾT HẠN GỬI XE!</h2>
+                  <div style={{ fontSize: '14px', color: '#b91c1c', marginTop: '4px' }}>Cần yêu cầu học sinh nộp lệ phí gia hạn vé mới</div>
+                </div>
+              )}
+
+              {checkinResult.checkinStatus === 'BLOCKED' && (
+                <div style={{ textAlign: 'center' }}>
+                  <Lock size={56} color="#7c2d12" />
+                  <h2 style={{ margin: '8px 0 0 0', color: '#7c2d12', fontSize: '22px' }}>🚫 THẺ XE ĐANG BỊ KHÓA / ĐÌNH CHỈ!</h2>
+                  <div style={{ fontSize: '14px', color: '#9a3412', marginTop: '4px' }}>Học sinh vi phạm quy định gửi xe trường</div>
+                </div>
+              )}
+
+              {checkinResult.checkinStatus === 'UNREGISTERED' && (
+                <div style={{ textAlign: 'center' }}>
+                  <AlertCircle size={56} color="#b45309" />
+                  <h2 style={{ margin: '8px 0 0 0', color: '#b45309', fontSize: '22px' }}>⚠️ CHƯA ĐĂNG KÝ / XE LẠ!</h2>
+                  <div style={{ fontSize: '14px', color: '#d97706', marginTop: '4px' }}>Không tìm thấy thông tin biển số "{checkinResult.searchKey}" trong CSDL</div>
+                </div>
+              )}
+
+              {checkinResult.student_name && (
+                <div style={{ marginTop: '20px', paddingTop: '15px', borderTop: '1px dashed #cbd5e1', fontSize: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div><strong>Họ và tên:</strong> {checkinResult.student_name}</div>
+                  <div><strong>Lớp:</strong> {checkinResult.student_class} ({checkinResult.grade_level})</div>
+                  <div><strong>Biển số xe:</strong> <span style={{ fontWeight: '900', color: '#be123c' }}>{checkinResult.license_plate}</span></div>
+                  <div><strong>Loại xe:</strong> {checkinResult.vehicle_type}</div>
+                  <div style={{ gridColumn: '1 / -1' }}><strong>Thời hạn vé:</strong> Từ {checkinResult.start_date} Đến {checkinResult.end_date}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </Layout>
   );
 }
 
+const getCheckinCardStyle = (status) => {
+  switch (status) {
+    case 'VALID': return { backgroundColor: '#f0fdf4', borderColor: '#86efac' };
+    case 'EXPIRED': return { backgroundColor: '#fef2f2', borderColor: '#fca5a5' };
+    case 'BLOCKED': return { backgroundColor: '#fff7ed', borderColor: '#fdba74' };
+    default: return { backgroundColor: '#fefce8', borderColor: '#fde047' };
+  }
+};
+
 const styles = {
+  tabContainer: {
+    display: 'flex',
+    gap: '10px',
+    marginBottom: '20px',
+    overflowX: 'auto',
+    paddingBottom: '4px'
+  },
+  tabBtn: {
+    padding: '10px 18px',
+    borderRadius: '10px',
+    border: '1px solid #cbd5e1',
+    fontSize: '13.5px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    whiteSpace: 'nowrap',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+  },
   statsGrid: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
@@ -347,6 +662,8 @@ const styles = {
     backgroundColor: '#ffffff',
     color: '#334155'
   },
+  label: { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' },
+  input: { width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' },
   printTicketCard: {
     maxWidth: '350px',
     border: '2px dashed #be123c',

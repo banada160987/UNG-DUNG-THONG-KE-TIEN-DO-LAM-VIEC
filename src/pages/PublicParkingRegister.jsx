@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight } from 'lucide-react';
 
-const PACKAGES = [
+const DEFAULT_PACKAGES = [
   { key: 'month', label: 'Đăng ký Theo Tháng', months: 1, fee: 50000, desc: 'Thời hạn 1 tháng (50.000 VNĐ)' },
   { key: 'quarter', label: 'Đăng ký Theo Quý (3 tháng)', months: 3, fee: 130000, desc: 'Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)' },
   { key: 'term', label: 'Đăng ký Theo Học Kỳ (5 tháng)', months: 5, fee: 200000, desc: 'Thời hạn 1 Học kỳ (Tiết kiệm 50.000 VNĐ)' },
@@ -10,6 +10,7 @@ const PACKAGES = [
 ];
 
 export default function PublicParkingRegister() {
+  const [packages, setPackages] = useState(DEFAULT_PACKAGES);
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentCode, setStudentCode] = useState('');
@@ -21,9 +22,39 @@ export default function PublicParkingRegister() {
   const [loading, setLoading] = useState(false);
   const [successTicket, setSuccessTicket] = useState(null);
 
+  useEffect(() => {
+    fetchConfiguredPackages();
+  }, []);
+
+  async function fetchConfiguredPackages() {
+    try {
+      const { data, error } = await supabase
+        .from('cbq_parking_packages')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        const formatted = data.map(p => ({
+          key: p.package_key,
+          label: p.title,
+          months: p.months_count,
+          fee: Number(p.fee_amount) || 0,
+          desc: p.description || `${p.title} (${Number(p.fee_amount).toLocaleString()} VNĐ)`
+        }));
+        setPackages(formatted);
+        if (formatted.length > 0) {
+          setPackageType(formatted[0].key);
+        }
+      }
+    } catch (err) {
+      console.warn("Nạp cấu hình gói vé từ DB thất bại, dùng mặc định:", err);
+    }
+  }
+
   const calculateEndDate = (startDateStr, monthsCount) => {
     const d = new Date(startDateStr);
-    d.setMonth(d.getMonth() + monthsCount);
+    d.setMonth(d.getMonth() + (monthsCount || 1));
     return d.toISOString().split('T')[0];
   };
 
@@ -43,7 +74,7 @@ export default function PublicParkingRegister() {
 
     setLoading(true);
     try {
-      const selectedPkg = PACKAGES.find(p => p.key === packageType) || PACKAGES[2];
+      const selectedPkg = packages.find(p => p.key === packageType) || packages[0];
       const today = new Date().toISOString().split('T')[0];
       const endDate = calculateEndDate(today, selectedPkg.months);
       
@@ -75,8 +106,7 @@ export default function PublicParkingRegister() {
         .single();
 
       if (error) {
-        // If Supabase table missing, use local payload
-        console.warn("Supabase save warn, showing local ticket:", error);
+        console.warn("Lưu DB cảnh báo, hiển thị vé tạm thời:", error);
         setSuccessTicket(payload);
       } else {
         setSuccessTicket(data);
@@ -135,7 +165,7 @@ export default function PublicParkingRegister() {
               <div style={styles.ticketRow}>
                 <span>Gói gửi xe:</span>
                 <strong style={{ color: '#b45309' }}>
-                  {PACKAGES.find(p => p.key === successTicket.package_type)?.label || 'Đăng ký Học kỳ'}
+                  {packages.find(p => p.key === successTicket.package_type)?.label || 'Đăng ký Học kỳ'}
                 </strong>
               </div>
               <div style={styles.ticketRow}>
@@ -239,13 +269,13 @@ export default function PublicParkingRegister() {
             </div>
           </div>
 
-          {/* PACKAGE SELECTION */}
+          {/* DYNAMIC PACKAGE SELECTION */}
           <div style={{ marginTop: '25px' }}>
             <label style={{ ...styles.label, fontSize: '14px', color: '#be123c' }}>
               🎫 Chọn Gói Đăng Ký Gửi Xe (*):
             </label>
             <div style={styles.packageGrid}>
-              {PACKAGES.map(pkg => (
+              {packages.map(pkg => (
                 <div 
                   key={pkg.key}
                   onClick={() => setPackageType(pkg.key)}
@@ -397,7 +427,7 @@ const styles = {
   },
   ticketRow: {
     display: 'flex',
-    justifyContent: 'space-between',
+    justify: 'space-between',
     alignItems: 'center'
   },
   ticketFooter: {
@@ -405,7 +435,7 @@ const styles = {
     paddingTop: '14px',
     borderTop: '1px dashed #cbd5e1',
     display: 'flex',
-    justifyContent: 'space-between',
+    justify: 'space-between',
     alignItems: 'center'
   },
   printBtn: {
