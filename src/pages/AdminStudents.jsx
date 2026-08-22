@@ -168,6 +168,37 @@ export default function AdminStudents() {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    const templateData = [
+      {
+        "Mã Học Sinh": "HS10A1-001",
+        "Họ và Tên": "Nguyễn Văn An",
+        "Lớp": "10A1"
+      },
+      {
+        "Mã Học Sinh": "HS11A2-015",
+        "Họ và Tên": "Trần Thị Bích",
+        "Lớp": "11A2"
+      },
+      {
+        "Mã Học Sinh": "HS12A5-020",
+        "Họ và Tên": "Phạm Minh Cường",
+        "Lớp": "12A5"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    worksheet['!cols'] = [
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 12 }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Mau_Hoc_Sinh");
+    XLSX.writeFile(workbook, "Mau_Import_Danh_Sach_Hoc_Sinh_THPT_CBQ.xlsx");
+  };
+
   const handleExportExcel = () => {
     const dataToExport = filteredStudents.map(s => ({
       "Mã Học Sinh": s.student_code,
@@ -208,6 +239,10 @@ export default function AdminStudents() {
             <FileSpreadsheet size={18} /> {uploading ? 'Đang Import...' : 'Import Từ File Excel'}
             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
+
+          <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Download size={18} /> Tải File Mẫu Import
+          </button>
 
           <button onClick={handleExportExcel} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7' }}>
             <Download size={18} /> Xuất Excel
