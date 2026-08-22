@@ -72,11 +72,21 @@ export default function PublicParkingRegister() {
         .select('*')
         .eq('is_active', true);
 
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         setStudentRoster(data);
+        localStorage.setItem('cbq_students_data', JSON.stringify(data));
+      } else {
+        const localData = localStorage.getItem('cbq_students_data');
+        if (localData) {
+          setStudentRoster(JSON.parse(localData));
+        }
       }
     } catch (err) {
-      console.warn("Nạp danh sách học sinh:", err);
+      console.warn("Nạp danh sách học sinh từ local:", err);
+      const localData = localStorage.getItem('cbq_students_data');
+      if (localData) {
+        setStudentRoster(JSON.parse(localData));
+      }
     }
   }
 

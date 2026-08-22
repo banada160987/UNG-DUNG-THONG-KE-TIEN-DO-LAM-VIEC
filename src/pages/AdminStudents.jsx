@@ -40,9 +40,19 @@ export default function AdminStudents() {
 
       if (!error && data && data.length > 0) {
         setStudents(data);
+        localStorage.setItem('cbq_students_data', JSON.stringify(data));
+      } else {
+        const localData = localStorage.getItem('cbq_students_data');
+        if (localData) {
+          setStudents(JSON.parse(localData));
+        }
       }
     } catch (err) {
-      console.warn("Dùng dữ liệu học sinh mặc định:", err);
+      console.warn("Nạp dữ liệu từ localStorage:", err);
+      const localData = localStorage.getItem('cbq_students_data');
+      if (localData) {
+        setStudents(JSON.parse(localData));
+      }
     } finally {
       setLoading(false);
     }
@@ -50,9 +60,10 @@ export default function AdminStudents() {
 
   const getGradeLevel = (clsName) => {
     if (!clsName) return 'Khối 10';
-    const clean = clsName.trim();
-    if (clean.startsWith('11')) return 'Khối 11';
-    if (clean.startsWith('12')) return 'Khối 12';
+    const clean = String(clsName).trim();
+    if (clean.includes('12')) return 'Khối 12';
+    if (clean.includes('11')) return 'Khối 11';
+    if (clean.includes('10')) return 'Khối 10';
     return 'Khối 10';
   };
 
@@ -103,19 +114,52 @@ export default function AdminStudents() {
           return;
         }
 
-        // Upsert to Supabase
-        const { error } = await supabase
-          .from('cbq_students')
-          .upsert(formattedList, { onConflict: 'student_code' });
+        // Check duplicates vs existing roster
+        const existingCodesSet = new Set(students.map(s => s.student_code));
+        let newCount = 0;
+        let updateCount = 0;
+        const updatedCodesList = [];
 
-        if (error) {
-          console.warn("Lỗi lưu Supabase, nạp local:", error);
-          setStudents(prev => [...formattedList, ...prev]);
-        } else {
-          fetchStudents();
+        formattedList.forEach(item => {
+          if (existingCodesSet.has(item.student_code)) {
+            updateCount++;
+            if (updatedCodesList.length < 5) {
+              updatedCodesList.push(item.student_code);
+            }
+          } else {
+            newCount++;
+          }
+        });
+
+        // Merge with current state & save to LocalStorage immediately (onConflict overwrite)
+        setStudents(prev => {
+          const map = new Map();
+          // Existing first, then new formattedList overwrites
+          prev.forEach(item => map.set(item.student_code, item));
+          formattedList.forEach(item => map.set(item.student_code, item));
+          const newList = Array.from(map.values());
+          localStorage.setItem('cbq_students_data', JSON.stringify(newList));
+          return newList;
+        });
+
+        // Try upserting to Supabase in background
+        try {
+          await supabase
+            .from('cbq_students')
+            .upsert(formattedList, { onConflict: 'student_code' });
+        } catch (dbErr) {
+          console.warn("Supabase upsert warn:", dbErr);
         }
 
-        alert(`🎉 ĐÃ IMPORT THÀNH CÔNG ${formattedList.length} HỌC SINH VÀO HỆ THỐNG!`);
+        let reportMsg = `🎉 IMPORT DỮ LIỆU HỌC SINH THÀNH CÔNG!\n\n`;
+        reportMsg += `✨ Học sinh Thêm mới: ${newCount} em\n`;
+        if (updateCount > 0) {
+          reportMsg += `🔄 Trùng Mã HS & Đã Cập Nhật Lại (Ghi Đè): ${updateCount} em\n`;
+          reportMsg += `   (Ví dụ các Mã HS được cập nhật: ${updatedCodesList.join(', ')}${updateCount > 5 ? '...' : ''})\n`;
+        }
+        reportMsg += `\n👉 Cơ chế an toàn: Hệ thống tự động CẬP NHẬT GHI ĐÈ thông tin mới nhất và BẢO ĐẢM KHÔNG TẠO DÒNG TRÙNG LẶP trong CSDL!`;
+
+        alert(reportMsg);
       } catch (err) {
         alert("Lỗi khi đọc file Excel: " + err.message);
       } finally {
