@@ -40,6 +40,8 @@ import PublicSchedule from './pages/PublicSchedule';
 import AdminSchedule from './pages/AdminSchedule';
 import PublicStaff from './pages/PublicStaff';
 import AdminStaff from './pages/AdminStaff';
+import PublicParkingRegister from './pages/PublicParkingRegister';
+import AdminParking from './pages/AdminParking';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -63,6 +65,7 @@ function App() {
         <Route path="/tap-san" element={<PublicMagazine />} />
         <Route path="/lich-cong-tac" element={<PublicSchedule />} />
         <Route path="/to-chuyen-mon" element={<PublicStaff />} />
+        <Route path="/dang-ky-xe-may" element={<PublicParkingRegister />} />
         <Route path="/tin-tuc" element={<PublicNewsList />} />
         <Route path="/van-ban" element={<PublicDocs />} />
         <Route path="/bang-vang" element={<PublicSponsorsList />} />
@@ -83,6 +86,7 @@ function App() {
         <>
           <Route path="/admin" element={(role === 'admin' || role === 'secretary') ? <Dashboard /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/committee" element={<CommitteeView />} />
+          <Route path="/admin/parking" element={permissions.canViewDocs ? <AdminParking /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/schedule" element={permissions.canViewDocs ? <AdminSchedule /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/staff" element={permissions.canViewDocs ? <AdminStaff /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />

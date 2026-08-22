@@ -101,13 +101,14 @@ export default function PublicLayout() {
             <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('school')}
-                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon')) ? styles.navItemActive : styles.navItem}
+                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon') || isActive('/dang-ky-xe-may')) ? styles.navItemActive : styles.navItem}
               >
                 🏫 Vận hành Nhà trường ▾
               </span>
               <div className="nav-dropdown-content">
                 <Link to="/lich-cong-tac" className="nav-dropdown-item">📅 Lịch công tác tuần & Trực BGH</Link>
                 <Link to="/to-chuyen-mon" className="nav-dropdown-item">👨‍🏫 Đội ngũ & Tổ chuyên môn</Link>
+                <Link to="/dang-ky-xe-may" className="nav-dropdown-item">🛵 Đăng ký Xe máy Học sinh</Link>
               </div>
             </div>
           </div>
