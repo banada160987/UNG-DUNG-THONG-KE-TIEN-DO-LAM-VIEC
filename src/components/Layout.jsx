@@ -95,17 +95,19 @@ export default function Layout({ children, title }) {
   const [openGroups, setOpenGroups] = useState({
     '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM': true,
     '🏫 VẬN HÀNH NHÀ TRƯỜNG': true,
-    '🌐 NỘI DUNG WEBSITE': false,
-    '⚙️ HỆ THỐNG': false
+    '🌐 NỘI DUNG WEBSITE': true,
+    '⚙️ HỆ THỐNG': true
   });
 
-  // Auto-expand group of current active path
+  // Auto-expand group of current active path safely
   useEffect(() => {
-    visibleMenuItems.forEach(item => {
-      if (item.path === location.pathname) {
-        setOpenGroups(prev => ({ ...prev, [item.group]: true }));
-      }
-    });
+    const activeItem = visibleMenuItems.find(item => item.path === location.pathname);
+    if (activeItem && activeItem.group) {
+      setOpenGroups(prev => {
+        if (prev[activeItem.group] === true) return prev;
+        return { ...prev, [activeItem.group]: true };
+      });
+    }
   }, [location.pathname]);
 
   const toggleGroup = (groupName) => {
@@ -131,7 +133,7 @@ export default function Layout({ children, title }) {
         borderLeft: isActive(to) ? '4px solid #3b82f6' : '4px solid transparent'
       }}
     >
-      <Icon size={18} /> {label}
+      {Icon && <Icon size={18} />} <span>{label}</span>
     </Link>
   );
 
