@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight } from 'lucide-react';
+import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search } from 'lucide-react';
 
 const DEFAULT_PACKAGES = [
   { key: 'month', label: 'Đăng ký Theo Tháng', months: 1, fee: 50000, desc: 'Thời hạn 1 tháng (50.000 VNĐ)' },
@@ -11,6 +11,8 @@ const DEFAULT_PACKAGES = [
 
 export default function PublicParkingRegister() {
   const [packages, setPackages] = useState(DEFAULT_PACKAGES);
+  const [studentRoster, setStudentRoster] = useState([]);
+  
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('');
   const [studentCode, setStudentCode] = useState('');
@@ -19,11 +21,25 @@ export default function PublicParkingRegister() {
   const [vehicleColor, setVehicleColor] = useState('');
   const [packageType, setPackageType] = useState('term');
   
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [successTicket, setSuccessTicket] = useState(null);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     fetchConfiguredPackages();
+    fetchStudentRoster();
+
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   async function fetchConfiguredPackages() {
@@ -43,14 +59,54 @@ export default function PublicParkingRegister() {
           desc: p.description || `${p.title} (${Number(p.fee_amount).toLocaleString()} VNĐ)`
         }));
         setPackages(formatted);
-        if (formatted.length > 0) {
-          setPackageType(formatted[0].key);
-        }
       }
     } catch (err) {
-      console.warn("Nạp cấu hình gói vé từ DB thất bại, dùng mặc định:", err);
+      console.warn("Nạp gói vé mặc định:", err);
     }
   }
+
+  async function fetchStudentRoster() {
+    try {
+      const { data, error } = await supabase
+        .from('cbq_students')
+        .select('*')
+        .eq('is_active', true);
+
+      if (!error && data) {
+        setStudentRoster(data);
+      }
+    } catch (err) {
+      console.warn("Nạp danh sách học sinh:", err);
+    }
+  }
+
+  // Handle Autocomplete Search
+  const handleNameChange = (val) => {
+    setStudentName(val);
+    setIsVerifiedStudent(false);
+    if (!val.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const clean = val.trim().toLowerCase();
+    const matches = studentRoster.filter(s => 
+      s.student_name.toLowerCase().includes(clean) ||
+      s.student_code.toLowerCase().includes(clean)
+    ).slice(0, 6);
+
+    setSuggestions(matches);
+    setShowSuggestions(matches.length > 0);
+  };
+
+  const handleSelectSuggestion = (student) => {
+    setStudentName(student.student_name);
+    setStudentClass(student.student_class);
+    setStudentCode(student.student_code);
+    setIsVerifiedStudent(true);
+    setShowSuggestions(false);
+  };
 
   const calculateEndDate = (startDateStr, monthsCount) => {
     const d = new Date(startDateStr);
@@ -106,7 +162,6 @@ export default function PublicParkingRegister() {
         .single();
 
       if (error) {
-        console.warn("Lưu DB cảnh báo, hiển thị vé tạm thời:", error);
         setSuccessTicket(payload);
       } else {
         setSuccessTicket(data);
@@ -201,16 +256,49 @@ export default function PublicParkingRegister() {
           <h3 style={styles.formTitle}>📝 Thông tin Đăng ký Vé Xe Máy Học Sinh</h3>
 
           <div style={styles.formGrid}>
-            <div>
-              <label style={styles.label}>Họ và Tên học sinh (*)</label>
+            {/* AUTOCOMPLETE STUDENT NAME FIELD */}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <label style={styles.label}>
+                Họ và Tên học sinh (*)
+                {isVerifiedStudent && (
+                  <span style={{ fontSize: '11.5px', color: '#166534', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '12px', marginLeft: '6px', border: '1px solid #bbf7d0' }}>
+                    ✓ Đã xác thực CSDL
+                  </span>
+                )}
+              </label>
               <input 
                 type="text" 
                 required 
-                placeholder="VD: Nguyễn Văn An"
+                placeholder="Gõ tên hoặc Mã HS để tự động gợi ý..."
                 value={studentName}
-                onChange={e => setStudentName(e.target.value)}
-                style={styles.input}
+                onChange={e => handleNameChange(e.target.value)}
+                style={{
+                  ...styles.input,
+                  borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
+                  backgroundColor: isVerifiedStudent ? '#f0fdf4' : '#ffffff'
+                }}
               />
+
+              {/* AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={styles.suggestionsDropdown}>
+                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                    💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG (Bấm chọn):
+                  </div>
+                  {suggestions.map((st, idx) => (
+                    <div 
+                      key={st.id || idx}
+                      onClick={() => handleSelectSuggestion(st)}
+                      style={styles.suggestionItem}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{st.student_name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Lớp: <strong style={{ color: '#be123c' }}>{st.student_class}</strong> • Mã HS: {st.student_code}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div>
@@ -258,7 +346,7 @@ export default function PublicParkingRegister() {
             </div>
 
             <div>
-              <label style={styles.label}>Mã học sinh (nếu nhớ)</label>
+              <label style={styles.label}>Mã học sinh</label>
               <input 
                 type="text" 
                 placeholder="VD: HS11A1-025"
@@ -372,6 +460,29 @@ const styles = {
     border: '1px solid #cbd5e1',
     fontSize: '13.5px',
     boxSizing: 'border-box'
+  },
+  suggestionsDropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    border: '1px solid #cbd5e1',
+    borderRadius: '8px',
+    boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
+    zIndex: 100,
+    marginTop: '4px',
+    maxHeight: '220px',
+    overflowY: 'auto'
+  },
+  suggestionItem: {
+    padding: '10px 12px',
+    borderBottom: '1px solid #f1f5f9',
+    cursor: 'pointer',
+    transition: 'background 0.15s',
+    '&:hover': {
+      backgroundColor: '#f8fafc'
+    }
   },
   packageGrid: {
     display: 'grid',

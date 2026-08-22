@@ -71,6 +71,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/tap-san', icon: BookOpen, label: '📖 Quản lý Tập San 30 năm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewDocs },
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
+    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
     { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },

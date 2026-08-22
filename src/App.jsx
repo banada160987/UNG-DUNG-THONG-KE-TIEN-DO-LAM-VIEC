@@ -42,6 +42,7 @@ import PublicStaff from './pages/PublicStaff';
 import AdminStaff from './pages/AdminStaff';
 import PublicParkingRegister from './pages/PublicParkingRegister';
 import AdminParking from './pages/AdminParking';
+import AdminStudents from './pages/AdminStudents';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -86,6 +87,7 @@ function App() {
         <>
           <Route path="/admin" element={(role === 'admin' || role === 'secretary') ? <Dashboard /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/committee" element={<CommitteeView />} />
+          <Route path="/admin/students" element={permissions.canViewDocs ? <AdminStudents /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/parking" element={permissions.canViewDocs ? <AdminParking /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/schedule" element={permissions.canViewDocs ? <AdminSchedule /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/staff" element={permissions.canViewDocs ? <AdminStaff /> : <Navigate to="/admin/committee" replace />} />
