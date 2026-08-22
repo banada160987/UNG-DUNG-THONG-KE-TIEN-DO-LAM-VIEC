@@ -91,6 +91,27 @@ export default function Layout({ children, title }) {
 
   const visibleMenuItems = menuItems.filter(item => item.show);
 
+  // Accordion State for Sidebar Groups
+  const [openGroups, setOpenGroups] = useState({
+    '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM': true,
+    '🏫 VẬN HÀNH NHÀ TRƯỜNG': true,
+    '🌐 NỘI DUNG WEBSITE': false,
+    '⚙️ HỆ THỐNG': false
+  });
+
+  // Auto-expand group of current active path
+  useEffect(() => {
+    visibleMenuItems.forEach(item => {
+      if (item.path === location.pathname) {
+        setOpenGroups(prev => ({ ...prev, [item.group]: true }));
+      }
+    });
+  }, [location.pathname]);
+
+  const toggleGroup = (groupName) => {
+    setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
+
   // Group items
   const groupedItems = visibleMenuItems.reduce((acc, item) => {
     if (!acc[item.group]) acc[item.group] = [];
@@ -129,14 +150,36 @@ export default function Layout({ children, title }) {
         </div>
 
         <div style={styles.navContainer}>
-          {Object.entries(groupedItems).map(([group, items]) => (
-            <div key={group}>
-              <div style={styles.navGroup}>{group}</div>
-              {items.map(item => (
-                <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
-              ))}
-            </div>
-          ))}
+          {Object.entries(groupedItems).map(([group, items]) => {
+            const isOpen = openGroups[group] ?? false;
+            return (
+              <div key={group} style={{ marginBottom: '6px' }}>
+                <div 
+                  onClick={() => toggleGroup(group)}
+                  style={{
+                    cursor: 'pointer',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+                    borderRadius: '6px',
+                    margin: '6px 10px 4px 10px',
+                    color: isOpen ? '#38bdf8' : '#94a3b8',
+                    fontWeight: 'bold',
+                    fontSize: '11px',
+                    userSelect: 'none'
+                  }}
+                >
+                  <span>{group} ({items.length})</span>
+                  <span style={{ fontSize: '10px' }}>{isOpen ? '▲' : '▼'}</span>
+                </div>
+                {isOpen && items.map(item => (
+                  <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
+                ))}
+              </div>
+            );
+          })}
         </div>
 
         <div style={styles.sidebarBottom}>

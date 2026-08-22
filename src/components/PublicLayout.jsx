@@ -46,62 +46,33 @@ export default function PublicLayout() {
           </button>
 
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-            <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>Trang chủ</Link>
-            <Link to="/gioi-thieu" style={isActive('/gioi-thieu') ? styles.navItemActive : styles.navItem}>Giới thiệu</Link>
-            <Link to="/tap-san" style={isActive('/tap-san') ? styles.navItemActive : styles.navItem}>📖 Tập san 30 năm</Link>
-            <Link to="/huong-dan" style={isActive('/huong-dan') ? styles.navItemActive : styles.navItem}>📖 Cẩm nang hướng dẫn</Link>
-            <Link to="/luu-but" style={isActive('/luu-but') ? styles.navItemActive : styles.navItem}>💖 Sổ lưu bút</Link>
+            <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>🏠 Trang chủ</Link>
             
-            {/* DROPDOWN 1: HOẠT ĐỘNG KỶ NIỆM */}
-            <div className={`nav-dropdown ${activeDropdown === 'activity' ? 'active-touch' : ''}`}>
+            {/* DROPDOWN 1: KỶ NIỆM 30 NĂM */}
+            <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
               <span 
-                onClick={() => toggleDropdown('activity')}
-                style={(isActive('/cuoc-thi') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}
+                onClick={() => toggleDropdown('anniversary')}
+                style={(isActive('/gioi-thieu') || isActive('/tap-san') || isActive('/huong-dan') || isActive('/luu-but') || isActive('/cuoc-thi') || isActive('/dang-ky-the-thao') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}
               >
-                🏆 Hoạt động kỷ niệm ▾
+                🎉 Đại Lễ Kỷ Niệm 30 Năm ▾
               </span>
               <div className="nav-dropdown-content">
+                <Link to="/gioi-thieu" className="nav-dropdown-item">ℹ️ Giới thiệu 30 năm</Link>
+                <Link to="/tap-san" className="nav-dropdown-item">📖 Tập san 30 năm 3D</Link>
+                <Link to="/huong-dan" className="nav-dropdown-item">📘 Cẩm nang hướng dẫn</Link>
                 <Link to="/cuoc-thi" className="nav-dropdown-item">🏆 Cuộc thi tìm hiểu 30 năm</Link>
                 <Link to="/dang-ky-the-thao" className="nav-dropdown-item">⚽ Đăng ký thi đấu thể thao</Link>
                 <Link to="/binh-chon" className="nav-dropdown-item">🗳️ Bình chọn tác phẩm</Link>
                 <Link to="/nop-bai-thi" className="nav-dropdown-item">📤 Nộp bài thi sáng tạo</Link>
+                <Link to="/luu-but" className="nav-dropdown-item">💖 Sổ lưu bút kỷ niệm</Link>
               </div>
             </div>
 
-            {/* DROPDOWN 2: TIN TỨC & VĂN BẢN */}
-            <div className={`nav-dropdown ${activeDropdown === 'news' ? 'active-touch' : ''}`}>
-              <span 
-                onClick={() => toggleDropdown('news')}
-                style={(isActive('/tin-tuc') || isActive('/van-ban')) ? styles.navItemActive : styles.navItem}
-              >
-                📰 Tin tức & Văn bản ▾
-              </span>
-              <div className="nav-dropdown-content">
-                <Link to="/tin-tuc" className="nav-dropdown-item">📰 Tin tức - Sự kiện</Link>
-                <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
-                <Link to="/gop-y" className="nav-dropdown-item">✍️ Góp ý Công việc & Đề án</Link>
-              </div>
-            </div>
-
-            {/* DROPDOWN 3: THƯ VIỆN & BẢNG VÀNG */}
-            <div className={`nav-dropdown ${activeDropdown === 'library' ? 'active-touch' : ''}`}>
-              <span 
-                onClick={() => toggleDropdown('library')}
-                style={(isActive('/bang-vang') || isActive('/thu-vien-anh')) ? styles.navItemActive : styles.navItem}
-              >
-                ⭐ Thư viện & Bảng vàng ▾
-              </span>
-              <div className="nav-dropdown-content">
-                <Link to="/bang-vang" className="nav-dropdown-item">🎖️ Bảng vàng kỷ niệm</Link>
-                <Link to="/thu-vien-anh" className="nav-dropdown-item">📸 Thư viện ảnh 30 năm</Link>
-              </div>
-            </div>
-
-            {/* DROPDOWN 4: VẬN HÀNH NHÀ TRƯỜNG */}
+            {/* DROPDOWN 2: VẬN HÀNH NHÀ TRƯỜNG */}
             <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('school')}
-                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon') || isActive('/dang-ky-xe-may')) ? styles.navItemActive : styles.navItem}
+                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon') || isActive('/dang-ky-xe-may') || isActive('/van-ban') || isActive('/gop-y')) ? styles.navItemActive : styles.navItem}
               >
                 🏫 Vận hành Nhà trường ▾
               </span>
@@ -109,6 +80,23 @@ export default function PublicLayout() {
                 <Link to="/lich-cong-tac" className="nav-dropdown-item">📅 Lịch công tác tuần & Trực BGH</Link>
                 <Link to="/to-chuyen-mon" className="nav-dropdown-item">👨‍🏫 Đội ngũ & Tổ chuyên môn</Link>
                 <Link to="/dang-ky-xe-may" className="nav-dropdown-item">🛵 Đăng ký Xe máy Học sinh</Link>
+                <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
+                <Link to="/gop-y" className="nav-dropdown-item">✍️ Góp ý Công việc & Đề án</Link>
+              </div>
+            </div>
+
+            {/* DROPDOWN 3: TIN TỨC & THƯ VIỆN */}
+            <div className={`nav-dropdown ${activeDropdown === 'media' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={() => toggleDropdown('media')}
+                style={(isActive('/tin-tuc') || isActive('/thu-vien-anh') || isActive('/bang-vang')) ? styles.navItemActive : styles.navItem}
+              >
+                📰 Tin tức & Thư viện ▾
+              </span>
+              <div className="nav-dropdown-content">
+                <Link to="/tin-tuc" className="nav-dropdown-item">📰 Tin tức - Sự kiện</Link>
+                <Link to="/thu-vien-anh" className="nav-dropdown-item">📸 Thư viện ảnh 30 năm</Link>
+                <Link to="/bang-vang" className="nav-dropdown-item">🎖️ Bảng vàng kỷ niệm</Link>
               </div>
             </div>
           </div>
