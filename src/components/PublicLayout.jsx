@@ -96,6 +96,20 @@ export default function PublicLayout() {
                 <Link to="/thu-vien-anh" className="nav-dropdown-item">📸 Thư viện ảnh 30 năm</Link>
               </div>
             </div>
+
+            {/* DROPDOWN 4: VẬN HÀNH NHÀ TRƯỜNG */}
+            <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={() => toggleDropdown('school')}
+                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon')) ? styles.navItemActive : styles.navItem}
+              >
+                🏫 Vận hành Nhà trường ▾
+              </span>
+              <div className="nav-dropdown-content">
+                <Link to="/lich-cong-tac" className="nav-dropdown-item">📅 Lịch công tác tuần & Trực BGH</Link>
+                <Link to="/to-chuyen-mon" className="nav-dropdown-item">👨‍🏫 Đội ngũ & Tổ chuyên môn</Link>
+              </div>
+            </div>
           </div>
 
           <Link to="/admin" style={styles.adminLoginBtn}>🔑 Đăng nhập BTC</Link>
