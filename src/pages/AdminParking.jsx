@@ -133,6 +133,7 @@ export default function AdminParking() {
         months_count: Number(pkgMonths) || 1,
         fee_amount: Number(pkgFee) || 0,
         description: pkgDesc,
+        hide_fee: pkgHideFee,
         is_active: true
       };
 
@@ -157,6 +158,7 @@ export default function AdminParking() {
     setPkgMonths(pkg.months_count);
     setPkgFee(pkg.fee_amount);
     setPkgDesc(pkg.description || '');
+    setPkgHideFee(!!pkg.hide_fee);
     setShowPkgForm(true);
   };
 
@@ -489,6 +491,12 @@ export default function AdminParking() {
                   <label style={styles.label}>Mô Tả Gói Vé</label>
                   <input type="text" value={pkgDesc} onChange={e => setPkgDesc(e.target.value)} style={styles.input} placeholder="VD: Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)..." />
                 </div>
+                <div style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', padding: '8px 14px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+                    <input type="checkbox" checked={pkgHideFee} onChange={e => setPkgHideFee(e.target.checked)} />
+                    <span>🙈 Ẩn số tiền lệ phí trên giao diện công khai (Hiển thị "Miễn phí")</span>
+                  </label>
+                </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px' }}>
                 <button type="button" onClick={() => setShowPkgForm(false)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
@@ -518,8 +526,8 @@ export default function AdminParking() {
                   <td style={{ padding: '10px', fontWeight: 'bold' }}>#{idx + 1}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{pkg.title}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{pkg.months_count} tháng</td>
-                  <td style={{ padding: '10px', fontWeight: '900', color: '#be123c', fontSize: '15px' }}>
-                    {(Number(pkg.fee_amount) || 0).toLocaleString()} VNĐ
+                  <td style={{ padding: '10px', fontWeight: '900', color: pkg.hide_fee || Number(pkg.fee_amount) === 0 ? '#166534' : '#be123c', fontSize: '15px' }}>
+                    {pkg.hide_fee ? '🟢 Miễn phí (Ẩn tiền)' : Number(pkg.fee_amount) === 0 ? '🟢 0 VNĐ (Miễn phí)' : `${(Number(pkg.fee_amount) || 0).toLocaleString()} VNĐ`}
                   </td>
                   <td style={{ padding: '10px', color: '#64748b' }}>{pkg.description || '-'}</td>
                   <td style={{ padding: '10px' }}>
@@ -529,14 +537,14 @@ export default function AdminParking() {
                   </td>
                   <td style={{ padding: '10px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                      <button type="button" onClick={() => handleEditPackage(pkg)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }} title="Sửa gói vé">
-                        <Edit3 size={14} />
+                      <button type="button" onClick={() => handleEditPackage(pkg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c7', background: '#e0f2fe', color: '#0284c7', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }} title="Sửa gói vé">
+                        <Edit3 size={14} /> Sửa Gói
                       </button>
-                      <button type="button" onClick={() => handleTogglePkgActive(pkg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
+                      <button type="button" onClick={() => handleTogglePkgActive(pkg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}>
                         {pkg.is_active ? 'Ẩn gói' : 'Mở lại'}
                       </button>
-                      <button type="button" onClick={() => handleDeletePackage(pkg.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }} title="Xóa gói vé">
-                        <Trash2 size={14} />
+                      <button type="button" onClick={() => handleDeletePackage(pkg.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }} title="Xóa gói vé">
+                        <Trash2 size={14} /> Xóa
                       </button>
                     </div>
                   </td>

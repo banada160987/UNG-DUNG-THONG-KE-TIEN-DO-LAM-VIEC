@@ -274,6 +274,102 @@ export default function AdminStudents() {
     XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  // Bulk Class Transfer State
+  const [showBulkTransferForm, setShowBulkTransferForm] = useState(false);
+  const [sourceClass, setSourceClass] = useState('');
+  const [targetClass, setTargetClass] = useState('');
+
+  // Get list of unique current classes
+  const uniqueClassesList = Array.from(new Set(students.map(s => s.student_class))).filter(Boolean).sort();
+
+  // Individual Class Transfer Handler
+  const handleIndividualTransfer = async (student) => {
+    const newClassInput = window.prompt(`Chuyển lớp cho học sinh: ${student.student_name} (${student.student_class})\n\nNhập Tên Lớp Mới (VD: 11A1, 12A5):`, student.student_class);
+    if (!newClassInput || !newClassInput.trim()) return;
+
+    const cleanNewClass = newClassInput.trim().toUpperCase();
+    const newGradeLevel = getGradeLevel(cleanNewClass);
+
+    try {
+      const updatedItem = {
+        ...student,
+        student_class: cleanNewClass,
+        grade_level: newGradeLevel
+      };
+
+      // Update Local State & LocalStorage
+      setStudents(prev => {
+        const newList = prev.map(s => s.student_code === student.student_code ? updatedItem : s);
+        localStorage.setItem('cbq_students_data', JSON.stringify(newList));
+        return newList;
+      });
+
+      // Update Supabase
+      await supabase
+        .from('cbq_students')
+        .update({ student_class: cleanNewClass, grade_level: newGradeLevel })
+        .eq('student_code', student.student_code);
+
+      alert(`🎉 Đã chuyển học sinh ${student.student_name} sang Lớp ${cleanNewClass} (${newGradeLevel}) thành công!`);
+    } catch (err) {
+      alert("Lỗi khi chuyển lớp: " + err.message);
+    }
+  };
+
+  // Bulk Class Transfer Handler
+  const handleBulkTransferSubmit = async (e) => {
+    e.preventDefault();
+    if (!sourceClass || !targetClass.trim()) {
+      alert("Vui lòng chọn Lớp Cũ và nhập Lớp Mới!");
+      return;
+    }
+
+    const cleanTargetClass = targetClass.trim().toUpperCase();
+    const targetGradeLevel = getGradeLevel(cleanTargetClass);
+
+    const studentsToMove = students.filter(s => s.student_class === sourceClass);
+    if (studentsToMove.length === 0) {
+      alert(`Không tìm thấy học sinh nào trong Lớp ${sourceClass}!`);
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc chắn muốn chuyển TOÀN BỘ ${studentsToMove.length} học sinh từ Lớp ${sourceClass} sang Lớp ${cleanTargetClass} (${targetGradeLevel})?`)) {
+      return;
+    }
+
+    try {
+      // 1. Update Local State & LocalStorage
+      setStudents(prev => {
+        const newList = prev.map(s => {
+          if (s.student_class === sourceClass) {
+            return {
+              ...s,
+              student_class: cleanTargetClass,
+              grade_level: targetGradeLevel
+            };
+          }
+          return s;
+        });
+        localStorage.setItem('cbq_students_data', JSON.stringify(newList));
+        return newList;
+      });
+
+      // 2. Update Supabase
+      const codesToMove = studentsToMove.map(s => s.student_code);
+      await supabase
+        .from('cbq_students')
+        .update({ student_class: cleanTargetClass, grade_level: targetGradeLevel })
+        .in('student_code', codesToMove);
+
+      alert(`🎉 ĐÃ CHUYỂN THÀNH CÔNG ${studentsToMove.length} HỌC SINH TỪ LỚP ${sourceClass} SANG LỚP ${cleanTargetClass} (${targetGradeLevel})!`);
+      setShowBulkTransferForm(false);
+      setSourceClass('');
+      setTargetClass('');
+    } catch (err) {
+      alert("Lỗi khi chuyển lớp hàng loạt: " + err.message);
+    }
+  };
+
   const filteredStudents = students.filter(s => {
     const matchSearch = !searchTerm || 
       s.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -301,6 +397,10 @@ export default function AdminStudents() {
             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />
           </label>
 
+          <button onClick={() => setShowBulkTransferForm(!showBulkTransferForm)} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#7c3aed', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <RefreshCw size={18} /> {showBulkTransferForm ? 'Đóng Chuyển Lớp' : 'Chuyển Lớp Hàng Loạt'}
+          </button>
+
           <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Download size={18} /> Tải File Mẫu Import
           </button>
@@ -314,6 +414,49 @@ export default function AdminStudents() {
           </button>
         </div>
       </div>
+
+      {/* BULK CLASS TRANSFER FORM SECTION */}
+      {showBulkTransferForm && (
+        <form onSubmit={handleBulkTransferSubmit} className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: '#fef2f2', border: '2px solid #fca5a5', marginBottom: '1.5rem' }}>
+          <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #fecdd3', paddingBottom: '10px' }}>
+            🚀 Chuyển Lớp Hàng Loạt (Lên Lớp Đầu Năm Học)
+          </h3>
+          <p style={{ fontSize: '13px', color: '#9f1239', marginTop: '-4px' }}>
+            Chuyển TOÀN BỘ danh sách học sinh thuộc một lớp cũ sang một lớp mới và tự động cập nhật Khối học mới.
+          </p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div>
+              <label style={{ ...styles.label, color: '#be123c' }}>1. Chọn Lớp Cũ Cần Chuyển (*)</label>
+              <select value={sourceClass} onChange={e => setSourceClass(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }}>
+                <option value="">-- Chọn Lớp Cũ --</option>
+                {uniqueClassesList.map(cls => (
+                  <option key={cls} value={cls}>Lớp {cls} ({students.filter(s => s.student_class === cls).length} học sinh)</option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ ...styles.label, color: '#be123c' }}>2. Nhập Lớp Mới (*)</label>
+              <input 
+                type="text" 
+                required 
+                value={targetClass} 
+                onChange={e => setTargetClass(e.target.value)} 
+                style={{ ...styles.input, fontWeight: 'bold' }} 
+                placeholder="VD: 11A1, 12A5..." 
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px' }}>
+            <button type="button" onClick={() => setShowBulkTransferForm(false)} style={{ padding: '8px 16px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
+            <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#be123c' }}>
+              🚀 XÁC NHẬN CHUYỂN TOÀN BỘ LỚP
+            </button>
+          </div>
+        </form>
+      )}
 
       {/* FORM SECTION */}
       {showForm && (
@@ -394,6 +537,9 @@ export default function AdminStudents() {
                     <td style={{ padding: '10px', color: '#475569' }}>{s.grade_level}</td>
                     <td style={{ padding: '10px', textAlign: 'right' }}>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                        <button type="button" onClick={() => handleIndividualTransfer(s)} title="Chuyển lớp học sinh" style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #7c3aed', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <RefreshCw size={12} /> Chuyển Lớp
+                        </button>
                         <button type="button" onClick={() => { setEditingId(s.id); setCode(s.student_code); setName(s.student_name); setClassName(s.student_class); setShowForm(true); }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
                           <Edit3 size={14} />
                         </button>

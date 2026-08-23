@@ -59,7 +59,8 @@ export default function PublicParkingRegister() {
           label: p.title,
           months: p.months_count,
           fee: Number(p.fee_amount) || 0,
-          desc: p.description || `${p.title} (${Number(p.fee_amount).toLocaleString()} VNĐ)`
+          hide_fee: !!p.hide_fee,
+          desc: p.description || `${p.title}`
         }));
         setPackages(formatted);
       }
@@ -449,8 +450,8 @@ export default function PublicParkingRegister() {
                 >
                   <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}>{pkg.label}</div>
                   <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>{pkg.desc}</div>
-                  <div style={{ fontWeight: '800', color: '#be123c', marginTop: '6px', fontSize: '15px' }}>
-                    {pkg.fee.toLocaleString()} VNĐ
+                  <div style={{ fontWeight: '800', color: pkg.hide_fee || pkg.fee === 0 ? '#166534' : '#be123c', marginTop: '6px', fontSize: '15px' }}>
+                    {pkg.hide_fee ? '🟢 Miễn phí' : pkg.fee === 0 ? '🟢 Miễn phí (0 VNĐ)' : `${pkg.fee.toLocaleString()} VNĐ`}
                   </div>
                 </div>
               ))}

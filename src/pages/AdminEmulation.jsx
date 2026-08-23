@@ -54,10 +54,17 @@ export default function AdminEmulation() {
       if (!logsRes.error && logsRes.data) setAllLogs(logsRes.data);
       if (!critRes.error && critRes.data && critRes.data.length > 0) setCriteriaList(critRes.data);
 
+      let uniqueClasses = [];
       if (!studentRes.error && studentRes.data && studentRes.data.length > 0) {
-        const uniqueClasses = Array.from(new Set(studentRes.data.map(s => s.student_class))).sort();
-        if (uniqueClasses.length > 0) setClassList(uniqueClasses);
+        uniqueClasses = Array.from(new Set(studentRes.data.map(s => s.student_class))).filter(Boolean).sort();
+      } else {
+        const cached = localStorage.getItem('cbq_students_data');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          uniqueClasses = Array.from(new Set(parsed.map(s => s.student_class))).filter(Boolean).sort();
+        }
       }
+      if (uniqueClasses.length > 0) setClassList(uniqueClasses);
     } catch (err) {
       console.warn("Dùng dữ liệu thi đua mẫu:", err);
     } finally {
