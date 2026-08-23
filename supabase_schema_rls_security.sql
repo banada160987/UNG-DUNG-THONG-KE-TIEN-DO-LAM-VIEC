@@ -1,6 +1,6 @@
 -- ==============================================================================
--- CHƯƠNG TRÌNH KHẮC PHỤC BẢO MẬT & TỐI ƯU HIỆU NĂNG CƠ SỞ DỮ LIỆU SUPABASE
--- Trường THPT Cao Bá Quát • Hệ Thống Vận Hành Nhà Trường (Tự động khởi tạo & Bảo mật)
+-- CHƯƠNG TRÌNH KHẮC PHỤC BẢO MẬT & XÓA SẠCH LỖI RECURSION TRÊN CSDL SUPABASE
+-- Trường THPT Cao Bá Quát • Hệ Thống Vận Hành Nhà Trường
 -- ==============================================================================
 
 -- 1. KHỞI TẠO TẤT CẢ CÁC BẢNG NẾU CHƯA TỒN TẠI
@@ -107,27 +107,40 @@ CREATE TABLE IF NOT EXISTS cbq_navigation_menus (
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 
--- 2. KÍCH HOẠT ROW LEVEL SECURITY (RLS)
+-- ==============================================================================
+-- 2. TỰ ĐỘNG LÀM SẠCH VÀ TRIỆT TIÊU BẤT KỲ POLICY CŨ NÀO GÂY ĐỆ QUY TRÊN CBQ_USER_ROLES
+-- ==============================================================================
+
+ALTER TABLE cbq_user_roles DISABLE ROW LEVEL SECURITY;
+
+DO $$ 
+DECLARE 
+    pol RECORD;
+BEGIN 
+    FOR pol IN (SELECT policyname FROM pg_policies WHERE tablename = 'cbq_user_roles') LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON cbq_user_roles', pol.policyname);
+    END LOOP;
+END $$;
+
+ALTER TABLE cbq_user_roles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all user roles" ON cbq_user_roles 
+  FOR ALL 
+  USING (true) 
+  WITH CHECK (true);
+
+-- ==============================================================================
+-- 3. KÍCH HOẠT VÀ LÀM SẠCH POLICY CHO CÁC BẢNG KHÁC
+-- ==============================================================================
+
 ALTER TABLE cbq_students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_parking_registrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_parking_packages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_emulation_criteria ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_emulation_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_emulation_weekly_summary ENABLE ROW LEVEL SECURITY;
-ALTER TABLE cbq_user_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cbq_navigation_menus ENABLE ROW LEVEL SECURITY;
 
--- 3. GIẢI QUYẾT TRIỆT ĐỂ LỖI RECURSION TRÊN BẢNG CBQ_USER_ROLES
-DROP POLICY IF EXISTS "Admin write user roles" ON cbq_user_roles;
-DROP POLICY IF EXISTS "Admin manage user roles" ON cbq_user_roles;
-DROP POLICY IF EXISTS "Public read user roles" ON cbq_user_roles;
-DROP POLICY IF EXISTS "Auth manage user roles" ON cbq_user_roles;
-DROP POLICY IF EXISTS "User roles policy" ON cbq_user_roles;
-
-CREATE POLICY "Public read user roles" ON cbq_user_roles FOR SELECT USING (true);
-CREATE POLICY "Auth manage user roles" ON cbq_user_roles FOR ALL USING (true) WITH CHECK (true);
-
--- POLICIES CHO CÁC BẢNG KHÁC
 DROP POLICY IF EXISTS "Public read students" ON cbq_students;
 CREATE POLICY "Public read students" ON cbq_students FOR SELECT USING (true);
 
@@ -158,7 +171,10 @@ CREATE POLICY "Public read menus" ON cbq_navigation_menus FOR SELECT USING (true
 DROP POLICY IF EXISTS "Auth manage menus" ON cbq_navigation_menus;
 CREATE POLICY "Auth manage menus" ON cbq_navigation_menus FOR ALL USING (true);
 
--- 4. TẠO INDEXES TỐI ƯU HIỆU NĂNG CHO 5.000+ BẢN GHI
+-- ==============================================================================
+-- 4. TẠO INDEXES TỐI ƯU HIỆU NĂNG
+-- ==============================================================================
+
 CREATE INDEX IF NOT EXISTS idx_students_code ON cbq_students(student_code);
 CREATE INDEX IF NOT EXISTS idx_students_class ON cbq_students(student_class);
 

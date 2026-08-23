@@ -93,6 +93,7 @@ export default function PublicLayout() {
               <div className="nav-dropdown-content">
                 {publicMenus
                   .filter(m => m.parent_group === 'anniversary' && m.is_active !== false)
+                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
                       {m.label}
@@ -112,6 +113,7 @@ export default function PublicLayout() {
               <div className="nav-dropdown-content">
                 {publicMenus
                   .filter(m => (m.parent_group === 'school' || !m.parent_group) && m.is_active !== false)
+                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
                       {m.label}
@@ -131,6 +133,7 @@ export default function PublicLayout() {
               <div className="nav-dropdown-content">
                 {publicMenus
                   .filter(m => m.parent_group === 'media' && m.is_active !== false)
+                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
                       {m.label}

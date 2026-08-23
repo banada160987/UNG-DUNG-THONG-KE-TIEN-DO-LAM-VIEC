@@ -217,6 +217,23 @@ export default function AdminMenuConfig() {
     }
   };
 
+  const handleMoveOrder = async (item, delta) => {
+    const currentOrder = Number(item.sort_order) || 1;
+    const newOrder = Math.max(1, currentOrder + delta);
+
+    const updated = menus.map(m => m.id === item.id ? { ...m, sort_order: newOrder } : m);
+    updated.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+
+    setMenus(updated);
+    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
+
+    try {
+      await supabase.from('cbq_navigation_menus').update({ sort_order: newOrder }).eq('id', item.id);
+    } catch (err) {
+      console.warn("Lỗi vị trí:", err);
+    }
+  };
+
   const handleSaveMenu = async (e) => {
     e.preventDefault();
     if (!label.trim() || !path.trim()) {
@@ -240,6 +257,8 @@ export default function AdminMenuConfig() {
     } else {
       updated = [...menus, { ...payload, id: `menu_${Date.now()}` }];
     }
+
+    updated.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
 
     setMenus(updated);
     localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
@@ -365,7 +384,9 @@ export default function AdminMenuConfig() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           {availableGroups.map((grpKey) => {
             const grpMeta = GROUP_METADATA[grpKey] || { title: grpKey, color: '#be123c', bg: '#fff1f2', border: '#fca5a5' };
-            const groupItems = menus.filter(m => (m.parent_group === grpKey || (!m.parent_group && grpKey === 'school')));
+            const groupItems = menus
+              .filter(m => (m.parent_group === grpKey || (!m.parent_group && grpKey === 'school')))
+              .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
 
             return (
               <div key={grpKey} className="glass" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', border: `2px solid ${grpMeta.border}` }}>
@@ -394,7 +415,15 @@ export default function AdminMenuConfig() {
                     <tbody>
                       {groupItems.map((m, idx) => (
                         <tr key={m.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px', fontWeight: 'bold' }}>#{m.sort_order || idx + 1}</td>
+                          <td style={{ padding: '10px', fontWeight: 'bold' }}>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <span>#{m.sort_order || idx + 1}</span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                                <button type="button" onClick={() => handleMoveOrder(m, -1)} style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '1px 5px', borderRadius: '3px', fontSize: '10px', fontWeight: 'bold' }} title="Chuyển lên vị trí trước">▲</button>
+                                <button type="button" onClick={() => handleMoveOrder(m, 1)} style={{ border: 'none', background: '#f1f5f9', cursor: 'pointer', padding: '1px 5px', borderRadius: '3px', fontSize: '10px', fontWeight: 'bold' }} title="Chuyển xuống vị trí sau">▼</button>
+                              </div>
+                            </div>
+                          </td>
                           <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{m.label}</td>
                           <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{m.path}</td>
                           <td style={{ padding: '10px' }}>
