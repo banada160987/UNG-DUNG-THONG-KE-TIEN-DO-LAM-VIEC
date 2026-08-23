@@ -80,6 +80,7 @@ export default function PublicLayout() {
                 <Link to="/lich-cong-tac" className="nav-dropdown-item">📅 Lịch công tác tuần & Trực BGH</Link>
                 <Link to="/to-chuyen-mon" className="nav-dropdown-item">👨‍🏫 Đội ngũ & Tổ chuyên môn</Link>
                 <Link to="/dang-ky-xe-may" className="nav-dropdown-item">🛵 Đăng ký Xe máy Học sinh</Link>
+                <Link to="/cham-diem-thi-dua" className="nav-dropdown-item">📋 Sổ Chấm điểm Thi đua Trực tuần</Link>
                 <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
                 <Link to="/gop-y" className="nav-dropdown-item">✍️ Góp ý Công việc & Đề án</Link>
               </div>
