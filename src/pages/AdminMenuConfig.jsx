@@ -12,6 +12,42 @@ const DEFAULT_PUBLIC_MENUS = [
   { id: 'm6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', icon: 'MessageSquare', sort_order: 6, is_active: true }
 ];
 
+const PRESET_SYSTEM_PAGES = [
+  // Public Pages
+  { label: '🏠 Trang chủ Kỷ niệm 30 năm', path: '/', group: 'school' },
+  { label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', group: 'school' },
+  { label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', group: 'school' },
+  { label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', group: 'school' },
+  { label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', group: 'school' },
+  { label: '📜 Văn bản - Thông báo', path: '/van-ban', group: 'school' },
+  { label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', group: 'school' },
+  { label: 'ℹ️ Giới thiệu lịch sử 30 năm', path: '/gioi-thieu', group: 'anniversary' },
+  { label: '📖 Tập san 30 năm 3D', path: '/tap-san', group: 'anniversary' },
+  { label: '📘 Cẩm nang hướng dẫn', path: '/huong-dan', group: 'anniversary' },
+  { label: '🏆 Cuộc thi tìm hiểu 30 năm', path: '/cuoc-thi', group: 'anniversary' },
+  { label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', group: 'anniversary' },
+  { label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', group: 'anniversary' },
+  { label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', group: 'anniversary' },
+  { label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', group: 'anniversary' },
+  { label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', group: 'media' },
+  { label: '📸 Thư viện ảnh 30 năm', path: '/thu-vien-anh', group: 'media' },
+  { label: '🎖️ Bảng vàng kỷ niệm', path: '/bang-vang', group: 'media' },
+
+  // Admin Pages
+  { label: '👨‍🎓 Quản lý Học sinh & Chuyển lớp', path: '/admin/students', group: 'school' },
+  { label: '📋 Quản lý Thi đua & Bảng xếp hạng', path: '/admin/emulation', group: 'school' },
+  { label: '🛵 Quản lý Xe máy Học sinh', path: '/admin/parking', group: 'school' },
+  { label: '📅 Quản lý Lịch công tác tuần', path: '/admin/schedule', group: 'school' },
+  { label: '👨‍🏫 Quản lý Đội ngũ & Tổ chuyên môn', path: '/admin/staff', group: 'school' },
+  { label: '📜 Quản lý Văn bản - Thông báo', path: '/admin/docs', group: 'school' },
+  { label: '📰 Quản lý Tin tức - Sự kiện', path: '/admin/news', group: 'media' },
+  { label: '📸 Quản lý Thư viện ảnh', path: '/admin/gallery', group: 'media' },
+  { label: '🏆 Quản lý Tài trợ', path: '/admin/sponsors', group: 'anniversary' },
+  { label: '✉️ Quản lý Khách mời', path: '/admin/guests', group: 'anniversary' },
+  { label: '⚙️ Phân quyền Tài khoản', path: '/admin/users', group: 'system' },
+  { label: '🌐 Cấu hình Menu Hiển thị', path: '/admin/menu-config', group: 'system' }
+];
+
 export default function AdminMenuConfig() {
   const [targetType, setTargetType] = useState('public'); // 'public', 'admin'
   const [menus, setMenus] = useState(DEFAULT_PUBLIC_MENUS);
@@ -20,6 +56,7 @@ export default function AdminMenuConfig() {
   // Form State
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedPreset, setSelectedPreset] = useState('');
   const [label, setLabel] = useState('');
   const [path, setPath] = useState('');
   const [parentGroup, setParentGroup] = useState('school');
@@ -29,6 +66,18 @@ export default function AdminMenuConfig() {
   useEffect(() => {
     fetchMenus();
   }, [targetType]);
+
+  const handleSelectPresetPage = (presetPath) => {
+    setSelectedPreset(presetPath);
+    if (!presetPath) return;
+
+    const found = PRESET_SYSTEM_PAGES.find(p => p.path === presetPath);
+    if (found) {
+      setPath(found.path);
+      if (!label.trim()) setLabel(found.label);
+      if (found.group) setParentGroup(found.group);
+    }
+  };
 
   async function fetchMenus() {
     setLoading(true);
@@ -168,6 +217,24 @@ export default function AdminMenuConfig() {
             {editingId ? '📝 Sửa Mục Menu' : '➕ Thêm Mục Menu Mới'}
           </h3>
 
+          <div style={{ backgroundColor: '#f0f9ff', padding: '14px', borderRadius: '10px', border: '1px solid #bae6fd', marginBottom: '15px' }}>
+            <label style={{ ...styles.label, color: '#0369a1', fontSize: '13.5px', marginBottom: '6px' }}>
+              ✨ Chọn Trang Có Sẵn Trong Hệ Thống (Không cần gõ tay Link):
+            </label>
+            <select 
+              value={selectedPreset} 
+              onChange={e => handleSelectPresetPage(e.target.value)} 
+              style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7', backgroundColor: '#ffffff' }}
+            >
+              <option value="">-- Bấm vào đây để chọn nhanh trang trong hệ thống --</option>
+              {PRESET_SYSTEM_PAGES.map((p, idx) => (
+                <option key={idx} value={p.path}>
+                  {p.label} &nbsp; ➔ &nbsp; Đường dẫn: {p.path}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1.5fr 1fr 1fr', gap: '12px' }}>
             <div>
               <label style={styles.label}>Tên Menu hiển thị (*)</label>
@@ -175,7 +242,7 @@ export default function AdminMenuConfig() {
             </div>
             <div>
               <label style={styles.label}>Tuyến đường Link Path (*)</label>
-              <input type="text" required value={path} onChange={e => setPath(e.target.value)} style={styles.input} placeholder="VD: /dang-ky-xe-may" />
+              <input type="text" required value={path} onChange={e => setPath(e.target.value)} style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7' }} placeholder="VD: /dang-ky-xe-may hoặc https://..." />
             </div>
             <div>
               <label style={styles.label}>Nhóm Menu</label>
@@ -183,6 +250,7 @@ export default function AdminMenuConfig() {
                 <option value="school">🏫 Vận hành Nhà trường</option>
                 <option value="anniversary">🎉 Đại Lễ Kỷ Niệm 30 Năm</option>
                 <option value="media">📰 Tin tức & Thư viện</option>
+                <option value="system">⚙️ Hệ thống Admin</option>
               </select>
             </div>
             <div>
