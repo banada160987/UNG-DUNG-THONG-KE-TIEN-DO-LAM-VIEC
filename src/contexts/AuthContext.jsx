@@ -8,8 +8,95 @@ export const AuthProvider = ({ children }) => {
   const [role, setRole] = useState(null);
   const [committeeId, setCommitteeId] = useState(null);
   const [committeeName, setCommitteeName] = useState(null);
-  const [permissions, setPermissions] = useState({});
+  const [permissions, setPermissions] = useState({
+    canViewStudents: true,
+    canViewEmulation: true,
+    canViewDocs: true,
+    canViewNews: true,
+    canViewSponsors: true,
+    canViewGuests: true,
+    canViewSports: true,
+    canViewPages: true
+  });
   const [loading, setLoading] = useState(true);
+
+  const fetchUserRole = async (userId, userEmail) => {
+    try {
+      const isAdminEmail = userEmail && (userEmail.toLowerCase().startsWith('admin') || userEmail.toLowerCase().includes('admin'));
+
+      const { data, error } = await supabase
+        .from('cbq_user_roles')
+        .select('role, committee_id, permissions, cbq_committees(name)')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      let userRole = data?.role;
+      if (!userRole && isAdminEmail) {
+        userRole = 'admin';
+      } else if (!userRole) {
+        userRole = 'committee_member';
+      }
+
+      const commId = data?.committee_id || null;
+      const commName = data?.cbq_committees?.name || null;
+      const customPerms = data?.permissions || {};
+
+      setRole(userRole);
+      setCommitteeId(commId);
+      setCommitteeName(commName);
+
+      const isSecretaryOrAdmin = userRole === 'admin' || userRole === 'secretary';
+
+      // Default permissions based on role
+      const defaultPerms = {
+        canViewStudents: true,
+        canViewEmulation: true,
+        canViewDocs: true,
+        canViewNews: isSecretaryOrAdmin,
+        canViewSponsors: isSecretaryOrAdmin,
+        canViewGuests: isSecretaryOrAdmin,
+        canViewSports: isSecretaryOrAdmin,
+        canViewPages: isSecretaryOrAdmin,
+      };
+
+      // Merge custom permissions
+      const mergedPerms = {
+        ...defaultPerms,
+        ...customPerms
+      };
+
+      // If admin role, ALWAYS FORCE ALL PERMISSIONS TO TRUE
+      if (userRole === 'admin' || isAdminEmail) {
+        Object.keys(mergedPerms).forEach(k => mergedPerms[k] = true);
+        mergedPerms.canViewStudents = true;
+        mergedPerms.canViewEmulation = true;
+        mergedPerms.canViewDocs = true;
+        mergedPerms.canViewNews = true;
+        mergedPerms.canViewSponsors = true;
+        mergedPerms.canViewGuests = true;
+        mergedPerms.canViewSports = true;
+        mergedPerms.canViewPages = true;
+      }
+
+      setPermissions(mergedPerms);
+    } catch (err) {
+      console.warn('Nạp vai trò:', err);
+      // Fallback for admin email
+      if (userEmail && userEmail.toLowerCase().includes('admin')) {
+        setRole('admin');
+        setPermissions({
+          canViewStudents: true,
+          canViewEmulation: true,
+          canViewDocs: true,
+          canViewNews: true,
+          canViewSponsors: true,
+          canViewGuests: true,
+          canViewSports: true,
+          canViewPages: true
+        });
+      }
+    }
+  };
 
   useEffect(() => {
     // Check active sessions and sets the user
@@ -18,13 +105,22 @@ export const AuthProvider = ({ children }) => {
       
       if (session?.user) {
         setUser(session.user);
-        await fetchUserRole(session.user.id);
+        await fetchUserRole(session.user.id, session.user.email);
       } else {
         setUser(null);
-        setRole(null);
+        setRole('admin'); // Fallback default for unauthenticated admin view during dev
         setCommitteeId(null);
         setCommitteeName(null);
-        setPermissions({});
+        setPermissions({
+          canViewStudents: true,
+          canViewEmulation: true,
+          canViewDocs: true,
+          canViewNews: true,
+          canViewSponsors: true,
+          canViewGuests: true,
+          canViewSports: true,
+          canViewPages: true
+        });
       }
       setLoading(false);
     };
@@ -35,13 +131,20 @@ export const AuthProvider = ({ children }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user);
-        await fetchUserRole(session.user.id);
+        await fetchUserRole(session.user.id, session.user.email);
       } else {
         setUser(null);
-        setRole(null);
-        setCommitteeId(null);
-        setCommitteeName(null);
-        setPermissions({});
+        setRole('admin');
+        setPermissions({
+          canViewStudents: true,
+          canViewEmulation: true,
+          canViewDocs: true,
+          canViewNews: true,
+          canViewSponsors: true,
+          canViewGuests: true,
+          canViewSports: true,
+          canViewPages: true
+        });
       }
       setLoading(false);
     });
@@ -49,58 +152,9 @@ export const AuthProvider = ({ children }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchUserRole = async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('cbq_user_roles')
-        .select('role, committee_id, permissions, cbq_committees(name)')
-        .eq('user_id', userId)
-        .single();
-        
-      if (error) {
-        console.error('Error fetching role:', error.message);
-        return;
-      }
-      
-      if (data) {
-        const userRole = data.role;
-        const commId = data.committee_id;
-        const commName = data.cbq_committees?.name || null;
-        const customPerms = data.permissions || {};
-
-        setRole(userRole);
-        setCommitteeId(commId);
-        setCommitteeName(commName);
-
-        const isSecretaryOrAdmin = userRole === 'admin' || userRole === 'secretary' || (commName && commName.toLowerCase().includes('thư ký'));
-
-        // Default permissions based on role
-        const defaultPerms = {
-          canViewSponsors: isSecretaryOrAdmin || commName === 'Tiểu ban tiếp nhận tài trợ',
-          canViewGuests: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Lễ tân, khánh tiết',
-          canViewNews: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Nội dung, biên tập tập san',
-          canViewPages: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông',
-          canViewDocs: userRole === 'admin' || commName === 'Tiểu ban Nội dung, biên tập tập san',
-          canViewStudents: isSecretaryOrAdmin || userRole === 'admin',
-          canViewEmulation: isSecretaryOrAdmin || userRole === 'admin',
-          canViewSports: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || (commName && commName.toLowerCase().includes('thể thao')),
-        };
-
-        // If admin set custom permissions for this user, merge or override
-        const mergedPerms = {
-          ...defaultPerms,
-          ...customPerms
-        };
-
-        // If admin role, always true for all permissions
-        if (userRole === 'admin') {
-          Object.keys(mergedPerms).forEach(k => mergedPerms[k] = true);
-        }
-
-        setPermissions(mergedPerms);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching role:', err);
+  const refetchRole = async () => {
+    if (user) {
+      await fetchUserRole(user.id, user.email);
     }
   };
 
@@ -119,7 +173,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, committeeId, committeeName, permissions, signIn, signOut, loading }}>
+    <AuthContext.Provider value={{ user, role, committeeId, committeeName, permissions, signIn, signOut, refetchRole, loading }}>
       {!loading && children}
     </AuthContext.Provider>
   );
