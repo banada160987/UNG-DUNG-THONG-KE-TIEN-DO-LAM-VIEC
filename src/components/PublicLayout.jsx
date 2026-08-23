@@ -1,5 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
+
+const DEFAULT_SCHOOL_MENUS = [
+  { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
+  { id: 'm2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
+  { id: 'm3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
+  { id: 'm4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
+  { id: 'm5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
+  { id: 'm6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true }
+];
 
 export default function PublicLayout() {
   const location = useLocation();
@@ -7,6 +17,7 @@ export default function PublicLayout() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [publicMenus, setPublicMenus] = useState(DEFAULT_SCHOOL_MENUS);
 
   const isActive = (path) => location.pathname === path;
 
@@ -17,7 +28,30 @@ export default function PublicLayout() {
   useEffect(() => {
     setMobileMenuOpen(false);
     setActiveDropdown(null);
+    fetchPublicMenus();
   }, [location.pathname]);
+
+  async function fetchPublicMenus() {
+    try {
+      const cached = localStorage.getItem('cbq_menus_public');
+      if (cached) {
+        setPublicMenus(JSON.parse(cached));
+      }
+
+      const { data, error } = await supabase
+        .from('cbq_navigation_menus')
+        .select('*')
+        .eq('target_type', 'public')
+        .order('sort_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        setPublicMenus(data);
+        localStorage.setItem('cbq_menus_public', JSON.stringify(data));
+      }
+    } catch (err) {
+      console.warn("Dùng menu công khai mặc định:", err);
+    }
+  }
 
   return (
     <div style={styles.portalContainer}>
@@ -77,12 +111,13 @@ export default function PublicLayout() {
                 🏫 Vận hành Nhà trường ▾
               </span>
               <div className="nav-dropdown-content">
-                <Link to="/lich-cong-tac" className="nav-dropdown-item">📅 Lịch công tác tuần & Trực BGH</Link>
-                <Link to="/to-chuyen-mon" className="nav-dropdown-item">👨‍🏫 Đội ngũ & Tổ chuyên môn</Link>
-                <Link to="/dang-ky-xe-may" className="nav-dropdown-item">🛵 Đăng ký Xe máy Học sinh</Link>
-                <Link to="/cham-diem-thi-dua" className="nav-dropdown-item">📋 Sổ Chấm điểm Thi đua Trực tuần</Link>
-                <Link to="/van-ban" className="nav-dropdown-item">📜 Văn bản - Thông báo</Link>
-                <Link to="/gop-y" className="nav-dropdown-item">✍️ Góp ý Công việc & Đề án</Link>
+                {publicMenus
+                  .filter(m => m.is_active !== false)
+                  .map(m => (
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                      {m.label}
+                    </Link>
+                  ))}
               </div>
             </div>
 
