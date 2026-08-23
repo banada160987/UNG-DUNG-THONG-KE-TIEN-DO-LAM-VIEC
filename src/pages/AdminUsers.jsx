@@ -98,10 +98,13 @@ export default function AdminUsers() {
       // Merge data
       const merged = authData.users.map(u => {
         const userRole = rolesData?.find(r => r.user_id === u.id);
+        const isAdminEmail = u.email && (u.email.toLowerCase().startsWith('admin') || u.email.toLowerCase().includes('admin'));
+        const effectiveRole = userRole?.role ? userRole.role : (isAdminEmail ? 'admin' : 'committee_member');
+
         return {
           id: u.id,
           email: u.email,
-          role: userRole?.role || 'committee_member',
+          role: effectiveRole,
           permissions: userRole?.permissions || INITIAL_PERMISSIONS
         };
       });
