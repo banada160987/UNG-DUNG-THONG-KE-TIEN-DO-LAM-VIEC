@@ -104,10 +104,10 @@ function App() {
           <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/tap-san" element={permissions.canViewDocs ? <AdminMagazine /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/links" element={role === 'admin' ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/links" element={<AdminLinks />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/menu-config" element={<AdminMenuConfig />} />
+          <Route path="/admin/audit" element={<AdminAuditLog />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewNews ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />

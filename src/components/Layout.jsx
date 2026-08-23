@@ -80,16 +80,16 @@ export default function Layout({ children, title }) {
     { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
 
     // 3. 🌐 NỘI DUNG WEBSITE
-    { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: '🌐 NỘI DUNG WEBSITE', show: !!permissions.canViewNews },
-    { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: '🌐 NỘI DUNG WEBSITE', show: !!permissions.canViewNews },
-    { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu', group: '🌐 NỘI DUNG WEBSITE', show: !!permissions.canViewPages },
-    { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: '🌐 NỘI DUNG WEBSITE', show: !!permissions.canViewPages },
-    { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: '🌐 NỘI DUNG WEBSITE', show: role === 'admin' },
+    { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: '🌐 NỘI DUNG WEBSITE', show: true },
+    { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: '🌐 NỘI DUNG WEBSITE', show: true },
+    { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu & Nội dung', group: '🌐 NỘI DUNG WEBSITE', show: true },
+    { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: '🌐 NỘI DUNG WEBSITE', show: true },
+    { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: '🌐 NỘI DUNG WEBSITE', show: true },
 
     // 4. ⚙️ HỆ THỐNG
-    { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
-    { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
-    { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
+    { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản', group: '⚙️ HỆ THỐNG', show: true },
+    { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ HỆ THỐNG', show: true },
+    { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: '⚙️ HỆ THỐNG', show: true },
   ];
 
   const visibleMenuItems = menuItems.filter(item => item.show);

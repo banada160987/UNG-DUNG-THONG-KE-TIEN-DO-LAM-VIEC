@@ -144,7 +144,7 @@ export default function PublicEmulationScoring() {
             <Award size={32} color="#ffffff" />
           </div>
           <div>
-            <h2 style={styles.pageTitle}>SỔ CHẤM ĐIỂM THI ĐỦA TRỰC TUẦN</h2>
+            <h2 style={styles.pageTitle}>SỔ CHẤM ĐIỂM THI ĐUA TRỰC TUẦN</h2>
             <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Cổng ghi nhận vi phạm & khen thưởng dành cho Đội Cờ đỏ / GV Trực tuần</p>
           </div>
         </div>
