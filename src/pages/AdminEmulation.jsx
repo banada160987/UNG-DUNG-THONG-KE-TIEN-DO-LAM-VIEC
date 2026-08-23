@@ -74,8 +74,17 @@ export default function AdminEmulation() {
 
   const getGradeLevel = (clsName) => {
     if (!clsName) return 'Khối 10';
-    if (clsName.includes('11')) return 'Khối 11';
-    if (clsName.includes('12')) return 'Khối 12';
+    const clean = String(clsName).trim().toUpperCase();
+
+    const matchPrefix = clean.match(/^(10|11|12)/);
+    if (matchPrefix) {
+      return `Khối ${matchPrefix[1]}`;
+    }
+
+    if (/\b12\b|12[A-Z]/i.test(clean)) return 'Khối 12';
+    if (/\b11\b|11[A-Z]/i.test(clean)) return 'Khối 11';
+    if (/\b10\b|10[A-Z]/i.test(clean)) return 'Khối 10';
+
     return 'Khối 10';
   };
 

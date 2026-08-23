@@ -60,10 +60,18 @@ export default function AdminStudents() {
 
   const getGradeLevel = (clsName) => {
     if (!clsName) return 'Khối 10';
-    const clean = String(clsName).trim();
-    if (clean.includes('12')) return 'Khối 12';
-    if (clean.includes('11')) return 'Khối 11';
-    if (clean.includes('10')) return 'Khối 10';
+    const clean = String(clsName).trim().toUpperCase();
+
+    // Match class prefix: e.g. "10A12", "10A1" -> Khối 10; "11A1" -> Khối 11; "12A3" -> Khối 12
+    const matchPrefix = clean.match(/^(10|11|12)/);
+    if (matchPrefix) {
+      return `Khối ${matchPrefix[1]}`;
+    }
+
+    if (/\b12\b|12[A-Z]/i.test(clean)) return 'Khối 12';
+    if (/\b11\b|11[A-Z]/i.test(clean)) return 'Khối 11';
+    if (/\b10\b|10[A-Z]/i.test(clean)) return 'Khối 10';
+
     return 'Khối 10';
   };
 
@@ -371,11 +379,12 @@ export default function AdminStudents() {
   };
 
   const filteredStudents = students.filter(s => {
+    const computedGrade = getGradeLevel(s.student_class);
     const matchSearch = !searchTerm || 
       s.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.student_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.student_class?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchGrade = selectedGrade === 'ALL' || s.grade_level === selectedGrade;
+    const matchGrade = selectedGrade === 'ALL' || computedGrade === selectedGrade;
     return matchSearch && matchGrade;
   });
 
