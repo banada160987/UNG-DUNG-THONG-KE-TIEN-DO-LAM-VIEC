@@ -57,11 +57,23 @@ export default function AdminParking() {
       if (!parkingRes.error && parkingRes.data && parkingRes.data.length > 0) {
         setParkingList(parkingRes.data);
       }
+
       if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
         setPackages(pkgRes.data);
+        localStorage.setItem('cbq_parking_packages', JSON.stringify(pkgRes.data));
+      } else {
+        const local = localStorage.getItem('cbq_parking_packages');
+        if (local) {
+          setPackages(JSON.parse(local));
+        } else {
+          setPackages(DEFAULT_PACKAGES);
+          localStorage.setItem('cbq_parking_packages', JSON.stringify(DEFAULT_PACKAGES));
+        }
       }
     } catch (err) {
       console.warn("Dùng dữ liệu xe mẫu:", err);
+      const local = localStorage.getItem('cbq_parking_packages');
+      if (local) setPackages(JSON.parse(local));
     } finally {
       setLoading(false);
     }
@@ -152,10 +164,20 @@ export default function AdminParking() {
       setPackages(updated);
       localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
-      if (editingPkgId) {
-        await supabase.from('cbq_parking_packages').update(payload).eq('id', editingPkgId);
-      } else {
-        await supabase.from('cbq_parking_packages').insert([payload]);
+      try {
+        const { data: updateData, error: updateError } = await supabase
+          .from('cbq_parking_packages')
+          .update(payload)
+          .eq('id', editingPkgId)
+          .select();
+
+        if (updateError || !updateData || updateData.length === 0) {
+          await supabase.from('cbq_parking_packages').upsert([{
+            ...payload
+          }], { onConflict: 'package_key' });
+        }
+      } catch (dbErr) {
+        console.warn("DB Upsert Fallback:", dbErr);
       }
 
       alert("🎉 ĐÃ LƯU CẤU HÌNH GÓI VÉ THÀNH CÔNG!");
