@@ -274,6 +274,30 @@ export default function AdminUsers() {
     }
   };
 
+  const handleSyncAllRolesToDB = async () => {
+    if (usersList.length === 0) return;
+    setSaving(true);
+    try {
+      const client = supabaseAdmin || supabase;
+      const payload = usersList.map(u => ({
+        user_id: u.id,
+        role: u.role,
+        permissions: u.permissions || INITIAL_PERMISSIONS
+      }));
+
+      const { error } = await client
+        .from('cbq_user_roles')
+        .upsert(payload, { onConflict: 'user_id' });
+
+      if (error) throw error;
+      alert(`🎉 ĐÃ ĐỒNG BỘ THÀNH CÔNG TOÀN BỘ MA TRẬN PHÂN QUYỀN CỦA ${usersList.length} TÀI KHOẢN VÀO CSDL SUPABASE!`);
+    } catch (err) {
+      alert("Lỗi khi đồng bộ CSDL: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <Layout title="Quản lý Tài khoản & Phân quyền">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -286,9 +310,20 @@ export default function AdminUsers() {
           </p>
         </div>
 
-        <button onClick={() => setShowCreateModal(true)} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Plus size={18} /> Tạo Tài Khoản Mới
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleSyncAllRolesToDB} 
+            disabled={saving}
+            className="btn-primary" 
+            style={{ padding: '10px 18px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Save size={18} /> {saving ? 'Đang lưu...' : '💾 Lưu Cấu Hình Phân Quyền Vào CSDL'}
+          </button>
+
+          <button onClick={() => setShowCreateModal(true)} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Plus size={18} /> Tạo Tài Khoản Mới
+          </button>
+        </div>
       </div>
 
       {/* USERS LIST TABLE */}
