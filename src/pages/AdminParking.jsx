@@ -126,16 +126,31 @@ export default function AdminParking() {
   // Save Configured Package
   const handleSavePackage = async (e) => {
     e.preventDefault();
+    if (!pkgTitle.trim()) {
+      alert("Vui lòng điền Tên Gói Vé!");
+      return;
+    }
+
     try {
       const payload = {
         package_key: pkgKey || `pkg_${Date.now()}`,
-        title: pkgTitle,
+        title: pkgTitle.trim(),
         months_count: Number(pkgMonths) || 1,
         fee_amount: Number(pkgFee) || 0,
-        description: pkgDesc,
+        description: pkgDesc.trim(),
         hide_fee: pkgHideFee,
         is_active: true
       };
+
+      let updated;
+      if (editingPkgId) {
+        updated = packages.map(p => p.id === editingPkgId ? { ...p, ...payload } : p);
+      } else {
+        updated = [...packages, { ...payload, id: `pkg_${Date.now()}` }];
+      }
+
+      setPackages(updated);
+      localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
       if (editingPkgId) {
         await supabase.from('cbq_parking_packages').update(payload).eq('id', editingPkgId);
@@ -145,18 +160,18 @@ export default function AdminParking() {
 
       alert("🎉 ĐÃ LƯU CẤU HÌNH GÓI VÉ THÀNH CÔNG!");
       setShowPkgForm(false);
-      fetchData();
+      setEditingPkgId(null);
     } catch (err) {
-      alert("Lỗi lưu gói vé: " + err.message);
+      console.warn("Lưu CSDL gói vé:", err);
     }
   };
 
   const handleEditPackage = (pkg) => {
     setEditingPkgId(pkg.id);
-    setPkgKey(pkg.package_key);
-    setPkgTitle(pkg.title);
-    setPkgMonths(pkg.months_count);
-    setPkgFee(pkg.fee_amount);
+    setPkgKey(pkg.package_key || '');
+    setPkgTitle(pkg.title || '');
+    setPkgMonths(pkg.months_count || 1);
+    setPkgFee(pkg.fee_amount || 0);
     setPkgDesc(pkg.description || '');
     setPkgHideFee(!!pkg.hide_fee);
     setShowPkgForm(true);
@@ -466,45 +481,60 @@ export default function AdminParking() {
             </button>
           </div>
 
-          {/* PACKAGE EDIT FORM */}
+          {/* PACKAGE EDIT MODAL POPUP */}
           {showPkgForm && (
-            <form onSubmit={handleSavePackage} style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '25px' }}>
-              <h4 style={{ margin: '0 0 15px 0', color: '#1e293b' }}>{editingPkgId ? '📝 Sửa Gói Vé' : '➕ Tạo Gói Vé Mới'}</h4>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-                <div>
-                  <label style={styles.label}>Tên Gói Vé (*)</label>
-                  <input type="text" required value={pkgTitle} onChange={e => setPkgTitle(e.target.value)} style={styles.input} placeholder="VD: Đăng ký Theo Quý" />
+            <div style={styles.modalOverlay}>
+              <div style={styles.modalContent}>
+                <div style={styles.modalHeader}>
+                  <h3 style={{ margin: 0, color: '#be123c' }}>
+                    {editingPkgId ? '📝 Chỉnh Sửa Gói Vé Xe Máy' : '➕ Tạo Gói Vé Xe Máy Mới'}
+                  </h3>
+                  <button type="button" onClick={() => setShowPkgForm(false)} style={styles.closeBtn}>
+                    ✕
+                  </button>
                 </div>
-                <div>
-                  <label style={styles.label}>Mã Gói (Key)</label>
-                  <input type="text" value={pkgKey} onChange={e => setPkgKey(e.target.value)} style={styles.input} placeholder="VD: quarter, month..." />
-                </div>
-                <div>
-                  <label style={styles.label}>Số Tháng Hiệu Lực (*)</label>
-                  <input type="number" required value={pkgMonths} onChange={e => setPkgMonths(e.target.value)} style={styles.input} />
-                </div>
-                <div>
-                  <label style={styles.label}>Mức Phí Lệ Phí (VNĐ) (*)</label>
-                  <input type="number" required value={pkgFee} onChange={e => setPkgFee(e.target.value)} style={{ ...styles.input, fontWeight: 'bold', color: '#be123c' }} />
-                </div>
-                <div style={{ gridColumn: '1 / -1' }}>
-                  <label style={styles.label}>Mô Tả Gói Vé</label>
-                  <input type="text" value={pkgDesc} onChange={e => setPkgDesc(e.target.value)} style={styles.input} placeholder="VD: Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)..." />
-                </div>
-                <div style={{ gridColumn: '1 / -1', marginTop: '6px' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', padding: '8px 14px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
-                    <input type="checkbox" checked={pkgHideFee} onChange={e => setPkgHideFee(e.target.checked)} />
-                    <span>🙈 Ẩn số tiền lệ phí trên giao diện công khai (Hiển thị "Miễn phí")</span>
-                  </label>
-                </div>
+
+                <form onSubmit={handleSavePackage} style={{ padding: '20px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={styles.label}>Tên Gói Vé (*)</label>
+                      <input type="text" required value={pkgTitle} onChange={e => setPkgTitle(e.target.value)} style={styles.input} placeholder="VD: Đăng ký Theo Quý" />
+                    </div>
+                    <div>
+                      <label style={styles.label}>Mã Gói (Key)</label>
+                      <input type="text" value={pkgKey} onChange={e => setPkgKey(e.target.value)} style={styles.input} placeholder="VD: quarter, month..." />
+                    </div>
+                    <div>
+                      <label style={styles.label}>Số Tháng Hiệu Lực (*)</label>
+                      <input type="number" required value={pkgMonths} onChange={e => setPkgMonths(e.target.value)} style={styles.input} />
+                    </div>
+                    <div>
+                      <label style={styles.label}>Mức Phí Lệ Phí (VNĐ) (*)</label>
+                      <input type="number" required value={pkgFee} onChange={e => setPkgFee(e.target.value)} style={{ ...styles.input, fontWeight: 'bold', color: '#be123c' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={styles.label}>Mô Tả Gói Vé</label>
+                    <input type="text" value={pkgDesc} onChange={e => setPkgDesc(e.target.value)} style={styles.input} placeholder="VD: Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)..." />
+                  </div>
+
+                  <div style={{ marginBottom: '20px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', padding: '10px 14px', borderRadius: '8px', border: '1px solid #fca5a5' }}>
+                      <input type="checkbox" checked={pkgHideFee} onChange={e => setPkgHideFee(e.target.checked)} style={{ width: '18px', height: '18px' }} />
+                      <span>🙈 Ẩn số tiền lệ phí trên giao diện công khai (Hiển thị "🟢 Miễn phí")</span>
+                    </label>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button type="button" onClick={() => setShowPkgForm(false)} style={{ padding: '9px 18px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Hủy</button>
+                    <button type="submit" className="btn-primary" style={{ padding: '9px 24px', backgroundColor: '#be123c' }}>
+                      <Save size={16} /> Lưu Cấu Hình Gói Vé
+                    </button>
+                  </div>
+                </form>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px' }}>
-                <button type="button" onClick={() => setShowPkgForm(false)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
-                <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#be123c' }}>
-                  <Save size={16} /> Lưu Cấu Hình Gói
-                </button>
-              </div>
-            </form>
+            </div>
           )}
 
           {/* PACKAGES LIST TABLE */}
@@ -704,5 +734,9 @@ const styles = {
     borderRadius: '12px',
     padding: '16px',
     backgroundColor: '#ffffff'
-  }
+  },
+  modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' },
+  modalContent: { backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' },
+  modalHeader: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' },
+  closeBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '18px', fontWeight: 'bold', padding: '4px' }
 };
