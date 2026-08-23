@@ -33,6 +33,7 @@ export default function AdminEmulation() {
   
   // Criteria Form State
   const [showCritForm, setShowCritForm] = useState(false);
+  const [editingCritId, setEditingCritId] = useState(null);
   const [critTitle, setCritTitle] = useState('');
   const [critCategory, setCritCategory] = useState('Nếp sống & Đồng phục');
   const [critScore, setCritScore] = useState(-5);
@@ -136,6 +137,24 @@ export default function AdminEmulation() {
     }
   };
 
+  const handleEditCriteria = (c) => {
+    setEditingCritId(c.id);
+    setCritTitle(c.title);
+    setCritCategory(c.category || 'Nếp sống & Đồng phục');
+    setCritScore(c.score_change);
+    setShowCritForm(true);
+  };
+
+  const handleDeleteCriteria = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa tiêu chí thi đua này?")) return;
+    try {
+      await supabase.from('cbq_emulation_criteria').delete().eq('id', id);
+      setCriteriaList(criteriaList.filter(c => c.id !== id));
+    } catch (err) {
+      alert("Lỗi khi xóa: " + err.message);
+    }
+  };
+
   const handleSaveCriteria = async (e) => {
     e.preventDefault();
     if (!critTitle.trim()) return;
@@ -146,9 +165,15 @@ export default function AdminEmulation() {
         score_change: Number(critScore) || -5,
         is_active: true
       };
-      await supabase.from('cbq_emulation_criteria').insert([payload]);
-      alert("🎉 Đã thêm tiêu chí thi đua mới!");
+
+      if (editingCritId) {
+        await supabase.from('cbq_emulation_criteria').update(payload).eq('id', editingCritId);
+      } else {
+        await supabase.from('cbq_emulation_criteria').insert([payload]);
+      }
+      alert("🎉 Đã lưu cấu hình tiêu chí thi đua!");
       setShowCritForm(false);
+      setEditingCritId(null);
       fetchData();
     } catch (err) {
       alert("Lỗi: " + err.message);
@@ -450,6 +475,7 @@ export default function AdminEmulation() {
                 <th style={{ padding: '10px' }}>Tên Tiêu chí</th>
                 <th style={{ padding: '10px' }}>Phân loại</th>
                 <th style={{ padding: '10px' }}>Số điểm (+ / -)</th>
+                <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
@@ -460,6 +486,16 @@ export default function AdminEmulation() {
                   <td style={{ padding: '10px', color: '#475569' }}>{c.category}</td>
                   <td style={{ padding: '10px', fontWeight: '900', color: Number(c.score_change) < 0 ? '#dc2626' : '#166534' }}>
                     {Number(c.score_change) > 0 ? '+' : ''}{c.score_change} điểm
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={() => handleEditCriteria(c)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
+                        <Edit3 size={14} />
+                      </button>
+                      <button type="button" onClick={() => handleDeleteCriteria(c.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

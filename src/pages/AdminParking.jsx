@@ -150,6 +150,26 @@ export default function AdminParking() {
     }
   };
 
+  const handleEditPackage = (pkg) => {
+    setEditingPkgId(pkg.id);
+    setPkgKey(pkg.package_key);
+    setPkgTitle(pkg.title);
+    setPkgMonths(pkg.months_count);
+    setPkgFee(pkg.fee_amount);
+    setPkgDesc(pkg.description || '');
+    setShowPkgForm(true);
+  };
+
+  const handleDeletePackage = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa gói vé này?")) return;
+    try {
+      await supabase.from('cbq_parking_packages').delete().eq('id', id);
+      setPackages(packages.filter(p => p.id !== id));
+    } catch (err) {
+      alert("Lỗi khi xóa: " + err.message);
+    }
+  };
+
   // Toggle Package Active Status
   const handleTogglePkgActive = async (pkg) => {
     try {
@@ -509,8 +529,14 @@ export default function AdminParking() {
                   </td>
                   <td style={{ padding: '10px', textAlign: 'right' }}>
                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={() => handleEditPackage(pkg)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }} title="Sửa gói vé">
+                        <Edit3 size={14} />
+                      </button>
                       <button type="button" onClick={() => handleTogglePkgActive(pkg)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}>
                         {pkg.is_active ? 'Ẩn gói' : 'Mở lại'}
+                      </button>
+                      <button type="button" onClick={() => handleDeletePackage(pkg.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }} title="Xóa gói vé">
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </td>
