@@ -59,25 +59,27 @@ export default function Layout({ children, title }) {
     }
   };
 
+  const isAdmin = role === 'admin';
+
   const menuItems = [
     // 1. 🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM
-    { path: '/admin', icon: Home, label: 'Tổng quan Lãnh đạo', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: role === 'admin' || role === 'secretary' },
+    { path: '/admin', icon: Home, label: 'Tổng quan Lãnh đạo', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || role === 'secretary' },
     { path: '/admin/committee', icon: CheckSquare, label: 'Việc của Tiểu ban', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: true },
-    { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewGuests },
-    { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewSponsors },
-    { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi tìm hiểu', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewNews },
-    { path: '/admin/voting', icon: Trophy, label: 'Bình chọn tác phẩm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewNews },
-    { path: '/admin/the-thao', icon: Activity, label: '⚽ Thể thao & Bảng đấu', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewSports },
-    { path: '/admin/tap-san', icon: BookOpen, label: '📖 Quản lý Tập San 30 năm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewDocs },
+    { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewGuests },
+    { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewSponsors },
+    { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi tìm hiểu', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewNews },
+    { path: '/admin/voting', icon: Trophy, label: 'Bình chọn tác phẩm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewNews },
+    { path: '/admin/the-thao', icon: Activity, label: '⚽ Thể thao & Bảng đấu', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewSports },
+    { path: '/admin/tap-san', icon: BookOpen, label: '📖 Quản lý Tập San 30 năm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewDocs },
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
-    { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewEmulation || !!permissions.canViewDocs },
-    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewStudents || !!permissions.canViewDocs },
-    { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
-    { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
-    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewStudents || !!permissions.canViewDocs },
-    { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
-    { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
+    { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewEmulation || !!permissions.canViewDocs },
+    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents || !!permissions.canViewDocs },
+    { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents || !!permissions.canViewDocs },
+    { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
 
     // 3. 🌐 NỘI DUNG WEBSITE
     { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: '🌐 NỘI DUNG WEBSITE', show: true },
