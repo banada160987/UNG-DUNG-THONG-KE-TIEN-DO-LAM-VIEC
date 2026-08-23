@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabaseAdmin } from '../lib/supabase';
-import { Users, Save, Trash2, Key, ShieldCheck, CheckSquare, Settings, X, Plus } from 'lucide-react';
+import { Users, Save, Trash2, Settings, X, Plus, ShieldCheck } from 'lucide-react';
 
 const INITIAL_PERMISSIONS = {
   canViewStudents: true,
@@ -25,21 +25,44 @@ const PERMISSION_LABELS = {
   canViewPages: '🌐 Trang Giới thiệu & Thiệp mời'
 };
 
+const ROLE_OPTIONS = [
+  { value: 'admin', label: '👑 Ban Giám Hiệu / Quản trị viên', color: '#be123c', bg: '#fef2f2' },
+  { value: 'secretary', label: '✍️ Thư ký Hội đồng / Văn thư', color: '#0369a1', bg: '#e0f2fe' },
+  { value: 'dang_uy', label: '🚩 Đảng ủy Nhà trường', color: '#dc2626', bg: '#fef2f2' },
+  { value: 'chi_bo_1', label: '🚩 Chi bộ 01', color: '#b91c1c', bg: '#fee2e2' },
+  { value: 'chi_bo_2', label: '🚩 Chi bộ 02', color: '#b91c1c', bg: '#fee2e2' },
+  { value: 'chi_bo_3', label: '🚩 Chi bộ 03', color: '#b91c1c', bg: '#fee2e2' },
+  { value: 'doan_thanh_nien', label: '🌟 Đoàn Thanh niên / BCH Đoàn trường', color: '#d97706', bg: '#fef3c7' },
+  { value: 'cong_doan', label: '🤝 Công đoàn Nhà trường', color: '#15803d', bg: '#dcfce7' },
+  { value: 'to_toan_tin', label: '📐 Tổ Toán - Tin học', color: '#4338ca', bg: '#e0e7ff' },
+  { value: 'to_ngu_van', label: '📚 Tổ Ngữ văn', color: '#c026d3', bg: '#fae8ff' },
+  { value: 'to_ly_hoa_sinh', label: '🧪 Tổ Vật lý - Hóa học - Sinh học', color: '#0d9488', bg: '#ccfbf1' },
+  { value: 'to_ngoai_ngu', label: '🌐 Tổ Ngoại ngữ (Tiếng Anh)', color: '#0284c7', bg: '#e0f2fe' },
+  { value: 'to_su_dia_gdcd', label: '🏛️ Tổ Lịch sử - Địa lý - GDCD', color: '#b45309', bg: '#fef3c7' },
+  { value: 'to_the_duc_qpan', label: '⚽ Tổ Thể dục - QPAN', color: '#166534', bg: '#dcfce7' },
+  { value: 'to_van_phong', label: '🏢 Tổ Văn phòng - Kế toán', color: '#475569', bg: '#f1f5f9' },
+  { value: 'gvcn', label: '👩‍🏫 Giáo viên Chủ nhiệm Lớp', color: '#6b21a8', bg: '#f3e8ff' },
+  { value: 'doi_co_do', label: '🚩 Đội Cờ đỏ / Trực tuần', color: '#991b1b', bg: '#fee2e2' },
+  { value: 'bao_ve', label: '🛡️ Ban Bảo vệ Cổng trường', color: '#7c2d12', bg: '#ffedd5' },
+  { value: 'custom', label: '➕ Nhập Vai trò / Tổ tùy chỉnh mới...', color: '#475569', bg: '#f1f5f9' }
+];
+
 export default function AdminUsers() {
   const [usersList, setUsersList] = useState([]);
-  const [committees, setCommittees] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Form State for Creating New User
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createEmail, setCreateEmail] = useState('');
   const [createPassword, setCreatePassword] = useState('');
-  const [createRole, setCreateRole] = useState('committee_member');
+  const [createRoleSelect, setCreateRoleSelect] = useState('to_toan_tin');
+  const [createCustomRole, setCreateCustomRole] = useState('');
   const [createPermissions, setCreatePermissions] = useState(INITIAL_PERMISSIONS);
 
   // Modal State for Editing Permissions
   const [editingUser, setEditingUser] = useState(null); // { id, email, role, permissions }
-  const [editRole, setEditRole] = useState('committee_member');
+  const [editRoleSelect, setEditRoleSelect] = useState('to_toan_tin');
+  const [editCustomRole, setEditCustomRole] = useState('');
   const [editPermissions, setEditPermissions] = useState(INITIAL_PERMISSIONS);
   const [saving, setSaving] = useState(false);
 
@@ -52,15 +75,12 @@ export default function AdminUsers() {
     try {
       if (!supabaseAdmin) {
         // Fallback fetch via public client
-        const { data: rolesData } = await supabase.from('cbq_user_roles').select('*, cbq_committees(name)');
-        const { data: comData } = await supabase.from('cbq_committees').select('id, name');
-        if (comData) setCommittees(comData);
+        const { data: rolesData } = await supabase.from('cbq_user_roles').select('*');
         if (rolesData) {
           setUsersList(rolesData.map(r => ({
             id: r.user_id,
             email: `Tài khoản (ID: ${r.user_id.slice(0, 8)}...)`,
             role: r.role,
-            committeeName: r.cbq_committees?.name || '-',
             permissions: r.permissions || {}
           })));
         }
@@ -73,21 +93,15 @@ export default function AdminUsers() {
       if (authError) throw authError;
 
       // Fetch roles
-      const { data: rolesData, error: rolesError } = await supabase.from('cbq_user_roles').select('*, cbq_committees(name)');
-      if (rolesError) throw rolesError;
-
-      // Fetch committees
-      const { data: comData } = await supabase.from('cbq_committees').select('id, name');
-      if (comData) setCommittees(comData);
+      const { data: rolesData } = await supabase.from('cbq_user_roles').select('*');
 
       // Merge data
       const merged = authData.users.map(u => {
-        const userRole = rolesData.find(r => r.user_id === u.id);
+        const userRole = rolesData?.find(r => r.user_id === u.id);
         return {
           id: u.id,
           email: u.email,
           role: userRole?.role || 'committee_member',
-          committeeName: userRole?.cbq_committees?.name || '-',
           permissions: userRole?.permissions || INITIAL_PERMISSIONS
         };
       });
@@ -103,11 +117,41 @@ export default function AdminUsers() {
   // Open Edit Permissions Modal
   const handleOpenEditModal = (u) => {
     setEditingUser(u);
-    setEditRole(u.role || 'committee_member');
+    const existingRole = u.role || 'committee_member';
+    const isPreset = ROLE_OPTIONS.some(r => r.value === existingRole);
+
+    if (isPreset) {
+      setEditRoleSelect(existingRole);
+      setEditCustomRole('');
+    } else {
+      setEditRoleSelect('custom');
+      setEditCustomRole(existingRole);
+    }
+
     setEditPermissions({
       ...INITIAL_PERMISSIONS,
       ...(u.permissions || {})
     });
+  };
+
+  const getEffectiveRole = (roleSelect, customRole) => {
+    if (roleSelect === 'custom') {
+      return customRole.trim() || 'Tổ tùy chỉnh';
+    }
+    return roleSelect;
+  };
+
+  const getRoleDisplay = (roleVal) => {
+    const found = ROLE_OPTIONS.find(r => r.value === roleVal);
+    if (found && found.value !== 'custom') {
+      return found;
+    }
+    return {
+      value: roleVal,
+      label: roleVal.startsWith('🏢') || roleVal.startsWith('🚩') ? roleVal : `🏢 ${roleVal}`,
+      color: '#475569',
+      bg: '#f1f5f9'
+    };
   };
 
   // Toggle Edit Permission Checkbox
@@ -131,6 +175,7 @@ export default function AdminUsers() {
     e.preventDefault();
     if (!editingUser) return;
 
+    const finalRole = getEffectiveRole(editRoleSelect, editCustomRole);
     setSaving(true);
     try {
       const client = supabaseAdmin || supabase;
@@ -139,7 +184,7 @@ export default function AdminUsers() {
       const { data: updateData, error: updateError } = await client
         .from('cbq_user_roles')
         .update({
-          role: editRole,
+          role: finalRole,
           permissions: editPermissions
         })
         .eq('user_id', editingUser.id)
@@ -151,7 +196,7 @@ export default function AdminUsers() {
           .from('cbq_user_roles')
           .upsert([{
             user_id: editingUser.id,
-            role: editRole,
+            role: finalRole,
             permissions: editPermissions
           }], { onConflict: 'user_id' });
       }
@@ -159,7 +204,7 @@ export default function AdminUsers() {
       // 3. Update Local State immediately
       setUsersList(prev => prev.map(u => u.id === editingUser.id ? {
         ...u,
-        role: editRole,
+        role: finalRole,
         permissions: editPermissions
       } : u));
 
@@ -180,6 +225,7 @@ export default function AdminUsers() {
       return;
     }
     
+    const finalRole = getEffectiveRole(createRoleSelect, createCustomRole);
     const finalPassword = createPassword || Math.random().toString(36).slice(-8);
 
     try {
@@ -195,14 +241,15 @@ export default function AdminUsers() {
       // 2. Assign Role & Matrix Permissions
       await supabaseAdmin.from('cbq_user_roles').insert([{
         user_id: userData.user.id,
-        role: createRole,
+        role: finalRole,
         permissions: createPermissions
       }]);
 
-      alert(`🎉 ĐÃ TẠO TÀI KHOẢN THÀNH CÔNG!\nEmail: ${createEmail}\nMật khẩu: ${finalPassword}`);
+      alert(`🎉 ĐÃ TẠO TÀI KHOẢN THÀNH CÔNG!\nEmail: ${createEmail}\nMật khẩu: ${finalPassword}\nVai trò/Tổ: ${finalRole}`);
       setShowCreateModal(false);
       setCreateEmail('');
       setCreatePassword('');
+      setCreateCustomRole('');
       fetchData();
     } catch (err) {
       alert("Lỗi tạo tài khoản: " + err.message);
@@ -229,10 +276,10 @@ export default function AdminUsers() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={26} color="#be123c" /> Quản Lý Tài Khoản & Ma Trận Phân Quyền (RBAC)
+            <Users size={26} color="#be123c" /> Quản Lý Tài Khoản, Tổ Chuyên Môn & Phân Quyền
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Bấm "Sửa Quyền" ở mỗi tài khoản để bật/tắt ma trận checkbox phân quyền chi tiết từng chức năng
+            Gán Vai trò / Tổ chuyên môn (Đảng ủy, Đoàn Thanh niên, Tổ môn...) và bật/tắt ma trận phân quyền chi tiết
           </p>
         </div>
 
@@ -252,20 +299,20 @@ export default function AdminUsers() {
             <thead>
               <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
                 <th style={{ padding: '10px' }}>Email đăng nhập</th>
-                <th style={{ padding: '10px' }}>Vai trò chính</th>
+                <th style={{ padding: '10px' }}>Vai trò / Tổ chuyên môn</th>
                 <th style={{ padding: '10px' }}>Các quyền hạn đã cấp</th>
                 <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {usersList.map((u) => {
-                const grantedPermsCount = Object.keys(u.permissions || {}).filter(k => u.permissions[k]).length;
+                const roleDisp = getRoleDisplay(u.role);
                 return (
                   <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                     <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{u.email}</td>
                     <td style={{ padding: '10px' }}>
-                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: u.role === 'admin' ? '#fef2f2' : u.role === 'secretary' ? '#e0f2fe' : '#f0fdf4', color: u.role === 'admin' ? '#be123c' : u.role === 'secretary' ? '#0369a1' : '#166534' }}>
-                        {u.role === 'admin' ? 'Quản trị viên' : u.role === 'secretary' ? 'Thư ký' : 'Giáo viên / Cán bộ'}
+                      <span style={{ padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: roleDisp.bg, color: roleDisp.color, border: `1px solid ${roleDisp.color}33` }}>
+                        {roleDisp.label}
                       </span>
                     </td>
                     <td style={{ padding: '10px', fontSize: '12.5px', color: '#475569' }}>
@@ -310,14 +357,14 @@ export default function AdminUsers() {
         )}
       </div>
 
-      {/* ==================== MODAL DIALOG: EDIT USER PERMISSIONS ==================== */}
+      {/* ==================== MODAL DIALOG: EDIT USER PERMISSIONS & ROLE ==================== */}
       {editingUser && (
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <div>
                 <h3 style={{ margin: 0, color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Settings size={22} color="#be123c" /> Chỉnh Sửa Phân Quyền Tài Khoản
+                  <Settings size={22} color="#be123c" /> Chỉnh Sửa Vai Trò & Phân Quyền Tài Khoản
                 </h3>
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '3px' }}>
                   Email: <strong>{editingUser.email}</strong>
@@ -330,12 +377,26 @@ export default function AdminUsers() {
 
             <form onSubmit={handleSavePermissions} style={{ padding: '20px' }}>
               <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>1. Chọn Vai Trò Chính (*)</label>
-                <select value={editRole} onChange={e => setEditRole(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }}>
-                  <option value="committee_member">Giáo viên / Cán bộ Tiểu ban</option>
-                  <option value="secretary">Thư ký Hội đồng</option>
-                  <option value="admin">Quản trị viên (Admin Toàn quyền)</option>
+                <label style={styles.label}>1. Chọn Vai Trò / Tổ Chuyên Môn / Đoàn Thể (*)</label>
+                <select value={editRoleSelect} onChange={e => setEditRoleSelect(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }}>
+                  {ROLE_OPTIONS.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
                 </select>
+
+                {editRoleSelect === 'custom' && (
+                  <div style={{ marginTop: '8px' }}>
+                    <label style={{ ...styles.label, color: '#be123c' }}>Nhập Tên Vai Trò / Tổ Tùy Chỉnh Mới (*)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={editCustomRole} 
+                      onChange={e => setEditCustomRole(e.target.value)} 
+                      style={{ ...styles.input, fontWeight: 'bold' }} 
+                      placeholder="VD: Chi bộ 01, Ban Thanh tra nhân dân, CLB Truyền thông..." 
+                    />
+                  </div>
+                )}
               </div>
 
               {/* PERMISSION CHECKBOX MATRIX */}
@@ -344,7 +405,7 @@ export default function AdminUsers() {
                   2. Ma Trận Checkbox Phân Quyền Chi Tiết Chức Năng:
                 </label>
 
-                {editRole === 'admin' ? (
+                {editRoleSelect === 'admin' ? (
                   <div style={{ padding: '10px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', color: '#be123c', fontSize: '13px', fontWeight: 'bold' }}>
                     🔥 Tài khoản Vai trò Quản trị viên (Admin) sẽ mặc định có Toàn quyền truy cập tất cả chức năng!
                   </div>
@@ -404,16 +465,30 @@ export default function AdminUsers() {
               </div>
 
               <div style={{ marginBottom: '15px' }}>
-                <label style={styles.label}>Vai trò chính (*)</label>
-                <select value={createRole} onChange={e => setCreateRole(e.target.value)} style={styles.input}>
-                  <option value="committee_member">Giáo viên / Cán bộ Tiểu ban</option>
-                  <option value="secretary">Thư ký Hội đồng</option>
-                  <option value="admin">Quản trị viên (Admin Toàn quyền)</option>
+                <label style={styles.label}>1. Chọn Vai Trò / Tổ Chuyên Môn / Đoàn Thể (*)</label>
+                <select value={createRoleSelect} onChange={e => setCreateRoleSelect(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }}>
+                  {ROLE_OPTIONS.map(r => (
+                    <option key={r.value} value={r.value}>{r.label}</option>
+                  ))}
                 </select>
+
+                {createRoleSelect === 'custom' && (
+                  <div style={{ marginTop: '8px' }}>
+                    <label style={{ ...styles.label, color: '#be123c' }}>Nhập Tên Vai Trò / Tổ Tùy Chỉnh Mới (*)</label>
+                    <input 
+                      type="text" 
+                      required 
+                      value={createCustomRole} 
+                      onChange={e => setCreateCustomRole(e.target.value)} 
+                      style={{ ...styles.input, fontWeight: 'bold' }} 
+                      placeholder="VD: Chi bộ 01, Ban Thanh tra nhân dân, CLB Truyền thông..." 
+                    />
+                  </div>
+                )}
               </div>
 
               <div style={{ backgroundColor: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
-                <label style={{ ...styles.label, color: '#be123c', marginBottom: '10px' }}>Ma Trận Phân Quyền Chi Tiết:</label>
+                <label style={{ ...styles.label, color: '#be123c', marginBottom: '10px' }}>2. Ma Trận Checkbox Phân Quyền Chi Tiết:</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                   {Object.keys(PERMISSION_LABELS).map(key => (
                     <label key={key} style={styles.checkboxLabel}>
@@ -443,7 +518,7 @@ const styles = {
   input: { width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' },
   checkboxLabel: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#1e293b', cursor: 'pointer', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', transition: 'all 0.2s' },
   modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' },
-  modalContent: { backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' },
+  modalContent: { backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '620px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' },
   modalHeader: { padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc', borderTopLeftRadius: '16px', borderTopRightRadius: '16px' },
   closeBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', borderRadius: '50%' }
 };
