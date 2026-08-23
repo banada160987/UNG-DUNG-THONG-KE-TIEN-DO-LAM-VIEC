@@ -91,14 +91,13 @@ export default function PublicLayout() {
                 🎉 Đại Lễ Kỷ Niệm 30 Năm ▾
               </span>
               <div className="nav-dropdown-content">
-                <Link to="/gioi-thieu" className="nav-dropdown-item">ℹ️ Giới thiệu 30 năm</Link>
-                <Link to="/tap-san" className="nav-dropdown-item">📖 Tập san 30 năm 3D</Link>
-                <Link to="/huong-dan" className="nav-dropdown-item">📘 Cẩm nang hướng dẫn</Link>
-                <Link to="/cuoc-thi" className="nav-dropdown-item">🏆 Cuộc thi tìm hiểu 30 năm</Link>
-                <Link to="/dang-ky-the-thao" className="nav-dropdown-item">⚽ Đăng ký thi đấu thể thao</Link>
-                <Link to="/binh-chon" className="nav-dropdown-item">🗳️ Bình chọn tác phẩm</Link>
-                <Link to="/nop-bai-thi" className="nav-dropdown-item">📤 Nộp bài thi sáng tạo</Link>
-                <Link to="/luu-but" className="nav-dropdown-item">💖 Sổ lưu bút kỷ niệm</Link>
+                {publicMenus
+                  .filter(m => m.parent_group === 'anniversary' && m.is_active !== false)
+                  .map(m => (
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                      {m.label}
+                    </Link>
+                  ))}
               </div>
             </div>
 
@@ -112,7 +111,7 @@ export default function PublicLayout() {
               </span>
               <div className="nav-dropdown-content">
                 {publicMenus
-                  .filter(m => m.is_active !== false)
+                  .filter(m => (m.parent_group === 'school' || !m.parent_group) && m.is_active !== false)
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
                       {m.label}
@@ -130,9 +129,13 @@ export default function PublicLayout() {
                 📰 Tin tức & Thư viện ▾
               </span>
               <div className="nav-dropdown-content">
-                <Link to="/tin-tuc" className="nav-dropdown-item">📰 Tin tức - Sự kiện</Link>
-                <Link to="/thu-vien-anh" className="nav-dropdown-item">📸 Thư viện ảnh 30 năm</Link>
-                <Link to="/bang-vang" className="nav-dropdown-item">🎖️ Bảng vàng kỷ niệm</Link>
+                {publicMenus
+                  .filter(m => m.parent_group === 'media' && m.is_active !== false)
+                  .map(m => (
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                      {m.label}
+                    </Link>
+                  ))}
               </div>
             </div>
           </div>

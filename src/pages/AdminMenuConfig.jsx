@@ -1,15 +1,63 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Settings, Plus, Save, Trash2, Edit3, Eye, EyeOff, Globe, LayoutDashboard, ArrowUp, ArrowDown } from 'lucide-react';
+import { Settings, Plus, Save, Trash2, Edit3, Eye, EyeOff, Globe, LayoutDashboard, RefreshCw } from 'lucide-react';
 
-const DEFAULT_PUBLIC_MENUS = [
-  { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', icon: 'Calendar', sort_order: 1, is_active: true },
-  { id: 'm2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', icon: 'Users', sort_order: 2, is_active: true },
-  { id: 'm3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', icon: 'Bike', sort_order: 3, is_active: true },
-  { id: 'm4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', icon: 'Award', sort_order: 4, is_active: true },
-  { id: 'm5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', icon: 'FileText', sort_order: 5, is_active: true },
-  { id: 'm6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', icon: 'MessageSquare', sort_order: 6, is_active: true }
+const DEFAULT_FULL_PUBLIC_MENUS = [
+  // Group 1: Kỷ niệm 30 năm
+  { id: 'pub_anniv_1', target_type: 'public', parent_group: 'anniversary', label: 'ℹ️ Giới thiệu 30 năm', path: '/gioi-thieu', sort_order: 1, is_active: true },
+  { id: 'pub_anniv_2', target_type: 'public', parent_group: 'anniversary', label: '📖 Tập san 30 năm 3D', path: '/tap-san', sort_order: 2, is_active: true },
+  { id: 'pub_anniv_3', target_type: 'public', parent_group: 'anniversary', label: '📘 Cẩm nang hướng dẫn', path: '/huong-dan', sort_order: 3, is_active: true },
+  { id: 'pub_anniv_4', target_type: 'public', parent_group: 'anniversary', label: '🏆 Cuộc thi tìm hiểu 30 năm', path: '/cuoc-thi', sort_order: 4, is_active: true },
+  { id: 'pub_anniv_5', target_type: 'public', parent_group: 'anniversary', label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', sort_order: 5, is_active: true },
+  { id: 'pub_anniv_6', target_type: 'public', parent_group: 'anniversary', label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', sort_order: 6, is_active: true },
+  { id: 'pub_anniv_7', target_type: 'public', parent_group: 'anniversary', label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', sort_order: 7, is_active: true },
+  { id: 'pub_anniv_8', target_type: 'public', parent_group: 'anniversary', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 8, is_active: true },
+
+  // Group 2: Vận hành nhà trường
+  { id: 'pub_school_1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
+  { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
+  { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
+  { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
+  { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
+  { id: 'pub_school_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true },
+
+  // Group 3: Tin tức & Thư viện
+  { id: 'pub_media_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },
+  { id: 'pub_media_2', target_type: 'public', parent_group: 'media', label: '📸 Thư viện ảnh 30 năm', path: '/thu-vien-anh', sort_order: 2, is_active: true },
+  { id: 'pub_media_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng kỷ niệm', path: '/bang-vang', sort_order: 3, is_active: true }
+];
+
+const DEFAULT_FULL_ADMIN_MENUS = [
+  // Group 1: 🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM
+  { id: 'adm_anniv_1', target_type: 'admin', parent_group: 'anniversary', label: 'Việc của Tiểu ban', path: '/admin/committee', sort_order: 1, is_active: true },
+  { id: 'adm_anniv_2', target_type: 'admin', parent_group: 'anniversary', label: 'Quản lý Khách mời', path: '/admin/guests', sort_order: 2, is_active: true },
+  { id: 'adm_anniv_3', target_type: 'admin', parent_group: 'anniversary', label: 'Quản lý Tài trợ', path: '/admin/sponsors', sort_order: 3, is_active: true },
+  { id: 'adm_anniv_4', target_type: 'admin', parent_group: 'anniversary', label: 'Cuộc thi tìm hiểu', path: '/admin/quizzes', sort_order: 4, is_active: true },
+  { id: 'adm_anniv_5', target_type: 'admin', parent_group: 'anniversary', label: 'Bình chọn tác phẩm', path: '/admin/voting', sort_order: 5, is_active: true },
+  { id: 'adm_anniv_6', target_type: 'admin', parent_group: 'anniversary', label: '⚽ Thể thao & Bảng đấu', path: '/admin/the-thao', sort_order: 6, is_active: true },
+  { id: 'adm_anniv_7', target_type: 'admin', parent_group: 'anniversary', label: '📖 Quản lý Tập San 30 năm', path: '/admin/tap-san', sort_order: 7, is_active: true },
+
+  // Group 2: 🏫 VẬN HÀNH NHÀ TRƯỜNG
+  { id: 'adm_school_1', target_type: 'admin', parent_group: 'school', label: '📋 Chấm Điểm Thi Đua Lớp', path: '/admin/emulation', sort_order: 1, is_active: true },
+  { id: 'adm_school_2', target_type: 'admin', parent_group: 'school', label: '👨‍🎓 Danh Sách Học Sinh', path: '/admin/students', sort_order: 2, is_active: true },
+  { id: 'adm_school_3', target_type: 'admin', parent_group: 'school', label: '📅 Lịch Công Tác Tuần', path: '/admin/schedule', sort_order: 3, is_active: true },
+  { id: 'adm_school_4', target_type: 'admin', parent_group: 'school', label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', path: '/admin/staff', sort_order: 4, is_active: true },
+  { id: 'adm_school_5', target_type: 'admin', parent_group: 'school', label: '🛵 Quản Lý Xe Máy Học Sinh', path: '/admin/parking', sort_order: 5, is_active: true },
+  { id: 'adm_school_6', target_type: 'admin', parent_group: 'school', label: 'Văn bản - Thông báo', path: '/admin/docs', sort_order: 6, is_active: true },
+  { id: 'adm_school_7', target_type: 'admin', parent_group: 'school', label: '✍️ Quản lý Góp ý Công việc', path: '/admin/gop-y', sort_order: 7, is_active: true },
+
+  // Group 3: 🌐 NỘI DUNG WEBSITE
+  { id: 'adm_media_1', target_type: 'admin', parent_group: 'media', label: 'Tin tức - Sự kiện', path: '/admin/news', sort_order: 1, is_active: true },
+  { id: 'adm_media_2', target_type: 'admin', parent_group: 'media', label: 'Thư viện ảnh', path: '/admin/gallery', sort_order: 2, is_active: true },
+  { id: 'adm_media_3', target_type: 'admin', parent_group: 'media', label: 'Trang Giới thiệu & Nội dung', path: '/admin/pages', sort_order: 3, is_active: true },
+  { id: 'adm_media_4', target_type: 'admin', parent_group: 'media', label: 'Cấu hình Thiệp Mời', path: '/admin/invite-config', sort_order: 4, is_active: true },
+  { id: 'adm_media_5', target_type: 'admin', parent_group: 'media', label: 'Cấu hình Liên kết trang', path: '/admin/links', sort_order: 5, is_active: true },
+
+  // Group 4: ⚙️ HỆ THỐNG
+  { id: 'adm_sys_1', target_type: 'admin', parent_group: 'system', label: '⚙️ Phân quyền Tài khoản', path: '/admin/users', sort_order: 1, is_active: true },
+  { id: 'adm_sys_2', target_type: 'admin', parent_group: 'system', label: '🌐 Cấu Hình Menu Hiển Thị', path: '/admin/menu-config', sort_order: 2, is_active: true },
+  { id: 'adm_sys_3', target_type: 'admin', parent_group: 'system', label: 'Nhật ký Hoạt động', path: '/admin/audit', sort_order: 3, is_active: true }
 ];
 
 const PRESET_SYSTEM_PAGES = [
@@ -48,9 +96,16 @@ const PRESET_SYSTEM_PAGES = [
   { label: '🌐 Cấu hình Menu Hiển thị', path: '/admin/menu-config', group: 'system' }
 ];
 
+const GROUP_METADATA = {
+  anniversary: { title: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM (1996 - 2026)', color: '#be123c', bg: '#fff1f2', border: '#fca5a5' },
+  school: { title: '🏫 VẬN HÀNH NHÀ TRƯỜNG', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  media: { title: '📰 TIN TỨC & THƯ VIỆN MEDIA', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  system: { title: '⚙️ HỆ THỐNG QUẢN TRỊ ADMIN', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' }
+};
+
 export default function AdminMenuConfig() {
   const [targetType, setTargetType] = useState('public'); // 'public', 'admin'
-  const [menus, setMenus] = useState(DEFAULT_PUBLIC_MENUS);
+  const [menus, setMenus] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Form State
@@ -92,14 +147,40 @@ export default function AdminMenuConfig() {
         setMenus(data);
       } else {
         const local = localStorage.getItem(`cbq_menus_${targetType}`);
-        if (local) setMenus(JSON.parse(local));
+        if (local) {
+          setMenus(JSON.parse(local));
+        } else {
+          // Load default full list
+          const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
+          setMenus(defaultList);
+          localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(defaultList));
+        }
       }
     } catch (err) {
       console.warn("Nạp menu mặc định:", err);
+      const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
+      setMenus(defaultList);
     } finally {
       setLoading(false);
     }
   }
+
+  const handleResetDefaultMenus = async () => {
+    if (!window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC ĐẦY ĐỦ tất cả danh mục menu mặc định cho ${targetType === 'public' ? 'Trang Công Khai' : 'Trang Admin'}?`)) return;
+    
+    const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
+    setMenus(defaultList);
+    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(defaultList));
+
+    try {
+      // Upsert into Supabase
+      await supabase.from('cbq_navigation_menus').delete().eq('target_type', targetType);
+      await supabase.from('cbq_navigation_menus').insert(defaultList);
+      alert("🎉 ĐÃ KHÔI PHỤC ĐẦY ĐỦ TẤT CẢ MENU MẶC ĐỊNH!");
+    } catch (err) {
+      console.warn("Lỗi reset DB:", err);
+    }
+  };
 
   const handleToggleActive = async (item) => {
     const updated = menus.map(m => m.id === item.id ? { ...m, is_active: !m.is_active } : m);
@@ -157,7 +238,7 @@ export default function AdminMenuConfig() {
     if (editingId) {
       updated = menus.map(m => m.id === editingId ? { ...m, ...payload } : m);
     } else {
-      updated = [...menus, { ...payload, id: Date.now().toString() }];
+      updated = [...menus, { ...payload, id: `menu_${Date.now()}` }];
     }
 
     setMenus(updated);
@@ -177,21 +258,32 @@ export default function AdminMenuConfig() {
     }
   };
 
+  // Group menus by parent_group for organized layout
+  const availableGroups = targetType === 'public' 
+    ? ['anniversary', 'school', 'media'] 
+    : ['anniversary', 'school', 'media', 'system'];
+
   return (
     <Layout title="Cấu hình Menu Động">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Settings size={26} color="#be123c" /> Cấu Hình Menu Hiển Thị Động
+            <Settings size={26} color="#be123c" /> Cấu Hình Menu Hiển Thị Theo Nhóm
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Thêm, sửa, xóa, sắp xếp và Ẩn/Hiện các mục Menu trên Giao diện Công khai & Sidebar Admin
+            Thêm, sửa, xóa và Ẩn/Hiện đầy đủ các mục menu được phân chia rõ ràng theo từng nhóm
           </p>
         </div>
 
-        <button onClick={() => { setEditingId(null); setLabel(''); setPath(''); setSortOrder(menus.length + 1); setShowForm(!showForm); }} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c' }}>
-          <Plus size={18} /> {showForm ? 'Đóng Form' : 'Thêm Mục Menu Mới'}
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={handleResetDefaultMenus} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <RefreshCw size={18} /> Khôi Phục Đầy Đủ Menu Mặc Định
+          </button>
+
+          <button onClick={() => { setEditingId(null); setLabel(''); setPath(''); setSortOrder(menus.length + 1); setShowForm(!showForm); }} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c' }}>
+            <Plus size={18} /> {showForm ? 'Đóng Form' : 'Thêm Mục Menu Mới'}
+          </button>
+        </div>
       </div>
 
       {/* SELECT TARGET TYPE */}
@@ -245,10 +337,10 @@ export default function AdminMenuConfig() {
               <input type="text" required value={path} onChange={e => setPath(e.target.value)} style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7' }} placeholder="VD: /dang-ky-xe-may hoặc https://..." />
             </div>
             <div>
-              <label style={styles.label}>Nhóm Menu</label>
+              <label style={styles.label}>Nhóm Menu (*)</label>
               <select value={parentGroup} onChange={e => setParentGroup(e.target.value)} style={styles.input}>
-                <option value="school">🏫 Vận hành Nhà trường</option>
                 <option value="anniversary">🎉 Đại Lễ Kỷ Niệm 30 Năm</option>
+                <option value="school">🏫 Vận hành Nhà trường</option>
                 <option value="media">📰 Tin tức & Thư viện</option>
                 <option value="system">⚙️ Hệ thống Admin</option>
               </select>
@@ -268,53 +360,72 @@ export default function AdminMenuConfig() {
         </form>
       )}
 
-      {/* MENUS LIST TABLE */}
-      <div className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-        <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-          📑 Danh Sách Mục Menu {targetType === 'public' ? 'Trang Công Khai' : 'Trang Admin'} ({menus.length})
-        </h3>
+      {/* GROUPED MENUS DISPLAY CARDS */}
+      {loading ? <p>Đang nạp danh sách menu...</p> : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {availableGroups.map((grpKey) => {
+            const grpMeta = GROUP_METADATA[grpKey] || { title: grpKey, color: '#be123c', bg: '#fff1f2', border: '#fca5a5' };
+            const groupItems = menus.filter(m => (m.parent_group === grpKey || (!m.parent_group && grpKey === 'school')));
 
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
-          <thead>
-            <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
-              <th style={{ padding: '10px' }}>Thứ tự</th>
-              <th style={{ padding: '10px' }}>Tên Mục Menu</th>
-              <th style={{ padding: '10px' }}>Đường dẫn Path</th>
-              <th style={{ padding: '10px' }}>Nhóm Menu</th>
-              <th style={{ padding: '10px' }}>Trạng thái</th>
-              <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            {menus.map((m, idx) => (
-              <tr key={m.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '10px', fontWeight: 'bold' }}>#{m.sort_order || idx + 1}</td>
-                <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{m.label}</td>
-                <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{m.path}</td>
-                <td style={{ padding: '10px', color: '#475569' }}>{m.parent_group || 'school'}</td>
-                <td style={{ padding: '10px' }}>
-                  <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: m.is_active ? '#f0fdf4' : '#fef2f2', color: m.is_active ? '#166534' : '#ef4444' }}>
-                    {m.is_active ? 'Đang hiện' : 'Đã ẩn'}
+            return (
+              <div key={grpKey} className="glass" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', border: `2px solid ${grpMeta.border}` }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: `2px solid ${grpMeta.border}`, paddingBottom: '10px', marginBottom: '12px' }}>
+                  <h3 style={{ margin: 0, color: grpMeta.color, fontSize: '16px', fontWeight: 'bold' }}>
+                    {grpMeta.title} ({groupItems.length} mục)
+                  </h3>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', color: grpMeta.color, backgroundColor: grpMeta.bg, padding: '3px 10px', borderRadius: '12px', border: `1px solid ${grpMeta.border}` }}>
+                    Thao tác nhanh theo nhóm
                   </span>
-                </td>
-                <td style={{ padding: '10px', textAlign: 'right' }}>
-                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    <button type="button" onClick={() => handleEdit(m)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
-                      <Edit3 size={14} />
-                    </button>
-                    <button type="button" onClick={() => handleToggleActive(m)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
-                      {m.is_active ? <EyeOff size={14} color="#ef4444" /> : <Eye size={14} color="#166534" />}
-                    </button>
-                    <button type="button" onClick={() => handleDelete(m.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
+
+                {groupItems.length === 0 ? (
+                  <p style={{ color: '#94a3b8', fontSize: '13px', fontStyle: 'italic' }}>Chưa có mục menu nào trong nhóm này. Hãy bấm "Thêm Mục Menu Mới" để bổ sung.</p>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: grpMeta.bg }}>
+                        <th style={{ padding: '10px' }}>Thứ tự</th>
+                        <th style={{ padding: '10px' }}>Tên Mục Menu</th>
+                        <th style={{ padding: '10px' }}>Đường dẫn Link Path</th>
+                        <th style={{ padding: '10px' }}>Trạng thái</th>
+                        <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {groupItems.map((m, idx) => (
+                        <tr key={m.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '10px', fontWeight: 'bold' }}>#{m.sort_order || idx + 1}</td>
+                          <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{m.label}</td>
+                          <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{m.path}</td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: m.is_active !== false ? '#f0fdf4' : '#fef2f2', color: m.is_active !== false ? '#166534' : '#ef4444', border: m.is_active !== false ? '1px solid #bbf7d0' : '1px solid #fca5a5' }}>
+                              {m.is_active !== false ? '🟢 Đang hiện' : '🔴 Đã ẩn'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button type="button" onClick={() => handleEdit(m)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #0284c7', background: '#e0f2fe', color: '#0284c7', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Edit3 size={14} /> Sửa
+                              </button>
+                              <button type="button" onClick={() => handleToggleActive(m)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {m.is_active !== false ? <EyeOff size={14} color="#ef4444" /> : <Eye size={14} color="#166534" />}
+                                {m.is_active !== false ? 'Ẩn' : 'Hiện lại'}
+                              </button>
+                              <button type="button" onClick={() => handleDelete(m.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Trash2 size={14} /> Xóa
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </Layout>
   );
 }
