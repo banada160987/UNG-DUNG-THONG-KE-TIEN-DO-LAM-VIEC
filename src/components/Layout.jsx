@@ -71,11 +71,11 @@ export default function Layout({ children, title }) {
     { path: '/admin/tap-san', icon: BookOpen, label: '📖 Quản lý Tập San 30 năm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: !!permissions.canViewDocs },
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
-    { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
-    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
+    { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewEmulation || !!permissions.canViewDocs },
+    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewStudents || !!permissions.canViewDocs },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
-    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
+    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewStudents || !!permissions.canViewDocs },
     { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
     { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: !!permissions.canViewDocs },
 
@@ -88,6 +88,7 @@ export default function Layout({ children, title }) {
 
     // 4. ⚙️ HỆ THỐNG
     { path: '/admin/users', icon: Settings, label: 'Phân quyền Tài khoản', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
+    { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
     { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: '⚙️ HỆ THỐNG', show: role === 'admin' },
   ];
 

@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabaseAdmin } from '../lib/supabase';
-import { Users, Save, Trash2, Key } from 'lucide-react';
+import { Users, Save, Trash2, Key, ShieldCheck, CheckSquare, Settings } from 'lucide-react';
+
+const INITIAL_PERMISSIONS = {
+  canViewStudents: true,
+  canViewEmulation: true,
+  canViewDocs: true,
+  canViewNews: false,
+  canViewSponsors: false,
+  canViewGuests: false,
+  canViewSports: false,
+  canViewPages: false
+};
 
 export default function AdminUsers() {
   const [usersList, setUsersList] = useState([]);
@@ -13,22 +24,38 @@ export default function AdminUsers() {
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('committee_member');
   const [committeeId, setCommitteeId] = useState('');
+  const [userPermissions, setUserPermissions] = useState(INITIAL_PERMISSIONS);
+  const [editingUserId, setEditingUserId] = useState(null);
 
   // Password reset state
   const [resetUserId, setResetUserId] = useState(null);
   const [newPassword, setNewPassword] = useState('');
 
   useEffect(() => {
-    if (supabaseAdmin) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
+    fetchData();
   }, []);
 
   async function fetchData() {
     setLoading(true);
     try {
+      if (!supabaseAdmin) {
+        // Fallback fetch via public client
+        const { data: rolesData } = await supabase.from('cbq_user_roles').select('*, cbq_committees(name)');
+        const { data: comData } = await supabase.from('cbq_committees').select('id, name');
+        if (comData) setCommittees(comData);
+        if (rolesData) {
+          setUsersList(rolesData.map(r => ({
+            id: r.user_id,
+            email: `User ID: ${r.user_id.slice(0, 8)}...`,
+            role: r.role,
+            committeeName: r.cbq_committees?.name || '-',
+            permissions: r.permissions || {}
+          })));
+        }
+        setLoading(false);
+        return;
+      }
+
       // Fetch users from Auth
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.listUsers();
       if (authError) throw authError;
@@ -37,7 +64,7 @@ export default function AdminUsers() {
       const { data: rolesData, error: rolesError } = await supabase.from('cbq_user_roles').select('*, cbq_committees(name)');
       if (rolesError) throw rolesError;
 
-      // Fetch committees for dropdown
+      // Fetch committees
       const { data: comData } = await supabase.from('cbq_committees').select('id, name');
       if (comData) setCommittees(comData);
 
@@ -48,22 +75,68 @@ export default function AdminUsers() {
           id: u.id,
           email: u.email,
           role: userRole?.role || 'Chưa phân quyền',
-          committeeName: userRole?.cbq_committees?.name || '-'
+          committeeName: userRole?.cbq_committees?.name || '-',
+          permissions: userRole?.permissions || {}
         };
       });
 
       setUsersList(merged);
     } catch (err) {
-      alert("Lỗi khi tải dữ liệu: " + err.message);
+      console.warn("Lỗi tải dữ liệu tài khoản:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  }
+
+  const togglePermission = (key) => {
+    setUserPermissions(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
+
+  const handleEditUserPerms = (u) => {
+    setEditingUserId(u.id);
+    setEmail(u.email);
+    setRole(u.role);
+    setUserPermissions({
+      ...INITIAL_PERMISSIONS,
+      ...(u.permissions || {})
+    });
+  };
+
+  const handleSaveUserPermissions = async (e) => {
+    e.preventDefault();
+    if (!editingUserId) return;
+
+    try {
+      const client = supabaseAdmin || supabase;
+      const { error } = await client
+        .from('cbq_user_roles')
+        .upsert([{
+          user_id: editingUserId,
+          role: role,
+          committee_id: committeeId || null,
+          permissions: userPermissions
+        }], { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      alert("🎉 ĐÃ LƯU MA TRẬN PHÂN QUYỀN TÀI KHOẢN THÀNH CÔNG!");
+      setEditingUserId(null);
+      fetchData();
+    } catch (err) {
+      alert("Lỗi khi lưu phân quyền: " + err.message);
+    }
   };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
-    if (!supabaseAdmin) return;
+    if (!supabaseAdmin) {
+      alert("Cần quyền supabaseAdmin để tạo tài khoản mới trực tiếp!");
+      return;
+    }
     
-    // Auto-generate temporary password if empty
     const finalPassword = password || Math.random().toString(36).slice(-8);
 
     try {
@@ -76,16 +149,17 @@ export default function AdminUsers() {
 
       if (createError) throw createError;
 
-      // 2. Assign Role
+      // 2. Assign Role & Matrix Permissions
       const { error: roleError } = await supabaseAdmin.from('cbq_user_roles').insert([{
         user_id: userData.user.id,
         role: role,
-        committee_id: (role === 'admin' || role === 'secretary') ? null : committeeId
+        committee_id: committeeId || null,
+        permissions: userPermissions
       }]);
 
       if (roleError) throw roleError;
 
-      alert(`Tạo tài khoản thành công!\nEmail: ${email}\nMật khẩu: ${finalPassword}`);
+      alert(`🎉 ĐÃ TẠO TÀI KHOẢN THÀNH CÔNG!\nEmail: ${email}\nMật khẩu: ${finalPassword}`);
       setEmail('');
       setPassword('');
       fetchData();
@@ -94,24 +168,12 @@ export default function AdminUsers() {
     }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!window.confirm("BẠN CÓ CHẮC CHẮN MUỐN XÓA TÀI KHOẢN NÀY? Toàn bộ dữ liệu của họ sẽ bị mất!")) return;
+  const handleResetPassword = async (userId) => {
+    if (!newPassword || !supabaseAdmin) return;
     try {
-      const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword });
       if (error) throw error;
-      alert("Đã xóa tài khoản thành công!");
-      fetchData();
-    } catch (err) {
-      alert("Lỗi khi xóa: " + err.message);
-    }
-  };
-
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    try {
-      const { error } = await supabaseAdmin.auth.admin.updateUserById(resetUserId, { password: newPassword });
-      if (error) throw error;
-      alert("Đổi mật khẩu thành công!");
+      alert("🎉 Đã đổi mật khẩu thành công!");
       setResetUserId(null);
       setNewPassword('');
     } catch (err) {
@@ -119,140 +181,170 @@ export default function AdminUsers() {
     }
   };
 
-  if (!supabaseAdmin) {
-    return (
-      <Layout title="Lỗi Bảo mật">
-        <div className="glass" style={{ padding: '3rem', textAlign: 'center', color: '#ef4444', maxWidth: '600px', margin: '0 auto' }}>
-          <h2>Thiếu Khóa Quản Trị (Service Role Key)</h2>
-          <p style={{ marginTop: '1rem', color: '#334155' }}>
-            Để sử dụng chức năng tạo tài khoản trực tiếp trên Web, hệ thống cần được cấp quyền tối cao.
-          </p>
-          <div style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.5rem', marginTop: '1.5rem', textAlign: 'left', border: '1px solid #e2e8f0' }}>
-            <p><strong>Cách khắc phục:</strong></p>
-            <ol style={{ paddingLeft: '1.5rem', marginTop: '0.5rem', color: '#475569' }}>
-              <li>Vào Supabase &gt; Project Settings &gt; API</li>
-              <li>Copy chuỗi mã ở mục <strong>service_role (secret)</strong></li>
-              <li>Mở file <code>.env</code> trong mã nguồn, thêm dòng:<br/><code style={{color: '#d97706'}}>VITE_SUPABASE_SERVICE_ROLE_KEY=dán_mã_vào_đây</code></li>
-              <li>Khởi động lại server React (tắt dev server cũ rồi chạy lại npm run dev)</li>
-            </ol>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn XÓA tài khoản này?")) return;
+    try {
+      if (supabaseAdmin) {
+        await supabaseAdmin.auth.admin.deleteUser(userId);
+      }
+      await supabase.from('cbq_user_roles').delete().eq('user_id', userId);
+      setUsersList(usersList.filter(u => u.id !== userId));
+      alert("Đã xóa tài khoản thành công!");
+    } catch (err) {
+      alert("Lỗi khi xóa: " + err.message);
+    }
+  };
 
   return (
     <Layout title="Quản lý Tài khoản & Phân quyền">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '20px' }}>
-        
-        {/* Left Col: Create User Form */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-            <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1e293b', marginBottom: '1.5rem' }}>
-              <Users size={20} /> Tạo Tài Khoản Mới
-            </h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <div>
+          <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Users size={26} color="#be123c" /> Quản Lý Tài Khoản & Ma Trận Phân Quyền
+          </h2>
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
+            Cấp quyền chi tiết theo từng chức năng (Thi đua, Xe máy, Lịch tuần, Tin tức...) khi tạo/sửa tài khoản
+          </p>
+        </div>
+      </div>
 
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              <div>
-                <label style={styles.label}>Email (Tên đăng nhập)</label>
-                <input required type="email" value={email} onChange={e => setEmail(e.target.value)} style={styles.input} placeholder="canbo@caobaquat.edu.vn" />
-              </div>
-              <div>
-                <label style={styles.label}>Mật khẩu (Bỏ trống để tạo ngẫu nhiên)</label>
-                <input type="text" value={password} onChange={e => setPassword(e.target.value)} style={styles.input} placeholder="********" />
-              </div>
-              <div>
-                <label style={styles.label}>Vai trò</label>
-                <select value={role} onChange={e => setRole(e.target.value)} style={styles.input}>
-                  <option value="committee_member">Thành viên Tiểu ban (Bị giới hạn)</option>
-                  <option value="secretary">Thư ký (Quản lý công việc)</option>
-                  <option value="admin">Quản trị viên (Admin - Toàn quyền)</option>
-                </select>
-              </div>
-              
-              {role === 'committee_member' && (
-                <div>
-                  <label style={styles.label}>Phân vào Tiểu ban</label>
-                  <select required value={committeeId} onChange={e => setCommitteeId(e.target.value)} style={styles.input}>
-                    <option value="">-- Chọn tiểu ban --</option>
-                    {committees.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+      {/* FORM CREATE / EDIT USER PERMISSION MATRIX */}
+      <form onSubmit={editingUserId ? handleSaveUserPermissions : handleCreateUser} className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem' }}>
+        <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
+          {editingUserId ? `📝 Chỉnh Sửa Ma Trận Phân Quyền (${email})` : '➕ Tạo Tài Khoản Nối Mới & Phân Quyền'}
+        </h3>
 
-              <button type="submit" className="btn-primary" style={{ padding: '12px', marginTop: '10px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                <Save size={18} /> Lưu & Kích hoạt
-              </button>
-            </form>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '15px' }}>
+          <div>
+            <label style={styles.label}>Email Đăng nhập (*)</label>
+            <input type="email" required disabled={!!editingUserId} value={email} onChange={e => setEmail(e.target.value)} style={styles.input} placeholder="VD: gv_nvA@caobaquat.edu.vn" />
+          </div>
+          {!editingUserId && (
+            <div>
+              <label style={styles.label}>Mật khẩu (để trống tự tạo)</label>
+              <input type="password" value={password} onChange={e => setPassword(e.target.value)} style={styles.input} placeholder="Tự tạo ngẫu nhiên nếu trống" />
+            </div>
+          )}
+          <div>
+            <label style={styles.label}>Vai trò chính (*)</label>
+            <select value={role} onChange={e => setRole(e.target.value)} style={styles.input}>
+              <option value="committee_member">Giáo viên / Cán bộ Tiểu ban</option>
+              <option value="secretary">Thư ký Hội đồng</option>
+              <option value="admin">Quản trị viên (Admin Toàn quyền)</option>
+            </select>
           </div>
         </div>
 
-        {/* Right Col: Users List */}
-        <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white', overflowX: 'auto' }}>
-          <h3 style={{ marginTop: 0, marginBottom: '20px', color: '#1e293b' }}>Danh sách Người dùng Hệ thống</h3>
-          
-          {/* Password Reset Modal */}
-          {resetUserId && (
-            <div style={{ padding: '1rem', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '0.5rem', marginBottom: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', color: '#166534' }}>Đổi mật khẩu</h4>
-              <form onSubmit={handleChangePassword} style={{ display: 'flex', gap: '10px' }}>
-                <input required type="text" placeholder="Nhập mật khẩu mới..." value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ ...styles.input, flex: 1 }} />
-                <button type="submit" className="btn-primary" style={{ padding: '0 1rem' }}>Cập nhật</button>
-                <button type="button" onClick={() => setResetUserId(null)} style={{ padding: '0 1rem', background: '#e2e8f0', color: '#475569', borderRadius: '0.5rem', border: 'none' }}>Hủy</button>
-              </form>
-            </div>
-          )}
+        {/* GRANULAR PERMISSION MATRIX CHECKBOXES */}
+        <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '15px' }}>
+          <label style={{ ...styles.label, color: '#be123c', fontSize: '14px', marginBottom: '10px' }}>
+            🔳 Ma Trận Phân Quyền Chi Tiết Theo Chức Năng:
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewStudents} onChange={() => togglePermission('canViewStudents')} />
+              <span>🛵 Quản lý Xe máy & Học sinh (`canViewStudents`)</span>
+            </label>
 
-          {loading ? <p>Đang tải...</p> : (
-            <table style={{width: '100%', borderCollapse: 'collapse'}}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '14px' }}>
-                  <th style={{padding: '12px 8px'}}>Email</th>
-                  <th style={{padding: '12px 8px'}}>Vai trò</th>
-                  <th style={{padding: '12px 8px'}}>Tiểu ban phụ trách</th>
-                  <th style={{padding: '12px 8px', textAlign: 'right'}}>Thao tác</th>
-                </tr>
-              </thead>
-              <tbody>
-                {usersList.map(u => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9', fontSize: '14px' }}>
-                    <td style={{padding: '12px 8px', fontWeight: '500'}}>{u.email}</td>
-                    <td style={{padding: '12px 8px'}}>
-                      <span style={{ 
-                        padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold',
-                        backgroundColor: u.role === 'admin' ? '#fee2e2' : (u.role === 'secretary' ? '#fef3c7' : (u.role === 'committee_member' ? '#e0f2fe' : '#f1f5f9')),
-                        color: u.role === 'admin' ? '#ef4444' : (u.role === 'secretary' ? '#d97706' : (u.role === 'committee_member' ? '#0284c7' : '#475569'))
-                      }}>
-                        {u.role === 'admin' ? 'Admin' : (u.role === 'secretary' ? 'Thư ký' : (u.role === 'committee_member' ? 'Thành viên' : 'Lỗi/Trống'))}
-                      </span>
-                    </td>
-                    <td style={{padding: '12px 8px', color: '#475569'}}>{u.committeeName}</td>
-                    <td style={{padding: '12px 8px', textAlign: 'right'}}>
-                      <button onClick={() => setResetUserId(u.id)} title="Đổi mật khẩu" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f59e0b', marginRight: '10px' }}>
-                        <Key size={18} />
-                      </button>
-                      <button onClick={() => handleDeleteUser(u.id)} title="Xóa tài khoản" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {usersList.length === 0 && (
-                  <tr><td colSpan="4" style={{ padding: '20px', textAlign: 'center' }}>Không có tài khoản nào</td></tr>
-                )}
-              </tbody>
-            </table>
-          )}
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewEmulation} onChange={() => togglePermission('canViewEmulation')} />
+              <span>📋 Quản lý Thi đua & Cờ đỏ (`canViewEmulation`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewDocs} onChange={() => togglePermission('canViewDocs')} />
+              <span>📅 Lịch tuần & Tổ chuyên môn (`canViewDocs`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewNews} onChange={() => togglePermission('canViewNews')} />
+              <span>📰 Tin tức & Thư viện ảnh (`canViewNews`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewSponsors} onChange={() => togglePermission('canViewSponsors')} />
+              <span>🏆 Quản lý Tài trợ & Bảng vàng (`canViewSponsors`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewGuests} onChange={() => togglePermission('canViewGuests')} />
+              <span>✉️ Quản lý Khách mời & Lễ tân (`canViewGuests`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewSports} onChange={() => togglePermission('canViewSports')} />
+              <span>⚽ Quản lý Thể thao & Bảng đấu (`canViewSports`)</span>
+            </label>
+
+            <label style={styles.checkboxLabel}>
+              <input type="checkbox" checked={!!userPermissions.canViewPages} onChange={() => togglePermission('canViewPages')} />
+              <span>🌐 Trang Giới thiệu & Thiệp mời (`canViewPages`)</span>
+            </label>
+          </div>
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+          {editingUserId && (
+            <button type="button" onClick={() => { setEditingUserId(null); setEmail(''); }} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>
+              Hủy Sửa
+            </button>
+          )}
+          <button type="submit" className="btn-primary" style={{ padding: '8px 22px', backgroundColor: '#be123c' }}>
+            <Save size={16} /> {editingUserId ? 'Lưu Cập Nhật Phân Quyền' : 'Tạo Tài Khoản & Cấp Quyền'}
+          </button>
+        </div>
+      </form>
+
+      {/* USERS LIST TABLE */}
+      <div className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+        <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
+          👥 Danh Sách Tài Khoản Người Dùng ({usersList.length})
+        </h3>
+
+        {loading ? <p>Đang nạp danh sách tài khoản...</p> : (
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
+                <th style={{ padding: '10px' }}>Email đăng nhập</th>
+                <th style={{ padding: '10px' }}>Vai trò chính</th>
+                <th style={{ padding: '10px' }}>Các quyền hạn đã cấp</th>
+                <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {usersList.map((u) => (
+                <tr key={u.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{u.email}</td>
+                  <td style={{ padding: '10px' }}>
+                    <span style={{ padding: '3px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: u.role === 'admin' ? '#fef2f2' : '#f0fdf4', color: u.role === 'admin' ? '#be123c' : '#166534' }}>
+                      {u.role === 'admin' ? 'Quản trị viên' : u.role === 'secretary' ? 'Thư ký' : 'Giáo viên / Cán bộ'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px', fontSize: '12px', color: '#475569' }}>
+                    {u.role === 'admin' ? '🔥 Toàn quyền hệ thống' : Object.keys(u.permissions || {}).filter(k => u.permissions[k]).join(', ') || 'Quyền mặc định'}
+                  </td>
+                  <td style={{ padding: '10px', textAlign: 'right' }}>
+                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                      <button type="button" onClick={() => handleEditUserPerms(u)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#1e293b', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>
+                        <Settings size={14} /> Sửa Quyền
+                      </button>
+                      <button type="button" onClick={() => handleDeleteUser(u.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </Layout>
   );
 }
 
 const styles = {
-  label: { display: 'block', fontSize: '14px', marginBottom: '5px', fontWeight: '500', color: '#334155' },
-  input: { width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }
+  label: { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' },
+  input: { width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' },
+  checkboxLabel: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#1e293b', cursor: 'pointer', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }
 };
-

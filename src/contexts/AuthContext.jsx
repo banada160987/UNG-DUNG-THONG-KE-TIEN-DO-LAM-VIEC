@@ -53,7 +53,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('cbq_user_roles')
-        .select('role, committee_id, cbq_committees(name)')
+        .select('role, committee_id, permissions, cbq_committees(name)')
         .eq('user_id', userId)
         .single();
         
@@ -66,6 +66,7 @@ export const AuthProvider = ({ children }) => {
         const userRole = data.role;
         const commId = data.committee_id;
         const commName = data.cbq_committees?.name || null;
+        const customPerms = data.permissions || {};
 
         setRole(userRole);
         setCommitteeId(commId);
@@ -73,16 +74,30 @@ export const AuthProvider = ({ children }) => {
 
         const isSecretaryOrAdmin = userRole === 'admin' || userRole === 'secretary' || (commName && commName.toLowerCase().includes('thư ký'));
 
-        // Define permissions
-        const perms = {
+        // Default permissions based on role
+        const defaultPerms = {
           canViewSponsors: isSecretaryOrAdmin || commName === 'Tiểu ban tiếp nhận tài trợ',
           canViewGuests: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Lễ tân, khánh tiết',
           canViewNews: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || commName === 'Tiểu ban Nội dung, biên tập tập san',
           canViewPages: userRole === 'admin' || commName === 'Tiểu ban Liên lạc, vận động, truyền thông',
           canViewDocs: userRole === 'admin' || commName === 'Tiểu ban Nội dung, biên tập tập san',
+          canViewStudents: isSecretaryOrAdmin || userRole === 'admin',
+          canViewEmulation: isSecretaryOrAdmin || userRole === 'admin',
           canViewSports: isSecretaryOrAdmin || commName === 'Tiểu ban Liên lạc, vận động, truyền thông' || (commName && commName.toLowerCase().includes('thể thao')),
         };
-        setPermissions(perms);
+
+        // If admin set custom permissions for this user, merge or override
+        const mergedPerms = {
+          ...defaultPerms,
+          ...customPerms
+        };
+
+        // If admin role, always true for all permissions
+        if (userRole === 'admin') {
+          Object.keys(mergedPerms).forEach(k => mergedPerms[k] = true);
+        }
+
+        setPermissions(mergedPerms);
       }
     } catch (err) {
       console.error('Unexpected error fetching role:', err);

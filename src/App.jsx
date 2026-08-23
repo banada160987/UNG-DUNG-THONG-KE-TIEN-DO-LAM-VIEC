@@ -45,6 +45,7 @@ import AdminParking from './pages/AdminParking';
 import AdminStudents from './pages/AdminStudents';
 import PublicEmulationScoring from './pages/PublicEmulationScoring';
 import AdminEmulation from './pages/AdminEmulation';
+import AdminMenuConfig from './pages/AdminMenuConfig';
 import PublicLayout from './components/PublicLayout';
 
 function App() {
@@ -105,6 +106,7 @@ function App() {
           <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/links" element={role === 'admin' ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewNews ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
