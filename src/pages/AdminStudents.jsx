@@ -19,6 +19,14 @@ export default function AdminStudents() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
+  
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedGrade]);
+
   // Form State
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -466,6 +474,12 @@ export default function AdminStudents() {
     return matchSearch && matchGrade;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = filteredStudents.slice(indexOfFirstItem, indexOfLastItem);
+
   const handleTestDatabaseConnection = async () => {
     const testCode = `TEST-${Date.now()}`;
     const testPayload = {
@@ -655,9 +669,9 @@ export default function AdminStudents() {
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((s, idx) => (
+                {currentItems.map((s, idx) => (
                   <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold' }}>#{idx + 1}</td>
+                    <td style={{ padding: '10px', fontWeight: 'bold' }}>#{indexOfFirstItem + idx + 1}</td>
                     <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{s.student_code}</td>
                     <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.student_name}</td>
                     <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>{s.student_class}</td>
@@ -679,6 +693,51 @@ export default function AdminStudents() {
                 ))}
               </tbody>
             </table>
+            
+            {/* PAGINATION CONTROLS */}
+            {filteredStudents.length > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', flexWrap: 'wrap', gap: '15px' }}>
+                <div style={{ fontSize: '13.5px', color: '#64748b' }}>
+                  Hiển thị <strong>{indexOfFirstItem + 1}</strong> - <strong>{Math.min(indexOfLastItem, filteredStudents.length)}</strong> trong tổng số <strong>{filteredStudents.length}</strong> học sinh
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <label style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 'bold' }}>Số dòng mỗi trang:</label>
+                  <select 
+                    value={itemsPerPage} 
+                    onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
+                    style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none' }}
+                  >
+                    <option value={50}>50 dòng</option>
+                    <option value={100}>100 dòng</option>
+                    <option value={200}>200 dòng</option>
+                    <option value={500}>500 dòng</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  <button 
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    style={{ padding: '6px 14px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : 'white', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}
+                  >
+                    Trang trước
+                  </button>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a' }}>
+                    Trang {currentPage} / {totalPages || 1}
+                  </div>
+                  
+                  <button 
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    style={{ padding: '6px 14px', border: '1px solid #cbd5e1', background: (currentPage === totalPages || totalPages === 0) ? '#f8fafc' : 'white', color: (currentPage === totalPages || totalPages === 0) ? '#94a3b8' : '#334155', cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}
+                  >
+                    Trang tiếp
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
