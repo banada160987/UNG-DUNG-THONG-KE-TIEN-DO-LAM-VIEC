@@ -609,7 +609,7 @@ export default function AdminParking() {
                   <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{pkg.title}</td>
                   <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{pkg.months_count} tháng</td>
                   <td style={{ padding: '10px', fontWeight: '900', color: pkg.hide_fee || Number(pkg.fee_amount) === 0 ? '#166534' : '#be123c', fontSize: '15px' }}>
-                    {pkg.hide_fee ? '🟢 Miễn phí (Ẩn tiền)' : Number(pkg.fee_amount) === 0 ? '🟢 0 VNĐ (Miễn phí)' : `${(Number(pkg.fee_amount) || 0).toLocaleString()} VNĐ`}
+                    {pkg.hide_fee ? '🙈 Ẩn lệ phí' : Number(pkg.fee_amount) === 0 ? '🟢 0 VNĐ (Miễn phí)' : `${(Number(pkg.fee_amount) || 0).toLocaleString()} VNĐ`}
                   </td>
                   <td style={{ padding: '10px', color: '#64748b' }}>{pkg.description || '-'}</td>
                   <td style={{ padding: '10px' }}>
