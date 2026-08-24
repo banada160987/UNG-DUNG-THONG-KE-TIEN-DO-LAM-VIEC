@@ -2,22 +2,29 @@ import { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, T
 
 export const generateWordReport = async (stats, quizConfig, submissions, studentUsers = []) => {
   const ALL_CLASSES = [
-    'Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05', 'Lớp 12A06', 'Lớp 12A07', 'Lớp 12A08', 'Lớp 12A09', 'Lớp 12A10', 'Lớp 12A11',
-    'Lớp 11A01', 'Lớp 11A02', 'Lớp 11A03', 'Lớp 11A04', 'Lớp 11A05', 'Lớp 11A06', 'Lớp 11A07', 'Lớp 11A08', 'Lớp 11A09', 'Lớp 11A10',
+    'Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05', 'Lớp 12A06', 'Lớp 12A07', 'Lớp 12A08', 'Lớp 12A09', 'Lớp 12A10',
+    'Lớp 11A01', 'Lớp 11A02', 'Lớp 11A03', 'Lớp 11A04', 'Lớp 11A05', 'Lớp 11A06', 'Lớp 11A07', 'Lớp 11A08', 'Lớp 11A09',
     'Lớp 10A01', 'Lớp 10A02', 'Lớp 10A03', 'Lớp 10A04', 'Lớp 10A05', 'Lớp 10A06', 'Lớp 10A07', 'Lớp 10A08', 'Lớp 10A09', 'Lớp 10A10', 'Lớp 10A11', 'Lớp 10A12', 'Lớp 10A13', 'Lớp 10A14', 'Lớp 10A15'
   ];
 
   // Tính toán sĩ số thực tế từ bảng học sinh
-  const classSizes = {};
+  const dbClassSizes = {};
+  if (studentUsers && studentUsers.length > 0) {
+    studentUsers.forEach(u => {
+      if (u.student_class) {
+        const clsName = u.student_class.startsWith('Lớp') ? u.student_class : 'Lớp ' + u.student_class;
+        dbClassSizes[clsName] = (dbClassSizes[clsName] || 0) + 1;
+      }
+    });
+  }
+
+  // Lấy sĩ số lớp từ DB, nếu không có hoặc DB rỗng thì mặc định là 40 để tránh lỗi chia cho 0
+  const getClassSize = (clsName) => dbClassSizes[clsName] || 40;
+
   let totalSchoolStudents = 0;
-  studentUsers.forEach(u => {
-    if (u.student_class) {
-      const clsName = u.student_class.startsWith('Lớp') ? u.student_class : 'Lớp ' + u.student_class;
-      classSizes[clsName] = (classSizes[clsName] || 0) + 1;
-      totalSchoolStudents++;
-    }
+  ALL_CLASSES.forEach(cls => {
+      totalSchoolStudents += getClassSize(cls);
   });
-  if (totalSchoolStudents === 0) totalSchoolStudents = 36 * 40; // Fallback
 
   
   // Data extraction
@@ -62,10 +69,10 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
       '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 } 
   };
   
-  Object.keys(classSizes).forEach(cls => {
-      if (cls.includes('10A')) grades['10'].totalStudents += classSizes[cls];
-      else if (cls.includes('11A')) grades['11'].totalStudents += classSizes[cls];
-      else if (cls.includes('12A')) grades['12'].totalStudents += classSizes[cls];
+  ALL_CLASSES.forEach(cls => {
+      if (cls.includes('10A')) grades['10'].totalStudents += getClassSize(cls);
+      else if (cls.includes('11A')) grades['11'].totalStudents += getClassSize(cls);
+      else if (cls.includes('12A')) grades['12'].totalStudents += getClassSize(cls);
   });
 
   validSubs.forEach(s => {
@@ -86,7 +93,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   const unparticipatedClasses = ALL_CLASSES.filter(c => !participatedClassNames.includes(c));
   const classParticipation = stats.classData.map(c => {
       const normalizedName = c.name.startsWith('Lớp') ? c.name : 'Lớp ' + c.name;
-      const cSize = classSizes[normalizedName] || 40;
+      const cSize = getClassSize(normalizedName);
       return {
           name: normalizedName,
           count: c.count,
@@ -214,7 +221,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
           
           createHeading("1. Tổng quan kết quả cuộc thi"),
           createParagraph(`- Tổng số học sinh tham gia dự thi: ${totalStudents} học sinh.`),
-          createParagraph(`- Tổng số lớp có học sinh tham gia: ${stats.totalClasses}/36 lớp.`),
+          createParagraph(`- Tổng số lớp có học sinh tham gia: ${stats.totalClasses}/${ALL_CLASSES.length} lớp.`),
           createParagraph(`- Tỷ lệ học sinh tham gia toàn trường: Đạt ${((totalStudents / totalSchoolStudents) * 100).toFixed(1)}%.`),
 
           createHeading("2. Thống kê mức độ tham gia"),
