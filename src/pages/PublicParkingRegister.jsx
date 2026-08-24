@@ -35,6 +35,13 @@ export default function PublicParkingRegister() {
 
   const [loading, setLoading] = useState(false);
   const [successTicket, setSuccessTicket] = useState(null);
+  
+  // Lookup & Edit State
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupResults, setLookupResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [editingTicket, setEditingTicket] = useState(null); // { type: 'parking'|'bus', id: string, ... }
+
   const dropdownRef = useRef(null);
 
   useEffect(() => {
@@ -106,6 +113,83 @@ export default function PublicParkingRegister() {
   const [classSuggestions, setClassSuggestions] = useState([]);
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
   const classDropdownRef = useRef(null);
+
+  // ----- LOGIC TRA CỨU (LOOKUP) -----
+  const handleLookup = async (e) => {
+    e.preventDefault();
+    if (!lookupQuery.trim()) return;
+
+    setIsSearching(true);
+    setLookupResults([]);
+    try {
+      const q = lookupQuery.trim().toUpperCase();
+      
+      // Tìm trong bảng Gửi Xe
+      const { data: parkData } = await supabase
+        .from('cbq_parking_registrations')
+        .select('*')
+        .or(`student_code.eq.${q},ticket_code.eq.${q}`);
+
+      // Tìm trong bảng Xe Đưa Đón
+      const { data: busData } = await supabase
+        .from('cbq_bus_registrations')
+        .select('*')
+        .or(`student_code.eq.${q},ticket_code.eq.${q}`);
+
+      const results = [];
+      if (parkData) {
+        parkData.forEach(p => results.push({ ...p, recordType: 'parking' }));
+      }
+      if (busData) {
+        busData.forEach(b => results.push({ ...b, recordType: 'bus' }));
+      }
+
+      setLookupResults(results);
+      if (results.length === 0) {
+        alert("Không tìm thấy dữ liệu đăng ký nào với Mã Học Sinh hoặc Mã Vé này.");
+      }
+    } catch (err) {
+      alert("Lỗi tìm kiếm: " + err.message);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const startEdit = (record) => {
+    setEditingTicket(record);
+    // Điền dữ liệu chung
+    setStudentName(record.student_name || '');
+    setStudentClass(record.student_class || '');
+    setStudentCode(record.student_code || '');
+
+    if (record.recordType === 'parking') {
+      setActiveTab('parking');
+      setLicensePlate(record.license_plate || '');
+      setVehicleType(record.vehicle_type || 'Xe máy điện');
+      setVehicleColor(record.vehicle_color || '');
+      setPackageType(record.package_type || 'term');
+    } else {
+      setActiveTab('bus');
+      setBusDistance(record.distance_km || '');
+      setBusAddress(record.home_address || '');
+      setBusPickupPoint(record.pickup_point || '');
+      setBusRouteType(record.route_type || '2-way');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingTicket(null);
+    setStudentName('');
+    setStudentClass('');
+    setStudentCode('');
+    setLicensePlate('');
+    setVehicleColor('');
+    setBusDistance('');
+    setBusAddress('');
+    setBusPickupPoint('');
+    setActiveTab('lookup');
+  };
+  // ----------------------------------
 
   // Compute Unique Classes across Khối 10, Khối 11, Khối 12
   const getUniqueClassesList = () => {
@@ -247,7 +331,7 @@ export default function PublicParkingRegister() {
       const gradeLevel = getGradeLevel(cleanClass);
 
       const payload = {
-        ticket_code: ticketCode,
+        ticket_code: editingTicket ? editingTicket.ticket_code : ticketCode,
         student_name: studentName.trim(),
         student_code: studentCode.trim() || `HS-${randomNum}`,
         student_class: cleanClass,
@@ -256,25 +340,29 @@ export default function PublicParkingRegister() {
         vehicle_type: vehicleType,
         vehicle_color: vehicleColor.trim(),
         package_type: packageType,
-        start_date: today,
-        end_date: endDate,
+        start_date: editingTicket ? editingTicket.start_date : today,
+        end_date: editingTicket ? editingTicket.end_date : endDate,
         fee_amount: selectedPkg.fee,
         status: 'active'
       };
 
-      const { data, error } = await supabase
-        .from('cbq_parking_registrations')
-        .insert([payload])
-        .select()
-        .single();
+      let dbQuery;
+      if (editingTicket && editingTicket.id) {
+        dbQuery = supabase.from('cbq_parking_registrations').update(payload).eq('id', editingTicket.id);
+      } else {
+        dbQuery = supabase.from('cbq_parking_registrations').insert([payload]);
+      }
+
+      const { data, error } = await dbQuery.select().single();
 
       if (error) {
         setSuccessTicket(payload);
       } else {
         setSuccessTicket(data);
       }
+      setEditingTicket(null);
     } catch (err) {
-      alert("Lỗi đăng ký: " + err.message);
+      alert("Lỗi đăng ký/cập nhật: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -301,23 +389,26 @@ export default function PublicParkingRegister() {
         address: busAddress.trim(),
         pickup_point: busPickupPoint.trim(),
         route_type: busRouteType,
-        ticket_code: ticketCode
+        ticket_code: editingTicket ? editingTicket.ticket_code : ticketCode
       };
 
-      const { data, error } = await supabase
-        .from('cbq_bus_registrations')
-        .insert([payload])
-        .select()
-        .single();
+      let dbQuery;
+      if (editingTicket && editingTicket.id) {
+        dbQuery = supabase.from('cbq_bus_registrations').update(payload).eq('id', editingTicket.id);
+      } else {
+        dbQuery = supabase.from('cbq_bus_registrations').insert([payload]);
+      }
+
+      const { data, error } = await dbQuery.select().single();
 
       if (error) {
-        // Fallback to local state if table doesn't exist
         setSuccessBusTicket(payload);
       } else {
         setSuccessBusTicket(data);
       }
+      setEditingTicket(null);
     } catch (err) {
-      alert("Lỗi đăng ký xe đưa đón: " + err.message);
+      alert("Lỗi đăng ký/cập nhật: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -342,16 +433,22 @@ export default function PublicParkingRegister() {
       {(!successTicket && !successBusTicket) && (
         <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '25px' }}>
           <button
-            onClick={() => setActiveTab('parking')}
+            onClick={() => { setActiveTab('parking'); setEditingTicket(null); }}
             style={{ flex: 1, padding: '12px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'parking' ? '#be123c' : '#64748b', borderBottom: activeTab === 'parking' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             <Bike size={18} /> GỬI XE MÁY / ĐẠP
           </button>
           <button
-            onClick={() => setActiveTab('bus')}
+            onClick={() => { setActiveTab('bus'); setEditingTicket(null); }}
             style={{ flex: 1, padding: '12px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'bus' ? '#f59e0b' : '#64748b', borderBottom: activeTab === 'bus' ? '3px solid #f59e0b' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
           >
             <Bus size={18} /> XE ĐƯA ĐÓN
+          </button>
+          <button
+            onClick={() => { setActiveTab('lookup'); setEditingTicket(null); }}
+            style={{ flex: 1, padding: '12px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'lookup' ? '#16a34a' : '#64748b', borderBottom: activeTab === 'lookup' ? '3px solid #16a34a' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            <Search size={18} /> TRA CỨU / SỬA
           </button>
         </div>
       )}
@@ -408,11 +505,8 @@ export default function PublicParkingRegister() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-            <button onClick={() => window.print()} style={styles.printBtn}>
-              <Printer size={18} /> In Phiếu Đăng Ký
-            </button>
             <button onClick={() => setSuccessBusTicket(null)} style={styles.newRegBtn}>
-              Đăng ký vé mới
+              Đăng ký xe mới
             </button>
           </div>
         </div>
@@ -472,9 +566,6 @@ export default function PublicParkingRegister() {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
-            <button onClick={() => window.print()} style={styles.printBtn}>
-              <Printer size={18} /> In Thẻ Gửi Xe Máy
-            </button>
             <button onClick={() => setSuccessTicket(null)} style={styles.newRegBtn}>
               Đăng ký xe mới
             </button>
@@ -485,10 +576,54 @@ export default function PublicParkingRegister() {
       {/* REGISTRATION FORMS */}
       {(!successTicket && !successBusTicket) && (
         <>
+          {/* LOOKUP FORM */}
+          {activeTab === 'lookup' && (
+            <div style={styles.formCard}>
+              <h3 style={styles.formTitle}>🔍 Tra Cứu & Điều Chỉnh Đăng Ký</h3>
+              <form onSubmit={handleLookup} style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="Nhập Mã Học Sinh hoặc Mã Vé..."
+                  value={lookupQuery}
+                  onChange={e => setLookupQuery(e.target.value)}
+                  style={{ ...styles.input, flex: 1 }}
+                />
+                <button type="submit" disabled={isSearching} style={{ padding: '10px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#16a34a', color: 'white', fontWeight: 'bold', cursor: 'pointer' }}>
+                  {isSearching ? 'ĐANG TÌM...' : 'TÌM KIẾM'}
+                </button>
+              </form>
+
+              {lookupResults.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {lookupResults.map((res, idx) => (
+                    <div key={idx} style={{ padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>
+                          {res.recordType === 'parking' ? '🏍️ Vé Gửi Xe Máy' : '🚌 Vé Xe Đưa Đón'}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>Họ tên: <strong style={{ color: '#0f172a' }}>{res.student_name}</strong> • Lớp: {res.student_class}</div>
+                        <div style={{ fontSize: '13px', color: '#64748b' }}>Mã vé: {res.ticket_code} • Mã HS: {res.student_code}</div>
+                      </div>
+                      <button 
+                        onClick={() => startEdit(res)}
+                        style={{ padding: '8px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#3b82f6', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                      >
+                        ✏️ CHỈNH SỬA
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* PARKING FORM */}
           {activeTab === 'parking' && (
             <form onSubmit={handleSubmit} style={styles.formCard}>
-              <h3 style={styles.formTitle}>📝 Thông tin Đăng ký Vé Xe Máy Học Sinh</h3>
+              <h3 style={styles.formTitle}>
+                {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN VÉ XE MÁY' : '📝 Thông tin Đăng ký Vé Xe Máy Học Sinh'}
+              </h3>
 
               <div style={styles.formGrid}>
                 {/* AUTOCOMPLETE STUDENT NAME FIELD */}
@@ -652,16 +787,25 @@ export default function PublicParkingRegister() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} style={styles.submitBtn}>
-            {loading ? 'Đang xử lý đăng ký...' : '🚀 XÁC NHẬN ĐĂNG KÝ VÉ XE MÁY'}
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button type="submit" disabled={loading} style={{ ...styles.submitBtn, flex: 1 }}>
+              {loading ? 'Đang xử lý...' : editingTicket ? '💾 LƯU ĐIỀU CHỈNH VÉ XE MÁY' : '🚀 XÁC NHẬN ĐĂNG KÝ VÉ XE MÁY'}
+            </button>
+            {editingTicket && (
+              <button type="button" onClick={cancelEdit} disabled={loading} style={{ ...styles.submitBtn, flex: 0.4, backgroundColor: '#64748b' }}>
+                ✖ HỦY
+              </button>
+            )}
+          </div>
         </form>
       )}
 
       {/* BUS FORM */}
       {activeTab === 'bus' && (
         <form onSubmit={handleSubmitBus} style={styles.formCard}>
-          <h3 style={{ ...styles.formTitle, color: '#b45309' }}>🚌 Thông tin Đăng ký Xe Đưa Đón Học Sinh</h3>
+          <h3 style={{ ...styles.formTitle, color: '#b45309' }}>
+            {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN XE ĐƯA ĐÓN' : '🚌 Thông tin Đăng ký Xe Đưa Đón Học Sinh'}
+          </h3>
 
           <div style={styles.formGrid}>
             {/* AUTOCOMPLETE STUDENT NAME FIELD */}
@@ -792,9 +936,16 @@ export default function PublicParkingRegister() {
             </div>
           </div>
 
-          <button type="submit" disabled={loading} style={{ ...styles.submitBtn, backgroundColor: '#f59e0b' }}>
-            {loading ? 'Đang xử lý đăng ký...' : '🚀 XÁC NHẬN ĐĂNG KÝ XE ĐƯA ĐÓN'}
-          </button>
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button type="submit" disabled={loading} style={{ ...styles.submitBtn, backgroundColor: '#f59e0b', flex: 1 }}>
+              {loading ? 'Đang xử lý...' : editingTicket ? '💾 LƯU ĐIỀU CHỈNH XE ĐƯA ĐÓN' : '🚀 XÁC NHẬN ĐĂNG KÝ XE ĐƯA ĐÓN'}
+            </button>
+            {editingTicket && (
+              <button type="button" onClick={cancelEdit} disabled={loading} style={{ ...styles.submitBtn, flex: 0.4, backgroundColor: '#64748b' }}>
+                ✖ HỦY
+              </button>
+            )}
+          </div>
         </form>
       )}
       </>
