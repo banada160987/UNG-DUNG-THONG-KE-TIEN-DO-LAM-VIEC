@@ -109,9 +109,14 @@ export default function AdminStudents() {
         // 1. Smart Header Row Detection (Handles title headers at the top of Excel files)
         const sheet2D = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         let headerRowIndex = 0;
-        for (let r = 0; r < Math.min(sheet2D.length, 12); r++) {
+        for (let r = 0; r < Math.min(sheet2D.length, 20); r++) {
           const rowStr = (sheet2D[r] || []).join(" ").toLowerCase();
-          if (rowStr.includes("tên") || rowStr.includes("lớp") || rowStr.includes("học sinh") || rowStr.includes("mã")) {
+          
+          const hasName = rowStr.includes("tên") || rowStr.includes("họ");
+          const hasClass = rowStr.includes("lớp") || rowStr.includes("class");
+          const hasCode = rowStr.includes("mã") || rowStr.includes("stt");
+          
+          if ((hasName && hasClass) || (hasName && hasCode)) {
             headerRowIndex = r;
             break;
           }
@@ -152,12 +157,14 @@ export default function AdminStudents() {
         }
 
         // Check duplicates vs existing roster
-        const existingCodesSet = new Set(students.map(s => s.student_code));
+        const existingCodesMap = new Map(students.map(s => [s.student_code, s.id]));
         let newCount = 0;
         let updateCount = 0;
 
         formattedList.forEach(item => {
-          if (existingCodesSet.has(item.student_code)) {
+          const existingId = existingCodesMap.get(item.student_code);
+          if (existingId) {
+            item.id = existingId; // Set ID for upsert by primary key
             updateCount++;
           } else {
             newCount++;
@@ -199,7 +206,7 @@ export default function AdminStudents() {
           const chunk = formattedList.slice(i, i + BATCH_SIZE);
           const { error: batchErr } = await dbClient
             .from('cbq_students')
-            .upsert(chunk, { onConflict: 'student_code' });
+            .upsert(chunk);
 
           if (batchErr) {
             console.error(`Lỗi upsert CSDL lô ${Math.floor(i / BATCH_SIZE) + 1}:`, batchErr);
