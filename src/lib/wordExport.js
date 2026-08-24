@@ -13,10 +13,10 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
     return match ? match[0] : null;
   };
 
-  const grades = { 
-      '10': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
-      '11': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
-      '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 } 
+  const grades = {
+    '10': { count: 0, avg: 0, sum: 0, totalStudents: 0 },
+    '11': { count: 0, avg: 0, sum: 0, totalStudents: 0 },
+    '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 }
   };
 
   // Tính toán sĩ số thực tế từ bảng học sinh
@@ -32,7 +32,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
 
         const grade = getGradeFromClass(u.student_class);
         if (grade && grades[grade]) {
-            grades[grade].totalStudents++;
+          grades[grade].totalStudents++;
         }
       }
     });
@@ -49,72 +49,72 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   // Lấy sĩ số lớp từ DB, nếu không có hoặc DB rỗng thì mặc định là 40 để tránh lỗi chia cho 0
   const getClassSize = (clsName) => dbClassSizes[clsName] || 40;
 
-  
+
   // Data extraction
   const totalStudents = submissions.length;
   let maxScore = -1, minScore = 99999, totalScoreSum = 0;
   let maxTime = -1, minTime = 99999, totalTimeSum = 0;
   let timeGroups = { under5: 0, from5to10: 0, from10to15: 0, over15: 0 };
   let perfectScores = 0;
-  
+
   const validSubs = submissions.map(s => {
-      const sScore = s.total_score || s.score || 0;
-      const sTime = s.time_taken_seconds || 0;
-      
-      if (sScore > maxScore) maxScore = sScore;
-      if (sScore < minScore) minScore = sScore;
-      if (sScore >= 300) perfectScores++;
-      totalScoreSum += sScore;
-      
-      if (sTime > maxTime) maxTime = sTime;
-      if (sTime < minTime) minTime = sTime;
-      
-      if (sTime < 300) timeGroups.under5++;
-      else if (sTime <= 600) timeGroups.from5to10++;
-      else if (sTime <= 900) timeGroups.from10to15++;
-      else timeGroups.over15++;
-      
-      return { ...s, finalScore: sScore, finalTime: sTime };
+    const sScore = s.total_score || s.score || 0;
+    const sTime = s.time_taken_seconds || 0;
+
+    if (sScore > maxScore) maxScore = sScore;
+    if (sScore < minScore) minScore = sScore;
+    if (sScore >= 300) perfectScores++;
+    totalScoreSum += sScore;
+
+    if (sTime > maxTime) maxTime = sTime;
+    if (sTime < minTime) minTime = sTime;
+
+    if (sTime < 300) timeGroups.under5++;
+    else if (sTime <= 600) timeGroups.from5to10++;
+    else if (sTime <= 900) timeGroups.from10to15++;
+    else timeGroups.over15++;
+
+    return { ...s, finalScore: sScore, finalTime: sTime };
   }).sort((a, b) => b.finalScore - a.finalScore || a.finalTime - b.finalTime);
-  
+
   if (minScore === 99999) minScore = 0;
   if (minTime === 99999) minTime = 0;
   if (maxScore === -1) maxScore = 0;
   if (maxTime === -1) maxTime = 0;
-  
+
   const avgScore = totalStudents > 0 ? (totalScoreSum / totalStudents).toFixed(1) : 0;
   const top10Individuals = validSubs.slice(0, 10);
-  
+
   // Grades
   validSubs.forEach(s => {
-      const g = s.student_group || '';
-      const grade = getGradeFromClass(g);
-      if (grade && grades[grade]) {
-        grades[grade].count++;
-        grades[grade].sum += s.finalScore;
-      }
+    const g = s.student_group || '';
+    const grade = getGradeFromClass(g);
+    if (grade && grades[grade]) {
+      grades[grade].count++;
+      grades[grade].sum += s.finalScore;
+    }
   });
-  
+
   ['10', '11', '12'].forEach(g => {
-      if (grades[g].totalStudents === 0) grades[g].totalStudents = 1; // avoid division by zero
-      grades[g].avg = grades[g].count > 0 ? (grades[g].sum / grades[g].count).toFixed(1) : 0;
-      grades[g].rate = ((grades[g].count / grades[g].totalStudents) * 100).toFixed(1);
+    if (grades[g].totalStudents === 0) grades[g].totalStudents = 1; // avoid division by zero
+    grades[g].avg = grades[g].count > 0 ? (grades[g].sum / grades[g].count).toFixed(1) : 0;
+    grades[g].rate = ((grades[g].count / grades[g].totalStudents) * 100).toFixed(1);
   });
-  
+
   // Classes
   const participatedClassNames = stats.classData.map(c => c.name.startsWith('Lớp') ? c.name : 'Lớp ' + c.name);
   const unparticipatedClasses = ALL_CLASSES.filter(c => !participatedClassNames.includes(c));
   const classParticipation = stats.classData.map(c => {
-      const normalizedName = c.name.startsWith('Lớp') ? c.name : 'Lớp ' + c.name;
-      const cSize = getClassSize(normalizedName);
-      return {
-          name: normalizedName,
-          count: c.count,
-          avgScore: c.avgScore,
-          rate: ((c.count / cSize) * 100).toFixed(1)
-      }
+    const normalizedName = c.name.startsWith('Lớp') ? c.name : 'Lớp ' + c.name;
+    const cSize = getClassSize(normalizedName);
+    return {
+      name: normalizedName,
+      count: c.count,
+      avgScore: c.avgScore,
+      rate: ((c.count / cSize) * 100).toFixed(1)
+    }
   }).sort((a, b) => b.rate - a.rate);
-  
+
   // Distributions
   const excellentCount = stats.scoreDistribution.find(d => d.name.includes('Giỏi'))?.value || 0;
   const goodCount = stats.scoreDistribution.find(d => d.name.includes('Khá'))?.value || 0;
@@ -124,18 +124,18 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   const weakRate = totalStudents > 0 ? (weakCount / totalStudents * 100).toFixed(1) : 0;
 
   const formatTime = (secs) => `${Math.floor(secs / 60)} phút ${secs % 60} giây`;
-  
+
   const createParagraph = (text, opts = {}) => {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
       spacing: { before: 100, after: 100, line: 360 }, // 1.5 lines spacing
       indent: { firstLine: 720 }, // 1.27 cm
       children: [
-        new TextRun({ text: text, font: "Times New Roman", size: 28, ...opts }) 
+        new TextRun({ text: text, font: "Times New Roman", size: 28, ...opts })
       ]
     });
   };
-  
+
   const createHeading = (text) => {
     return new Paragraph({
       spacing: { before: 200, after: 100 },
@@ -230,8 +230,8 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
 
           // Content
           createParagraph("Căn cứ Kế hoạch tổ chức các hoạt động kỷ niệm 30 năm ngày thành lập Trường THPT Cao Bá Quát;"),
-          createParagraph(`Trường THPT Cao Bá Quát báo cáo kết quả tổ chức "${quizConfig.title || 'Cuộc Thi'}" với những số liệu cụ thể như sau:`),
-          
+          createParagraph(`Thay mặt ban tổ chức, báo cáo kết quả tổ chức "${quizConfig.title || 'Cuộc Thi'}" với những số liệu cụ thể như sau:`),
+
           createHeading("1. Tổng quan kết quả cuộc thi"),
           createParagraph(`- Tổng số học sinh tham gia dự thi: ${totalStudents} học sinh.`),
           createParagraph(`- Tổng số lớp có học sinh tham gia: ${stats.totalClasses}/${ALL_CLASSES.length} lớp.`),
@@ -242,7 +242,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
           createParagraph(`- Khối 10: Có ${grades['10'].count}/${grades['10'].totalStudents} học sinh tham gia (Tỷ lệ: ${grades['10'].rate}%).`),
           createParagraph(`- Khối 11: Có ${grades['11'].count}/${grades['11'].totalStudents} học sinh tham gia (Tỷ lệ: ${grades['11'].rate}%).`),
           createParagraph(`- Khối 12: Có ${grades['12'].count}/${grades['12'].totalStudents} học sinh tham gia (Tỷ lệ: ${grades['12'].rate}%).`),
-          
+
           createParagraph("2.2. Xếp hạng theo tỷ lệ tham gia của lớp:"),
           ...classParticipation.slice(0, 3).map((cls, idx) => createParagraph(`- Top ${idx + 1} tỷ lệ tham gia cao: ${cls.name} (Có ${cls.count} học sinh, đạt tỷ lệ ${cls.rate}%).`)),
           createParagraph(`- Có ${unparticipatedClasses.length} lớp chưa có học sinh nào tham gia dự thi.`),
@@ -259,7 +259,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
           createParagraph(`4.1. Cá nhân xuất sắc (Top 10):`),
           ...top10Individuals.map((t, idx) => createParagraph(`- Top ${idx + 1}: Thí sinh ${t.student_name} (${t.student_group}) đạt ${t.finalScore} điểm (Thời gian nộp: ${formatTime(t.finalTime)}).`)),
           createParagraph(`4.2. Tập thể xuất sắc (Top 3 lớp có điểm trung bình cao nhất):`),
-          ...stats.classData.slice(0, 3).map((cls, idx) => createParagraph(`- Tập thể Top ${idx + 1}: ${cls.name.startsWith('Lớp') ? cls.name : 'Lớp '+cls.name} đạt điểm trung bình ${cls.avgScore} điểm.`)),
+          ...stats.classData.slice(0, 3).map((cls, idx) => createParagraph(`- Tập thể Top ${idx + 1}: ${cls.name.startsWith('Lớp') ? cls.name : 'Lớp ' + cls.name} đạt điểm trung bình ${cls.avgScore} điểm.`)),
 
           createHeading("5. Thống kê thời gian làm bài"),
           createParagraph(`- Thời gian làm bài nhanh nhất: ${formatTime(minTime)}.`),

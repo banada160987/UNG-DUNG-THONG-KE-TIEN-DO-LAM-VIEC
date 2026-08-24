@@ -453,7 +453,7 @@ export default function AdminQuiz() {
       return;
     }
     try {
-      const { data: studentUsers } = await supabase.from('cbq_student_users').select('student_class').limit(10000);
+      const { data: studentUsers } = await supabase.from('cbq_students').select('student_class').limit(10000);
       const currentStats = stats || getStatsData();
       await generateWordReport(currentStats, quizConfig, submissions, studentUsers || []);
       alert("Đã xuất báo cáo Word (chuẩn Nghị định 30) thành công!");
