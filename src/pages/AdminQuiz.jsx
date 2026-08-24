@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import html2canvas from 'html2canvas';
 
 export default function AdminQuiz() {
@@ -286,9 +286,21 @@ export default function AdminQuiz() {
     setEditingQuestion(null);
   };
 
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
+  };
+
   const getStatsData = () => {
     const dateMap = {};
     const classMap = {};
+
+    let totalTime = 0;
+    let excellent = 0; // >= 250
+    let good = 0;      // 200 - 249
+    let average = 0;   // 150 - 199
+    let weak = 0;      // < 150
 
     submissions.forEach(sub => {
       const d = new Date(sub.created_at);
@@ -297,15 +309,25 @@ export default function AdminQuiz() {
         dateMap[dateStr] = { dateStr, timestamp: d.setHours(0,0,0,0), students: 0, classes: new Set() };
       }
       dateMap[dateStr].students += 1;
-      if (sub.student_group) {
-        dateMap[dateStr].classes.add(sub.student_group);
+      
+      const group = sub.student_group || 'Chưa rõ';
+      if (group && group !== 'Chưa rõ') {
+        dateMap[dateStr].classes.add(group);
       }
 
-      const group = sub.student_group || 'Chưa rõ';
       if (!classMap[group]) {
-        classMap[group] = 0;
+        classMap[group] = { count: 0, totalScore: 0 };
       }
-      classMap[group] += 1;
+      classMap[group].count += 1;
+      classMap[group].totalScore += (sub.score || 0);
+
+      const s = sub.score || 0;
+      if (s >= 250) excellent++;
+      else if (s >= 200) good++;
+      else if (s >= 150) average++;
+      else weak++;
+
+      totalTime += (sub.time_taken_seconds || 0);
     });
 
     const timeData = Object.values(dateMap).map(d => ({
@@ -316,10 +338,30 @@ export default function AdminQuiz() {
     })).sort((a, b) => a.timestamp - b.timestamp);
 
     const classData = Object.entries(classMap)
-      .map(([name, count]) => ({ name, count }))
+      .map(([name, data]) => ({ 
+        name, 
+        count: data.count,
+        avgScore: Math.round(data.totalScore / data.count)
+      }))
       .sort((a, b) => b.count - a.count);
 
-    return { timeData, classData, totalStudents: submissions.length, totalClasses: Object.keys(classMap).length };
+    const avgTime = submissions.length > 0 ? Math.floor(totalTime / submissions.length) : 0;
+    
+    const scoreDistribution = [
+      { name: 'Giỏi (≥250đ)', value: excellent, color: '#16a34a' },
+      { name: 'Khá (200-240đ)', value: good, color: '#3b82f6' },
+      { name: 'TB (150-190đ)', value: average, color: '#eab308' },
+      { name: 'Yếu (<150đ)', value: weak, color: '#ef4444' }
+    ].filter(item => item.value > 0);
+
+    return { 
+      timeData, 
+      classData, 
+      totalStudents: submissions.length, 
+      totalClasses: Object.keys(classMap).filter(k => k !== 'Chưa rõ').length,
+      avgTime,
+      scoreDistribution
+    };
   };
 
   const stats = showStatsModal ? getStatsData() : null;
@@ -456,16 +498,72 @@ export default function AdminQuiz() {
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Thời gian trích xuất: {new Date().toLocaleString('vi-VN')}</div>
               </div>
 
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 'bold' }}>Tổng Số Thí Sinh</div>
+                  <div style={{ fontSize: '28px', color: '#1e3a8a', fontWeight: 'bold' }}>{stats.totalStudents}</div>
+                </div>
+                <div style={{ background: '#f0fdf4', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#15803d', fontWeight: 'bold' }}>Số Lớp Tham Gia</div>
+                  <div style={{ fontSize: '28px', color: '#166534', fontWeight: 'bold' }}>{stats.totalClasses}</div>
+                </div>
+                <div style={{ background: '#fdf4ff', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '14px', color: '#86198f', fontWeight: 'bold' }}>Thời Gian TB</div>
+                  <div style={{ fontSize: '28px', color: '#701a75', fontWeight: 'bold' }}>{formatTime(stats.avgTime)}</div>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-              <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 'bold' }}>Tổng Số Thí Sinh</div>
-                <div style={{ fontSize: '32px', color: '#1e3a8a', fontWeight: 'bold' }}>{stats.totalStudents}</div>
+                <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ color: '#334155', margin: '0 0 10px 0', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', textAlign: 'center' }}>
+                    📈 Phân Bố Phổ Điểm
+                  </h4>
+                  <div style={{ height: '220px', width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={stats.scoreDistribution}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          labelLine={false}
+                          fontSize={11}
+                        >
+                          {stats.scoreDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ color: '#334155', margin: '0 0 10px 0', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px', textAlign: 'center' }}>
+                    🏆 Top 5 Lớp Có Điểm Cao Nhất
+                  </h4>
+                  <div style={{ height: '220px', width: '100%' }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[...stats.classData].sort((a,b)=>b.avgScore - a.avgScore).slice(0,5)} layout="vertical" margin={{ top: 5, right: 10, left: 30, bottom: 5 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                        <XAxis type="number" domain={[0, 300]} fontSize={11} stroke="#64748b" />
+                        <YAxis dataKey="name" type="category" fontSize={11} stroke="#64748b" width={70} />
+                        <RechartsTooltip 
+                          cursor={{fill: '#f1f5f9'}} 
+                          contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                          formatter={(value) => [value + ' điểm', 'Điểm trung bình']}
+                        />
+                        <Bar dataKey="avgScore" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={15} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
-              <div style={{ background: '#f0fdf4', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
-                <div style={{ fontSize: '14px', color: '#15803d', fontWeight: 'bold' }}>Số Lớp Tham Gia</div>
-                <div style={{ fontSize: '32px', color: '#166534', fontWeight: 'bold' }}>{stats.totalClasses}</div>
-              </div>
-            </div>
 
             <h4 style={{ color: '#334155', marginBottom: '10px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px' }}>
               📈 Tiến Độ Tham Gia Theo Thời Gian
