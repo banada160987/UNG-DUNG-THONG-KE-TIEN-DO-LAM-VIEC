@@ -11,7 +11,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Client thông thường (Cho tất cả user)
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
-// Client đặc quyền Admin (Chỉ dùng trên Frontend trong trường hợp đặc biệt này)
+// Client đặc quyền Admin Service Role (Bắt buộc persistSession: false để ép luôn dùng Service Key chứ không bị dính JWT Anon ở LocalStorage)
 export const supabaseAdmin = supabaseServiceKey 
-  ? createClient(supabaseUrl, supabaseServiceKey) 
+  ? createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }) 
   : null;

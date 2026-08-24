@@ -436,6 +436,42 @@ export default function AdminStudents() {
     return matchSearch && matchGrade;
   });
 
+  const handleTestDatabaseConnection = async () => {
+    const testCode = `TEST-${Date.now()}`;
+    const testPayload = {
+      student_code: testCode,
+      student_name: "Học Sinh Test CSDL",
+      student_class: "10A1",
+      grade_level: "Khối 10",
+      is_active: true
+    };
+
+    try {
+      const dbClient = supabaseAdmin || supabase;
+
+      // Test 1: SELECT
+      const { data: selData, error: selErr } = await dbClient.from('cbq_students').select('*').limit(1);
+      if (selErr) {
+        alert(`❌ LỖI TRUY VẤN CSDL (SELECT):\n${selErr.code}: ${selErr.message}\n\n👉 Nguyên nhân: Bảng 'cbq_students' chưa có hoặc sai tên cột trên Supabase!\nHãy chạy file SQL tạo bảng trong Supabase SQL Editor.`);
+        return;
+      }
+
+      // Test 2: INSERT
+      const { data: insData, error: insErr } = await dbClient.from('cbq_students').insert([testPayload]).select();
+      if (insErr) {
+        alert(`❌ LỖI GHI CSDL (INSERT):\n${insErr.code}: ${insErr.message}\n\n👉 Nguyên nhân: RLS của Supabase đang khóa quyền ghi!\nHãy mở Supabase SQL Editor và chạy câu lệnh này:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`);
+        return;
+      }
+
+      // Test 3: CLEANUP
+      await dbClient.from('cbq_students').delete().eq('student_code', testCode);
+
+      alert("🎉 KẾT NỐI VÀ GHI DỮ LIỆU THÀNH CÔNG 100% LÊN CSDL SUPABASE!");
+    } catch (err) {
+      alert("❌ Lỗi kết nối CSDL: " + err.message);
+    }
+  };
+
   return (
     <Layout title="Danh sách Học sinh Nhà trường">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -449,6 +485,10 @@ export default function AdminStudents() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={handleTestDatabaseConnection} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }} title="Kiểm tra xem CSDL Supabase có cho phép ghi dữ liệu không">
+            <CheckCircle2 size={18} /> Test Ghi CSDL
+          </button>
+
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#166534', color: 'white', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13.5px' }}>
             <FileSpreadsheet size={18} /> {uploading ? 'Đang Import...' : 'Import Từ File Excel'}
             <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} style={{ display: 'none' }} />

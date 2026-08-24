@@ -26,3 +26,4 @@ dist-ssr
 .vercel
 .env*
 supabase_schema_invitation.sql
+supabase_schema_rls_security.sql
