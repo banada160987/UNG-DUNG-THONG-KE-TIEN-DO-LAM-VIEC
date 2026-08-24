@@ -101,16 +101,15 @@ export default function PublicParkingRegister() {
 
   // Compute Unique Classes across Khối 10, Khối 11, Khối 12
   const getUniqueClassesList = () => {
-    let classes = Array.from(new Set(studentRoster.map(s => s.student_class))).filter(Boolean);
-    if (classes.length === 0) {
-      const defaults = [];
-      ['10', '11', '12'].forEach(g => {
-        for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
-      });
-      return defaults;
-    }
+    const defaults = [];
+    ['10', '11', '12'].forEach(g => {
+      for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
+    });
 
-    return classes.sort((a, b) => {
+    const fromRoster = studentRoster.map(s => s.student_class?.trim().toUpperCase()).filter(Boolean);
+    const combined = Array.from(new Set([...fromRoster, ...defaults]));
+
+    return combined.sort((a, b) => {
       const gradeA = parseInt(a.slice(0, 2)) || 10;
       const gradeB = parseInt(b.slice(0, 2)) || 10;
       if (gradeA !== gradeB) return gradeA - gradeB;
@@ -154,14 +153,22 @@ export default function PublicParkingRegister() {
   // Autocomplete Search for Class
   const filterClassSuggestions = (val) => {
     const allUnique = getUniqueClassesList();
-    const clean = (val || '').trim().toLowerCase();
+    const clean = (val || '').trim().toUpperCase();
     if (!clean) {
       setClassSuggestions(allUnique.slice(0, 15));
       setShowClassSuggestions(true);
       return;
     }
 
-    const filtered = allUnique.filter(c => c.toLowerCase().includes(clean)).slice(0, 15);
+    const filtered = allUnique.filter(c => {
+      const upper = c.toUpperCase();
+      // Prefix match for grade numbers 10, 11, 12 so 10A12 does not trigger when typing 12
+      if (clean === '10' || clean === '11' || clean === '12') {
+        return upper.startsWith(clean);
+      }
+      return upper.startsWith(clean) || upper.includes(clean);
+    }).slice(0, 15);
+
     setClassSuggestions(filtered);
     setShowClassSuggestions(filtered.length > 0);
   };

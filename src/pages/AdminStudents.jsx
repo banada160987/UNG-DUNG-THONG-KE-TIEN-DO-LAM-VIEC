@@ -36,7 +36,8 @@ export default function AdminStudents() {
       const { data, error } = await supabase
         .from('cbq_students')
         .select('*')
-        .order('student_class', { ascending: true });
+        .order('student_class', { ascending: true })
+        .limit(5000);
 
       if (!error && data && data.length > 0) {
         setStudents(data);
@@ -75,6 +76,21 @@ export default function AdminStudents() {
     return 'Khối 10';
   };
 
+  // Helper to extract value from row object matching any keyword
+  const getValByKeywords = (rowObj, keywords) => {
+    if (!rowObj || typeof rowObj !== 'object') return "";
+    const keys = Object.keys(rowObj);
+    for (const k of keys) {
+      const cleanK = String(k).trim().toLowerCase();
+      for (const kw of keywords) {
+        if (cleanK.includes(kw)) {
+          return rowObj[k];
+        }
+      }
+    }
+    return "";
+  };
+
   // Import Excel File Handler
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -89,7 +105,19 @@ export default function AdminStudents() {
         const workbook = XLSX.read(bstr, { type: 'binary' });
         const wsname = workbook.SheetNames[0];
         const ws = workbook.Sheets[wsname];
-        const rawData = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+        // 1. Smart Header Row Detection (Handles title headers at the top of Excel files)
+        const sheet2D = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        let headerRowIndex = 0;
+        for (let r = 0; r < Math.min(sheet2D.length, 12); r++) {
+          const rowStr = (sheet2D[r] || []).join(" ").toLowerCase();
+          if (rowStr.includes("tên") || rowStr.includes("lớp") || rowStr.includes("học sinh") || rowStr.includes("mã")) {
+            headerRowIndex = r;
+            break;
+          }
+        }
+
+        const rawData = XLSX.utils.sheet_to_json(ws, { range: headerRowIndex, defval: "" });
 
         if (!rawData || rawData.length === 0) {
           alert("Tệp Excel không chứa dữ liệu!");
@@ -99,15 +127,16 @@ export default function AdminStudents() {
 
         const formattedList = [];
         rawData.forEach((row, idx) => {
-          // Flexible Column Names Matching
-          const sCode = row['Mã Học Sinh'] || row['Mã HS'] || row['Mã'] || row['StudentCode'] || `HS${idx + 1}`;
-          const sName = row['Họ và Tên'] || row['Họ tên'] || row['Tên học sinh'] || row['StudentName'] || row['Full Name'];
-          const sClass = row['Lớp'] || row['Tên lớp'] || row['Lớp học'] || row['Class'];
+          const sCode = getValByKeywords(row, ['mã hs', 'mã học sinh', 'mã', 'stt', 'code', 'studentcode', 'id']);
+          const sName = getValByKeywords(row, ['họ và tên', 'họ tên', 'tên học sinh', 'tên', 'studentname', 'name', 'full name']);
+          const sClass = getValByKeywords(row, ['lớp', 'tên lớp', 'lớp học', 'class']);
 
-          if (sName && sClass) {
-            const cleanClass = String(sClass).trim().toUpperCase();
+          if (sName && String(sName).trim()) {
+            const cleanClass = sClass ? String(sClass).trim().toUpperCase() : '10A1';
+            const cleanCode = sCode && String(sCode).trim() ? String(sCode).trim().toUpperCase() : `HS${cleanClass}-${idx + 1}`;
+            
             formattedList.push({
-              student_code: String(sCode).trim().toUpperCase(),
+              student_code: cleanCode,
               student_name: String(sName).trim(),
               student_class: cleanClass,
               grade_level: getGradeLevel(cleanClass),
@@ -117,7 +146,7 @@ export default function AdminStudents() {
         });
 
         if (formattedList.length === 0) {
-          alert("Không tìm thấy các cột tương ứng: 'Mã Học Sinh', 'Họ và Tên', 'Lớp' trong file Excel!");
+          alert("Không tìm thấy dữ liệu cột 'Họ và Tên' và 'Lớp' trong file Excel!");
           setUploading(false);
           return;
         }
@@ -126,26 +155,20 @@ export default function AdminStudents() {
         const existingCodesSet = new Set(students.map(s => s.student_code));
         let newCount = 0;
         let updateCount = 0;
-        const updatedCodesList = [];
 
         formattedList.forEach(item => {
           if (existingCodesSet.has(item.student_code)) {
             updateCount++;
-            if (updatedCodesList.length < 5) {
-              updatedCodesList.push(item.student_code);
-            }
           } else {
             newCount++;
           }
         });
 
-        // Merge with current state & save to LocalStorage immediately (student_code is primary unique key)
+        // Merge with current state & save to LocalStorage immediately
         setStudents(prev => {
           const map = new Map();
-          // Existing items first
           prev.forEach(item => map.set(item.student_code, item));
           
-          // Overwrite with new file items while preserving existing database ID if present
           formattedList.forEach(newItem => {
             const existing = map.get(newItem.student_code);
             if (existing) {
@@ -166,7 +189,7 @@ export default function AdminStudents() {
           return newList;
         });
 
-        // Try upserting to Supabase in background (onConflict: student_code)
+        // Try upserting to Supabase in background
         try {
           await supabase
             .from('cbq_students')
