@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LabelList } from 'recharts';
 import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
@@ -404,27 +405,39 @@ export default function AdminQuiz() {
       return;
     }
 
-    let csv = "\uFEFF"; // UTF-8 BOM
-    csv += "STT,Họ và Tên,Lớp / Niên Khóa,Số Điện Thoại,Điểm Trắc Nghiệm,Điểm Tự Luận,Tổng Điểm,Thời Gian (Giây),Bài Làm Tự Luận,Thời Gian Nộp\n";
+    const data = submissions.map((s, idx) => ({
+      'STT': idx + 1,
+      'Họ và Tên': s.student_name || '',
+      'Lớp / Niên Khóa': s.student_group || '',
+      'Số Điện Thoại': s.phone || '',
+      'Điểm Trắc Nghiệm': s.score || 0,
+      'Điểm Tự Luận': s.essay_score || 0,
+      'Tổng Điểm': s.total_score || s.score,
+      'Thời Gian Làm Bài (Giây)': s.time_taken_seconds || 0,
+      'Bài Làm Dự Đoán': s.essay_answer || '',
+      'Thời Gian Nộp': s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : ''
+    }));
 
-    submissions.forEach((s, idx) => {
-      const cleanName = `"${(s.student_name || '').replace(/"/g, '""')}"`;
-      const cleanGroup = `"${(s.student_group || '').replace(/"/g, '""')}"`;
-      const cleanPhone = `"${(s.phone || '').replace(/"/g, '""')}"`;
-      const cleanEssay = `"${(s.essay_answer || '').replace(/"/g, '""')}"`;
-      const dateStr = s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : '';
+    const worksheet = XLSX.utils.json_to_sheet(data);
 
-      csv += `${idx + 1},${cleanName},${cleanGroup},${cleanPhone},${s.score || 0},${s.essay_score || 0},${s.total_score || s.score},${s.time_taken_seconds || 0},${cleanEssay},${dateStr}\n`;
-    });
+    // Căn chỉnh độ rộng các cột cho đẹp
+    worksheet['!cols'] = [
+      { wch: 5 },  // STT
+      { wch: 25 }, // Họ tên
+      { wch: 15 }, // Lớp
+      { wch: 15 }, // SĐT
+      { wch: 18 }, // Điểm TN
+      { wch: 15 }, // Điểm TL
+      { wch: 15 }, // Tổng
+      { wch: 25 }, // Thời gian
+      { wch: 45 }, // Bài làm tự luận
+      { wch: 22 }, // Thời gian nộp
+    ];
 
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Thống Kê Thí Sinh");
+
+    XLSX.writeFile(workbook, `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`);
   };
 
   return (
