@@ -16,6 +16,7 @@
     "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.112.0",
     "date-fns": "^4.4.0",
+    "docx": "^9.7.1",
     "html2canvas": "^1.4.1",
     "html5-qrcode": "^2.3.8",
     "lucide-react": "^1.28.0",

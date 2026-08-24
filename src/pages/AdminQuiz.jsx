@@ -5,6 +5,7 @@ import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LabelList } from 'recharts';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import { generateWordReport } from '../lib/wordExport';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
@@ -405,7 +406,13 @@ export default function AdminQuiz() {
       return;
     }
 
-    const data = submissions.map((s, idx) => ({
+    const sortedSubmissions = [...submissions].sort((a, b) => {
+      const scoreA = a.total_score || a.score || 0;
+      const scoreB = b.total_score || b.score || 0;
+      return scoreB - scoreA;
+    });
+
+    const data = sortedSubmissions.map((s, idx) => ({
       'STT': idx + 1,
       'Họ và Tên': s.student_name || '',
       'Lớp / Niên Khóa': s.student_group || '',
@@ -438,6 +445,21 @@ export default function AdminQuiz() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Thống Kê Thí Sinh");
 
     XLSX.writeFile(workbook, `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`);
+  };
+
+  const exportToWord = async () => {
+    if (submissions.length === 0) {
+      alert("Chưa có dữ liệu để xuất báo cáo!");
+      return;
+    }
+    try {
+      const currentStats = stats || getStatsData();
+      await generateWordReport(currentStats, quizConfig);
+      alert("Đã xuất báo cáo Word (chuẩn Nghị định 30) thành công!");
+    } catch (err) {
+      console.error(err);
+      alert("Có lỗi khi tạo báo cáo Word: " + err.message);
+    }
   };
 
   return (
@@ -484,7 +506,10 @@ export default function AdminQuiz() {
             <BarChart2 size={18} /> Thống Kê
           </button>
           <button onClick={exportToExcel} style={styles.exportBtn}>
-            <Download size={18} /> Xuất Excel / CSV (Thí Sinh)
+            <Download size={18} /> Xuất Excel
+          </button>
+          <button onClick={exportToWord} style={{ ...styles.exportBtn, backgroundColor: '#0ea5e9' }}>
+            <Download size={18} /> Báo Cáo Word
           </button>
         </div>
       </div>
