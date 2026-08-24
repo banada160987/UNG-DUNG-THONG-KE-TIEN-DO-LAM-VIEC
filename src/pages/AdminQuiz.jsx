@@ -1,13 +1,17 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock } from 'lucide-react';
+import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
   const [submissions, setSubmissions] = useState([]);
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Stats Modal
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   // Question Form Modal
   const [showQuestionModal, setShowQuestionModal] = useState(false);
@@ -272,6 +276,44 @@ export default function AdminQuiz() {
     setEditingQuestion(null);
   };
 
+  const getStatsData = () => {
+    const dateMap = {};
+    const classMap = {};
+
+    submissions.forEach(sub => {
+      const d = new Date(sub.created_at);
+      const dateStr = d.toLocaleDateString('vi-VN'); // DD/MM/YYYY
+      if (!dateMap[dateStr]) {
+        dateMap[dateStr] = { dateStr, timestamp: d.setHours(0,0,0,0), students: 0, classes: new Set() };
+      }
+      dateMap[dateStr].students += 1;
+      if (sub.student_group) {
+        dateMap[dateStr].classes.add(sub.student_group);
+      }
+
+      const group = sub.student_group || 'Chưa rõ';
+      if (!classMap[group]) {
+        classMap[group] = 0;
+      }
+      classMap[group] += 1;
+    });
+
+    const timeData = Object.values(dateMap).map(d => ({
+      date: d.dateStr,
+      timestamp: d.timestamp,
+      students: d.students,
+      classes: d.classes.size
+    })).sort((a, b) => a.timestamp - b.timestamp);
+
+    const classData = Object.entries(classMap)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count);
+
+    return { timeData, classData, totalStudents: submissions.length, totalClasses: Object.keys(classMap).length };
+  };
+
+  const stats = showStatsModal ? getStatsData() : null;
+
   const exportToExcel = () => {
     if (submissions.length === 0) {
       alert("Chưa có dữ liệu bài nộp nào để xuất!");
@@ -341,11 +383,78 @@ export default function AdminQuiz() {
               </button>
             </div>
           )}
+          <button onClick={() => setShowStatsModal(true)} style={{ ...styles.exportBtn, backgroundColor: '#3b82f6' }}>
+            <BarChart2 size={18} /> Thống Kê
+          </button>
           <button onClick={exportToExcel} style={styles.exportBtn}>
             <Download size={18} /> Xuất Excel / CSV (Thí Sinh)
           </button>
         </div>
       </div>
+
+      {/* STATS MODAL */}
+      {showStatsModal && stats && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalContent, maxWidth: '900px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <BarChart2 size={24} /> Thống Kê Chi Tiết Cuộc Thi
+              </h3>
+              <button onClick={() => setShowStatsModal(false)} style={styles.cancelBtn}>Đóng</button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+              <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 'bold' }}>Tổng Số Thí Sinh</div>
+                <div style={{ fontSize: '32px', color: '#1e3a8a', fontWeight: 'bold' }}>{stats.totalStudents}</div>
+              </div>
+              <div style={{ background: '#f0fdf4', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
+                <div style={{ fontSize: '14px', color: '#15803d', fontWeight: 'bold' }}>Số Lớp Tham Gia</div>
+                <div style={{ fontSize: '32px', color: '#166534', fontWeight: 'bold' }}>{stats.totalClasses}</div>
+              </div>
+            </div>
+
+            <h4 style={{ color: '#334155', marginBottom: '10px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px' }}>
+              📈 Tiến Độ Tham Gia Theo Thời Gian
+            </h4>
+            <div style={{ height: '300px', width: '100%', marginBottom: '30px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={stats.timeData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis dataKey="date" stroke="#64748b" fontSize={12} />
+                  <YAxis yAxisId="left" stroke="#3b82f6" fontSize={12} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={12} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Line yAxisId="left" type="monotone" dataKey="students" name="Số học sinh" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
+                  <Line yAxisId="right" type="monotone" dataKey="classes" name="Số lớp tham gia" stroke="#10b981" strokeWidth={3} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <h4 style={{ color: '#334155', marginBottom: '10px', borderBottom: '2px solid #e2e8f0', paddingBottom: '8px' }}>
+              📊 Số Lượng Thí Sinh Theo Lớp
+            </h4>
+            <div style={{ height: `${Math.max(300, stats.classData.length * 40)}px`, width: '100%' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={stats.classData} layout="vertical" margin={{ top: 5, right: 30, left: 60, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
+                  <XAxis type="number" stroke="#64748b" fontSize={12} />
+                  <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={100} />
+                  <RechartsTooltip 
+                    cursor={{fill: 'transparent'}}
+                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Bar dataKey="count" name="Số lượng học sinh" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QUESTION MODAL */}
       {showQuestionModal && (
