@@ -1,6 +1,22 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, Table, TableRow, TableCell, WidthType, BorderStyle } from "docx";
 
 export const generateWordReport = async (stats, quizConfig) => {
+  const ALL_CLASSES = [
+    'Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05', 'Lớp 12A06', 'Lớp 12A07', 'Lớp 12A08', 'Lớp 12A09', 'Lớp 12A10', 'Lớp 12A11',
+    'Lớp 11A01', 'Lớp 11A02', 'Lớp 11A03', 'Lớp 11A04', 'Lớp 11A05', 'Lớp 11A06', 'Lớp 11A07', 'Lớp 11A08', 'Lớp 11A09', 'Lớp 11A10',
+    'Lớp 10A01', 'Lớp 10A02', 'Lớp 10A03', 'Lớp 10A04', 'Lớp 10A05', 'Lớp 10A06', 'Lớp 10A07', 'Lớp 10A08', 'Lớp 10A09', 'Lớp 10A10', 'Lớp 10A11', 'Lớp 10A12', 'Lớp 10A13', 'Lớp 10A14', 'Lớp 10A15'
+  ];
+
+  const participatedClassNames = stats.classData.map(c => c.name.startsWith('Lớp') ? c.name : 'Lớp ' + c.name);
+  const unparticipatedClasses = ALL_CLASSES.filter(c => !participatedClassNames.includes(c));
+
+  // Get score stats for evaluation
+  const excellentCount = stats.scoreDistribution.find(d => d.name.includes('Giỏi'))?.value || 0;
+  const goodCount = stats.scoreDistribution.find(d => d.name.includes('Khá'))?.value || 0;
+  const weakCount = stats.scoreDistribution.find(d => d.name.includes('Yếu'))?.value || 0;
+  const goodRate = stats.totalStudents > 0 ? ((excellentCount + goodCount) / stats.totalStudents * 100).toFixed(1) : 0;
+  const weakRate = stats.totalStudents > 0 ? (weakCount / stats.totalStudents * 100).toFixed(1) : 0;
+
   const createParagraph = (text) => {
     return new Paragraph({
       alignment: AlignmentType.JUSTIFIED,
@@ -46,19 +62,19 @@ export const generateWordReport = async (stats, quizConfig) => {
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ text: "SỞ GIÁO DỤC VÀ ĐÀO TẠO", font: "Times New Roman", size: 26 }), 
+                          new TextRun({ text: "TRƯỜNG THPT CAO BÁ QUÁT", font: "Times New Roman", size: 26 }), 
                         ],
                       }),
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ text: "TRƯỜNG THPT CAO BÁ QUÁT", font: "Times New Roman", size: 26, bold: true }),
+                          new TextRun({ text: "BAN TỔ CHỨC CUỘC THI", font: "Times New Roman", size: 26, bold: true }),
                         ],
                       }),
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ text: "Số: ..... /BC-CBQ", font: "Times New Roman", size: 26 }),
+                          new TextRun({ text: "Số: ..... /BC-BTC", font: "Times New Roman", size: 26 }),
                         ],
                       }),
                       new Paragraph({
@@ -148,12 +164,36 @@ export const generateWordReport = async (stats, quizConfig) => {
               new TextRun({ text: "3. Thống kê theo lớp (Top 5 lớp tham gia tích cực nhất)", font: "Times New Roman", size: 28, bold: true }),
             ],
           }),
-          ...stats.classData.slice(0, 5).map((cls, idx) => createParagraph(`- Top ${idx + 1}: Lớp ${cls.name} có ${cls.count} học sinh tham gia, với điểm trung bình đạt ${cls.avgScore} điểm.`)),
+          ...stats.classData.slice(0, 5).map((cls, idx) => createParagraph(`- Top ${idx + 1}: ${cls.name.startsWith('Lớp') ? cls.name : 'Lớp ' + cls.name} có ${cls.count} học sinh tham gia, với điểm trung bình đạt ${cls.avgScore} điểm.`)),
+
+          new Paragraph({
+            spacing: { before: 200, after: 100 },
+            children: [
+              new TextRun({ text: "4. Thống kê các lớp chưa tham gia", font: "Times New Roman", size: 28, bold: true }),
+            ],
+          }),
+          createParagraph(`Tính đến thời điểm xuất báo cáo, có ${unparticipatedClasses.length} lớp chưa có học sinh nào tham gia dự thi.`),
+          ...(unparticipatedClasses.length > 0 
+              ? [createParagraph(`- Chi tiết các lớp chưa tham gia: ${unparticipatedClasses.join(', ')}.`)] 
+              : [createParagraph(`- Tất cả 100% các lớp trong toàn trường đã có học sinh tham gia.`)]),
+
+          new Paragraph({
+            spacing: { before: 200, after: 100 },
+            children: [
+              new TextRun({ text: "5. Đánh giá chất lượng các lớp tham gia", font: "Times New Roman", size: 28, bold: true }),
+            ],
+          }),
+          createParagraph("- Ưu điểm: " + (goodRate > 50 
+            ? `Chất lượng làm bài của học sinh rất tốt. Tỷ lệ học sinh đạt điểm Khá, Giỏi chiếm ${goodRate}%. Điều này cho thấy các lớp đã có sự tìm hiểu, ôn tập kỹ lưỡng về truyền thống nhà trường.`
+            : `Đa số học sinh đã có tinh thần tham gia nhiệt tình, bám sát các nội dung tìm hiểu về truyền thống 30 năm nhà trường.`)),
+          createParagraph("- Nhược điểm: " + (weakRate > 20 
+            ? `Vẫn còn một bộ phận học sinh (chiếm ${weakRate}%) đạt điểm dưới trung bình (Yếu). Các giáo viên chủ nhiệm cần nhắc nhở và đôn đốc học sinh nghiên cứu kỹ hơn các tài liệu trước khi thi.`
+            : `Tuy nhiên, một vài lớp chưa có tỷ lệ học sinh đạt điểm tối đa cao, cần đẩy mạnh hơn nữa phong trào thi đua chiều sâu.`)),
 
           new Paragraph({
             spacing: { before: 200, after: 400 },
             children: [
-              new TextRun({ text: "4. Đánh giá chung", font: "Times New Roman", size: 28, bold: true }),
+              new TextRun({ text: "6. Đánh giá chung", font: "Times New Roman", size: 28, bold: true }),
             ],
           }),
           createParagraph("Cuộc thi đã diễn ra nghiêm túc, an toàn và thu hút được đông đảo học sinh tham gia, tạo phong trào thi đua sôi nổi hướng tới kỷ niệm 30 năm thành lập trường. Hệ thống ghi nhận kết quả chính xác, minh bạch, phản ánh đúng năng lực và tinh thần tìm hiểu truyền thống nhà trường của các em học sinh."),
@@ -194,13 +234,19 @@ export const generateWordReport = async (stats, quizConfig) => {
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ text: "HIỆU TRƯỞNG", font: "Times New Roman", size: 26, bold: true }),
+                          new TextRun({ text: "TM. BAN TỔ CHỨC", font: "Times New Roman", size: 26, bold: true }),
                         ],
                       }),
                       new Paragraph({
                         alignment: AlignmentType.CENTER,
                         children: [
-                          new TextRun({ text: "(Ký, ghi rõ họ tên và đóng dấu)", font: "Times New Roman", size: 24, italics: true }),
+                          new TextRun({ text: "TRƯỞNG BAN", font: "Times New Roman", size: 26, bold: true }),
+                        ],
+                      }),
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                          new TextRun({ text: "(Ký, ghi rõ họ tên)", font: "Times New Roman", size: 24, italics: true }),
                         ],
                       }),
                     ],
