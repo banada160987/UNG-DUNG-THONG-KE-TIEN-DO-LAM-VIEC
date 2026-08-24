@@ -59,8 +59,21 @@ export default function AdminParking() {
       }
 
       if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
-        setPackages(pkgRes.data);
-        localStorage.setItem('cbq_parking_packages', JSON.stringify(pkgRes.data));
+        const local = localStorage.getItem('cbq_parking_packages');
+        if (local) {
+          try {
+            const parsedLocal = JSON.parse(local);
+            const mergedMap = new Map();
+            pkgRes.data.forEach(p => mergedMap.set(p.package_key || String(p.id), p));
+            parsedLocal.forEach(p => mergedMap.set(p.package_key || String(p.id), { ...mergedMap.get(p.package_key || String(p.id)), ...p }));
+            const mergedList = Array.from(mergedMap.values());
+            setPackages(mergedList);
+          } catch {
+            setPackages(pkgRes.data);
+          }
+        } else {
+          setPackages(pkgRes.data);
+        }
       } else {
         const local = localStorage.getItem('cbq_parking_packages');
         if (local) {
@@ -166,25 +179,15 @@ export default function AdminParking() {
       localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
       try {
-        if (editingPkgId) {
-          const { data: updateData, error: updateError } = await supabase
-            .from('cbq_parking_packages')
-            .update(payload)
-            .eq('id', editingPkgId)
-            .select();
+        const dbPayload = (editingPkgId && !String(editingPkgId).startsWith('p') && !String(editingPkgId).startsWith('pkg_')) 
+          ? { id: editingPkgId, ...payload } 
+          : payload;
 
-          if (updateError || !updateData || updateData.length === 0) {
-            await supabase
-              .from('cbq_parking_packages')
-              .update(payload)
-              .eq('package_key', pkgKey)
-              .select();
-          }
-        } else {
-          await supabase.from('cbq_parking_packages').insert([payload]);
-        }
+        await supabase
+          .from('cbq_parking_packages')
+          .upsert([dbPayload], { onConflict: 'package_key' });
       } catch (dbErr) {
-        console.warn("DB Upsert Fallback:", dbErr);
+        console.warn("Lỗi lưu DB gói vé:", dbErr);
       }
 
       alert("🎉 ĐÃ LƯU CẤU HÌNH GÓI VÉ THÀNH CÔNG!");
