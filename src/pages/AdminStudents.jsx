@@ -33,15 +33,38 @@ export default function AdminStudents() {
   async function fetchStudents() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('cbq_students')
-        .select('*')
-        .order('student_class', { ascending: true })
-        .limit(5000);
+      let allStudents = [];
+      let from = 0;
+      const step = 1000;
+      let fetchMore = true;
 
-      if (!error && data && data.length > 0) {
-        setStudents(data);
-        localStorage.setItem('cbq_students_data', JSON.stringify(data));
+      while (fetchMore) {
+        const { data, error } = await supabase
+          .from('cbq_students')
+          .select('*')
+          .order('student_class', { ascending: true })
+          .range(from, from + step - 1);
+
+        if (error) {
+          console.warn("Lỗi khi tải dữ liệu từ Supabase:", error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allStudents = [...allStudents, ...data];
+          from += step;
+          // Nếu số lượng trả về nhỏ hơn số lượng yêu cầu, nghĩa là đã hết dữ liệu
+          if (data.length < step) {
+            fetchMore = false;
+          }
+        } else {
+          fetchMore = false;
+        }
+      }
+
+      if (allStudents.length > 0) {
+        setStudents(allStudents);
+        localStorage.setItem('cbq_students_data', JSON.stringify(allStudents));
       } else {
         const localData = localStorage.getItem('cbq_students_data');
         if (localData) {
