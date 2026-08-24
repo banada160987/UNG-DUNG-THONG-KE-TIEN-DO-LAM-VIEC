@@ -189,23 +189,38 @@ export default function AdminStudents() {
           return newList;
         });
 
-        // Try upserting to Supabase in background
-        try {
-          await supabase
+        // Batch Upsert to Supabase in chunks of 100 rows to avoid HTTP payload limits
+        let dbSuccessCount = 0;
+        let dbErrorMsg = null;
+        const BATCH_SIZE = 100;
+
+        for (let i = 0; i < formattedList.length; i += BATCH_SIZE) {
+          const chunk = formattedList.slice(i, i + BATCH_SIZE);
+          const { error: batchErr } = await supabase
             .from('cbq_students')
-            .upsert(formattedList, { onConflict: 'student_code' });
-        } catch (dbErr) {
-          console.warn("Supabase upsert warn:", dbErr);
+            .upsert(chunk, { onConflict: 'student_code' });
+
+          if (batchErr) {
+            console.error(`Lỗi upsert CSDL lô ${Math.floor(i / BATCH_SIZE) + 1}:`, batchErr);
+            dbErrorMsg = batchErr.message;
+          } else {
+            dbSuccessCount += chunk.length;
+          }
         }
 
+        // Re-fetch from Supabase to synchronize full list immediately
+        await fetchStudents();
+
         let reportMsg = `🎉 IMPORT DỮ LIỆU HỌC SINH THÀNH CÔNG!\n\n`;
-        reportMsg += `🔑 Khóa chính duy nhất: Mã Học Sinh (Student Code)\n\n`;
+        reportMsg += `📊 Tổng số học sinh từ tệp: ${formattedList.length} học sinh\n`;
         reportMsg += `✨ Thêm mới: ${newCount} học sinh\n`;
         if (updateCount > 0) {
-          reportMsg += `🔄 Phát hiện trùng Mã HS & ĐÃ CẬP NHẬT THEO THÔNG TIN MỚI: ${updateCount} học sinh\n`;
-          reportMsg += `   (Ví dụ các Mã HS được cập nhật thông tin mới: ${updatedCodesList.join(', ')}${updateCount > 5 ? '...' : ''})\n`;
+          reportMsg += `🔄 Cập nhật thông tin mới (trùng Mã HS): ${updateCount} học sinh\n`;
         }
-        reportMsg += `\n👉 Đảm bảo: Thông tin tên, lớp, khối mới nhất từ file đã được cập nhật chuẩn xác theo Mã học sinh và KHÔNG bị trùng lặp!`;
+        reportMsg += `\n💾 ĐÃ GHI VÀO CSDL SUPABASE: ${dbSuccessCount}/${formattedList.length} bản ghi\n`;
+        if (dbErrorMsg) {
+          reportMsg += `\n⚠️ Cảnh báo CSDL Supabase: ${dbErrorMsg}\n(Hãy đảm bảo đã chạy script SQL cấp quyền RLS trên Supabase SQL Editor!)`;
+        }
 
         alert(reportMsg);
       } catch (err) {
