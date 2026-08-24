@@ -11,6 +11,15 @@ export default function AdminQuiz() {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Pagination for submissions
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
+  const totalPages = pageSize === 'all' ? 1 : Math.ceil(submissions.length / pageSize);
+  const currentSubmissions = pageSize === 'all' 
+    ? submissions 
+    : submissions.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
   // Stats Modal
   const [showStatsModal, setShowStatsModal] = useState(false);
 
@@ -570,6 +579,45 @@ export default function AdminQuiz() {
       {/* TAB 1: SUBMISSIONS TABLE */}
       {activeTab === 'submissions' && (
         <div style={{ background: '#ffffff', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+            <div style={{ fontSize: '13.5px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              Hiển thị: 
+              <select 
+                value={pageSize} 
+                onChange={(e) => { setPageSize(e.target.value === 'all' ? 'all' : Number(e.target.value)); setCurrentPage(1); }}
+                style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+                <option value="all">Tất cả</option>
+              </select>
+              bản ghi / trang
+            </div>
+            
+            {pageSize !== 'all' && totalPages > 1 && (
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f1f5f9' : '#ffffff', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#94a3b8' : '#334155', fontSize: '13px' }}
+                >
+                  Trước
+                </button>
+                <span style={{ fontSize: '13.5px', color: '#334155', fontWeight: 'bold' }}>
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  style={{ padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: currentPage === totalPages ? '#f1f5f9' : '#ffffff', cursor: currentPage === totalPages ? 'not-allowed' : 'pointer', color: currentPage === totalPages ? '#94a3b8' : '#334155', fontSize: '13px' }}
+                >
+                  Sau
+                </button>
+              </div>
+            )}
+          </div>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #cbd5e1', textTransform: 'uppercase', fontSize: '12px', color: '#475569' }}>
@@ -582,7 +630,7 @@ export default function AdminQuiz() {
               </tr>
             </thead>
             <tbody>
-              {submissions.map((sub, idx) => (
+              {currentSubmissions.map((sub, idx) => (
                 <tr key={sub.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                   <td style={{ padding: '12px' }}>
                     <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{sub.student_name}</div>
