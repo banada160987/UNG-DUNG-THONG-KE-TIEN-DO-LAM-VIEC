@@ -654,9 +654,11 @@ export default function PublicQuiz() {
               <div><strong>🔒 Quy định an toàn:</strong> Mỗi Học Sinh (Mã HS) chỉ thi 01 LẦN DUY NHẤT</div>
             </div>
 
+            {/* Tạm ẩn phần cơ cấu giải thưởng theo yêu cầu
             <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#166534', fontWeight: 'bold' }}>
               🎁 Cơ cấu Giải Thưởng: 01 Giải Đặc Biệt • 01 Giải Nhất • 02 Giải Nhì • 03 Giải Ba • 10 Giải Khuyến Khích & 01 Giải Tập Thể Đông Thí Sinh Nhất.
             </div>
+            */}
           </div>
 
           <form onSubmit={handleStartQuiz} style={{ maxWidth: '440px', margin: '0 auto' }}>
