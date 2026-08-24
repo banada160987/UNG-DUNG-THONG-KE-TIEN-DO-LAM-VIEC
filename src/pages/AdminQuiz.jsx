@@ -453,9 +453,21 @@ export default function AdminQuiz() {
       return;
     }
     try {
-      const { data: studentUsers } = await supabase.from('cbq_students').select('student_class').limit(10000);
+      let allStudents = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase.from('cbq_students').select('student_class').range(from, from + 999);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allStudents = allStudents.concat(data);
+          from += 1000;
+        } else {
+          hasMore = false;
+        }
+      }
       const currentStats = stats || getStatsData();
-      await generateWordReport(currentStats, quizConfig, submissions, studentUsers || []);
+      await generateWordReport(currentStats, quizConfig, submissions, allStudents);
       alert("Đã xuất báo cáo Word (chuẩn Nghị định 30) thành công!");
     } catch (err) {
       console.error(err);
