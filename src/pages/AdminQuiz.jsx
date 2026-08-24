@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import html2canvas from 'html2canvas';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
@@ -314,6 +315,38 @@ export default function AdminQuiz() {
 
   const stats = showStatsModal ? getStatsData() : null;
 
+  const handleExportStatsImage = async () => {
+    const el = document.getElementById('stats-report-container');
+    if (!el) return;
+    try {
+      const modalContent = el.parentElement;
+      const originalMaxHeight = modalContent.style.maxHeight;
+      const originalOverflow = modalContent.style.overflowY;
+      
+      // Bỏ giới hạn chiều cao để chụp toàn bộ nội dung mà không bị thanh cuộn che
+      modalContent.style.maxHeight = 'none';
+      modalContent.style.overflowY = 'visible';
+      
+      const canvas = await html2canvas(el, { 
+        scale: 2, 
+        backgroundColor: '#ffffff', 
+        logging: false,
+        useCORS: true 
+      });
+      
+      modalContent.style.maxHeight = originalMaxHeight;
+      modalContent.style.overflowY = originalOverflow;
+      
+      const link = document.createElement('a');
+      link.download = `Bao_Cao_Thong_Ke_${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error(err);
+      alert('Có lỗi khi xuất báo cáo hình ảnh!');
+    }
+  };
+
   const exportToExcel = () => {
     if (submissions.length === 0) {
       alert("Chưa có dữ liệu bài nộp nào để xuất!");
@@ -398,12 +431,23 @@ export default function AdminQuiz() {
           <div style={{ ...styles.modalContent, maxWidth: '900px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h3 style={{ margin: 0, color: '#1e3a8a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <BarChart2 size={24} /> Thống Kê Chi Tiết Cuộc Thi
+                <BarChart2 size={24} /> Báo Cáo Thống Kê
               </h3>
-              <button onClick={() => setShowStatsModal(false)} style={styles.cancelBtn}>Đóng</button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={handleExportStatsImage} style={{ ...styles.exportBtn, backgroundColor: '#4f46e5', padding: '8px 16px' }}>
+                  📸 Xuất Ảnh Báo Cáo
+                </button>
+                <button onClick={() => setShowStatsModal(false)} style={styles.cancelBtn}>Đóng</button>
+              </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+            <div id="stats-report-container" style={{ padding: '15px', backgroundColor: '#ffffff', borderRadius: '8px' }}>
+              <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                <h2 style={{ margin: 0, color: '#be123c', fontSize: '20px', textTransform: 'uppercase' }}>Báo Cáo Thống Kê Cuộc Thi</h2>
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '4px' }}>Thời gian trích xuất: {new Date().toLocaleString('vi-VN')}</div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
               <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '10px', textAlign: 'center' }}>
                 <div style={{ fontSize: '14px', color: '#1d4ed8', fontWeight: 'bold' }}>Tổng Số Thí Sinh</div>
                 <div style={{ fontSize: '32px', color: '#1e3a8a', fontWeight: 'bold' }}>{stats.totalStudents}</div>
@@ -451,6 +495,7 @@ export default function AdminQuiz() {
                   <Bar dataKey="count" name="Số lượng học sinh" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
             </div>
           </div>
         </div>
