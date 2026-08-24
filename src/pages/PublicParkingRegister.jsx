@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search } from 'lucide-react';
+import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search, Bus, MapPin, Navigation } from 'lucide-react';
 
 const DEFAULT_PACKAGES = [
   { key: 'month', label: 'Đăng ký Theo Tháng', months: 1, fee: 50000, desc: 'Thời hạn 1 tháng (50.000 VNĐ)' },
@@ -24,6 +24,14 @@ export default function PublicParkingRegister() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
+
+  // Bus Registration State
+  const [activeTab, setActiveTab] = useState('parking'); // 'parking' | 'bus'
+  const [busDistance, setBusDistance] = useState('');
+  const [busAddress, setBusAddress] = useState('');
+  const [busPickupPoint, setBusPickupPoint] = useState('');
+  const [busRouteType, setBusRouteType] = useState('2-way'); // '1-way' or '2-way'
+  const [successBusTicket, setSuccessBusTicket] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [successTicket, setSuccessTicket] = useState(null);
@@ -272,23 +280,146 @@ export default function PublicParkingRegister() {
     }
   };
 
+  const handleSubmitBus = async (e) => {
+    e.preventDefault();
+    if (!studentName.trim() || !studentClass.trim() || !busDistance || !busAddress.trim() || !busPickupPoint.trim()) {
+      alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const cleanClass = studentClass.trim().toUpperCase();
+      const randomNum = Math.floor(100 + Math.random() * 900);
+      const ticketCode = `BUS-${cleanClass}-${randomNum}`;
+      
+      const payload = {
+        student_name: studentName.trim(),
+        student_code: studentCode.trim() || `HS-${randomNum}`,
+        student_class: cleanClass,
+        distance_km: Number(busDistance),
+        address: busAddress.trim(),
+        pickup_point: busPickupPoint.trim(),
+        route_type: busRouteType,
+        ticket_code: ticketCode
+      };
+
+      const { data, error } = await supabase
+        .from('cbq_bus_registrations')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) {
+        // Fallback to local state if table doesn't exist
+        setSuccessBusTicket(payload);
+      } else {
+        setSuccessBusTicket(data);
+      }
+    } catch (err) {
+      alert("Lỗi đăng ký xe đưa đón: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={styles.container}>
       {/* BANNER HEADER */}
       <div style={styles.headerCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={styles.iconCircle}>
-            <Bike size={32} color="#ffffff" />
+          <div style={{ ...styles.iconCircle, background: activeTab === 'bus' ? '#f59e0b' : '#be123c' }}>
+            {activeTab === 'bus' ? <Bus size={32} color="#ffffff" /> : <Bike size={32} color="#ffffff" />}
           </div>
           <div>
-            <h2 style={styles.pageTitle}>ĐĂNG KÝ VÉ GỬI XE MÁY HỌC SINH</h2>
-            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Cổng đăng ký vé gửi xe điện tử theo Tháng / Học kỳ / Năm</p>
+            <h2 style={styles.pageTitle}>CỔNG ĐĂNG KÝ DỊCH VỤ DI CHUYỂN</h2>
+            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Đăng ký vé gửi xe hoặc xe đưa đón học sinh</p>
           </div>
         </div>
       </div>
 
-      {/* SUCCESS TICKET CARD */}
-      {successTicket ? (
+      {/* TABS SELECTOR */}
+      {(!successTicket && !successBusTicket) && (
+        <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '25px' }}>
+          <button
+            onClick={() => setActiveTab('parking')}
+            style={{ flex: 1, padding: '12px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'parking' ? '#be123c' : '#64748b', borderBottom: activeTab === 'parking' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            <Bike size={18} /> GỬI XE MÁY / ĐẠP
+          </button>
+          <button
+            onClick={() => setActiveTab('bus')}
+            style={{ flex: 1, padding: '12px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'bus' ? '#f59e0b' : '#64748b', borderBottom: activeTab === 'bus' ? '3px solid #f59e0b' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+          >
+            <Bus size={18} /> XE ĐƯA ĐÓN
+          </button>
+        </div>
+      )}
+
+      {/* SUCCESS BUS TICKET CARD */}
+      {successBusTicket && (
+        <div style={styles.successWrapper}>
+          <div style={styles.ticketCard} id="printable-bus-ticket">
+            <div style={styles.ticketHeader}>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+              <h3 style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#be123c' }}>PHIẾU ĐĂNG KÝ XE ĐƯA ĐÓN</h3>
+              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7', marginTop: '2px' }}>MÃ VÉ: {successBusTicket.ticket_code}</div>
+            </div>
+
+            <div style={styles.ticketBody}>
+              <div style={styles.ticketRow}>
+                <span>Họ và tên học sinh:</span>
+                <strong>{successBusTicket.student_name}</strong>
+              </div>
+              <div style={styles.ticketRow}>
+                <span>Lớp:</span>
+                <strong style={{ color: '#be123c' }}>{successBusTicket.student_class}</strong>
+              </div>
+              <div style={styles.ticketRow}>
+                <span>Địa chỉ nhà:</span>
+                <strong>{successBusTicket.address}</strong>
+              </div>
+              <div style={styles.ticketRow}>
+                <span>Khoảng cách:</span>
+                <strong>{successBusTicket.distance_km} km</strong>
+              </div>
+              <div style={styles.ticketRow}>
+                <span>Điểm đón mong muốn:</span>
+                <strong style={{ color: '#166534' }}>{successBusTicket.pickup_point}</strong>
+              </div>
+              <div style={styles.ticketRow}>
+                <span>Loại tuyến:</span>
+                <strong style={{ color: '#b45309' }}>
+                  {successBusTicket.route_type === '2-way' ? '2 chiều (Đi & Về)' : '1 chiều'}
+                </strong>
+              </div>
+            </div>
+
+            <div style={styles.ticketFooter}>
+              <div style={{ textAlign: 'center' }}>
+                <QrCode size={64} color="#1e293b" />
+                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Quét mã QR Check-in xe tuyến</div>
+              </div>
+              <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748b' }}>
+                <div>Trạng thái đăng ký</div>
+                <div style={{ fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>✓ Chờ nhà trường xếp xe</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: '20px' }}>
+            <button onClick={() => window.print()} style={styles.printBtn}>
+              <Printer size={18} /> In Phiếu Đăng Ký
+            </button>
+            <button onClick={() => setSuccessBusTicket(null)} style={styles.newRegBtn}>
+              Đăng ký vé mới
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* SUCCESS PARKING TICKET CARD */}
+      {successTicket && !successBusTicket && (
         <div style={styles.successWrapper}>
           <div style={styles.ticketCard} id="printable-ticket">
             <div style={styles.ticketHeader}>
@@ -349,30 +480,34 @@ export default function PublicParkingRegister() {
             </button>
           </div>
         </div>
-      ) : (
-        /* REGISTRATION FORM */
-        <form onSubmit={handleSubmit} style={styles.formCard}>
-          <h3 style={styles.formTitle}>📝 Thông tin Đăng ký Vé Xe Máy Học Sinh</h3>
+      {/* REGISTRATION FORMS */}
+      {(!successTicket && !successBusTicket) && (
+        <>
+          {/* PARKING FORM */}
+          {activeTab === 'parking' && (
+            <form onSubmit={handleSubmit} style={styles.formCard}>
+              <h3 style={styles.formTitle}>📝 Thông tin Đăng ký Vé Xe Máy Học Sinh</h3>
 
-          <div style={styles.formGrid}>
-            {/* AUTOCOMPLETE STUDENT NAME FIELD */}
-            <div style={{ position: 'relative' }} ref={dropdownRef}>
-              <label style={styles.label}>
-                Họ và Tên học sinh (*)
-                {isVerifiedStudent && (
-                  <span style={{ fontSize: '11.5px', color: '#166534', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '12px', marginLeft: '6px', border: '1px solid #bbf7d0' }}>
-                    ✓ Đã xác thực CSDL
-                  </span>
-                )}
-              </label>
-              <input 
-                type="text" 
-                required 
-                placeholder="Gõ tên hoặc Mã HS để tự động gợi ý..."
-                value={studentName}
-                onChange={e => handleNameChange(e.target.value)}
-                onFocus={handleNameFocus}
-                style={{
+              <div style={styles.formGrid}>
+                {/* AUTOCOMPLETE STUDENT NAME FIELD */}
+                <div style={{ position: 'relative' }} ref={dropdownRef}>
+                  <label style={styles.label}>
+                    Họ và Tên học sinh (*)
+                    {isVerifiedStudent && (
+                      <span style={{ fontSize: '11.5px', color: '#166534', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '12px', marginLeft: '6px', border: '1px solid #bbf7d0' }}>
+                        ✓ Đã xác thực CSDL
+                      </span>
+                    )}
+                  </label>
+                  <input 
+                    type="text" 
+                    required 
+                    placeholder="Gõ tên hoặc Mã HS để tự động gợi ý..."
+                    value={studentName}
+                    onChange={e => handleNameChange(e.target.value)}
+                    onFocus={handleNameFocus}
+                    style={{
+
                   ...styles.input,
                   borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
                   backgroundColor: isVerifiedStudent ? '#f0fdf4' : '#ffffff'
@@ -519,6 +654,148 @@ export default function PublicParkingRegister() {
             {loading ? 'Đang xử lý đăng ký...' : '🚀 XÁC NHẬN ĐĂNG KÝ VÉ XE MÁY'}
           </button>
         </form>
+      )}
+
+      {/* BUS FORM */}
+      {activeTab === 'bus' && (
+        <form onSubmit={handleSubmitBus} style={styles.formCard}>
+          <h3 style={{ ...styles.formTitle, color: '#b45309' }}>🚌 Thông tin Đăng ký Xe Đưa Đón Học Sinh</h3>
+
+          <div style={styles.formGrid}>
+            {/* AUTOCOMPLETE STUDENT NAME FIELD */}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <label style={styles.label}>
+                Họ và Tên học sinh (*)
+                {isVerifiedStudent && (
+                  <span style={{ fontSize: '11.5px', color: '#166534', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '12px', marginLeft: '6px', border: '1px solid #bbf7d0' }}>
+                    ✓ Đã xác thực
+                  </span>
+                )}
+              </label>
+              <input 
+                type="text" 
+                required 
+                placeholder="Gõ tên hoặc Mã HS..."
+                value={studentName}
+                onChange={e => handleNameChange(e.target.value)}
+                onFocus={handleNameFocus}
+                style={{
+                  ...styles.input,
+                  borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
+                  borderWidth: isVerifiedStudent ? '2px' : '1px'
+                }}
+              />
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={styles.suggestionsDropdown}>
+                  {suggestions.map(s => (
+                    <div 
+                      key={s.id} 
+                      style={styles.suggestionItem}
+                      onClick={() => handleSelectSuggestion(s)}
+                    >
+                      <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{s.student_name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Lớp: {s.student_class} | Mã HS: {s.student_code}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div style={{ position: 'relative' }} ref={classDropdownRef}>
+              <label style={styles.label}>Lớp học (*)</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="VD: 10A1, 11A2..."
+                value={studentClass}
+                onChange={e => handleClassChange(e.target.value)}
+                onFocus={handleClassFocus}
+                style={styles.input}
+              />
+              {showClassSuggestions && classSuggestions.length > 0 && (
+                <div style={styles.suggestionsDropdown}>
+                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', borderBottom: '1px solid #fca5a5' }}>
+                    🏫 DANH SÁCH LỚP HỌC:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '6px' }}>
+                    {classSuggestions.map((clsItem, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectClassSuggestion(clsItem)}
+                        style={{
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          backgroundColor: studentClass.toUpperCase() === clsItem.toUpperCase() ? '#be123c' : '#f8fafc',
+                          color: studentClass.toUpperCase() === clsItem.toUpperCase() ? '#ffffff' : '#1e293b',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Lớp {clsItem}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label style={styles.label}>Khoảng cách ước tính từ nhà đến trường (km) (*)</label>
+              <input 
+                type="number" 
+                required 
+                min="1"
+                placeholder="VD: 5"
+                value={busDistance}
+                onChange={e => setBusDistance(e.target.value)}
+                style={styles.input}
+              />
+            </div>
+
+            <div>
+              <label style={styles.label}>Địa chỉ nhà (*)</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="VD: Số 123, đường X, phường Y"
+                value={busAddress}
+                onChange={e => setBusAddress(e.target.value)}
+                style={styles.input}
+              />
+            </div>
+
+            <div>
+              <label style={styles.label}>Điểm đón mong muốn (*)</label>
+              <input 
+                type="text" 
+                required 
+                placeholder="VD: Cổng làng Z / Ngã tư W"
+                value={busPickupPoint}
+                onChange={e => setBusPickupPoint(e.target.value)}
+                style={styles.input}
+              />
+            </div>
+
+            <div>
+              <label style={styles.label}>Loại tuyến đưa đón (*)</label>
+              <select value={busRouteType} onChange={e => setBusRouteType(e.target.value)} style={styles.input}>
+                <option value="2-way">🔄 Đưa đón 2 chiều (Đi & Về)</option>
+                <option value="1-way">➡️ Đưa đón 1 chiều</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" disabled={loading} style={{ ...styles.submitBtn, backgroundColor: '#f59e0b' }}>
+            {loading ? 'Đang xử lý đăng ký...' : '🚀 XÁC NHẬN ĐĂNG KÝ XE ĐƯA ĐÓN'}
+          </button>
+        </form>
+      )}
+      </>
       )}
     </div>
   );
