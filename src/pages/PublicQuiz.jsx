@@ -349,7 +349,7 @@ export default function PublicQuiz() {
   const handleNameChange = (e) => {
     const val = e.target.value;
     setStudentName(val);
-    
+
     if (val.trim().length > 1) {
       const searchStr = val.toLowerCase();
       const matches = allStudents.filter(s => s.student_name && s.student_name.toLowerCase().includes(searchStr)).slice(0, 5);
@@ -401,7 +401,7 @@ export default function PublicQuiz() {
       try {
         const p = JSON.parse(opts);
         if (Array.isArray(p)) return p;
-      } catch (e) {}
+      } catch (e) { }
     }
     return [];
   };
@@ -646,11 +646,11 @@ export default function PublicQuiz() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#be123c', fontWeight: 'bold', fontSize: '15.5px', marginBottom: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
               <Award size={20} color="#be123c" /> THỂ LỆ & QUY CHẾ CHÍNH THỨC TỪ BAN TỔ CHỨC
             </div>
-            
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '13.5px', color: '#334155' }}>
               <div><strong>⏱️ Thời gian làm bài:</strong> {quizConfig?.time_limit_minutes || 15} Phút</div>
               <div><strong>📝 Cấu trúc đề thi:</strong> {questions.length > 0 ? questions.length : '30'} Câu</div>
-              <div><strong>🎯 Câu dự đoán xếp hạng:</strong> Dự đoán số người 30/30</div>
+              <div><strong>🎯 Câu dự đoán xếp hạng:</strong> Dự đoán số người tham gia câu số 31</div>
               <div><strong>🔒 Quy định an toàn:</strong> Mỗi Học Sinh (Mã HS) chỉ thi 01 LẦN DUY NHẤT</div>
             </div>
 
@@ -675,12 +675,12 @@ export default function PublicQuiz() {
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                 style={{ ...styles.input, backgroundColor: isLocked ? '#f1f5f9' : 'white', cursor: isLocked ? 'not-allowed' : 'text' }}
               />
-              
+
               {showSuggestions && suggestions.length > 0 && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', zIndex: 10, marginTop: '4px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
                   {suggestions.map((s, i) => (
-                    <div 
-                      key={i} 
+                    <div
+                      key={i}
                       onClick={() => handleSelectSuggestion(s)}
                       style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: i === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                       onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
@@ -728,12 +728,12 @@ export default function PublicQuiz() {
             )}
 
             <button type="submit" disabled={isLocked} style={{ ...styles.startBtn, opacity: isLocked ? 0.6 : 1, cursor: isLocked ? 'not-allowed' : 'pointer', background: isLocked ? '#94a3b8' : (styles.startBtn?.background || '#be123c') }}>
-              {isLocked ? '🔒 CHƯA THỂ LÀM BÀI' : '🚀 BẮT ĐẦU LÀM BÀI THI'} { !isLocked && <ArrowRight size={20} /> }
+              {isLocked ? '🔒 CHƯA THỂ LÀM BÀI' : '🚀 BẮT ĐẦU LÀM BÀI THI'} {!isLocked && <ArrowRight size={20} />}
             </button>
 
             {questions.length === 0 && !loading && (
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={handleSeedDefaultQuestions}
                 style={{ ...styles.seedBtn, width: '100%', marginTop: '15px' }}
               >
@@ -766,9 +766,9 @@ export default function PublicQuiz() {
           {/* QUESTION CONTENT */}
           {(() => {
             const q = questions[currentQuestionIndex];
-            const isPrediction = q.question_type === 'essay' || 
+            const isPrediction = q.question_type === 'essay' ||
               (q.question_text && (
-                q.question_text.toLowerCase().includes('dự đoán') || 
+                q.question_text.toLowerCase().includes('dự đoán') ||
                 q.question_text.toLowerCase().includes('bao nhiêu')
               ));
             const optionsList = parseOptions(q.options);
