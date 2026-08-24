@@ -37,6 +37,7 @@ export default function AdminParking() {
   const [pkgMonths, setPkgMonths] = useState(1);
   const [pkgFee, setPkgFee] = useState(50000);
   const [pkgDesc, setPkgDesc] = useState('');
+  const [pkgHideFee, setPkgHideFee] = useState(false);
 
   // Security Check-in Terminal Query
   const [checkinQuery, setCheckinQuery] = useState('');
