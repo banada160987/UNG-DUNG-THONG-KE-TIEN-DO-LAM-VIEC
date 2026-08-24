@@ -69,17 +69,25 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
       '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 } 
   };
   
+  const getGradeFromClass = (className) => {
+    const match = className.match(/(10|11|12)/);
+    return match ? match[0] : null;
+  };
+
   ALL_CLASSES.forEach(cls => {
-      if (cls.includes('10A')) grades['10'].totalStudents += getClassSize(cls);
-      else if (cls.includes('11A')) grades['11'].totalStudents += getClassSize(cls);
-      else if (cls.includes('12A')) grades['12'].totalStudents += getClassSize(cls);
+      const grade = getGradeFromClass(cls);
+      if (grade && grades[grade]) {
+        grades[grade].totalStudents += getClassSize(cls);
+      }
   });
 
   validSubs.forEach(s => {
       const g = s.student_group || '';
-      if (g.includes('10A')) { grades['10'].count++; grades['10'].sum += s.finalScore; }
-      else if (g.includes('11A')) { grades['11'].count++; grades['11'].sum += s.finalScore; }
-      else if (g.includes('12A')) { grades['12'].count++; grades['12'].sum += s.finalScore; }
+      const grade = getGradeFromClass(g);
+      if (grade && grades[grade]) {
+        grades[grade].count++;
+        grades[grade].sum += s.finalScore;
+      }
   });
   
   ['10', '11', '12'].forEach(g => {
