@@ -480,6 +480,8 @@ export default function PublicParkingRegister() {
             </button>
           </div>
         </div>
+      )}
+
       {/* REGISTRATION FORMS */}
       {(!successTicket && !successBusTicket) && (
         <>
