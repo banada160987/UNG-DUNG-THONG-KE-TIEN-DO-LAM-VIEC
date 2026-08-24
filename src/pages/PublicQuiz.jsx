@@ -311,11 +311,59 @@ export default function PublicQuiz() {
 
   const timerRef = useRef(null);
 
+  // Autocomplete State
+  const [allStudents, setAllStudents] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+
   useEffect(() => {
     fetchQuestions();
     fetchLeaderboard();
     fetchQuizConfig();
+    fetchAllStudents();
   }, []);
+
+  async function fetchAllStudents() {
+    try {
+      let data = [];
+      let from = 0;
+      let fetchMore = true;
+      while (fetchMore) {
+        const res = await supabase.from('cbq_students').select('student_name, student_class').range(from, from + 999);
+        if (res.error) break;
+        if (res.data && res.data.length > 0) {
+          data = [...data, ...res.data];
+          from += 1000;
+          if (res.data.length < 1000) fetchMore = false;
+        } else {
+          fetchMore = false;
+        }
+      }
+      setAllStudents(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  const handleNameChange = (e) => {
+    const val = e.target.value;
+    setStudentName(val);
+    
+    if (val.trim().length > 1) {
+      const searchStr = val.toLowerCase();
+      const matches = allStudents.filter(s => s.student_name && s.student_name.toLowerCase().includes(searchStr)).slice(0, 5);
+      setSuggestions(matches);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
+  };
+
+  const handleSelectSuggestion = (student) => {
+    setStudentName(student.student_name);
+    setStudentGroup(student.student_class ? `Lớp ${student.student_class}` : '');
+    setShowSuggestions(false);
+  };
 
   async function fetchQuizConfig() {
     try {
@@ -585,16 +633,35 @@ export default function PublicQuiz() {
           </div>
 
           <form onSubmit={handleStartQuiz} style={{ maxWidth: '440px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '14px' }}>
+            <div style={{ marginBottom: '14px', position: 'relative' }}>
               <label style={styles.label}>Họ và Tên Thí Sinh *</label>
               <input
                 type="text"
                 required
                 placeholder="VD: Nguyễn Văn An"
                 value={studentName}
-                onChange={e => setStudentName(e.target.value)}
+                onChange={handleNameChange}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
                 style={styles.input}
               />
+              
+              {showSuggestions && suggestions.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#fff', border: '1px solid #cbd5e1', borderRadius: '8px', zIndex: 10, marginTop: '4px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', overflow: 'hidden' }}>
+                  {suggestions.map((s, i) => (
+                    <div 
+                      key={i} 
+                      onClick={() => handleSelectSuggestion(s)}
+                      style={{ padding: '10px 14px', cursor: 'pointer', borderBottom: i === suggestions.length - 1 ? 'none' : '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{s.student_name}</span>
+                      <span style={{ fontSize: '12px', color: '#be123c', background: '#fff1f2', padding: '2px 8px', borderRadius: '12px', fontWeight: 'bold' }}>{s.student_class}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ marginBottom: '14px' }}>

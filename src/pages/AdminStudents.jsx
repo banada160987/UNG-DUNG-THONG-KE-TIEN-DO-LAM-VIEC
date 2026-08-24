@@ -12,17 +12,18 @@ const DEFAULT_STUDENTS = [
   { id: '5', student_code: 'HS10A2-012', student_name: 'Phạm Minh Cường', student_class: '10A2', grade_level: 'Khối 10' }
 ];
 
+
 export default function AdminStudents() {
   const [students, setStudents] = useState(DEFAULT_STUDENTS);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
-  
+
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(50);
-  
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, selectedGrade]);
@@ -142,11 +143,11 @@ export default function AdminStudents() {
         let headerRowIndex = 0;
         for (let r = 0; r < Math.min(sheet2D.length, 20); r++) {
           const rowStr = (sheet2D[r] || []).join(" ").toLowerCase();
-          
+
           const hasName = rowStr.includes("tên") || rowStr.includes("họ");
           const hasClass = rowStr.includes("lớp") || rowStr.includes("class");
           const hasCode = rowStr.includes("mã") || rowStr.includes("stt");
-          
+
           if ((hasName && hasClass) || (hasName && hasCode)) {
             headerRowIndex = r;
             break;
@@ -170,7 +171,7 @@ export default function AdminStudents() {
           if (sName && String(sName).trim()) {
             const cleanClass = sClass ? String(sClass).trim().toUpperCase() : '10A1';
             const cleanCode = sCode && String(sCode).trim() ? String(sCode).trim().toUpperCase() : `HS${cleanClass}-${idx + 1}`;
-            
+
             formattedList.push({
               student_code: cleanCode,
               student_name: String(sName).trim(),
@@ -206,7 +207,7 @@ export default function AdminStudents() {
         setStudents(prev => {
           const map = new Map();
           prev.forEach(item => map.set(item.student_code, item));
-          
+
           formattedList.forEach(newItem => {
             const existing = map.get(newItem.student_code);
             if (existing) {
@@ -466,7 +467,7 @@ export default function AdminStudents() {
 
   const filteredStudents = students.filter(s => {
     const computedGrade = getGradeLevel(s.student_class);
-    const matchSearch = !searchTerm || 
+    const matchSearch = !searchTerm ||
       s.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.student_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.student_class?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -579,13 +580,13 @@ export default function AdminStudents() {
 
             <div>
               <label style={{ ...styles.label, color: '#be123c' }}>2. Nhập Lớp Mới (*)</label>
-              <input 
-                type="text" 
-                required 
-                value={targetClass} 
-                onChange={e => setTargetClass(e.target.value)} 
-                style={{ ...styles.input, fontWeight: 'bold' }} 
-                placeholder="VD: 11A1, 12A5..." 
+              <input
+                type="text"
+                required
+                value={targetClass}
+                onChange={e => setTargetClass(e.target.value)}
+                style={{ ...styles.input, fontWeight: 'bold' }}
+                placeholder="VD: 11A1, 12A5..."
               />
             </div>
           </div>
@@ -632,8 +633,8 @@ export default function AdminStudents() {
       <div className="glass" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
           <Search size={18} color="#64748b" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Tìm theo Mã học sinh, Họ và Tên, Lớp..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
@@ -693,18 +694,18 @@ export default function AdminStudents() {
                 ))}
               </tbody>
             </table>
-            
+
             {/* PAGINATION CONTROLS */}
             {filteredStudents.length > 0 && (
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', flexWrap: 'wrap', gap: '15px' }}>
                 <div style={{ fontSize: '13.5px', color: '#64748b' }}>
                   Hiển thị <strong>{indexOfFirstItem + 1}</strong> - <strong>{Math.min(indexOfLastItem, filteredStudents.length)}</strong> trong tổng số <strong>{filteredStudents.length}</strong> học sinh
                 </div>
-                
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <label style={{ fontSize: '13.5px', color: '#64748b', fontWeight: 'bold' }}>Số dòng mỗi trang:</label>
-                  <select 
-                    value={itemsPerPage} 
+                  <select
+                    value={itemsPerPage}
                     onChange={e => { setItemsPerPage(Number(e.target.value)); setCurrentPage(1); }}
                     style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px', outline: 'none' }}
                   >
@@ -716,19 +717,19 @@ export default function AdminStudents() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '6px' }}>
-                  <button 
+                  <button
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     style={{ padding: '6px 14px', border: '1px solid #cbd5e1', background: currentPage === 1 ? '#f8fafc' : 'white', color: currentPage === 1 ? '#94a3b8' : '#334155', cursor: currentPage === 1 ? 'not-allowed' : 'pointer', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}
                   >
                     Trang trước
                   </button>
-                  
+
                   <div style={{ display: 'flex', alignItems: 'center', padding: '0 10px', fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a' }}>
                     Trang {currentPage} / {totalPages || 1}
                   </div>
-                  
-                  <button 
+
+                  <button
                     disabled={currentPage === totalPages || totalPages === 0}
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     style={{ padding: '6px 14px', border: '1px solid #cbd5e1', background: (currentPage === totalPages || totalPages === 0) ? '#f8fafc' : 'white', color: (currentPage === totalPages || totalPages === 0) ? '#94a3b8' : '#334155', cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold' }}
