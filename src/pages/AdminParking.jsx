@@ -151,36 +151,46 @@ export default function AdminParking() {
   // Save Configured Package
   const handleSavePackage = async (e) => {
     e.preventDefault();
-    if (!pkgTitle.trim()) {
+    if (!pkgTitle || !pkgTitle.trim()) {
       alert("Vui lòng điền Tên Gói Vé!");
       return;
     }
 
     try {
-      const existingPkg = packages.find(p => String(p.id) === String(editingPkgId));
+      const targetId = editingPkgId;
       const payload = {
-        package_key: pkgKey || `pkg_${Date.now()}`,
+        package_key: pkgKey.trim() || `pkg_${Date.now()}`,
         title: pkgTitle.trim(),
         months_count: Number(pkgMonths) || 1,
         fee_amount: Number(pkgFee) || 0,
         description: pkgDesc.trim(),
         hide_fee: pkgHideFee,
-        is_active: existingPkg ? existingPkg.is_active : true
+        is_active: true
       };
 
-      let updated;
-      if (editingPkgId) {
-        updated = packages.map(p => String(p.id) === String(editingPkgId) ? { ...p, ...payload } : p);
-      } else {
-        updated = [...packages, { ...payload, id: `pkg_${Date.now()}` }];
-      }
+      // 1. Guaranteed Functional State & LocalStorage Update
+      setPackages(prev => {
+        let matched = false;
+        const nextList = prev.map(p => {
+          if ((targetId && String(p.id) === String(targetId)) || (p.package_key && p.package_key === payload.package_key)) {
+            matched = true;
+            return { ...p, ...payload, id: p.id || targetId };
+          }
+          return p;
+        });
 
-      setPackages(updated);
-      localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
+        if (!matched) {
+          nextList.push({ ...payload, id: targetId || `pkg_${Date.now()}` });
+        }
 
+        localStorage.setItem('cbq_parking_packages', JSON.stringify(nextList));
+        return nextList;
+      });
+
+      // 2. Async Supabase DB Upsert
       try {
-        const dbPayload = (editingPkgId && !String(editingPkgId).startsWith('p') && !String(editingPkgId).startsWith('pkg_')) 
-          ? { id: editingPkgId, ...payload } 
+        const dbPayload = (targetId && !String(targetId).startsWith('p') && !String(targetId).startsWith('pkg_')) 
+          ? { id: targetId, ...payload } 
           : payload;
 
         await supabase
@@ -190,23 +200,26 @@ export default function AdminParking() {
         console.warn("Lỗi lưu DB gói vé:", dbErr);
       }
 
-      alert("🎉 ĐÃ LƯU CẤU HÌNH GÓI VÉ THÀNH CÔNG!");
+      alert(`🎉 ĐÃ LƯU THÀNH CÔNG GÓI VÉ: "${pkgTitle.trim()}"!`);
       setShowPkgForm(false);
       setEditingPkgId(null);
     } catch (err) {
-      console.warn("Lưu CSDL gói vé:", err);
+      alert("Lỗi khi lưu gói vé: " + err.message);
     }
   };
 
   const handleEditPackage = (pkg) => {
-    setEditingPkgId(pkg.id);
-    setPkgKey(pkg.package_key || '');
-    setPkgTitle(pkg.title || '');
-    setPkgMonths(pkg.months_count || 1);
-    setPkgFee(pkg.fee_amount || 0);
-    setPkgDesc(pkg.description || '');
+    if (!pkg) return;
+    setActiveTab('config');
+    setEditingPkgId(pkg.id || pkg.package_key || `pkg_${Date.now()}`);
+    setPkgKey(pkg.package_key || pkg.key || '');
+    setPkgTitle(pkg.title || pkg.label || '');
+    setPkgMonths(Number(pkg.months_count || pkg.months) || 1);
+    setPkgFee(Number(pkg.fee_amount || pkg.fee) || 0);
+    setPkgDesc(pkg.description || pkg.desc || '');
     setPkgHideFee(!!pkg.hide_fee);
     setShowPkgForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeletePackage = async (id) => {
