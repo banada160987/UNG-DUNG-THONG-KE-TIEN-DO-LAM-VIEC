@@ -321,13 +321,22 @@ export default function PublicQuiz() {
   useEffect(() => {
     fetchQuestions();
     fetchLeaderboard();
-    fetchStatistics();
     fetchQuizConfig();
     fetchAllStudents();
   }, []);
 
   async function fetchAllStudents() {
     try {
+      const localData = localStorage.getItem('cbq_students_data');
+      if (localData) {
+        try {
+          setAllStudents(JSON.parse(localData));
+          return;
+        } catch (e) {
+          // Ignore parsing error, proceed to fetch
+        }
+      }
+
       let data = [];
       let from = 0;
       let fetchMore = true;
@@ -343,6 +352,9 @@ export default function PublicQuiz() {
         }
       }
       setAllStudents(data);
+      if (data.length > 0) {
+        localStorage.setItem('cbq_students_data', JSON.stringify(data));
+      }
     } catch (err) {
       console.error(err);
     }
@@ -979,12 +991,7 @@ export default function PublicQuiz() {
             >
               <Trophy size={16} /> BẢNG VÀNG
             </button>
-            <button
-              onClick={() => setActiveTab('statistics')}
-              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '13px', color: activeTab === 'statistics' ? '#be123c' : '#64748b', borderBottom: activeTab === 'statistics' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-            >
-              <BarChart2 size={16} /> THỐNG KÊ
-            </button>
+
             <button
               onClick={() => setActiveTab('result')}
               style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '13px', color: activeTab === 'result' ? '#be123c' : '#64748b', borderBottom: activeTab === 'result' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
@@ -1075,67 +1082,7 @@ export default function PublicQuiz() {
             </div>
           )}
 
-          {/* TAB 3: STATISTICS */}
-          {activeTab === 'statistics' && statistics && (
-            <div style={{ animation: 'fadeIn 0.5s' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '12px', textAlign: 'center', border: '1px solid #bfdbfe' }}>
-                  <div style={{ fontSize: '12px', color: '#1d4ed8', fontWeight: 'bold', textTransform: 'uppercase' }}>Tổng Số Thí Sinh</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>{statistics.totalStudents}</div>
-                </div>
-                <div style={{ background: '#fdf4ff', padding: '15px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f5d0fe' }}>
-                  <div style={{ fontSize: '12px', color: '#86198f', fontWeight: 'bold', textTransform: 'uppercase' }}>Thời Gian TB</div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#701a75', margin: '5px 0' }}>{formatTime(statistics.avgTime)}</div>
-                </div>
-              </div>
 
-              <div style={{ marginBottom: '25px', background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#334155', textAlign: 'center' }}>📈 Phân Bố Phổ Điểm</h3>
-                <div style={{ height: '250px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={statistics.scoreDistribution}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={90}
-                        paddingAngle={5}
-                        dataKey="value"
-                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                        labelLine={false}
-                        fontSize={11}
-                      >
-                        {statistics.scoreDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#334155', textAlign: 'center' }}>🏆 Top 10 Lớp Có Điểm Trung Bình Cao Nhất</h3>
-                <div style={{ height: '300px', width: '100%' }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={statistics.classData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
-                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
-                      <XAxis type="number" domain={[0, 300]} fontSize={11} stroke="#64748b" />
-                      <YAxis dataKey="name" type="category" fontSize={11} stroke="#64748b" width={80} />
-                      <Tooltip 
-                        cursor={{fill: '#f1f5f9'}} 
-                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                        formatter={(value, name) => [value + ' điểm', 'Điểm trung bình']}
-                      />
-                      <Bar dataKey="avgScore" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

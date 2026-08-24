@@ -86,6 +86,14 @@ export default function PublicParkingRegister() {
 
   async function fetchStudentRoster() {
     try {
+      const localData = localStorage.getItem('cbq_students_data');
+      if (localData) {
+        try {
+          setStudentRoster(JSON.parse(localData));
+          return; // Nếu có cache thì thoát luôn, không gọi API nữa
+        } catch (e) {}
+      }
+
       const { data, error } = await supabase
         .from('cbq_students')
         .select('*')
@@ -95,18 +103,9 @@ export default function PublicParkingRegister() {
       if (!error && data && data.length > 0) {
         setStudentRoster(data);
         localStorage.setItem('cbq_students_data', JSON.stringify(data));
-      } else {
-        const localData = localStorage.getItem('cbq_students_data');
-        if (localData) {
-          setStudentRoster(JSON.parse(localData));
-        }
       }
     } catch (err) {
-      console.warn("Nạp danh sách học sinh từ local:", err);
-      const localData = localStorage.getItem('cbq_students_data');
-      if (localData) {
-        setStudentRoster(JSON.parse(localData));
-      }
+      console.warn("Lỗi tải danh sách học sinh:", err);
     }
   }
 
