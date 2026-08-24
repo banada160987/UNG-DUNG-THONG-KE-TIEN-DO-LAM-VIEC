@@ -605,6 +605,19 @@ export default function PublicQuiz() {
     return `${mins < 10 ? '0' : ''}${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
+  const nowTime = new Date();
+  let lockReason = null;
+  if (quizConfig) {
+    if (quizConfig.is_active === false) lockReason = "Cuộc thi hiện đang tạm dừng.";
+    else if (quizConfig.start_time && new Date(quizConfig.start_time) > nowTime) {
+      lockReason = `Cuộc thi sẽ mở vào lúc ${new Date(quizConfig.start_time).toLocaleString('vi-VN')}`;
+    }
+    else if (quizConfig.end_time && new Date(quizConfig.end_time) < nowTime) {
+      lockReason = `Cuộc thi đã kết thúc vào lúc ${new Date(quizConfig.end_time).toLocaleString('vi-VN')}`;
+    }
+  }
+  const isLocked = lockReason !== null;
+
   return (
     <div style={styles.container}>
       {/* WELCOME / ENTRY SCREEN */}
@@ -612,11 +625,11 @@ export default function PublicQuiz() {
         <div style={styles.card}>
           <div style={{ textAlign: 'center', marginBottom: '20px' }}>
             <div style={styles.badge}>
-              🏆 CUỘC THI TOÀN TRƯỜNG KỶ NIỆM 30 NĂM (1996 - 2026)
+              🏆 CUỘC THI TRỰC TUYẾN
             </div>
-            <h1 style={styles.title}>CUỘC THI 1: "CAO BÁ QUÁT - 30 NĂM CHẮP CÁNH ƯỚC MƠ"</h1>
+            <h1 style={styles.title}>{quizConfig?.title || 'CUỘC THI 1: "CAO BÁ QUÁT - 30 NĂM CHẮP CÁNH ƯỚC MƠ"'}</h1>
             <p style={styles.subtitle}>
-              Cuộc thi tìm hiểu lịch sử, truyền thống và thành tựu Trường THPT Cao Bá Quát hướng tới Lễ Kỷ Niệm 30 Năm Ngày Thành Lập.
+              {quizConfig?.description || 'Cuộc thi tìm hiểu lịch sử, truyền thống và thành tựu Trường THPT Cao Bá Quát hướng tới Lễ Kỷ Niệm 30 Năm Ngày Thành Lập.'}
             </p>
           </div>
 
@@ -627,8 +640,8 @@ export default function PublicQuiz() {
             </div>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', fontSize: '13.5px', color: '#334155' }}>
-              <div><strong>⏱️ Thời gian làm bài:</strong> 15 Phút</div>
-              <div><strong>📝 Cấu trúc đề thi:</strong> 30 Câu Trắc Nghiệm (300đ)</div>
+              <div><strong>⏱️ Thời gian làm bài:</strong> {quizConfig?.time_limit_minutes || 15} Phút</div>
+              <div><strong>📝 Cấu trúc đề thi:</strong> {questions.length > 0 ? questions.length : '30'} Câu</div>
               <div><strong>🎯 Câu dự đoán xếp hạng:</strong> Dự đoán số người 30/30</div>
               <div><strong>🔒 Quy định an toàn:</strong> Mỗi SĐT chỉ thi 01 LẦN DUY NHẤT</div>
             </div>
@@ -644,12 +657,13 @@ export default function PublicQuiz() {
               <input
                 type="text"
                 required
+                disabled={isLocked}
                 placeholder="VD: Nguyễn Văn An"
                 value={studentName}
                 onChange={handleNameChange}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
-                style={styles.input}
+                style={{ ...styles.input, backgroundColor: isLocked ? '#f1f5f9' : 'white', cursor: isLocked ? 'not-allowed' : 'text' }}
               />
               
               {showSuggestions && suggestions.length > 0 && (
@@ -689,15 +703,22 @@ export default function PublicQuiz() {
               <input
                 type="tel"
                 required
+                disabled={isLocked}
                 placeholder="VD: 0987 654 321 hoặc 0975609590"
                 value={studentPhone}
                 onChange={e => setStudentPhone(e.target.value)}
-                style={styles.input}
+                style={{ ...styles.input, backgroundColor: isLocked ? '#f1f5f9' : 'white', cursor: isLocked ? 'not-allowed' : 'text' }}
               />
             </div>
 
-            <button type="submit" style={styles.startBtn}>
-              🚀 BẮT ĐẦU LÀM BÀI THI <ArrowRight size={20} />
+            {isLocked && (
+              <div style={{ background: '#fee2e2', color: '#991b1b', padding: '12px', borderRadius: '8px', marginBottom: '15px', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', border: '1px solid #f87171' }}>
+                🔒 {lockReason}
+              </div>
+            )}
+
+            <button type="submit" disabled={isLocked} style={{ ...styles.startBtn, opacity: isLocked ? 0.6 : 1, cursor: isLocked ? 'not-allowed' : 'pointer', background: isLocked ? '#94a3b8' : (styles.startBtn?.background || '#be123c') }}>
+              {isLocked ? '🔒 CHƯA THỂ LÀM BÀI' : '🚀 BẮT ĐẦU LÀM BÀI THI'} { !isLocked && <ArrowRight size={20} /> }
             </button>
 
             {questions.length === 0 && !loading && (

@@ -52,29 +52,27 @@ export default function AdminQuiz() {
     e.preventDefault();
     setSavingConfig(true);
     try {
+      const payload = {
+        title: quizConfig.title,
+        description: quizConfig.description,
+        time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
+        start_time: quizConfig.start_time || null,
+        end_time: quizConfig.end_time || null,
+        is_active: quizConfig.is_active
+      };
+
       if (quizConfig.id) {
-        await supabase.from('cbq_quizzes').update({
-          title: quizConfig.title,
-          description: quizConfig.description,
-          time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
-          start_time: quizConfig.start_time,
-          end_time: quizConfig.end_time,
-          is_active: quizConfig.is_active
-        }).eq('id', quizConfig.id);
+        const { error } = await supabase.from('cbq_quizzes').update(payload).eq('id', quizConfig.id);
+        if (error) throw error;
       } else {
-        const newQ = await supabase.from('cbq_quizzes').insert([{
-          title: quizConfig.title,
-          description: quizConfig.description,
-          time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
-          start_time: quizConfig.start_time,
-          end_time: quizConfig.end_time,
-          is_active: quizConfig.is_active
-        }]).select().single();
-        if (newQ.data) setQuizConfig(newQ.data);
+        const { data, error } = await supabase.from('cbq_quizzes').insert([payload]).select().single();
+        if (error) throw error;
+        if (data) setQuizConfig(data);
       }
       alert("Đã lưu cấu hình thời gian & thông tin cuộc thi thành công!");
     } catch (err) {
-      alert("Lỗi lưu cấu hình: " + err.message);
+      console.error("Save config error:", err);
+      alert("Lỗi lưu cấu hình: " + (err.message || "Không rõ nguyên nhân"));
     } finally {
       setSavingConfig(false);
     }
