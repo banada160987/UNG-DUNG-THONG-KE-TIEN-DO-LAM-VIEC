@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Trophy, Clock, CheckCircle2, Award, Sparkles, Send, ArrowRight, RotateCcw, Medal } from 'lucide-react';
-
+import { Trophy, Clock, CheckCircle2, Award, Sparkles, Send, ArrowRight, RotateCcw, Medal, BarChart2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
 const DEFAULT_SAMPLE_QUESTIONS = [
   {
     question_text: "Câu 1. Trường THPT Cao Bá Quát được thành lập vào năm nào?",
@@ -305,7 +305,8 @@ export default function PublicQuiz() {
   const [finalScore, setFinalScore] = useState(0);
   const [timeTaken, setTimeTaken] = useState(0);
   const [leaderboard, setLeaderboard] = useState([]);
-  const [activeTab, setActiveTab] = useState('result'); // 'result' | 'leaderboard' | 'review'
+  const [statistics, setStatistics] = useState(null);
+  const [activeTab, setActiveTab] = useState('result'); // 'result' | 'leaderboard' | 'statistics'
 
   // Contest Config State
   const [quizConfig, setQuizConfig] = useState(null);
@@ -320,6 +321,7 @@ export default function PublicQuiz() {
   useEffect(() => {
     fetchQuestions();
     fetchLeaderboard();
+    fetchStatistics();
     fetchQuizConfig();
     fetchAllStudents();
   }, []);
@@ -444,6 +446,69 @@ export default function PublicQuiz() {
       console.error("Lỗi tải bảng xếp hạng:", err);
     }
   };
+
+  async function fetchStatistics() {
+    try {
+      const { data } = await supabase
+        .from('cbq_quiz_submissions')
+        .select('score, total_score, time_taken_seconds, student_group');
+      
+      if (!data || data.length === 0) return;
+
+      const totalStudents = data.length;
+      let totalTime = 0;
+      
+      let excellent = 0; // >= 250
+      let good = 0;      // 200 - 249
+      let average = 0;   // 150 - 199
+      let weak = 0;      // < 150
+
+      const classScores = {};
+      const classCounts = {};
+
+      data.forEach(sub => {
+        const s = sub.score || 0;
+        if (s >= 250) excellent++;
+        else if (s >= 200) good++;
+        else if (s >= 150) average++;
+        else weak++;
+
+        totalTime += (sub.time_taken_seconds || 0);
+
+        const grp = sub.student_group || 'Khác';
+        if (!classScores[grp]) {
+          classScores[grp] = 0;
+          classCounts[grp] = 0;
+        }
+        classScores[grp] += s;
+        classCounts[grp] += 1;
+      });
+
+      const avgTime = Math.floor(totalTime / totalStudents);
+
+      const scoreDistribution = [
+        { name: 'Giỏi (≥250đ)', value: excellent, color: '#16a34a' },
+        { name: 'Khá (200-240đ)', value: good, color: '#3b82f6' },
+        { name: 'TB (150-190đ)', value: average, color: '#eab308' },
+        { name: 'Yếu (<150đ)', value: weak, color: '#ef4444' }
+      ].filter(item => item.value > 0);
+
+      const classData = Object.keys(classScores).map(grp => ({
+        name: grp,
+        avgScore: Math.round(classScores[grp] / classCounts[grp]),
+        count: classCounts[grp]
+      })).sort((a, b) => b.avgScore - a.avgScore).slice(0, 10); // Top 10
+
+      setStatistics({
+        totalStudents,
+        avgTime,
+        scoreDistribution,
+        classData
+      });
+    } catch (err) {
+      console.error("Lỗi lấy dữ liệu thống kê:", err);
+    }
+  }
 
   const handleSeedDefaultQuestions = async () => {
     try {
@@ -598,6 +663,7 @@ export default function PublicQuiz() {
       }]);
 
       await fetchLeaderboard();
+      await fetchStatistics();
       setStep('result');
     } catch (err) {
       console.error("Lỗi lưu bài nộp:", err);
@@ -909,15 +975,21 @@ export default function PublicQuiz() {
           <div style={{ display: 'flex', borderBottom: '2px solid #e2e8f0', marginBottom: '20px' }}>
             <button
               onClick={() => setActiveTab('leaderboard')}
-              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'leaderboard' ? '#be123c' : '#64748b', borderBottom: activeTab === 'leaderboard' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '13px', color: activeTab === 'leaderboard' ? '#be123c' : '#64748b', borderBottom: activeTab === 'leaderboard' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              <Trophy size={18} /> BẢNG VÀNG THÀNH TÍCH TOP 20
+              <Trophy size={16} /> BẢNG VÀNG
+            </button>
+            <button
+              onClick={() => setActiveTab('statistics')}
+              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '13px', color: activeTab === 'statistics' ? '#be123c' : '#64748b', borderBottom: activeTab === 'statistics' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+            >
+              <BarChart2 size={16} /> THỐNG KÊ
             </button>
             <button
               onClick={() => setActiveTab('result')}
-              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '15px', color: activeTab === 'result' ? '#be123c' : '#64748b', borderBottom: activeTab === 'result' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              style={{ flex: 1, padding: '10px', border: 'none', background: 'none', fontWeight: 'bold', fontSize: '13px', color: activeTab === 'result' ? '#be123c' : '#64748b', borderBottom: activeTab === 'result' ? '3px solid #be123c' : 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
             >
-              <Award size={18} /> CHỨNG NHẬN ĐIỆN TỬ
+              <Award size={16} /> CHỨNG NHẬN
             </button>
           </div>
 
@@ -999,6 +1071,68 @@ export default function PublicQuiz() {
                 <button onClick={() => { setStep('welcome'); fetchLeaderboard(); }} style={{ padding: '10px 20px', background: '#be123c', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <RotateCcw size={16} /> Thi Lại Lần Khác
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: STATISTICS */}
+          {activeTab === 'statistics' && statistics && (
+            <div style={{ animation: 'fadeIn 0.5s' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                <div style={{ background: '#eff6ff', padding: '15px', borderRadius: '12px', textAlign: 'center', border: '1px solid #bfdbfe' }}>
+                  <div style={{ fontSize: '12px', color: '#1d4ed8', fontWeight: 'bold', textTransform: 'uppercase' }}>Tổng Số Thí Sinh</div>
+                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#1e3a8a', margin: '5px 0' }}>{statistics.totalStudents}</div>
+                </div>
+                <div style={{ background: '#fdf4ff', padding: '15px', borderRadius: '12px', textAlign: 'center', border: '1px solid #f5d0fe' }}>
+                  <div style={{ fontSize: '12px', color: '#86198f', fontWeight: 'bold', textTransform: 'uppercase' }}>Thời Gian TB</div>
+                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: '#701a75', margin: '5px 0' }}>{formatTime(statistics.avgTime)}</div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '25px', background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#334155', textAlign: 'center' }}>📈 Phân Bố Phổ Điểm</h3>
+                <div style={{ height: '250px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={statistics.scoreDistribution}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        labelLine={false}
+                        fontSize={11}
+                      >
+                        {statistics.scoreDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: '15px', color: '#334155', textAlign: 'center' }}>🏆 Top 10 Lớp Có Điểm Trung Bình Cao Nhất</h3>
+                <div style={{ height: '300px', width: '100%' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={statistics.classData} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#e2e8f0" />
+                      <XAxis type="number" domain={[0, 300]} fontSize={11} stroke="#64748b" />
+                      <YAxis dataKey="name" type="category" fontSize={11} stroke="#64748b" width={80} />
+                      <Tooltip 
+                        cursor={{fill: '#f1f5f9'}} 
+                        contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value, name) => [value + ' điểm', 'Điểm trung bình']}
+                      />
+                      <Bar dataKey="avgScore" fill="#3b82f6" radius={[0, 4, 4, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             </div>
           )}
