@@ -679,11 +679,16 @@ export default function PublicParkingRegister() {
               <input 
                 type="text" 
                 required 
+                readOnly={isVerifiedStudent || !!editingTicket}
                 placeholder="Bấm hoặc gõ Lớp (VD: 10A1, 11A2, 12A3)..."
                 value={studentClass}
                 onChange={e => handleClassChange(e.target.value)}
                 onFocus={handleClassFocus}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: (isVerifiedStudent || !!editingTicket) ? '#f1f5f9' : '#ffffff',
+                  color: (isVerifiedStudent || !!editingTicket) ? '#64748b' : '#0f172a'
+                }}
               />
 
               {/* CLASS AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
@@ -753,10 +758,15 @@ export default function PublicParkingRegister() {
               <label style={styles.label}>Mã học sinh</label>
               <input 
                 type="text" 
+                readOnly={isVerifiedStudent || !!editingTicket}
                 placeholder="VD: HS11A1-025"
                 value={studentCode}
                 onChange={e => setStudentCode(e.target.value)}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: (isVerifiedStudent || !!editingTicket) ? '#f1f5f9' : '#ffffff',
+                  color: (isVerifiedStudent || !!editingTicket) ? '#64748b' : '#0f172a'
+                }}
               />
             </div>
           </div>
@@ -854,11 +864,16 @@ export default function PublicParkingRegister() {
               <input 
                 type="text" 
                 required 
+                readOnly={isVerifiedStudent || !!editingTicket}
                 placeholder="VD: 10A1, 11A2..."
                 value={studentClass}
                 onChange={e => handleClassChange(e.target.value)}
                 onFocus={handleClassFocus}
-                style={styles.input}
+                style={{ 
+                  ...styles.input, 
+                  backgroundColor: (isVerifiedStudent || !!editingTicket) ? '#f1f5f9' : '#ffffff',
+                  color: (isVerifiedStudent || !!editingTicket) ? '#64748b' : '#0f172a'
+                }}
               />
               {showClassSuggestions && classSuggestions.length > 0 && (
                 <div style={styles.suggestionsDropdown}>
