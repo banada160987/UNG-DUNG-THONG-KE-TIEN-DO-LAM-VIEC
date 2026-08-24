@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LabelList } from 'recharts';
 import html2canvas from 'html2canvas';
 
 export default function AdminQuiz() {
@@ -529,7 +529,7 @@ export default function AdminQuiz() {
                           outerRadius={80}
                           paddingAngle={5}
                           dataKey="value"
-                          label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                          label={({ name, value, percent }) => `${name}: ${value} hs (${(percent * 100).toFixed(0)}%)`}
                           labelLine={false}
                           fontSize={11}
                         >
@@ -558,7 +558,9 @@ export default function AdminQuiz() {
                           contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                           formatter={(value) => [value + ' điểm', 'Điểm trung bình']}
                         />
-                        <Bar dataKey="avgScore" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={15} />
+                        <Bar dataKey="avgScore" fill="#8b5cf6" radius={[0, 4, 4, 0]} barSize={15}>
+                          <LabelList dataKey="avgScore" position="right" fontSize={11} fill="#64748b" />
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -579,8 +581,12 @@ export default function AdminQuiz() {
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Line yAxisId="left" type="monotone" dataKey="students" name="Số học sinh" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
-                  <Line yAxisId="right" type="monotone" dataKey="classes" name="Số lớp tham gia" stroke="#10b981" strokeWidth={3} />
+                  <Line yAxisId="left" type="monotone" dataKey="students" name="Số học sinh" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }}>
+                    <LabelList dataKey="students" position="top" fontSize={11} fill="#3b82f6" />
+                  </Line>
+                  <Line yAxisId="right" type="monotone" dataKey="classes" name="Số lớp tham gia" stroke="#10b981" strokeWidth={3}>
+                    <LabelList dataKey="classes" position="bottom" fontSize={11} fill="#10b981" />
+                  </Line>
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -599,7 +605,9 @@ export default function AdminQuiz() {
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px' }} />
-                  <Bar dataKey="count" name="Số lượng học sinh" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20} />
+                  <Bar dataKey="count" name="Số lượng học sinh" fill="#6366f1" radius={[0, 4, 4, 0]} barSize={20}>
+                    <LabelList dataKey="count" position="right" fontSize={11} fill="#64748b" />
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
