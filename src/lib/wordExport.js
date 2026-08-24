@@ -8,23 +8,46 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   ];
 
   // Tính toán sĩ số thực tế từ bảng học sinh
+  const getGradeFromClass = (className) => {
+    const match = className.match(/(10|11|12)/);
+    return match ? match[0] : null;
+  };
+
+  const grades = { 
+      '10': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
+      '11': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
+      '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 } 
+  };
+
+  // Tính toán sĩ số thực tế từ bảng học sinh
   const dbClassSizes = {};
+  let totalSchoolStudents = 0;
+
   if (studentUsers && studentUsers.length > 0) {
     studentUsers.forEach(u => {
       if (u.student_class) {
         const clsName = u.student_class.startsWith('Lớp') ? u.student_class : 'Lớp ' + u.student_class;
         dbClassSizes[clsName] = (dbClassSizes[clsName] || 0) + 1;
+        totalSchoolStudents++;
+
+        const grade = getGradeFromClass(u.student_class);
+        if (grade && grades[grade]) {
+            grades[grade].totalStudents++;
+        }
+      }
+    });
+  } else {
+    totalSchoolStudents = ALL_CLASSES.length * 40;
+    ALL_CLASSES.forEach(cls => {
+      const grade = getGradeFromClass(cls);
+      if (grade && grades[grade]) {
+        grades[grade].totalStudents += 40;
       }
     });
   }
 
   // Lấy sĩ số lớp từ DB, nếu không có hoặc DB rỗng thì mặc định là 40 để tránh lỗi chia cho 0
   const getClassSize = (clsName) => dbClassSizes[clsName] || 40;
-
-  let totalSchoolStudents = 0;
-  ALL_CLASSES.forEach(cls => {
-      totalSchoolStudents += getClassSize(cls);
-  });
 
   
   // Data extraction
@@ -63,24 +86,6 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   const top10Individuals = validSubs.slice(0, 10);
   
   // Grades
-  const grades = { 
-      '10': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
-      '11': { count: 0, avg: 0, sum: 0, totalStudents: 0 }, 
-      '12': { count: 0, avg: 0, sum: 0, totalStudents: 0 } 
-  };
-  
-  const getGradeFromClass = (className) => {
-    const match = className.match(/(10|11|12)/);
-    return match ? match[0] : null;
-  };
-
-  ALL_CLASSES.forEach(cls => {
-      const grade = getGradeFromClass(cls);
-      if (grade && grades[grade]) {
-        grades[grade].totalStudents += getClassSize(cls);
-      }
-  });
-
   validSubs.forEach(s => {
       const g = s.student_group || '';
       const grade = getGradeFromClass(g);
