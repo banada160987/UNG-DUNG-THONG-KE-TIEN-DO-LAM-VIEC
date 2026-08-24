@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 import { Users, Upload, Search, Download, Plus, Save, Trash2, Edit3, CheckCircle2, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -193,10 +193,11 @@ export default function AdminStudents() {
         let dbSuccessCount = 0;
         let dbErrorMsg = null;
         const BATCH_SIZE = 100;
+        const dbClient = supabaseAdmin || supabase;
 
         for (let i = 0; i < formattedList.length; i += BATCH_SIZE) {
           const chunk = formattedList.slice(i, i + BATCH_SIZE);
-          const { error: batchErr } = await supabase
+          const { error: batchErr } = await dbClient
             .from('cbq_students')
             .upsert(chunk, { onConflict: 'student_code' });
 
@@ -219,7 +220,7 @@ export default function AdminStudents() {
         }
         reportMsg += `\n💾 ĐÃ GHI VÀO CSDL SUPABASE: ${dbSuccessCount}/${formattedList.length} bản ghi\n`;
         if (dbErrorMsg) {
-          reportMsg += `\n⚠️ Cảnh báo CSDL Supabase: ${dbErrorMsg}\n(Hãy đảm bảo đã chạy script SQL cấp quyền RLS trên Supabase SQL Editor!)`;
+          reportMsg += `\n⚠️ Cảnh báo CSDL Supabase (Bảo vệ RLS): ${dbErrorMsg}\n👉 Nếu chưa ghi được CSDL, bạn hãy chạy câu lệnh SQL này trong Supabase Editor:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`;
         }
 
         alert(reportMsg);
@@ -251,12 +252,20 @@ export default function AdminStudents() {
     };
 
     try {
+      const dbClient = supabaseAdmin || supabase;
+      let res;
       if (editingId) {
-        await supabase.from('cbq_students').update(payload).eq('id', editingId);
+        res = await dbClient.from('cbq_students').update(payload).eq('id', editingId);
       } else {
-        await supabase.from('cbq_students').insert([payload]);
+        res = await dbClient.from('cbq_students').insert([payload]);
       }
-      alert("🎉 ĐÃ LƯU THÔNG TIN HỌC SINH THÀNH CÔNG!");
+
+      if (res.error) {
+        alert("⚠️ Lỗi từ Supabase (Do RLS Bảo vệ CSDL): " + res.error.message + "\nHãy chạy lệnh SQL: ALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;");
+      } else {
+        alert("🎉 ĐÃ LƯU THÔNG TIN HỌC SINH THÀNH CÔNG VÀO CSDL!");
+      }
+
       setShowForm(false);
       setEditingId(null);
       fetchStudents();
@@ -268,7 +277,8 @@ export default function AdminStudents() {
   const handleDelete = async (id) => {
     if (!window.confirm("Xóa học sinh này khỏi danh sách nhà trường?")) return;
     try {
-      await supabase.from('cbq_students').delete().eq('id', id);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_students').delete().eq('id', id);
       setStudents(students.filter(s => s.id !== id));
     } catch (err) {
       alert("Lỗi khi xóa: " + err.message);
