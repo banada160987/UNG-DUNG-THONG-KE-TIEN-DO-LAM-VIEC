@@ -144,6 +144,7 @@ export default function AdminParking() {
     }
 
     try {
+      const existingPkg = packages.find(p => String(p.id) === String(editingPkgId));
       const payload = {
         package_key: pkgKey || `pkg_${Date.now()}`,
         title: pkgTitle.trim(),
@@ -151,12 +152,12 @@ export default function AdminParking() {
         fee_amount: Number(pkgFee) || 0,
         description: pkgDesc.trim(),
         hide_fee: pkgHideFee,
-        is_active: true
+        is_active: existingPkg ? existingPkg.is_active : true
       };
 
       let updated;
       if (editingPkgId) {
-        updated = packages.map(p => p.id === editingPkgId ? { ...p, ...payload } : p);
+        updated = packages.map(p => String(p.id) === String(editingPkgId) ? { ...p, ...payload } : p);
       } else {
         updated = [...packages, { ...payload, id: `pkg_${Date.now()}` }];
       }
@@ -165,16 +166,22 @@ export default function AdminParking() {
       localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
       try {
-        const { data: updateData, error: updateError } = await supabase
-          .from('cbq_parking_packages')
-          .update(payload)
-          .eq('id', editingPkgId)
-          .select();
+        if (editingPkgId) {
+          const { data: updateData, error: updateError } = await supabase
+            .from('cbq_parking_packages')
+            .update(payload)
+            .eq('id', editingPkgId)
+            .select();
 
-        if (updateError || !updateData || updateData.length === 0) {
-          await supabase.from('cbq_parking_packages').upsert([{
-            ...payload
-          }], { onConflict: 'package_key' });
+          if (updateError || !updateData || updateData.length === 0) {
+            await supabase
+              .from('cbq_parking_packages')
+              .update(payload)
+              .eq('package_key', pkgKey)
+              .select();
+          }
+        } else {
+          await supabase.from('cbq_parking_packages').insert([payload]);
         }
       } catch (dbErr) {
         console.warn("DB Upsert Fallback:", dbErr);
@@ -201,21 +208,27 @@ export default function AdminParking() {
 
   const handleDeletePackage = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa gói vé này?")) return;
+    const updated = packages.filter(p => String(p.id) !== String(id));
+    setPackages(updated);
+    localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
+
     try {
       await supabase.from('cbq_parking_packages').delete().eq('id', id);
-      setPackages(packages.filter(p => p.id !== id));
     } catch (err) {
-      alert("Lỗi khi xóa: " + err.message);
+      console.warn("Lỗi khi xóa:", err);
     }
   };
 
   // Toggle Package Active Status
   const handleTogglePkgActive = async (pkg) => {
+    const updated = packages.map(p => String(p.id) === String(pkg.id) ? { ...p, is_active: !p.is_active } : p);
+    setPackages(updated);
+    localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
+
     try {
       await supabase.from('cbq_parking_packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id);
-      fetchData();
     } catch (err) {
-      alert("Lỗi: " + err.message);
+      console.warn("Lỗi:", err);
     }
   };
 
