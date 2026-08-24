@@ -290,6 +290,7 @@ export default function PublicQuiz() {
   // Student Info
   const [studentName, setStudentName] = useState('');
   const [studentGroup, setStudentGroup] = useState('');
+  const [studentCode, setStudentCode] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
 
   // Quiz State
@@ -329,7 +330,7 @@ export default function PublicQuiz() {
       let from = 0;
       let fetchMore = true;
       while (fetchMore) {
-        const res = await supabase.from('cbq_students').select('student_name, student_class').range(from, from + 999);
+        const res = await supabase.from('cbq_students').select('student_name, student_class, student_code').range(from, from + 999);
         if (res.error) break;
         if (res.data && res.data.length > 0) {
           data = [...data, ...res.data];
@@ -362,6 +363,7 @@ export default function PublicQuiz() {
   const handleSelectSuggestion = (student) => {
     setStudentName(student.student_name);
     setStudentGroup(student.student_class ? `Lớp ${student.student_class}` : '');
+    setStudentCode(student.student_code || '');
     setShowSuggestions(false);
   };
 
@@ -499,21 +501,26 @@ export default function PublicQuiz() {
       return;
     }
 
-    // CHECK IF THIS PHONE HAS ALREADY COMPLETED A SUBMISSION
+    if (!studentCode) {
+      alert("Vui lòng chọn đúng tên của bạn từ danh sách gợi ý để hệ thống ghi nhận Mã Học Sinh.");
+      return;
+    }
+
+    // CHECK IF THIS STUDENT CODE HAS ALREADY COMPLETED A SUBMISSION
     try {
       const { data: existingSubmissions, error: checkError } = await supabase
         .from('cbq_quiz_submissions')
         .select('id, student_name, created_at')
-        .or(`phone.eq.${cleanPhone},phone.eq.${studentPhone.trim()}`);
+        .eq('student_code', studentCode);
 
       if (!checkError && existingSubmissions && existingSubmissions.length > 0) {
         const prevSub = existingSubmissions[0];
         const dateStr = prevSub.created_at ? new Date(prevSub.created_at).toLocaleString('vi-VN') : '';
-        alert(`⚠️ SỐ ĐIỆN THOẠI ĐÃ THAM GIA THI!\n\nSố điện thoại "${studentPhone}" (Thí sinh: ${prevSub.student_name}) đã hoàn thành 01 lượt thi vào lúc ${dateStr}.\n\nTheo quy định của Ban Tổ Chức, mỗi số điện thoại chỉ được phép tham gia thi 01 LẦN DUY NHẤT.`);
+        alert(`⚠️ MÃ HỌC SINH ĐÃ THAM GIA THI!\n\nMã học sinh "${studentCode}" (Thí sinh: ${prevSub.student_name}) đã hoàn thành 01 lượt thi vào lúc ${dateStr}.\n\nTheo quy định của Ban Tổ Chức, mỗi mã học sinh chỉ được phép tham gia thi 01 LẦN DUY NHẤT.`);
         return;
       }
     } catch (err) {
-      console.error("Lỗi kiểm tra trùng số điện thoại:", err);
+      console.error("Lỗi kiểm tra trùng mã học sinh:", err);
     }
 
     if (quizConfig && quizConfig.is_active === false) {
@@ -580,6 +587,7 @@ export default function PublicQuiz() {
       await supabase.from('cbq_quiz_submissions').insert([{
         student_name: studentName.trim(),
         student_group: studentGroup.trim() || 'Học sinh / Cựu học sinh',
+        student_code: studentCode,
         phone: studentPhone.trim(),
         score: autoScore,
         total_score: autoScore,
@@ -643,7 +651,7 @@ export default function PublicQuiz() {
               <div><strong>⏱️ Thời gian làm bài:</strong> {quizConfig?.time_limit_minutes || 15} Phút</div>
               <div><strong>📝 Cấu trúc đề thi:</strong> {questions.length > 0 ? questions.length : '30'} Câu</div>
               <div><strong>🎯 Câu dự đoán xếp hạng:</strong> Dự đoán số người 30/30</div>
-              <div><strong>🔒 Quy định an toàn:</strong> Mỗi SĐT chỉ thi 01 LẦN DUY NHẤT</div>
+              <div><strong>🔒 Quy định an toàn:</strong> Mỗi Học Sinh (Mã HS) chỉ thi 01 LẦN DUY NHẤT</div>
             </div>
 
             <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#166534', fontWeight: 'bold' }}>
