@@ -230,7 +230,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
 
           // Content
           createParagraph("Căn cứ Kế hoạch tổ chức các hoạt động kỷ niệm 30 năm ngày thành lập Trường THPT Cao Bá Quát;"),
-          createParagraph(`Thay mặt ban tổ chức, báo cáo kết quả tổ chức "${quizConfig.title || 'Cuộc Thi'}" với những số liệu cụ thể như sau:`),
+          createParagraph(`Thay mặt Ban tổ chức cuộc thi, báo cáo kết quả tổ chức "${quizConfig.title || 'Cuộc Thi'}" với những số liệu cụ thể như sau:`),
 
           createHeading("1. Tổng quan kết quả cuộc thi"),
           createParagraph(`- Tổng số học sinh tham gia dự thi: ${totalStudents} học sinh.`),
