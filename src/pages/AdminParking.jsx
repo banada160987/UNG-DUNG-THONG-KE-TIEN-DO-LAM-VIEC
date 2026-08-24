@@ -3,6 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { generateParkingWordReport } from '../lib/wordExportParking';
 
 const DEFAULT_PARKING_LIST = [
   { id: '1', ticket_code: 'PARK-11A1-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A1-01', student_class: '11A1', grade_level: 'Khối 11', license_plate: '29B1-567.89', vehicle_type: 'Xe máy điện', vehicle_color: 'Đen nhám', package_type: 'term', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 200000, status: 'active' },
@@ -285,6 +286,62 @@ export default function AdminParking() {
     XLSX.writeFile(workbook, `Danh_Sach_Xe_May_Hoc_Sinh_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const handleExportWord = async () => {
+    try {
+      // 1. Fetch all students (Paginated)
+      let allStudents = [];
+      let fromStudents = 0;
+      let hasMoreStudents = true;
+      while (hasMoreStudents) {
+        const { data, error } = await supabase.from('cbq_students').select('student_class, student_code, student_name').range(fromStudents, fromStudents + 999);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allStudents = allStudents.concat(data);
+          fromStudents += 1000;
+        } else {
+          hasMoreStudents = false;
+        }
+      }
+
+      // 2. Fetch all parking registrations (Paginated)
+      let parkingData = [];
+      let fromParking = 0;
+      let hasMoreParking = true;
+      while (hasMoreParking) {
+        const { data, error } = await supabase.from('cbq_parking_registrations').select('*').range(fromParking, fromParking + 999);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          parkingData = parkingData.concat(data);
+          fromParking += 1000;
+        } else {
+          hasMoreParking = false;
+        }
+      }
+
+      // 3. Fetch all bus registrations (Paginated)
+      let busData = [];
+      let fromBus = 0;
+      let hasMoreBus = true;
+      while (hasMoreBus) {
+        const { data, error } = await supabase.from('cbq_bus_registrations').select('*').range(fromBus, fromBus + 999);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          busData = busData.concat(data);
+          fromBus += 1000;
+        } else {
+          hasMoreBus = false;
+        }
+      }
+
+      // Tạo báo cáo Word
+      await generateParkingWordReport(allStudents, parkingData, busData);
+      alert("Đã xuất báo cáo Word (chuẩn Nghị định 30) thành công!");
+    } catch (err) {
+      console.error(err);
+      alert("Có lỗi khi tạo báo cáo Word: " + err.message);
+    }
+  };
+
   const handleDeleteItem = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa lượt đăng ký xe này?")) return;
     try {
@@ -356,6 +413,13 @@ export default function AdminParking() {
           >
             <Eye size={18} /> Cổng Đăng Ký Học Sinh
           </a>
+          <button 
+            onClick={handleExportWord}
+            className="btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#2563eb' }}
+          >
+            <Download size={18} /> Xuất Báo cáo Word
+          </button>
           <button 
             onClick={handleExportExcel}
             className="btn-primary" 
