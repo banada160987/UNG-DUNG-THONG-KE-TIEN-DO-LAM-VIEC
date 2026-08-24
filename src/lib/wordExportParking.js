@@ -1,5 +1,4 @@
 import { Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, BorderStyle, WidthType, AlignmentType } from "docx";
-import { saveAs } from "file-saver";
 
 export const generateParkingWordReport = async (allStudents, parkingData, busData) => {
   // --- 1. PREPARE DATA ---
@@ -343,5 +342,11 @@ export const generateParkingWordReport = async (allStudents, parkingData, busDat
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, "Bao_Cao_Dang_Ky_Phuong_Tien_Di_Chuyen.docx");
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `Bao_Cao_Dang_Ky_Phuong_Tien_Di_Chuyen_${Date.now()}.docx`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 };
