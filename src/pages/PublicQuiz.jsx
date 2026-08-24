@@ -493,6 +493,12 @@ export default function PublicQuiz() {
       return;
     }
 
+    const phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+    if (!phoneRegex.test(cleanPhone)) {
+      alert("Số điện thoại không hợp lệ. Vui lòng nhập đúng số điện thoại 10 số của Việt Nam (VD: 0987654321).");
+      return;
+    }
+
     // CHECK IF THIS PHONE HAS ALREADY COMPLETED A SUBMISSION
     try {
       const { data: existingSubmissions, error: checkError } = await supabase
@@ -669,10 +675,12 @@ export default function PublicQuiz() {
               <input
                 type="text"
                 required
-                placeholder="VD: Lớp 12A1 (Niên khóa 2002 - 2005)"
+                readOnly
+                placeholder="VD: Lớp 12A1 (sẽ tự động điền)"
                 value={studentGroup}
                 onChange={e => setStudentGroup(e.target.value)}
-                style={styles.input}
+                style={{ ...styles.input, backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#475569' }}
+                title="Lớp sẽ tự động điền khi bạn chọn tên từ danh sách gợi ý"
               />
             </div>
 
