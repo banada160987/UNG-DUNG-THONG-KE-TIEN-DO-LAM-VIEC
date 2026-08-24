@@ -74,7 +74,8 @@ export default function PublicParkingRegister() {
       const { data, error } = await supabase
         .from('cbq_students')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .limit(5000);
 
       if (!error && data && data.length > 0) {
         setStudentRoster(data);
@@ -98,58 +99,87 @@ export default function PublicParkingRegister() {
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
   const classDropdownRef = useRef(null);
 
-  // Handle Autocomplete Search for Name
+  // Compute Unique Classes across Khối 10, Khối 11, Khối 12
+  const getUniqueClassesList = () => {
+    let classes = Array.from(new Set(studentRoster.map(s => s.student_class))).filter(Boolean);
+    if (classes.length === 0) {
+      const defaults = [];
+      ['10', '11', '12'].forEach(g => {
+        for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
+      });
+      return defaults;
+    }
+
+    return classes.sort((a, b) => {
+      const gradeA = parseInt(a.slice(0, 2)) || 10;
+      const gradeB = parseInt(b.slice(0, 2)) || 10;
+      if (gradeA !== gradeB) return gradeA - gradeB;
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  };
+
+  // Autocomplete Search for Student Name
+  const filterNameSuggestions = (nameVal, classVal = studentClass) => {
+    const cleanName = (nameVal || '').trim().toLowerCase();
+    const cleanClass = (classVal || '').trim().toLowerCase();
+
+    let matches = studentRoster;
+    if (cleanClass) {
+      matches = matches.filter(s => s.student_class?.toLowerCase() === cleanClass);
+    }
+    if (cleanName) {
+      matches = matches.filter(s => 
+        s.student_name?.toLowerCase().includes(cleanName) ||
+        s.student_code?.toLowerCase().includes(cleanName)
+      );
+    }
+
+    const sliced = matches.slice(0, 12);
+    setSuggestions(sliced);
+    setShowSuggestions(sliced.length > 0);
+  };
+
   const handleNameChange = (val) => {
     setStudentName(val);
     setIsVerifiedStudent(false);
-    if (!val.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-
-    const clean = val.trim().toLowerCase();
-    const cleanClass = studentClass.trim().toLowerCase();
-
-    // Prioritize students in current class if class is entered
-    let matches = studentRoster.filter(s => {
-      const matchNameOrCode = s.student_name.toLowerCase().includes(clean) || s.student_code.toLowerCase().includes(clean);
-      return matchNameOrCode;
-    });
-
-    if (cleanClass) {
-      matches.sort((a, b) => {
-        const aInClass = a.student_class.toLowerCase() === cleanClass;
-        const bInClass = b.student_class.toLowerCase() === cleanClass;
-        if (aInClass && !bInClass) return -1;
-        if (!aInClass && bInClass) return 1;
-        return 0;
-      });
-    }
-
-    matches = matches.slice(0, 8);
-    setSuggestions(matches);
-    setShowSuggestions(matches.length > 0);
+    filterNameSuggestions(val);
   };
 
-  // Handle Autocomplete Search for Class
-  const handleClassChange = (val) => {
-    setStudentClass(val);
-    if (!val.trim()) {
-      setClassSuggestions([]);
-      setShowClassSuggestions(false);
+  const handleNameFocus = () => {
+    filterNameSuggestions(studentName);
+  };
+
+  // Autocomplete Search for Class
+  const filterClassSuggestions = (val) => {
+    const allUnique = getUniqueClassesList();
+    const clean = (val || '').trim().toLowerCase();
+    if (!clean) {
+      setClassSuggestions(allUnique.slice(0, 15));
+      setShowClassSuggestions(true);
       return;
     }
 
-    const clean = val.trim().toLowerCase();
-    // Find all students in matching class or class names
-    const matchingStudents = studentRoster.filter(s => 
-      s.student_class.toLowerCase().includes(clean) ||
-      s.student_class.toLowerCase() === clean
-    ).slice(0, 8);
+    const filtered = allUnique.filter(c => c.toLowerCase().includes(clean)).slice(0, 15);
+    setClassSuggestions(filtered);
+    setShowClassSuggestions(filtered.length > 0);
+  };
 
-    setClassSuggestions(matchingStudents);
-    setShowClassSuggestions(matchingStudents.length > 0);
+  const handleClassChange = (val) => {
+    setStudentClass(val);
+    filterClassSuggestions(val);
+  };
+
+  const handleClassFocus = () => {
+    filterClassSuggestions(studentClass);
+  };
+
+  const handleSelectClassSuggestion = (clsName) => {
+    setStudentClass(clsName);
+    setShowClassSuggestions(false);
+    // Automatically trigger student suggestions for this class
+    filterNameSuggestions(studentName, clsName);
   };
 
   const handleSelectSuggestion = (student) => {
@@ -167,10 +197,19 @@ export default function PublicParkingRegister() {
     return d.toISOString().split('T')[0];
   };
 
-  const getGradeLevel = (className) => {
-    if (!className) return 'Khối 10';
-    if (className.startsWith('11')) return 'Khối 11';
-    if (className.startsWith('12')) return 'Khối 12';
+  const getGradeLevel = (clsName) => {
+    if (!clsName) return 'Khối 10';
+    const clean = String(clsName).trim().toUpperCase();
+
+    const matchPrefix = clean.match(/^(10|11|12)/);
+    if (matchPrefix) {
+      return `Khối ${matchPrefix[1]}`;
+    }
+
+    if (/\b12\b|12[A-Z]/i.test(clean)) return 'Khối 12';
+    if (/\b11\b|11[A-Z]/i.test(clean)) return 'Khối 11';
+    if (/\b10\b|10[A-Z]/i.test(clean)) return 'Khối 10';
+
     return 'Khối 10';
   };
 
@@ -325,6 +364,7 @@ export default function PublicParkingRegister() {
                 placeholder="Gõ tên hoặc Mã HS để tự động gợi ý..."
                 value={studentName}
                 onChange={e => handleNameChange(e.target.value)}
+                onFocus={handleNameFocus}
                 style={{
                   ...styles.input,
                   borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
@@ -336,7 +376,7 @@ export default function PublicParkingRegister() {
               {showSuggestions && suggestions.length > 0 && (
                 <div style={styles.suggestionsDropdown}>
                   <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG (Bấm chọn):
+                    💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG ({suggestions.length} học sinh):
                   </div>
                   {suggestions.map((st, idx) => (
                     <div 
@@ -360,9 +400,10 @@ export default function PublicParkingRegister() {
               <input 
                 type="text" 
                 required 
-                placeholder="Gõ Lớp (VD: 10A5, 11A1) để chọn HS..."
+                placeholder="Bấm hoặc gõ Lớp (VD: 10A1, 11A2, 12A3)..."
                 value={studentClass}
                 onChange={e => handleClassChange(e.target.value)}
+                onFocus={handleClassFocus}
                 style={styles.input}
               />
 
@@ -370,20 +411,29 @@ export default function PublicParkingRegister() {
               {showClassSuggestions && classSuggestions.length > 0 && (
                 <div style={styles.suggestionsDropdown}>
                   <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#be123c', backgroundColor: '#fff1f2', borderBottom: '1px solid #fca5a5' }}>
-                    🏫 HỌC SINH THUỘC LỚP {studentClass.toUpperCase()} (Bấm để chọn):
+                    🏫 DANH SÁCH LỚP HỌC (3 KHỐI 10, 11, 12):
                   </div>
-                  {classSuggestions.map((st, idx) => (
-                    <div 
-                      key={st.id || idx}
-                      onClick={() => handleSelectSuggestion(st)}
-                      style={styles.suggestionItem}
-                    >
-                      <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{st.student_name}</div>
-                      <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        Lớp: <strong style={{ color: '#be123c' }}>{st.student_class}</strong> • Mã HS: {st.student_code}
-                      </div>
-                    </div>
-                  ))}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', padding: '6px' }}>
+                    {classSuggestions.map((clsItem, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectClassSuggestion(clsItem)}
+                        style={{
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0',
+                          backgroundColor: studentClass.toUpperCase() === clsItem.toUpperCase() ? '#be123c' : '#f8fafc',
+                          color: studentClass.toUpperCase() === clsItem.toUpperCase() ? '#ffffff' : '#1e293b',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Lớp {clsItem}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
