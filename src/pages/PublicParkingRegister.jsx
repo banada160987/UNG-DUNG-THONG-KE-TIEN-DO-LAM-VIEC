@@ -9,8 +9,15 @@ const DEFAULT_PACKAGES = [
   { key: 'year', label: 'Đăng ký Cả Năm Học (9 tháng)', months: 9, fee: 400000, desc: 'Thời hạn trọn cả năm học (Tiết kiệm 50.000 VNĐ)' }
 ];
 
+const DEFAULT_BUS_PACKAGES = [
+  { key: 'month_2way', label: '2 Chiều - Đăng ký Theo Tháng', months: 1, fee: 300000, desc: 'Thời hạn 1 tháng, đưa đón 2 chiều (300.000 VNĐ)' },
+  { key: 'term_2way', label: '2 Chiều - Đăng ký Theo Học Kỳ', months: 5, fee: 1400000, desc: 'Đưa đón 2 chiều, thời hạn 5 tháng' },
+  { key: 'month_1way', label: '1 Chiều - Đăng ký Theo Tháng', months: 1, fee: 180000, desc: 'Thời hạn 1 tháng, đưa đón 1 chiều (180.000 VNĐ)' },
+];
+
 export default function PublicParkingRegister() {
   const [packages, setPackages] = useState(DEFAULT_PACKAGES);
+  const [busPackages, setBusPackages] = useState(DEFAULT_BUS_PACKAGES);
   const [studentRoster, setStudentRoster] = useState([]);
   
   const [studentName, setStudentName] = useState('');
@@ -39,6 +46,7 @@ export default function PublicParkingRegister() {
   const [busAddress, setBusAddress] = useState('');
   const [busPickupPoint, setBusPickupPoint] = useState('');
   const [busRouteType, setBusRouteType] = useState('2-way'); // '1-way' or '2-way'
+  const [busPackageType, setBusPackageType] = useState('month_2way');
   const [successBusTicket, setSuccessBusTicket] = useState(null);
 
   const [loading, setLoading] = useState(false);
@@ -98,22 +106,24 @@ export default function PublicParkingRegister() {
 
   async function fetchConfiguredPackages() {
     try {
-      const { data, error } = await supabase
-        .from('cbq_parking_packages')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
+      const [parkingRes, busRes] = await Promise.all([
+        supabase.from('cbq_parking_packages').select('*').eq('is_active', true).order('sort_order', { ascending: true }),
+        supabase.from('cbq_bus_packages').select('*').eq('is_active', true).order('sort_order', { ascending: true })
+      ]);
 
-      if (!error && data && data.length > 0) {
-        const formatted = data.map(p => ({
-          key: p.package_key,
-          label: p.title,
-          months: p.months_count,
-          fee: Number(p.fee_amount) || 0,
-          hide_fee: !!p.hide_fee,
-          desc: p.description || `${p.title}`
+      if (!parkingRes.error && parkingRes.data && parkingRes.data.length > 0) {
+        const formatted = parkingRes.data.map(p => ({
+          key: p.package_key, label: p.title, months: p.months_count, fee: Number(p.fee_amount) || 0, hide_fee: !!p.hide_fee, desc: p.description || `${p.title}`
         }));
         setPackages(formatted);
+      }
+      
+      if (!busRes.error && busRes.data && busRes.data.length > 0) {
+        const formattedBus = busRes.data.map(p => ({
+          key: p.package_key, label: p.title, months: p.months_count, fee: Number(p.fee_amount) || 0, hide_fee: !!p.hide_fee, desc: p.description || `${p.title}`
+        }));
+        setBusPackages(formattedBus);
+        if (formattedBus.length > 0) setBusPackageType(formattedBus[0].key);
       }
     } catch (err) {
       console.warn("Nạp gói vé mặc định:", err);
@@ -424,6 +434,11 @@ export default function PublicParkingRegister() {
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticketCode = `BUS-${cleanClass}-${randomNum}`;
       
+      const selectedPkg = busPackages.find(p => p.key === busPackageType) || busPackages[0];
+      const today = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + (selectedPkg?.months || 1));
+
       const payload = {
         student_name: studentName.trim(),
         student_code: studentCode.trim() || `HS-${randomNum}`,
@@ -432,7 +447,12 @@ export default function PublicParkingRegister() {
         address: busAddress.trim(),
         pickup_point: busPickupPoint.trim(),
         route_type: busRouteType,
-        ticket_code: editingTicket ? editingTicket.ticket_code : ticketCode
+        ticket_code: editingTicket ? editingTicket.ticket_code : ticketCode,
+        package_type: busPackageType,
+        start_date: editingTicket && editingTicket.start_date ? editingTicket.start_date : today.toISOString().split('T')[0],
+        end_date: editingTicket && editingTicket.end_date ? editingTicket.end_date : endDate.toISOString().split('T')[0],
+        fee_amount: selectedPkg ? selectedPkg.fee : 0,
+        status: 'active'
       };
 
       let dbQuery;
@@ -1007,6 +1027,37 @@ export default function PublicParkingRegister() {
                 <option value="2-way">🔄 Đưa đón 2 chiều (Đi & Về)</option>
                 <option value="1-way">➡️ Đưa đón 1 chiều</option>
               </select>
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={styles.label}>Gói Thời Hạn & Lệ Phí (*)</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '6px' }}>
+                {busPackages.map(pkg => (
+                  <label key={pkg.key} style={{
+                    display: 'flex', flexDirection: 'column', padding: '12px', borderRadius: '10px', border: busPackageType === pkg.key ? '2px solid #be123c' : '1px solid #cbd5e1', backgroundColor: busPackageType === pkg.key ? '#fff1f2' : '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                      <input 
+                        type="radio" 
+                        name="busPackageType" 
+                        value={pkg.key} 
+                        checked={busPackageType === pkg.key}
+                        onChange={() => setBusPackageType(pkg.key)}
+                        style={{ accentColor: '#be123c', width: '16px', height: '16px' }}
+                      />
+                      <span style={{ fontWeight: 'bold', fontSize: '14px', color: busPackageType === pkg.key ? '#be123c' : '#1e293b' }}>{pkg.label}</span>
+                    </div>
+                    <div style={{ paddingLeft: '24px', fontSize: '12px', color: '#64748b' }}>
+                      {pkg.desc}
+                    </div>
+                    {!pkg.hide_fee && (
+                      <div style={{ paddingLeft: '24px', fontSize: '14px', fontWeight: '900', color: '#be123c', marginTop: '6px' }}>
+                        {pkg.fee === 0 ? '🟢 Miễn phí' : `${pkg.fee.toLocaleString()} VNĐ`}
+                      </div>
+                    )}
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 

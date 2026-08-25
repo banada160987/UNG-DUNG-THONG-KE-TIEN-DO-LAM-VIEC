@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -78,6 +78,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/bus', icon: Bus, label: '🚌 Quản lý Xe đưa đón', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },
     { path: '/admin/docs', icon: FileText, label: 'Văn bản - Thông báo', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản lý Góp ý Công việc', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewFeedback },
 

@@ -42,6 +42,7 @@ import PublicStaff from './pages/PublicStaff';
 import AdminStaff from './pages/AdminStaff';
 import PublicParkingRegister from './pages/PublicParkingRegister';
 import AdminParking from './pages/AdminParking';
+import AdminBus from './pages/AdminBus';
 import AdminStudents from './pages/AdminStudents';
 import PublicEmulationScoring from './pages/PublicEmulationScoring';
 import AdminEmulation from './pages/AdminEmulation';
@@ -93,6 +94,7 @@ function App() {
           <Route path="/admin/committee" element={<CommitteeView />} />
           <Route path="/admin/emulation" element={permissions.canViewEmulation ? <AdminEmulation /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/students" element={permissions.canViewStudents ? <AdminStudents /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/bus" element={permissions.canViewStudents ? <AdminBus /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/parking" element={permissions.canViewStudents ? <AdminParking /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/schedule" element={permissions.canViewDocs ? <AdminSchedule /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/staff" element={permissions.canViewDocs ? <AdminStaff /> : <Navigate to="/admin/committee" replace />} />
