@@ -264,7 +264,8 @@ export default function AdminBus() {
           .from('cbq_bus_packages')
           .upsert([dbPayload], { onConflict: 'package_key' });
       } catch (dbErr) {
-        console.warn("Lỗi lưu DB gói vé:", dbErr);
+        console.error("Lỗi lưu DB gói vé:", dbErr);
+        alert("CẢNH BÁO: Không thể lưu vào CSDL Supabase. Gói vé chỉ được lưu tạm trên trình duyệt.\nVui lòng kiểm tra lại cấu hình DB hoặc chạy file SQL để tạo bảng.\nChi tiết lỗi: " + dbErr.message);
       }
 
       alert(`🎉 ĐÃ LƯU THÀNH CÔNG GÓI VÉ: "${pkgTitle.trim()}"!`);
