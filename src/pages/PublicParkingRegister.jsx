@@ -365,10 +365,20 @@ export default function PublicParkingRegister() {
     return 'Khối 10';
   };
 
+  const isBicycle = vehicleType === 'Xe đạp' || vehicleType === 'Xe đạp điện';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!studentName.trim() || !studentClass.trim() || !licensePlate.trim()) {
+    if (!studentName.trim() || !studentClass.trim()) {
       alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
+      return;
+    }
+    if (!isBicycle && !licensePlate.trim()) {
+      alert("Vui lòng nhập Biển số xe.");
+      return;
+    }
+    if (isBicycle && !vehicleColor.trim()) {
+      alert("Vui lòng nhập Màu xe / Đặc điểm nhận dạng cho xe đạp.");
       return;
     }
 
@@ -394,7 +404,7 @@ export default function PublicParkingRegister() {
         student_code: studentCode.trim() || `HS-${randomNum}`,
         student_class: cleanClass,
         grade_level: gradeLevel,
-        license_plate: licensePlate.trim().toUpperCase(),
+        license_plate: (isBicycle && !licensePlate.trim()) ? `Không có` : licensePlate.trim().toUpperCase(),
         vehicle_type: vehicleType,
         vehicle_color: vehicleColor.trim(),
         package_type: packageType,
@@ -711,7 +721,7 @@ export default function PublicParkingRegister() {
           {activeTab === 'parking' && (isRegistrationOpen() || !!editingTicket) && (
             <form onSubmit={handleSubmit} style={styles.formCard}>
               <h3 style={styles.formTitle}>
-                {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN VÉ XE MÁY' : '📝 Thông tin Đăng ký Vé Xe Máy Học Sinh'}
+                {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN VÉ GỬI XE' : '📝 Thông tin Đăng ký Vé Gửi Xe Học Sinh'}
               </h3>
 
               <div style={styles.formGrid}>
@@ -811,17 +821,19 @@ export default function PublicParkingRegister() {
               )}
             </div>
 
-            <div>
-              <label style={styles.label}>Biển số xe (*)</label>
-              <input 
-                type="text" 
-                required 
-                placeholder="VD: 29B1-567.89 hoặc 29-AA 1234"
-                value={licensePlate}
-                onChange={e => setLicensePlate(e.target.value)}
-                style={{ ...styles.input, fontWeight: 'bold', letterSpacing: '1px' }}
-              />
-            </div>
+            {!isBicycle && (
+              <div>
+                <label style={styles.label}>Biển số xe (*)</label>
+                <input 
+                  type="text" 
+                  required 
+                  placeholder="VD: 29B1-567.89 hoặc 29-AA 1234"
+                  value={licensePlate}
+                  onChange={e => setLicensePlate(e.target.value)}
+                  style={{ ...styles.input, fontWeight: 'bold', letterSpacing: '1px' }}
+                />
+              </div>
+            )}
 
             <div>
               <label style={styles.label}>Loại phương tiện (*)</label>
@@ -835,9 +847,10 @@ export default function PublicParkingRegister() {
             </div>
 
             <div>
-              <label style={styles.label}>Màu xe (không bắt buộc)</label>
+              <label style={styles.label}>Màu xe {isBicycle ? '(*)' : '(không bắt buộc)'}</label>
               <input 
                 type="text" 
+                required={isBicycle}
                 placeholder="VD: Màu Đen nhám, Đỏ Trắng..."
                 value={vehicleColor}
                 onChange={e => setVehicleColor(e.target.value)}
@@ -888,9 +901,15 @@ export default function PublicParkingRegister() {
             </div>
           </div>
 
+          {isBicycle && (
+            <div style={{ marginTop: '20px', padding: '12px', backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', color: '#92400e', fontSize: '13.5px' }}>
+              <strong>💡 Lưu ý:</strong> Vì xe đạp không có biển số, sau khi đăng ký thành công, học sinh vui lòng chụp màn hình vé và báo lại với phòng bảo vệ để được cấp tem dán số xe nhé.
+            </div>
+          )}
+
           <div style={{ display: 'flex', gap: '12px' }}>
             <button type="submit" disabled={loading} style={{ ...styles.submitBtn, flex: 1 }}>
-              {loading ? 'Đang xử lý...' : editingTicket ? '💾 LƯU ĐIỀU CHỈNH VÉ XE MÁY' : '🚀 XÁC NHẬN ĐĂNG KÝ VÉ XE MÁY'}
+              {loading ? 'Đang xử lý...' : editingTicket ? '💾 LƯU ĐIỀU CHỈNH VÉ GỬI XE' : '🚀 XÁC NHẬN ĐĂNG KÝ VÉ GỬI XE'}
             </button>
             {editingTicket && (
               <button type="button" onClick={cancelEdit} disabled={loading} style={{ ...styles.submitBtn, flex: 0.4, backgroundColor: '#64748b' }}>
