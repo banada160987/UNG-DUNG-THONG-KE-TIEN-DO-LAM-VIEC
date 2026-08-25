@@ -165,8 +165,8 @@ export default function AdminBus() {
       item.pickup_point?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.ticket_code?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchGrade = selectedGrade === 'ALL' || item.grade_level === selectedGrade;
-    const matchPkg = selectedPackage === 'ALL' || item.package_type === selectedPackage;
+    const matchGrade = selectedGrade === 'ALL' || item.grade_level === selectedGrade || (selectedGrade === 'Khối 10' && String(item.student_class || '').startsWith('10')) || (selectedGrade === 'Khối 11' && String(item.student_class || '').startsWith('11')) || (selectedGrade === 'Khối 12' && String(item.student_class || '').startsWith('12'));
+    const matchPkg = selectedPackage === 'ALL' || String(item.package_type || '').includes(selectedPackage);
     const matchStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
     const matchVehicle = selectedRouteType === 'ALL' || item.route_type === selectedRouteType;
     const matchClass = selectedClassFilter === 'ALL' || item.student_class === selectedClassFilter;
@@ -177,9 +177,9 @@ export default function AdminBus() {
   // Calculate Statistics
   const stats = {
     total: busList.length,
-    grade10: busList.filter(i => i.grade_level === 'Khối 10').length,
-    grade11: busList.filter(i => i.grade_level === 'Khối 11').length,
-    grade12: busList.filter(i => i.grade_level === 'Khối 12').length,
+    grade10: busList.filter(i => i.grade_level === 'Khối 10' || String(i.student_class || '').startsWith('10')).length,
+    grade11: busList.filter(i => i.grade_level === 'Khối 11' || String(i.student_class || '').startsWith('11')).length,
+    grade12: busList.filter(i => i.grade_level === 'Khối 12' || String(i.student_class || '').startsWith('12')).length,
     pkgMonth: busList.filter(i => String(i.package_type || '').includes('month')).length,
     pkgTerm: busList.filter(i => String(i.package_type || '').includes('term')).length,
     pkgYear: busList.filter(i => String(i.package_type || '').includes('year')).length,
@@ -649,7 +649,7 @@ export default function AdminBus() {
                         </td>
                         <td style={{ padding: '10px', color: '#475569' }}>{item.route_type}</td>
                         <td style={{ padding: '10px', fontWeight: 'bold', color: '#b45309' }}>
-                          {item.package_type === 'month' ? 'Tháng' : item.package_type === 'term' ? 'Học kỳ' : 'Cả năm'}
+                          {String(item.package_type || '').includes('month') ? 'Tháng' : String(item.package_type || '').includes('term') ? 'Học kỳ' : 'Cả năm'}
                         </td>
                         <td style={{ padding: '10px', fontSize: '12.5px', color: '#64748b' }}>
                           Từ {item.start_date} <br />Đến {item.end_date}
