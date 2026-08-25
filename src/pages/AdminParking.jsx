@@ -28,7 +28,9 @@ export default function AdminParking() {
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   const [selectedPackage, setSelectedPackage] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
-  const [selectedTicketToPrint, setSelectedTicketToPrint] = useState(null);
+  const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
+  const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
+  const [selectedTicketsToPrint, setSelectedTicketsToPrint] = useState([]);
 
   // Package Form State
   const [showPkgForm, setShowPkgForm] = useState(false);
@@ -153,6 +155,9 @@ export default function AdminParking() {
   };
 
   // Filter Data
+  const uniqueClasses = Array.from(new Set(parkingList.map(i => i.student_class).filter(Boolean))).sort();
+  const uniqueVehicleTypes = Array.from(new Set(parkingList.map(i => i.vehicle_type).filter(Boolean))).sort();
+
   const filteredList = parkingList.filter(item => {
     const matchSearch = !searchTerm || 
       item.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -163,8 +168,10 @@ export default function AdminParking() {
     const matchGrade = selectedGrade === 'ALL' || item.grade_level === selectedGrade;
     const matchPkg = selectedPackage === 'ALL' || item.package_type === selectedPackage;
     const matchStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
+    const matchVehicle = selectedVehicleType === 'ALL' || item.vehicle_type === selectedVehicleType;
+    const matchClass = selectedClassFilter === 'ALL' || item.student_class === selectedClassFilter;
 
-    return matchSearch && matchGrade && matchPkg && matchStatus;
+    return matchSearch && matchGrade && matchPkg && matchStatus && matchVehicle && matchClass;
   });
 
   // Calculate Statistics
@@ -411,7 +418,18 @@ export default function AdminParking() {
   };
 
   const handlePrintCard = (item) => {
-    setSelectedTicketToPrint(item);
+    setSelectedTicketsToPrint([item]);
+    setTimeout(() => {
+      window.print();
+    }, 300);
+  };
+
+  const handlePrintBulk = () => {
+    if (filteredList.length === 0) {
+      alert("Không có vé nào trong danh sách hiện tại để in.");
+      return;
+    }
+    setSelectedTicketsToPrint(filteredList);
     setTimeout(() => {
       window.print();
     }, 300);
@@ -427,25 +445,29 @@ export default function AdminParking() {
       `}</style>
 
       {/* PRINT MODAL CARD (Hidden during regular display, visible on print) */}
-      {selectedTicketToPrint && (
+      {selectedTicketsToPrint && selectedTicketsToPrint.length > 0 && (
         <div style={{ display: 'none' }} className="printable-card">
-          <div style={styles.printTicketCard}>
-            <div style={{ textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '10px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-              <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {selectedTicketToPrint.ticket_code}</div>
-            </div>
-            <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
-              <div><strong>Họ tên HS:</strong> {selectedTicketToPrint.student_name}</div>
-              <div><strong>Lớp:</strong> {selectedTicketToPrint.student_class} ({selectedTicketToPrint.grade_level})</div>
-              <div><strong>Biển số xe:</strong> <span style={{ fontSize: '15px', color: '#be123c', fontWeight: 'bold' }}>{selectedTicketToPrint.license_plate}</span></div>
-              <div><strong>Loại xe:</strong> {selectedTicketToPrint.vehicle_type}</div>
-              <div><strong>Thời hạn:</strong> Từ {selectedTicketToPrint.start_date} Đến {selectedTicketToPrint.end_date}</div>
-            </div>
-            <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <QrCode size={48} color="#1e293b" />
-              <div style={{ fontSize: '10px', textAlign: 'right', color: '#64748b' }}>Xác nhận Ban Bảo Vệ<br /><b>✓ Đã duyệt vé</b></div>
-            </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', padding: '10px' }}>
+            {selectedTicketsToPrint.map((ticket, idx) => (
+              <div key={idx} style={{ ...styles.printTicketCard, breakInside: 'avoid', marginBottom: '20px' }}>
+                <div style={{ textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '10px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {ticket.ticket_code}</div>
+                </div>
+                <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                  <div><strong>Họ tên HS:</strong> {ticket.student_name}</div>
+                  <div><strong>Lớp:</strong> {ticket.student_class} ({ticket.grade_level})</div>
+                  <div><strong>Biển số xe:</strong> <span style={{ fontSize: '15px', color: '#be123c', fontWeight: 'bold' }}>{ticket.license_plate}</span></div>
+                  <div><strong>Loại xe:</strong> {ticket.vehicle_type}</div>
+                  <div><strong>Thời hạn:</strong> Từ {ticket.start_date} Đến {ticket.end_date}</div>
+                </div>
+                <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <QrCode size={48} color="#1e293b" />
+                  <div style={{ fontSize: '10px', textAlign: 'right', color: '#64748b' }}>Xác nhận Ban Bảo Vệ<br /><b>✓ Đã duyệt vé</b></div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -554,12 +576,19 @@ export default function AdminParking() {
               <Search size={18} color="#64748b" />
               <input 
                 type="text" 
-                placeholder="Tìm theo Biển số xe (29B1-...), Họ tên học sinh, Lớp..."
+                placeholder="Tìm theo Biển số xe (29B1-...), Họ tên học sinh..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '13.5px' }}
               />
             </div>
+
+            <select value={selectedClassFilter} onChange={e => setSelectedClassFilter(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Lớp</option>
+              {uniqueClasses.map(c => (
+                <option key={c} value={c}>Lớp {c}</option>
+              ))}
+            </select>
 
             <select value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)} style={styles.filterSelect}>
               <option value="ALL">Tất cả Khối lớp</option>
@@ -568,12 +597,23 @@ export default function AdminParking() {
               <option value="Khối 12">Khối 12</option>
             </select>
 
+            <select value={selectedVehicleType} onChange={e => setSelectedVehicleType(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Loại Xe</option>
+              {uniqueVehicleTypes.map(v => (
+                <option key={v} value={v}>{v}</option>
+              ))}
+            </select>
+
             <select value={selectedPackage} onChange={e => setSelectedPackage(e.target.value)} style={styles.filterSelect}>
               <option value="ALL">Tất cả Gói thời hạn</option>
               <option value="month">Gói Theo Tháng</option>
               <option value="term">Gói Theo Học Kỳ</option>
               <option value="year">Gói Cả Năm</option>
             </select>
+
+            <button onClick={handlePrintBulk} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Printer size={16} /> In {filteredList.length} Vé Xe
+            </button>
           </div>
 
           {/* DATA TABLE */}
