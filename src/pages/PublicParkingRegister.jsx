@@ -372,6 +372,11 @@ export default function PublicParkingRegister() {
       return;
     }
 
+    if (!isVerifiedStudent && !editingTicket) {
+      alert("Bạn phải chọn đúng họ tên và mã học sinh từ danh sách gợi ý của hệ thống để đăng ký.");
+      return;
+    }
+
     setLoading(true);
     try {
       const selectedPkg = packages.find(p => p.key === packageType) || packages[0];
@@ -425,6 +430,11 @@ export default function PublicParkingRegister() {
     e.preventDefault();
     if (!studentName.trim() || !studentClass.trim() || !busDistance || !busAddress.trim() || !busPickupPoint.trim()) {
       alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
+      return;
+    }
+
+    if (!isVerifiedStudent && !editingTicket) {
+      alert("Bạn phải chọn đúng họ tên và mã học sinh từ danh sách gợi ý của hệ thống để đăng ký.");
       return;
     }
 
