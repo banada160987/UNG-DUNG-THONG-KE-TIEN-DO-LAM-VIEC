@@ -817,6 +817,7 @@ export default function AdminParking() {
             </tbody>
           </table>
         </div>
+        </div>
       )}
 
       {/* ==================== TAB 3: SECURITY CHECK-IN TERMINAL ==================== */}
