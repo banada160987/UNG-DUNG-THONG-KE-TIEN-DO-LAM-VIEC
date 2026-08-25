@@ -25,6 +25,14 @@ export default function PublicParkingRegister() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
 
+  // System Configuration State
+  const [regConfig, setRegConfig] = useState({
+    isOpen: true,
+    startDate: '',
+    endDate: '',
+    message: ''
+  });
+
   // Bus Registration State
   const [activeTab, setActiveTab] = useState('parking'); // 'parking' | 'bus'
   const [busDistance, setBusDistance] = useState('');
@@ -47,6 +55,7 @@ export default function PublicParkingRegister() {
   useEffect(() => {
     fetchConfiguredPackages();
     fetchStudentRoster();
+    fetchRegConfig();
 
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -59,6 +68,33 @@ export default function PublicParkingRegister() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  async function fetchRegConfig() {
+    try {
+      const { data, error } = await supabase.from('cbq_parking_settings').select('*').maybeSingle();
+      if (!error && data) {
+        setRegConfig({
+          isOpen: data.is_open,
+          startDate: data.start_time,
+          endDate: data.end_time,
+          message: data.notice_message
+        });
+      } else {
+        const local = localStorage.getItem('cbq_parking_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          setRegConfig({
+            isOpen: parsed.is_open !== undefined ? parsed.is_open : true,
+            startDate: parsed.start_time,
+            endDate: parsed.end_time,
+            message: parsed.notice_message
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Lỗi nạp cấu hình thời gian:", err);
+    }
+  }
 
   async function fetchConfiguredPackages() {
     try {
@@ -112,6 +148,14 @@ export default function PublicParkingRegister() {
   const [classSuggestions, setClassSuggestions] = useState([]);
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
   const classDropdownRef = useRef(null);
+
+  const isRegistrationOpen = () => {
+    if (regConfig.isOpen === false) return false;
+    const now = new Date();
+    if (regConfig.startDate && now < new Date(regConfig.startDate)) return false;
+    if (regConfig.endDate && now > new Date(regConfig.endDate)) return false;
+    return true;
+  };
 
   // ----- LOGIC TRA CỨU (LOOKUP) -----
   const handleLookup = async (e) => {
@@ -617,8 +661,24 @@ export default function PublicParkingRegister() {
             </div>
           )}
 
+          {/* REGISTRATION CLOSED MESSAGE */}
+          {(activeTab === 'parking' || activeTab === 'bus') && !isRegistrationOpen() && !editingTicket && (
+            <div style={{ textAlign: 'center', padding: '50px 20px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', marginTop: '20px' }}>
+              <h3 style={{ color: '#dc2626', marginBottom: '15px', fontSize: '20px' }}>⚠️ Cổng Đăng Ký Đã Đóng</h3>
+              <p style={{ color: '#991b1b', fontSize: '15px', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
+                {regConfig.message || 'Hiện tại hệ thống đăng ký đã đóng hoặc đã hết hạn. Vui lòng quay lại sau!'}
+              </p>
+              <button 
+                onClick={() => setActiveTab('lookup')}
+                style={{ marginTop: '25px', padding: '10px 20px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                Tra Cứu Vé Đã Đăng Ký
+              </button>
+            </div>
+          )}
+
           {/* PARKING FORM */}
-          {activeTab === 'parking' && (
+          {activeTab === 'parking' && (isRegistrationOpen() || !!editingTicket) && (
             <form onSubmit={handleSubmit} style={styles.formCard}>
               <h3 style={styles.formTitle}>
                 {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN VÉ XE MÁY' : '📝 Thông tin Đăng ký Vé Xe Máy Học Sinh'}
@@ -810,7 +870,7 @@ export default function PublicParkingRegister() {
       )}
 
       {/* BUS FORM */}
-      {activeTab === 'bus' && (
+      {activeTab === 'bus' && (isRegistrationOpen() || !!editingTicket) && (
         <form onSubmit={handleSubmitBus} style={styles.formCard}>
           <h3 style={{ ...styles.formTitle, color: '#b45309' }}>
             {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN XE ĐƯA ĐÓN' : '🚌 Thông tin Đăng ký Xe Đưa Đón Học Sinh'}

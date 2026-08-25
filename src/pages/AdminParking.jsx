@@ -44,6 +44,14 @@ export default function AdminParking() {
   const [checkinQuery, setCheckinQuery] = useState('');
   const [checkinResult, setCheckinResult] = useState(null);
 
+  // Registration Time Config
+  const [regConfig, setRegConfig] = useState({
+    isOpen: true,
+    startDate: '',
+    endDate: '',
+    message: 'Hệ thống đăng ký hiện đang mở.'
+  });
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -85,14 +93,64 @@ export default function AdminParking() {
           localStorage.setItem('cbq_parking_packages', JSON.stringify(DEFAULT_PACKAGES));
         }
       }
+
+      // Fetch Registration Config
+      try {
+        const { data: configData, error: configError } = await supabase.from('cbq_parking_settings').select('*').maybeSingle();
+        if (!configError && configData) {
+          setRegConfig({
+            isOpen: configData.is_open,
+            startDate: configData.start_time ? new Date(configData.start_time).toISOString().slice(0, 16) : '',
+            endDate: configData.end_time ? new Date(configData.end_time).toISOString().slice(0, 16) : '',
+            message: configData.notice_message || ''
+          });
+          localStorage.setItem('cbq_parking_settings', JSON.stringify(configData));
+        } else {
+          loadLocalConfig();
+        }
+      } catch (err) {
+        loadLocalConfig();
+      }
+
     } catch (err) {
       console.warn("Dùng dữ liệu xe mẫu:", err);
       const local = localStorage.getItem('cbq_parking_packages');
       if (local) setPackages(JSON.parse(local));
+      loadLocalConfig();
     } finally {
       setLoading(false);
     }
   }
+
+  function loadLocalConfig() {
+    const local = localStorage.getItem('cbq_parking_settings');
+    if (local) {
+      const parsed = JSON.parse(local);
+      setRegConfig({
+        isOpen: parsed.is_open !== undefined ? parsed.is_open : true,
+        startDate: parsed.start_time ? new Date(parsed.start_time).toISOString().slice(0, 16) : '',
+        endDate: parsed.end_time ? new Date(parsed.end_time).toISOString().slice(0, 16) : '',
+        message: parsed.notice_message || ''
+      });
+    }
+  }
+
+  const handleSaveRegConfig = async () => {
+    const payload = {
+      id: 1,
+      is_open: regConfig.isOpen,
+      start_time: regConfig.startDate ? new Date(regConfig.startDate).toISOString() : null,
+      end_time: regConfig.endDate ? new Date(regConfig.endDate).toISOString() : null,
+      notice_message: regConfig.message
+    };
+    try {
+      await supabase.from('cbq_parking_settings').upsert([payload]);
+    } catch (err) {
+      console.warn('Lỗi lưu cấu hình DB:', err);
+    }
+    localStorage.setItem('cbq_parking_settings', JSON.stringify(payload));
+    alert('Đã lưu Cấu hình Thời gian đăng ký!');
+  };
 
   // Filter Data
   const filteredList = parkingList.filter(item => {
@@ -586,16 +644,76 @@ export default function AdminParking() {
 
       {/* ==================== TAB 2: FEE & PACKAGE CONFIGURATION ==================== */}
       {activeTab === 'config' && (
-        <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
-            <div>
-              <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Giữ Xe</h3>
-              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>Thiết lập số tiền lệ phí và thời hạn các gói vé cho học sinh đăng ký</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* REGISTRATION TIME CONFIGURATION */}
+          <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ margin: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
+              ⏱️ Cấu Hình Thời Gian Đăng Ký
+            </h3>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '15px' }}>
+              <div>
+                <label style={styles.label}>Trạng thái Mở/Đóng Cổng Đăng Ký (*)</label>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', border: regConfig.isOpen ? '1px solid #16a34a' : '1px solid #cbd5e1', backgroundColor: regConfig.isOpen ? '#f0fdf4' : '#f8fafc', color: regConfig.isOpen ? '#16a34a' : '#64748b', fontWeight: 'bold' }}>
+                    <input type="radio" name="isOpen" checked={regConfig.isOpen === true} onChange={() => setRegConfig({ ...regConfig, isOpen: true })} /> 🟢 Đang Mở Cửa
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', padding: '8px 12px', borderRadius: '6px', border: !regConfig.isOpen ? '1px solid #dc2626' : '1px solid #cbd5e1', backgroundColor: !regConfig.isOpen ? '#fef2f2' : '#f8fafc', color: !regConfig.isOpen ? '#dc2626' : '#64748b', fontWeight: 'bold' }}>
+                    <input type="radio" name="isOpen" checked={regConfig.isOpen === false} onChange={() => setRegConfig({ ...regConfig, isOpen: false })} /> 🔴 Đóng Cửa (Bảo trì/Hết hạn)
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label style={styles.label}>Thông báo khi Đóng cửa hoặc Hướng dẫn (Hiển thị cho HS)</label>
+                <input 
+                  type="text" 
+                  value={regConfig.message} 
+                  onChange={e => setRegConfig({ ...regConfig, message: e.target.value })} 
+                  style={styles.input} 
+                  placeholder="VD: Hệ thống đang đóng để duyệt hồ sơ..." 
+                />
+              </div>
             </div>
-            <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
-              <Plus size={16} /> Thêm Gói Vé Mới
-            </button>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }}>
+              <div>
+                <label style={styles.label}>Thời gian Bắt đầu Mở đăng ký (Không bắt buộc)</label>
+                <input 
+                  type="datetime-local" 
+                  value={regConfig.startDate} 
+                  onChange={e => setRegConfig({ ...regConfig, startDate: e.target.value })} 
+                  style={styles.input} 
+                />
+              </div>
+              <div>
+                <label style={styles.label}>Thời gian Kết thúc / Hạn chót (Không bắt buộc)</label>
+                <input 
+                  type="datetime-local" 
+                  value={regConfig.endDate} 
+                  onChange={e => setRegConfig({ ...regConfig, endDate: e.target.value })} 
+                  style={styles.input} 
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={handleSaveRegConfig} className="btn-primary" style={{ padding: '9px 24px', backgroundColor: '#0284c7' }}>
+                <Save size={16} /> Lưu Cấu Hình Thời Gian
+              </button>
+            </div>
           </div>
+
+          <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Giữ Xe</h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>Thiết lập số tiền lệ phí và thời hạn các gói vé cho học sinh đăng ký</p>
+              </div>
+              <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
+                <Plus size={16} /> Thêm Gói Vé Mới
+              </button>
+            </div>
 
           {/* PACKAGE EDIT MODAL POPUP */}
           {showPkgForm && (

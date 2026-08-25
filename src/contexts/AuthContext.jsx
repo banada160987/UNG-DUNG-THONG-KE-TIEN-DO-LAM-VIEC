@@ -57,6 +57,10 @@ export const AuthProvider = ({ children }) => {
         canViewGuests: isSecretaryOrAdmin,
         canViewSports: isSecretaryOrAdmin,
         canViewPages: isSecretaryOrAdmin,
+        canViewQuizzes: isSecretaryOrAdmin,
+        canViewFeedback: isSecretaryOrAdmin,
+        canViewMagazine: isSecretaryOrAdmin,
+        canViewGuestbook: isSecretaryOrAdmin,
       };
 
       // Merge custom permissions
@@ -76,6 +80,10 @@ export const AuthProvider = ({ children }) => {
         mergedPerms.canViewGuests = true;
         mergedPerms.canViewSports = true;
         mergedPerms.canViewPages = true;
+        mergedPerms.canViewQuizzes = true;
+        mergedPerms.canViewFeedback = true;
+        mergedPerms.canViewMagazine = true;
+        mergedPerms.canViewGuestbook = true;
       }
 
       setPermissions(mergedPerms);
@@ -92,7 +100,11 @@ export const AuthProvider = ({ children }) => {
           canViewSponsors: true,
           canViewGuests: true,
           canViewSports: true,
-          canViewPages: true
+          canViewPages: true,
+          canViewQuizzes: true,
+          canViewFeedback: true,
+          canViewMagazine: true,
+          canViewGuestbook: true
         });
       }
     }
