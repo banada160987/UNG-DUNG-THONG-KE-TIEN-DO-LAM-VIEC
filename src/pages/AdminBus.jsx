@@ -1,34 +1,34 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
+import { Bus, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateBusWordReport } from '../lib/wordExportBus';
 
-const DEFAULT_PARKING_LIST = [
-  { id: '1', ticket_code: 'PARK-11A1-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A1-01', student_class: '11A1', grade_level: 'Khối 11', pickup_point: '29B1-567.89', route_type: 'Xe đưa đón điện', distance_km: 'Đen nhám', package_type: 'term', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 200000, status: 'active' },
-  { id: '2', ticket_code: 'PARK-12A3-002', student_name: 'Trần Thị Bích', student_code: 'HS12A3-05', student_class: '12A3', grade_level: 'Khối 12', pickup_point: '29H1-888.66', route_type: 'Xe đưa đón 50cc', distance_km: 'Trắng đỏ', package_type: 'year', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 450000, status: 'active' },
-  { id: '3', ticket_code: 'PARK-10A2-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A2-12', student_class: '10A2', grade_level: 'Khối 10', pickup_point: '29K1-345.12', route_type: 'Xe đưa đón điện', distance_km: 'Xanh dương', package_type: 'month', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 50000, status: 'active' }
+const DEFAULT_BUS_LIST = [
+  { id: '1', ticket_code: 'BUS-11A1-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A1-01', student_class: '11A1', grade_level: 'Khối 11', pickup_point: 'Ngã tư Trần Phú', route_type: '2-way', distance_km: 15, package_type: 'term_2way', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 1400000, status: 'active' },
+  { id: '2', ticket_code: 'BUS-12A3-002', student_name: 'Trần Thị Bích', student_code: 'HS12A3-05', student_class: '12A3', grade_level: 'Khối 12', pickup_point: 'Cổng làng B', route_type: '1-way', distance_km: 10, package_type: 'year_1way', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 1500000, status: 'active' },
+  { id: '3', ticket_code: 'BUS-10A2-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A2-12', student_class: '10A2', grade_level: 'Khối 10', pickup_point: 'UBND Phường Y', route_type: '2-way', distance_km: 5, package_type: 'month_2way', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 300000, status: 'active' }
 ];
 
 const DEFAULT_PACKAGES = [
-  { id: 'p1', package_key: 'month', title: 'Đăng ký Theo Tháng', months_count: 1, fee_amount: 50000, description: 'Thời hạn 1 tháng (50.000 VNĐ)', sort_order: 1, is_active: true },
-  { id: 'p2', package_key: 'quarter', title: 'Đăng ký Theo Quý (3 tháng)', months_count: 3, fee_amount: 130000, description: 'Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)', sort_order: 2, is_active: true },
-  { id: 'p3', package_key: 'term', title: 'Đăng ký Theo Học Kỳ (5 tháng)', months_count: 5, fee_amount: 200000, description: 'Thời hạn 1 Học kỳ (Tiết kiệm 50.000 VNĐ)', sort_order: 3, is_active: true },
-  { id: 'p4', package_key: 'year', title: 'Đăng ký Cả Năm Học (9 tháng)', months_count: 9, fee_amount: 400000, description: 'Thời hạn trọn cả năm học (Tiết kiệm 50.000 VNĐ)', sort_order: 4, is_active: true }
+  { id: 'p1', package_key: 'month_2way', title: '2 Chiều - Đăng ký Theo Tháng', months_count: 1, fee_amount: 300000, description: 'Đưa đón 2 chiều (300.000 VNĐ)', sort_order: 1, is_active: true },
+  { id: 'p2', package_key: 'month_1way', title: '1 Chiều - Đăng ký Theo Tháng', months_count: 1, fee_amount: 180000, description: 'Đưa đón 1 chiều (180.000 VNĐ)', sort_order: 2, is_active: true },
+  { id: 'p3', package_key: 'term_2way', title: '2 Chiều - Theo Học Kỳ (5 tháng)', months_count: 5, fee_amount: 1400000, description: 'Đưa đón 2 chiều (Tiết kiệm 100k)', sort_order: 3, is_active: true },
+  { id: 'p4', package_key: 'year_2way', title: '2 Chiều - Cả Năm Học (9 tháng)', months_count: 9, fee_amount: 2500000, description: 'Đưa đón 2 chiều (Tiết kiệm 200k)', sort_order: 4, is_active: true }
 ];
 
 export default function AdminBus() {
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'config', 'checkin', 'alerts'
   
-  const [busList, setBusList] = useState(DEFAULT_PARKING_LIST);
+  const [busList, setBusList] = useState(DEFAULT_BUS_LIST);
   const [packages, setPackages] = useState(DEFAULT_PACKAGES);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   const [selectedPackage, setSelectedPackage] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
-  const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
+  const [selectedRouteType, setSelectedRouteType] = useState('ALL');
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
   const [selectedTicketsToPrint, setSelectedTicketsToPrint] = useState([]);
 
@@ -168,7 +168,7 @@ export default function AdminBus() {
     const matchGrade = selectedGrade === 'ALL' || item.grade_level === selectedGrade;
     const matchPkg = selectedPackage === 'ALL' || item.package_type === selectedPackage;
     const matchStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
-    const matchVehicle = selectedVehicleType === 'ALL' || item.route_type === selectedVehicleType;
+    const matchVehicle = selectedRouteType === 'ALL' || item.route_type === selectedRouteType;
     const matchClass = selectedClassFilter === 'ALL' || item.student_class === selectedClassFilter;
 
     return matchSearch && matchGrade && matchPkg && matchStatus && matchVehicle && matchClass;
@@ -452,7 +452,7 @@ export default function AdminBus() {
               <div key={idx} style={{ ...styles.printTicketCard, breakInside: 'avoid', marginBottom: '20px' }}>
                 <div style={{ textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '10px' }}>
                   <div style={{ fontSize: '11px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-                  <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
+                  <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', color: '#be123c' }}>THẺ XE ĐƯA ĐÓN HỌC SINH</h3>
                   <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {ticket.ticket_code}</div>
                 </div>
                 <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
@@ -476,10 +476,10 @@ export default function AdminBus() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }} className="no-print">
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Bike size={26} color="#be123c" /> Quản Lý Phương Tiện Xe Máy Học Sinh
+            <Bus size={26} color="#be123c" /> Quản Lý Phương Tiện Xe Đưa Đón Học Sinh
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Thống kê số lượng, cấu hình mức phí, kiểm soát an ninh cổng xe và in thẻ gửi xe
+            Thống kê số lượng, cấu hình mức phí và quản lý vé xe đưa đón
           </p>
         </div>
 
@@ -512,12 +512,9 @@ export default function AdminBus() {
 
       {/* 4 FEATURE NAVIGATION TABS */}
       <div style={styles.tabContainer} className="no-print">
-        <button 
-          onClick={() => setActiveTab('list')} 
-          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'list' ? '#be123c' : '#ffffff', color: activeTab === 'list' ? '#ffffff' : '#334155' }}
-        >
-          <Bike size={16} /> 🛵 Danh Sách & In Vé Xe ({busList.length})
-        </button>
+        <button onClick={() => setActiveTab('list')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'list' ? '3px solid #be123c' : 'none', color: activeTab === 'list' ? '#be123c' : '#64748b', fontWeight: activeTab === 'list' ? 'bold' : 'normal' }}>
+            <Bus size={16} /> 🚌 Danh Sách & In Vé Xe ({busList.length})
+          </button>
         <button 
           onClick={() => setActiveTab('config')} 
           style={{ ...styles.tabBtn, backgroundColor: activeTab === 'config' ? '#be123c' : '#ffffff', color: activeTab === 'config' ? '#ffffff' : '#334155' }}
@@ -528,7 +525,7 @@ export default function AdminBus() {
           onClick={() => setActiveTab('checkin')} 
           style={{ ...styles.tabBtn, backgroundColor: activeTab === 'checkin' ? '#be123c' : '#ffffff', color: activeTab === 'checkin' ? '#ffffff' : '#334155' }}
         >
-          <ShieldCheck size={16} /> 🔍 Trạm Kiểm Soát Check-in Cổng Xe
+          <ShieldCheck size={16} /> 🔍 Kiểm tra Mã Vé Xe đưa đón
         </button>
       </div>
 
@@ -562,7 +559,7 @@ export default function AdminBus() {
             </div>
 
             <div style={{ ...styles.statCard, borderLeft: '4px solid #be123c' }}>
-              <div style={styles.statLabel}>TỔNG LỆ PHÍ THU GIỮ XE</div>
+              <div style={styles.statLabel}>TỔNG LỆ PHÍ XE ĐƯA ĐÓN</div>
               <div style={{ fontSize: '20px', fontWeight: '900', color: '#be123c', marginTop: '4px' }}>
                 {stats.totalFees.toLocaleString()} <span style={{ fontSize: '13px' }}>VNĐ</span>
               </div>
@@ -597,8 +594,8 @@ export default function AdminBus() {
               <option value="Khối 12">Khối 12</option>
             </select>
 
-            <select value={selectedVehicleType} onChange={e => setSelectedVehicleType(e.target.value)} style={styles.filterSelect}>
-              <option value="ALL">Tất cả Loại Xe</option>
+            <select value={selectedRouteType} onChange={e => setSelectedRouteType(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Tuyến Đường</option>
               {uniqueVehicleTypes.map(v => (
                 <option key={v} value={v}>{v}</option>
               ))}
@@ -619,7 +616,7 @@ export default function AdminBus() {
           {/* DATA TABLE */}
           <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
             <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-              🛵 Danh sách Học sinh Đăng ký Xe đưa đón ({filteredList.length} xe)
+              🚌 Danh sách Học sinh Đăng ký Xe đưa đón ({filteredList.length} xe)
             </h3>
 
             {loading ? <p>Đang nạp dữ liệu xe đưa đón...</p> : (
@@ -747,7 +744,7 @@ export default function AdminBus() {
           <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
               <div>
-                <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Giữ Xe</h3>
+                <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Xe Đưa Đón</h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>Thiết lập số tiền lệ phí và thời hạn các gói vé cho học sinh đăng ký</p>
               </div>
               <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
@@ -761,7 +758,7 @@ export default function AdminBus() {
               <div style={styles.modalContent}>
                 <div style={styles.modalHeader}>
                   <h3 style={{ margin: 0, color: '#be123c' }}>
-                    {editingPkgId ? '📝 Chỉnh Sửa Gói Vé Xe Máy' : '➕ Tạo Gói Vé Xe Máy Mới'}
+                    {editingPkgId ? '📝 Chỉnh Sửa Gói Xe Đưa Đón' : '➕ Tạo Gói Xe Đưa Đón Mới'}
                   </h3>
                   <button type="button" onClick={() => setShowPkgForm(false)} style={styles.closeBtn}>
                     ✕
