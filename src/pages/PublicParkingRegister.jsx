@@ -829,6 +829,8 @@ export default function PublicParkingRegister() {
                 <option value="Xe máy điện">⚡ Xe máy điện (Yadea, VinFast, Pega...)</option>
                 <option value="Xe máy 50cc">🛵 Xe máy 50cc (Wave, Cub, Giorno...)</option>
                 <option value="Xe máy >50cc">🏍️ Xe máy trên 50cc (Có GPLX)</option>
+                <option value="Xe đạp">🚲 Xe đạp</option>
+                <option value="Xe đạp điện">🚲 Xe đạp điện</option>
               </select>
             </div>
 
