@@ -113,7 +113,13 @@ export default function PublicParkingRegister() {
 
       if (!parkingRes.error && parkingRes.data && parkingRes.data.length > 0) {
         const formatted = parkingRes.data.map(p => ({
-          key: p.package_key, label: p.title, months: p.months_count, fee: Number(p.fee_amount) || 0, hide_fee: !!p.hide_fee, desc: p.description || `${p.title}`
+          key: p.package_key, 
+          label: p.title, 
+          months: p.months_count, 
+          fee: Number(p.fee_amount) || 0, 
+          hide_fee: !!p.hide_fee, 
+          desc: p.description || `${p.title}`,
+          applicable_vehicles: p.applicable_vehicles || []
         }));
         setPackages(formatted);
       }
@@ -366,6 +372,18 @@ export default function PublicParkingRegister() {
   };
 
   const isBicycle = vehicleType === 'Xe đạp' || vehicleType === 'Xe đạp điện';
+
+  const filteredPackages = packages.filter(p => !p.applicable_vehicles || p.applicable_vehicles.length === 0 || p.applicable_vehicles.includes(vehicleType));
+
+  useEffect(() => {
+    const valid = packages.filter(p => !p.applicable_vehicles || p.applicable_vehicles.length === 0 || p.applicable_vehicles.includes(vehicleType));
+    setPackageType(prev => {
+      if (valid.length > 0 && !valid.find(p => p.key === prev)) {
+        return valid[0].key;
+      }
+      return prev;
+    });
+  }, [vehicleType, packages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -878,10 +896,10 @@ export default function PublicParkingRegister() {
           {/* DYNAMIC PACKAGE SELECTION */}
           <div style={{ marginTop: '25px' }}>
             <label style={{ ...styles.label, fontSize: '14px', color: '#be123c' }}>
-              🎫 Chọn Gói Đăng Ký Gửi Xe (*):
+              👉 Chọn Gói Đăng Ký Gửi Xe (*):
             </label>
             <div style={styles.packageGrid}>
-              {packages.map(pkg => (
+              {filteredPackages.map(pkg => (
                 <div 
                   key={pkg.key}
                   onClick={() => setPackageType(pkg.key)}

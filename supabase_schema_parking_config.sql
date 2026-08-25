@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS cbq_parking_packages (
   description text,
   sort_order integer DEFAULT 0,
   is_active boolean DEFAULT true,
+  applicable_vehicles text[] DEFAULT '{}',
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
 

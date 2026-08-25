@@ -41,6 +41,7 @@ export default function AdminParking() {
   const [pkgFee, setPkgFee] = useState(50000);
   const [pkgDesc, setPkgDesc] = useState('');
   const [pkgHideFee, setPkgHideFee] = useState(false);
+  const [pkgApplicableVehicles, setPkgApplicableVehicles] = useState([]);
 
   // Security Check-in Terminal Query
   const [checkinQuery, setCheckinQuery] = useState('');
@@ -232,7 +233,8 @@ export default function AdminParking() {
         fee_amount: Number(pkgFee) || 0,
         description: pkgDesc.trim(),
         hide_fee: pkgHideFee,
-        is_active: true
+        is_active: true,
+        applicable_vehicles: pkgApplicableVehicles
       };
 
       // 1. Guaranteed Functional State & LocalStorage Update
@@ -285,6 +287,7 @@ export default function AdminParking() {
     setPkgFee(Number(pkg.fee_amount || pkg.fee) || 0);
     setPkgDesc(pkg.description || pkg.desc || '');
     setPkgHideFee(!!pkg.hide_fee);
+    setPkgApplicableVehicles(pkg.applicable_vehicles || []);
     setShowPkgForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -750,7 +753,7 @@ export default function AdminParking() {
                 <h3 style={{ margin: 0, color: '#be123c' }}>⚙️ Cấu Hình Gói Vé & Mức Phí Giữ Xe</h3>
                 <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>Thiết lập số tiền lệ phí và thời hạn các gói vé cho học sinh đăng ký</p>
               </div>
-              <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
+              <button onClick={() => { setEditingPkgId(null); setPkgKey(''); setPkgTitle(''); setPkgMonths(1); setPkgFee(50000); setPkgDesc(''); setPkgHideFee(false); setPkgApplicableVehicles([]); setShowPkgForm(!showPkgForm); }} className="btn-primary" style={{ padding: '9px 18px', backgroundColor: '#be123c' }}>
                 <Plus size={16} /> Thêm Gói Vé Mới
               </button>
             </div>
@@ -791,6 +794,24 @@ export default function AdminParking() {
                   <div style={{ marginBottom: '14px' }}>
                     <label style={styles.label}>Mô Tả Gói Vé</label>
                     <input type="text" value={pkgDesc} onChange={e => setPkgDesc(e.target.value)} style={styles.input} placeholder="VD: Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)..." />
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={styles.label}>Áp dụng cho các phương tiện (Bỏ trống để áp dụng cho TẤT CẢ)</label>
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginTop: '5px' }}>
+                      {['Xe đạp', 'Xe đạp điện', 'Xe máy điện', 'Xe máy 50cc', 'Xe máy >50cc'].map(v => (
+                        <label key={v} style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '13.5px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={pkgApplicableVehicles.includes(v)}
+                            onChange={(e) => {
+                              if (e.target.checked) setPkgApplicableVehicles([...pkgApplicableVehicles, v]);
+                              else setPkgApplicableVehicles(pkgApplicableVehicles.filter(item => item !== v));
+                            }}
+                          /> {v}
+                        </label>
+                      ))}
+                    </div>
                   </div>
 
                   <div style={{ marginBottom: '20px' }}>
