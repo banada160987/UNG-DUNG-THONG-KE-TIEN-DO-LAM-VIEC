@@ -11,7 +11,11 @@ const INITIAL_PERMISSIONS = {
   canViewSponsors: false,
   canViewGuests: false,
   canViewSports: false,
-  canViewPages: false
+  canViewPages: false,
+  canViewQuizzes: false,
+  canViewFeedback: false,
+  canViewMagazine: false,
+  canViewGuestbook: false
 };
 
 const PERMISSION_LABELS = {
@@ -22,7 +26,11 @@ const PERMISSION_LABELS = {
   canViewSponsors: '🏆 Quản lý Tài trợ & Bảng vàng',
   canViewGuests: '✉️ Quản lý Khách mời & Lễ tân',
   canViewSports: '⚽ Quản lý Thể thao & Bảng đấu',
-  canViewPages: '🌐 Trang Giới thiệu & Thiệp mời'
+  canViewPages: '🌐 Trang Giới thiệu & Thiệp mời',
+  canViewQuizzes: '🎯 Quản lý Cuộc thi & Bình chọn',
+  canViewFeedback: '✍️ Quản lý Góp ý & Phản hồi',
+  canViewMagazine: '📖 Quản lý Tập san',
+  canViewGuestbook: '📓 Quản lý Lưu bút'
 };
 
 const ROLE_OPTIONS = [
