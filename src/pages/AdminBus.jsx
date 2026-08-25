@@ -180,9 +180,9 @@ export default function AdminBus() {
     grade10: busList.filter(i => i.grade_level === 'Khối 10').length,
     grade11: busList.filter(i => i.grade_level === 'Khối 11').length,
     grade12: busList.filter(i => i.grade_level === 'Khối 12').length,
-    pkgMonth: busList.filter(i => i.package_type === 'month').length,
-    pkgTerm: busList.filter(i => i.package_type === 'term').length,
-    pkgYear: busList.filter(i => i.package_type === 'year').length,
+    pkgMonth: busList.filter(i => String(i.package_type || '').includes('month')).length,
+    pkgTerm: busList.filter(i => String(i.package_type || '').includes('term')).length,
+    pkgYear: busList.filter(i => String(i.package_type || '').includes('year')).length,
     totalFees: busList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
   };
 
@@ -536,26 +536,26 @@ export default function AdminBus() {
           {/* STATISTICS CARDS PANEL */}
           <div style={styles.statsGrid} className="no-print">
             <div style={styles.statCard}>
-              <div style={styles.statLabel}>TỔNG SỐ XE ĐĂNG KÝ</div>
-              <div style={styles.statNumber}>{stats.total} <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>xe</span></div>
+              <div style={styles.statLabel}>TỔNG SỐ HỌC SINH ĐĂNG KÝ</div>
+              <div style={styles.statNumber}>{stats.total} <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}>học sinh</span></div>
               <div style={styles.statSub}>Tất cả khối lớp</div>
             </div>
 
             <div style={styles.statCard}>
               <div style={styles.statLabel}>THỐNG KÊ THEO KHỐI LỚP</div>
               <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
-                <div>Khối 10: <strong>{stats.grade10}</strong> xe</div>
-                <div>Khối 11: <strong>{stats.grade11}</strong> xe</div>
-                <div>Khối 12: <strong>{stats.grade12}</strong> xe</div>
+                <div>Khối 10: <strong>{stats.grade10}</strong> học sinh</div>
+                <div>Khối 11: <strong>{stats.grade11}</strong> học sinh</div>
+                <div>Khối 12: <strong>{stats.grade12}</strong> học sinh</div>
               </div>
             </div>
 
             <div style={styles.statCard}>
               <div style={styles.statLabel}>THỐNG KÊ GÓI ĐĂNG KÝ</div>
               <div style={{ fontSize: '13.5px', marginTop: '6px', lineHeight: '1.6' }}>
-                <div>Theo Học Kỳ: <strong>{stats.pkgTerm}</strong> xe</div>
-                <div>Theo Tháng: <strong>{stats.pkgMonth}</strong> xe</div>
-                <div>Cả Năm Học: <strong>{stats.pkgYear}</strong> xe</div>
+                <div>Theo Học Kỳ: <strong>{stats.pkgTerm}</strong> học sinh</div>
+                <div>Theo Tháng: <strong>{stats.pkgMonth}</strong> học sinh</div>
+                <div>Cả Năm Học: <strong>{stats.pkgYear}</strong> học sinh</div>
               </div>
             </div>
 
@@ -564,7 +564,7 @@ export default function AdminBus() {
               <div style={{ fontSize: '20px', fontWeight: '900', color: '#be123c', marginTop: '4px' }}>
                 {stats.totalFees.toLocaleString()} <span style={{ fontSize: '13px' }}>VNĐ</span>
               </div>
-              <div style={styles.statSub}>Bảo vệ quản lý trực tiếp</div>
+              <div style={styles.statSub}>Nhà xe trực tiếp quản lý</div>
             </div>
           </div>
 
