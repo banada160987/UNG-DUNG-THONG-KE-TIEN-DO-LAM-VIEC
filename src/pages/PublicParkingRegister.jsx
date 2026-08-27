@@ -142,7 +142,7 @@ export default function PublicParkingRegister() {
       if (localData) {
         try {
           setStudentRoster(JSON.parse(localData));
-          return; // Nếu có cache thì thoát luôn, không gọi API nữa
+          // Đã loại bỏ 'return' ở đây để dữ liệu luôn được fetch mới ngầm và cập nhật
         } catch (e) {}
       }
 
@@ -275,15 +275,23 @@ export default function PublicParkingRegister() {
     const cleanName = (nameVal || '').trim().toLowerCase();
     const cleanClass = (classVal || '').trim().toLowerCase();
 
+    const normalize = (str) => {
+      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+    };
+    const cleanNameNormalized = normalize(cleanName);
+
     let matches = studentRoster;
     if (cleanClass) {
       matches = matches.filter(s => s.student_class?.toLowerCase() === cleanClass);
     }
     if (cleanName) {
-      matches = matches.filter(s => 
-        s.student_name?.toLowerCase().includes(cleanName) ||
-        s.student_code?.toLowerCase().includes(cleanName)
-      );
+      matches = matches.filter(s => {
+        const studentName = s.student_name?.toLowerCase() || '';
+        const studentCode = s.student_code?.toLowerCase() || '';
+        return studentName.includes(cleanName) || 
+               normalize(studentName).includes(cleanNameNormalized) ||
+               studentCode.includes(cleanName);
+      });
     }
 
     const sliced = matches.slice(0, 12);
