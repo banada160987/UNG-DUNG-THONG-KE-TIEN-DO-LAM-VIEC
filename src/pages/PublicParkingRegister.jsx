@@ -440,6 +440,20 @@ export default function PublicParkingRegister() {
 
     setLoading(true);
     try {
+      if (!editingTicket) {
+        // Kiểm tra xem học sinh đã đăng ký vé gửi xe chưa
+        const { data: existing, error: checkErr } = await supabase
+          .from('cbq_parking_registrations')
+          .select('ticket_code')
+          .eq('student_code', studentCode.trim());
+        
+        if (!checkErr && existing && existing.length > 0) {
+          alert(`LỖI: Học sinh này đã đăng ký vé gửi xe (Mã vé: ${existing[0].ticket_code}).\nMỗi học sinh chỉ được đăng ký 1 vé. Nếu muốn thay đổi thông tin, vui lòng qua tab "Tra cứu / Sửa".`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const selectedPkg = packages.find(p => p.key === packageType) || packages[0];
       const today = new Date().toISOString().split('T')[0];
       const endDate = calculateEndDate(today, selectedPkg.months);
@@ -501,6 +515,20 @@ export default function PublicParkingRegister() {
 
     setLoading(true);
     try {
+      if (!editingTicket) {
+        // Kiểm tra xem học sinh đã đăng ký xe đưa đón chưa
+        const { data: existing, error: checkErr } = await supabase
+          .from('cbq_bus_registrations')
+          .select('ticket_code')
+          .eq('student_code', studentCode.trim());
+        
+        if (!checkErr && existing && existing.length > 0) {
+          alert(`LỖI: Học sinh này đã đăng ký xe đưa đón (Mã vé: ${existing[0].ticket_code}).\nMỗi học sinh chỉ được đăng ký 1 tuyến. Nếu muốn thay đổi, vui lòng qua tab "Tra cứu / Sửa".`);
+          setLoading(false);
+          return;
+        }
+      }
+
       const cleanClass = studentClass.trim().toUpperCase();
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticketCode = `BUS-${cleanClass}-${randomNum}`;

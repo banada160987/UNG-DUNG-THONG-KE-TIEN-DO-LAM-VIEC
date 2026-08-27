@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
+import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateParkingWordReport } from '../lib/wordExportParking';
 
@@ -186,6 +186,20 @@ export default function AdminParking() {
     pkgYear: parkingList.filter(i => i.package_type === 'year').length,
     totalFees: parkingList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
   };
+
+  const classStats = uniqueClasses.map(cls => ({
+    name: cls,
+    count: parkingList.filter(i => i.student_class === cls).length
+  })).sort((a, b) => {
+    // Sort by count desc, then name asc
+    if (b.count !== a.count) return b.count - a.count;
+    return a.name.localeCompare(b.name);
+  });
+
+  const vehicleStats = uniqueVehicleTypes.map(v => ({
+    name: v,
+    count: parkingList.filter(i => i.vehicle_type === v).length
+  })).sort((a, b) => b.count - a.count);
 
   // Check-in terminal search function
   const handleCheckinSearch = (q) => {
@@ -529,6 +543,12 @@ export default function AdminParking() {
           <Settings size={16} /> ⚙️ Cấu Hình Gói Vé & Mức Phí ({packages.length})
         </button>
         <button 
+          onClick={() => setActiveTab('stats')} 
+          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'stats' ? '#be123c' : '#ffffff', color: activeTab === 'stats' ? '#ffffff' : '#334155' }}
+        >
+          <BarChart size={16} /> 📊 Báo Cáo Thống Kê
+        </button>
+        <button 
           onClick={() => setActiveTab('checkin')} 
           style={{ ...styles.tabBtn, backgroundColor: activeTab === 'checkin' ? '#be123c' : '#ffffff', color: activeTab === 'checkin' ? '#ffffff' : '#334155' }}
         >
@@ -684,6 +704,46 @@ export default function AdminParking() {
             )}
           </div>
         </>
+      )}
+
+      {/* ==================== TAB: STATISTICS ==================== */}
+      {activeTab === 'stats' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+          <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🏫 Thống Kê Số Lượng Xe Theo Lớp
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginTop: '16px' }}>
+              {classStats.map(c => (
+                <div key={c.name} style={{ padding: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', color: '#334155', fontSize: '14px' }}>Lớp {c.name}</span>
+                  <span style={{ backgroundColor: '#be123c', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>{c.count} xe</span>
+                </div>
+              ))}
+              {classStats.length === 0 && <p style={{ color: '#64748b', fontSize: '13.5px' }}>Chưa có dữ liệu</p>}
+            </div>
+          </div>
+
+          <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🛵 Thống Kê Theo Loại Xe
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {vehicleStats.map(v => (
+                <div key={v.name} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', color: '#334155', fontSize: '14px' }}>{v.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '120px', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${stats.total > 0 ? (v.count / stats.total) * 100 : 0}%`, height: '100%', backgroundColor: '#0284c7' }}></div>
+                    </div>
+                    <span style={{ fontWeight: 'bold', color: '#0284c7', fontSize: '14px', width: '45px', textAlign: 'right' }}>{v.count} xe</span>
+                  </div>
+                </div>
+              ))}
+              {vehicleStats.length === 0 && <p style={{ color: '#64748b', fontSize: '13.5px' }}>Chưa có dữ liệu</p>}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ==================== TAB 2: FEE & PACKAGE CONFIGURATION ==================== */}
