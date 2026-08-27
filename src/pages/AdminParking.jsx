@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase, logActivity } from '../lib/supabase';
-import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart } from 'lucide-react';
+import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart, Archive } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateParkingWordReport } from '../lib/wordExportParking';
 
@@ -27,7 +27,7 @@ export default function AdminParking() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
   const [selectedPackage, setSelectedPackage] = useState('ALL');
-  const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [selectedStatus, setSelectedStatus] = useState('active');
   const [selectedVehicleType, setSelectedVehicleType] = useState('ALL');
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
   const [selectedTicketsToPrint, setSelectedTicketsToPrint] = useState([]);
@@ -164,6 +164,33 @@ export default function AdminParking() {
     alert('Đã lưu Cấu hình Thời gian đăng ký!');
   };
 
+  const handleArchiveExpired = async () => {
+    const today = new Date();
+    const expiredIds = parkingList
+      .filter(i => i.status !== 'archived' && i.status !== 'blocked' && new Date(i.end_date) < today)
+      .map(i => i.id);
+
+    if (expiredIds.length === 0) {
+      alert("Không có vé nào đã hết hạn cần lưu trữ!");
+      return;
+    }
+
+    if (window.confirm(`Bạn có chắc muốn chuyển ${expiredIds.length} vé đã hết hạn vào Lưu trữ? Các vé này sẽ được cất đi và không hiển thị ở danh sách chính nữa.`)) {
+      try {
+        const { error } = await supabase
+          .from('cbq_parking_registrations')
+          .update({ status: 'archived' })
+          .in('id', expiredIds);
+        
+        if (error) throw error;
+        alert("Lưu trữ thành công!");
+        fetchData();
+      } catch (err) {
+        alert("Lỗi lưu trữ: " + err.message);
+      }
+    }
+  };
+
   // Filter Data
   const uniqueClasses = Array.from(new Set(parkingList.map(i => i.student_class).filter(Boolean))).sort();
   const uniqueVehicleTypes = Array.from(new Set(parkingList.map(i => i.vehicle_type).filter(Boolean))).sort();
@@ -177,7 +204,14 @@ export default function AdminParking() {
 
     const matchGrade = selectedGrade === 'ALL' || item.grade_level === selectedGrade;
     const matchPkg = selectedPackage === 'ALL' || item.package_type === selectedPackage;
-    const matchStatus = selectedStatus === 'ALL' || item.status === selectedStatus;
+
+    const today = new Date();
+    let computedStatus = item.status;
+    if (computedStatus !== 'archived' && computedStatus !== 'blocked' && new Date(item.end_date) < today) {
+      computedStatus = 'expired';
+    }
+    const matchStatus = selectedStatus === 'ALL' ? item.status !== 'archived' : computedStatus === selectedStatus;
+
     const matchVehicle = selectedVehicleType === 'ALL' || item.vehicle_type === selectedVehicleType;
     const matchClass = selectedClassFilter === 'ALL' || item.student_class === selectedClassFilter;
 
@@ -185,15 +219,16 @@ export default function AdminParking() {
   });
 
   // Calculate Statistics
+  const activeList = parkingList.filter(i => i.status !== 'archived');
   const stats = {
-    total: parkingList.length,
-    grade10: parkingList.filter(i => i.grade_level === 'Khối 10').length,
-    grade11: parkingList.filter(i => i.grade_level === 'Khối 11').length,
-    grade12: parkingList.filter(i => i.grade_level === 'Khối 12').length,
-    pkgMonth: parkingList.filter(i => i.package_type === 'month').length,
-    pkgTerm: parkingList.filter(i => i.package_type === 'term').length,
-    pkgYear: parkingList.filter(i => i.package_type === 'year').length,
-    totalFees: parkingList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
+    total: activeList.length,
+    grade10: activeList.filter(i => i.grade_level === 'Khối 10').length,
+    grade11: activeList.filter(i => i.grade_level === 'Khối 11').length,
+    grade12: activeList.filter(i => i.grade_level === 'Khối 12').length,
+    pkgMonth: activeList.filter(i => i.package_type === 'month').length,
+    pkgTerm: activeList.filter(i => i.package_type === 'term').length,
+    pkgYear: activeList.filter(i => i.package_type === 'year').length,
+    totalFees: activeList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
   };
 
   const classStats = uniqueClasses.map(cls => ({
@@ -695,6 +730,14 @@ export default function AdminParking() {
               ))}
             </select>
 
+            <select value={selectedStatus} onChange={e => setSelectedStatus(e.target.value)} style={styles.filterSelect}>
+              <option value="ALL">Tất cả Trạng thái</option>
+              <option value="active">Đang hoạt động</option>
+              <option value="expired">Đã hết hạn</option>
+              <option value="blocked">Đã khóa</option>
+              <option value="archived">Đã lưu trữ (Ẩn)</option>
+            </select>
+
             <select value={selectedPackage} onChange={e => setSelectedPackage(e.target.value)} style={styles.filterSelect}>
               <option value="ALL">Tất cả Gói thời hạn</option>
               <option value="month">Gói Theo Tháng</option>
@@ -703,7 +746,10 @@ export default function AdminParking() {
             </select>
 
             <button onClick={handlePrintBulk} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Printer size={16} /> In {filteredList.length} Vé Xe
+              <Printer size={16} /> In {filteredList.length} Vé
+            </button>
+            <button onClick={handleArchiveExpired} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #eab308', backgroundColor: '#fef08a', color: '#854d0e', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Archive size={16} /> Chốt sổ (Lưu trữ vé cũ)
             </button>
           </div>
 
