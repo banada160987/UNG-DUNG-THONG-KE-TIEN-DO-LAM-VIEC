@@ -24,6 +24,7 @@ export default function PublicParkingRegister() {
   const [studentClass, setStudentClass] = useState('');
   const [studentCode, setStudentCode] = useState('');
   const [licensePlate, setLicensePlate] = useState('');
+  const [noLicensePlate, setNoLicensePlate] = useState(false);
   const [vehicleType, setVehicleType] = useState('Xe máy điện');
   const [vehicleColor, setVehicleColor] = useState('');
   const [packageType, setPackageType] = useState('term');
@@ -424,7 +425,7 @@ export default function PublicParkingRegister() {
       alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
       return;
     }
-    if (!isBicycle && !licensePlate.trim()) {
+    if (!isBicycle && !noLicensePlate && !licensePlate.trim()) {
       alert("Vui lòng nhập Biển số xe.");
       return;
     }
@@ -463,13 +464,19 @@ export default function PublicParkingRegister() {
       const ticketCode = `PARK-${cleanClass}-${randomNum}`;
       const gradeLevel = getGradeLevel(cleanClass);
 
+      const finalTicketCode = editingTicket ? editingTicket.ticket_code : ticketCode;
+      let finalLicensePlate = licensePlate.trim().toUpperCase();
+      if (isBicycle || noLicensePlate) {
+        finalLicensePlate = `TEM-${finalTicketCode}`;
+      }
+
       const payload = {
-        ticket_code: editingTicket ? editingTicket.ticket_code : ticketCode,
+        ticket_code: finalTicketCode,
         student_name: studentName.trim(),
         student_code: studentCode.trim() || `HS-${randomNum}`,
         student_class: cleanClass,
         grade_level: gradeLevel,
-        license_plate: isBicycle ? `Không có` : licensePlate.trim().toUpperCase(),
+        license_plate: finalLicensePlate,
         vehicle_type: vehicleType,
         vehicle_color: vehicleColor.trim(),
         package_type: packageType,
@@ -905,12 +912,17 @@ export default function PublicParkingRegister() {
                 <label style={styles.label}>Biển số xe (*)</label>
                 <input 
                   type="text" 
-                  required 
+                  required={!noLicensePlate}
+                  disabled={noLicensePlate}
                   placeholder="VD: 29B1-567.89 hoặc 29-AA 1234"
                   value={licensePlate}
                   onChange={e => setLicensePlate(e.target.value)}
-                  style={{ ...styles.input, fontWeight: 'bold', letterSpacing: '1px' }}
+                  style={{ ...styles.input, fontWeight: 'bold', letterSpacing: '1px', backgroundColor: noLicensePlate ? '#f1f5f9' : '#ffffff' }}
                 />
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '8px', cursor: 'pointer', fontSize: '13px', color: '#1e293b' }}>
+                  <input type="checkbox" checked={noLicensePlate} onChange={e => { setNoLicensePlate(e.target.checked); if(e.target.checked) setLicensePlate(''); }} style={{ width: '16px', height: '16px', accentColor: '#be123c' }} />
+                  Xe chưa có biển số (Hệ thống sẽ cấp tem dán)
+                </label>
               </div>
             )}
 
