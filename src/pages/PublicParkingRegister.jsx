@@ -242,6 +242,7 @@ export default function PublicParkingRegister() {
     setStudentName(record.student_name || '');
     setStudentClass(record.student_class || '');
     setStudentCode(record.student_code || '');
+    setIsVerifiedStudent(true); // Đánh dấu đã xác thực khi sửa vé
 
     if (record.recordType === 'parking') {
       setActiveTab('parking');
@@ -252,9 +253,10 @@ export default function PublicParkingRegister() {
     } else {
       setActiveTab('bus');
       setBusDistance(record.distance_km || '');
-      setBusAddress(record.home_address || '');
+      setBusAddress(record.address || record.home_address || '');
       setBusPickupPoint(record.pickup_point || '');
       setBusRouteType(record.route_type || '2-way');
+      setBusPackageType(record.package_type || 'month_2way');
     }
   };
 
@@ -268,6 +270,7 @@ export default function PublicParkingRegister() {
     setBusDistance('');
     setBusAddress('');
     setBusPickupPoint('');
+    setIsVerifiedStudent(false);
     setActiveTab('lookup');
   };
   // ----------------------------------
@@ -452,7 +455,7 @@ export default function PublicParkingRegister() {
         student_code: studentCode.trim() || `HS-${randomNum}`,
         student_class: cleanClass,
         grade_level: gradeLevel,
-        license_plate: (isBicycle && !licensePlate.trim()) ? `Không có` : licensePlate.trim().toUpperCase(),
+        license_plate: isBicycle ? `Không có` : licensePlate.trim().toUpperCase(),
         vehicle_type: vehicleType,
         vehicle_color: vehicleColor.trim(),
         package_type: packageType,
@@ -786,17 +789,17 @@ export default function PublicParkingRegister() {
                   <input 
                     type="text" 
                     required 
+                    readOnly={!!editingTicket}
                     placeholder="Gõ tên hoặc Mã HS để tự động gợi ý..."
                     value={studentName}
                     onChange={e => handleNameChange(e.target.value)}
                     onFocus={handleNameFocus}
                     style={{
-
-                  ...styles.input,
-                  borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
-                  backgroundColor: isVerifiedStudent ? '#f0fdf4' : '#ffffff'
-                }}
-              />
+                      ...styles.input,
+                      borderColor: (isVerifiedStudent || !!editingTicket) ? '#166534' : '#cbd5e1',
+                      backgroundColor: (isVerifiedStudent || !!editingTicket) ? '#f0fdf4' : '#ffffff'
+                    }}
+                  />
 
               {/* AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
               {showSuggestions && suggestions.length > 0 && (
@@ -989,14 +992,16 @@ export default function PublicParkingRegister() {
               <input 
                 type="text" 
                 required 
+                readOnly={!!editingTicket}
                 placeholder="Gõ tên hoặc Mã HS..."
                 value={studentName}
                 onChange={e => handleNameChange(e.target.value)}
                 onFocus={handleNameFocus}
                 style={{
                   ...styles.input,
-                  borderColor: isVerifiedStudent ? '#166534' : '#cbd5e1',
-                  borderWidth: isVerifiedStudent ? '2px' : '1px'
+                  borderColor: (isVerifiedStudent || !!editingTicket) ? '#166534' : '#cbd5e1',
+                  borderWidth: (isVerifiedStudent || !!editingTicket) ? '2px' : '1px',
+                  backgroundColor: (isVerifiedStudent || !!editingTicket) ? '#f0fdf4' : '#ffffff'
                 }}
               />
               {showSuggestions && suggestions.length > 0 && (
