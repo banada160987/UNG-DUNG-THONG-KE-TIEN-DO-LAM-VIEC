@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Bus, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save } from 'lucide-react';
+import { Bus, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateBusWordReport } from '../lib/wordExportBus';
 
@@ -185,6 +185,19 @@ export default function AdminBus() {
     pkgYear: busList.filter(i => String(i.package_type || '').includes('year')).length,
     totalFees: busList.reduce((acc, curr) => acc + (Number(curr.fee_amount) || 0), 0)
   };
+
+  const classStats = uniqueClasses.map(cls => ({
+    name: cls,
+    count: busList.filter(i => i.student_class === cls).length
+  })).sort((a, b) => {
+    if (b.count !== a.count) return b.count - a.count;
+    return a.name.localeCompare(b.name);
+  });
+
+  const routeStats = uniqueVehicleTypes.map(v => ({
+    name: v === '1-way' ? '1 chiều' : v === '2-way' ? '2 chiều (Đi & Về)' : v,
+    count: busList.filter(i => i.route_type === v).length
+  })).sort((a, b) => b.count - a.count);
 
   // Check-in terminal search function
   const handleCheckinSearch = (q) => {
@@ -523,6 +536,12 @@ export default function AdminBus() {
           <Settings size={16} /> ⚙️ Cấu Hình Gói Vé & Mức Phí ({packages.length})
         </button>
         <button 
+          onClick={() => setActiveTab('stats')} 
+          style={{ ...styles.tabBtn, backgroundColor: activeTab === 'stats' ? '#be123c' : '#ffffff', color: activeTab === 'stats' ? '#ffffff' : '#334155' }}
+        >
+          <BarChart size={16} /> 📊 Báo Cáo Thống Kê
+        </button>
+        <button 
           onClick={() => setActiveTab('checkin')} 
           style={{ ...styles.tabBtn, backgroundColor: activeTab === 'checkin' ? '#be123c' : '#ffffff', color: activeTab === 'checkin' ? '#ffffff' : '#334155' }}
         >
@@ -678,6 +697,46 @@ export default function AdminBus() {
             )}
           </div>
         </>
+      )}
+
+      {/* ==================== TAB: STATISTICS ==================== */}
+      {activeTab === 'stats' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+          <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🏫 Thống Kê Số Lượng Đăng Ký Theo Lớp
+            </h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '12px', marginTop: '16px' }}>
+              {classStats.map(c => (
+                <div key={c.name} style={{ padding: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', color: '#334155', fontSize: '14px' }}>Lớp {c.name}</span>
+                  <span style={{ backgroundColor: '#f59e0b', color: 'white', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>{c.count} vé</span>
+                </div>
+              ))}
+              {classStats.length === 0 && <p style={{ color: '#64748b', fontSize: '13.5px' }}>Chưa có dữ liệu</p>}
+            </div>
+          </div>
+
+          <div className="glass no-print" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              🚌 Thống Kê Theo Loại Tuyến Đường
+            </h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              {routeStats.map(v => (
+                <div key={v.name} style={{ padding: '12px 16px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 'bold', color: '#334155', fontSize: '14px' }}>{v.name}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '120px', height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ width: `${stats.total > 0 ? (v.count / stats.total) * 100 : 0}%`, height: '100%', backgroundColor: '#f59e0b' }}></div>
+                    </div>
+                    <span style={{ fontWeight: 'bold', color: '#f59e0b', fontSize: '14px', width: '45px', textAlign: 'right' }}>{v.count} vé</span>
+                  </div>
+                </div>
+              ))}
+              {routeStats.length === 0 && <p style={{ color: '#64748b', fontSize: '13.5px' }}>Chưa có dữ liệu</p>}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ==================== TAB 2: FEE & PACKAGE CONFIGURATION ==================== */}
