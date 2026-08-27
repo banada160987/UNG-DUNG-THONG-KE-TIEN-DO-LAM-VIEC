@@ -146,15 +146,37 @@ export default function PublicParkingRegister() {
         } catch (e) {}
       }
 
-      const { data, error } = await supabase
-        .from('cbq_students')
-        .select('*')
-        .eq('is_active', true)
-        .limit(5000);
+      let allStudents = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
 
-      if (!error && data && data.length > 0) {
-        setStudentRoster(data);
-        localStorage.setItem('cbq_students_data', JSON.stringify(data));
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('cbq_students')
+          .select('*')
+          .eq('is_active', true)
+          .range(from, from + step - 1);
+
+        if (error) {
+          console.warn("Lỗi phân trang tải danh sách học sinh:", error);
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allStudents = [...allStudents, ...data];
+          from += step;
+          if (data.length < step) {
+            hasMore = false;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      if (allStudents.length > 0) {
+        setStudentRoster(allStudents);
+        localStorage.setItem('cbq_students_data', JSON.stringify(allStudents));
       }
     } catch (err) {
       console.warn("Lỗi tải danh sách học sinh:", err);
