@@ -331,7 +331,7 @@ export default function PublicQuiz() {
       if (localData) {
         try {
           setAllStudents(JSON.parse(localData));
-          return;
+          // Không return ở đây để dữ liệu luôn được fetch mới ngầm và cập nhật
         } catch (e) {
           // Ignore parsing error, proceed to fetch
         }
@@ -365,8 +365,20 @@ export default function PublicQuiz() {
     setStudentName(val);
 
     if (val.trim().length > 1) {
-      const searchStr = val.toLowerCase();
-      const matches = allStudents.filter(s => s.student_name && s.student_name.toLowerCase().includes(searchStr)).slice(0, 5);
+      const normalize = (str) => {
+        return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+      };
+      const cleanName = val.trim().toLowerCase();
+      const cleanNameNormalized = normalize(cleanName);
+
+      const matches = allStudents.filter(s => {
+        const studentName = s.student_name?.toLowerCase() || '';
+        const studentCode = s.student_code?.toLowerCase() || '';
+        return studentName.includes(cleanName) || 
+               normalize(studentName).includes(cleanNameNormalized) ||
+               studentCode.includes(cleanName);
+      }).slice(0, 5);
+
       setSuggestions(matches);
       setShowSuggestions(true);
     } else {
@@ -461,9 +473,27 @@ export default function PublicQuiz() {
 
   async function fetchStatistics() {
     try {
-      const { data } = await supabase
-        .from('cbq_quiz_submissions')
-        .select('score, total_score, time_taken_seconds, student_group');
+      let data = [];
+      let from = 0;
+      const step = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: pageData, error } = await supabase
+          .from('cbq_quiz_submissions')
+          .select('score, total_score, time_taken_seconds, student_group')
+          .range(from, from + step - 1);
+        
+        if (error) break;
+        
+        if (pageData && pageData.length > 0) {
+          data = [...data, ...pageData];
+          from += step;
+          if (pageData.length < step) hasMore = false;
+        } else {
+          hasMore = false;
+        }
+      }
       
       if (!data || data.length === 0) return;
 
