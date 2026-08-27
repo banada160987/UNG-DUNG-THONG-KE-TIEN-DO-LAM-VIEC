@@ -609,8 +609,14 @@ export default function PublicQuiz() {
     }
 
     if (!studentCode) {
-      alert("Vui lòng chọn đúng tên của bạn từ danh sách gợi ý để hệ thống ghi nhận Mã Học Sinh.");
+      alert("LỖI: Tài khoản của bạn chưa được nhà trường cấp Mã Học Sinh (Mã HS) hoặc bạn chưa chọn đúng tên từ danh sách gợi ý. Vui lòng liên hệ nhà trường để bổ sung mã trước khi thi!");
       return;
+    }
+
+    const sessionStr = localStorage.getItem(`cbq_quiz_session_${studentCode}`);
+    let session = null;
+    if (sessionStr) {
+      try { session = JSON.parse(sessionStr); } catch(e){}
     }
 
     // CHECK IF THIS STUDENT CODE HAS ALREADY COMPLETED A SUBMISSION
@@ -653,17 +659,47 @@ export default function PublicQuiz() {
       return;
     }
 
+    if (session) {
+       const elapsed = Math.floor((Date.now() - session.startTime) / 1000);
+       if (elapsed < session.durationSecs) {
+          alert(`Hệ thống phát hiện bạn đang có một lượt thi chưa hoàn thành. Trạng thái sẽ được khôi phục. Thời gian còn lại: ${Math.floor((session.durationSecs - elapsed)/60)} phút.`);
+          setStep('quiz');
+          setStartTime(session.startTime);
+          setTimeLeft(session.durationSecs - elapsed);
+          const savedAnswers = localStorage.getItem(`cbq_quiz_answers_${studentCode}`);
+          if (savedAnswers) {
+             try { setSelectedAnswers(JSON.parse(savedAnswers)); } catch(e){}
+          }
+          return;
+       } else {
+          alert("Thời gian làm bài của lượt thi trước đã kết thúc. Xin lỗi, bạn không thể thi lại.");
+          return;
+       }
+    }
+
     const durationMins = Number(quizConfig?.time_limit_minutes) || 15;
+    const durationSecs = durationMins * 60;
+
+    localStorage.setItem(`cbq_quiz_session_${studentCode}`, JSON.stringify({
+       startTime: Date.now(),
+       durationSecs
+    }));
+    
     setStep('quiz');
     setStartTime(Date.now());
-    setTimeLeft(durationMins * 60);
+    setTimeLeft(durationSecs);
+    setSelectedAnswers({});
+    localStorage.removeItem(`cbq_quiz_answers_${studentCode}`);
   };
 
   const handleSelectOption = (questionId, optionIndex) => {
-    setSelectedAnswers(prev => ({
-      ...prev,
-      [questionId]: optionIndex
-    }));
+    setSelectedAnswers(prev => {
+      const updated = { ...prev, [questionId]: optionIndex };
+      if (studentCode) {
+         localStorage.setItem(`cbq_quiz_answers_${studentCode}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
   };
 
   const handleSubmitQuiz = async (isAuto = false) => {
@@ -672,6 +708,11 @@ export default function PublicQuiz() {
 
     setSubmitting(true);
     clearInterval(timerRef.current);
+    
+    if (studentCode) {
+      localStorage.removeItem(`cbq_quiz_session_${studentCode}`);
+      localStorage.removeItem(`cbq_quiz_answers_${studentCode}`);
+    }
 
     const now = Date.now();
     const secondsTaken = Math.max(1, Math.floor((now - (startTime || now)) / 1000));
@@ -679,9 +720,9 @@ export default function PublicQuiz() {
 
     // Calculate score
     let autoScore = 0;
-    questions.forEach(q => {
+    questions.forEach((q, index) => {
       if (q.question_type === 'multiple_choice') {
-        const userChoice = selectedAnswers[q.id];
+        const userChoice = selectedAnswers[q.id || index];
         if (userChoice !== undefined && userChoice === q.correct_option_index) {
           autoScore += (q.points || 10);
         }

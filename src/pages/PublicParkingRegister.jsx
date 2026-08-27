@@ -439,6 +439,11 @@ export default function PublicParkingRegister() {
       return;
     }
 
+    if (!studentCode || !studentCode.trim()) {
+      alert("LỖI: Tài khoản của bạn chưa được nhà trường cấp Mã Học Sinh (Mã HS). Vui lòng liên hệ nhà trường để bổ sung mã trước khi đăng ký!");
+      return;
+    }
+
     setLoading(true);
     try {
       if (!editingTicket) {
@@ -473,7 +478,7 @@ export default function PublicParkingRegister() {
       const payload = {
         ticket_code: finalTicketCode,
         student_name: studentName.trim(),
-        student_code: studentCode.trim() || `HS-${randomNum}`,
+        student_code: studentCode.trim(),
         student_class: cleanClass,
         grade_level: gradeLevel,
         license_plate: finalLicensePlate,
@@ -524,6 +529,11 @@ export default function PublicParkingRegister() {
       return;
     }
 
+    if (!studentCode || !studentCode.trim()) {
+      alert("LỖI: Tài khoản của bạn chưa được nhà trường cấp Mã Học Sinh (Mã HS). Vui lòng liên hệ nhà trường để bổ sung mã trước khi đăng ký!");
+      return;
+    }
+
     setLoading(true);
     try {
       if (!editingTicket) {
@@ -551,7 +561,7 @@ export default function PublicParkingRegister() {
 
       const payload = {
         student_name: studentName.trim(),
-        student_code: studentCode.trim() || `HS-${randomNum}`,
+        student_code: studentCode.trim(),
         student_class: cleanClass,
         distance_km: Number(busDistance),
         address: busAddress.trim(),
