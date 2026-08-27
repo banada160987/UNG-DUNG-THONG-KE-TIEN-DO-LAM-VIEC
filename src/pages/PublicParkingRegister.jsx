@@ -34,7 +34,13 @@ export default function PublicParkingRegister() {
   const [isVerifiedStudent, setIsVerifiedStudent] = useState(false);
 
   // System Configuration State
-  const [regConfig, setRegConfig] = useState({
+  const [parkingConfig, setParkingConfig] = useState({
+    isOpen: true,
+    startDate: '',
+    endDate: '',
+    message: ''
+  });
+  const [busConfig, setBusConfig] = useState({
     isOpen: true,
     startDate: '',
     endDate: '',
@@ -80,19 +86,42 @@ export default function PublicParkingRegister() {
 
   async function fetchRegConfig() {
     try {
-      const { data, error } = await supabase.from('cbq_parking_settings').select('*').maybeSingle();
-      if (!error && data) {
-        setRegConfig({
-          isOpen: data.is_open,
-          startDate: data.start_time,
-          endDate: data.end_time,
-          message: data.notice_message
+      // Parking Config
+      const { data: parkingData, error: parkingError } = await supabase.from('cbq_parking_settings').select('*').maybeSingle();
+      if (!parkingError && parkingData) {
+        setParkingConfig({
+          isOpen: parkingData.is_open,
+          startDate: parkingData.start_time,
+          endDate: parkingData.end_time,
+          message: parkingData.notice_message
         });
       } else {
         const local = localStorage.getItem('cbq_parking_settings');
         if (local) {
           const parsed = JSON.parse(local);
-          setRegConfig({
+          setParkingConfig({
+            isOpen: parsed.is_open !== undefined ? parsed.is_open : true,
+            startDate: parsed.start_time,
+            endDate: parsed.end_time,
+            message: parsed.notice_message
+          });
+        }
+      }
+
+      // Bus Config
+      const { data: busData, error: busError } = await supabase.from('cbq_bus_settings').select('*').maybeSingle();
+      if (!busError && busData) {
+        setBusConfig({
+          isOpen: busData.is_open,
+          startDate: busData.start_time,
+          endDate: busData.end_time,
+          message: busData.notice_message
+        });
+      } else {
+        const local = localStorage.getItem('cbq_bus_settings');
+        if (local) {
+          const parsed = JSON.parse(local);
+          setBusConfig({
             isOpen: parsed.is_open !== undefined ? parsed.is_open : true,
             startDate: parsed.start_time,
             endDate: parsed.end_time,
@@ -188,11 +217,12 @@ export default function PublicParkingRegister() {
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
   const classDropdownRef = useRef(null);
 
-  const isRegistrationOpen = () => {
-    if (regConfig.isOpen === false) return false;
+  const isRegistrationOpen = (type = activeTab) => {
+    const config = type === 'bus' ? busConfig : parkingConfig;
+    if (config.isOpen === false) return false;
     const now = new Date();
-    if (regConfig.startDate && now < new Date(regConfig.startDate)) return false;
-    if (regConfig.endDate && now > new Date(regConfig.endDate)) return false;
+    if (config.startDate && now < new Date(config.startDate)) return false;
+    if (config.endDate && now > new Date(config.endDate)) return false;
     return true;
   };
 
@@ -810,7 +840,7 @@ export default function PublicParkingRegister() {
             <div style={{ textAlign: 'center', padding: '50px 20px', backgroundColor: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '12px', marginTop: '20px' }}>
               <h3 style={{ color: '#dc2626', marginBottom: '15px', fontSize: '20px' }}>⚠️ Cổng Đăng Ký Đã Đóng</h3>
               <p style={{ color: '#991b1b', fontSize: '15px', maxWidth: '600px', margin: '0 auto', lineHeight: '1.6' }}>
-                {regConfig.message || 'Hiện tại hệ thống đăng ký đã đóng hoặc đã hết hạn. Vui lòng quay lại sau!'}
+                {(activeTab === 'bus' ? busConfig.message : parkingConfig.message) || 'Hiện tại hệ thống đăng ký đã đóng hoặc đã hết hạn. Vui lòng quay lại sau!'}
               </p>
               <button 
                 onClick={() => setActiveTab('lookup')}
