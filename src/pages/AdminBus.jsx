@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase } from '../lib/supabase';
+import { supabase, logActivity } from '../lib/supabase';
 import { Bus, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateBusWordReport } from '../lib/wordExportBus';
@@ -45,6 +45,15 @@ export default function AdminBus() {
   // Security Check-in Terminal Query
   const [checkinQuery, setCheckinQuery] = useState('');
   const [checkinResult, setCheckinResult] = useState(null);
+
+  // Edit Ticket State
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTicket, setEditingTicket] = useState(null);
+
+  // History Modal State
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [ticketHistory, setTicketHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
 
   // Registration Time Config
   const [regConfig, setRegConfig] = useState({
@@ -421,13 +430,73 @@ export default function AdminBus() {
     }
   };
 
-  const handleDeleteItem = async (id) => {
+  const handleDeleteItem = async (item) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa lượt đăng ký xe này?")) return;
     try {
-      await supabase.from('cbq_bus_registrations').delete().eq('id', id);
-      setBusList(busList.filter(i => i.id !== id));
+      await supabase.from('cbq_bus_registrations').delete().eq('id', item.id);
+      setBusList(busList.filter(i => i.id !== item.id));
+      await logActivity('bus', item.id, item.ticket_code, 'DELETE', 'admin', 'Admin đã xóa vé');
     } catch (err) {
       alert("Lỗi khi xóa: " + err.message);
+    }
+  };
+
+  const handleOpenEdit = (item) => {
+    setEditingTicket({ ...item });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    try {
+      const { data, error } = await supabase
+        .from('cbq_bus_registrations')
+        .update({
+          student_name: editingTicket.student_name,
+          student_class: editingTicket.student_class,
+          address: editingTicket.address,
+          pickup_point: editingTicket.pickup_point,
+          route_type: editingTicket.route_type,
+          package_type: editingTicket.package_type,
+          distance_km: editingTicket.distance_km
+        })
+        .eq('id', editingTicket.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setBusList(busList.map(i => i.id === data.id ? data : i));
+      
+      const changes = `Admin sửa vé: Tên(${data.student_name}), Lớp(${data.student_class}), Điểm đón(${data.pickup_point}), Tuyến(${data.route_type}), Gói(${data.package_type})`;
+      await logActivity('bus', data.id, data.ticket_code, 'UPDATE', 'admin', changes);
+
+      setShowEditModal(false);
+      setEditingTicket(null);
+      alert("Đã cập nhật thông tin vé thành công!");
+    } catch (err) {
+      alert("Lỗi khi cập nhật vé: " + err.message);
+    }
+  };
+
+  const handleViewHistory = async (item) => {
+    setShowHistoryModal(true);
+    setLoadingHistory(true);
+    setTicketHistory([]);
+    try {
+      const { data, error } = await supabase
+        .from('cbq_audit_logs')
+        .select('*')
+        .eq('entity_id', item.id)
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setTicketHistory(data);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -681,10 +750,16 @@ export default function AdminBus() {
                             <button type="button" onClick={() => handlePrintCard(item)} title="In Thẻ Gửi Xe" style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#1e293b', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px', fontWeight: 'bold' }}>
                               <Printer size={14} color="#be123c" /> In Vé Xe
                             </button>
+                            <button type="button" onClick={() => handleOpenEdit(item)} title="Sửa thông tin" style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #0284c7', background: '#e0f2fe', color: '#0284c7', cursor: 'pointer' }}>
+                              <Edit3 size={14} />
+                            </button>
+                            <button type="button" onClick={() => handleViewHistory(item)} title="Lịch sử chỉnh sửa" style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #eab308', background: '#fef9c3', color: '#ca8a04', cursor: 'pointer' }}>
+                              <Clock size={14} />
+                            </button>
                             <button type="button" onClick={() => handleToggleBlock(item)} title={item.status === 'blocked' ? 'Mở khóa' : 'Khóa thẻ xe'} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: item.status === 'blocked' ? '#fef2f2' : '#ffffff', color: item.status === 'blocked' ? '#ef4444' : '#64748b', cursor: 'pointer' }}>
                               {item.status === 'blocked' ? <Lock size={14} /> : <Unlock size={14} />}
                             </button>
-                            <button type="button" onClick={() => handleDeleteItem(item.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                            <button type="button" onClick={() => handleDeleteItem(item)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
                               <Trash2 size={14} />
                             </button>
                           </div>
@@ -985,6 +1060,104 @@ export default function AdminBus() {
           )}
         </div>
       )}
+
+      {/* ==================== MODALS ==================== */}
+      
+      {/* HISTORY MODAL */}
+      {showHistoryModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={{ margin: 0, color: '#ca8a04', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={20} /> Lịch Sử Chỉnh Sửa Vé
+              </h3>
+              <button type="button" onClick={() => setShowHistoryModal(false)} style={styles.closeBtn}>✕</button>
+            </div>
+            <div style={{ padding: '20px' }}>
+              {loadingHistory ? (
+                <p>Đang tải lịch sử...</p>
+              ) : ticketHistory.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                  <Clock size={40} style={{ opacity: 0.5, marginBottom: '10px' }} />
+                  <p>Vé này chưa có lịch sử chỉnh sửa nào.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {ticketHistory.map((log, idx) => (
+                    <div key={idx} style={{ padding: '12px', borderLeft: '4px solid #ca8a04', backgroundColor: '#fefce8', borderRadius: '0 8px 8px 0', fontSize: '13.5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px', color: '#854d0e', fontSize: '12px', fontWeight: 'bold' }}>
+                        <span>{new Date(log.created_at).toLocaleString('vi-VN')}</span>
+                        <span>Bởi: {log.performed_by === 'admin' ? 'Admin / BGH' : 'Học sinh (Tự sửa)'}</span>
+                      </div>
+                      <div style={{ color: '#422006' }}>
+                        <strong>Thao tác ({log.action}):</strong> {log.changes}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT TICKET MODAL */}
+      {showEditModal && editingTicket && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h3 style={{ margin: 0, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit3 size={20} /> Chỉnh Sửa Thông Tin Vé ({editingTicket.ticket_code})
+              </h3>
+              <button type="button" onClick={() => setShowEditModal(false)} style={styles.closeBtn}>✕</button>
+            </div>
+            <form onSubmit={handleSaveEdit} style={{ padding: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
+                <div>
+                  <label style={styles.label}>Họ và Tên (*)</label>
+                  <input type="text" required value={editingTicket.student_name} onChange={e => setEditingTicket({...editingTicket, student_name: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Lớp (*)</label>
+                  <input type="text" required value={editingTicket.student_class} onChange={e => setEditingTicket({...editingTicket, student_class: e.target.value})} style={styles.input} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Địa chỉ nhà (*)</label>
+                  <input type="text" required value={editingTicket.address || ''} onChange={e => setEditingTicket({...editingTicket, address: e.target.value})} style={styles.input} />
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Điểm đón (*)</label>
+                  <input type="text" required value={editingTicket.pickup_point} onChange={e => setEditingTicket({...editingTicket, pickup_point: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Khoảng cách (km)</label>
+                  <input type="number" value={editingTicket.distance_km || ''} onChange={e => setEditingTicket({...editingTicket, distance_km: e.target.value})} style={styles.input} />
+                </div>
+                <div>
+                  <label style={styles.label}>Tuyến đường (*)</label>
+                  <select value={editingTicket.route_type} onChange={e => setEditingTicket({...editingTicket, route_type: e.target.value})} style={styles.input}>
+                    <option value="1-way">1 Chiều</option>
+                    <option value="2-way">2 Chiều (Đi & Về)</option>
+                  </select>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Gói đăng ký (*)</label>
+                  <select value={editingTicket.package_type} onChange={e => setEditingTicket({...editingTicket, package_type: e.target.value})} style={styles.input}>
+                    {packages.map(p => (
+                      <option key={p.package_key} value={p.package_key}>{p.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setShowEditModal(false)} style={{ padding: '9px 18px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Hủy</button>
+                <button type="submit" className="btn-primary" style={{ padding: '9px 24px', backgroundColor: '#0284c7' }}>Lưu Thay Đổi</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </Layout>
   );
 }

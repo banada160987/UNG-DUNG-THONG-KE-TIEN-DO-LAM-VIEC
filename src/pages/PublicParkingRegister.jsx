@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, logActivity } from '../lib/supabase';
 import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search, Bus, MapPin, Navigation } from 'lucide-react';
 
 const DEFAULT_PACKAGES = [
@@ -499,6 +499,10 @@ export default function PublicParkingRegister() {
         setSuccessTicket(payload);
       } else {
         setSuccessTicket(data);
+        if (editingTicket) {
+          const changes = `Học sinh tự cập nhật: Tên(${data.student_name}), Lớp(${data.student_class}), Biển số(${data.license_plate}), Loại(${data.vehicle_type}), Gói(${data.package_type})`;
+          await logActivity('parking', data.id, data.ticket_code, 'UPDATE', 'student', changes);
+        }
       }
       setEditingTicket(null);
     } catch (err) {
@@ -574,6 +578,10 @@ export default function PublicParkingRegister() {
         setSuccessBusTicket(payload);
       } else {
         setSuccessBusTicket(data);
+        if (editingTicket) {
+          const changes = `Học sinh tự cập nhật: Tên(${data.student_name}), Lớp(${data.student_class}), Điểm đón(${data.pickup_point}), Tuyến(${data.route_type}), Gói(${data.package_type})`;
+          await logActivity('bus', data.id, data.ticket_code, 'UPDATE', 'student', changes);
+        }
       }
       setEditingTicket(null);
     } catch (err) {

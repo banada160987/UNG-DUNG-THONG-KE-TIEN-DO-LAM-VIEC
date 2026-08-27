@@ -20,3 +20,27 @@ export const supabaseAdmin = supabaseServiceKey
       }
     }) 
   : null;
+
+/**
+ * Ghi lại lịch sử hoạt động vào bảng cbq_audit_logs
+ * @param {string} entityType - 'parking' hoặc 'bus'
+ * @param {string} entityId - UUID của bản ghi bị thay đổi
+ * @param {string} ticketCode - Mã vé (vd: PARK-10A1-123)
+ * @param {string} action - 'UPDATE', 'DELETE', etc.
+ * @param {string} performedBy - 'admin' hoặc 'student'
+ * @param {string} changes - Mô tả thay đổi
+ */
+export const logActivity = async (entityType, entityId, ticketCode, action, performedBy, changes) => {
+  try {
+    await supabase.from('cbq_audit_logs').insert([{
+      entity_type: entityType,
+      entity_id: entityId,
+      ticket_code: ticketCode,
+      action: action,
+      performed_by: performedBy,
+      changes: changes
+    }]);
+  } catch (error) {
+    console.error('Lỗi khi ghi log activity:', error);
+  }
+};
