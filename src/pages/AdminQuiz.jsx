@@ -104,11 +104,25 @@ export default function AdminQuiz() {
 
   async function fetchSubmissions() {
     setLoading(true);
-    const { data } = await supabase
-      .from('cbq_quiz_submissions')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setSubmissions(data);
+    let allData = [];
+    let from = 0;
+    const limit = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from('cbq_quiz_submissions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(from, from + limit - 1);
+        
+      if (data && data.length > 0) {
+        allData.push(...data);
+        if (data.length < limit) break;
+        from += limit;
+      } else {
+        break;
+      }
+    }
+    setSubmissions(allData);
     setLoading(false);
   };
 
@@ -116,11 +130,24 @@ export default function AdminQuiz() {
     setShowUnsubmittedModal(true);
     setUnsubmittedLoading(true);
     try {
-      const { data: allStudents, error } = await supabase
-        .from('cbq_student_users')
-        .select('username, full_name, student_class');
-        
-      if (error) throw error;
+      let allStudents = [];
+      let from = 0;
+      const limit = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from('cbq_student_users')
+          .select('username, full_name, student_class')
+          .range(from, from + limit - 1);
+          
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allStudents.push(...data);
+          if (data.length < limit) break;
+          from += limit;
+        } else {
+          break;
+        }
+      }
       
       const submittedKeys = new Set(
         submissions.map(s => s.student_code?.trim().toLowerCase()).filter(Boolean)
