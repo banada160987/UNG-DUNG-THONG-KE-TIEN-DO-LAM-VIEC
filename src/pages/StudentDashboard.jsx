@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock } from 'lucide-react';
+import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function StudentDashboard() {
@@ -97,8 +97,14 @@ export default function StudentDashboard() {
               <div style={{ fontWeight: 'bold' }}>{student.student_class}</div>
             </div>
             <div>
-              <div style={{ fontSize: '12px', opacity: 0.8 }}>Niên khóa</div>
-              <div style={{ fontWeight: 'bold' }}>{student.academic_year || '2023-2026'}</div>
+              <div style={{ fontSize: '12px', opacity: 0.8 }}>Chức vụ</div>
+              <div style={{ fontWeight: 'bold' }}>
+                {student.role === 'class_president' && '👑 Lớp trưởng'}
+                {student.role === 'vp_academics' && '📚 Lớp phó Học tập'}
+                {student.role === 'inspector' && '🚩 Cờ Đỏ'}
+                {student.role === 'youth_union_secretary' && '🌟 Bí thư'}
+                {(!student.role || student.role === 'member') && '🧑‍🎓 Học sinh'}
+              </div>
             </div>
           </div>
           <div style={{ background: 'white', padding: '12px', borderRadius: '8px', display: 'inline-block' }}>
@@ -161,6 +167,88 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+
+      {/* CÁN BỘ LỚP / QUẢN TRỊ VIÊN */}
+      {student.role && student.role !== 'member' && (
+        <div style={{ marginTop: '24px' }}>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Shield color="#3b82f6" /> Khu vực Quản trị - Dành cho Cán bộ Lớp
+          </h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            
+            {student.role === 'class_president' && (
+              <>
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #fef08a, #fde047)', border: '1px solid #facc15' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#ca8a04' }}><BookOpen size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#854d0e', fontSize: '16px' }}>Sổ đầu bài điện tử</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#713f12', margin: '0 0 16px 0' }}>Ghi nhận tiết học, điểm danh đầu giờ và nhận xét của GV bộ môn.</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#ca8a04', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Sổ Đầu Bài</button>
+                </div>
+                
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #fed7aa, #fdba74)', border: '1px solid #fb923c' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#c2410c' }}><ClipboardCheck size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#9a3412', fontSize: '16px' }}>Phân công trực nhật</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#7c2d12', margin: '0 0 16px 0' }}>Xếp lịch trực nhật, lao động và theo dõi tiến độ hoàn thành.</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#ea580c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Bảng Phân Công</button>
+                </div>
+              </>
+            )}
+
+            {student.role === 'vp_academics' && (
+              <>
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #bfdbfe, #93c5fd)', border: '1px solid #60a5fa' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#2563eb' }}><ClipboardList size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '16px' }}>Báo cáo chuyên cần HT</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 16px 0' }}>Báo cáo số lượng học sinh làm bài tập về nhà hàng ngày.</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Báo cáo ngay</button>
+                </div>
+              </>
+            )}
+
+            {student.role === 'inspector' && (
+              <>
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #fecaca, #fca5a5)', border: '1px solid #f87171' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#dc2626' }}><ShieldAlert size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#7f1d1d', fontSize: '16px' }}>Sổ Chấm điểm Nề nếp</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#7f1d1d', margin: '0 0 16px 0' }}>Chấm điểm thi đua di động (Thanh tra chéo các lớp).</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Bắt đầu chấm điểm</button>
+                </div>
+              </>
+            )}
+
+            {student.role === 'youth_union_secretary' && (
+              <>
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #bbf7d0, #86efac)', border: '1px solid #4ade80' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#16a34a' }}><Wallet size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#14532d', fontSize: '16px' }}>Quản lý Quỹ đoàn</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#14532d', margin: '0 0 16px 0' }}>Sổ thu/chi quỹ đoàn trực tuyến, đảm bảo minh bạch.</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Sổ Quỹ</button>
+                </div>
+                
+                <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #e9d5ff, #d8b4fe)', border: '1px solid #c084fc' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                    <div style={{ padding: '10px', background: 'white', borderRadius: '12px', color: '#9333ea' }}><Users size={24} /></div>
+                    <h3 style={{ margin: 0, color: '#4c1d95', fontSize: '16px' }}>Điểm danh Sự kiện</h3>
+                  </div>
+                  <p style={{ fontSize: '13px', color: '#4c1d95', margin: '0 0 16px 0' }}>Điểm danh đoàn viên tham gia mít tinh, hội thao.</p>
+                  <button style={{ width: '100%', padding: '10px', background: '#9333ea', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Điểm danh QR</button>
+                </div>
+              </>
+            )}
+            
+          </div>
+        </div>
+      )}
     </div>
   );
 }

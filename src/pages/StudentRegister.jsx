@@ -10,7 +10,8 @@ export default function StudentRegister() {
     password: '',
     confirm_password: '',
     full_name: '',
-    student_class: 'Lớp 12A01'
+    student_class: 'Lớp 12A01',
+    role: 'member'
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -70,6 +71,7 @@ export default function StudentRegister() {
         password: formData.password, // Stored securely
         full_name: formData.full_name.trim(),
         student_class: formData.student_class,
+        role: formData.role,
         created_at: new Date().toISOString()
       };
 
@@ -120,7 +122,7 @@ export default function StudentRegister() {
           👤 ĐĂNG KÝ TÀI KHOẢN
         </h2>
         <p style={{ margin: 0, fontSize: '13.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.4)', fontWeight: '500' }}>
-          Tạo tài khoản cá nhân chính thức để tham gia bình chọn sản phẩm Kỷ niệm 30 năm
+          Tạo tài khoản cá nhân để truy cập Cổng Không Gian Học Sinh
         </p>
       </div>
 
@@ -178,6 +180,23 @@ export default function StudentRegister() {
               style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
             >
               {classList.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+              Chức Vụ Trong Lớp (*)
+            </label>
+            <select 
+              value={formData.role} 
+              onChange={e => setFormData(prev => ({ ...prev, role: e.target.value }))}
+              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+            >
+              <option value="member">🧑‍🎓 Học sinh bình thường</option>
+              <option value="class_president">👑 Lớp trưởng</option>
+              <option value="vp_academics">📚 Lớp phó Học tập</option>
+              <option value="inspector">🚩 Đội Cờ đỏ</option>
+              <option value="youth_union_secretary">🌟 Bí thư Chi đoàn</option>
             </select>
           </div>
 
