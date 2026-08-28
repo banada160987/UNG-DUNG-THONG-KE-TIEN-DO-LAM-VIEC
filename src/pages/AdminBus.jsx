@@ -111,8 +111,8 @@ export default function AdminBus() {
         if (!configError && configData) {
           setRegConfig({
             isOpen: configData.is_open,
-            startDate: configData.start_time ? new Date(configData.start_time).toISOString().slice(0, 16) : '',
-            endDate: configData.end_time ? new Date(configData.end_time).toISOString().slice(0, 16) : '',
+            startDate: configData.start_time ? new Date(new Date(configData.start_time).getTime() - (new Date(configData.start_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '',
+            endDate: configData.end_time ? new Date(new Date(configData.end_time).getTime() - (new Date(configData.end_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '',
             message: configData.notice_message || ''
           });
           localStorage.setItem('cbq_bus_settings', JSON.stringify(configData));
@@ -139,8 +139,8 @@ export default function AdminBus() {
       const parsed = JSON.parse(local);
       setRegConfig({
         isOpen: parsed.is_open !== undefined ? parsed.is_open : true,
-        startDate: parsed.start_time ? new Date(parsed.start_time).toISOString().slice(0, 16) : '',
-        endDate: parsed.end_time ? new Date(parsed.end_time).toISOString().slice(0, 16) : '',
+        startDate: parsed.start_time ? new Date(new Date(parsed.start_time).getTime() - (new Date(parsed.start_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '',
+        endDate: parsed.end_time ? new Date(new Date(parsed.end_time).getTime() - (new Date(parsed.end_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '',
         message: parsed.notice_message || ''
       });
     }

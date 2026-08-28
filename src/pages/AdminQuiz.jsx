@@ -57,7 +57,10 @@ export default function AdminQuiz() {
     try {
       const { data } = await supabase.from('cbq_quizzes').select('*').limit(1);
       if (data && data.length > 0) {
-        setQuizConfig(data[0]);
+        const config = { ...data[0] };
+        if (config.start_time) config.start_time = new Date(new Date(config.start_time).getTime() - (new Date(config.start_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        if (config.end_time) config.end_time = new Date(new Date(config.end_time).getTime() - (new Date(config.end_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        setQuizConfig(config);
       }
     } catch (err) {
       console.error("Lỗi lấy cấu hình cuộc thi:", err);
@@ -72,8 +75,8 @@ export default function AdminQuiz() {
         title: quizConfig.title,
         description: quizConfig.description,
         time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
-        start_time: quizConfig.start_time || null,
-        end_time: quizConfig.end_time || null,
+        start_time: quizConfig.start_time ? new Date(quizConfig.start_time).toISOString() : null,
+        end_time: quizConfig.end_time ? new Date(quizConfig.end_time).toISOString() : null,
         is_active: quizConfig.is_active
       };
 
