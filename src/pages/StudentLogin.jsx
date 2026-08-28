@@ -79,7 +79,7 @@ export default function StudentLogin() {
           🔐 ĐĂNG NHẬP TÀI KHOẢN
         </h2>
         <p style={{ margin: 0, fontSize: '13.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.4)', fontWeight: '500' }}>
-          Đăng nhập tài khoản để thả tim bình chọn cho sản phẩm sáng tạo
+          Hệ Sinh Thái Dành Cho Cán Bộ Lớp - THPT Cao Bá Quát
         </p>
       </div>
 
