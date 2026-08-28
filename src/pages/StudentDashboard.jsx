@@ -142,7 +142,7 @@ export default function StudentDashboard() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '300px', overflowY: 'auto', paddingRight: '8px' }}>
               {tickets.map(ticket => (
-                <div key={ticket.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', borderLeft: \`4px solid \${ticket.status === 'approved' ? '#22c55e' : '#eab308'}\` }}>
+                <div key={ticket.id} style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px', background: '#f8fafc', borderRadius: '12px', borderLeft: `4px solid ${ticket.status === 'approved' ? '#22c55e' : '#eab308'}` }}>
                   {ticket._type === 'parking' ? <Bike size={24} color="#0f172a" /> : <Bus size={24} color="#0f172a" />}
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '15px' }}>
