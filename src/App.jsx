@@ -49,6 +49,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import PublicEmulationScoring from './pages/PublicEmulationScoring';
 import AdminEmulation from './pages/AdminEmulation';
 import AdminMenuConfig from './pages/AdminMenuConfig';
+import AdminDigitalVault from './pages/AdminDigitalVault';
 import PublicLayout from './components/PublicLayout';
 
 // Student Features
@@ -58,6 +59,7 @@ import AcademicReport from './pages/student_features/AcademicReport';
 import DisciplineInspection from './pages/student_features/DisciplineInspection';
 import UnionFunds from './pages/student_features/UnionFunds';
 import EventAttendance from './pages/student_features/EventAttendance';
+import StudentDigitalVault from './pages/student_features/StudentDigitalVault';
 
 // Teacher Features
 import TeacherLogin from './pages/TeacherLogin';
@@ -111,6 +113,7 @@ function App() {
         <Route path="/hoc-sinh/cham-diem-ne-nep" element={<DisciplineInspection />} />
         <Route path="/hoc-sinh/quy-doan" element={<UnionFunds />} />
         <Route path="/hoc-sinh/diem-danh-su-kien" element={<EventAttendance />} />
+        <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
         
         {/* Teacher Portal */}
         <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
@@ -144,6 +147,7 @@ function App() {
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/digital-vault" element={role === 'admin' ? <AdminDigitalVault /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewQuizzes ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewQuizzes ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />

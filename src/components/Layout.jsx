@@ -74,6 +74,7 @@ export default function Layout({ children, title }) {
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
     { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewEmulation },
+    { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewDocs },
