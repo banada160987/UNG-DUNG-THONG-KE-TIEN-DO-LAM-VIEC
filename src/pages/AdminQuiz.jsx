@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2 } from 'lucide-react';
+import { Trophy, Download, Trash2, Plus, CheckCircle, Edit3, MessageSquare, Star, Sparkles, Settings, Clock, BarChart2, Users } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, LabelList } from 'recharts';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
@@ -24,6 +24,11 @@ export default function AdminQuiz() {
 
   // Stats Modal
   const [showStatsModal, setShowStatsModal] = useState(false);
+
+  // Unsubmitted Stats Modal
+  const [showUnsubmittedModal, setShowUnsubmittedModal] = useState(false);
+  const [unsubmittedStats, setUnsubmittedStats] = useState({});
+  const [unsubmittedLoading, setUnsubmittedLoading] = useState(false);
 
   // Question Form Modal
   const [showQuestionModal, setShowQuestionModal] = useState(false);
@@ -105,6 +110,47 @@ export default function AdminQuiz() {
       .order('created_at', { ascending: false });
     if (data) setSubmissions(data);
     setLoading(false);
+  };
+
+  const fetchUnsubmitted = async () => {
+    setShowUnsubmittedModal(true);
+    setUnsubmittedLoading(true);
+    try {
+      const { data: allStudents, error } = await supabase
+        .from('cbq_student_users')
+        .select('full_name, student_class');
+        
+      if (error) throw error;
+      
+      const submittedKeys = new Set(
+        submissions.map(s => `${s.student_name?.trim().toLowerCase()}_${s.student_class?.trim().toLowerCase()}`)
+      );
+      
+      const unsubmitted = allStudents.filter(st => {
+        const key = `${st.full_name?.trim().toLowerCase()}_${st.student_class?.trim().toLowerCase()}`;
+        return !submittedKeys.has(key);
+      });
+      
+      const grouped = unsubmitted.reduce((acc, curr) => {
+        const cls = curr.student_class || 'Khác';
+        if (!acc[cls]) acc[cls] = [];
+        acc[cls].push(curr);
+        return acc;
+      }, {});
+      
+      const sortedClasses = Object.keys(grouped).sort();
+      const groupedSorted = sortedClasses.reduce((acc, cls) => {
+        acc[cls] = grouped[cls].sort((a, b) => a.full_name.localeCompare(b.full_name));
+        return acc;
+      }, {});
+      
+      setUnsubmittedStats(groupedSorted);
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi tải danh sách chưa thi: " + err.message);
+    } finally {
+      setUnsubmittedLoading(false);
+    }
   };
 
   const parseOptions = (opts) => {
@@ -520,6 +566,9 @@ export default function AdminQuiz() {
           )}
           <button onClick={() => setShowStatsModal(true)} style={{ ...styles.exportBtn, backgroundColor: '#3b82f6' }}>
             <BarChart2 size={18} /> Thống Kê
+          </button>
+          <button onClick={fetchUnsubmitted} style={{ ...styles.exportBtn, backgroundColor: '#f59e0b' }}>
+            <Users size={18} /> DS Chưa Thi
           </button>
           <button onClick={exportToExcel} style={styles.exportBtn}>
             <Download size={18} /> Xuất Excel
@@ -982,6 +1031,57 @@ export default function AdminQuiz() {
               {savingConfig ? '⏳ Đang lưu...' : '💾 Lưu Cấu Hình Cuộc Thi'}
             </button>
           </form>
+        </div>
+      )}
+      {/* UNSUBMITTED MODAL */}
+      {showUnsubmittedModal && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalContent, maxWidth: '900px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h3 style={{ margin: 0, color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={24} /> Danh Sách Chưa Tham Gia Thi
+              </h3>
+              <button onClick={() => setShowUnsubmittedModal(false)} style={styles.cancelBtn}>Đóng</button>
+            </div>
+
+            {unsubmittedLoading ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>⏳ Đang đối chiếu dữ liệu với danh sách học sinh toàn trường...</div>
+            ) : (
+              <div style={{ padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
+                <div style={{ textAlign: 'center', marginBottom: '20px', padding: '15px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '15px', color: '#b45309', fontWeight: 'bold', textTransform: 'uppercase' }}>Tổng Số Chưa Hoàn Thành</div>
+                  <div style={{ fontSize: '32px', color: '#d97706', fontWeight: 'bold', marginTop: '5px' }}>
+                    {Object.values(unsubmittedStats).reduce((acc, curr) => acc + curr.length, 0)} <span style={{ fontSize: '16px' }}>học sinh</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '15px' }}>
+                  {Object.entries(unsubmittedStats).map(([className, students]) => (
+                    <div key={className} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                      <div style={{ background: '#f1f5f9', padding: '12px 15px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
+                        <span><span style={{color: '#d97706'}}>Lớp:</span> {className}</span>
+                        <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', border: '1px solid #fde68a' }}>{students.length} em</span>
+                      </div>
+                      <div style={{ padding: '10px 15px', maxHeight: '220px', overflowY: 'auto', fontSize: '13.5px' }}>
+                        {students.map((st, idx) => (
+                          <div key={idx} style={{ padding: '6px 0', borderBottom: idx < students.length - 1 ? '1px dashed #e2e8f0' : 'none', color: '#475569', display: 'flex', gap: '8px' }}>
+                            <span style={{ color: '#94a3b8', width: '20px' }}>{idx + 1}.</span> 
+                            <span style={{ fontWeight: '500' }}>{st.full_name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {Object.keys(unsubmittedStats).length === 0 && (
+                  <div style={{ textAlign: 'center', color: '#10b981', fontWeight: 'bold', padding: '40px', fontSize: '16px', background: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0' }}>
+                    🎉 Tuyệt vời! 100% học sinh toàn trường đã hoàn thành bài thi!
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Layout>
