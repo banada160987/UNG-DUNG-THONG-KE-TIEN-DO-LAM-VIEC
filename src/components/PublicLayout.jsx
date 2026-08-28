@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { GraduationCap, Briefcase, ShieldCheck } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 
 const DEFAULT_SCHOOL_MENUS = [
@@ -144,10 +145,16 @@ export default function PublicLayout() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <Link to="/dang-nhap-hoc-sinh" style={{...styles.adminLoginBtn, backgroundColor: '#3b82f6', border: '1px solid #2563eb'}}>👨‍🎓 Cổng Học Sinh</Link>
-            <Link to="/dang-nhap-giao-vien" style={{...styles.adminLoginBtn, backgroundColor: '#16a34a', border: '1px solid #15803d'}}>👨‍🏫 Cổng Giáo Viên</Link>
-            <Link to="/admin" style={styles.adminLoginBtn}>🔑 Đăng nhập BTC</Link>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student">
+              <GraduationCap size={16} /> Học Sinh
+            </Link>
+            <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher">
+              <Briefcase size={16} /> Giáo Viên
+            </Link>
+            <Link to="/admin" className="premium-nav-btn admin">
+              <ShieldCheck size={16} /> BTC
+            </Link>
           </div>
         </div>
       </nav>
