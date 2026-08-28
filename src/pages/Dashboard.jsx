@@ -194,35 +194,34 @@ export default function Dashboard() {
             </button>
           </div>
           <div style={styles.grid}>
-          {/* Sports Management Quick Access Card */}
-          <Link to="/admin/the-thao" className="glass" style={{ ...styles.card, gridColumn: '1 / -1', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '18px 22px' }}>
-            <div>
+          {/* Quick Access Cards Wrapper */}
+          <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+            {/* Sports Management Quick Access Card */}
+            <Link to="/admin/the-thao" className="glass" style={{ ...styles.card, background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px', padding: '18px 22px' }}>
               <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#fde047', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                ⚽ QUẢN LÝ THỂ THAO & BỐC THĂM BẢNG ĐẤU 30 NĂM
+                ⚽ QUẢN LÝ THỂ THAO & BỐC THĂM
               </h2>
-              <p style={{ margin: 0, fontSize: '13.5px', color: '#e0f2fe' }}>
+              <p style={{ margin: 0, fontSize: '13.5px', color: '#e0f2fe', flex: 1 }}>
                 Xem danh sách VĐV đăng ký, quản lý kinh phí 300k, xuất file Excel & bốc thăm chia bảng đấu tự động cho BTC.
               </p>
-            </div>
-            <span style={{ padding: '8px 18px', background: '#ffffff', color: '#0369a1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px' }}>
-              Truy Cập Ngay ➔
-            </span>
-          </Link>
+              <span style={{ padding: '8px 18px', background: '#ffffff', color: '#0369a1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', alignSelf: 'flex-start' }}>
+                Truy Cập Ngay ➔
+              </span>
+            </Link>
 
-          {/* Guestbook Quick Access Card */}
-          <Link to="/admin/luu-but" className="glass" style={{ ...styles.card, gridColumn: '1 / -1', background: 'linear-gradient(135deg, #be123c 0%, #881337 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', padding: '18px 22px', marginTop: '10px' }}>
-            <div>
+            {/* Guestbook Quick Access Card */}
+            <Link to="/admin/luu-but" className="glass" style={{ ...styles.card, background: 'linear-gradient(135deg, #be123c 0%, #881337 100%)', color: '#ffffff', textDecoration: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '12px', padding: '18px 22px' }}>
               <h2 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#fde047', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 💖 QUẢN LÝ SỔ LƯU BÚT
               </h2>
-              <p style={{ margin: 0, fontSize: '13.5px', color: '#ffe4e6' }}>
+              <p style={{ margin: 0, fontSize: '13.5px', color: '#ffe4e6', flex: 1 }}>
                 Xem, duyệt và quản lý các bài đăng lưu bút của cựu học sinh và giáo viên.
               </p>
-            </div>
-            <span style={{ padding: '8px 18px', background: '#ffffff', color: '#be123c', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px' }}>
-              Truy Cập Ngay ➔
-            </span>
-          </Link>
+              <span style={{ padding: '8px 18px', background: '#ffffff', color: '#be123c', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', alignSelf: 'flex-start' }}>
+                Truy Cập Ngay ➔
+              </span>
+            </Link>
+          </div>
 
           {/* Red Alert Section */}
           <div className="glass" style={{...styles.card, gridColumn: '1 / -1'}}>
@@ -452,6 +451,9 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     gap: '0.75rem',
+    maxHeight: '350px',
+    overflowY: 'auto',
+    paddingRight: '5px'
   },
   alertItem: {
     padding: '1rem',
