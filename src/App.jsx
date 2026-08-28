@@ -51,6 +51,21 @@ import AdminEmulation from './pages/AdminEmulation';
 import AdminMenuConfig from './pages/AdminMenuConfig';
 import PublicLayout from './components/PublicLayout';
 
+// Student Features
+import ClassJournal from './pages/student_features/ClassJournal';
+import DutyRoster from './pages/student_features/DutyRoster';
+import AcademicReport from './pages/student_features/AcademicReport';
+import DisciplineInspection from './pages/student_features/DisciplineInspection';
+import UnionFunds from './pages/student_features/UnionFunds';
+import EventAttendance from './pages/student_features/EventAttendance';
+
+// Teacher Features
+import TeacherLogin from './pages/TeacherLogin';
+import TeacherDashboard from './pages/TeacherDashboard';
+import TeacherFundsManager from './pages/teacher_features/TeacherFundsManager';
+import TeacherDiscipline from './pages/teacher_features/TeacherDiscipline';
+import TeacherAcademics from './pages/teacher_features/TeacherAcademics';
+
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
 
@@ -88,6 +103,21 @@ function App() {
         <Route path="/dang-ky" element={<StudentRegister />} />
         <Route path="/dang-nhap-hoc-sinh" element={<StudentLogin />} />
         <Route path="/student-dashboard" element={<StudentDashboard />} />
+        
+        {/* Role-based Student Features */}
+        <Route path="/hoc-sinh/so-dau-bai" element={<ClassJournal />} />
+        <Route path="/hoc-sinh/truc-nhat" element={<DutyRoster />} />
+        <Route path="/hoc-sinh/bao-cao-hoc-tap" element={<AcademicReport />} />
+        <Route path="/hoc-sinh/cham-diem-ne-nep" element={<DisciplineInspection />} />
+        <Route path="/hoc-sinh/quy-doan" element={<UnionFunds />} />
+        <Route path="/hoc-sinh/diem-danh-su-kien" element={<EventAttendance />} />
+        
+        {/* Teacher Portal */}
+        <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
+        <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
+        <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
+        <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
+        <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
       </Route>
       
       {/* Protected Admin Routes */}

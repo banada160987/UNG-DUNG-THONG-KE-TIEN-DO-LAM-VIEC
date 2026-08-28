@@ -146,6 +146,7 @@ export default function PublicLayout() {
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
             <Link to="/dang-nhap-hoc-sinh" style={{...styles.adminLoginBtn, backgroundColor: '#3b82f6', border: '1px solid #2563eb'}}>👨‍🎓 Cổng Học Sinh</Link>
+            <Link to="/dang-nhap-giao-vien" style={{...styles.adminLoginBtn, backgroundColor: '#16a34a', border: '1px solid #15803d'}}>👨‍🏫 Cổng Giáo Viên</Link>
             <Link to="/admin" style={styles.adminLoginBtn}>🔑 Đăng nhập BTC</Link>
           </div>
         </div>

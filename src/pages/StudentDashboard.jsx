@@ -184,7 +184,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#854d0e', fontSize: '16px' }}>Sổ đầu bài điện tử</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#713f12', margin: '0 0 16px 0' }}>Ghi nhận tiết học, điểm danh đầu giờ và nhận xét của GV bộ môn.</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#ca8a04', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Sổ Đầu Bài</button>
+                  <Link to="/hoc-sinh/so-dau-bai" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#ca8a04', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Mở Sổ Đầu Bài</Link>
                 </div>
                 
                 <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #fed7aa, #fdba74)', border: '1px solid #fb923c' }}>
@@ -193,7 +193,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#9a3412', fontSize: '16px' }}>Phân công trực nhật</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#7c2d12', margin: '0 0 16px 0' }}>Xếp lịch trực nhật, lao động và theo dõi tiến độ hoàn thành.</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#ea580c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Bảng Phân Công</button>
+                  <Link to="/hoc-sinh/truc-nhat" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#ea580c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Mở Bảng Phân Công</Link>
                 </div>
               </>
             )}
@@ -206,7 +206,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#1e3a8a', fontSize: '16px' }}>Báo cáo chuyên cần HT</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#1e3a8a', margin: '0 0 16px 0' }}>Báo cáo số lượng học sinh làm bài tập về nhà hàng ngày.</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Báo cáo ngay</button>
+                  <Link to="/hoc-sinh/bao-cao-hoc-tap" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Báo cáo ngay</Link>
                 </div>
               </>
             )}
@@ -219,7 +219,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#7f1d1d', fontSize: '16px' }}>Sổ Chấm điểm Nề nếp</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#7f1d1d', margin: '0 0 16px 0' }}>Chấm điểm thi đua di động (Thanh tra chéo các lớp).</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Bắt đầu chấm điểm</button>
+                  <Link to="/hoc-sinh/cham-diem-ne-nep" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Bắt đầu chấm điểm</Link>
                 </div>
               </>
             )}
@@ -232,7 +232,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#14532d', fontSize: '16px' }}>Quản lý Quỹ đoàn</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#14532d', margin: '0 0 16px 0' }}>Sổ thu/chi quỹ đoàn trực tuyến, đảm bảo minh bạch.</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Mở Sổ Quỹ</button>
+                  <Link to="/hoc-sinh/quy-doan" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Mở Sổ Quỹ</Link>
                 </div>
                 
                 <div className="glass" style={{ padding: '20px', borderRadius: '16px', background: 'linear-gradient(135deg, #e9d5ff, #d8b4fe)', border: '1px solid #c084fc' }}>
@@ -241,7 +241,7 @@ export default function StudentDashboard() {
                     <h3 style={{ margin: 0, color: '#4c1d95', fontSize: '16px' }}>Điểm danh Sự kiện</h3>
                   </div>
                   <p style={{ fontSize: '13px', color: '#4c1d95', margin: '0 0 16px 0' }}>Điểm danh đoàn viên tham gia mít tinh, hội thao.</p>
-                  <button style={{ width: '100%', padding: '10px', background: '#9333ea', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Điểm danh QR</button>
+                  <Link to="/hoc-sinh/diem-danh-su-kien" style={{ display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '10px', background: '#9333ea', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxSizing: 'border-box' }}>Điểm danh QR</Link>
                 </div>
               </>
             )}
