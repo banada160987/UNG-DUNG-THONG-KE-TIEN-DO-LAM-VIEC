@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { QrCode, Plus, Save, FileText, CheckCircle, Search, FileBadge, Trash2 } from 'lucide-react';
-import AdminLayout from '../components/AdminLayout';
+import Layout from '../components/Layout';
 
 export default function AdminDigitalVault() {
   const [documents, setDocuments] = useState([]);
@@ -102,7 +102,7 @@ export default function AdminDigitalVault() {
   );
 
   return (
-    <AdminLayout>
+    <Layout>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -228,7 +228,7 @@ export default function AdminDigitalVault() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }
 
