@@ -118,17 +118,17 @@ export default function AdminQuiz() {
     try {
       const { data: allStudents, error } = await supabase
         .from('cbq_student_users')
-        .select('full_name, student_class');
+        .select('username, full_name, student_class');
         
       if (error) throw error;
       
       const submittedKeys = new Set(
-        submissions.map(s => `${s.student_name?.trim().toLowerCase()}_${s.student_class?.trim().toLowerCase()}`)
+        submissions.map(s => s.student_code?.trim().toLowerCase()).filter(Boolean)
       );
       
       const unsubmitted = allStudents.filter(st => {
-        const key = `${st.full_name?.trim().toLowerCase()}_${st.student_class?.trim().toLowerCase()}`;
-        return !submittedKeys.has(key);
+        const key = st.username?.trim().toLowerCase();
+        return key && !submittedKeys.has(key);
       });
       
       const grouped = unsubmitted.reduce((acc, curr) => {
