@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { ArrowLeft, Plus, Save, Wallet, CheckCircle, Clock } from 'lucide-react';
 
 export default function TeacherFundsManager() {

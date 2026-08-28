@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { ArrowLeft, GraduationCap, BookOpen, ClipboardList } from 'lucide-react';
 
 export default function TeacherAcademics() {
