@@ -582,6 +582,46 @@ export default function AdminFeedbackSystem() {
     document.body.removeChild(link);
   };
 
+  const handleApproveTopic = async () => {
+    if (!selectedTopicId) return;
+    if (currentTopicObj?.is_approved) {
+      alert("Văn bản này đã được duyệt và ban hành rồi.");
+      return;
+    }
+    if (!window.confirm("Bạn có chắc chắn muốn CHUYỂN TRẠNG THÁI thành ĐÃ DUYỆT & BAN HÀNH văn bản này không?")) return;
+    
+    try {
+      setLoading(true);
+      // 1. Update cbq_feedback_topics
+      const { error: updateError } = await supabase
+        .from('cbq_feedback_topics')
+        .update({ is_approved: true, approved_at: new Date().toISOString(), approved_by: 'Hiệu trưởng' })
+        .eq('id', selectedTopicId);
+      
+      if (updateError) throw updateError;
+      
+      // 2. Add to cbq_docs
+      const topicObj = topics.find(t => t.id === selectedTopicId);
+      if (topicObj) {
+        await supabase.from('cbq_docs').insert([{
+          title: topicObj.title,
+          category: 'Quyết định / Ban hành',
+          content: topicObj.description,
+          author: 'Hiệu trưởng',
+          reference_number: topicObj.dispatch_number
+        }]);
+      }
+
+      alert("Phê duyệt và ban hành văn bản thành công!");
+      fetchTopics();
+    } catch (err) {
+      console.error(err);
+      alert("Lỗi khi duyệt văn bản: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
   
   // Submitted Count for Official Departments
@@ -662,6 +702,15 @@ export default function AdminFeedbackSystem() {
                 title="Copy Mẫu Thông Báo Nhắc Nộp Góp Ý Gửi Group Zalo Trường"
               >
                 💬 Copy Mẫu Zalo
+              </button>
+
+              <button
+                onClick={handleApproveTopic}
+                disabled={currentTopicObj?.is_approved}
+                style={{ padding: '6px 14px', background: currentTopicObj?.is_approved ? '#16a34a' : '#3b82f6', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: currentTopicObj?.is_approved ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
+                title="Duyệt và ban hành thành văn bản chính thức"
+              >
+                <CheckCircle2 size={15} /> {currentTopicObj?.is_approved ? '✅ Đã Ban Hành' : '✍️ Duyệt & Ban Hành'}
               </button>
 
               <button

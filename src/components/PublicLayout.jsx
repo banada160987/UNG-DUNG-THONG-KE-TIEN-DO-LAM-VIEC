@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import ChatbotWidget from './ChatbotWidget';
 
 const DEFAULT_SCHOOL_MENUS = [
   { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
@@ -161,6 +162,9 @@ export default function PublicLayout() {
       <div style={{ maxWidth: '1200px', margin: '0 auto', paddingTop: '20px' }}>
         <Outlet />
       </div>
+      
+      {/* Smart School AI Chatbot */}
+      <ChatbotWidget />
     </div>
   );
 }

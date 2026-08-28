@@ -51,7 +51,7 @@ export default function StudentLogin() {
       // Save session
       localStorage.setItem('cbq_current_student', JSON.stringify(foundUser));
       alert(`👋 ĐĂNG NHẬP THÀNH CÔNG!\n\nChào mừng bạn ${foundUser.full_name} (${foundUser.student_class}).`);
-      navigate('/binh-chon');
+      navigate('/student-dashboard');
 
     } catch (err) {
       console.error(err);

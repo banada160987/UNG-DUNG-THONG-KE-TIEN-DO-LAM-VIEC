@@ -44,6 +44,8 @@ import PublicParkingRegister from './pages/PublicParkingRegister';
 import AdminParking from './pages/AdminParking';
 import AdminBus from './pages/AdminBus';
 import AdminStudents from './pages/AdminStudents';
+import AdminQRScanner from './pages/AdminQRScanner';
+import StudentDashboard from './pages/StudentDashboard';
 import PublicEmulationScoring from './pages/PublicEmulationScoring';
 import AdminEmulation from './pages/AdminEmulation';
 import AdminMenuConfig from './pages/AdminMenuConfig';
@@ -84,7 +86,8 @@ function App() {
         <Route path="/gop-y" element={<PublicFeedbackSystem />} />
         <Route path="/gop-y-quy-hoc-bong" element={<Navigate to="/gop-y" replace />} />
         <Route path="/dang-ky" element={<StudentRegister />} />
-        <Route path="/dang-nhap" element={<StudentLogin />} />
+        <Route path="/dang-nhap-hoc-sinh" element={<StudentLogin />} />
+        <Route path="/student-dashboard" element={<StudentDashboard />} />
       </Route>
       
       {/* Protected Admin Routes */}
@@ -96,6 +99,7 @@ function App() {
           <Route path="/admin/students" element={permissions.canViewStudents ? <AdminStudents /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/bus" element={permissions.canViewStudents ? <AdminBus /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/parking" element={permissions.canViewStudents ? <AdminParking /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/qr-scanner" element={permissions.canViewStudents ? <AdminQRScanner /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/schedule" element={permissions.canViewDocs ? <AdminSchedule /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/staff" element={permissions.canViewDocs ? <AdminStaff /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />

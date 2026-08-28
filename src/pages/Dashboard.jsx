@@ -12,6 +12,10 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [sponsors, setSponsors] = useState([]);
+  const [parkingCount, setParkingCount] = useState(0);
+  const [busCount, setBusCount] = useState(0);
+  const [quizCount, setQuizCount] = useState(0);
+  const [feedbackCount, setFeedbackCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,18 +28,25 @@ export default function Dashboard() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [tasksRes, committeesRes, sponsorsRes] = await Promise.all([
+      const [tasksRes, committeesRes, sponsorsRes, parkingRes, busRes, quizRes, feedbackRes] = await Promise.all([
         supabase.from('cbq_tasks').select('*'),
         supabase.from('cbq_committees').select('*'),
-        supabase.from('cbq_sponsors').select('donation_amount').eq('is_public', true)
+        supabase.from('cbq_sponsors').select('donation_amount').eq('is_public', true),
+        supabase.from('cbq_parking_registrations').select('id', { count: 'exact' }),
+        supabase.from('cbq_bus_registrations').select('id', { count: 'exact' }),
+        supabase.from('cbq_quiz_submissions').select('id', { count: 'exact' }),
+        supabase.from('cbq_feedback_topics').select('id', { count: 'exact' })
       ]);
 
       if (tasksRes.error) throw tasksRes.error;
-      if (committeesRes.error) throw committeesRes.error;
 
       setTasks(tasksRes.data || []);
       setCommittees(committeesRes.data || []);
       setSponsors(sponsorsRes.data || []);
+      setParkingCount(parkingRes.count || 0);
+      setBusCount(busRes.count || 0);
+      setQuizCount(quizRes.count || 0);
+      setFeedbackCount(feedbackRes.count || 0);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {
@@ -243,30 +254,61 @@ export default function Dashboard() {
             <Clock color="var(--status-progress)" size={32} />
             <div>
               <div style={styles.statValue}>{tasks.filter(t => t.status !== 'completed').length}</div>
-              <div style={styles.statLabel}>Đang thực hiện</div>
+              <div style={styles.statLabel}>Việc Đang làm</div>
             </div>
           </div>
           <div className="glass" style={styles.statCard}>
             <CheckCircle color="var(--status-completed)" size={32} />
             <div>
               <div style={styles.statValue}>{tasks.filter(t => t.status === 'completed').length}</div>
-              <div style={styles.statLabel}>Đã hoàn thành</div>
-            </div>
-          </div>
-          <div className="glass" style={styles.statCard}>
-            <DollarSign color="#166534" size={32} />
-            <div>
-              <div style={{...styles.statValue, color: '#166534'}}>{totalIncome.toLocaleString()} đ</div>
-              <div style={styles.statLabel}>Tổng thu (Tài trợ)</div>
+              <div style={styles.statLabel}>Việc Hoàn thành</div>
             </div>
           </div>
           <div className="glass" style={styles.statCard}>
             <DollarSign color="#eab308" size={32} />
             <div>
-              <div style={{...styles.statValue, color: '#eab308'}}>{totalBudget.toLocaleString()} đ</div>
-              <div style={styles.statLabel}>Tổng chi (Dự kiến)</div>
+              <div style={styles.statValue}>{totalBudget.toLocaleString('vi-VN')}</div>
+              <div style={styles.statLabel}>Tổng Dự toán (VNĐ)</div>
             </div>
           </div>
+          <div className="glass" style={styles.statCard}>
+            <DollarSign color="#22c55e" size={32} />
+            <div>
+              <div style={styles.statValue}>{totalIncome.toLocaleString('vi-VN')}</div>
+              <div style={styles.statLabel}>Tài trợ / Ủng hộ</div>
+            </div>
+          </div>
+
+          {/* Smart School 4.0 Stats */}
+          <div className="glass" style={{ ...styles.statCard, background: 'linear-gradient(to right, #ecfdf5, #d1fae5)' }}>
+            <div style={{ fontSize: '32px' }}>🛵</div>
+            <div>
+              <div style={{ ...styles.statValue, color: '#047857' }}>{parkingCount}</div>
+              <div style={{ ...styles.statLabel, color: '#065f46' }}>Vé Xe Máy</div>
+            </div>
+          </div>
+          <div className="glass" style={{ ...styles.statCard, background: 'linear-gradient(to right, #eff6ff, #dbeafe)' }}>
+            <div style={{ fontSize: '32px' }}>🚌</div>
+            <div>
+              <div style={{ ...styles.statValue, color: '#1d4ed8' }}>{busCount}</div>
+              <div style={{ ...styles.statLabel, color: '#1e40af' }}>Vé Xe Buýt</div>
+            </div>
+          </div>
+          <div className="glass" style={{ ...styles.statCard, background: 'linear-gradient(to right, #fffbeb, #fef3c7)' }}>
+            <div style={{ fontSize: '32px' }}>🏆</div>
+            <div>
+              <div style={{ ...styles.statValue, color: '#b45309' }}>{quizCount}</div>
+              <div style={{ ...styles.statLabel, color: '#92400e' }}>Lượt Thi Quiz</div>
+            </div>
+          </div>
+          <div className="glass" style={{ ...styles.statCard, background: 'linear-gradient(to right, #fef2f2, #fee2e2)' }}>
+            <div style={{ fontSize: '32px' }}>✍️</div>
+            <div>
+              <div style={{ ...styles.statValue, color: '#b91c1c' }}>{feedbackCount}</div>
+              <div style={{ ...styles.statLabel, color: '#991b1b' }}>Dự Thảo Ý Kiến</div>
+            </div>
+          </div>
+
           <div className="glass" style={{...styles.statCard, gridColumn: '1 / -1', justifyContent: 'center', backgroundColor: balance >= 0 ? '#f0fdf4' : '#fef2f2'}}>
             <DollarSign color={balance >= 0 ? '#166534' : '#d32f2f'} size={40} />
             <div>

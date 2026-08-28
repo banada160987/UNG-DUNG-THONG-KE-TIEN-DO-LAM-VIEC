@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, logActivity } from '../lib/supabase';
 import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search, Bus, MapPin, Navigation } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 
 const DEFAULT_PACKAGES = [
   { key: 'month', label: 'Đăng ký Theo Tháng', months: 1, fee: 50000, desc: 'Thời hạn 1 tháng (50.000 VNĐ)' },
@@ -711,7 +712,7 @@ export default function PublicParkingRegister() {
 
             <div style={styles.ticketFooter}>
               <div style={{ textAlign: 'center' }}>
-                <QrCode size={64} color="#1e293b" />
+                <QRCodeSVG value={successBusTicket.ticket_code} size={64} level="M" />
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Quét mã QR Check-in xe tuyến</div>
               </div>
               <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748b' }}>
@@ -772,7 +773,7 @@ export default function PublicParkingRegister() {
 
             <div style={styles.ticketFooter}>
               <div style={{ textAlign: 'center' }}>
-                <QrCode size={64} color="#1e293b" />
+                <QRCodeSVG value={successTicket.ticket_code} size={64} level="M" />
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Quét mã QR check-in tại cổng xe</div>
               </div>
               <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748b' }}>
