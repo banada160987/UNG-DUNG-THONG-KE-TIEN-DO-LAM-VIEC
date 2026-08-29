@@ -122,6 +122,7 @@ function App() {
         <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
         <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
         <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
+        <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
       </Route>
       
       {/* Protected Admin Routes */}

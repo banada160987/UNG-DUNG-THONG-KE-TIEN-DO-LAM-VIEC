@@ -15,7 +15,7 @@ export default function AdminLinks() {
 
   async function fetchLinks() {
     setLoading(true);
-    const { data } = await supabase.from('cbq_external_links').select('*').order('order_index', { ascending: true });
+    const { data } = await supabase.from('cbq_external_links').select('*').eq('type', 'public').order('order_index', { ascending: true });
     if (data) setLinks(data);
     setLoading(false);
   };
@@ -36,7 +36,7 @@ export default function AdminLinks() {
     } else {
       // Insert
       const { id, ...insertData } = formData;
-      const { error } = await supabase.from('cbq_external_links').insert([insertData]);
+      const { error } = await supabase.from('cbq_external_links').insert([{...insertData, type: 'public'}]);
       if (!error) {
         setShowForm(false);
         resetForm();

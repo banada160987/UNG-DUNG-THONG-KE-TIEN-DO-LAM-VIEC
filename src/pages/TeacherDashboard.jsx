@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap } from 'lucide-react';
+import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
@@ -83,6 +83,18 @@ export default function TeacherDashboard() {
               Kiểm tra Sổ đầu bài điện tử do Lớp trưởng ghi và Báo cáo thiếu BTVN từ Lớp phó Học tập.
             </p>
             <Link to="/teacher-dashboard/academics" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#d97706', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Xem tình hình học tập</Link>
+          </div>
+
+          {/* Kho Ứng Dụng (App Hub) */}
+          <div style={{ background: 'white', borderRadius: '20px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#e0e7ff', color: '#4f46e5', borderRadius: '16px' }}><LayoutDashboard size={28} /></div>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>Cổng Tiện Ích</h3>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Truy cập nhanh vào các phần mềm trường học: SMAS, Azota, K12Online, Email... 
+            </p>
+            <Link to="/teacher-dashboard/app-hub" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#4f46e5', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Mở Kho Ứng Dụng</Link>
           </div>
 
         </div>

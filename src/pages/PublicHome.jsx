@@ -86,7 +86,7 @@ export default function PublicHome() {
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*'),
-        supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true }),
+        supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single()
       ]);
       
