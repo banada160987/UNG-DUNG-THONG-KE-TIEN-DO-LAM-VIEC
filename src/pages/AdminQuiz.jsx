@@ -551,6 +551,39 @@ export default function AdminQuiz() {
     }
   };
 
+  const handleExportUnsubmittedExcel = () => {
+    if (!unsubmittedStats || Object.keys(unsubmittedStats).length === 0) {
+      alert("Không có dữ liệu để xuất!");
+      return;
+    }
+    
+    let exportData = [];
+    let stt = 1;
+    
+    Object.entries(unsubmittedStats).forEach(([className, students]) => {
+      students.forEach(st => {
+        exportData.push({
+          'STT': stt++,
+          'Họ và Tên': st.full_name,
+          'Lớp / Khóa': className
+        });
+      });
+    });
+    
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    
+    worksheet['!cols'] = [
+      { wch: 8 },  // STT
+      { wch: 35 }, // Họ tên
+      { wch: 20 }, // Lớp
+    ];
+    
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ChuaThamGia");
+    
+    XLSX.writeFile(workbook, `Danh_Sach_Chua_Thi_Trac_Nghiem_${Date.now()}.xlsx`);
+  };
+
   return (
     <Layout title="Quản lý Cuộc Thi Trắc Nghiệm & Tự Luận">
       {/* TOOLBAR */}
@@ -1068,7 +1101,12 @@ export default function AdminQuiz() {
               <h3 style={{ margin: 0, color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={24} /> Danh Sách Chưa Tham Gia Thi
               </h3>
-              <button onClick={() => setShowUnsubmittedModal(false)} style={styles.cancelBtn}>Đóng</button>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={handleExportUnsubmittedExcel} style={{ ...styles.exportBtn, backgroundColor: '#10b981', padding: '8px 16px', fontSize: '13.5px' }}>
+                  <Download size={16} /> Xuất Excel
+                </button>
+                <button onClick={() => setShowUnsubmittedModal(false)} style={styles.cancelBtn}>Đóng</button>
+              </div>
             </div>
 
             {unsubmittedLoading ? (
