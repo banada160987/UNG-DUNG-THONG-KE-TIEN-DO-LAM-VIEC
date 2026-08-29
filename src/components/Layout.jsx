@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -74,6 +74,7 @@ export default function Layout({ children, title }) {
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích (Hub)', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: true },
+    { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Hồ sơ Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },

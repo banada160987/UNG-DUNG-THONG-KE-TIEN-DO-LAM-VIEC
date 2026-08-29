@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard } from 'lucide-react';
+import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard, FolderOpen } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
@@ -95,6 +95,18 @@ export default function TeacherDashboard() {
               Truy cập nhanh vào các phần mềm trường học: SMAS, Azota, K12Online, Email... 
             </p>
             <Link to="/teacher-dashboard/app-hub" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#4f46e5', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Mở Kho Ứng Dụng</Link>
+          </div>
+
+          {/* Hồ sơ Tổ Chuyên môn */}
+          <div style={{ background: 'white', borderRadius: '20px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#dbeafe', color: '#2563eb', borderRadius: '16px' }}><FolderOpen size={28} /></div>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>Hồ sơ Tổ Chuyên Môn</h3>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Truy cập thư mục lưu trữ tài liệu, giáo án, và chuyên đề của Tổ chuyên môn trên Google Drive.
+            </p>
+            <Link to="/teacher-dashboard/department-drive" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#2563eb', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Mở Hồ Sơ Tổ</Link>
           </div>
 
         </div>

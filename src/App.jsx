@@ -51,6 +51,7 @@ import AdminEmulation from './pages/AdminEmulation';
 import AdminMenuConfig from './pages/AdminMenuConfig';
 import AdminDigitalVault from './pages/AdminDigitalVault';
 import AppHub from './pages/AppHub';
+import DepartmentDrive from './pages/DepartmentDrive';
 import PublicLayout from './components/PublicLayout';
 
 // Student Features
@@ -123,6 +124,7 @@ function App() {
         <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
         <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
         <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
+        <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
       </Route>
       
       {/* Protected Admin Routes */}
@@ -145,12 +147,13 @@ function App() {
           <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/tap-san" element={permissions.canViewMagazine ? <AdminMagazine /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/links" element={role === 'admin' ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/links" element={permissions.canViewLinks ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/department-drives" element={(role === 'admin' || role === 'secretary') ? <DepartmentDrive /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/app-hub" element={(role === 'admin' || role === 'secretary') ? <AppHub /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/digital-vault" element={role === 'admin' ? <AdminDigitalVault /> : <Navigate to="/admin/committee" replace />} />
-          <Route path="/admin/app-hub" element={<AppHub />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewQuizzes ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewQuizzes ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
