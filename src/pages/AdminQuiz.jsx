@@ -135,8 +135,8 @@ export default function AdminQuiz() {
       const limit = 1000;
       while (true) {
         const { data, error } = await supabase
-          .from('cbq_student_users')
-          .select('username, full_name, student_class')
+          .from('cbq_students')
+          .select('student_code, student_name, student_class')
           .range(from, from + limit - 1);
           
         if (error) throw error;
@@ -154,20 +154,20 @@ export default function AdminQuiz() {
       );
       
       const unsubmitted = allStudents.filter(st => {
-        const key = st.username?.trim().toLowerCase();
+        const key = st.student_code?.trim().toLowerCase();
         return key && !submittedKeys.has(key);
       });
       
       const grouped = unsubmitted.reduce((acc, curr) => {
         const cls = curr.student_class || 'Khác';
         if (!acc[cls]) acc[cls] = [];
-        acc[cls].push(curr);
+        acc[cls].push({ ...curr, full_name: curr.student_name }); // mapping student_name to full_name cho UI
         return acc;
       }, {});
       
       const sortedClasses = Object.keys(grouped).sort();
       const groupedSorted = sortedClasses.reduce((acc, cls) => {
-        acc[cls] = grouped[cls].sort((a, b) => a.full_name.localeCompare(b.full_name));
+        acc[cls] = grouped[cls].sort((a, b) => (a.full_name || '').localeCompare(b.full_name || ''));
         return acc;
       }, {});
       
