@@ -103,7 +103,7 @@ export default function AdminEmulation() {
     });
 
     const baseScore = 100;
-    const finalScore = baseScore + totalDeduction + totalBonus;
+    const finalScore = Math.max(0, baseScore + totalDeduction + totalBonus);
     const gradeLevel = getGradeLevel(cls);
 
     let classification = 'Xuất sắc';

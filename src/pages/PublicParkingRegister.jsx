@@ -496,8 +496,9 @@ export default function PublicParkingRegister() {
       const endDate = calculateEndDate(today, selectedPkg.months);
       
       const cleanClass = studentClass.trim().toUpperCase();
+      const timeStampSuffix = Date.now().toString(36).toUpperCase().slice(-3);
       const randomNum = Math.floor(100 + Math.random() * 900);
-      const ticketCode = `PARK-${cleanClass}-${randomNum}`;
+      const ticketCode = `PARK-${cleanClass}-${timeStampSuffix}${randomNum}`;
       const gradeLevel = getGradeLevel(cleanClass);
 
       const finalTicketCode = editingTicket ? editingTicket.ticket_code : ticketCode;
