@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
@@ -24,11 +24,31 @@ export default function DepartmentDrive() {
   const [folderIdInput, setFolderIdInput] = useState('');
   const [showConfig, setShowConfig] = useState(false);
 
-  useEffect(() => {
-    init();
-  }, [isTeacherPortal, isAdmin]);
+  const handleSelectDept = useCallback(async (deptName) => {
+    setSelectedDept(deptName);
+    setLoading(true);
+    setShowConfig(false);
+    
+    // Fetch drive link for this dept
+    const { data } = await supabase
+      .from('cbq_external_links')
+      .select('*')
+      .eq('type', 'department_drive')
+      .eq('category', deptName)
+      .maybeSingle();
+      
+    if (data) {
+      setDriveConfig(data);
+      setFolderIdInput(data.url || ''); // We use url to store folder ID
+    } else {
+      setDriveConfig(null);
+      setFolderIdInput('');
+    }
+    
+    setLoading(false);
+  }, []);
 
-  const init = async () => {
+  const init = useCallback(async () => {
     setLoading(true);
     
     // Fetch unique departments from staff
@@ -64,31 +84,11 @@ export default function DepartmentDrive() {
         navigate('/dang-nhap-giao-vien');
       }
     }
-  };
+  }, [isAdmin, isTeacherPortal, handleSelectDept, navigate]);
 
-  const handleSelectDept = async (deptName) => {
-    setSelectedDept(deptName);
-    setLoading(true);
-    setShowConfig(false);
-    
-    // Fetch drive link for this dept
-    const { data } = await supabase
-      .from('cbq_external_links')
-      .select('*')
-      .eq('type', 'department_drive')
-      .eq('category', deptName)
-      .maybeSingle();
-      
-    if (data) {
-      setDriveConfig(data);
-      setFolderIdInput(data.url || ''); // We use url to store folder ID
-    } else {
-      setDriveConfig(null);
-      setFolderIdInput('');
-    }
-    
-    setLoading(false);
-  };
+  useEffect(() => {
+    init();
+  }, [init]);
 
   const handleSaveConfig = async () => {
     if (!folderIdInput.trim()) {

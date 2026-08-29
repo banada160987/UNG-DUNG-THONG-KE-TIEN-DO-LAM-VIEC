@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Save, Send } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import FileUpload from './FileUpload';
@@ -23,10 +23,11 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
   const [newComment, setNewComment] = useState('');
   const [newCommentFile, setNewCommentFile] = useState('');
 
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
+    if (!task?.id) return;
     const { data } = await supabase.from('cbq_task_comments').select('*').eq('task_id', task.id).order('created_at', { ascending: true });
     if (data) setComments(data);
-  };
+  }, [task?.id]);
 
   const handleAddComment = async () => {
     if (!newComment.trim() && !newCommentFile) return;
@@ -67,7 +68,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task, committees, u
         committee_id: isMember ? userCommitteeId : ''
       });
     }
-  }, [task, isOpen, isMember, userCommitteeId]);
+  }, [task, isOpen, isMember, userCommitteeId, fetchComments]);
 
   if (!isOpen) return null;
 

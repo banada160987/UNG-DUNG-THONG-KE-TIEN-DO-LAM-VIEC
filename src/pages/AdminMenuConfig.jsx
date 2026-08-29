@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Settings, Plus, Save, Trash2, Edit3, Eye, EyeOff, Globe, LayoutDashboard, RefreshCw } from 'lucide-react';
@@ -118,23 +118,7 @@ export default function AdminMenuConfig() {
   const [icon, setIcon] = useState('Link2');
   const [sortOrder, setSortOrder] = useState(1);
 
-  useEffect(() => {
-    fetchMenus();
-  }, [targetType]);
-
-  const handleSelectPresetPage = (presetPath) => {
-    setSelectedPreset(presetPath);
-    if (!presetPath) return;
-
-    const found = PRESET_SYSTEM_PAGES.find(p => p.path === presetPath);
-    if (found) {
-      setPath(found.path);
-      if (!label.trim()) setLabel(found.label);
-      if (found.group) setParentGroup(found.group);
-    }
-  };
-
-  async function fetchMenus() {
+  const fetchMenus = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -163,7 +147,23 @@ export default function AdminMenuConfig() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [targetType]);
+
+  useEffect(() => {
+    fetchMenus();
+  }, [fetchMenus]);
+
+  const handleSelectPresetPage = (presetPath) => {
+    setSelectedPreset(presetPath);
+    if (!presetPath) return;
+
+    const found = PRESET_SYSTEM_PAGES.find(p => p.path === presetPath);
+    if (found) {
+      setPath(found.path);
+      if (!label.trim()) setLabel(found.label);
+      if (found.group) setParentGroup(found.group);
+    }
+  };
 
   const handleResetDefaultMenus = async () => {
     if (!window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC ĐẦY ĐỦ tất cả danh mục menu mặc định cho ${targetType === 'public' ? 'Trang Công Khai' : 'Trang Admin'}?`)) return;

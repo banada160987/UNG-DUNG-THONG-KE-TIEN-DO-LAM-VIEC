@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, DollarSign, Menu, X, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -100,7 +100,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: '⚙️ HỆ THỐNG', show: isAdmin },
   ];
 
-  const visibleMenuItems = menuItems.filter(item => item.show);
+  const visibleMenuItems = useMemo(() => menuItems.filter(item => item.show), [isAdmin, role, permissions]);
 
   // Accordion State for Sidebar Groups
   const [openGroups, setOpenGroups] = useState({
@@ -119,7 +119,7 @@ export default function Layout({ children, title }) {
         return { ...prev, [activeItem.group]: true };
       });
     }
-  }, [location.pathname]);
+  }, [location.pathname, visibleMenuItems]);
 
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));

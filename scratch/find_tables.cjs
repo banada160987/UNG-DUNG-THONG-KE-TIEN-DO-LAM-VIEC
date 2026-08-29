@@ -4,11 +4,11 @@ const path = require('path');
 const srcDir = path.join(__dirname, 'src');
 
 function getAllFiles(dirPath, arrayOfFiles) {
-  files = fs.readdirSync(dirPath);
+  const dirFiles = fs.readdirSync(dirPath);
 
   arrayOfFiles = arrayOfFiles || [];
 
-  files.forEach(function(file) {
+  dirFiles.forEach(function(file) {
     if (fs.statSync(dirPath + "/" + file).isDirectory()) {
       arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
     } else {

@@ -120,19 +120,10 @@ export const AuthProvider = ({ children }) => {
         await fetchUserRole(session.user.id, session.user.email);
       } else {
         setUser(null);
-        setRole('admin'); // Fallback default for unauthenticated admin view during dev
+        setRole(null);
         setCommitteeId(null);
         setCommitteeName(null);
-        setPermissions({
-          canViewStudents: true,
-          canViewEmulation: true,
-          canViewDocs: true,
-          canViewNews: true,
-          canViewSponsors: true,
-          canViewGuests: true,
-          canViewSports: true,
-          canViewPages: true
-        });
+        setPermissions({});
       }
       setLoading(false);
     };
@@ -146,17 +137,10 @@ export const AuthProvider = ({ children }) => {
         await fetchUserRole(session.user.id, session.user.email);
       } else {
         setUser(null);
-        setRole('admin');
-        setPermissions({
-          canViewStudents: true,
-          canViewEmulation: true,
-          canViewDocs: true,
-          canViewNews: true,
-          canViewSponsors: true,
-          canViewGuests: true,
-          canViewSports: true,
-          canViewPages: true
-        });
+        setRole(null);
+        setCommitteeId(null);
+        setCommitteeName(null);
+        setPermissions({});
       }
       setLoading(false);
     });
