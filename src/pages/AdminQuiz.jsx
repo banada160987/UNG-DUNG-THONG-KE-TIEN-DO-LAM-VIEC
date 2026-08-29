@@ -557,29 +557,50 @@ export default function AdminQuiz() {
       return;
     }
     
-    let exportData = [];
+    // Tạo cấu trúc dữ liệu theo dạng Mảng 2 chiều (AoA) để tùy chỉnh format
+    const aoa = [
+      ["TRƯỜNG THPT CAO BÁ QUÁT"],
+      ["BAN TỔ CHỨC LỄ KỶ NIỆM 30 NĂM"],
+      [""],
+      ["DANH SÁCH HỌC SINH CHƯA THAM GIA THI TRẮC NGHIỆM"],
+      [`Thời gian trích xuất: ${new Date().toLocaleString('vi-VN')}`],
+      [""],
+      ["STT", "Mã Học Sinh", "Họ và Tên", "Lớp / Khóa"]
+    ];
+    
     let stt = 1;
     
     Object.entries(unsubmittedStats).forEach(([className, students]) => {
       students.forEach(st => {
-        exportData.push({
-          'STT': stt++,
-          'Họ và Tên': st.full_name,
-          'Lớp / Khóa': className
-        });
+        aoa.push([
+          stt++,
+          st.student_code || '---',
+          st.full_name,
+          className
+        ]);
       });
     });
     
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
     
+    // Gộp ô (Merge cells) cho các tiêu đề
+    worksheet['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // TRƯỜNG...
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // BAN TỔ CHỨC...
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } }, // DANH SÁCH...
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } }, // Thời gian...
+    ];
+    
+    // Chỉnh độ rộng cột
     worksheet['!cols'] = [
       { wch: 8 },  // STT
-      { wch: 35 }, // Họ tên
-      { wch: 20 }, // Lớp
+      { wch: 20 }, // Mã Học Sinh
+      { wch: 35 }, // Họ và Tên
+      { wch: 20 }, // Lớp / Khóa
     ];
     
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "ChuaThamGia");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DS Chưa Thi");
     
     XLSX.writeFile(workbook, `Danh_Sach_Chua_Thi_Trac_Nghiem_${Date.now()}.xlsx`);
   };
