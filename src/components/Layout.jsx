@@ -73,6 +73,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/tap-san', icon: BookOpen, label: '📖 Quản lý Tập San 30 năm', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewMagazine },
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
+    { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích (Hub)', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: true },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },

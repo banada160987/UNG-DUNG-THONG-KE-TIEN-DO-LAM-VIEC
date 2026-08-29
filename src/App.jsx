@@ -50,6 +50,7 @@ import PublicEmulationScoring from './pages/PublicEmulationScoring';
 import AdminEmulation from './pages/AdminEmulation';
 import AdminMenuConfig from './pages/AdminMenuConfig';
 import AdminDigitalVault from './pages/AdminDigitalVault';
+import AppHub from './pages/AppHub';
 import PublicLayout from './components/PublicLayout';
 
 // Student Features
@@ -148,6 +149,7 @@ function App() {
           <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/digital-vault" element={role === 'admin' ? <AdminDigitalVault /> : <Navigate to="/admin/committee" replace />} />
+          <Route path="/admin/app-hub" element={<AppHub />} />
           <Route path="/admin/invite-config" element={permissions.canViewPages ? <AdminInviteConfig /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/quizzes" element={permissions.canViewQuizzes ? <AdminQuiz /> : <Navigate to="/admin/committee" replace />} />
           <Route path="/admin/voting" element={permissions.canViewQuizzes ? <AdminVoting /> : <Navigate to="/admin/committee" replace />} />
