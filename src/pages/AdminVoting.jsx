@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase';
 import ImageUpload from '../components/ImageUpload';
 import { Plus, Heart, Trophy, Trash2, Edit2, ShieldCheck, Download, FileText, CheckCircle2, BarChart2, Users, AlertTriangle, Sparkles, Award } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { exportToExcelWithTitle } from '../utils/excelExport';
 import CertificateModal from '../components/CertificateModal';
 
 export default function AdminVoting() {
@@ -297,19 +298,32 @@ export default function AdminVoting() {
 
   const handleExportClassParticipationExcel = () => {
     const classStats = getClassStats();
-    const exportData = classStats.map((c, idx) => ({
-      'STT': idx + 1,
-      'Tên Lớp / Khóa': c.className,
-      'Sĩ Số (Tổng HS)': c.total,
-      'Đã Tham Gia (HS)': c.voted,
-      'Tỷ Lệ Đã Tham Gia (%)': c.votedPercent + '%',
-      'Chưa Tham Gia (HS)': c.unvoted,
-      'Tỷ Lệ Chưa Tham Gia (%)': c.unvotedPercent + '%'
-    }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "ThongKeTheoLop");
-    XLSX.writeFile(wb, "BaoCao_ThongKe_ThamGia_BinhChon_TheoLop.xlsx");
+    
+    let exportData = [
+      ["STT", "Tên Lớp / Khóa", "Sĩ Số (Tổng HS)", "Đã Tham Gia (HS)", "Tỷ Lệ Đã Tham Gia (%)", "Chưa Tham Gia (HS)", "Tỷ Lệ Chưa Tham Gia (%)"]
+    ];
+
+    classStats.forEach((c, idx) => {
+      exportData.push([
+        idx + 1,
+        c.className,
+        c.total || 0,
+        c.voted || c.votedCount || 0,
+        (c.votedPercent || c.percent || 0) + '%',
+        c.unvoted || 0,
+        (c.unvotedPercent || 0) + '%'
+      ]);
+    });
+
+    exportToExcelWithTitle({
+      reportName: "BÁO CÁO THỐNG KÊ TỶ LỆ THAM GIA BÌNH CHỌN THEO LỚP",
+      data: exportData,
+      cols: [
+        { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 22 }, { wch: 20 }, { wch: 25 }
+      ],
+      sheetName: "Thống Kê",
+      fileName: `BaoCao_TyLe_ThamGia_BinhChon_${Date.now()}.xlsx`
+    });
   };
 
   const handleExportAwardWord = () => {

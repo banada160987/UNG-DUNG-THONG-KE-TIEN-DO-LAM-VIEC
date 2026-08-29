@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
@@ -21,9 +20,20 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
-  }, []);
 
-  useAutoRefresh(fetchData, 60000);
+    const channel = supabase.channel('dashboard_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_tasks' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_parking_registrations' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_bus_registrations' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_quiz_submissions' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_feedback_topics' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_sponsors' }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   async function fetchData() {
     setLoading(true);

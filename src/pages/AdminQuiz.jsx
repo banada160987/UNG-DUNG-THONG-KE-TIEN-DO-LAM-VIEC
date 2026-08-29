@@ -6,6 +6,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 import { generateWordReport } from '../lib/wordExport';
+import { exportToExcelWithTitle } from '../utils/excelExport';
 
 export default function AdminQuiz() {
   const [activeTab, setActiveTab] = useState('submissions'); // 'submissions' | 'questions'
@@ -29,6 +30,7 @@ export default function AdminQuiz() {
   const [showUnsubmittedModal, setShowUnsubmittedModal] = useState(false);
   const [unsubmittedStats, setUnsubmittedStats] = useState({});
   const [unsubmittedLoading, setUnsubmittedLoading] = useState(false);
+  const [unsubmittedSearch, setUnsubmittedSearch] = useState('');
 
   // Question Form Modal
   const [showQuestionModal, setShowQuestionModal] = useState(false);
@@ -130,38 +132,13 @@ export default function AdminQuiz() {
     setShowUnsubmittedModal(true);
     setUnsubmittedLoading(true);
     try {
-      let allStudents = [];
-      let from = 0;
-      const limit = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from('cbq_students')
-          .select('student_code, student_name, student_class')
-          .range(from, from + limit - 1);
-          
-        if (error) throw error;
-        if (data && data.length > 0) {
-          allStudents.push(...data);
-          if (data.length < limit) break;
-          from += limit;
-        } else {
-          break;
-        }
-      }
+      const { data, error } = await supabase.rpc('get_unsubmitted_students');
+      if (error) throw error;
       
-      const submittedKeys = new Set(
-        submissions.map(s => s.student_code?.trim().toLowerCase()).filter(Boolean)
-      );
-      
-      const unsubmitted = allStudents.filter(st => {
-        const key = st.student_code?.trim().toLowerCase();
-        return key && !submittedKeys.has(key);
-      });
-      
-      const grouped = unsubmitted.reduce((acc, curr) => {
+      const grouped = (data || []).reduce((acc, curr) => {
         const cls = curr.student_class || 'Khác';
         if (!acc[cls]) acc[cls] = [];
-        acc[cls].push({ ...curr, full_name: curr.student_name }); // mapping student_name to full_name cho UI
+        acc[cls].push(curr);
         return acc;
       }, {});
       
@@ -488,39 +465,35 @@ export default function AdminQuiz() {
       return scoreB - scoreA;
     });
 
-    const data = sortedSubmissions.map((s, idx) => ({
-      'STT': idx + 1,
-      'Họ và Tên': s.student_name || '',
-      'Lớp / Niên Khóa': s.student_group || '',
-      'Số Điện Thoại': s.phone || '',
-      'Điểm Trắc Nghiệm': s.score || 0,
-      'Điểm Tự Luận': s.essay_score || 0,
-      'Tổng Điểm': s.total_score || s.score,
-      'Thời Gian Làm Bài (Giây)': s.time_taken_seconds || 0,
-      'Bài Làm Dự Đoán': s.essay_answer || '',
-      'Thời Gian Nộp': s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : ''
-    }));
-
-    const worksheet = XLSX.utils.json_to_sheet(data);
-
-    // Căn chỉnh độ rộng các cột cho đẹp
-    worksheet['!cols'] = [
-      { wch: 5 },  // STT
-      { wch: 25 }, // Họ tên
-      { wch: 15 }, // Lớp
-      { wch: 15 }, // SĐT
-      { wch: 18 }, // Điểm TN
-      { wch: 15 }, // Điểm TL
-      { wch: 15 }, // Tổng
-      { wch: 25 }, // Thời gian
-      { wch: 45 }, // Bài làm tự luận
-      { wch: 22 }, // Thời gian nộp
+    const exportData = [
+      ["STT", "Họ và Tên", "Lớp / Niên Khóa", "Số Điện Thoại", "Điểm Trắc Nghiệm", "Điểm Tự Luận", "Tổng Điểm", "Thời Gian Làm Bài (Giây)", "Bài Làm Dự Đoán", "Thời Gian Nộp"]
     ];
 
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Thống Kê Thí Sinh");
+    sortedSubmissions.forEach((s, idx) => {
+      exportData.push([
+        idx + 1,
+        s.student_name || '',
+        s.student_group || '',
+        s.phone || '',
+        s.score || 0,
+        s.essay_score || 0,
+        s.total_score || s.score,
+        s.time_taken_seconds || 0,
+        s.essay_answer || '',
+        s.created_at ? new Date(s.created_at).toLocaleString('vi-VN') : ''
+      ]);
+    });
 
-    XLSX.writeFile(workbook, `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`);
+    exportToExcelWithTitle({
+      reportName: "KẾT QUẢ CUỘC THI TÌM HIỂU 30 NĂM",
+      data: exportData,
+      cols: [
+        { wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 18 },
+        { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 45 }, { wch: 22 }
+      ],
+      sheetName: "Thống Kê Thí Sinh",
+      fileName: `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`
+    });
   };
 
   const exportToWord = async () => {
@@ -557,22 +530,19 @@ export default function AdminQuiz() {
       return;
     }
     
-    // Tạo cấu trúc dữ liệu theo dạng Mảng 2 chiều (AoA) để tùy chỉnh format
-    const aoa = [
-      ["TRƯỜNG THPT CAO BÁ QUÁT"],
-      ["BAN TỔ CHỨC LỄ KỶ NIỆM 30 NĂM"],
-      [""],
-      ["DANH SÁCH HỌC SINH CHƯA THAM GIA THI TRẮC NGHIỆM"],
-      [`Thời gian trích xuất: ${new Date().toLocaleString('vi-VN')}`],
-      [""],
-      ["STT", "Mã Học Sinh", "Họ và Tên", "Lớp / Khóa"]
-    ];
-    
+    let exportData = [];
+    exportData.push(["STT", "Mã Học Sinh", "Họ và Tên", "Lớp / Khóa"]);
     let stt = 1;
     
     Object.entries(unsubmittedStats).forEach(([className, students]) => {
-      students.forEach(st => {
-        aoa.push([
+      const filteredStudents = students.filter(st => {
+        if (!unsubmittedSearch) return true;
+        const searchLower = unsubmittedSearch.toLowerCase();
+        return (st.full_name?.toLowerCase().includes(searchLower) || className.toLowerCase().includes(searchLower));
+      });
+
+      filteredStudents.forEach(st => {
+        exportData.push([
           stt++,
           st.student_code || '---',
           st.full_name,
@@ -581,28 +551,13 @@ export default function AdminQuiz() {
       });
     });
     
-    const worksheet = XLSX.utils.aoa_to_sheet(aoa);
-    
-    // Gộp ô (Merge cells) cho các tiêu đề
-    worksheet['!merges'] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } }, // TRƯỜNG...
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } }, // BAN TỔ CHỨC...
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 3 } }, // DANH SÁCH...
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 3 } }, // Thời gian...
-    ];
-    
-    // Chỉnh độ rộng cột
-    worksheet['!cols'] = [
-      { wch: 8 },  // STT
-      { wch: 20 }, // Mã Học Sinh
-      { wch: 35 }, // Họ và Tên
-      { wch: 20 }, // Lớp / Khóa
-    ];
-    
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "DS Chưa Thi");
-    
-    XLSX.writeFile(workbook, `Danh_Sach_Chua_Thi_Trac_Nghiem_${Date.now()}.xlsx`);
+    exportToExcelWithTitle({
+      reportName: "DANH SÁCH HỌC SINH CHƯA THAM GIA THI TRẮC NGHIỆM",
+      data: exportData,
+      cols: [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }],
+      sheetName: "DS Chưa Thi",
+      fileName: `Danh_Sach_Chua_Thi_Trac_Nghiem_${Date.now()}.xlsx`
+    });
   };
 
   return (
@@ -1118,11 +1073,28 @@ export default function AdminQuiz() {
       {showUnsubmittedModal && (
         <div style={styles.modalOverlay}>
           <div style={{ ...styles.modalContent, maxWidth: '900px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
               <h3 style={{ margin: 0, color: '#d97706', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Users size={24} /> Danh Sách Chưa Tham Gia Thi
               </h3>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <input 
+                  type="text" 
+                  placeholder="Tìm Lớp hoặc Tên học sinh..." 
+                  value={unsubmittedSearch}
+                  onChange={(e) => setUnsubmittedSearch(e.target.value)}
+                  style={{ padding: '8px 12px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '14px', minWidth: '220px' }}
+                />
+                <button 
+                  onClick={() => {
+                    const msg = "THÔNG BÁO NHẮC NHỞ\nCác em học sinh có tên trong danh sách chưa hoàn thành bài thi trắc nghiệm vui lòng truy cập hệ thống để làm bài ngay nhé!";
+                    navigator.clipboard.writeText(msg);
+                    alert("Đã sao chép tin nhắn nhắc nhở! Bạn có thể dán vào nhóm Zalo lớp.");
+                  }} 
+                  style={{ ...styles.exportBtn, backgroundColor: '#3b82f6', padding: '8px 16px', fontSize: '13.5px' }}
+                >
+                  <MessageSquare size={16} /> Nhắc Nhở
+                </button>
                 <button onClick={handleExportUnsubmittedExcel} style={{ ...styles.exportBtn, backgroundColor: '#10b981', padding: '8px 16px', fontSize: '13.5px' }}>
                   <Download size={16} /> Xuất Excel
                 </button>
@@ -1135,29 +1107,45 @@ export default function AdminQuiz() {
             ) : (
               <div style={{ padding: '15px', backgroundColor: '#f8fafc', borderRadius: '8px' }}>
                 <div style={{ textAlign: 'center', marginBottom: '20px', padding: '15px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fde68a' }}>
-                  <div style={{ fontSize: '15px', color: '#b45309', fontWeight: 'bold', textTransform: 'uppercase' }}>Tổng Số Chưa Hoàn Thành</div>
+                  <div style={{ fontSize: '15px', color: '#b45309', fontWeight: 'bold', textTransform: 'uppercase' }}>Tổng Số Chưa Hoàn Thành {unsubmittedSearch && "(Lọc)"}</div>
                   <div style={{ fontSize: '32px', color: '#d97706', fontWeight: 'bold', marginTop: '5px' }}>
-                    {Object.values(unsubmittedStats).reduce((acc, curr) => acc + curr.length, 0)} <span style={{ fontSize: '16px' }}>học sinh</span>
+                    {Object.entries(unsubmittedStats).reduce((acc, [cls, stds]) => {
+                       const filtered = stds.filter(st => {
+                         if (!unsubmittedSearch) return true;
+                         const term = unsubmittedSearch.toLowerCase();
+                         return (st.full_name?.toLowerCase().includes(term) || cls.toLowerCase().includes(term));
+                       });
+                       return acc + filtered.length;
+                    }, 0)} <span style={{ fontSize: '16px' }}>học sinh</span>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '15px' }}>
-                  {Object.entries(unsubmittedStats).map(([className, students]) => (
-                    <div key={className} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                      <div style={{ background: '#f1f5f9', padding: '12px 15px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
-                        <span><span style={{color: '#d97706'}}>Lớp:</span> {className}</span>
-                        <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', border: '1px solid #fde68a' }}>{students.length} em</span>
+                  {Object.entries(unsubmittedStats).map(([className, students]) => {
+                    const filteredStudents = students.filter(st => {
+                      if (!unsubmittedSearch) return true;
+                      const term = unsubmittedSearch.toLowerCase();
+                      return (st.full_name?.toLowerCase().includes(term) || className.toLowerCase().includes(term));
+                    });
+                    if (filteredStudents.length === 0) return null;
+                    
+                    return (
+                      <div key={className} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                        <div style={{ background: '#f1f5f9', padding: '12px 15px', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontWeight: 'bold', color: '#334155' }}>
+                          <span><span style={{color: '#d97706'}}>Lớp:</span> {className}</span>
+                          <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontSize: '12px', border: '1px solid #fde68a' }}>{filteredStudents.length} em</span>
+                        </div>
+                        <div style={{ padding: '10px 15px', maxHeight: '220px', overflowY: 'auto', fontSize: '13.5px' }}>
+                          {filteredStudents.map((st, idx) => (
+                            <div key={idx} style={{ padding: '6px 0', borderBottom: idx < filteredStudents.length - 1 ? '1px dashed #e2e8f0' : 'none', color: '#475569', display: 'flex', gap: '8px' }}>
+                              <span style={{ color: '#94a3b8', width: '20px' }}>{idx + 1}.</span> 
+                              <span style={{ fontWeight: '500' }}>{st.full_name}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div style={{ padding: '10px 15px', maxHeight: '220px', overflowY: 'auto', fontSize: '13.5px' }}>
-                        {students.map((st, idx) => (
-                          <div key={idx} style={{ padding: '6px 0', borderBottom: idx < students.length - 1 ? '1px dashed #e2e8f0' : 'none', color: '#475569', display: 'flex', gap: '8px' }}>
-                            <span style={{ color: '#94a3b8', width: '20px' }}>{idx + 1}.</span> 
-                            <span style={{ fontWeight: '500' }}>{st.full_name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {Object.keys(unsubmittedStats).length === 0 && (
