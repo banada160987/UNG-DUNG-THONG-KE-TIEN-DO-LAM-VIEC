@@ -560,11 +560,41 @@ export default function AdminParking() {
       <style>{`
         @media print {
           @page { size: A4 portrait; margin: 8mm; }
-          header, nav, sidebar, footer, .no-print, .glass { display: none !important; }
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          .printable-card { display: block !important; width: 100% !important; margin: 0 !important; }
-          .print-ticket-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
-          .print-ticket-card-item { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 10px !important; }
+          html, body, #root, div, main, section {
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+          }
+          header, nav, sidebar, footer, .no-print, .glass, .layout-sidebar, .hamburger-btn {
+            display: none !important;
+          }
+          body {
+            background: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          .printable-card {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            overflow: visible !important;
+            margin: 0 !important;
+            background: white !important;
+            z-index: 999999 !important;
+          }
+          .print-ticket-grid {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 10px !important;
+          }
+          .print-ticket-card-item {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin-bottom: 8px !important;
+            box-sizing: border-box !important;
+          }
         }
       `}</style>
 
@@ -1315,10 +1345,11 @@ const styles = {
   label: { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' },
   input: { width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' },
   printTicketCard: {
+    width: '100%',
     maxWidth: '340px',
     border: '2px dashed #be123c',
     borderRadius: '10px',
-    padding: '12px 14px',
+    padding: '10px 12px',
     backgroundColor: '#ffffff',
     boxSizing: 'border-box'
   },
