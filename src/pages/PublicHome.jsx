@@ -251,19 +251,19 @@ export default function PublicHome() {
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
           {/* COUNTDOWN & STATS */}
-          <PortalBlock title="HƯỚNG VỀ LỄ KỶ NIỆM" color="#d32f2f">
+          <PortalBlock title="HƯỚNG VỀ LỄ KỶ NIỆM" color="#d32f2f" icon="⏳">
             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534', marginBottom: '5px' }}>ĐẾM NGƯỢC THỜI GIAN</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐẾM NGƯỢC THỜI GIAN LỄ KỶ NIỆM</div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
                 {Object.keys(timeLeft).length > 0 ? (
                   <>
-                    <div style={styles.timeBox}><span>{timeLeft.days}</span><small>Ngày</small></div>
-                    <div style={styles.timeBox}><span>{timeLeft.hours}</span><small>Giờ</small></div>
-                    <div style={styles.timeBox}><span>{timeLeft.minutes}</span><small>Phút</small></div>
-                    <div style={styles.timeBox}><span>{timeLeft.seconds}</span><small>Giây</small></div>
+                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.days}</span><small style={{ fontSize: '10px' }}>Ngày</small></div>
+                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.hours}</span><small style={{ fontSize: '10px' }}>Giờ</small></div>
+                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.minutes}</span><small style={{ fontSize: '10px' }}>Phút</small></div>
+                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.seconds}</span><small style={{ fontSize: '10px' }}>Giây</small></div>
                   </>
                 ) : (
-                  <div style={{ fontWeight: 'bold', color: '#d32f2f', padding: '10px' }}>SỰ KIỆN ĐANG DIỄN RA</div>
+                  <div style={{ fontWeight: 'bold', color: '#d32f2f', padding: '10px' }}>🎉 SỰ KIỆN ĐANG DIỄN RA!</div>
                 )}
               </div>
             </div>
@@ -280,13 +280,13 @@ export default function PublicHome() {
                 <div style={styles.statIcon}>💝</div>
                 <div>
                   <div style={{ fontSize: '12px', color: '#64748b' }}>Tổng tài trợ (Công khai)</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#d32f2f' }}>{totalDonation.toLocaleString()} VNĐ</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c' }}>{totalDonation.toLocaleString()} VNĐ</div>
                 </div>
               </div>
             </div>
           </PortalBlock>
 
-          <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534">
+          <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534" icon="📸">
             <div style={{ position: 'relative', width: '100%', height: '175px', overflow: 'hidden', backgroundColor: '#0f172a' }}>
               {galleryList.length > 0 && (
                 <>
@@ -380,7 +380,7 @@ export default function PublicHome() {
             </div>
           </PortalBlock>
 
-          <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534">
+          <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534" icon="📞">
             <ul style={styles.listStyle}>
               <li>📍 Địa chỉ trường THPT Cao Bá Quát</li>
               <li>📞 Hotline: 0123.456.789</li>
@@ -388,7 +388,7 @@ export default function PublicHome() {
             </ul>
           </PortalBlock>
 
-          <PortalBlock title="LIÊN KẾT TRANG" color="#166534">
+          <PortalBlock title="LIÊN KẾT TRANG" color="#166534" icon="🔗">
             <ul style={styles.linkList}>
               {externalLinks.length > 0 ? (
                 externalLinks.map(link => (
@@ -409,7 +409,9 @@ export default function PublicHome() {
 
           {/* NỔI BẬT: Tra cứu thiệp mời đặt ở giữa để khách dễ thấy nhất */}
           <div style={styles.rsvpHighlightBlock}>
-            <div style={styles.rsvpHighlightHeader}>TRA CỨU THIỆP MỜI ĐIỆN TỬ</div>
+            <div style={styles.rsvpHighlightHeader}>
+              <span style={{ marginRight: '6px' }}>✉️</span> TRA CỨU THIỆP MỜI ĐIỆN TỬ
+            </div>
             <div style={styles.rsvpHighlightBody}>
               <p style={{ marginBottom: '12px', fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>
                 Nhập <strong>Họ và Tên</strong> hoặc <strong>Mã số thiệp mời</strong> để tra cứu phiên bản điện tử và gửi phản hồi xác nhận tham dự.
@@ -641,57 +643,70 @@ export default function PublicHome() {
                 </div>
               ) : (
                 <>
-                  {/* TOP 3 PODIUM */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
-                    {quizLeaderboard.slice(0, 3).map((item, idx) => (
-                      <div
-                        key={item.id}
-                        style={{
-                          background: idx === 0 ? 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)' : idx === 1 ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                          border: idx === 0 ? '2px solid #eab308' : idx === 1 ? '2px solid #94a3b8' : '2px solid #f97316',
-                          borderRadius: '14px',
-                          padding: '16px 12px',
-                          textAlign: 'center',
-                          boxShadow: idx === 0 ? '0 8px 20px rgba(234,179,8,0.2)' : '0 4px 12px rgba(0,0,0,0.05)',
-                          position: 'relative'
-                        }}
-                      >
-                        <div style={{
-                          position: 'absolute',
-                          top: '-11px',
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: idx === 0 ? '#ca8a04' : idx === 1 ? '#475569' : '#c2410c',
-                          color: 'white',
-                          padding: '2px 12px',
-                          borderRadius: '20px',
-                          fontSize: '10.5px',
-                          fontWeight: 'bold',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.5px',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {idx === 0 ? '👑 GIẢI NHẤT VÀNG' : idx === 1 ? '🥈 GIẢI NHÌ BẠC' : '🥉 GIẢI BA ĐỒNG'}
-                        </div>
+                  {/* TOP 3 PODIUM (OLYMPIC STANDARD: TOP 1 IN CENTER) */}
+                  {(() => {
+                    const top3 = quizLeaderboard.slice(0, 3);
+                    const podiumItems = [];
+                    if (top3[1]) podiumItems.push({ ...top3[1], rank: 2, badge: '🥈 GIẢI NHÌ BẠC', border: '#94a3b8', bg: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', badgeBg: '#475569', icon: '🥈', isCenter: false });
+                    if (top3[0]) podiumItems.push({ ...top3[0], rank: 1, badge: '👑 GIẢI NHẤT VÀNG', border: '#eab308', bg: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)', badgeBg: '#ca8a04', icon: '🥇', isCenter: true });
+                    if (top3[2]) podiumItems.push({ ...top3[2], rank: 3, badge: '🥉 GIẢI BA ĐỒNG', border: '#f97316', bg: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)', badgeBg: '#c2410c', icon: '🥉', isCenter: false });
 
-                        <div style={{ fontSize: '26px', marginTop: '6px', marginBottom: '2px' }}>
-                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
-                        </div>
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px', alignItems: 'end', marginBottom: '20px', paddingTop: '10px' }}>
+                        {podiumItems.map((item) => (
+                          <div
+                            key={item.id}
+                            style={{
+                              background: item.bg,
+                              border: `2px solid ${item.border}`,
+                              borderRadius: '16px',
+                              padding: item.isCenter ? '24px 14px 20px' : '16px 12px',
+                              textAlign: 'center',
+                              boxShadow: item.isCenter ? '0 12px 28px rgba(234,179,8,0.28)' : '0 4px 12px rgba(0,0,0,0.05)',
+                              position: 'relative',
+                              transform: item.isCenter ? 'scale(1.03)' : 'scale(0.98)',
+                              zIndex: item.isCenter ? 2 : 1
+                            }}
+                          >
+                            <div style={{
+                              position: 'absolute',
+                              top: '-12px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              background: item.badgeBg,
+                              color: 'white',
+                              padding: '3px 14px',
+                              borderRadius: '20px',
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.5px',
+                              whiteSpace: 'nowrap',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.15)'
+                            }}>
+                              {item.badge}
+                            </div>
 
-                        <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '15px', marginBottom: '2px' }}>
-                          {item.student_name}
-                        </div>
+                            <div style={{ fontSize: item.isCenter ? '32px' : '26px', marginTop: item.isCenter ? '4px' : '6px', marginBottom: '2px' }}>
+                              {item.icon}
+                            </div>
 
-                        <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500', marginBottom: '8px' }}>
-                          Lớp: <span style={{ color: '#be123c', fontWeight: 'bold' }}>{item.student_group}</span>
-                        </div>
+                            <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: item.isCenter ? '16px' : '14.5px', marginBottom: '3px' }}>
+                              {item.student_name}
+                            </div>
 
-                        <div style={{ display: 'inline-block', background: 'white', padding: '4px 12px', borderRadius: '20px', border: '1px solid #e2e8f0', fontSize: '13.5px', fontWeight: 'bold', color: '#15803d' }}>
-                          {item.total_score || item.score} / 300 Điểm
-                        </div>
+                            <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500', marginBottom: '10px' }}>
+                              Lớp: <span style={{ color: '#be123c', fontWeight: 'bold' }}>{item.student_group}</span>
+                            </div>
+
+                            <div style={{ display: 'inline-block', background: 'white', padding: '5px 14px', borderRadius: '20px', border: `1px solid ${item.border}`, fontSize: item.isCenter ? '14px' : '13px', fontWeight: 'bold', color: '#15803d', boxShadow: '0 2px 5px rgba(0,0,0,0.04)' }}>
+                              {item.total_score || item.score} / 300 Điểm
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    );
+                  })()}
 
                   {/* TOP 4 -> 10 LIST */}
                   {quizLeaderboard.length > 3 && (
@@ -805,7 +820,7 @@ export default function PublicHome() {
 
         {/* RIGHT COLUMN */}
         <div style={styles.rightCol}>
-          <PortalBlock title="THÔNG BÁO MỚI" color="#d32f2f">
+          <PortalBlock title="THÔNG BÁO MỚI" color="#d32f2f" icon="📢">
             <div style={styles.marqueeVertical}>
               <ul style={styles.linkList}>
                 {news.slice(0, 4).map((n, i) => (
@@ -822,9 +837,31 @@ export default function PublicHome() {
             </div>
           </PortalBlock>
 
-          <PortalBlock title="BẢNG VÀNG TRI ÂN" color="#d32f2f">
+          <PortalBlock title="BẢNG VÀNG TRI ÂN" color="#d32f2f" icon="💝">
             {sponsors.length === 0 ? (
-              <div style={{ fontSize: '13px', color: '#666', padding: '10px' }}>Chưa có dữ liệu.</div>
+              <div style={{ textAlign: 'center', padding: '16px 10px', backgroundColor: '#fffdf5', borderRadius: '12px', border: '1px solid #fef08a' }}>
+                <div style={{ fontSize: '26px', marginBottom: '4px' }}>💝</div>
+                <div style={{ fontWeight: 'bold', color: '#b45309', fontSize: '13.5px' }}>Đồng Hành Cùng Đại Lễ Kỷ Niệm 30 Năm</div>
+                <p style={{ fontSize: '12px', color: '#854d0e', margin: '6px 0 12px 0', lineHeight: '1.5' }}>
+                  Ban Tổ Chức trân trọng cảm ơn sự ủng hộ & tài trợ từ Quý cơ quan, cựu học sinh và nhà tài trợ.
+                </p>
+                <a 
+                  href="/tai-tro" 
+                  style={{
+                    display: 'inline-block',
+                    background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)',
+                    color: 'white',
+                    padding: '7px 16px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 8px rgba(190,18,60,0.25)'
+                  }}
+                >
+                  Đóng Góp Tài Trợ ➔
+                </a>
+              </div>
             ) : (
               <ul style={styles.sponsorList}>
                 {sponsors.slice(0, 10).map((s, i) => (
@@ -923,13 +960,38 @@ export default function PublicHome() {
 }
 
 // Reusable Portal Block Component
-function PortalBlock({ title, color, children }) {
+function PortalBlock({ title, color = '#166534', icon, children }) {
+  const headerBg = color === '#d32f2f' || color === '#be123c'
+    ? 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)'
+    : color === '#b45309' || color === '#d97706'
+    ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
+    : 'linear-gradient(135deg, #166534 0%, #14532d 100%)';
+
   return (
-    <div style={styles.portalBlock}>
-      <div style={{ ...styles.portalBlockHeader, backgroundColor: color }}>
-        {title}
+    <div style={{
+      backgroundColor: '#ffffff',
+      border: '1px solid #e2e8f0',
+      borderRadius: '14px',
+      overflow: 'hidden',
+      boxShadow: '0 4px 18px rgba(0,0,0,0.04)',
+      marginBottom: '16px'
+    }}>
+      <div style={{
+        background: headerBg,
+        color: 'white',
+        padding: '11px 16px',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        letterSpacing: '0.4px',
+        borderBottom: '2px solid rgba(254, 240, 138, 0.4)'
+      }}>
+        {icon && <span style={{ fontSize: '15px' }}>{icon}</span>}
+        <span>{title}</span>
       </div>
-      <div style={styles.portalBlockContent}>
+      <div style={{ padding: '14px' }}>
         {children}
       </div>
     </div>
@@ -1036,19 +1098,25 @@ const styles = {
   // RSVP Highlight in Center
   rsvpHighlightBlock: {
     backgroundColor: '#fff',
-    border: '2px solid #fbbf24',
+    border: '2px solid #fde047',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    boxShadow: '0 10px 30px rgba(217, 119, 6, 0.12)',
+    marginBottom: '20px'
   },
   rsvpHighlightHeader: {
-    backgroundColor: '#fbbf24',
-    color: '#78350f',
-    padding: '10px 15px',
+    background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+    color: '#ffffff',
+    padding: '13px 20px',
     fontWeight: 'bold',
-    fontSize: '15px',
+    fontSize: '15.5px',
     textAlign: 'center',
+    letterSpacing: '0.5px',
+    borderBottom: '2px solid #fef08a'
   },
   rsvpHighlightBody: {
     padding: '20px',
-    backgroundColor: '#fffbeb',
+    backgroundColor: '#fffdf5',
   },
   searchForm: {
     display: 'flex',
@@ -1056,19 +1124,23 @@ const styles = {
   },
   searchInput: {
     flex: 1,
-    padding: '10px',
-    border: '1px solid #d1d5db',
-    borderRadius: '4px',
+    padding: '11px 16px',
+    border: '1.5px solid #cbd5e1',
+    borderRadius: '25px',
     fontSize: '14px',
+    outline: 'none',
+    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
   },
   searchBtn: {
-    padding: '10px 20px',
-    backgroundColor: '#d32f2f',
+    padding: '11px 24px',
+    background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)',
     color: 'white',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '25px',
     fontWeight: 'bold',
     cursor: 'pointer',
+    boxShadow: '0 4px 12px rgba(190,18,60,0.25)',
+    whiteSpace: 'nowrap'
   },
   errorMsg: {
     marginTop: '10px',
