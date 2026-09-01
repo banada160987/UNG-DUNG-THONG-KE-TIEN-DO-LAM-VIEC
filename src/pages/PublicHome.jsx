@@ -19,6 +19,7 @@ const removeAccents = (str) => {
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
   const [news, setNews] = useState([]);
+  const [selectedNews, setSelectedNews] = useState(null);
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
@@ -512,20 +513,29 @@ export default function PublicHome() {
               ) : (
                 <>
                   {/* Tin nổi bật (tin đầu tiên) */}
-                  <div style={styles.featuredNews}>
+                  <div 
+                    style={{ ...styles.featuredNews, cursor: 'pointer' }} 
+                    onClick={() => setSelectedNews(news[0])}
+                  >
                     <img src={news[0].image_url || 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=600&auto=format&fit=crop'} alt="featured" style={styles.featuredNewsImg} />
                     <h3 style={styles.featuredNewsTitle}>{news[0].title}</h3>
-                    <div style={styles.newsMeta}>📅 {new Date(news[0].published_at).toLocaleDateString('vi-VN')} | 👁️ Lượt xem: {Math.floor(Math.random() * 500) + 100}</div>
-                    <p style={styles.featuredNewsDesc}>{news[0].content.substring(0, 150)}...</p>
+                    <div style={styles.newsMeta}>📅 {new Date(news[0].published_at).toLocaleDateString('vi-VN')} | 👁️ Lượt xem: 488</div>
+                    <p style={styles.featuredNewsDesc}>
+                      {(news[0].content || '').replace(/<[^>]+>/g, '').substring(0, 150)}...
+                    </p>
                   </div>
 
                   {/* Danh sách tin cũ hơn */}
                   {news.length > 1 && (
                     <ul style={styles.olderNewsList}>
                       {news.slice(1, 5).map(item => (
-                        <li key={item.id} style={styles.olderNewsItem}>
+                        <li 
+                          key={item.id} 
+                          style={{ ...styles.olderNewsItem, cursor: 'pointer' }}
+                          onClick={() => setSelectedNews(item)}
+                        >
                           <ChevronRight size={14} color="#0284c7" style={{ minWidth: '14px' }} />
-                          <a href="#" style={styles.olderNewsLink}>{item.title}</a>
+                          <span style={styles.olderNewsLink}>{item.title}</span>
                         </li>
                       ))}
                     </ul>
@@ -543,8 +553,12 @@ export default function PublicHome() {
             <div style={styles.marqueeVertical}>
               <ul style={styles.linkList}>
                 {news.slice(0, 4).map((n, i) => (
-                  <li key={i} style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px', marginBottom: '8px' }}>
-                    <a href="#" style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none' }}>✔ {n.title}</a>
+                  <li 
+                    key={i} 
+                    style={{ borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px', marginBottom: '8px', cursor: 'pointer' }}
+                    onClick={() => setSelectedNews(n)}
+                  >
+                    <span style={{ color: '#d32f2f', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none' }}>✔ {n.title}</span>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>({new Date(n.published_at).toLocaleDateString('vi-VN')})</div>
                   </li>
                 ))}
@@ -568,6 +582,85 @@ export default function PublicHome() {
             )}
           </PortalBlock>
         </div>
+
+        {/* NEWS DETAIL READER MODAL */}
+        {selectedNews && (
+          <div 
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(15, 23, 42, 0.75)',
+              backdropFilter: 'blur(6px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '20px'
+            }} 
+            onClick={() => setSelectedNews(null)}
+          >
+            <div 
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                maxWidth: '750px',
+                width: '100%',
+                maxHeight: '90vh',
+                overflowY: 'auto',
+                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)',
+                position: 'relative',
+                padding: '28px',
+                animation: 'fadeIn 0.2s ease-out'
+              }} 
+              onClick={e => e.stopPropagation()}
+            >
+              <button 
+                onClick={() => setSelectedNews(null)}
+                style={{
+                  position: 'absolute',
+                  top: '16px',
+                  right: '16px',
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  border: 'none',
+                  backgroundColor: '#f1f5f9',
+                  color: '#475569',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+
+              {selectedNews.image_url && (
+                <img 
+                  src={selectedNews.image_url} 
+                  alt={selectedNews.title} 
+                  style={{ width: '100%', maxHeight: '350px', objectFit: 'cover', borderRadius: '12px', marginBottom: '20px' }} 
+                />
+              )}
+
+              <h2 style={{ fontSize: '22px', fontWeight: 'bold', color: '#166534', marginTop: 0, marginBottom: '12px', lineHeight: '1.4' }}>
+                {selectedNews.title}
+              </h2>
+
+              <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '20px' }}>
+                <span>📅 Đăng lúc: {new Date(selectedNews.published_at || Date.now()).toLocaleDateString('vi-VN')}</span>
+                <span>👁️ Lượt xem: 488</span>
+              </div>
+
+              <div 
+                dangerouslySetInnerHTML={{ __html: selectedNews.content || '' }} 
+                style={{ fontSize: '15px', lineHeight: '1.7', color: '#334155' }}
+              />
+            </div>
+          </div>
+        )}
 
       </div>
   );
