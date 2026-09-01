@@ -16,7 +16,8 @@ export const AuthProvider = ({ children }) => {
     canViewSponsors: true,
     canViewGuests: true,
     canViewSports: true,
-    canViewPages: true
+    canViewPages: true,
+    canViewLinks: true
   });
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }) => {
         canViewGuests: isSecretaryOrAdmin,
         canViewSports: isSecretaryOrAdmin,
         canViewPages: isSecretaryOrAdmin,
+        canViewLinks: isSecretaryOrAdmin,
         canViewQuizzes: isSecretaryOrAdmin,
         canViewFeedback: isSecretaryOrAdmin,
         canViewMagazine: isSecretaryOrAdmin,
@@ -80,6 +82,7 @@ export const AuthProvider = ({ children }) => {
         mergedPerms.canViewGuests = true;
         mergedPerms.canViewSports = true;
         mergedPerms.canViewPages = true;
+        mergedPerms.canViewLinks = true;
         mergedPerms.canViewQuizzes = true;
         mergedPerms.canViewFeedback = true;
         mergedPerms.canViewMagazine = true;
@@ -101,6 +104,7 @@ export const AuthProvider = ({ children }) => {
           canViewGuests: true,
           canViewSports: true,
           canViewPages: true,
+          canViewLinks: true,
           canViewQuizzes: true,
           canViewFeedback: true,
           canViewMagazine: true,
