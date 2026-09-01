@@ -777,9 +777,9 @@ export default function PublicParkingRegister() {
                 <QRCodeSVG value={successTicket.ticket_code} size={64} level="M" />
                 <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Quét mã QR check-in tại cổng xe</div>
               </div>
-              <div style={{ textAlign: 'right', fontSize: '11px', color: '#64748b' }}>
-                <div>Xác thực bởi Ban Bảo Vệ</div>
-                <div style={{ fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>✓ Đã thanh toán & Đủ điều kiện</div>
+              <div style={{ textAlign: 'right', fontSize: '11px', color: '#334155' }}>
+                <div>Xác nhận Lãnh Đạo Trường</div>
+                <div style={{ fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>✓ Đã duyệt & Cấp thẻ</div>
               </div>
             </div>
           </div>

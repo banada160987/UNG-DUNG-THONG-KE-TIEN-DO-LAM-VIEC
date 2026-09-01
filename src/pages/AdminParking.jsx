@@ -567,6 +567,16 @@ export default function AdminParking() {
       {/* PRINT MODAL CARD (Hidden during regular display, visible on print) */}
       {selectedTicketsToPrint && selectedTicketsToPrint.length > 0 && (
         <div style={{ display: 'none' }} className="printable-card">
+          <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #be123c', paddingBottom: '8px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c', textTransform: 'uppercase' }}>DANH SÁCH THẺ GỬI XE MÁY HỌC SINH IN HÀNG LOẠT</div>
+            <div style={{ fontSize: '12px', color: '#334155', marginTop: '4px' }}>
+              {selectedClassFilter !== 'ALL' && <span style={{ marginRight: '10px' }}>LỚP: <b style={{ color: '#be123c' }}>{selectedClassFilter}</b></span>}
+              {selectedVehicleType !== 'ALL' && <span style={{ marginRight: '10px' }}>LOẠI XE: <b style={{ color: '#0284c7' }}>{selectedVehicleType}</b></span>}
+              <span>TỔNG SỐ THẺ: <b style={{ color: '#166534' }}>{selectedTicketsToPrint.length} THẺ</b></span>
+            </div>
+          </div>
+
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', padding: '10px' }}>
             {selectedTicketsToPrint.map((ticket, idx) => (
               <div key={idx} style={{ ...styles.printTicketCard, breakInside: 'avoid', marginBottom: '20px' }}>
@@ -584,7 +594,10 @@ export default function AdminParking() {
                 </div>
                 <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <QrCode size={48} color="#1e293b" />
-                  <div style={{ fontSize: '10px', textAlign: 'right', color: '#64748b' }}>Xác nhận Ban Bảo Vệ<br /><b>✓ Đã duyệt vé</b></div>
+                  <div style={{ fontSize: '10.5px', textAlign: 'right', color: '#334155' }}>
+                    Xác nhận Lãnh Đạo Trường<br />
+                    <b style={{ color: '#166534' }}>✓ Đã duyệt & Cấp thẻ</b>
+                  </div>
                 </div>
               </div>
             ))}
