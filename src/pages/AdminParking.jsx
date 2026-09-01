@@ -594,9 +594,8 @@ export default function AdminParking() {
                 </div>
                 <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <QrCode size={48} color="#1e293b" />
-                  <div style={{ fontSize: '10.5px', textAlign: 'right', color: '#334155' }}>
-                    Xác nhận Lãnh Đạo Trường<br />
-                    <b style={{ color: '#166534' }}>✓ Đã duyệt & Cấp thẻ</b>
+                  <div style={{ fontSize: '11px', textAlign: 'right', color: '#334155' }}>
+                    Xác nhận Lãnh Đạo Trường
                   </div>
                 </div>
               </div>

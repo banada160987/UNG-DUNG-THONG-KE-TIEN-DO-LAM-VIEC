@@ -779,7 +779,6 @@ export default function PublicParkingRegister() {
               </div>
               <div style={{ textAlign: 'right', fontSize: '11px', color: '#334155' }}>
                 <div>Xác nhận Lãnh Đạo Trường</div>
-                <div style={{ fontWeight: 'bold', color: '#166534', marginTop: '4px' }}>✓ Đã duyệt & Cấp thẻ</div>
               </div>
             </div>
           </div>
