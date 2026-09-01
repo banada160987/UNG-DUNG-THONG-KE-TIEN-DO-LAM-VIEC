@@ -16,12 +16,22 @@ const removeAccents = (str) => {
     .trim();
 };
 
+const FALLBACK_SLIDER_IMAGES = [
+  { id: 'f1', image_url: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Kỷ niệm 30 năm THPT Cao Bá Quát' },
+  { id: 'f2', image_url: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Lễ Khai Giảng & Kỷ Niệm' },
+  { id: 'f3', image_url: 'https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Thư Viện Nhà Trường' },
+  { id: 'f4', image_url: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Hội Thao Học Sinh' },
+  { id: 'f5', image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Hoạt Động Ngoại Khóa' }
+];
+
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
   const [news, setNews] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
   const [quizLeaderboard, setQuizLeaderboard] = useState([]);
   const [quizInfo, setQuizInfo] = useState(null);
+  const [galleryList, setGalleryList] = useState(FALLBACK_SLIDER_IMAGES);
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
@@ -82,17 +92,26 @@ export default function PublicHome() {
     }
   };
 
+  useEffect(() => {
+    if (galleryList.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentImgIndex(prev => (prev + 1) % galleryList.length);
+    }, 3500);
+    return () => clearInterval(timer);
+  }, [galleryList]);
+
   async function fetchPublicData() {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes, quizInfoRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes, quizInfoRes, galleryRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single(),
         supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10),
-        supabase.from('cbq_quizzes').select('*').limit(1)
+        supabase.from('cbq_quizzes').select('*').limit(1),
+        supabase.from('cbq_gallery').select('*').eq('is_approved', true).order('created_at', { ascending: false })
       ]);
       
       if (configRes.data && configRes.data.content) {
@@ -112,6 +131,9 @@ export default function PublicHome() {
       if (!newsRes.error) setNews(newsRes.data || []);
       if (quizRes && !quizRes.error) setQuizLeaderboard(quizRes.data || []);
       if (quizInfoRes && !quizInfoRes.error && quizInfoRes.data?.length > 0) setQuizInfo(quizInfoRes.data[0]);
+      if (galleryRes && !galleryRes.error && galleryRes.data?.length > 0) {
+        setGalleryList([...galleryRes.data, ...FALLBACK_SLIDER_IMAGES]);
+      }
       if (!guestsRes.error) {
         const guestData = guestsRes.data || [];
         setAllGuests(guestData);
@@ -265,8 +287,96 @@ export default function PublicHome() {
           </PortalBlock>
 
           <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534">
-            <div style={styles.mockSlider}>
-              <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3" alt="School" style={{ width: '100%', height: '150px', objectFit: 'cover' }} />
+            <div style={{ position: 'relative', width: '100%', height: '175px', overflow: 'hidden', backgroundColor: '#0f172a' }}>
+              {galleryList.length > 0 && (
+                <>
+                  <a href="/thu-vien-anh" title="Click để mở Thư viện ảnh đầy đủ" style={{ display: 'block', width: '100%', height: '100%' }}>
+                    <img 
+                      src={galleryList[currentImgIndex]?.image_url} 
+                      alt="Hình ảnh tiêu biểu" 
+                      style={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                        transition: 'opacity 0.5s ease-in-out'
+                      }} 
+                    />
+                  </a>
+
+                  {/* Caption & Counter overlay */}
+                  <div style={{
+                    position: 'absolute',
+                    bottom: '6px',
+                    left: '6px',
+                    right: '6px',
+                    display: 'flex',
+                    justify: 'space-between',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                    backdropFilter: 'blur(4px)',
+                    color: 'white',
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    fontSize: '11px',
+                    pointerEvents: 'none'
+                  }}>
+                    <span style={{ fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
+                      📸 {galleryList[currentImgIndex]?.uploaded_by || 'Cao Bá Quát'}
+                    </span>
+                    <span style={{ opacity: 0.85, fontSize: '10.5px' }}>{currentImgIndex + 1}/{galleryList.length}</span>
+                  </div>
+
+                  {/* Prev / Next controls */}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentImgIndex(prev => (prev - 1 + galleryList.length) % galleryList.length); }}
+                    style={{
+                      position: 'absolute',
+                      left: '6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'rgba(0,0,0,0.5)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px'
+                    }}
+                    title="Ảnh trước"
+                  >
+                    ❮
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCurrentImgIndex(prev => (prev + 1) % galleryList.length); }}
+                    style={{
+                      position: 'absolute',
+                      right: '6px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'rgba(0,0,0,0.5)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '24px',
+                      height: '24px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px'
+                    }}
+                    title="Ảnh kế tiếp"
+                  >
+                    ❯
+                  </button>
+                </>
+              )}
             </div>
           </PortalBlock>
 
