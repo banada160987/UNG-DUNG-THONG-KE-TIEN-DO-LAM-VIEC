@@ -734,52 +734,90 @@ export default function PublicParkingRegister() {
       {/* SUCCESS PARKING TICKET CARD */}
       {successTicket && !successBusTicket && (
         <div style={styles.successWrapper}>
-          <div style={styles.ticketCard} id="printable-ticket">
-            <div style={styles.ticketHeader}>
-              <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-              <h3 style={{ margin: '4px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
-              <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7', marginTop: '2px' }}>MÃ VÉ: {successTicket.ticket_code}</div>
+          <div style={{
+            maxWidth: '420px',
+            margin: '0 auto',
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            border: '2px solid #be123c',
+            overflow: 'hidden',
+            boxShadow: '0 15px 35px rgba(0,0,0,0.12)',
+            textAlign: 'left'
+          }} id="printable-ticket">
+            {/* HEADER BANNER */}
+            <div style={{
+              background: 'linear-gradient(135deg, #991b1b 0%, #be123c 100%)',
+              color: '#ffffff',
+              padding: '14px 20px',
+              textAlign: 'center',
+              borderBottom: '3px solid #f59e0b'
+            }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.95 }}>
+                TRƯỜNG THPT CAO BÁ QUÁT
+              </div>
+              <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#fef08a', letterSpacing: '0.5px' }}>
+                THẺ GỬI XE MÁY HỌC SINH
+              </h3>
             </div>
 
-            <div style={styles.ticketBody}>
-              <div style={styles.ticketRow}>
-                <span>Họ và tên học sinh:</span>
-                <strong>{successTicket.student_name}</strong>
+            <div style={{ padding: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <span style={{ fontSize: '12.5px', color: '#64748b', fontWeight: 'bold' }}>MÃ VÉ:</span>
+                <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0284c7', backgroundColor: '#e0f2fe', padding: '3px 12px', borderRadius: '12px', border: '1px solid #bae6fd' }}>
+                  {successTicket.ticket_code}
+                </span>
               </div>
-              <div style={styles.ticketRow}>
-                <span>Lớp:</span>
-                <strong style={{ color: '#be123c' }}>{successTicket.student_class} ({successTicket.grade_level})</strong>
-              </div>
-              <div style={styles.ticketRow}>
-                <span>Biển số xe:</span>
-                <strong style={{ fontSize: '16px', color: '#166534', backgroundColor: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                  {successTicket.license_plate}
-                </strong>
-              </div>
-              <div style={styles.ticketRow}>
-                <span>Loại xe / Màu sắc:</span>
-                <strong>{successTicket.vehicle_type} {successTicket.vehicle_color ? `(${successTicket.vehicle_color})` : ''}</strong>
-              </div>
-              <div style={styles.ticketRow}>
-                <span>Gói gửi xe:</span>
-                <strong style={{ color: '#b45309' }}>
-                  {packages.find(p => p.key === successTicket.package_type)?.label || 'Đăng ký Học kỳ'}
-                </strong>
-              </div>
-              <div style={styles.ticketRow}>
-                <span>Thời hạn hiệu lực:</span>
-                <strong style={{ color: '#1e293b' }}>Từ {successTicket.start_date} Đến {successTicket.end_date}</strong>
-              </div>
-            </div>
 
-            <div style={{ ...styles.ticketFooter, alignItems: 'flex-start', minHeight: '75px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <QRCodeSVG value={successTicket.ticket_code} size={64} level="M" />
-                <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>Quét mã QR check-in tại cổng xe</div>
+              <div style={styles.ticketBody}>
+                <div style={styles.ticketRow}>
+                  <span>Họ và tên học sinh:</span>
+                  <strong style={{ fontSize: '14px', color: '#0f172a' }}>{successTicket.student_name}</strong>
+                </div>
+                <div style={styles.ticketRow}>
+                  <span>Lớp:</span>
+                  <strong style={{ color: '#be123c', fontSize: '14px' }}>{successTicket.student_class} ({successTicket.grade_level})</strong>
+                </div>
+                <div style={styles.ticketRow}>
+                  <span>Biển số xe:</span>
+                  <div style={{
+                    display: 'inline-block',
+                    padding: '2px 10px',
+                    border: '1.5px solid #1e293b',
+                    borderRadius: '6px',
+                    backgroundColor: '#ffffff',
+                    color: '#be123c',
+                    fontWeight: '900',
+                    fontSize: '15px',
+                    letterSpacing: '1px'
+                  }}>
+                    {successTicket.license_plate}
+                  </div>
+                </div>
+                <div style={styles.ticketRow}>
+                  <span>Loại xe / Màu sắc:</span>
+                  <strong>{successTicket.vehicle_type} {successTicket.vehicle_color ? `(${successTicket.vehicle_color})` : ''}</strong>
+                </div>
+                <div style={styles.ticketRow}>
+                  <span>Gói gửi xe:</span>
+                  <strong style={{ color: '#b45309' }}>
+                    {packages.find(p => p.key === successTicket.package_type)?.label || 'Đăng ký Học kỳ'}
+                  </strong>
+                </div>
+                <div style={styles.ticketRow}>
+                  <span>Thời hạn hiệu lực:</span>
+                  <strong style={{ color: '#1e293b' }}>Từ {successTicket.start_date} Đến {successTicket.end_date}</strong>
+                </div>
               </div>
-              <div style={{ textAlign: 'right', fontSize: '11.5px', color: '#1e293b' }}>
-                <div style={{ fontWeight: 'bold' }}>Xác nhận Lãnh Đạo Trường</div>
-                <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic', marginTop: '35px' }}>(Ký & đóng dấu)</div>
+
+              <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <QRCodeSVG value={successTicket.ticket_code} size={64} level="M" />
+                  <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 'bold', marginTop: '3px' }}>QUÉT CHECK-IN CỔNG</div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '11.5px', color: '#1e293b' }}>
+                  <div style={{ fontWeight: 'bold', color: '#991b1b' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
+                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: '28px' }}>(Ký & đóng dấu)</div>
+                </div>
               </div>
             </div>
           </div>

@@ -613,24 +613,79 @@ export default function AdminParking() {
 
           <div className="print-ticket-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '4px' }}>
             {selectedTicketsToPrint.map((ticket, idx) => (
-              <div key={idx} className="print-ticket-card-item" style={{ ...styles.printTicketCard, breakInside: 'avoid' }}>
-                <div style={{ textAlign: 'center', borderBottom: '1px dashed #cbd5e1', paddingBottom: '6px', marginBottom: '8px' }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-                  <h3 style={{ margin: '1px 0 0 0', fontSize: '15px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
-                  <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {ticket.ticket_code}</div>
+              <div key={idx} className="print-ticket-card-item" style={{
+                width: '100%',
+                maxWidth: '345px',
+                border: '2px solid #be123c',
+                borderRadius: '12px',
+                backgroundColor: '#ffffff',
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                breakInside: 'avoid'
+              }}>
+                {/* HEADER BANNER */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #991b1b 0%, #be123c 100%)',
+                  color: '#ffffff',
+                  padding: '7px 10px',
+                  textAlign: 'center',
+                  borderBottom: '2px solid #f59e0b'
+                }}>
+                  <div style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.95 }}>
+                    TRƯỜNG THPT CAO BÁ QUÁT
+                  </div>
+                  <div style={{ fontSize: '14.5px', fontWeight: '900', letterSpacing: '0.5px', color: '#fef08a', marginTop: '1px' }}>
+                    THẺ GỬI XE MÁY HỌC SINH
+                  </div>
                 </div>
-                <div style={{ fontSize: '12.5px', lineHeight: '1.45' }}>
-                  <div><strong>Họ tên HS:</strong> {ticket.student_name}</div>
-                  <div><strong>Lớp:</strong> {ticket.student_class} ({ticket.grade_level})</div>
-                  <div><strong>Biển số xe:</strong> <span style={{ fontSize: '14px', color: '#be123c', fontWeight: 'bold' }}>{ticket.license_plate}</span></div>
-                  <div><strong>Loại xe:</strong> {ticket.vehicle_type}</div>
-                  <div><strong>Thời hạn:</strong> Từ {ticket.start_date} Đến {ticket.end_date}</div>
-                </div>
-                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <QrCode size={42} color="#1e293b" />
-                  <div style={{ fontSize: '11px', textAlign: 'right', color: '#1e293b' }}>
-                    <div style={{ fontWeight: 'bold' }}>Xác nhận Lãnh Đạo Trường</div>
-                    <div style={{ fontSize: '9.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: '18px' }}>(Ký & đóng dấu)</div>
+
+                {/* CARD BODY */}
+                <div style={{ padding: '10px 12px' }}>
+                  {/* TICKET CODE BADGE */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>MÃ VÉ:</span>
+                    <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#0284c7', backgroundColor: '#e0f2fe', padding: '2px 8px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+                      {ticket.ticket_code}
+                    </span>
+                  </div>
+
+                  {/* STUDENT & VEHICLE DETAILS */}
+                  <div style={{ fontSize: '12px', lineHeight: '1.45', color: '#1e293b' }}>
+                    <div><strong>Họ tên HS:</strong> <span style={{ color: '#0f172a', fontWeight: 'bold' }}>{ticket.student_name}</span></div>
+                    <div><strong>Lớp:</strong> <span style={{ color: '#be123c', fontWeight: 'bold' }}>{ticket.student_class}</span> ({ticket.grade_level})</div>
+                    
+                    {/* REALISTIC LICENSE PLATE BOX */}
+                    <div style={{ margin: '5px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <strong style={{ fontSize: '12px' }}>Biển số xe:</strong>
+                      <div style={{
+                        display: 'inline-block',
+                        padding: '1px 8px',
+                        border: '1.5px solid #1e293b',
+                        borderRadius: '5px',
+                        backgroundColor: '#ffffff',
+                        color: '#be123c',
+                        fontWeight: '900',
+                        fontSize: '13.5px',
+                        letterSpacing: '0.8px'
+                      }}>
+                        {ticket.license_plate}
+                      </div>
+                    </div>
+
+                    <div><strong>Loại xe:</strong> {ticket.vehicle_type}</div>
+                    <div style={{ fontSize: '11px', color: '#475569', marginTop: '2px' }}><strong>Thời hạn:</strong> Từ {ticket.start_date} Đến {ticket.end_date}</div>
+                  </div>
+
+                  {/* FOOTER QR & SIGNATURE AREA */}
+                  <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <QrCode size={40} color="#1e293b" />
+                      <div style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold', marginTop: '1px' }}>CHECK-IN</div>
+                    </div>
+                    <div style={{ textAlign: 'right', color: '#1e293b' }}>
+                      <div style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#991b1b' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
+                      <div style={{ fontSize: '9px', color: '#94a3b8', fontStyle: 'italic', marginTop: '16px' }}>(Ký & đóng dấu)</div>
+                    </div>
                   </div>
                 </div>
               </div>
