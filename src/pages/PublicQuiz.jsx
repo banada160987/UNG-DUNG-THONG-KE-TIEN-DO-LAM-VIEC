@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Trophy, Clock, CheckCircle2, Award, Sparkles, Send, ArrowRight, RotateCcw, Medal, BarChart2 } from 'lucide-react';
+import { Trophy, Clock, CheckCircle2, Award, Sparkles, Send, ArrowRight, RotateCcw, Medal, BarChart2, Download } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, CartesianGrid } from 'recharts';
+import html2canvas from 'html2canvas';
 const DEFAULT_SAMPLE_QUESTIONS = [
   {
     question_text: "Câu 1. Trường THPT Cao Bá Quát được thành lập vào năm nào?",
@@ -312,6 +313,25 @@ export default function PublicQuiz() {
   const [quizConfig, setQuizConfig] = useState(null);
 
   const timerRef = useRef(null);
+  const certRef = useRef(null);
+  const [downloadingCert, setDownloadingCert] = useState(false);
+
+  const handleDownloadCertificate = async () => {
+    if (!certRef.current) return;
+    setDownloadingCert(true);
+    try {
+      const canvas = await html2canvas(certRef.current, { scale: 2, useCORS: true });
+      const image = canvas.toDataURL("image/png");
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `Giay_Chung_Nhan_${(studentName || 'Thi_Sinh').replace(/\s+/g, '_')}.png`;
+      link.click();
+    } catch (err) {
+      alert("Lỗi khi tạo ảnh giấy chứng nhận: " + err.message);
+    } finally {
+      setDownloadingCert(false);
+    }
+  };
 
   // Autocomplete State
   const [allStudents, setAllStudents] = useState([]);
@@ -1122,32 +1142,79 @@ export default function PublicQuiz() {
 
           {/* TAB 2: CERTIFICATE */}
           {activeTab === 'result' && (
-            <div style={{ background: 'linear-gradient(135deg, #fffdfa 0%, #fff7ed 100%)', border: '3px double #d4af37', padding: '24px', borderRadius: '16px', textAlign: 'center', position: 'relative' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b45309', letterSpacing: '2px', textTransform: 'uppercase' }}>
-                TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK
-              </div>
-              <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', color: '#be123c', margin: '8px 0', fontSize: '22px' }}>
-                CHỨNG NHẬN THÀNH TÍCH XUẤT SẮC
-              </h2>
-              <p style={{ fontStyle: 'italic', color: '#475569', fontSize: '13.5px', margin: '0 0 15px 0' }}>
-                Chứng nhận thí sinh đã tích cực tham gia Cuộc Thi Tìm Hiểu Kỷ Niệm 30 Năm Thành Lập Trường (1996 - 2026)
-              </p>
+            <div>
+              <div 
+                ref={certRef} 
+                style={{ 
+                  background: 'linear-gradient(135deg, #fffdfa 0%, #fff7ed 100%)', 
+                  border: '4px double #d4af37', 
+                  padding: '32px 24px', 
+                  borderRadius: '16px', 
+                  textAlign: 'center', 
+                  position: 'relative',
+                  boxShadow: '0 10px 25px rgba(212,175,55,0.12)'
+                }}
+              >
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#b45309', letterSpacing: '2px', textTransform: 'uppercase' }}>
+                  TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK
+                </div>
+                <h2 style={{ fontFamily: 'Playfair Display, Georgia, serif', color: '#be123c', margin: '12px 0 6px 0', fontSize: '24px', fontWeight: 'bold' }}>
+                  CHỨNG NHẬN THÀNH TÍCH XUẤT SẮC
+                </h2>
+                <p style={{ fontStyle: 'italic', color: '#475569', fontSize: '13.5px', margin: '0 0 20px 0' }}>
+                  Chứng nhận thí sinh đã hoàn thành xuất sắc Cuộc Thi Tìm Hiểu Kỷ Niệm 30 Năm Thành Lập Trường (1996 - 2026)
+                </p>
 
-              <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1e293b', margin: '15px 0 5px 0' }}>
-                {studentName}
-              </div>
-              <div style={{ fontSize: '14px', color: '#64748b' }}>
-                {studentGroup}
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#0f172a', margin: '15px 0 4px 0' }}>
+                  {studentName}
+                </div>
+                <div style={{ fontSize: '15px', color: '#64748b', fontWeight: '500' }}>
+                  {studentGroup}
+                </div>
+
+                <div style={{ display: 'inline-block', margin: '20px 0', padding: '10px 28px', background: '#ffffff', borderRadius: '30px', border: '1.5px solid #fde047', boxShadow: '0 4px 12px rgba(234,179,8,0.15)' }}>
+                  <span style={{ fontSize: '14px', color: '#475569' }}>Tổng điểm đạt được: </span>
+                  <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#be123c' }}>{finalScore} / 300 Điểm</span>
+                </div>
               </div>
 
-              <div style={{ display: 'inline-block', margin: '20px 0', padding: '10px 24px', background: '#ffffff', borderRadius: '30px', border: '1px solid #fde047', boxShadow: '0 4px 12px rgba(234,179,8,0.15)' }}>
-                <span style={{ fontSize: '14px', color: '#475569' }}>Kết quả: </span>
-                <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#be123c' }}>{finalScore} Điểm</span>
-              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '20px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={handleDownloadCertificate} 
+                  disabled={downloadingCert} 
+                  style={{ 
+                    padding: '12px 24px', 
+                    background: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)', 
+                    color: '#ffffff', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    boxShadow: '0 4px 12px rgba(217,119,6,0.3)' 
+                  }}
+                >
+                  <Download size={18} /> {downloadingCert ? 'Đang xuất hình...' : 'Tải Giấy Chứng Nhận (PNG)'}
+                </button>
 
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginTop: '15px' }}>
-                <button onClick={() => { setStep('welcome'); fetchLeaderboard(); }} style={{ padding: '10px 20px', background: '#be123c', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <RotateCcw size={16} /> Thi Lại Lần Khác
+                <button 
+                  onClick={() => { setStep('welcome'); fetchLeaderboard(); }} 
+                  style={{ 
+                    padding: '12px 20px', 
+                    background: '#be123c', 
+                    color: '#ffffff', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    fontWeight: 'bold', 
+                    cursor: 'pointer', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '6px' 
+                  }}
+                >
+                  <RotateCcw size={16} /> Trang Chủ Cuộc Thi
                 </button>
               </div>
             </div>
