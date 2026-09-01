@@ -3,8 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import RichTextEditor from '../components/RichTextEditor';
 
 export default function AdminNews() {
   const [news, setNews] = useState([]);
@@ -109,7 +108,7 @@ export default function AdminNews() {
             </div>
             <div>
               <label style={{display: 'block', marginBottom: '0.5rem'}}>Nội dung bài viết (*)</label>
-              <ReactQuill theme="snow" value={formData.content} onChange={(val) => setFormData(prev => ({...prev, content: val}))} style={{backgroundColor: 'white', marginBottom: '20px'}} />
+              <RichTextEditor value={formData.content} onChange={(val) => setFormData(prev => ({...prev, content: val}))} />
             </div>
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
               <button type="submit" className="btn-primary" style={{ padding: '0.75rem 2rem' }}>{editingId ? 'Cập nhật' : 'Đăng bài'}</button>
