@@ -21,6 +21,7 @@ export default function PublicHome() {
   const [news, setNews] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
   const [quizLeaderboard, setQuizLeaderboard] = useState([]);
+  const [quizInfo, setQuizInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
@@ -84,13 +85,14 @@ export default function PublicHome() {
   async function fetchPublicData() {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes, quizInfoRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single(),
-        supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10)
+        supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10),
+        supabase.from('cbq_quizzes').select('*').limit(1)
       ]);
       
       if (configRes.data && configRes.data.content) {
@@ -109,6 +111,7 @@ export default function PublicHome() {
       }
       if (!newsRes.error) setNews(newsRes.data || []);
       if (quizRes && !quizRes.error) setQuizLeaderboard(quizRes.data || []);
+      if (quizInfoRes && !quizInfoRes.error && quizInfoRes.data?.length > 0) setQuizInfo(quizInfoRes.data[0]);
       if (!guestsRes.error) {
         const guestData = guestsRes.data || [];
         setAllGuests(guestData);
@@ -507,17 +510,24 @@ export default function PublicHome() {
             </div>
           </div>
 
-          {/* BẢNG VÀNG THỦ KHOA - CUỘC THI 30 NĂM THPT CAO BÁ QUÁT */}
+          {/* BẢNG VÀNG THỦ KHOA - XUẤT BẢN THEO CẤU HÌNH ADMIN */}
           <div style={styles.goldBoardBlock}>
             <div style={styles.goldBoardHeader}>
               <span style={{ fontSize: '20px' }}>👑</span>
-              <span>BẢNG VÀNG THỦ KHOA - CUỘC THI TÌM HIỂU 30 NĂM</span>
+              <span>BẢNG VÀNG THỦ KHOA - {(quizInfo?.title || 'CUỘC THI TÌM HIỂU 30 NĂM').toUpperCase()}</span>
             </div>
 
             <div style={{ padding: '20px', background: 'linear-gradient(180deg, #fffdf5 0%, #ffffff 100%)' }}>
-              {quizLeaderboard.length === 0 ? (
+              {quizInfo && quizInfo.show_leaderboard === false ? (
+                <div style={{ textAlign: 'center', color: '#b45309', padding: '20px 10px', fontSize: '14.5px', background: '#fefce8', borderRadius: '10px', border: '1px solid #fef08a' }}>
+                  🔒 <strong>BẢNG VÀNG ĐANG Ở CHẾ ĐỘ CHỜ XUẤT BẢN</strong>
+                  <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#854d0e' }}>
+                    Ban Tổ Chức sẽ công bố Bảng Vàng Vinh Danh công khai ngay sau khi cuộc thi kết thúc!
+                  </p>
+                </div>
+              ) : quizLeaderboard.length === 0 ? (
                 <div style={{ textAlign: 'center', color: '#64748b', padding: '15px 0', fontSize: '14px' }}>
-                  Chưa có dữ liệu bài thi.
+                  Chưa có dữ liệu bài thi nào được ghi nhận.
                 </div>
               ) : (
                 <>

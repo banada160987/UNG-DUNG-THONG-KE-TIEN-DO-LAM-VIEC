@@ -50,7 +50,8 @@ export default function AdminQuiz() {
     time_limit_minutes: 15,
     start_time: '2026-08-01T08:00',
     end_time: '2026-09-03T23:59',
-    is_active: true
+    is_active: true,
+    show_leaderboard: true
   });
   const [savingConfig, setSavingConfig] = useState(false);
 
@@ -67,6 +68,7 @@ export default function AdminQuiz() {
         const config = { ...data[0] };
         if (config.start_time) config.start_time = new Date(new Date(config.start_time).getTime() - (new Date(config.start_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
         if (config.end_time) config.end_time = new Date(new Date(config.end_time).getTime() - (new Date(config.end_time).getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        if (config.show_leaderboard === undefined) config.show_leaderboard = true;
         setQuizConfig(config);
       }
     } catch (err) {
@@ -84,7 +86,8 @@ export default function AdminQuiz() {
         time_limit_minutes: Number(quizConfig.time_limit_minutes) || 15,
         start_time: quizConfig.start_time ? new Date(quizConfig.start_time).toISOString() : null,
         end_time: quizConfig.end_time ? new Date(quizConfig.end_time).toISOString() : null,
-        is_active: quizConfig.is_active
+        is_active: quizConfig.is_active,
+        show_leaderboard: quizConfig.show_leaderboard !== false
       };
 
       if (quizConfig.id) {
@@ -1035,6 +1038,23 @@ export default function AdminQuiz() {
                   <option value="false">🔴 Tạm đóng / Dừng nhận bài thi</option>
                 </select>
               </div>
+            </div>
+
+            <div style={{ marginBottom: '16px', background: '#fefce8', padding: '14px', borderRadius: '10px', border: '1px solid #fef08a' }}>
+              <label style={{ ...styles.label, color: '#854d0e', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                👑 Công Tắc Xuất Bản Bảng Vàng Vinh Danh (Hiển Thị Công Khai Trên Web)
+              </label>
+              <select 
+                value={quizConfig.show_leaderboard !== false ? 'true' : 'false'} 
+                onChange={e => setQuizConfig(prev => ({ ...prev, show_leaderboard: e.target.value === 'true' }))} 
+                style={{ ...styles.input, fontWeight: 'bold' }}
+              >
+                <option value="true">🟢 ĐÃ XUẤT BẢN - Hiển thị Bảng Vàng Top 10 trên Trang Chủ & Trang Cuộc Thi</option>
+                <option value="false">🔒 ẨN BẢNG VÀNG - Tạm ẩn Bảng Vàng công khai (Chưa công bố)</option>
+              </select>
+              <span style={{ fontSize: '12px', color: '#a16207', display: 'block', marginTop: '6px' }}>
+                * Bật tùy chọn này để Bảng Vàng Thủ Khoa của Cuộc Thi này xuất hiện công khai trên Trang Chủ và Trang Cuộc Thi.
+              </span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
