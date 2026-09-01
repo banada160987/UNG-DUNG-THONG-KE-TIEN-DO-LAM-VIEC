@@ -20,6 +20,7 @@ export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
   const [news, setNews] = useState([]);
   const [selectedNews, setSelectedNews] = useState(null);
+  const [quizLeaderboard, setQuizLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rsvpCode, setRsvpCode] = useState('');
   const [rsvpResult, setRsvpResult] = useState(null);
@@ -83,12 +84,13 @@ export default function PublicHome() {
   async function fetchPublicData() {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
-        supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single()
+        supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single(),
+        supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10)
       ]);
       
       if (configRes.data && configRes.data.content) {
@@ -106,6 +108,7 @@ export default function PublicHome() {
         setTotalDonation(total);
       }
       if (!newsRes.error) setNews(newsRes.data || []);
+      if (quizRes && !quizRes.error) setQuizLeaderboard(quizRes.data || []);
       if (!guestsRes.error) {
         const guestData = guestsRes.data || [];
         setAllGuests(guestData);
@@ -504,6 +507,139 @@ export default function PublicHome() {
             </div>
           </div>
 
+          {/* BẢNG VÀNG THỦ KHOA - CUỘC THI 30 NĂM THPT CAO BÁ QUÁT */}
+          <div style={styles.goldBoardBlock}>
+            <div style={styles.goldBoardHeader}>
+              <span style={{ fontSize: '20px' }}>👑</span>
+              <span>BẢNG VÀNG THỦ KHOA - CUỘC THI TÌM HIỂU 30 NĂM</span>
+            </div>
+
+            <div style={{ padding: '20px', background: 'linear-gradient(180deg, #fffdf5 0%, #ffffff 100%)' }}>
+              {quizLeaderboard.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#64748b', padding: '15px 0', fontSize: '14px' }}>
+                  Chưa có dữ liệu bài thi.
+                </div>
+              ) : (
+                <>
+                  {/* TOP 3 PODIUM */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                    {quizLeaderboard.slice(0, 3).map((item, idx) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          background: idx === 0 ? 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)' : idx === 1 ? 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' : 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                          border: idx === 0 ? '2px solid #eab308' : idx === 1 ? '2px solid #94a3b8' : '2px solid #f97316',
+                          borderRadius: '14px',
+                          padding: '16px 12px',
+                          textAlign: 'center',
+                          boxShadow: idx === 0 ? '0 8px 20px rgba(234,179,8,0.2)' : '0 4px 12px rgba(0,0,0,0.05)',
+                          position: 'relative'
+                        }}
+                      >
+                        <div style={{
+                          position: 'absolute',
+                          top: '-11px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          background: idx === 0 ? '#ca8a04' : idx === 1 ? '#475569' : '#c2410c',
+                          color: 'white',
+                          padding: '2px 12px',
+                          borderRadius: '20px',
+                          fontSize: '10.5px',
+                          fontWeight: 'bold',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.5px',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {idx === 0 ? '👑 GIẢI NHẤT VÀNG' : idx === 1 ? '🥈 GIẢI NHÌ BẠC' : '🥉 GIẢI BA ĐỒNG'}
+                        </div>
+
+                        <div style={{ fontSize: '26px', marginTop: '6px', marginBottom: '2px' }}>
+                          {idx === 0 ? '🥇' : idx === 1 ? '🥈' : '🥉'}
+                        </div>
+
+                        <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '15px', marginBottom: '2px' }}>
+                          {item.student_name}
+                        </div>
+
+                        <div style={{ fontSize: '12.5px', color: '#64748b', fontWeight: '500', marginBottom: '8px' }}>
+                          Lớp: <span style={{ color: '#be123c', fontWeight: 'bold' }}>{item.student_group}</span>
+                        </div>
+
+                        <div style={{ display: 'inline-block', background: 'white', padding: '4px 12px', borderRadius: '20px', border: '1px solid #e2e8f0', fontSize: '13.5px', fontWeight: 'bold', color: '#15803d' }}>
+                          {item.total_score || item.score} / 300 Điểm
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* TOP 4 -> 10 LIST */}
+                  {quizLeaderboard.length > 3 && (
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', overflow: 'hidden', background: 'white' }}>
+                      <div style={{ padding: '8px 14px', background: '#f8fafc', fontWeight: 'bold', fontSize: '12.5px', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
+                        🎖️ TOP 4 - TOP 10 THÍ SINH DẪN ĐẦU BẢNG XẾP HẠNG
+                      </div>
+                      {quizLeaderboard.slice(3, 10).map((item, idx) => (
+                        <div
+                          key={item.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 14px',
+                            borderBottom: idx < quizLeaderboard.slice(3, 10).length - 1 ? '1px dashed #f1f5f9' : 'none',
+                            fontSize: '13px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{
+                              width: '22px',
+                              height: '22px',
+                              borderRadius: '50%',
+                              background: '#f1f5f9',
+                              color: '#475569',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 'bold',
+                              fontSize: '11px'
+                            }}>
+                              {idx + 4}
+                            </span>
+                            <span style={{ fontWeight: 'bold', color: '#1e293b' }}>{item.student_name}</span>
+                            <span style={{ color: '#64748b', fontSize: '12px' }}>({item.student_group})</span>
+                          </div>
+                          <span style={{ fontWeight: 'bold', color: '#166534' }}>{item.total_score || item.score} Điểm</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                    <a
+                      href="/cuoc-thi"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 20px',
+                        background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)',
+                        color: 'white',
+                        borderRadius: '25px',
+                        fontWeight: 'bold',
+                        fontSize: '13.5px',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 12px rgba(190,18,60,0.2)'
+                      }}
+                    >
+                      🏆 Thử Sức Ngay & Xem Chi Tiết Bảng Vàng ➔
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           {/* Tin Tức - Sự Kiện */}
           <div style={styles.newsBlock}>
             <div style={styles.newsMainHeader}>TIN TỨC - SỰ KIỆN</div>
@@ -687,6 +823,26 @@ const styles = {
   rightCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
 
   // Blocks
+  goldBoardBlock: {
+    backgroundColor: '#fff',
+    border: '2px solid #fde047',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    boxShadow: '0 10px 30px rgba(234, 179, 8, 0.12)',
+    marginBottom: '20px'
+  },
+  goldBoardHeader: {
+    backgroundColor: '#b45309',
+    backgroundImage: 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+    color: '#ffffff',
+    padding: '14px 20px',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    letterSpacing: '0.5px'
+  },
   portalBlock: {
     backgroundColor: '#fff',
     border: '1px solid #e2e8f0',
