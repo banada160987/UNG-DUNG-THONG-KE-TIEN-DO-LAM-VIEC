@@ -592,10 +592,11 @@ export default function AdminParking() {
                   <div><strong>Loại xe:</strong> {ticket.vehicle_type}</div>
                   <div><strong>Thời hạn:</strong> Từ {ticket.start_date} Đến {ticket.end_date}</div>
                 </div>
-                <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: '65px' }}>
                   <QrCode size={48} color="#1e293b" />
-                  <div style={{ fontSize: '11px', textAlign: 'right', color: '#334155' }}>
-                    Xác nhận Lãnh Đạo Trường
+                  <div style={{ fontSize: '11.5px', textAlign: 'right', color: '#1e293b' }}>
+                    <div style={{ fontWeight: 'bold' }}>Xác nhận Lãnh Đạo Trường</div>
+                    <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic', marginTop: '28px' }}>(Ký & đóng dấu)</div>
                   </div>
                 </div>
               </div>
