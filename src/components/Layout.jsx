@@ -74,7 +74,7 @@ export default function Layout({ children, title }) {
 
     // 2. 🏫 VẬN HÀNH NHÀ TRƯỜNG
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích (Hub)', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: true },
-    { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Hồ sơ Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
+    { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Hồ sơ Tổ Chuyên Môn', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || role === 'secretary' },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 VẬN HÀNH NHÀ TRƯỜNG', show: isAdmin || !!permissions.canViewStudents },
@@ -92,7 +92,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/luu-but', icon: BookOpen, label: '📓 Quản lý Lưu bút', group: '🌐 NỘI DUNG WEBSITE', show: isAdmin || !!permissions.canViewGuestbook },
     { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu & Nội dung', group: '🌐 NỘI DUNG WEBSITE', show: isAdmin || !!permissions.canViewPages },
     { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: '🌐 NỘI DUNG WEBSITE', show: isAdmin || !!permissions.canViewPages },
-    { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: '🌐 NỘI DUNG WEBSITE', show: isAdmin },
+    { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: '🌐 NỘI DUNG WEBSITE', show: isAdmin || !!permissions.canViewLinks },
 
     // 4. ⚙️ HỆ THỐNG
     { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản', group: '⚙️ HỆ THỐNG', show: isAdmin },
