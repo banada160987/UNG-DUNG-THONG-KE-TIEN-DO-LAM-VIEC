@@ -559,44 +559,48 @@ export default function AdminParking() {
     <Layout title="Quản lý Xe máy Học sinh">
       <style>{`
         @media print {
-          header, nav, sidebar, .no-print, .glass { display: none !important; }
-          .printable-card { display: block !important; width: 100% !important; margin: 0 auto !important; }
+          @page { size: A4 portrait; margin: 8mm; }
+          header, nav, sidebar, footer, .no-print, .glass { display: none !important; }
+          body { background: white !important; margin: 0 !important; padding: 0 !important; }
+          .printable-card { display: block !important; width: 100% !important; margin: 0 !important; }
+          .print-ticket-grid { display: grid !important; grid-template-columns: repeat(2, 1fr) !important; gap: 12px !important; }
+          .print-ticket-card-item { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 10px !important; }
         }
       `}</style>
 
       {/* PRINT MODAL CARD (Hidden during regular display, visible on print) */}
       {selectedTicketsToPrint && selectedTicketsToPrint.length > 0 && (
         <div style={{ display: 'none' }} className="printable-card">
-          <div style={{ textAlign: 'center', marginBottom: '15px', borderBottom: '2px solid #be123c', paddingBottom: '8px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold', letterSpacing: '0.5px' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-            <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c', textTransform: 'uppercase' }}>DANH SÁCH THẺ GỬI XE MÁY HỌC SINH IN HÀNG LOẠT</div>
-            <div style={{ fontSize: '12px', color: '#334155', marginTop: '4px' }}>
+          <div style={{ textAlign: 'center', marginBottom: '12px', borderBottom: '2px solid #be123c', paddingBottom: '6px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', letterSpacing: '0.5px' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+            <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#be123c', textTransform: 'uppercase' }}>DANH SÁCH THẺ GỬI XE MÁY HỌC SINH IN HÀNG LOẠT</div>
+            <div style={{ fontSize: '11.5px', color: '#334155', marginTop: '2px' }}>
               {selectedClassFilter !== 'ALL' && <span style={{ marginRight: '10px' }}>LỚP: <b style={{ color: '#be123c' }}>{selectedClassFilter}</b></span>}
               {selectedVehicleType !== 'ALL' && <span style={{ marginRight: '10px' }}>LOẠI XE: <b style={{ color: '#0284c7' }}>{selectedVehicleType}</b></span>}
               <span>TỔNG SỐ THẺ: <b style={{ color: '#166534' }}>{selectedTicketsToPrint.length} THẺ</b></span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '20px', padding: '10px' }}>
+          <div className="print-ticket-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', padding: '4px' }}>
             {selectedTicketsToPrint.map((ticket, idx) => (
-              <div key={idx} style={{ ...styles.printTicketCard, breakInside: 'avoid', marginBottom: '20px' }}>
-                <div style={{ textAlign: 'center', borderBottom: '1px solid #cbd5e1', paddingBottom: '8px', marginBottom: '10px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-                  <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {ticket.ticket_code}</div>
+              <div key={idx} className="print-ticket-card-item" style={{ ...styles.printTicketCard, breakInside: 'avoid' }}>
+                <div style={{ textAlign: 'center', borderBottom: '1px dashed #cbd5e1', paddingBottom: '6px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <h3 style={{ margin: '1px 0 0 0', fontSize: '15px', color: '#be123c' }}>THẺ GỬI XE MÁY HỌC SINH</h3>
+                  <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#0284c7' }}>MÃ: {ticket.ticket_code}</div>
                 </div>
-                <div style={{ fontSize: '13px', lineHeight: '1.6' }}>
+                <div style={{ fontSize: '12.5px', lineHeight: '1.45' }}>
                   <div><strong>Họ tên HS:</strong> {ticket.student_name}</div>
                   <div><strong>Lớp:</strong> {ticket.student_class} ({ticket.grade_level})</div>
-                  <div><strong>Biển số xe:</strong> <span style={{ fontSize: '15px', color: '#be123c', fontWeight: 'bold' }}>{ticket.license_plate}</span></div>
+                  <div><strong>Biển số xe:</strong> <span style={{ fontSize: '14px', color: '#be123c', fontWeight: 'bold' }}>{ticket.license_plate}</span></div>
                   <div><strong>Loại xe:</strong> {ticket.vehicle_type}</div>
                   <div><strong>Thời hạn:</strong> Từ {ticket.start_date} Đến {ticket.end_date}</div>
                 </div>
-                <div style={{ marginTop: '12px', paddingTop: '8px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', minHeight: '65px' }}>
-                  <QrCode size={48} color="#1e293b" />
-                  <div style={{ fontSize: '11.5px', textAlign: 'right', color: '#1e293b' }}>
+                <div style={{ marginTop: '8px', paddingTop: '6px', borderTop: '1px dashed #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <QrCode size={42} color="#1e293b" />
+                  <div style={{ fontSize: '11px', textAlign: 'right', color: '#1e293b' }}>
                     <div style={{ fontWeight: 'bold' }}>Xác nhận Lãnh Đạo Trường</div>
-                    <div style={{ fontSize: '10px', color: '#94a3b8', fontStyle: 'italic', marginTop: '28px' }}>(Ký & đóng dấu)</div>
+                    <div style={{ fontSize: '9.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: '18px' }}>(Ký & đóng dấu)</div>
                   </div>
                 </div>
               </div>
@@ -1311,11 +1315,12 @@ const styles = {
   label: { display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' },
   input: { width: '100%', padding: '9px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' },
   printTicketCard: {
-    maxWidth: '350px',
+    maxWidth: '340px',
     border: '2px dashed #be123c',
-    borderRadius: '12px',
-    padding: '16px',
-    backgroundColor: '#ffffff'
+    borderRadius: '10px',
+    padding: '12px 14px',
+    backgroundColor: '#ffffff',
+    boxSizing: 'border-box'
   },
   modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' },
   modalContent: { backgroundColor: '#ffffff', borderRadius: '16px', width: '100%', maxWidth: '580px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' },
