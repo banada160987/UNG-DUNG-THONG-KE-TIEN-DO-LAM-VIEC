@@ -559,6 +559,10 @@ export default function AdminParking() {
     <Layout title="Quản lý Xe máy Học sinh">
       <style>{`
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           @page { size: A4 portrait; margin: 8mm; }
           html, body, #root, div, main, section {
             overflow: visible !important;
@@ -625,16 +629,18 @@ export default function AdminParking() {
               }}>
                 {/* HEADER BANNER */}
                 <div style={{
-                  background: 'linear-gradient(135deg, #991b1b 0%, #be123c 100%)',
+                  backgroundColor: '#be123c',
                   color: '#ffffff',
-                  padding: '7px 10px',
+                  padding: '8px 10px',
                   textAlign: 'center',
-                  borderBottom: '2px solid #f59e0b'
+                  borderBottom: '2px solid #f59e0b',
+                  WebkitPrintColorAdjust: 'exact',
+                  printColorAdjust: 'exact'
                 }}>
-                  <div style={{ fontSize: '10px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.95 }}>
+                  <div style={{ fontSize: '10.5px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#ffffff' }}>
                     TRƯỜNG THPT CAO BÁ QUÁT
                   </div>
-                  <div style={{ fontSize: '14.5px', fontWeight: '900', letterSpacing: '0.5px', color: '#fef08a', marginTop: '1px' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '900', letterSpacing: '0.5px', color: '#ffffff', marginTop: '1px' }}>
                     THẺ GỬI XE MÁY HỌC SINH
                   </div>
                 </div>
@@ -683,8 +689,7 @@ export default function AdminParking() {
                       <div style={{ fontSize: '8px', color: '#64748b', fontWeight: 'bold', marginTop: '1px' }}>CHECK-IN</div>
                     </div>
                     <div style={{ textAlign: 'right', color: '#1e293b' }}>
-                      <div style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#991b1b' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
-                      <div style={{ fontSize: '9px', color: '#94a3b8', fontStyle: 'italic', marginTop: '16px' }}>(Ký & đóng dấu)</div>
+                      <div style={{ fontSize: '10.5px', fontWeight: 'bold', color: '#be123c' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
                     </div>
                   </div>
                 </div>

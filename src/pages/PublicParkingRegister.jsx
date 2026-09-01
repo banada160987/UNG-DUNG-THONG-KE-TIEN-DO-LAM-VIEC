@@ -746,16 +746,18 @@ export default function PublicParkingRegister() {
           }} id="printable-ticket">
             {/* HEADER BANNER */}
             <div style={{
-              background: 'linear-gradient(135deg, #991b1b 0%, #be123c 100%)',
+              backgroundColor: '#be123c',
               color: '#ffffff',
               padding: '14px 20px',
               textAlign: 'center',
-              borderBottom: '3px solid #f59e0b'
+              borderBottom: '3px solid #f59e0b',
+              WebkitPrintColorAdjust: 'exact',
+              printColorAdjust: 'exact'
             }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.95 }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px', color: '#ffffff' }}>
                 TRƯỜNG THPT CAO BÁ QUÁT
               </div>
-              <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#fef08a', letterSpacing: '0.5px' }}>
+              <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.5px' }}>
                 THẺ GỬI XE MÁY HỌC SINH
               </h3>
             </div>
@@ -815,8 +817,7 @@ export default function PublicParkingRegister() {
                   <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 'bold', marginTop: '3px' }}>QUÉT CHECK-IN CỔNG</div>
                 </div>
                 <div style={{ textAlign: 'right', fontSize: '11.5px', color: '#1e293b' }}>
-                  <div style={{ fontWeight: 'bold', color: '#991b1b' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
-                  <div style={{ fontSize: '9.5px', color: '#94a3b8', fontStyle: 'italic', marginTop: '28px' }}>(Ký & đóng dấu)</div>
+                  <div style={{ fontWeight: 'bold', color: '#be123c' }}>XÁC NHẬN LÃNH ĐẠO TRƯỜNG</div>
                 </div>
               </div>
             </div>
