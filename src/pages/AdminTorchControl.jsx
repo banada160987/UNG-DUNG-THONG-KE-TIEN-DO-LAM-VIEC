@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase, logActivity } from '../lib/supabase';
-import { Flame, Sparkles, Radio, Zap, ExternalLink, FastForward, RotateCcw, User, Save } from 'lucide-react';
+import { Flame, Sparkles, Radio, Zap, ExternalLink, FastForward, RotateCcw, User, Save, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 export default function AdminTorchControl() {
   const [activeStep, setActiveStep] = useState(0);
@@ -10,35 +10,36 @@ export default function AdminTorchControl() {
   const [channelStatus, setChannelStatus] = useState('Connecting...');
   const [saveSuccessMsg, setSaveSuccessMsg] = useState('');
 
-  // 2 PERSONS ON STAGE (LEFT PERSON & RIGHT PERSON)
-  const [personsConfig, setPersonsConfig] = useState([
-    { id: 1, name: 'Đại diện Thế hệ Đi trước', title: 'Thầy Cô / Ban Giám Hiệu / Cựu HS', sub: 'BÊN TRÁI SÂN SẤU', side: 'LEFT' },
-    { id: 2, name: 'Đại diện Thế hệ Tiếp nối', title: 'Học Sinh Hiện Tại (Khóa 2023 - 2026)', sub: 'BÊN PHẢI SÂN SẤU', side: 'RIGHT' }
+  // UNLIMITED DYNAMIC MULTI-GENERATION PERSONS LIST
+  const [personsList, setPersonsList] = useState([
+    { id: 1, name: 'Đại diện Ban Giám Hiệu', title: 'Ban Giám Hiệu & Thầy Cô (1996)', sub: 'THẾ HỆ KHỞI NGUỒN' },
+    { id: 2, name: 'Đại diện Cựu HS Khóa 1', title: 'Khóa 1996 - 2000', sub: 'THẮP SÁNG KHÁT VỌNG' },
+    { id: 3, name: 'Đại diện Cựu HS Khóa 2', title: 'Khóa 2001 - 2005', sub: 'THẬP KỶ TRI THỨC' },
+    { id: 4, name: 'Đại diện Cựu HS Khóa 3', title: 'Khóa 2006 - 2010', sub: 'VƯƠN XA & TRƯỞNG THÀNH' },
+    { id: 5, name: 'Đại diện Cựu HS Khóa 4', title: 'Khóa 2011 - 2015', sub: 'KẾ THỪA & PHÁT TRIỂN' },
+    { id: 6, name: 'Đại diện Cựu HS Khóa 5', title: 'Khóa 2016 - 2020', sub: 'HỘI NHẬP & TỎA SÁNG' },
+    { id: 7, name: 'Đại diện Học Sinh Hiện Tại', title: 'Khóa 2023 - 2026', sub: 'THẮP SÁNG TƯƠNG LAI' }
   ]);
 
-  const stepsList = [
-    { step: 0, title: '💤 Màn Hình Chờ Sân Sấu', desc: 'Sẵn sàng 2 vị trí đứng bên TRÁI & bên PHẢI sân khấu.' },
-    { step: 1, title: '🔥 1. Thắp Lửa Người BÊN TRÁI', desc: 'Ngọn lửa bùng cháy rực rỡ bên TRÁI + Vinh danh Người 1.' },
-    { step: 2, title: '🚀 2. BAY LỬA CAO: TRÁI ➔ PHẢI', desc: 'Cầu lửa thiêng bắn vút bay cao qua bầu trời LED hạ cánh xuống tay Người 2 bên PHẢI!' },
-    { step: 3, title: '🔥 3. Thắp Lửa Người BÊN PHẢI', desc: 'Ngọn lửa bên trái tắt, DUY NHẤT ngọn lửa bên PHẢI bùng cháy + Vinh danh Người 2.' },
-    { step: 4, title: '🚀 4. CẦU LỬA BAY LÊN TRỜI CAO', desc: 'Cầu lửa từ tay Người 2 bên phải vút bay cao vút lên giữa bầu trời LED.' },
-    { step: 5, title: '🎉 5. BÙNG NỔ ĐẠI LỄ KỶ NIỆM 30 NĂM', desc: 'Nổ pháo hoa rực rỡ & Hiện biểu trưng ĐẠI LỄ 30 NĂM THPT CAO BÁ QUÁT!' }
-  ];
+  // Calculate total steps dynamically based on number of persons
+  const totalTransfers = Math.max(1, personsList.length - 1);
+  const soarStep = totalTransfers * 2 + 1;
+  const grandFinaleStep = soarStep + 1;
 
   useEffect(() => {
     try {
-      const local = localStorage.getItem('cbq_torch_current_step');
-      if (local) {
-        const parsed = JSON.parse(local);
+      const localStep = localStorage.getItem('cbq_torch_current_step');
+      if (localStep) {
+        const parsed = JSON.parse(localStep);
         if (parsed.step !== undefined) setActiveStep(parsed.step);
         if (parsed.title) setCustomTitleInput(parsed.title);
       }
 
-      const localPersons = localStorage.getItem('cbq_torch_persons_config');
+      const localPersons = localStorage.getItem('cbq_torch_persons_list');
       if (localPersons) {
-        const parsedPersons = JSON.parse(localPersons);
-        if (Array.isArray(parsedPersons) && parsedPersons.length >= 2) {
-          setPersonsConfig(parsedPersons.slice(0, 2));
+        const parsedList = JSON.parse(localPersons);
+        if (Array.isArray(parsedList) && parsedList.length >= 2) {
+          setPersonsList(parsedList);
         }
       }
     } catch {}
@@ -53,20 +54,20 @@ export default function AdminTorchControl() {
     };
   }, []);
 
-  const savePersonsConfig = async () => {
+  const savePersonsList = async (updatedList = personsList) => {
     try {
-      localStorage.setItem('cbq_torch_persons_config', JSON.stringify(personsConfig));
+      localStorage.setItem('cbq_torch_persons_list', JSON.stringify(updatedList));
       
       await supabase.channel('cbq_torch_stage_channel').send({
         type: 'broadcast',
-        event: 'TORCH_PERSONS_CONFIG_CHANGE',
-        payload: { persons: personsConfig }
+        event: 'TORCH_PERSONS_LIST_CHANGE',
+        payload: { persons: updatedList }
       });
 
-      setSaveSuccessMsg('✅ Đã lưu Tên 2 Đại Biểu thành công!');
+      setSaveSuccessMsg(`✅ Đã lưu danh sách ${updatedList.length} Thế hệ thành công!`);
       setTimeout(() => setSaveSuccessMsg(''), 3000);
     } catch (err) {
-      console.warn("Lỗi lưu cấu hình:", err);
+      console.warn("Lỗi lưu danh sách:", err);
     }
   };
 
@@ -77,7 +78,7 @@ export default function AdminTorchControl() {
     const payload = { 
       step: targetStep, 
       title: title.trim(),
-      persons: personsConfig
+      persons: personsList
     };
     
     localStorage.setItem('cbq_torch_current_step', JSON.stringify(payload));
@@ -89,7 +90,7 @@ export default function AdminTorchControl() {
         payload
       });
 
-      await logActivity('torch_stage', 'LED_DUAL_STAGE', String(targetStep), 'UPDATE', 'admin', `Điều khiển màn LED 2 người truyền lửa: Step ${targetStep}`);
+      await logActivity('torch_stage', 'LED_MULTI_RELAY', String(targetStep), 'UPDATE', 'admin', `Truyền lửa xoay vòng nhiều thế hệ: Step ${targetStep}`);
     } catch (err) {
       console.warn("Lỗi phát sóng:", err);
     } finally {
@@ -98,30 +99,68 @@ export default function AdminTorchControl() {
   };
 
   const handleNextStep = () => {
-    if (activeStep < 5) {
+    if (activeStep < grandFinaleStep) {
       sendStepTrigger(activeStep + 1);
     }
   };
 
-  const handlePersonChange = (index, field, value) => {
-    const updated = [...personsConfig];
-    updated[index][field] = value;
-    setPersonsConfig(updated);
+  // Add new person
+  const handleAddPerson = () => {
+    const newId = personsList.length + 1;
+    const newPerson = {
+      id: newId,
+      name: `Đại diện Thế hệ ${newId}`,
+      title: `Niên khóa thứ ${newId}`,
+      sub: 'KẾ THỪA & NỐI TÍẾP'
+    };
+    const updated = [...personsList, newPerson];
+    setPersonsList(updated);
+    savePersonsList(updated);
+  };
+
+  // Remove person
+  const handleRemovePerson = (idx) => {
+    if (personsList.length <= 2) {
+      alert("Cần tối thiểu 2 người để thực hiện nghi thức truyền lửa!");
+      return;
+    }
+    const updated = personsList.filter((_, i) => i !== idx);
+    setPersonsList(updated);
+    savePersonsList(updated);
+  };
+
+  // Edit person field
+  const handlePersonChange = (idx, field, val) => {
+    const updated = [...personsList];
+    updated[idx][field] = val;
+    setPersonsList(updated);
+  };
+
+  // Move person up/down
+  const handleMovePerson = (idx, dir) => {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= personsList.length) return;
+    const updated = [...personsList];
+    const temp = updated[idx];
+    updated[idx] = updated[newIdx];
+    updated[newIdx] = temp;
+    setPersonsList(updated);
+    savePersonsList(updated);
   };
 
   return (
-    <Layout title="Điều Khiển Sân Sấu - 2 Người Truyền Lửa Hai Bên">
-      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
+    <Layout title="Bàn Điều Khiển Sân Sấu - Truyền Lửa Xoay Vòng Nhiều Thế Hệ">
+      <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
         {/* TOP STATUS HEADER */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h2 style={{ margin: 0, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={26} color="#be123c" /> Điều Khiển 2 Người Truyền Lửa Hai Bên Sân Sấu
+                <Flame size={26} color="#be123c" /> Điều Khiển Truyền Lửa Xoay Vòng Nhiều Thế Hệ
               </h2>
               <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-                Cầu lửa thiêng bắn bay cao uốn lướt qua bầu trời LED từ tay Người Bên Trái ➔ Đậu chính xác xuống tay Người Bên Phải!
+                Cầu lửa bay từ Trái sang Phải ➔ Khi ngọn lửa bùng cháy bên Phải, thẻ tự động trượt sang Trái để nhường bên Phải cho Thế hệ tiếp theo!
               </p>
             </div>
 
@@ -139,7 +178,7 @@ export default function AdminTorchControl() {
           <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ fontSize: '13.5px', color: '#334155' }}>
               <Radio size={16} color="#166534" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-              Kênh điều khiển: <strong style={{ color: '#166534' }}>{channelStatus}</strong> | Bước hiện tại: <strong style={{ color: '#be123c', fontSize: '15px' }}>STEP {activeStep} / 5</strong>
+              Kênh điều khiển: <strong style={{ color: '#166534' }}>{channelStatus}</strong> | Tổng số thế hệ: <strong style={{ color: '#be123c' }}>{personsList.length} Người</strong> | Bước: <strong style={{ color: '#be123c', fontSize: '15px' }}>STEP {activeStep} / {grandFinaleStep}</strong>
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -152,7 +191,7 @@ export default function AdminTorchControl() {
 
               <button 
                 onClick={handleNextStep}
-                disabled={activeStep >= 5 || isBroadcasting}
+                disabled={activeStep >= grandFinaleStep || isBroadcasting}
                 style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#166534', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.3)' }}
               >
                 <FastForward size={16} /> BƯỚC TIẾP THEO (STEP {activeStep + 1}) ➔
@@ -161,18 +200,27 @@ export default function AdminTorchControl() {
           </div>
         </div>
 
-        {/* FORM CẤU HÌNH TÊN 2 NGƯỜI ĐỨNG HAI BÊN SÂN SẤU */}
+        {/* DYNAMIC LIST OF MULTI-GENERATIONS PERSONS */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '16px' }}>
             <h3 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={20} color="#be123c" /> Cấu Hình Tên 2 Người Đứng Hai Bên Sân Sấu
+              <User size={20} color="#be123c" /> Danh Sách {personsList.length} Thế Hệ Truyền Lửa Xoay Vòng
             </h3>
-            <button 
-              onClick={savePersonsConfig}
-              style={{ padding: '8px 18px', backgroundColor: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              <Save size={15} /> Lưu & Phát Sóng Lên Màn LED
-            </button>
+            
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={handleAddPerson}
+                style={{ padding: '8px 16px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Plus size={15} /> Thêm Thế Hệ Mới
+              </button>
+              <button 
+                onClick={() => savePersonsList(personsList)}
+                style={{ padding: '8px 18px', backgroundColor: '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Save size={15} /> Lưu Tất Cả
+              </button>
+            </div>
           </div>
 
           {saveSuccessMsg && (
@@ -181,106 +229,138 @@ export default function AdminTorchControl() {
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-            {/* PERSON 1: LEFT */}
-            <div style={{ backgroundColor: (activeStep === 1 || activeStep === 2) ? '#fff1f2' : '#f8fafc', border: (activeStep === 1 || activeStep === 2) ? '2px solid #be123c' : '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase', marginBottom: '8px' }}>
-                🔴 1. NGUYỄN VĂN A (BÊN TRÁI SÂN SẤU)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div>
-                  <label style={{ fontSize: '11.5px', color: '#475569', fontWeight: 'bold' }}>Họ và tên người bên trái:</label>
-                  <input 
-                    type="text"
-                    value={personsConfig[0]?.name || ''}
-                    onChange={e => handlePersonChange(0, 'name', e.target.value)}
-                    placeholder="VD: Thầy Nguyễn Văn A - Hiệu trưởng..."
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11.5px', color: '#475569', fontWeight: 'bold' }}>Chức danh / Đơn vị:</label>
-                  <input 
-                    type="text"
-                    value={personsConfig[0]?.title || ''}
-                    onChange={e => handlePersonChange(0, 'title', e.target.value)}
-                    placeholder="VD: Ban Giám Hiệu & Thầy Cô (1996)..."
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {personsList.map((p, idx) => {
+              const transferStep = idx * 2 + 1;
+              const isCurrentHolder = activeStep === transferStep || activeStep === (transferStep + 1);
 
-            {/* PERSON 2: RIGHT */}
-            <div style={{ backgroundColor: (activeStep === 3 || activeStep === 4) ? '#f0fdf4' : '#f8fafc', border: (activeStep === 3 || activeStep === 4) ? '2px solid #166534' : '1px solid #e2e8f0', borderRadius: '12px', padding: '16px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '900', color: '#166534', textTransform: 'uppercase', marginBottom: '8px' }}>
-                🟢 2. NGUYỄN VĂN B (BÊN PHẢI SÂN SẤU)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div>
-                  <label style={{ fontSize: '11.5px', color: '#475569', fontWeight: 'bold' }}>Họ và tên người bên phải:</label>
-                  <input 
-                    type="text"
-                    value={personsConfig[1]?.name || ''}
-                    onChange={e => handlePersonChange(1, 'name', e.target.value)}
-                    placeholder="VD: Em Trần Văn B - Lớp 12A1..."
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '11.5px', color: '#475569', fontWeight: 'bold' }}>Chức danh / Lớp:</label>
-                  <input 
-                    type="text"
-                    value={personsConfig[1]?.title || ''}
-                    onChange={e => handlePersonChange(1, 'title', e.target.value)}
-                    placeholder="VD: Học Sinh Hiện Tại (Khóa 2023-2026)..."
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 5 STAGE STEP TRIGGER BUTTONS */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
-          <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={20} color="#f59e0b" /> Kịch Bản Trình Chiếu 2 Người Truyền Lửa (5 Bước Trực Tiếp)
-          </h3>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginTop: '16px' }}>
-            {stepsList.map((st) => {
-              const isActive = activeStep === st.step;
               return (
                 <div 
-                  key={st.step}
-                  onClick={() => sendStepTrigger(st.step)}
+                  key={idx} 
                   style={{
-                    padding: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    backgroundColor: isCurrentHolder ? '#fff1f2' : '#f8fafc',
+                    border: isCurrentHolder ? '2px solid #be123c' : '1px solid #e2e8f0',
                     borderRadius: '12px',
-                    border: '2px solid',
-                    borderColor: isActive ? '#be123c' : '#e2e8f0',
-                    backgroundColor: isActive ? '#fff1f2' : '#ffffff',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    boxShadow: isActive ? '0 4px 15px rgba(0,0,0,0.08)' : 'none'
+                    padding: '12px 16px'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', backgroundColor: isActive ? '#be123c' : '#f1f5f9', color: isActive ? 'white' : '#64748b' }}>
-                      STEP {st.step}
-                    </span>
-                    {isActive && <Sparkles size={16} color="#f59e0b" />}
+                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#be123c', minWidth: '85px' }}>
+                    #0{idx + 1} {idx === 0 ? '(BGH)' : idx === personsList.length - 1 ? '(Cuối)' : ''}
+                  </span>
+
+                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px' }}>
+                    <input 
+                      type="text" 
+                      value={p.name}
+                      onChange={e => handlePersonChange(idx, 'name', e.target.value)}
+                      placeholder="Họ và tên..."
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                    />
+                    <input 
+                      type="text" 
+                      value={p.title}
+                      onChange={e => handlePersonChange(idx, 'title', e.target.value)}
+                      placeholder="Niên khóa / Chức danh..."
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                    />
+                    <input 
+                      type="text" 
+                      value={p.sub}
+                      onChange={e => handlePersonChange(idx, 'sub', e.target.value)}
+                      placeholder="Thông điệp / Khẩu hiệu..."
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                    />
                   </div>
-                  <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800', color: isActive ? '#0f172a' : '#334155' }}>
-                    {st.title}
-                  </h4>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
-                    {st.desc}
-                  </p>
+
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button 
+                      onClick={() => handleMovePerson(idx, -1)} 
+                      disabled={idx === 0}
+                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                    >
+                      <ArrowUp size={14} />
+                    </button>
+                    <button 
+                      onClick={() => handleMovePerson(idx, 1)} 
+                      disabled={idx === personsList.length - 1}
+                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                    >
+                      <ArrowDown size={14} />
+                    </button>
+                    <button 
+                      onClick={() => sendStepTrigger(transferStep)}
+                      style={{ padding: '6px 12px', backgroundColor: '#1e293b', color: '#fef08a', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Kích Hoạt
+                    </button>
+                    <button 
+                      onClick={() => handleRemovePerson(idx)}
+                      style={{ padding: '6px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#ef4444', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* AUTOMATED STEP CONTROLS */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
+          <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
+            ⚡ Các Bước Kịch Bản Truyền Lửa Tự Động ({grandFinaleStep} Bước)
+          </h3>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', marginTop: '14px' }}>
+            <button 
+              onClick={() => sendStepTrigger(0)}
+              style={{ padding: '12px', borderRadius: '10px', border: activeStep === 0 ? '2px solid #94a3b8' : '1px solid #e2e8f0', backgroundColor: activeStep === 0 ? '#f1f5f9' : '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+            >
+              Step 0: Màn Chờ Sân Sấu
+            </button>
+
+            {Array.from({ length: totalTransfers }).map((_, i) => {
+              const p1 = personsList[i];
+              const p2 = personsList[i + 1];
+              const stepLit = i * 2 + 1;
+              const stepFly = i * 2 + 2;
+
+              return (
+                <div key={i} style={{ display: 'contents' }}>
+                  <button 
+                    onClick={() => sendStepTrigger(stepLit)}
+                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepLit ? '2px solid #be123c' : '1px solid #e2e8f0', backgroundColor: activeStep === stepLit ? '#fff1f2' : '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    🔥 Step {stepLit}: Thắp Lửa #{i + 1} ({p1?.name})
+                  </button>
+
+                  <button 
+                    onClick={() => sendStepTrigger(stepFly)}
+                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepFly ? '2px solid #0284c7' : '1px solid #e2e8f0', backgroundColor: activeStep === stepFly ? '#f0f9ff' : '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    🚀 Step {stepFly}: Bay Lửa #{i + 1} ➔ #{i + 2} ({p2?.name})
+                  </button>
+                </div>
+              );
+            })}
+
+            <button 
+              onClick={() => sendStepTrigger(soarStep)}
+              style={{ padding: '12px', borderRadius: '10px', border: activeStep === soarStep ? '2px solid #d97706' : '1px solid #e2e8f0', backgroundColor: activeStep === soarStep ? '#fffbebfb' : '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+            >
+              Step {soarStep}: 🚀 Bay Lên Trời Cao
+            </button>
+
+            <button 
+              onClick={() => sendStepTrigger(grandFinaleStep)}
+              style={{ padding: '12px', borderRadius: '10px', border: activeStep === grandFinaleStep ? '2px solid #be123c' : '1px solid #e2e8f0', backgroundColor: activeStep === grandFinaleStep ? '#fff1f2' : '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', color: '#be123c' }}
+            >
+              Step {grandFinaleStep}: 🎉 BÙNG NỔ 30 NĂM ĐẠI LỄ
+            </button>
           </div>
         </div>
 
