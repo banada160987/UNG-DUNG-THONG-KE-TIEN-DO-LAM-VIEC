@@ -2,6 +2,108 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Flame, Sparkles, Maximize, Volume2, VolumeX, Radio, Trophy, ArrowRight } from 'lucide-react';
 
+// REALISTIC ANIMATED BURNING STAGE TORCH COMPONENT
+function RealisticTorch({ isLit }) {
+  return (
+    <div style={{ position: 'relative', width: '100px', height: '110px', margin: '0 auto 8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
+      <style>{`
+        @keyframes torchFlicker1 {
+          0% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
+          25% { transform: scale(1.08, 1.15) rotate(2deg); opacity: 1; }
+          50% { transform: scale(0.96, 0.92) rotate(-2deg); opacity: 0.9; }
+          75% { transform: scale(1.12, 1.08) rotate(1deg); opacity: 1; }
+          100% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
+        }
+        @keyframes torchFlicker2 {
+          0% { transform: scale(0.95) rotate(2deg); }
+          50% { transform: scale(1.15, 1.22) rotate(-3deg); }
+          100% { transform: scale(0.95) rotate(2deg); }
+        }
+        @keyframes emberFlyUp {
+          0% { transform: translateY(0) scale(1); opacity: 1; }
+          100% { transform: translateY(-55px) scale(0.2); opacity: 0; }
+        }
+      `}</style>
+
+      {/* BURNING FIRE TONGUES & EMBERS (WHEN LIT) */}
+      {isLit ? (
+        <div style={{ position: 'absolute', bottom: '34px', width: '70px', height: '95px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 5 }}>
+          
+          {/* OUTER AURA GLOW BLOOM */}
+          <div style={{
+            position: 'absolute',
+            width: '100px',
+            height: '100px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(245, 158, 11, 0.65)',
+            filter: 'blur(28px)',
+            animation: 'torchFlicker1 1.5s ease-in-out infinite alternate'
+          }} />
+
+          {/* FLAME TONGUE LAYER 1 (CRIMSON OUTER FLAME) */}
+          <div style={{
+            position: 'absolute',
+            width: '56px',
+            height: '80px',
+            borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
+            background: 'linear-gradient(to top, #be123c, #ef4444, #f59e0b)',
+            boxShadow: '0 0 25px #ef4444',
+            animation: 'torchFlicker1 0.75s ease-in-out infinite alternate',
+            transformOrigin: 'bottom center'
+          }} />
+
+          {/* FLAME TONGUE LAYER 2 (BRIGHT ORANGE MIDDLE FLAME) */}
+          <div style={{
+            position: 'absolute',
+            width: '38px',
+            height: '62px',
+            borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
+            background: 'linear-gradient(to top, #f59e0b, #eab308, #fef08a)',
+            boxShadow: '0 0 18px #f59e0b',
+            animation: 'torchFlicker2 0.55s ease-in-out infinite alternate',
+            transformOrigin: 'bottom center'
+          }} />
+
+          {/* FLAME TONGUE LAYER 3 (WHITE HOT INNER CORE) */}
+          <div style={{
+            position: 'absolute',
+            width: '22px',
+            height: '40px',
+            borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
+            background: 'linear-gradient(to top, #ffffff, #fef08a)',
+            boxShadow: '0 0 14px #ffffff',
+            animation: 'torchFlicker1 0.35s ease-in-out infinite alternate',
+            transformOrigin: 'bottom center'
+          }} />
+
+          {/* EMBERS SPARKS RISING UP */}
+          <div style={{ position: 'absolute', bottom: '40px', left: '15px', width: '5px', height: '5px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 6px #f59e0b', animation: 'emberFlyUp 1.2s infinite ease-out' }} />
+          <div style={{ position: 'absolute', bottom: '45px', right: '18px', width: '4px', height: '4px', backgroundColor: '#ffffff', borderRadius: '50%', boxShadow: '0 0 6px #ef4444', animation: 'emberFlyUp 0.9s infinite ease-out 0.3s' }} />
+          <div style={{ position: 'absolute', bottom: '50px', left: '32px', width: '6px', height: '6px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 8px #f59e0b', animation: 'emberFlyUp 1.5s infinite ease-out 0.6s' }} />
+        </div>
+      ) : (
+        /* DIM PILOT FLAME (WAITING TO BE IGNITED) */
+        <div style={{ position: 'absolute', bottom: '34px', width: '22px', height: '28px', borderRadius: '50% 50% 40% 40%', background: 'linear-gradient(to top, #b45309, #f59e0b)', opacity: 0.6, filter: 'blur(1px)', animation: 'torchFlicker1 2s ease-in-out infinite', zIndex: 5 }} />
+      )}
+
+      {/* GOLDEN ROYAL TORCH BOWL & CUP HANDLE BASE */}
+      <svg width="60" height="42" viewBox="0 0 60 42" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 10, filter: isLit ? 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.9))' : 'none' }}>
+        <path d="M5 6 C12 2, 48 2, 55 6 L44 32 C40 38, 20 38, 16 32 Z" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1.5" />
+        <ellipse cx="30" cy="6" rx="25" ry="4" fill="#78350f" stroke="#fef08a" strokeWidth="1" />
+        <rect x="25" y="32" width="10" height="10" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1" />
+        <defs>
+          <linearGradient id="torchGoldGrad" x1="0" y1="0" x2="60" y2="42" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#fef08a" />
+            <stop offset="0.4" stopColor="#d97706" />
+            <stop offset="0.7" stopColor="#b45309" />
+            <stop offset="1" stopColor="#78350f" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+  );
+}
+
 export default function StageLedTorch() {
   // STAGE MODE: DYNAMIC MULTI-GENERATION CONTINUOUS RELAY
   const [activeStep, setActiveStep] = useState(0);
@@ -159,7 +261,7 @@ export default function StageLedTorch() {
         this.vx = vx + (Math.random() - 0.5) * 3;
         this.vy = vy + (Math.random() - 0.5) * 3;
         this.radius = size * (Math.random() * 0.6 + 0.4);
-        this.life = Math.random() * 35 + 20;
+        this.life = Math.random() * 65 + 40;
         this.maxLife = this.life;
       }
       update() {
@@ -242,11 +344,11 @@ export default function StageLedTorch() {
       particles.forEach(p => { p.update(); p.draw(); });
 
       // ----------------------------------------------------
-      // HIGH PARABOLIC FIREBALL FLIGHT FROM LEFT CARD TO RIGHT CARD
+      // HIGH PARABOLIC FIREBALL FLIGHT FROM LEFT CARD TO RIGHT CARD (SLOW & EMOTIONAL EASE)
       // ----------------------------------------------------
       if (isFlying) {
         if (flyProgressRef.current < 1.0) {
-          flyProgressRef.current += 0.016; // ~2 seconds flight
+          flyProgressRef.current += 0.0055; // ~4.8s Slow, nostalgic, emotional flight!
           if (flyProgressRef.current >= 1.0) {
             flyProgressRef.current = 1.0;
             // Arrive on Right Card!
@@ -256,8 +358,8 @@ export default function StageLedTorch() {
         }
 
         const t = flyProgressRef.current;
-        const pLeft = { x: 230, y: height - 190 };
-        const pRight = { x: width - 230, y: height - 190 };
+        const pLeft = { x: 230, y: height - 210 };
+        const pRight = { x: width - 230, y: height - 210 };
         const pControlHigh = { x: width / 2, y: height * 0.12 };
 
         const currX = (1 - t) * (1 - t) * pLeft.x + 2 * (1 - t) * t * pControlHigh.x + t * t * pRight.x;
@@ -319,7 +421,7 @@ export default function StageLedTorch() {
         }
 
         const t = flyProgressRef.current;
-        const pStartRight = { x: width - 230, y: height - 190 };
+        const pStartRight = { x: width - 230, y: height - 210 };
         const pSky = { x: width / 2, y: height * 0.20 };
         const pSkyCtrl = { x: (pStartRight.x + pSky.x) / 2 + 50, y: Math.min(pStartRight.y, pSky.y) - 60 };
 
@@ -395,11 +497,6 @@ export default function StageLedTorch() {
   return (
     <div style={styles.stageContainer}>
       <style>{`
-        @keyframes flamePulse {
-          0% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.9)); }
-          50% { transform: scale(1.15); filter: drop-shadow(0 0 50px rgba(239, 68, 68, 1)); }
-          100% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.9)); }
-        }
         @keyframes bannerScaleUp {
           0% { transform: scale(0.6) translateY(30px); opacity: 0; }
           100% { transform: scale(1) translateY(0); opacity: 1; }
@@ -467,7 +564,7 @@ export default function StageLedTorch() {
           )}
         </div>
 
-        {/* 2 ABSOLUTE PINNED CARDS ON EXTREME FAR LEFT AND FAR RIGHT EDGES */}
+        {/* 2 ABSOLUTE PINNED CARDS WITH REALISTIC BURNING TORCHES */}
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 25 }}>
           
           {/* PERSON ON EXTREME FAR LEFT (CURRENT TORCH HOLDER) */}
@@ -482,11 +579,9 @@ export default function StageLedTorch() {
             boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
             transform: isLeftLit ? 'scale(1.05)' : 'scale(0.95)'
           }}>
-            <div style={{ animation: isLeftLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
-              <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isLeftLit ? 'rgba(239,68,68,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
-                <Flame size={isLeftLit ? 60 : 36} color={isLeftLit ? '#fef08a' : 'rgba(255,255,255,0.3)'} />
-              </div>
-            </div>
+            
+            {/* REALISTIC BURNING TORCH AT TOP OF CARD */}
+            <RealisticTorch isLit={isLeftLit} />
 
             <div style={{ fontSize: '11.5px', fontWeight: '900', color: isLeftLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
               {isLeftLit ? `🔥 THẾ HỆ #${currentPairIdx + 1} (ĐANG GIỮ LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 1} (BÊN TRÁI)`}
@@ -523,11 +618,9 @@ export default function StageLedTorch() {
             boxShadow: isRightLit ? '0 0 50px rgba(34, 197, 94, 0.8)' : 'none',
             transform: isRightLit ? 'scale(1.05)' : 'scale(0.95)'
           }}>
-            <div style={{ animation: isRightLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
-              <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isRightLit ? 'rgba(34,197,94,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
-                <Flame size={isRightLit ? 60 : 36} color={isRightLit ? '#fef08a' : 'rgba(255,255,255,0.3)'} />
-              </div>
-            </div>
+            
+            {/* REALISTIC BURNING TORCH AT TOP OF CARD */}
+            <RealisticTorch isLit={isRightLit} />
 
             <div style={{ fontSize: '11.5px', fontWeight: '900', color: isRightLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
               {isRightLit ? `🔥 THẾ HỆ #${currentPairIdx + 2} (ĐÃ NHẬN LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 2} (BÊN PHẢI CHỜ NHẬN)`}
@@ -626,7 +719,7 @@ const styles = {
   personStageCard: {
     width: '380px',
     borderRadius: '20px',
-    padding: '26px 22px',
+    padding: '24px 22px',
     textAlign: 'center',
     backdropFilter: 'blur(12px)',
     transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
