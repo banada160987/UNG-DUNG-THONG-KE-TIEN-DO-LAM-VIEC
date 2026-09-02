@@ -469,15 +469,19 @@ export default function StageLedTorch() {
         </div>
 
         {/* 2 MAIN PERSON CARDS MAPPED TO STAGE LEFT & RIGHT POSITIONS */}
-        <div style={styles.dualStageContainer}>
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 25 }}>
           
-          {/* PERSON 1: FAR LEFT OF STAGE */}
+          {/* PERSON 1: EXTREME FAR LEFT OF STAGE */}
           <div style={{
             ...styles.personStageCard,
+            position: 'absolute',
+            left: '40px',
+            bottom: '70px',
+            pointerEvents: 'auto',
             border: isLeftLit ? '3px solid #f59e0b' : '1.5px solid rgba(255,255,255,0.15)',
             backgroundColor: isLeftLit ? 'rgba(185, 28, 28, 0.85)' : 'rgba(15, 23, 42, 0.75)',
             boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
-            transform: isLeftLit ? 'scale(1.08)' : 'scale(0.96)'
+            transform: isLeftLit ? 'scale(1.05)' : 'scale(0.95)'
           }}>
             <div style={{ animation: isLeftLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
               <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isLeftLit ? 'rgba(239,68,68,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
@@ -489,18 +493,18 @@ export default function StageLedTorch() {
               {isLeftLit ? '🔥 BÊN TRÁI SÂN SẤU (ĐANG GIỮ LỬA)' : '📍 NGƯỜI TRAO LỬA (BÊN TRÁI)'}
             </div>
             
-            <h2 style={{ margin: '4px 0', fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>
+            <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
               {personsConfig[0]?.name || 'Đại diện Thế hệ Đi trước'}
             </h2>
 
-            <div style={{ fontSize: '13.5px', color: isLeftLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '13px', color: isLeftLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
               {personsConfig[0]?.title || 'Ban Giám Hiệu & Thầy Cô (1996)'}
             </div>
           </div>
 
-          {/* FLYING ARROW INDICATOR IN CENTER */}
+          {/* FLYING ARROW INDICATOR IN SKY CENTER */}
           {activeStep === 2 && (
-            <div style={{ textAlign: 'center', animation: 'bannerScaleUp 0.5s ease' }}>
+            <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', animation: 'bannerScaleUp 0.5s ease' }}>
               <div style={{ fontSize: '16px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 20px #f59e0b', marginBottom: '6px' }}>
                 🚀 CẦU LỬA ĐANG BAY TRÊN CAO...
               </div>
@@ -508,13 +512,17 @@ export default function StageLedTorch() {
             </div>
           )}
 
-          {/* PERSON 2: FAR RIGHT OF STAGE */}
+          {/* PERSON 2: EXTREME FAR RIGHT OF STAGE */}
           <div style={{
             ...styles.personStageCard,
+            position: 'absolute',
+            right: '40px',
+            bottom: '70px',
+            pointerEvents: 'auto',
             border: isRightLit ? '3px solid #22c55e' : '1.5px solid rgba(255,255,255,0.15)',
             backgroundColor: isRightLit ? 'rgba(22, 101, 52, 0.85)' : 'rgba(15, 23, 42, 0.75)',
             boxShadow: isRightLit ? '0 0 50px rgba(34, 197, 94, 0.8)' : 'none',
-            transform: isRightLit ? 'scale(1.08)' : 'scale(0.96)'
+            transform: isRightLit ? 'scale(1.05)' : 'scale(0.95)'
           }}>
             <div style={{ animation: isRightLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
               <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isRightLit ? 'rgba(34,197,94,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
@@ -526,11 +534,11 @@ export default function StageLedTorch() {
               {isRightLit ? '🔥 BÊN PHẢI SÂN SẤU (ĐÃ NHẬN LỬA)' : '📍 NGƯỜI NHẬN LỬA (BÊN PHẢI)'}
             </div>
 
-            <h2 style={{ margin: '4px 0', fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>
+            <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
               {personsConfig[1]?.name || 'Đại diện Thế hệ Tiếp nối'}
             </h2>
 
-            <div style={{ fontSize: '13.5px', color: isRightLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
+            <div style={{ fontSize: '13px', color: isRightLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
               {personsConfig[1]?.title || 'Học Sinh Hiện Tại (Khóa 2023 - 2026)'}
             </div>
           </div>
