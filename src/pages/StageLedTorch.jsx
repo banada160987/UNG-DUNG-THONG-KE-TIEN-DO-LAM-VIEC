@@ -621,15 +621,14 @@ const styles = {
     justify: 'space-between',
     alignItems: 'center',
     width: '100%',
-    maxWidth: '1250px',
     margin: 'auto 0',
-    padding: '0 20px',
+    padding: '0 40px',
     boxSizing: 'border-box'
   },
   personStageCard: {
-    width: '420px',
+    width: '380px',
     borderRadius: '20px',
-    padding: '28px 24px',
+    padding: '26px 22px',
     textAlign: 'center',
     backdropFilter: 'blur(12px)',
     transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
