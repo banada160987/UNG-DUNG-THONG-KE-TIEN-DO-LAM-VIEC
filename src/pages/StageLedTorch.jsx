@@ -1,35 +1,32 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { Flame, Sparkles, Maximize, Volume2, VolumeX, Radio, Trophy, UserCheck } from 'lucide-react';
+import { Flame, Sparkles, Maximize, Volume2, VolumeX, Radio, Trophy, ArrowRight } from 'lucide-react';
 
 export default function StageLedTorch() {
+  // STAGE MODE: 2-PERSON DUAL SIDE STAGE CHOREOGRAPHY
+  // STEP STATES:
+  // 0: IDLE (Waiting)
+  // 1: LIT_LEFT (Person 1 on Far Left holds the Sacred Flame)
+  // 2: FLYING_LEFT_TO_RIGHT (Fireball launches high up into sky & lands on Person 2's hand on Far Right)
+  // 3: LIT_RIGHT (Person 2 on Far Right holds the Sacred Flame)
+  // 4: SOARING_TO_SKY (Fireball rockets up from Person 2 to High Sky Center)
+  // 5: GRAND_BURST_30_YEARS (Fireworks Galaxy Burst & Golden 30th Anniversary Banner!)
+
   const [activeStep, setActiveStep] = useState(0);
   const [customTitle, setCustomTitle] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
 
-  // CONFIGURABLE PERSON NAMES (Received from Admin or LocalStorage)
-  const [personConfig, setPersonConfig] = useState([
-    { id: 1, name: 'Đại diện Ban Giám Hiệu', title: 'Thầy Cô & BGH (Khởi nguồn 1996)', sub: 'TRƯỜNG THPT CAO BÁ QUÁT' },
-    { id: 2, name: 'Đại diện Cựu Học Sinh Khóa 1', title: 'Khóa 1996 - 2000', sub: 'TIẾP NỐI KHÁT VỌNG' },
-    { id: 3, name: 'Đại diện Cựu HS Thập Kỷ Đầu', title: 'Khóa 2001 - 2010', sub: 'THẬP KỶ TRI THỨC' },
-    { id: 4, name: 'Đại diện Cựu HS Thập Kỷ Thứ Hai', title: 'Khóa 2011 - 2020', sub: 'VƯƠN XA & TRƯỞNG THÀNH' },
-    { id: 5, name: 'Đại diện Học Sinh Hiện Tại', title: 'Khóa 2023 - 2026', sub: 'THẮP SÁNG TƯƠNG LAI' }
+  // 2 PERSON CONFIGURATION (LEFT PERSON & RIGHT PERSON)
+  const [personsConfig, setPersonsConfig] = useState([
+    { id: 1, name: 'Đại diện Thế hệ Đi trước', title: 'Ban Giám Hiệu & Thầy Cô (1996)', sub: 'BÊN TRÁI SÂN SẤU', side: 'LEFT' },
+    { id: 2, name: 'Đại diện Thế hệ Tiếp nối', title: 'Học Sinh Hiện Tại (Khóa 2023 - 2026)', sub: 'BÊN PHẢI SÂN SẤU', side: 'RIGHT' }
   ]);
 
   const canvasRef = useRef(null);
   const audioRef = useRef(null);
   const flyProgressRef = useRef(0);
-
-  // 5 PHYSICAL STAGE NODES (Bottom Stage Positions)
-  const stageNodes = [
-    { id: 1, label: 'Vị Trí 01', color: '#ef4444', xRatio: 0.15, yRatio: 0.72 },
-    { id: 2, label: 'Vị Trí 02', color: '#f97316', xRatio: 0.32, yRatio: 0.72 },
-    { id: 3, label: 'Vị Trí 03', color: '#f59e0b', xRatio: 0.50, yRatio: 0.72 },
-    { id: 4, label: 'Vị Trí 04', color: '#eab308', xRatio: 0.68, yRatio: 0.72 },
-    { id: 5, label: 'Vị Trí 05', color: '#22c55e', xRatio: 0.85, yRatio: 0.72 }
-  ];
 
   // LISTEN TO SUPABASE REALTIME BROADCAST & LOCALSTORAGE
   useEffect(() => {
@@ -41,12 +38,12 @@ export default function StageLedTorch() {
           const { step, title, persons } = payload.payload;
           if (step !== undefined) triggerStepTransition(step);
           if (title !== undefined) setCustomTitle(title);
-          if (persons && Array.isArray(persons)) setPersonConfig(persons);
+          if (persons && Array.isArray(persons)) setPersonsConfig(persons);
         }
       })
       .on('broadcast', { event: 'TORCH_PERSONS_CONFIG_CHANGE' }, payload => {
         if (payload && payload.payload && payload.payload.persons) {
-          setPersonConfig(payload.payload.persons);
+          setPersonsConfig(payload.payload.persons);
         }
       })
       .subscribe((status) => {
@@ -65,14 +62,14 @@ export default function StageLedTorch() {
         const parsed = JSON.parse(local);
         if (parsed.step !== undefined) setActiveStep(parsed.step);
         if (parsed.title) setCustomTitle(parsed.title);
-        if (parsed.persons && Array.isArray(parsed.persons)) setPersonConfig(parsed.persons);
+        if (parsed.persons && Array.isArray(parsed.persons)) setPersonsConfig(parsed.persons);
       }
 
       const localPersons = localStorage.getItem('cbq_torch_persons_config');
       if (localPersons) {
         const parsedPersons = JSON.parse(localPersons);
-        if (Array.isArray(parsedPersons) && parsedPersons.length === 5) {
-          setPersonConfig(parsedPersons);
+        if (Array.isArray(parsedPersons) && parsedPersons.length >= 2) {
+          setPersonsConfig(parsedPersons);
         }
       }
     } catch (err) {
@@ -93,20 +90,14 @@ export default function StageLedTorch() {
     }
   }
 
-  // Determine current active person index (0 to 4) based on step
-  const getActivePersonIdx = () => {
-    if (activeStep === 1 || activeStep === 2) return 0;
-    if (activeStep === 3 || activeStep === 4) return 1;
-    if (activeStep === 5 || activeStep === 6) return 2;
-    if (activeStep === 7 || activeStep === 8) return 3;
-    if (activeStep === 9 || activeStep === 10) return 4;
-    return -1;
-  };
+  // Active Person: Step 1 & 2 -> Person Left (index 0); Step 3 & 4 -> Person Right (index 1)
+  const activePersonObj = (activeStep === 1 || activeStep === 2) 
+    ? personsConfig[0] 
+    : (activeStep === 3 || activeStep === 4) 
+    ? personsConfig[1] 
+    : null;
 
-  const activePersonIdx = getActivePersonIdx();
-  const activePersonObj = activePersonIdx !== -1 ? personConfig[activePersonIdx] : null;
-
-  // CANVAS RENDERING: GIANT CENTRAL FIRE CORE & FLYING ARCS
+  // CANVAS RENDERING: HIGH PARABOLIC FIREBALL FLIGHT FROM LEFT TO RIGHT
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -125,7 +116,6 @@ export default function StageLedTorch() {
     const particles = [];
     const trailParticles = [];
     const fireworkSparks = [];
-    const centralFlameParticles = [];
 
     // Ambient background particle
     class AmbientParticle {
@@ -155,38 +145,6 @@ export default function StageLedTorch() {
       }
     }
 
-    // Central Giant Flame Particle
-    class CentralFlameParticle {
-      constructor() { this.reset(); }
-      reset() {
-        this.x = width / 2 + (Math.random() - 0.5) * 140;
-        this.y = height * 0.42 + Math.random() * 40;
-        this.vx = (Math.random() - 0.5) * 3;
-        this.vy = -(Math.random() * 5 + 3);
-        this.radius = Math.random() * 12 + 5;
-        this.life = Math.random() * 50 + 30;
-        this.maxLife = this.life;
-        const colors = ['rgba(254, 240, 138, ', 'rgba(245, 158, 11, ', 'rgba(239, 68, 68, ', 'rgba(225, 29, 72, '];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        this.radius *= 0.96;
-        this.life--;
-        if (this.life <= 0) this.reset();
-      }
-      draw() {
-        const opacity = Math.max(0, this.life / this.maxLife);
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, Math.max(0.5, this.radius), 0, Math.PI * 2);
-        ctx.fillStyle = `${this.color}${opacity})`;
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = '#f59e0b';
-        ctx.fill();
-      }
-    }
-
     // Flying Fireball Trail Particle
     class TrailParticle {
       constructor(x, y, vx, vy, size) {
@@ -195,13 +153,13 @@ export default function StageLedTorch() {
         this.vx = vx + (Math.random() - 0.5) * 3;
         this.vy = vy + (Math.random() - 0.5) * 3;
         this.radius = size * (Math.random() * 0.6 + 0.4);
-        this.life = Math.random() * 30 + 20;
+        this.life = Math.random() * 35 + 20;
         this.maxLife = this.life;
       }
       update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.radius *= 0.95;
+        this.radius *= 0.94;
         this.life--;
       }
       draw() {
@@ -210,7 +168,7 @@ export default function StageLedTorch() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, Math.max(0.5, this.radius), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(254, 240, 138, ${opacity})`;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 15;
         ctx.shadowColor = '#f59e0b';
         ctx.fill();
       }
@@ -250,18 +208,17 @@ export default function StageLedTorch() {
     }
 
     for (let i = 0; i < 90; i++) particles.push(new AmbientParticle());
-    for (let i = 0; i < 70; i++) centralFlameParticles.push(new CentralFlameParticle());
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Radial Stage Glow Background
+      // Radial Stage Background
       const bgGrad = ctx.createRadialGradient(
         width / 2, height / 2, 80,
         width / 2, height / 2, width / 1.1
       );
 
-      if (activeStep >= 10) {
+      if (activeStep >= 4) {
         bgGrad.addColorStop(0, 'rgba(180, 83, 9, 0.55)');
         bgGrad.addColorStop(0.5, 'rgba(153, 27, 27, 0.45)');
         bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
@@ -279,69 +236,79 @@ export default function StageLedTorch() {
       // Render Ambient Particles
       particles.forEach(p => { p.update(); p.draw(); });
 
-      // RENDER GIANT CENTRAL SACRED FLAME WHEN A PERSON HOLDS TORCH (STEPS 1 TO 9)
-      if (activeStep > 0 && activeStep < 10) {
-        centralFlameParticles.forEach(p => { p.update(); p.draw(); });
-      }
-
-      // HORIZONTAL FLYING FIREBALL ARC (Person 1 -> 2 -> 3 -> 4 -> 5)
-      let flyingFromIdx = -1;
-      let flyingToIdx = -1;
-
-      if (activeStep === 2) { flyingFromIdx = 0; flyingToIdx = 1; }
-      else if (activeStep === 4) { flyingFromIdx = 1; flyingToIdx = 2; }
-      else if (activeStep === 6) { flyingFromIdx = 2; flyingToIdx = 3; }
-      else if (activeStep === 8) { flyingFromIdx = 3; flyingToIdx = 4; }
-
-      if (flyingFromIdx !== -1 && flyingToIdx !== -1) {
+      // ----------------------------------------------------
+      // HIGH PARABOLIC FIREBALL FLIGHT FROM FAR LEFT (PERSON 1) TO FAR RIGHT (PERSON 2)
+      // ----------------------------------------------------
+      if (activeStep === 2) {
         if (flyProgressRef.current < 1.0) {
-          flyProgressRef.current += 0.018;
+          flyProgressRef.current += 0.015; // ~2.2 seconds spectacular flight
           if (flyProgressRef.current >= 1.0) {
             flyProgressRef.current = 1.0;
-            const nextLitStep = activeStep + 1;
-            setActiveStep(nextLitStep);
+            // Arrive at Right Person!
+            setActiveStep(3);
             playAudioFx();
           }
         }
 
         const t = flyProgressRef.current;
-        const p0 = { x: stageNodes[flyingFromIdx].xRatio * width, y: stageNodes[flyingFromIdx].yRatio * height - 40 };
-        const p1 = { x: stageNodes[flyingToIdx].xRatio * width, y: stageNodes[flyingToIdx].yRatio * height - 40 };
-        const pCtrl = { x: (p0.x + p1.x) / 2, y: Math.min(p0.y, p1.y) - 150 };
+        // Left Person position (15% width, 65% height) -> Right Person position (85% width, 65% height)
+        const pLeft = { x: width * 0.15, y: height * 0.65 - 50 };
+        const pRight = { x: width * 0.85, y: height * 0.65 - 50 };
+        const pControlHigh = { x: width / 2, y: height * 0.12 }; // SOARING HIGH UP IN THE SKY!
 
-        const currX = (1 - t) * (1 - t) * p0.x + 2 * (1 - t) * t * pCtrl.x + t * t * p1.x;
-        const currY = (1 - t) * (1 - t) * p0.y + 2 * (1 - t) * t * pCtrl.y + t * t * p1.y;
+        // Quadratic Bezier Arc Formula
+        const currX = (1 - t) * (1 - t) * pLeft.x + 2 * (1 - t) * t * pControlHigh.x + t * t * pRight.x;
+        const currY = (1 - t) * (1 - t) * pLeft.y + 2 * (1 - t) * t * pControlHigh.y + t * t * pRight.y;
 
-        const vx = 2 * (1 - t) * (pCtrl.x - p0.x) + 2 * t * (p1.x - pCtrl.x);
-        const vy = 2 * (1 - t) * (pCtrl.y - p0.y) + 2 * t * (p1.y - pCtrl.y);
+        const vx = 2 * (1 - t) * (pControlHigh.x - pLeft.x) + 2 * t * (pRight.x - pControlHigh.x);
+        const vy = 2 * (1 - t) * (pControlHigh.y - pLeft.y) + 2 * t * (pRight.y - pControlHigh.y);
         const norm = Math.hypot(vx, vy) || 1;
 
-        for (let i = 0; i < 6; i++) {
+        // Trail particles
+        for (let i = 0; i < 8; i++) {
           trailParticles.push(new TrailParticle(
-            currX + (Math.random() - 0.5) * 12,
-            currY + (Math.random() - 0.5) * 12,
-            -(vx / norm) * (Math.random() * 3 + 1),
-            -(vy / norm) * (Math.random() * 3 + 1),
-            Math.random() * 10 + 6
+            currX + (Math.random() - 0.5) * 16,
+            currY + (Math.random() - 0.5) * 16,
+            -(vx / norm) * (Math.random() * 4 + 1),
+            -(vy / norm) * (Math.random() * 4 + 1),
+            Math.random() * 12 + 7
           ));
         }
 
+        // Draw High Arc Guide Curve (Glow Dotted Arc across sky)
         ctx.beginPath();
-        ctx.arc(currX, currY, 20, 0, Math.PI * 2);
+        ctx.moveTo(pLeft.x, pLeft.y);
+        ctx.quadraticCurveTo(pControlHigh.x, pControlHigh.y, pRight.x, pRight.y);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+        ctx.lineWidth = 4;
+        ctx.setLineDash([10, 10]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Giant Flying Fireball Head
+        ctx.beginPath();
+        ctx.arc(currX, currY, 24, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 35;
+        ctx.shadowBlur = 45;
         ctx.shadowColor = '#f59e0b';
+        ctx.fill();
+
+        ctx.beginPath();
+        ctx.arc(currX, currY, 36, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.5)';
         ctx.fill();
       }
 
-      // STEP 10 & 11: SOARING TO SKY & CONTINUOUS FIREWORKS
-      if (activeStep === 10 || activeStep === 11) {
-        if (activeStep === 10) {
+      // ----------------------------------------------------
+      // STEP 4 & 5: SOARING TO SKY & CONTINUOUS FIREWORKS
+      // ----------------------------------------------------
+      if (activeStep === 4 || activeStep === 5) {
+        if (activeStep === 4) {
           if (flyProgressRef.current < 1.0) {
             flyProgressRef.current += 0.025;
             if (flyProgressRef.current >= 1.0) {
               flyProgressRef.current = 1.0;
-              setActiveStep(11);
+              setActiveStep(5);
               playAudioFx();
             }
           }
@@ -350,12 +317,12 @@ export default function StageLedTorch() {
         }
 
         const t = flyProgressRef.current;
-        const pStart = { x: stageNodes[4].xRatio * width, y: stageNodes[4].yRatio * height - 40 };
+        const pStartRight = { x: width * 0.85, y: height * 0.65 - 50 };
         const pSky = { x: width / 2, y: height * 0.20 };
-        const pSkyCtrl = { x: (pStart.x + pSky.x) / 2 + 60, y: Math.min(pStart.y, pSky.y) - 60 };
+        const pSkyCtrl = { x: (pStartRight.x + pSky.x) / 2 + 50, y: Math.min(pStartRight.y, pSky.y) - 60 };
 
-        const soarX = (1 - t) * (1 - t) * pStart.x + 2 * (1 - t) * t * pSkyCtrl.x + t * t * pSky.x;
-        const soarY = (1 - t) * (1 - t) * pStart.y + 2 * (1 - t) * t * pSkyCtrl.y + t * t * pSky.y;
+        const soarX = (1 - t) * (1 - t) * pStartRight.x + 2 * (1 - t) * t * pSkyCtrl.x + t * t * pSky.x;
+        const soarY = (1 - t) * (1 - t) * pStartRight.y + 2 * (1 - t) * t * pSkyCtrl.y + t * t * pSky.y;
 
         if (t < 1.0) {
           for (let i = 0; i < 8; i++) {
@@ -376,7 +343,7 @@ export default function StageLedTorch() {
           ctx.fill();
         }
 
-        if (activeStep === 11) {
+        if (activeStep === 5) {
           for (let i = 0; i < 4; i++) {
             const rx = width / 2 + (Math.random() - 0.5) * (width * 0.4);
             const ry = height * 0.22 + (Math.random() - 0.5) * 100;
@@ -412,7 +379,7 @@ export default function StageLedTorch() {
   }, [activeStep]);
 
   const toggleFullScreen = () => {
-    if (!document.fullscreenElement) {
+    if (!documentfullscreenElement) {
       document.documentElement.requestFullscreen().catch(() => {});
       setIsFullScreen(true);
     } else {
@@ -423,28 +390,16 @@ export default function StageLedTorch() {
     }
   };
 
-  const isNodeLit = (nodeId) => {
-    if (activeStep >= 11) return true; // BURST ALL AT GRAND FINALE
-    if (nodeId === 1 && (activeStep === 1 || activeStep === 2)) return true;
-    if (nodeId === 2 && (activeStep === 3 || activeStep === 4)) return true;
-    if (nodeId === 3 && (activeStep === 5 || activeStep === 6)) return true;
-    if (nodeId === 4 && (activeStep === 7 || activeStep === 8)) return true;
-    if (nodeId === 5 && (activeStep === 9 || activeStep === 10)) return true;
-    return false;
-  };
+  const isLeftLit = activeStep === 1 || activeStep === 2 || activeStep >= 5;
+  const isRightLit = activeStep === 3 || activeStep === 4 || activeStep >= 5;
 
   return (
     <div style={styles.stageContainer}>
       <style>{`
         @keyframes flamePulse {
-          0% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.8)); }
-          50% { transform: scale(1.15); filter: drop-shadow(0 0 45px rgba(239, 68, 68, 0.95)); }
-          100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.8)); }
-        }
-        @keyframes centerFlameGlow {
-          0% { transform: scale(1); filter: drop-shadow(0 0 35px rgba(245, 158, 11, 0.9)); }
-          50% { transform: scale(1.08); filter: drop-shadow(0 0 65px rgba(239, 68, 68, 1)); }
-          100% { transform: scale(1); filter: drop-shadow(0 0 35px rgba(245, 158, 11, 0.9)); }
+          0% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.9)); }
+          50% { transform: scale(1.15); filter: drop-shadow(0 0 50px rgba(239, 68, 68, 1)); }
+          100% { transform: scale(1); filter: drop-shadow(0 0 25px rgba(245, 158, 11, 0.9)); }
         }
         @keyframes bannerScaleUp {
           0% { transform: scale(0.6) translateY(30px); opacity: 0; }
@@ -460,7 +415,7 @@ export default function StageLedTorch() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
           <Radio size={16} color={isConnected ? '#22c55e' : '#ef4444'} />
           <span>Sân khấu LED Realtime: <strong style={{ color: isConnected ? '#4ade80' : '#f87171' }}>{isConnected ? 'ONLINE' : 'OFFLINE'}</strong></span>
-          <span style={{ marginLeft: '15px', color: '#fef08a', fontWeight: 'bold' }}>• STEP: {activeStep} / 11</span>
+          <span style={{ marginLeft: '15px', color: '#fef08a', fontWeight: 'bold' }}>• TRẠNG THÁI: STEP {activeStep} / 5</span>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={() => setSoundEnabled(!soundEnabled)} style={styles.topBtn}>
@@ -477,8 +432,8 @@ export default function StageLedTorch() {
         
         {/* TOP TITLE BANNER */}
         <div style={{ textAlign: 'center', marginTop: '10px', zIndex: 30, position: 'relative' }}>
-          {activeStep >= 10 ? (
-            /* GRAND ANNIVERSARY FINALE BANNER (STEP 10 & 11) */
+          {activeStep >= 4 ? (
+            /* GRAND ANNIVERSARY FINALE BANNER (STEP 4 & 5) */
             <div style={{ animation: 'bannerScaleUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards' }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '8px 24px', borderRadius: '30px', backgroundColor: '#be123c', border: '2px solid #fef08a', boxShadow: '0 0 35px rgba(245, 158, 11, 0.8)', marginBottom: '12px' }}>
                 <Trophy size={22} color="#fef08a" />
@@ -487,7 +442,7 @@ export default function StageLedTorch() {
                 </span>
               </div>
 
-              <h1 style={{ margin: '6px 0', fontSize: '44px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 35px rgba(245, 158, 11, 0.9), 0 3px 12px rgba(0,0,0,0.95)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+              <h1 style={{ margin: '6px 0', fontSize: '46px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 35px rgba(245, 158, 11, 0.9), 0 3px 12px rgba(0,0,0,0.95)', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
                 {customTitle || 'CHÀO MỪNG ĐẠI LỄ KỶ NIỆM 30 NĂM THÀNH LẬP'}
               </h1>
               
@@ -496,15 +451,16 @@ export default function StageLedTorch() {
               </div>
             </div>
           ) : (
-            /* STANDARD STAGE HEADER BANNER (STEPS 0 - 9) */
+            /* STANDARD STAGE HEADER BANNER */
             <div>
-              <div style={{ fontSize: '13.5px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', color: '#fef08a', textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '3px', color: '#fef08a', textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
                 TRƯỜNG THPT CAO BÁ QUÁT • 30 NĂM PHÁT TRIỂN & CHẮP CÁNH MƠ ƯỚC
               </div>
               <h1 style={styles.mainTitle}>
                 {customTitle || (
-                  activeStep % 2 === 0 && activeStep > 0 ? '🚀 NGỌN LỬA THIÊNG ĐANG VÚT BAY TRAO NỐI TÍẾP...' :
-                  activeStep > 0 ? '🔥 NGHI THỨC TRUYỀN LỬA THẾ HỆ THẦY & TRÒ' :
+                  activeStep === 2 ? '🚀 CẦU LỬA THIÊNG VÚT BAY CAO TỪ BÊN TRÁI SANG BÊN PHẢI...' :
+                  activeStep === 1 ? '🔥 NGỌN LỬA KHỜI NGUỒN BÙNG CHÁY BÊN TRÁI SÂN SẤU' :
+                  activeStep === 3 ? '🔥 NGUYỄN VĂN B BÊN PHẢI ĐÃ NHẬN NGỌN LỬA THIÊNG!' :
                   'NGHI THỨC TRUYỀN LỬA THẾ HỆ (1996 - 2026)'
                 )}
               </h1>
@@ -512,88 +468,79 @@ export default function StageLedTorch() {
           )}
         </div>
 
-        {/* GIANT CENTRAL ERUPTING FLAME & ACTIVE PERSON HONOR BANNER (STEPS 1 - 9) */}
-        {activePersonObj && activeStep < 10 && (
-          <div style={{ textAlign: 'center', margin: 'auto 0', zIndex: 25, position: 'relative', animation: 'bannerScaleUp 0.6s ease' }}>
+        {/* 2 MAIN PERSON CARDS MAPPED TO STAGE LEFT & RIGHT POSITIONS */}
+        <div style={styles.dualStageContainer}>
+          
+          {/* PERSON 1: FAR LEFT OF STAGE */}
+          <div style={{
+            ...styles.personStageCard,
+            border: isLeftLit ? '3px solid #f59e0b' : '1.5px solid rgba(255,255,255,0.15)',
+            backgroundColor: isLeftLit ? 'rgba(185, 28, 28, 0.85)' : 'rgba(15, 23, 42, 0.75)',
+            boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
+            transform: isLeftLit ? 'scale(1.08)' : 'scale(0.96)'
+          }}>
+            <div style={{ animation: isLeftLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
+              <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isLeftLit ? 'rgba(239,68,68,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
+                <Flame size={isLeftLit ? 60 : 36} color={isLeftLit ? '#fef08a' : 'rgba(255,255,255,0.3)'} />
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', fontWeight: '900', color: isLeftLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+              {isLeftLit ? '🔥 BÊN TRÁI SÂN SẤU (ĐANG GIỮ LỬA)' : '📍 NGƯỜI TRAO LỬA (BÊN TRÁI)'}
+            </div>
             
-            {/* GIANT CENTRAL FLAME ICON */}
-            <div style={{ animation: 'centerFlameGlow 2s ease-in-out infinite', display: 'inline-block', marginBottom: '16px' }}>
-              <div style={{ padding: '24px', borderRadius: '50%', backgroundColor: 'rgba(185, 28, 28, 0.6)', border: '4px solid #fef08a', boxShadow: '0 0 60px rgba(245, 158, 11, 0.95)' }}>
-                <Flame size={95} color="#fef08a" />
-              </div>
+            <h2 style={{ margin: '4px 0', fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>
+              {personsConfig[0]?.name || 'Đại diện Thế hệ Đi trước'}
+            </h2>
+
+            <div style={{ fontSize: '13.5px', color: isLeftLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
+              {personsConfig[0]?.title || 'Ban Giám Hiệu & Thầy Cô (1996)'}
             </div>
-
-            {/* PERSON HONOR BADGE & NAME */}
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 18px', borderRadius: '20px', backgroundColor: 'rgba(185, 28, 28, 0.85)', border: '1.5px solid #fef08a', marginBottom: '8px' }}>
-                <span style={{ fontSize: '13px', fontWeight: '900', color: '#fef08a', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                  🔥 NGƯỜI ĐANG GIỮ NGỌN LỬA THIÊNG (VỊ TRÍ 0{activePersonObj.id})
-                </span>
-              </div>
-
-              <h2 style={{ margin: '4px 0', fontSize: '40px', fontWeight: '900', color: '#ffffff', textShadow: '0 0 30px rgba(245, 158, 11, 0.9), 0 3px 10px rgba(0,0,0,0.9)', letterSpacing: '1px' }}>
-                {activePersonObj.name}
-              </h2>
-
-              <div style={{ fontSize: '20px', fontWeight: '800', color: '#fef08a', textShadow: '0 2px 10px rgba(0,0,0,0.9)' }}>
-                {activePersonObj.title} {activePersonObj.sub ? `• ${activePersonObj.sub}` : ''}
-              </div>
-            </div>
-
           </div>
-        )}
 
-        {/* 5 PHYSICAL STAGE NODES (MAPPED TO STAGE STANDING POSITIONS AT BOTTOM) */}
-        <div style={styles.nodesContainer}>
-          {stageNodes.map((node) => {
-            const lit = isNodeLit(node.id);
-            const personInfo = personConfig[node.id - 1];
-
-            return (
-              <div key={node.id} style={styles.nodeItemWrapper}>
-                
-                {/* FLAME BADGE ABOVE PERSON */}
-                <div style={{
-                  ...styles.flameCircle,
-                  backgroundColor: lit ? 'rgba(185, 28, 28, 0.55)' : 'rgba(30, 41, 59, 0.5)',
-                  borderColor: lit ? '#f59e0b' : 'rgba(255,255,255,0.2)',
-                  boxShadow: lit ? `0 0 35px ${node.color}` : 'none',
-                  animation: lit ? 'flamePulse 2s ease-in-out infinite' : 'none'
-                }}>
-                  {lit ? (
-                    <Flame size={44} color="#fef08a" />
-                  ) : (
-                    <Flame size={30} color="rgba(255,255,255,0.25)" />
-                  )}
-                </div>
-
-                {/* PERSON STAGE POSITION LABEL CARD */}
-                <div style={{
-                  ...styles.nodeLabelCard,
-                  backgroundColor: lit ? 'rgba(185, 28, 28, 0.9)' : 'rgba(15, 23, 42, 0.75)',
-                  borderColor: lit ? '#fef08a' : 'rgba(255,255,255,0.15)',
-                  transform: lit ? 'scale(1.05)' : 'scale(1)'
-                }}>
-                  <div style={{ fontSize: '10.5px', fontWeight: 'bold', color: lit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase' }}>
-                    {lit ? '🔥 ĐANG GIỮ LỬA' : `VỊ TRÍ 0${node.id}`}
-                  </div>
-                  <h4 style={{ margin: '3px 0 2px 0', fontSize: '13.5px', fontWeight: '900', color: '#ffffff' }}>
-                    {personInfo?.name || node.label}
-                  </h4>
-                  <div style={{ fontSize: '11px', color: lit ? '#fef3c7' : '#cbd5e1' }}>
-                    {personInfo?.title || ''}
-                  </div>
-                </div>
-
+          {/* FLYING ARROW INDICATOR IN CENTER */}
+          {activeStep === 2 && (
+            <div style={{ textAlign: 'center', animation: 'bannerScaleUp 0.5s ease' }}>
+              <div style={{ fontSize: '16px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 20px #f59e0b', marginBottom: '6px' }}>
+                🚀 CẦU LỬA ĐANG BAY TRÊN CAO...
               </div>
-            );
-          })}
+              <ArrowRight size={50} color="#fef08a" />
+            </div>
+          )}
+
+          {/* PERSON 2: FAR RIGHT OF STAGE */}
+          <div style={{
+            ...styles.personStageCard,
+            border: isRightLit ? '3px solid #22c55e' : '1.5px solid rgba(255,255,255,0.15)',
+            backgroundColor: isRightLit ? 'rgba(22, 101, 52, 0.85)' : 'rgba(15, 23, 42, 0.75)',
+            boxShadow: isRightLit ? '0 0 50px rgba(34, 197, 94, 0.8)' : 'none',
+            transform: isRightLit ? 'scale(1.08)' : 'scale(0.96)'
+          }}>
+            <div style={{ animation: isRightLit ? 'flamePulse 2s ease-in-out infinite' : 'none', marginBottom: '12px' }}>
+              <div style={{ padding: '20px', borderRadius: '50%', backgroundColor: isRightLit ? 'rgba(34,197,94,0.5)' : 'rgba(30,41,59,0.5)', border: '3px solid #fef08a', display: 'inline-flex' }}>
+                <Flame size={isRightLit ? 60 : 36} color={isRightLit ? '#fef08a' : 'rgba(255,255,255,0.3)'} />
+              </div>
+            </div>
+
+            <div style={{ fontSize: '12px', fontWeight: '900', color: isRightLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+              {isRightLit ? '🔥 BÊN PHẢI SÂN SẤU (ĐÃ NHẬN LỬA)' : '📍 NGƯỜI NHẬN LỬA (BÊN PHẢI)'}
+            </div>
+
+            <h2 style={{ margin: '4px 0', fontSize: '26px', fontWeight: '900', color: '#ffffff' }}>
+              {personsConfig[1]?.name || 'Đại diện Thế hệ Tiếp nối'}
+            </h2>
+
+            <div style={{ fontSize: '13.5px', color: isRightLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
+              {personsConfig[1]?.title || 'Học Sinh Hiện Tại (Khóa 2023 - 2026)'}
+            </div>
+          </div>
+
         </div>
 
         {/* FOOTER STAGE MESSAGE */}
         <div style={styles.stageFooter}>
           <div style={{ fontSize: '19px', fontWeight: '900', color: '#fef08a', textShadow: '0 2px 14px rgba(0,0,0,0.9)', letterSpacing: '1px' }}>
-            {activeStep >= 10 
+            {activeStep >= 4 
               ? '🎉 CHÀO MỪNG ĐẠI LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT!' 
               : '🔥 THẮP SÁNG TRI THỨC • VƯƠNG TẦM KHÁT VỌNG • VỮNG BƯỚC TƯƠNG LAI'}
           </div>
@@ -657,7 +604,7 @@ const styles = {
     flexDirection: 'column',
     justify: 'space-between',
     alignItems: 'center',
-    padding: '16px 20px',
+    padding: '20px',
     boxSizing: 'border-box'
   },
   mainTitle: {
@@ -669,41 +616,23 @@ const styles = {
     letterSpacing: '1.2px',
     textTransform: 'uppercase'
   },
-  nodesContainer: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(5, 1fr)',
-    gap: '14px',
-    width: '100%',
-    maxWidth: '1350px',
-    margin: '10px 0',
-    padding: '0 10px'
-  },
-  nodeItemWrapper: {
+  dualStageContainer: {
     display: 'flex',
-    flexDirection: 'column',
+    justify: 'space-between',
     alignItems: 'center',
-    justify: 'center'
-  },
-  flameCircle: {
-    width: '80px',
-    height: '80px',
-    borderRadius: '50%',
-    border: '3px solid',
-    display: 'flex',
-    alignItems: 'center',
-    justify: 'center',
-    marginBottom: '10px',
-    backdropFilter: 'blur(6px)',
-    transition: 'all 0.5s ease'
-  },
-  nodeLabelCard: {
     width: '100%',
-    borderRadius: '12px',
-    padding: '10px 8px',
-    border: '1.5px solid',
+    maxWidth: '1250px',
+    margin: 'auto 0',
+    padding: '0 20px',
+    boxSizing: 'border-box'
+  },
+  personStageCard: {
+    width: '420px',
+    borderRadius: '20px',
+    padding: '28px 24px',
     textAlign: 'center',
-    backdropFilter: 'blur(10px)',
-    transition: 'all 0.5s ease'
+    backdropFilter: 'blur(12px)',
+    transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
   },
   stageFooter: {
     textAlign: 'center',
