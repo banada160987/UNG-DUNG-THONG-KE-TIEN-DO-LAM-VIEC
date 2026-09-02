@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase, logActivity } from '../lib/supabase';
-import { Flame, Sparkles, Radio, Zap, RefreshCw, Trophy, ExternalLink, ShieldCheck, Play, ArrowRight, FastForward, RotateCcw } from 'lucide-react';
+import { Flame, Sparkles, Radio, Zap, ExternalLink, FastForward, RotateCcw, Rocket } from 'lucide-react';
 
 export default function AdminTorchControl() {
   const [activeStep, setActiveStep] = useState(0);
@@ -20,7 +20,8 @@ export default function AdminTorchControl() {
     { step: 7, title: '🔥 Thắp Lửa Vị Trí 4 (Khóa 2011-2020)', desc: 'Người 4 nhận đuốc & thắp sáng vị trí.' },
     { step: 8, title: '🚀 Bay Lửa: Vị trí 4 ➔ Vị trí 5', desc: 'Cầu lửa thiêng bay sang Người 5 (Học Sinh Hiện Tại).' },
     { step: 9, title: '🔥 Thắp Lửa Vị Trí 5 (Học Sinh 2023-2026)', desc: 'Đại diện học sinh hiện tại nâng cao ngọn đuốc.' },
-    { step: 10, title: '🌟 BÙNG NỔ NGỌN LỬA 30 NĂM TẤT CẢ VỊ TRÍ 🎉', desc: 'Toàn bộ 5 vị trí cùng bùng nổ pháo hoa & chúc mừng!' }
+    { step: 10, title: '🚀 BAY LÊN TRỜI CAO (Fireball Soars to Sky)', desc: 'Cầu lửa từ tay Người 5 vút bay cao vút lên giữa bầu trời LED.' },
+    { step: 11, title: '🎉 CHÀO MỪNG ĐẠI LỄ KỶ NIỆM 30 NĂM (GRAND CLIMAX)', desc: 'Nổ pháo hoa rực rỡ & hiện Biểu tượng Vàng 30 Năm THPT Cao Bá Quát!' }
   ];
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function AdminTorchControl() {
         payload
       });
 
-      await logActivity('torch_stage', 'LED_STAGE_ARC', String(targetStep), 'UPDATE', 'admin', `Kích hoạt bước nghi thức truyền lửa: Step ${targetStep}`);
+      await logActivity('torch_stage', 'LED_STAGE_GRAND', String(targetStep), 'UPDATE', 'admin', `Trình chiếu màn LED ngọn lửa: Step ${targetStep}`);
     } catch (err) {
       console.warn("Lỗi phát sóng:", err);
     } finally {
@@ -66,7 +67,7 @@ export default function AdminTorchControl() {
   };
 
   const handleNextStep = () => {
-    if (activeStep < 10) {
+    if (activeStep < 11) {
       sendStepTrigger(activeStep + 1);
     }
   };
@@ -83,7 +84,7 @@ export default function AdminTorchControl() {
                 <Flame size={26} color="#be123c" /> Bàn Điều Khiển Cầu Lửa Bay Nối Tiếp Sân Sấu
               </h2>
               <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-                Điều khiển hiệu ứng Cầu lửa vút bay qua 5 vị trí Thầy Cô & Học sinh đứng trên sân khấu
+                Điều khiển hiệu ứng Cầu lửa vút bay qua 5 vị trí Thầy Cô & Học sinh ➔ Vút bay lên trời cao ➔ Hiện biểu trưng ĐẠI LỄ 30 NĂM
               </p>
             </div>
 
@@ -101,7 +102,7 @@ export default function AdminTorchControl() {
           <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
             <div style={{ fontSize: '13.5px', color: '#334155' }}>
               <Radio size={16} color="#166534" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-              Kênh điều khiển: <strong style={{ color: '#166534' }}>{channelStatus}</strong> | Bước hiện tại: <strong style={{ color: '#be123c', fontSize: '15px' }}>STEP {activeStep} / 10</strong>
+              Kênh điều khiển: <strong style={{ color: '#166534' }}>{channelStatus}</strong> | Trạng thái: <strong style={{ color: '#be123c', fontSize: '15px' }}>STEP {activeStep} / 11</strong>
             </div>
 
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -114,7 +115,7 @@ export default function AdminTorchControl() {
 
               <button 
                 onClick={handleNextStep}
-                disabled={activeStep >= 10 || isBroadcasting}
+                disabled={activeStep >= 11 || isBroadcasting}
                 style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#166534', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.3)' }}
               >
                 <FastForward size={16} /> BƯỚC TIẾP THEO (STEP {activeStep + 1}) ➔
@@ -123,17 +124,18 @@ export default function AdminTorchControl() {
           </div>
         </div>
 
-        {/* 10 DETAILED STAGE STEP BUTTONS */}
+        {/* 11 DETAILED STAGE STEP BUTTONS */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
           <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Zap size={20} color="#f59e0b" /> Tiến Trình Kịch Bản Truyền Lửa Sân Sấu (10 Bước)
+            <Zap size={20} color="#f59e0b" /> Tiến Trình Kịch Bản Truyền Lửa Sân Sấu (11 Bước Đỉnh Cao)
           </h3>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginTop: '16px' }}>
             {stepsList.map((st) => {
               const isActive = activeStep === st.step;
               const isFlyingStep = st.step % 2 === 0 && st.step > 0 && st.step < 10;
-              const isBurstStep = st.step === 10;
+              const isSoarStep = st.step === 10;
+              const isGrandClimax = st.step === 11;
 
               return (
                 <div 
@@ -143,8 +145,8 @@ export default function AdminTorchControl() {
                     padding: '14px 16px',
                     borderRadius: '12px',
                     border: '2px solid',
-                    borderColor: isActive ? (isBurstStep ? '#be123c' : isFlyingStep ? '#0284c7' : '#f59e0b') : '#e2e8f0',
-                    backgroundColor: isActive ? (isBurstStep ? '#fff1f2' : isFlyingStep ? '#f0f9ff' : '#fffbeb') : '#ffffff',
+                    borderColor: isActive ? (isGrandClimax ? '#be123c' : isSoarStep ? '#d97706' : isFlyingStep ? '#0284c7' : '#f59e0b') : '#e2e8f0',
+                    backgroundColor: isActive ? (isGrandClimax ? '#fff1f2' : isSoarStep ? '#fffbebfb' : isFlyingStep ? '#f0f9ff' : '#fffbeb') : '#ffffff',
                     cursor: 'pointer',
                     transition: 'all 0.2s ease',
                     boxShadow: isActive ? '0 4px 15px rgba(0,0,0,0.08)' : 'none'
