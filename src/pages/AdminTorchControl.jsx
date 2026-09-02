@@ -1,39 +1,41 @@
 import { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import { supabase, logActivity } from '../lib/supabase';
-import { Flame, Sparkles, Radio, Zap, RefreshCw, Trophy, ExternalLink, ShieldCheck, Play, Layers } from 'lucide-react';
+import { Flame, Sparkles, Radio, Zap, RefreshCw, Trophy, ExternalLink, ShieldCheck, Play, ArrowRight, FastForward, RotateCcw } from 'lucide-react';
 
 export default function AdminTorchControl() {
-  const [currentState, setCurrentState] = useState('idle');
-  const [currentCohort, setCurrentCohort] = useState('ALL');
+  const [activeStep, setActiveStep] = useState(0);
   const [customTitleInput, setCustomTitleInput] = useState('');
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [channelStatus, setChannelStatus] = useState('Connecting...');
 
-  // COHORTS FOR STAGE CONTROL
-  const cohorts = [
-    { key: 'ALL', label: 'Tất cả các Khóa (Tự động)' },
-    { key: '1996-2000', label: 'Khóa 1 (1996 - 2000)' },
-    { key: '2001-2010', label: 'Thập kỷ Đầu (2001 - 2010)' },
-    { key: '2011-2020', label: 'Thập kỷ Thứ hai (2011 - 2020)' },
-    { key: '2021-2026', label: 'Khóa Hiện tại (2021 - 2026)' }
+  const stepsList = [
+    { step: 0, title: '💤 Màn Hình Chờ Sân Sấu', desc: 'Sẵn sàng vị trí 5 người đứng trên sân khấu.' },
+    { step: 1, title: '🔥 Thắp Lửa Vị Trí 1 (BGH / Thầy Cô)', desc: 'Ngọn lửa đầu tiên bùng sáng trên tay Người 1.' },
+    { step: 2, title: '🚀 Bay Lửa: Vị trí 1 ➔ Vị trí 2', desc: 'Cầu lửa thiêng cuộn vệt hào quang bay từ Người 1 sang Người 2.' },
+    { step: 3, title: '🔥 Thắp Lửa Vị Trí 2 (Khóa 1996-2000)', desc: 'Người 2 nhận đuốc & thắp sáng vị trí.' },
+    { step: 4, title: '🚀 Bay Lửa: Vị trí 2 ➔ Vị trí 3', desc: 'Cầu lửa thiêng bay tiếp từ Người 2 sang Người 3.' },
+    { step: 5, title: '🔥 Thắp Lửa Vị Trí 3 (Khóa 2001-2010)', desc: 'Người 3 nhận đuốc & thắp sáng vị trí.' },
+    { step: 6, title: '🚀 Bay Lửa: Vị trí 3 ➔ Vị trí 4', desc: 'Cầu lửa thiêng bay từ Người 3 sang Người 4.' },
+    { step: 7, title: '🔥 Thắp Lửa Vị Trí 4 (Khóa 2011-2020)', desc: 'Người 4 nhận đuốc & thắp sáng vị trí.' },
+    { step: 8, title: '🚀 Bay Lửa: Vị trí 4 ➔ Vị trí 5', desc: 'Cầu lửa thiêng bay sang Người 5 (Học Sinh Hiện Tại).' },
+    { step: 9, title: '🔥 Thắp Lửa Vị Trí 5 (Học Sinh 2023-2026)', desc: 'Đại diện học sinh hiện tại nâng cao ngọn đuốc.' },
+    { step: 10, title: '🌟 BÙNG NỔ NGỌN LỬA 30 NĂM TẤT CẢ VỊ TRÍ 🎉', desc: 'Toàn bộ 5 vị trí cùng bùng nổ pháo hoa & chúc mừng!' }
   ];
 
   useEffect(() => {
-    // Read local initial
     try {
-      const local = localStorage.getItem('cbq_torch_current_state');
+      const local = localStorage.getItem('cbq_torch_current_step');
       if (local) {
         const parsed = JSON.parse(local);
-        if (parsed.state) setCurrentState(parsed.state);
-        if (parsed.cohort) setCurrentCohort(parsed.cohort);
+        if (parsed.step !== undefined) setActiveStep(parsed.step);
         if (parsed.title) setCustomTitleInput(parsed.title);
       }
     } catch {}
 
     const channel = supabase.channel('cbq_torch_stage_channel');
     channel.subscribe((status) => {
-      setChannelStatus(status === 'SUBSCRIBED' ? 'SẴN SÀNG ĐIỀU KHIỂN (REALTIME)' : status);
+      setChannelStatus(status === 'SUBSCRIBED' ? 'ONLINE REALTIME SẴN SÀNG' : status);
     });
 
     return () => {
@@ -41,50 +43,50 @@ export default function AdminTorchControl() {
     };
   }, []);
 
-  // BROADCAST STATE CHANGE TO STAGE LED SCREEN
-  const sendTorchTrigger = async (state, cohort = currentCohort, title = customTitleInput) => {
+  const sendStepTrigger = async (targetStep, title = customTitleInput) => {
     setIsBroadcasting(true);
-    setCurrentState(state);
-    setCurrentCohort(cohort);
+    setActiveStep(targetStep);
 
-    const payload = { state, cohort, title: title.trim() };
-
-    // 1. Save to LocalStorage for persistence
-    localStorage.setItem('cbq_torch_current_state', JSON.stringify(payload));
+    const payload = { step: targetStep, title: title.trim() };
+    localStorage.setItem('cbq_torch_current_step', JSON.stringify(payload));
 
     try {
-      // 2. Realtime Supabase Broadcast
       await supabase.channel('cbq_torch_stage_channel').send({
         type: 'broadcast',
-        event: 'TORCH_STATE_CHANGE',
+        event: 'TORCH_STEP_CHANGE',
         payload
       });
 
-      // 3. Audit Log
-      await logActivity('torch_stage', 'LED_STAGE', state, 'UPDATE', 'admin', `Điều khiển màn hình LED ngọn lửa: ${state} (${cohort})`);
+      await logActivity('torch_stage', 'LED_STAGE_ARC', String(targetStep), 'UPDATE', 'admin', `Kích hoạt bước nghi thức truyền lửa: Step ${targetStep}`);
     } catch (err) {
-      console.warn("Lỗi phát sóng Realtime:", err);
+      console.warn("Lỗi phát sóng:", err);
     } finally {
       setIsBroadcasting(false);
     }
   };
 
+  const handleNextStep = () => {
+    if (activeStep < 10) {
+      sendStepTrigger(activeStep + 1);
+    }
+  };
+
   return (
-    <Layout title="Điều Khiển Sân Sấu LED - Nghi Thức Truyền Lửa">
-      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+    <Layout title="Bàn Điều Khiển Sân Sấu LED - Cầu Lửa Bay Nối Tiếp">
+      <div style={{ maxWidth: '1050px', margin: '0 auto' }}>
         
-        {/* HEADER STATUS BANNER */}
+        {/* TOP STATUS HEADER */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', marginBottom: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h2 style={{ margin: 0, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={26} color="#be123c" /> Bàn Điều Khiển Từ Xa Màn Hình LED Sân Sấu
+                <Flame size={26} color="#be123c" /> Bàn Điều Khiển Cầu Lửa Bay Nối Tiếp Sân Sấu
               </h2>
               <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-                Bấm phím điều khiển từ xa để kích hoạt từng giai đoạn nghi thức Truyền Ngọn Lửa Thiêng trên màn hình LED lớn
+                Điều khiển hiệu ứng Cầu lửa vút bay qua 5 vị trí Thầy Cô & Học sinh đứng trên sân khấu
               </p>
             </div>
-            
+
             <a 
               href="/truyen-lua-led" 
               target="_blank" 
@@ -95,116 +97,96 @@ export default function AdminTorchControl() {
             </a>
           </div>
 
-          <div style={{ marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155' }}>
-            <Radio size={16} color="#166534" />
-            <span>Trạng thái kết nối Realtime: <strong style={{ color: '#166534' }}>{channelStatus}</strong></span>
+          {/* MAIN STEP NAVIGATION BAR */}
+          <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ fontSize: '13.5px', color: '#334155' }}>
+              <Radio size={16} color="#166534" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+              Kênh điều khiển: <strong style={{ color: '#166534' }}>{channelStatus}</strong> | Bước hiện tại: <strong style={{ color: '#be123c', fontSize: '15px' }}>STEP {activeStep} / 10</strong>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button 
+                onClick={() => sendStepTrigger(0)}
+                style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#475569', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RotateCcw size={15} /> Reset Màn Chờ (Step 0)
+              </button>
+
+              <button 
+                onClick={handleNextStep}
+                disabled={activeStep >= 10 || isBroadcasting}
+                style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#166534', color: 'white', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.3)' }}
+              >
+                <FastForward size={16} /> BƯỚC TIẾP THEO (STEP {activeStep + 1}) ➔
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 4 STAGE TRIGGER BUTTONS */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', marginBottom: '25px' }}>
-          
-          {/* STEP 0: IDLE */}
-          <div style={{ ...styles.actionCard, borderColor: currentState === 'idle' ? '#94a3b8' : '#e2e8f0', backgroundColor: currentState === 'idle' ? '#f8fafc' : '#ffffff' }}>
-            <div style={styles.stepBadge}>BƯỚC 0</div>
-            <h3 style={styles.stepTitle}>💤 1. Màn Hình Chờ</h3>
-            <p style={styles.stepDesc}>Giao diện khởi động ban đầu với hạt lấp lánh nhẹ nhàng.</p>
-            <button 
-              onClick={() => sendTorchTrigger('idle')}
-              disabled={isBroadcasting}
-              style={{ ...styles.triggerBtn, backgroundColor: '#475569' }}
-            >
-              <Play size={16} /> Kích Hoạt Màn Chờ
-            </button>
-          </div>
-
-          {/* STEP 1: TEACHERS / BGH */}
-          <div style={{ ...styles.actionCard, borderColor: currentState === 'teacher' ? '#b45309' : '#e2e8f0', backgroundColor: currentState === 'teacher' ? '#fffbebfb' : '#ffffff' }}>
-            <div style={{ ...styles.stepBadge, backgroundColor: '#f59e0b' }}>BƯỚC 1</div>
-            <h3 style={{ ...styles.stepTitle, color: '#b45309' }}>🔥 2. Khởi Nguồn Lửa Thiêng</h3>
-            <p style={styles.stepDesc}>Tôn vinh Ban Giám Hiệu & Các Thế hệ Thầy Cô (Khóa 1996).</p>
-            <button 
-              onClick={() => sendTorchTrigger('teacher', '1996-2000')}
-              disabled={isBroadcasting}
-              style={{ ...styles.triggerBtn, backgroundColor: '#d97706' }}
-            >
-              <Flame size={16} /> Thắp Ngọn Lửa Đầu
-            </button>
-          </div>
-
-          {/* STEP 2: ALUMNI COHORTS */}
-          <div style={{ ...styles.actionCard, borderColor: currentState === 'alumni' ? '#2563eb' : '#e2e8f0', backgroundColor: currentState === 'alumni' ? '#eff6ff' : '#ffffff' }}>
-            <div style={{ ...styles.stepBadge, backgroundColor: '#2563eb' }}>BƯỚC 2</div>
-            <h3 style={{ ...styles.stepTitle, color: '#1d4ed8' }}>⚡ 3. Lan Tỏa Niên Khóa</h3>
-            <p style={styles.stepDesc}>Sóng ngọn lửa truyền qua các thế hệ cựu học sinh (1996 - 2020).</p>
-            <button 
-              onClick={() => sendTorchTrigger('alumni')}
-              disabled={isBroadcasting}
-              style={{ ...styles.triggerBtn, backgroundColor: '#2563eb' }}
-            >
-              <Zap size={16} /> Truyền Lửa Các Khóa
-            </button>
-          </div>
-
-          {/* STEP 3: BURST CELEBRATION */}
-          <div style={{ ...styles.actionCard, borderColor: currentState === 'burst' ? '#be123c' : '#e2e8f0', backgroundColor: currentState === 'burst' ? '#fff1f2' : '#ffffff' }}>
-            <div style={{ ...styles.stepBadge, backgroundColor: '#be123c' }}>BƯỚC 3 (ĐỈNH CAO)</div>
-            <h3 style={{ ...styles.stepTitle, color: '#be123c' }}>🌟 4. BÙNG NỔ 30 NĂM</h3>
-            <p style={styles.stepDesc}>Học sinh hiện tại nhận đuốc ➔ Bùng nổ pháo hoa & rực rỡ 30 năm.</p>
-            <button 
-              onClick={() => sendTorchTrigger('burst', 'ALL')}
-              disabled={isBroadcasting}
-              style={{ ...styles.triggerBtn, backgroundColor: '#be123c' }}
-            >
-              <Trophy size={16} /> BÙNG NỔ 30 NĂM 🎉
-            </button>
-          </div>
-
-        </div>
-
-        {/* OVERRIDE CONTROLS & CUSTOM TITLE */}
-        <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
-          <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
-            ⚙️ Tùy Chỉnh Nâng Cao Cho Ban Tổ Chức Sân Sấu
+        {/* 10 DETAILED STAGE STEP BUTTONS */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
+          <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Zap size={20} color="#f59e0b" /> Tiến Trình Kịch Bản Truyền Lửa Sân Sấu (10 Bước)
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '16px' }}>
-            <div>
-              <label style={styles.label}>Chọn Niên khóa hiển thị cụ thể:</label>
-              <select 
-                value={currentCohort} 
-                onChange={e => {
-                  setCurrentCohort(e.target.value);
-                  if (currentState === 'alumni') {
-                    sendTorchTrigger('alumni', e.target.value);
-                  }
-                }}
-                style={styles.selectInput}
-              >
-                {cohorts.map(c => (
-                  <option key={c.key} value={c.key}>{c.label}</option>
-                ))}
-              </select>
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginTop: '16px' }}>
+            {stepsList.map((st) => {
+              const isActive = activeStep === st.step;
+              const isFlyingStep = st.step % 2 === 0 && st.step > 0 && st.step < 10;
+              const isBurstStep = st.step === 10;
 
-            <div>
-              <label style={styles.label}>Tiêu đề tùy chỉnh hiển thị trực tiếp lên LED:</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input 
-                  type="text" 
-                  placeholder="Gõ tiêu đề phát biểu hoặc khẩu hiệu sân khấu..."
-                  value={customTitleInput}
-                  onChange={e => setCustomTitleInput(e.target.value)}
-                  style={{ ...styles.selectInput, flex: 1 }}
-                />
-                <button 
-                  onClick={() => sendTorchTrigger(currentState, currentCohort, customTitleInput)}
-                  style={{ padding: '8px 16px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+              return (
+                <div 
+                  key={st.step}
+                  onClick={() => sendStepTrigger(st.step)}
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '12px',
+                    border: '2px solid',
+                    borderColor: isActive ? (isBurstStep ? '#be123c' : isFlyingStep ? '#0284c7' : '#f59e0b') : '#e2e8f0',
+                    backgroundColor: isActive ? (isBurstStep ? '#fff1f2' : isFlyingStep ? '#f0f9ff' : '#fffbeb') : '#ffffff',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: isActive ? '0 4px 15px rgba(0,0,0,0.08)' : 'none'
+                  }}
                 >
-                  Phát Tiêu Đề
-                </button>
-              </div>
-            </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '10px', backgroundColor: isActive ? '#be123c' : '#f1f5f9', color: isActive ? 'white' : '#64748b' }}>
+                      STEP {st.step}
+                    </span>
+                    {isActive && <Sparkles size={16} color="#f59e0b" />}
+                  </div>
+                  <h4 style={{ margin: '0 0 4px 0', fontSize: '14.5px', fontWeight: '800', color: isActive ? '#0f172a' : '#334155' }}>
+                    {st.title}
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '12px', color: '#64748b', lineHeight: '1.4' }}>
+                    {st.desc}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* CUSTOM TITLE OVERLAY INPUT */}
+        <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' }}>
+          <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>
+            💬 Tiêu đề / Khẩu hiệu phát biểu tùy chỉnh hiển thị trực tiếp trên Màn hình LED:
+          </label>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <input 
+              type="text"
+              placeholder="Nhập thông điệp phát biểu (VD: LỄ KỶ NIỆM 30 NĂM THPT CAO BÁ QUÁT)..."
+              value={customTitleInput}
+              onChange={e => setCustomTitleInput(e.target.value)}
+              style={{ flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+            />
+            <button 
+              onClick={() => sendStepTrigger(activeStep, customTitleInput)}
+              style={{ padding: '10px 20px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+            >
+              Phát Lên Màn LED
+            </button>
           </div>
         </div>
 
@@ -212,69 +194,3 @@ export default function AdminTorchControl() {
     </Layout>
   );
 }
-
-const styles = {
-  actionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: '14px',
-    padding: '20px',
-    border: '2px solid',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
-    display: 'flex',
-    flexDirection: 'column',
-    justify: 'space-between'
-  },
-  stepBadge: {
-    display: 'inline-block',
-    padding: '3px 10px',
-    borderRadius: '12px',
-    backgroundColor: '#64748b',
-    color: 'white',
-    fontSize: '11px',
-    fontWeight: 'bold',
-    width: 'fit-content',
-    marginBottom: '10px'
-  },
-  stepTitle: {
-    margin: '0 0 8px 0',
-    fontSize: '17px',
-    fontWeight: '800',
-    color: '#1e293b'
-  },
-  stepDesc: {
-    margin: '0 0 16px 0',
-    fontSize: '13px',
-    color: '#64748b',
-    lineHeight: '1.45'
-  },
-  triggerBtn: {
-    padding: '12px 16px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '10px',
-    fontWeight: 'bold',
-    fontSize: '14px',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-  },
-  label: {
-    display: 'block',
-    fontSize: '13px',
-    fontWeight: 'bold',
-    color: '#334155',
-    marginBottom: '6px'
-  },
-  selectInput: {
-    width: '100%',
-    padding: '10px 12px',
-    borderRadius: '8px',
-    border: '1px solid #cbd5e1',
-    fontSize: '13.5px',
-    backgroundColor: '#ffffff',
-    color: '#1e293b'
-  }
-};
