@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Flame, Sparkles, Maximize, Volume2, VolumeX, Radio, Trophy, ArrowRight } from 'lucide-react';
 
-// REALISTIC ANIMATED BURNING STAGE TORCH COMPONENT
+// REALISTIC ANIMATED CINEMATIC BURNING STAGE TORCH COMPONENT
 function RealisticTorch({ isLit }) {
   return (
-    <div style={{ position: 'relative', width: '100px', height: '110px', margin: '0 auto 8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end' }}>
+    <div style={{ position: 'relative', width: '100px', height: '110px', margin: '0 auto 8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', willChange: 'transform' }}>
       <style>{`
         @keyframes torchFlicker1 {
           0% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
@@ -23,20 +23,35 @@ function RealisticTorch({ isLit }) {
           0% { transform: translateY(0) scale(1); opacity: 1; }
           100% { transform: translateY(-55px) scale(0.2); opacity: 0; }
         }
+        @keyframes shockwaveExpand {
+          0% { transform: scale(0.6); opacity: 1; }
+          100% { transform: scale(1.8); opacity: 0; }
+        }
       `}</style>
 
       {/* BURNING FIRE TONGUES & EMBERS (WHEN LIT) */}
       {isLit ? (
         <div style={{ position: 'absolute', bottom: '34px', width: '70px', height: '95px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 5 }}>
           
+          {/* LANDING SHOCKWAVE AURA */}
+          <div style={{
+            position: 'absolute',
+            width: '80px',
+            height: '80px',
+            borderRadius: '50%',
+            border: '2px solid #fef08a',
+            backgroundColor: 'rgba(245, 158, 11, 0.3)',
+            animation: 'shockwaveExpand 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite'
+          }} />
+
           {/* OUTER AURA GLOW BLOOM */}
           <div style={{
             position: 'absolute',
-            width: '100px',
-            height: '100px',
+            width: '110px',
+            height: '110px',
             borderRadius: '50%',
             backgroundColor: 'rgba(245, 158, 11, 0.65)',
-            filter: 'blur(28px)',
+            filter: 'blur(30px)',
             animation: 'torchFlicker1 1.5s ease-in-out infinite alternate'
           }} />
 
@@ -44,10 +59,10 @@ function RealisticTorch({ isLit }) {
           <div style={{
             position: 'absolute',
             width: '56px',
-            height: '80px',
+            height: '82px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #be123c, #ef4444, #f59e0b)',
-            boxShadow: '0 0 25px #ef4444',
+            boxShadow: '0 0 28px #ef4444',
             animation: 'torchFlicker1 0.75s ease-in-out infinite alternate',
             transformOrigin: 'bottom center'
           }} />
@@ -56,10 +71,10 @@ function RealisticTorch({ isLit }) {
           <div style={{
             position: 'absolute',
             width: '38px',
-            height: '62px',
+            height: '64px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #f59e0b, #eab308, #fef08a)',
-            boxShadow: '0 0 18px #f59e0b',
+            boxShadow: '0 0 20px #f59e0b',
             animation: 'torchFlicker2 0.55s ease-in-out infinite alternate',
             transformOrigin: 'bottom center'
           }} />
@@ -68,10 +83,10 @@ function RealisticTorch({ isLit }) {
           <div style={{
             position: 'absolute',
             width: '22px',
-            height: '40px',
+            height: '42px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #ffffff, #fef08a)',
-            boxShadow: '0 0 14px #ffffff',
+            boxShadow: '0 0 16px #ffffff',
             animation: 'torchFlicker1 0.35s ease-in-out infinite alternate',
             transformOrigin: 'bottom center'
           }} />
@@ -87,7 +102,7 @@ function RealisticTorch({ isLit }) {
       )}
 
       {/* GOLDEN ROYAL TORCH BOWL & CUP HANDLE BASE */}
-      <svg width="60" height="42" viewBox="0 0 60 42" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 10, filter: isLit ? 'drop-shadow(0 0 12px rgba(245, 158, 11, 0.9))' : 'none' }}>
+      <svg width="60" height="42" viewBox="0 0 60 42" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 10, filter: isLit ? 'drop-shadow(0 0 14px rgba(245, 158, 11, 0.95))' : 'none' }}>
         <path d="M5 6 C12 2, 48 2, 55 6 L44 32 C40 38, 20 38, 16 32 Z" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1.5" />
         <ellipse cx="30" cy="6" rx="25" ry="4" fill="#78350f" stroke="#fef08a" strokeWidth="1" />
         <rect x="25" y="32" width="10" height="10" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1" />
@@ -205,11 +220,11 @@ export default function StageLedTorch() {
     }
   }
 
-  // CANVAS RENDERING: PARABOLIC FIREBALL FLIGHT & CONTINUOUS SKY FIREWORKS
+  // 60FPS CINEMATIC HIGH PERFORMANCE CANVAS RENDER ENGINE
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: false }); // High performance GPU context
     let animationFrameId;
 
     let width = (canvas.width = window.innerWidth);
@@ -225,16 +240,16 @@ export default function StageLedTorch() {
     const trailParticles = [];
     const fireworkSparks = [];
 
-    // Ambient background particle
+    // Ambient warm background smoke particle
     class AmbientParticle {
       constructor() { this.reset(); }
       reset() {
         this.x = Math.random() * width;
         this.y = height + Math.random() * 20;
-        this.vx = (Math.random() - 0.5) * 1.5;
-        this.vy = -(Math.random() * 3 + 1);
-        this.radius = Math.random() * 4 + 1.5;
-        this.life = Math.random() * 80 + 40;
+        this.vx = (Math.random() - 0.5) * 1.2;
+        this.vy = -(Math.random() * 2.5 + 0.8);
+        this.radius = Math.random() * 5 + 2;
+        this.life = Math.random() * 100 + 50;
         this.maxLife = this.life;
         this.color = Math.random() > 0.5 ? 'rgba(245, 158, 11, ' : 'rgba(239, 68, 68, ';
       }
@@ -248,26 +263,26 @@ export default function StageLedTorch() {
         const opacity = Math.max(0, this.life / this.maxLife);
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `${this.color}${opacity * 0.6})`;
+        ctx.fillStyle = `${this.color}${opacity * 0.55})`;
         ctx.fill();
       }
     }
 
-    // Flying Fireball Trail Particle
+    // Flying Fireball Trail Particle with Shimmering Glow
     class TrailParticle {
       constructor(x, y, vx, vy, size) {
         this.x = x;
         this.y = y;
-        this.vx = vx + (Math.random() - 0.5) * 3;
-        this.vy = vy + (Math.random() - 0.5) * 3;
-        this.radius = size * (Math.random() * 0.6 + 0.4);
-        this.life = Math.random() * 65 + 40;
+        this.vx = vx + (Math.random() - 0.5) * 2.5;
+        this.vy = vy + (Math.random() - 0.5) * 2.5;
+        this.radius = size * (Math.random() * 0.7 + 0.3);
+        this.life = Math.random() * 70 + 40;
         this.maxLife = this.life;
       }
       update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.radius *= 0.94;
+        this.radius *= 0.95;
         this.life--;
       }
       draw() {
@@ -276,7 +291,7 @@ export default function StageLedTorch() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, Math.max(0.5, this.radius), 0, Math.PI * 2);
         ctx.fillStyle = `rgba(254, 240, 138, ${opacity})`;
-        ctx.shadowBlur = 15;
+        ctx.shadowBlur = 18;
         ctx.shadowColor = '#f59e0b';
         ctx.fill();
       }
@@ -288,11 +303,11 @@ export default function StageLedTorch() {
         this.x = x;
         this.y = y;
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 9 + 2;
+        const speed = Math.random() * 9.5 + 2.5;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.radius = Math.random() * 6 + 2;
-        this.life = Math.random() * 70 + 30;
+        this.radius = Math.random() * 6.5 + 2.5;
+        this.life = Math.random() * 75 + 35;
         this.maxLife = this.life;
         const colors = ['rgba(254, 240, 138, ', 'rgba(245, 158, 11, ', 'rgba(239, 68, 68, ', 'rgba(225, 29, 72, ', 'rgba(255, 255, 255, '];
         this.color = colors[Math.floor(Math.random() * colors.length)];
@@ -300,7 +315,7 @@ export default function StageLedTorch() {
       update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.vy += 0.06;
+        this.vy += 0.055;
         this.life--;
       }
       draw() {
@@ -309,32 +324,35 @@ export default function StageLedTorch() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = `${this.color}${opacity})`;
-        ctx.shadowBlur = 10;
+        ctx.shadowBlur = 12;
         ctx.shadowColor = '#f59e0b';
         ctx.fill();
       }
     }
 
-    for (let i = 0; i < 90; i++) particles.push(new AmbientParticle());
+    for (let i = 0; i < 95; i++) particles.push(new AmbientParticle());
+
+    // Cubic Bezier Easing Function for Smooth Video-Like Deceleration
+    const easeInOutCubic = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Stage Background Gradient
+      // Stage Background Radial Glow Atmosphere
       const bgGrad = ctx.createRadialGradient(
         width / 2, height / 2, 80,
         width / 2, height / 2, width / 1.1
       );
 
       if (activeStep >= soarStep) {
-        bgGrad.addColorStop(0, 'rgba(180, 83, 9, 0.55)');
-        bgGrad.addColorStop(0.5, 'rgba(153, 27, 27, 0.45)');
-        bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
+        bgGrad.addColorStop(0, 'rgba(180, 83, 9, 0.58)');
+        bgGrad.addColorStop(0.5, 'rgba(153, 27, 27, 0.48)');
+        bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.99)');
       } else if (activeStep > 0) {
-        bgGrad.addColorStop(0, 'rgba(185, 28, 28, 0.3)');
-        bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.98)');
+        bgGrad.addColorStop(0, 'rgba(185, 28, 28, 0.32)');
+        bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.99)');
       } else {
-        bgGrad.addColorStop(0, 'rgba(30, 41, 59, 0.3)');
+        bgGrad.addColorStop(0, 'rgba(30, 41, 59, 0.35)');
         bgGrad.addColorStop(1, 'rgba(15, 23, 42, 0.99)');
       }
 
@@ -344,11 +362,11 @@ export default function StageLedTorch() {
       particles.forEach(p => { p.update(); p.draw(); });
 
       // ----------------------------------------------------
-      // HIGH PARABOLIC FIREBALL FLIGHT FROM LEFT CARD TO RIGHT CARD (SLOW & EMOTIONAL EASE)
+      // HIGH PARABOLIC FIREBALL FLIGHT (60FPS CINEMATIC VIDEO-LIKE SMOOTH EASE)
       // ----------------------------------------------------
       if (isFlying) {
         if (flyProgressRef.current < 1.0) {
-          flyProgressRef.current += 0.0055; // ~4.8s Slow, nostalgic, emotional flight!
+          flyProgressRef.current += 0.0050; // ~5.0s Buttery smooth video-like flight!
           if (flyProgressRef.current >= 1.0) {
             flyProgressRef.current = 1.0;
             // Arrive on Right Card!
@@ -357,11 +375,14 @@ export default function StageLedTorch() {
           }
         }
 
-        const t = flyProgressRef.current;
+        const rawT = flyProgressRef.current;
+        const t = easeInOutCubic(rawT); // Apply smooth Video Easing
+
         const pLeft = { x: 230, y: height - 210 };
         const pRight = { x: width - 230, y: height - 210 };
-        const pControlHigh = { x: width / 2, y: height * 0.12 };
+        const pControlHigh = { x: width / 2, y: height * 0.10 }; // High Arc Sky
 
+        // Sub-pixel Smooth Bezier Trajectory
         const currX = (1 - t) * (1 - t) * pLeft.x + 2 * (1 - t) * t * pControlHigh.x + t * t * pRight.x;
         const currY = (1 - t) * (1 - t) * pLeft.y + 2 * (1 - t) * t * pControlHigh.y + t * t * pRight.y;
 
@@ -369,37 +390,44 @@ export default function StageLedTorch() {
         const vy = 2 * (1 - t) * (pControlHigh.y - pLeft.y) + 2 * t * (pRight.y - pControlHigh.y);
         const norm = Math.hypot(vx, vy) || 1;
 
-        for (let i = 0; i < 8; i++) {
+        // Trail particles
+        for (let i = 0; i < 9; i++) {
           trailParticles.push(new TrailParticle(
-            currX + (Math.random() - 0.5) * 16,
-            currY + (Math.random() - 0.5) * 16,
+            currX + (Math.random() - 0.5) * 18,
+            currY + (Math.random() - 0.5) * 18,
             -(vx / norm) * (Math.random() * 4 + 1),
             -(vy / norm) * (Math.random() * 4 + 1),
-            Math.random() * 12 + 7
+            Math.random() * 13 + 7
           ));
         }
 
-        // Arc Guide Line
+        // Arc Guide Line with Shimmering Glow
         ctx.beginPath();
         ctx.moveTo(pLeft.x, pLeft.y);
         ctx.quadraticCurveTo(pControlHigh.x, pControlHigh.y, pRight.x, pRight.y);
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
         ctx.lineWidth = 4;
-        ctx.setLineDash([10, 10]);
+        ctx.setLineDash([12, 12]);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Flying Fireball Head
+        // CINEMATIC COMET HEAD WITH RADIAL MOTION GLOW
+        const cometGrad = ctx.createRadialGradient(currX, currY, 4, currX, currY, 45);
+        cometGrad.addColorStop(0, '#ffffff');
+        cometGrad.addColorStop(0.3, 'rgba(254, 240, 138, 0.95)');
+        cometGrad.addColorStop(0.7, 'rgba(245, 158, 11, 0.7)');
+        cometGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+
         ctx.beginPath();
-        ctx.arc(currX, currY, 24, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 45;
+        ctx.arc(currX, currY, 45, 0, Math.PI * 2);
+        ctx.fillStyle = cometGrad;
+        ctx.shadowBlur = 55;
         ctx.shadowColor = '#f59e0b';
         ctx.fill();
 
         ctx.beginPath();
-        ctx.arc(currX, currY, 36, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.5)';
+        ctx.arc(currX, currY, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
         ctx.fill();
       }
 
@@ -409,7 +437,7 @@ export default function StageLedTorch() {
       if (activeStep >= soarStep) {
         if (activeStep === soarStep) {
           if (flyProgressRef.current < 1.0) {
-            flyProgressRef.current += 0.025;
+            flyProgressRef.current += 0.020;
             if (flyProgressRef.current >= 1.0) {
               flyProgressRef.current = 1.0;
               setActiveStep(grandFinaleStep);
@@ -420,7 +448,9 @@ export default function StageLedTorch() {
           flyProgressRef.current = 1.0;
         }
 
-        const t = flyProgressRef.current;
+        const rawT = flyProgressRef.current;
+        const t = easeInOutCubic(rawT);
+
         const pStartRight = { x: width - 230, y: height - 210 };
         const pSky = { x: width / 2, y: height * 0.20 };
         const pSkyCtrl = { x: (pStartRight.x + pSky.x) / 2 + 50, y: Math.min(pStartRight.y, pSky.y) - 60 };
@@ -429,20 +459,20 @@ export default function StageLedTorch() {
         const soarY = (1 - t) * (1 - t) * pStartRight.y + 2 * (1 - t) * t * pSkyCtrl.y + t * t * pSky.y;
 
         if (t < 1.0) {
-          for (let i = 0; i < 8; i++) {
+          for (let i = 0; i < 9; i++) {
             trailParticles.push(new TrailParticle(
-              soarX + (Math.random() - 0.5) * 14,
-              soarY + (Math.random() - 0.5) * 14,
+              soarX + (Math.random() - 0.5) * 16,
+              soarY + (Math.random() - 0.5) * 16,
               (Math.random() - 0.5) * 4,
               (Math.random() - 0.5) * 4 + 2,
-              Math.random() * 12 + 6
+              Math.random() * 13 + 7
             ));
           }
 
           ctx.beginPath();
-          ctx.arc(soarX, soarY, 24, 0, Math.PI * 2);
+          ctx.arc(soarX, soarY, 26, 0, Math.PI * 2);
           ctx.fillStyle = '#ffffff';
-          ctx.shadowBlur = 50;
+          ctx.shadowBlur = 55;
           ctx.shadowColor = '#f59e0b';
           ctx.fill();
         }
@@ -501,6 +531,10 @@ export default function StageLedTorch() {
           0% { transform: scale(0.6) translateY(30px); opacity: 0; }
           100% { transform: scale(1) translateY(0); opacity: 1; }
         }
+        @keyframes cardFadeIn {
+          0% { opacity: 0; transform: scale(0.92) translateY(25px); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
       `}</style>
 
       <audio ref={audioRef} src="https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3" preload="auto" />
@@ -510,7 +544,7 @@ export default function StageLedTorch() {
       <div style={styles.topControlBar} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
           <Radio size={16} color={isConnected ? '#22c55e' : '#ef4444'} />
-          <span>Sân khấu LED Realtime: <strong style={{ color: isConnected ? '#4ade80' : '#f87171' }}>{isConnected ? 'ONLINE' : 'OFFLINE'}</strong></span>
+          <span>Sân khấu LED 4K Video Render: <strong style={{ color: isConnected ? '#4ade80' : '#f87171' }}>{isConnected ? 'ONLINE 60FPS' : 'OFFLINE'}</strong></span>
           <span style={{ marginLeft: '15px', color: '#fef08a', fontWeight: 'bold' }}>• THẾ HỆ #{currentPairIdx + 1} / {totalTransfers} | STEP: {activeStep}</span>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -574,6 +608,7 @@ export default function StageLedTorch() {
             left: '40px',
             bottom: '70px',
             pointerEvents: 'auto',
+            animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             border: isLeftLit ? '3px solid #f59e0b' : '1.5px solid rgba(255,255,255,0.15)',
             backgroundColor: isLeftLit ? 'rgba(185, 28, 28, 0.85)' : 'rgba(15, 23, 42, 0.75)',
             boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
@@ -613,6 +648,7 @@ export default function StageLedTorch() {
             right: '40px',
             bottom: '70px',
             pointerEvents: 'auto',
+            animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             border: isRightLit ? '3px solid #22c55e' : '1.5px solid rgba(255,255,255,0.15)',
             backgroundColor: isRightLit ? 'rgba(22, 101, 52, 0.85)' : 'rgba(15, 23, 42, 0.75)',
             boxShadow: isRightLit ? '0 0 50px rgba(34, 197, 94, 0.8)' : 'none',
@@ -662,7 +698,8 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     justify: 'space-between',
-    fontFamily: "'Inter', sans-serif"
+    fontFamily: "'Inter', sans-serif",
+    contain: 'strict'
   },
   canvasBackground: {
     position: 'absolute',
@@ -670,7 +707,8 @@ const styles = {
     left: 0,
     width: '100%',
     height: '100%',
-    zIndex: 1
+    zIndex: 1,
+    willChange: 'transform'
   },
   topControlBar: {
     position: 'relative',
@@ -722,7 +760,8 @@ const styles = {
     padding: '24px 22px',
     textAlign: 'center',
     backdropFilter: 'blur(12px)',
-    transition: 'all 0.6s cubic-bezier(0.16, 1, 0.3, 1)'
+    transition: 'all 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
+    willChange: 'transform, opacity, box-shadow'
   },
   stageFooter: {
     textAlign: 'center',
