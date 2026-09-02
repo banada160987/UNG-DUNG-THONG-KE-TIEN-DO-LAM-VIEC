@@ -371,12 +371,12 @@ export default function StageLedTorch() {
   };
 
   const isNodeLit = (nodeId) => {
-    if (activeStep >= 10) return true; // BURST ALL
-    if (nodeId === 1 && activeStep >= 1) return true;
-    if (nodeId === 2 && activeStep >= 3) return true;
-    if (nodeId === 3 && activeStep >= 5) return true;
-    if (nodeId === 4 && activeStep >= 7) return true;
-    if (nodeId === 5 && activeStep >= 9) return true;
+    if (activeStep >= 11) return true; // BURST ALL AT GRAND FINALE
+    if (nodeId === 1 && (activeStep === 1 || activeStep === 2)) return true;
+    if (nodeId === 2 && (activeStep === 3 || activeStep === 4)) return true;
+    if (nodeId === 3 && (activeStep === 5 || activeStep === 6)) return true;
+    if (nodeId === 4 && (activeStep === 7 || activeStep === 8)) return true;
+    if (nodeId === 5 && (activeStep === 9 || activeStep === 10)) return true;
     return false;
   };
 
@@ -487,7 +487,7 @@ export default function StageLedTorch() {
                   transform: lit ? 'scale(1.06)' : 'scale(1)'
                 }}>
                   <div style={{ fontSize: '11px', fontWeight: 'bold', color: lit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase' }}>
-                    {lit ? '✓ ĐÃ THẮP LỬA' : `VỊ TRÍ 0${node.id}`}
+                    {lit ? '🔥 ĐANG GIỮ LỬA' : `VỊ TRÍ 0${node.id}`}
                   </div>
                   <h4 style={{ margin: '3px 0 2px 0', fontSize: '15px', fontWeight: '900', color: '#ffffff' }}>
                     {node.label}
@@ -576,21 +576,17 @@ const styles = {
     margin: '6px 0 0 0',
     fontSize: '34px',
     fontWeight: '900',
-    background: 'linear-gradient(135deg, #ffffff 0%, #fef08a 50%, #f59e0b 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    textShadow: '0 4px 20px rgba(245, 158, 11, 0.4)',
-    letterSpacing: '1px',
+    color: '#fef08a',
+    textShadow: '0 0 25px rgba(245, 158, 11, 0.8), 0 2px 8px rgba(0,0,0,0.9)',
+    letterSpacing: '1.2px',
     textTransform: 'uppercase'
   },
   grandAnniversaryHeading: {
     margin: '4px 0 0 0',
     fontSize: '44px',
     fontWeight: '900',
-    background: 'linear-gradient(135deg, #ffffff 0%, #fef08a 40%, #f59e0b 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    textShadow: '0 6px 30px rgba(245, 158, 11, 0.6)',
+    color: '#ffffff',
+    textShadow: '0 0 35px rgba(245, 158, 11, 0.9), 0 3px 12px rgba(0,0,0,0.95)',
     letterSpacing: '1.5px',
     textTransform: 'uppercase'
   },
