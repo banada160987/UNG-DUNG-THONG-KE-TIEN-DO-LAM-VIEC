@@ -48,6 +48,8 @@ const AdminStaff = lazy(() => import('./pages/AdminStaff'));
 const PublicParkingRegister = lazy(() => import('./pages/PublicParkingRegister'));
 const AdminParking = lazy(() => import('./pages/AdminParking'));
 const AdminBus = lazy(() => import('./pages/AdminBus'));
+const StageLedTorch = lazy(() => import('./pages/StageLedTorch'));
+const AdminTorchControl = lazy(() => import('./pages/AdminTorchControl'));
 const AdminStudents = lazy(() => import('./pages/AdminStudents'));
 const AdminQRScanner = lazy(() => import('./pages/AdminQRScanner'));
 const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
@@ -173,10 +175,14 @@ function App() {
               <Route path="/admin/the-thao" element={permissions.canViewSports ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y" element={permissions.canViewFeedback ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y-quy-hoc-bong" element={<Navigate to="/admin/gop-y" replace />} />
+              <Route path="/admin/truyen-lua-control" element={(role === 'admin' || role === 'secretary' || permissions.canViewPages) ? <AdminTorchControl /> : <Navigate to="/admin/committee" replace />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />
           )}
+
+          {/* Fullscreen Stage LED Screen Route (Public Access for Stage Display) */}
+          <Route path="/truyen-lua-led" element={<StageLedTorch />} />
           
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

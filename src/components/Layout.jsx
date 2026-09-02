@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -65,6 +65,7 @@ export default function Layout({ children, title }) {
     // 1. 🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM
     { path: '/admin', icon: Home, label: 'Tổng quan Lãnh đạo', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || role === 'secretary' },
     { path: '/admin/committee', icon: CheckSquare, label: 'Việc của Tiểu ban', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: true },
+    { path: '/admin/truyen-lua-control', icon: Flame, label: '🔥 Điều khiển LED Truyền Lửa', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: true },
     { path: '/admin/guests', icon: Users, label: 'Quản lý Khách mời', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewGuests },
     { path: '/admin/sponsors', icon: Gift, label: 'Quản lý Tài trợ', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewSponsors },
     { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi tìm hiểu', group: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM', show: isAdmin || !!permissions.canViewQuizzes },
