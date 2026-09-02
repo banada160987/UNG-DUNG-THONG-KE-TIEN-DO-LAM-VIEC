@@ -15,15 +15,15 @@ export default function AdminTorchControl() {
     { id: 1, name: 'Đại diện Ban Giám Hiệu', title: 'Ban Giám Hiệu & Thầy Cô (1996)', sub: 'THẾ HỆ KHỞI NGUỒN' },
     { id: 2, name: 'Đại diện Cựu HS Khóa 1', title: 'Khóa 1996 - 2000', sub: 'THẮP SÁNG KHÁT VỌNG' },
     { id: 3, name: 'Đại diện Cựu HS Khóa 2', title: 'Khóa 2001 - 2005', sub: 'THẬP KỶ TRI THỨC' },
-    { id: 4, name: 'Đại diện Cựu HS Khóa 3', title: 'Khóa 2006 - 2010', sub: 'VƯƠN XA & TRƯỞNG THÀNH' },
+    { id: 4, name: 'Đại diện Cựu HS Khóa 3', title: 'Khóa 2006 - 2010', sub: 'VƯƠN XA & TRƯỜNG THÀNH' },
     { id: 5, name: 'Đại diện Cựu HS Khóa 4', title: 'Khóa 2011 - 2015', sub: 'KẾ THỪA & PHÁT TRIỂN' },
     { id: 6, name: 'Đại diện Cựu HS Khóa 5', title: 'Khóa 2016 - 2020', sub: 'HỘI NHẬP & TỎA SÁNG' },
     { id: 7, name: 'Đại diện Học Sinh Hiện Tại', title: 'Khóa 2023 - 2026', sub: 'THẮP SÁNG TƯƠNG LAI' }
   ]);
 
-  // Calculate total steps dynamically based on number of persons
+  // Calculate total steps dynamically based on 3-Substep Loop per transfer
   const totalTransfers = Math.max(1, personsList.length - 1);
-  const soarStep = totalTransfers * 2 + 1;
+  const soarStep = totalTransfers * 3 + 1;
   const grandFinaleStep = soarStep + 1;
 
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function AdminTorchControl() {
         payload
       });
 
-      await logActivity('torch_stage', 'LED_MULTI_RELAY', String(targetStep), 'UPDATE', 'admin', `Truyền lửa xoay vòng nhiều thế hệ: Step ${targetStep}`);
+      await logActivity('torch_stage', 'LED_3STAGE_HONOR', String(targetStep), 'UPDATE', 'admin', `Kích hoạt màn LED 3 bước vinh danh trung tâm: Step ${targetStep}`);
     } catch (err) {
       console.warn("Lỗi phát sóng:", err);
     } finally {
@@ -149,7 +149,7 @@ export default function AdminTorchControl() {
   };
 
   return (
-    <Layout title="Bàn Điều Khiển Sân Sấu - Truyền Lửa Xoay Vòng Nhiều Thế Hệ">
+    <Layout title="Bàn Điều Khiển Sân Sấu - 3 Bước Vinh Danh Trung Tâm">
       <div style={{ maxWidth: '1150px', margin: '0 auto' }}>
         
         {/* TOP STATUS HEADER */}
@@ -157,10 +157,10 @@ export default function AdminTorchControl() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h2 style={{ margin: 0, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={26} color="#be123c" /> Điều Khiển Truyền Lửa Xoay Vòng Nhiều Thế Hệ
+                <Flame size={26} color="#be123c" /> Bàn Điều Khiển Nghi Thức 3 Bước Vinh Danh Trung Tâm
               </h2>
               <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-                Cầu lửa bay từ Trái sang Phải ➔ Khi ngọn lửa bùng cháy bên Phải, thẻ tự động trượt sang Trái để nhường bên Phải cho Thế hệ tiếp theo!
+                1. Bay Cầu Lửa ➔ 2. Nhận Lửa & Hiện Vinh Danh Giữa Màn Hình ➔ 3. Trượt Sang Trái Nhường Bên Phải Cho Thế Hệ Tiếp Theo!
               </p>
             </div>
 
@@ -204,7 +204,7 @@ export default function AdminTorchControl() {
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '16px' }}>
             <h3 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <User size={20} color="#be123c" /> Danh Sách {personsList.length} Thế Hệ Truyền Lửa Xoay Vòng
+              <User size={20} color="#be123c" /> Danh Sách {personsList.length} Thế Hệ Truyền Lửa
             </h3>
             
             <div style={{ display: 'flex', gap: '10px' }}>
@@ -230,92 +230,81 @@ export default function AdminTorchControl() {
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {personsList.map((p, idx) => {
-              const transferStep = idx * 2 + 1;
-              const isCurrentHolder = activeStep === transferStep || activeStep === (transferStep + 1);
+            {personsList.map((p, idx) => (
+              <div 
+                key={idx} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '12px 16px'
+                }}
+              >
+                <span style={{ fontSize: '14px', fontWeight: '900', color: '#be123c', minWidth: '85px' }}>
+                  #0{idx + 1} {idx === 0 ? '(BGH)' : idx === personsList.length - 1 ? '(Cuối)' : ''}
+                </span>
 
-              return (
-                <div 
-                  key={idx} 
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '12px',
-                    backgroundColor: isCurrentHolder ? '#fff1f2' : '#f8fafc',
-                    border: isCurrentHolder ? '2px solid #be123c' : '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    padding: '12px 16px'
-                  }}
-                >
-                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#be123c', minWidth: '85px' }}>
-                    #0{idx + 1} {idx === 0 ? '(BGH)' : idx === personsList.length - 1 ? '(Cuối)' : ''}
-                  </span>
-
-                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px' }}>
-                    <input 
-                      type="text" 
-                      value={p.name}
-                      onChange={e => handlePersonChange(idx, 'name', e.target.value)}
-                      placeholder="Họ và tên..."
-                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                    />
-                    <input 
-                      type="text" 
-                      value={p.title}
-                      onChange={e => handlePersonChange(idx, 'title', e.target.value)}
-                      placeholder="Niên khóa / Chức danh..."
-                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                    />
-                    <input 
-                      type="text" 
-                      value={p.sub}
-                      onChange={e => handlePersonChange(idx, 'sub', e.target.value)}
-                      placeholder="Thông điệp / Khẩu hiệu..."
-                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                    />
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button 
-                      onClick={() => handleMovePerson(idx, -1)} 
-                      disabled={idx === 0}
-                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
-                    >
-                      <ArrowUp size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleMovePerson(idx, 1)} 
-                      disabled={idx === personsList.length - 1}
-                      style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
-                    >
-                      <ArrowDown size={14} />
-                    </button>
-                    <button 
-                      onClick={() => sendStepTrigger(transferStep)}
-                      style={{ padding: '6px 12px', backgroundColor: '#1e293b', color: '#fef08a', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-                    >
-                      Kích Hoạt
-                    </button>
-                    <button 
-                      onClick={() => handleRemovePerson(idx)}
-                      style={{ padding: '6px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#ef4444', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
+                <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px' }}>
+                  <input 
+                    type="text" 
+                    value={p.name}
+                    onChange={e => handlePersonChange(idx, 'name', e.target.value)}
+                    placeholder="Họ và tên..."
+                    style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
+                  <input 
+                    type="text" 
+                    value={p.title}
+                    onChange={e => handlePersonChange(idx, 'title', e.target.value)}
+                    placeholder="Niên khóa / Chức danh..."
+                    style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
+                  <input 
+                    type="text" 
+                    value={p.sub}
+                    onChange={e => handlePersonChange(idx, 'sub', e.target.value)}
+                    placeholder="Thông điệp / Khẩu hiệu..."
+                    style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
                 </div>
-              );
-            })}
+
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  <button 
+                    onClick={() => handleMovePerson(idx, -1)} 
+                    disabled={idx === 0}
+                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                  >
+                    <ArrowUp size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleMovePerson(idx, 1)} 
+                    disabled={idx === personsList.length - 1}
+                    style={{ padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                  >
+                    <ArrowDown size={14} />
+                  </button>
+                  <button 
+                    onClick={() => handleRemovePerson(idx)}
+                    style={{ padding: '6px', borderRadius: '6px', border: 'none', backgroundColor: '#fee2e2', color: '#ef4444', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* AUTOMATED STEP CONTROLS */}
+        {/* 3-SUBSTEP LOOP PER TRANSFER */}
         <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', marginBottom: '25px' }}>
           <h3 style={{ marginTop: 0, color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-            ⚡ Các Bước Kịch Bản Truyền Lửa Tự Động ({grandFinaleStep} Bước)
+            ⚡ Kịch Bản Trình Chiếu 3 Bước Vinh Danh Trung Tâm ({grandFinaleStep} Bước)
           </h3>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px', marginTop: '14px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginTop: '14px' }}>
             <button 
               onClick={() => sendStepTrigger(0)}
               style={{ padding: '12px', borderRadius: '10px', border: activeStep === 0 ? '2px solid #94a3b8' : '1px solid #e2e8f0', backgroundColor: activeStep === 0 ? '#f1f5f9' : '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
@@ -326,23 +315,31 @@ export default function AdminTorchControl() {
             {Array.from({ length: totalTransfers }).map((_, i) => {
               const p1 = personsList[i];
               const p2 = personsList[i + 1];
-              const stepLit = i * 2 + 1;
-              const stepFly = i * 2 + 2;
+              const stepHold = i * 3 + 1;
+              const stepFly = i * 3 + 2;
+              const stepCenter = i * 3 + 3;
 
               return (
                 <div key={i} style={{ display: 'contents' }}>
                   <button 
-                    onClick={() => sendStepTrigger(stepLit)}
-                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepLit ? '2px solid #be123c' : '1px solid #e2e8f0', backgroundColor: activeStep === stepLit ? '#fff1f2' : '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', textAlign: 'left' }}
+                    onClick={() => sendStepTrigger(stepHold)}
+                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepHold ? '2px solid #be123c' : '1px solid #e2e8f0', backgroundColor: activeStep === stepHold ? '#fff1f2' : '#ffffff', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textAlign: 'left' }}
                   >
-                    🔥 Step {stepLit}: Thắp Lửa #{i + 1} ({p1?.name})
+                    🔥 Step {stepHold}: Giữ Lửa #{i + 1} ({p1?.name})
                   </button>
 
                   <button 
                     onClick={() => sendStepTrigger(stepFly)}
-                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepFly ? '2px solid #0284c7' : '1px solid #e2e8f0', backgroundColor: activeStep === stepFly ? '#f0f9ff' : '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', textAlign: 'left' }}
+                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepFly ? '2px solid #0284c7' : '1px solid #e2e8f0', backgroundColor: activeStep === stepFly ? '#f0f9ff' : '#ffffff', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textAlign: 'left' }}
                   >
-                    🚀 Step {stepFly}: Bay Lửa #{i + 1} ➔ #{i + 2} ({p2?.name})
+                    🚀 Step {stepFly}: Bay Cầu Lửa #{i + 1} ➔ #{i + 2} ({p2?.name})
+                  </button>
+
+                  <button 
+                    onClick={() => sendStepTrigger(stepCenter)}
+                    style={{ padding: '12px', borderRadius: '10px', border: activeStep === stepCenter ? '2px solid #d97706' : '1px solid #e2e8f0', backgroundColor: activeStep === stepCenter ? '#fffbebfb' : '#ffffff', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    👑 Step {stepCenter}: VINH DANH TRUNG TÂM #{i + 2} ({p2?.name})
                   </button>
                 </div>
               );
@@ -352,7 +349,7 @@ export default function AdminTorchControl() {
               onClick={() => sendStepTrigger(soarStep)}
               style={{ padding: '12px', borderRadius: '10px', border: activeStep === soarStep ? '2px solid #d97706' : '1px solid #e2e8f0', backgroundColor: activeStep === soarStep ? '#fffbebfb' : '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
             >
-              Step {soarStep}: 🚀 Bay Lên Trời Cao
+              Step {soarStep}: 🚀 Cầu Lửa Bay Lên Trời Cao
             </button>
 
             <button 

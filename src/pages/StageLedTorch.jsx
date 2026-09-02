@@ -120,7 +120,6 @@ function RealisticTorch({ isLit }) {
 }
 
 export default function StageLedTorch() {
-  // STAGE MODE: DYNAMIC MULTI-GENERATION CONTINUOUS RELAY
   const [activeStep, setActiveStep] = useState(0);
   const [customTitle, setCustomTitle] = useState('');
   const [isFullScreen, setIsFullScreen] = useState(false);
@@ -142,21 +141,25 @@ export default function StageLedTorch() {
   const audioRef = useRef(null);
   const flyProgressRef = useRef(0);
 
-  // Calculate dynamic steps
+  // Calculate dynamic steps based on 3-Substep Loop
   const totalTransfers = Math.max(1, personsList.length - 1);
-  const soarStep = totalTransfers * 2 + 1;
+  const soarStep = totalTransfers * 3 + 1;
   const grandFinaleStep = soarStep + 1;
 
-  // Compute current transfer pair index (0, 1, 2, 3...)
-  const currentPairIdx = Math.min(totalTransfers - 1, Math.floor(Math.max(0, activeStep - 1) / 2));
-  
+  // 3-SUBSTEP LOGIC FOR EACH TRANSFER PAIR:
+  // Substep % 3 === 1: HOLD_LEFT
+  // Substep % 3 === 2: FLYING_TO_RIGHT
+  // Substep % 3 === 0: CENTER_HONOR_SPOTLIGHT
+  const currentPairIdx = Math.min(totalTransfers - 1, Math.floor(Math.max(0, activeStep - 1) / 3));
+  const subStepType = activeStep === 0 ? 0 : activeStep >= soarStep ? 99 : ((activeStep - 1) % 3 + 1);
+
   const leftPerson = personsList[currentPairIdx] || personsList[0];
   const rightPerson = personsList[currentPairIdx + 1] || personsList[personsList.length - 1];
 
-  // Flame lighting status
-  const isFlying = activeStep % 2 === 0 && activeStep > 0 && activeStep < soarStep;
-  const isLeftLit = activeStep > 0 && activeStep < soarStep; // Current Holder on Left is Lit
-  const isRightLit = false; // Receiver on Right remains OFF/Dim until fireball arrives and shifts to Left!
+  const isFlying = subStepType === 2;
+  const isCenterHonor = subStepType === 3;
+  const isLeftLit = (subStepType === 1 || subStepType === 2) && activeStep < soarStep;
+  const isRightLit = isCenterHonor; // Right Torch ignites when receiving and entering Center Spotlight!
 
   // LISTEN TO SUPABASE REALTIME BROADCAST & LOCALSTORAGE
   useEffect(() => {
@@ -224,7 +227,7 @@ export default function StageLedTorch() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: false }); // High performance GPU context
+    const ctx = canvas.getContext('2d', { alpha: false });
     let animationFrameId;
 
     let width = (canvas.width = window.innerWidth);
@@ -268,7 +271,7 @@ export default function StageLedTorch() {
       }
     }
 
-    // Flying Fireball Trail Particle with Shimmering Glow
+    // Flying Fireball Trail Particle
     class TrailParticle {
       constructor(x, y, vx, vy, size) {
         this.x = x;
@@ -332,7 +335,6 @@ export default function StageLedTorch() {
 
     for (let i = 0; i < 95; i++) particles.push(new AmbientParticle());
 
-    // Cubic Bezier Easing Function for Smooth Video-Like Deceleration
     const easeInOutCubic = (x) => x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 
     const render = () => {
@@ -362,27 +364,26 @@ export default function StageLedTorch() {
       particles.forEach(p => { p.update(); p.draw(); });
 
       // ----------------------------------------------------
-      // HIGH PARABOLIC FIREBALL FLIGHT (60FPS CINEMATIC VIDEO-LIKE SMOOTH EASE)
+      // HIGH PARABOLIC FIREBALL FLIGHT FROM LEFT CARD TO RIGHT CARD
       // ----------------------------------------------------
       if (isFlying) {
         if (flyProgressRef.current < 1.0) {
-          flyProgressRef.current += 0.0050; // ~5.0s Buttery smooth video-like flight!
+          flyProgressRef.current += 0.0050; // ~5.0s Slow, nostalgic, emotional flight!
           if (flyProgressRef.current >= 1.0) {
             flyProgressRef.current = 1.0;
-            // Arrive on Right Card!
+            // Arrive on Right Torch -> AUTOMATICALLY ENTER CENTER HONOR SPOTLIGHT!
             setActiveStep(activeStep + 1);
             playAudioFx();
           }
         }
 
         const rawT = flyProgressRef.current;
-        const t = easeInOutCubic(rawT); // Apply smooth Video Easing
+        const t = easeInOutCubic(rawT);
 
         const pLeft = { x: 230, y: height - 210 };
         const pRight = { x: width - 230, y: height - 210 };
-        const pControlHigh = { x: width / 2, y: height * 0.10 }; // High Arc Sky
+        const pControlHigh = { x: width / 2, y: height * 0.10 };
 
-        // Sub-pixel Smooth Bezier Trajectory
         const currX = (1 - t) * (1 - t) * pLeft.x + 2 * (1 - t) * t * pControlHigh.x + t * t * pRight.x;
         const currY = (1 - t) * (1 - t) * pLeft.y + 2 * (1 - t) * t * pControlHigh.y + t * t * pRight.y;
 
@@ -390,7 +391,6 @@ export default function StageLedTorch() {
         const vy = 2 * (1 - t) * (pControlHigh.y - pLeft.y) + 2 * t * (pRight.y - pControlHigh.y);
         const norm = Math.hypot(vx, vy) || 1;
 
-        // Trail particles
         for (let i = 0; i < 9; i++) {
           trailParticles.push(new TrailParticle(
             currX + (Math.random() - 0.5) * 18,
@@ -401,7 +401,7 @@ export default function StageLedTorch() {
           ));
         }
 
-        // Arc Guide Line with Shimmering Glow
+        // Arc Guide Line
         ctx.beginPath();
         ctx.moveTo(pLeft.x, pLeft.y);
         ctx.quadraticCurveTo(pControlHigh.x, pControlHigh.y, pRight.x, pRight.y);
@@ -411,7 +411,7 @@ export default function StageLedTorch() {
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // CINEMATIC COMET HEAD WITH RADIAL MOTION GLOW
+        // Flying Fireball Comet Head
         const cometGrad = ctx.createRadialGradient(currX, currY, 4, currX, currY, 45);
         cometGrad.addColorStop(0, '#ffffff');
         cometGrad.addColorStop(0.3, 'rgba(254, 240, 138, 0.95)');
@@ -531,6 +531,10 @@ export default function StageLedTorch() {
           0% { transform: scale(0.6) translateY(30px); opacity: 0; }
           100% { transform: scale(1) translateY(0); opacity: 1; }
         }
+        @keyframes centerHonorZoom {
+          0% { transform: translate(-50%, 0) scale(0.7); opacity: 0; }
+          100% { transform: translate(-50%, 0) scale(1.18); opacity: 1; }
+        }
         @keyframes cardFadeIn {
           0% { opacity: 0; transform: scale(0.92) translateY(25px); }
           100% { opacity: 1; transform: scale(1) translateY(0); }
@@ -544,7 +548,7 @@ export default function StageLedTorch() {
       <div style={styles.topControlBar} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#94a3b8' }}>
           <Radio size={16} color={isConnected ? '#22c55e' : '#ef4444'} />
-          <span>Sân khấu LED 4K Video Render: <strong style={{ color: isConnected ? '#4ade80' : '#f87171' }}>{isConnected ? 'ONLINE 60FPS' : 'OFFLINE'}</strong></span>
+          <span>Sân khấu LED 3 Bước Vinh Danh Trung Tâm: <strong style={{ color: isConnected ? '#4ade80' : '#f87171' }}>{isConnected ? 'ONLINE 60FPS' : 'OFFLINE'}</strong></span>
           <span style={{ marginLeft: '15px', color: '#fef08a', fontWeight: 'bold' }}>• THẾ HỆ #{currentPairIdx + 1} / {totalTransfers} | STEP: {activeStep}</span>
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -588,9 +592,9 @@ export default function StageLedTorch() {
               </div>
               <h1 style={styles.mainTitle}>
                 {customTitle || (
+                  isCenterHonor ? `👑 TÔN VINH ${rightPerson.name.toUpperCase()} - ĐÃ CHÍNH THỨC NHẬN NGỌN LỬA THIÊNG!` :
                   isFlying ? `🚀 CẦU LỬA THIÊNG DẪN LỖI: THẾ HỆ #${currentPairIdx + 1} ➔ THẾ HỆ #${currentPairIdx + 2}...` :
                   isLeftLit ? `🔥 NGỌN LỬA THIÊNG BÙNG CHÁY BÊN TRÁI: ${leftPerson.name}` :
-                  isRightLit ? `🔥 ${rightPerson.name} BÊN PHẢI ĐÃ NHẬN NGỌN LỬA THIÊNG!` :
                   'NGHI THỨC TRUYỀN LỬA THẾ HỆ (1996 - 2026)'
                 )}
               </h1>
@@ -598,78 +602,113 @@ export default function StageLedTorch() {
           )}
         </div>
 
-        {/* 2 ABSOLUTE PINNED CARDS WITH REALISTIC BURNING TORCHES */}
+        {/* CARDS CONTAINER & CENTER SPOTLIGHT STAGE */}
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 25 }}>
           
-          {/* PERSON ON EXTREME FAR LEFT (CURRENT TORCH HOLDER) */}
-          <div key={`left-${currentPairIdx}`} style={{
-            ...styles.personStageCard,
-            position: 'absolute',
-            left: '40px',
-            bottom: '70px',
-            pointerEvents: 'auto',
-            animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            border: isLeftLit ? '3px solid #f59e0b' : '1.5px solid rgba(255,255,255,0.15)',
-            backgroundColor: isLeftLit ? 'rgba(185, 28, 28, 0.85)' : 'rgba(15, 23, 42, 0.75)',
-            boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
-            transform: isLeftLit ? 'scale(1.05)' : 'scale(0.95)'
-          }}>
-            
-            {/* REALISTIC BURNING TORCH AT TOP OF CARD */}
-            <RealisticTorch isLit={isLeftLit} />
-
-            <div style={{ fontSize: '11.5px', fontWeight: '900', color: isLeftLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-              {isLeftLit ? `🔥 THẾ HỆ #${currentPairIdx + 1} (ĐANG GIỮ LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 1} (BÊN TRÁI)`}
-            </div>
-            
-            <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
-              {leftPerson.name}
-            </h2>
-
-            <div style={{ fontSize: '13px', color: isLeftLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
-              {leftPerson.title}
-            </div>
-          </div>
-
-          {/* FLYING ARROW INDICATOR IN SKY CENTER */}
-          {isFlying && (
-            <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', animation: 'bannerScaleUp 0.5s ease' }}>
-              <div style={{ fontSize: '16px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 20px #f59e0b', marginBottom: '6px' }}>
-                🚀 CẦU LỬA THIÊNG ĐANG BAY CAO BĂNG QUA BẦU TRỜI...
+          {/* CENTER HONOR SPOTLIGHT CARD (SUBSTEP 3: WHEN RIGHT PERSON RECEIVES FLAME & SHOWS IN CENTER) */}
+          {isCenterHonor ? (
+            <div style={{
+              position: 'absolute',
+              left: '50%',
+              bottom: '100px',
+              width: '460px',
+              pointerEvents: 'auto',
+              border: '4px solid #fef08a',
+              backgroundColor: 'rgba(185, 28, 28, 0.92)',
+              boxShadow: '0 0 70px rgba(245, 158, 11, 0.95), 0 10px 40px rgba(0,0,0,0.9)',
+              borderRadius: '24px',
+              padding: '30px 24px',
+              textAlign: 'center',
+              backdropFilter: 'blur(16px)',
+              animation: 'centerHonorZoom 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+            }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 18px', borderRadius: '20px', backgroundColor: '#be123c', border: '1.5px solid #fef08a', marginBottom: '10px' }}>
+                <span style={{ fontSize: '13px', fontWeight: '900', color: '#fef08a', letterSpacing: '1.5px', textTransform: 'uppercase' }}>
+                  👑 THẾ HỆ #{currentPairIdx + 2} • ĐÃ CHÍNH THỨC NHẬN LỬA!
+                </span>
               </div>
-              <ArrowRight size={50} color="#fef08a" />
+
+              {/* GIANT REALISTIC BURNING TORCH AT CENTER */}
+              <RealisticTorch isLit={true} />
+
+              <h2 style={{ margin: '8px 0 4px 0', fontSize: '30px', fontWeight: '900', color: '#ffffff', textShadow: '0 0 25px rgba(245, 158, 11, 0.9)' }}>
+                {rightPerson.name}
+              </h2>
+
+              <div style={{ fontSize: '16px', color: '#fef08a', fontWeight: '800', marginTop: '4px' }}>
+                {rightPerson.title} {rightPerson.sub ? `• ${rightPerson.sub}` : ''}
+              </div>
             </div>
+          ) : (
+            /* DUAL SIDE STAGE CARDS (LEFT HOLDER & RIGHT RECEIVER) */
+            <>
+              {/* PERSON ON EXTREME FAR LEFT (CURRENT TORCH HOLDER) */}
+              <div key={`left-${currentPairIdx}`} style={{
+                ...styles.personStageCard,
+                position: 'absolute',
+                left: '40px',
+                bottom: '70px',
+                pointerEvents: 'auto',
+                animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                border: isLeftLit ? '3px solid #f59e0b' : '1.5px solid rgba(255,255,255,0.15)',
+                backgroundColor: isLeftLit ? 'rgba(185, 28, 28, 0.85)' : 'rgba(15, 23, 42, 0.75)',
+                boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
+                transform: isLeftLit ? 'scale(1.05)' : 'scale(0.95)'
+              }}>
+                <RealisticTorch isLit={isLeftLit} />
+
+                <div style={{ fontSize: '11.5px', fontWeight: '900', color: isLeftLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                  {isLeftLit ? `🔥 THẾ HỆ #${currentPairIdx + 1} (ĐANG GIỮ LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 1} (BÊN TRÁI)`}
+                </div>
+                
+                <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
+                  {leftPerson.name}
+                </h2>
+
+                <div style={{ fontSize: '13px', color: isLeftLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
+                  {leftPerson.title}
+                </div>
+              </div>
+
+              {/* FLYING ARROW INDICATOR IN SKY CENTER */}
+              {isFlying && (
+                <div style={{ position: 'absolute', top: '22%', left: '50%', transform: 'translateX(-50%)', textAlign: 'center', animation: 'bannerScaleUp 0.5s ease' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#fef08a', textShadow: '0 0 20px #f59e0b', marginBottom: '6px' }}>
+                    🚀 CẦU LỬA THIÊNG ĐANG BAY CAO BĂNG QUA BẦU TRỜI...
+                  </div>
+                  <ArrowRight size={50} color="#fef08a" />
+                </div>
+              )}
+
+              {/* PERSON ON EXTREME FAR RIGHT (TORCH RECEIVER WAITING) */}
+              <div key={`right-${currentPairIdx}`} style={{
+                ...styles.personStageCard,
+                position: 'absolute',
+                right: '40px',
+                bottom: '70px',
+                pointerEvents: 'auto',
+                animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                border: '1.5px solid rgba(255,255,255,0.15)',
+                backgroundColor: 'rgba(15, 23, 42, 0.75)',
+                boxShadow: 'none',
+                transform: 'scale(0.95)'
+              }}>
+                <RealisticTorch isLit={false} />
+
+                <div style={{ fontSize: '11.5px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                  📍 THẾ HỆ #{currentPairIdx + 2} (BÊN PHẢI CHỜ NHẬN)
+                </div>
+
+                <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
+                  {rightPerson.name}
+                </h2>
+
+                <div style={{ fontSize: '13px', color: '#cbd5e1', fontWeight: 'bold' }}>
+                  {rightPerson.title}
+                </div>
+              </div>
+            </>
           )}
-
-          {/* PERSON ON EXTREME FAR RIGHT (TORCH RECEIVER) */}
-          <div key={`right-${currentPairIdx}`} style={{
-            ...styles.personStageCard,
-            position: 'absolute',
-            right: '40px',
-            bottom: '70px',
-            pointerEvents: 'auto',
-            animation: 'cardFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-            border: isRightLit ? '3px solid #22c55e' : '1.5px solid rgba(255,255,255,0.15)',
-            backgroundColor: isRightLit ? 'rgba(22, 101, 52, 0.85)' : 'rgba(15, 23, 42, 0.75)',
-            boxShadow: isRightLit ? '0 0 50px rgba(34, 197, 94, 0.8)' : 'none',
-            transform: isRightLit ? 'scale(1.05)' : 'scale(0.95)'
-          }}>
-            
-            {/* REALISTIC BURNING TORCH AT TOP OF CARD */}
-            <RealisticTorch isLit={isRightLit} />
-
-            <div style={{ fontSize: '11.5px', fontWeight: '900', color: isRightLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-              {isRightLit ? `🔥 THẾ HỆ #${currentPairIdx + 2} (ĐÃ NHẬN LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 2} (BÊN PHẢI CHỜ NHẬN)`}
-            </div>
-
-            <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
-              {rightPerson.name}
-            </h2>
-
-            <div style={{ fontSize: '13px', color: isRightLit ? '#fef3c7' : '#cbd5e1', fontWeight: 'bold' }}>
-              {rightPerson.title}
-            </div>
-          </div>
 
         </div>
 
