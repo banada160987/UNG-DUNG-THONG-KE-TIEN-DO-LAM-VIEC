@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Flame, Sparkles, Maximize, Volume2, VolumeX, Radio, Trophy, ArrowRight } from 'lucide-react';
 
-// REALISTIC ANIMATED CINEMATIC BURNING STAGE TORCH COMPONENT
-function RealisticTorch({ isLit }) {
+// REALISTIC ARTISTIC HAND HOLDING SACRED TORCH COMPONENT
+function RealisticHandHoldingTorch({ isLit }) {
   return (
-    <div style={{ position: 'relative', width: '100px', height: '110px', margin: '0 auto 8px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', willChange: 'transform' }}>
+    <div style={{ position: 'relative', width: '120px', height: '140px', margin: '0 auto 10px auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', willChange: 'transform' }}>
       <style>{`
         @keyframes torchFlicker1 {
           0% { transform: scale(1) rotate(-1deg); opacity: 0.95; }
@@ -27,28 +27,33 @@ function RealisticTorch({ isLit }) {
           0% { transform: scale(0.6); opacity: 1; }
           100% { transform: scale(1.8); opacity: 0; }
         }
+        @keyframes handRaise {
+          0% { transform: translateY(4px); }
+          50% { transform: translateY(-4px); }
+          100% { transform: translateY(4px); }
+        }
       `}</style>
 
       {/* BURNING FIRE TONGUES & EMBERS (WHEN LIT) */}
       {isLit ? (
-        <div style={{ position: 'absolute', bottom: '34px', width: '70px', height: '95px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 5 }}>
+        <div style={{ position: 'absolute', bottom: '68px', width: '80px', height: '100px', display: 'flex', justifyContent: 'center', alignItems: 'flex-end', zIndex: 5 }}>
           
           {/* LANDING SHOCKWAVE AURA */}
           <div style={{
             position: 'absolute',
-            width: '80px',
-            height: '80px',
+            width: '85px',
+            height: '85px',
             borderRadius: '50%',
             border: '2px solid #fef08a',
-            backgroundColor: 'rgba(245, 158, 11, 0.3)',
+            backgroundColor: 'rgba(245, 158, 11, 0.35)',
             animation: 'shockwaveExpand 1.8s cubic-bezier(0.16, 1, 0.3, 1) infinite'
           }} />
 
           {/* OUTER AURA GLOW BLOOM */}
           <div style={{
             position: 'absolute',
-            width: '110px',
-            height: '110px',
+            width: '115px',
+            height: '115px',
             borderRadius: '50%',
             backgroundColor: 'rgba(245, 158, 11, 0.65)',
             filter: 'blur(30px)',
@@ -58,11 +63,11 @@ function RealisticTorch({ isLit }) {
           {/* FLAME TONGUE LAYER 1 (CRIMSON OUTER FLAME) */}
           <div style={{
             position: 'absolute',
-            width: '56px',
-            height: '82px',
+            width: '60px',
+            height: '86px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #be123c, #ef4444, #f59e0b)',
-            boxShadow: '0 0 28px #ef4444',
+            boxShadow: '0 0 30px #ef4444',
             animation: 'torchFlicker1 0.75s ease-in-out infinite alternate',
             transformOrigin: 'bottom center'
           }} />
@@ -70,8 +75,8 @@ function RealisticTorch({ isLit }) {
           {/* FLAME TONGUE LAYER 2 (BRIGHT ORANGE MIDDLE FLAME) */}
           <div style={{
             position: 'absolute',
-            width: '38px',
-            height: '64px',
+            width: '40px',
+            height: '66px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #f59e0b, #eab308, #fef08a)',
             boxShadow: '0 0 20px #f59e0b',
@@ -82,8 +87,8 @@ function RealisticTorch({ isLit }) {
           {/* FLAME TONGUE LAYER 3 (WHITE HOT INNER CORE) */}
           <div style={{
             position: 'absolute',
-            width: '22px',
-            height: '42px',
+            width: '24px',
+            height: '44px',
             borderRadius: '50% 50% 35% 35% / 60% 60% 40% 40%',
             background: 'linear-gradient(to top, #ffffff, #fef08a)',
             boxShadow: '0 0 16px #ffffff',
@@ -92,26 +97,58 @@ function RealisticTorch({ isLit }) {
           }} />
 
           {/* EMBERS SPARKS RISING UP */}
-          <div style={{ position: 'absolute', bottom: '40px', left: '15px', width: '5px', height: '5px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 6px #f59e0b', animation: 'emberFlyUp 1.2s infinite ease-out' }} />
-          <div style={{ position: 'absolute', bottom: '45px', right: '18px', width: '4px', height: '4px', backgroundColor: '#ffffff', borderRadius: '50%', boxShadow: '0 0 6px #ef4444', animation: 'emberFlyUp 0.9s infinite ease-out 0.3s' }} />
-          <div style={{ position: 'absolute', bottom: '50px', left: '32px', width: '6px', height: '6px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 8px #f59e0b', animation: 'emberFlyUp 1.5s infinite ease-out 0.6s' }} />
+          <div style={{ position: 'absolute', bottom: '40px', left: '18px', width: '5px', height: '5px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 6px #f59e0b', animation: 'emberFlyUp 1.2s infinite ease-out' }} />
+          <div style={{ position: 'absolute', bottom: '45px', right: '20px', width: '4px', height: '4px', backgroundColor: '#ffffff', borderRadius: '50%', boxShadow: '0 0 6px #ef4444', animation: 'emberFlyUp 0.9s infinite ease-out 0.3s' }} />
+          <div style={{ position: 'absolute', bottom: '50px', left: '36px', width: '6px', height: '6px', backgroundColor: '#fef08a', borderRadius: '50%', boxShadow: '0 0 8px #f59e0b', animation: 'emberFlyUp 1.5s infinite ease-out 0.6s' }} />
         </div>
       ) : (
         /* DIM PILOT FLAME (WAITING TO BE IGNITED) */
-        <div style={{ position: 'absolute', bottom: '34px', width: '22px', height: '28px', borderRadius: '50% 50% 40% 40%', background: 'linear-gradient(to top, #b45309, #f59e0b)', opacity: 0.6, filter: 'blur(1px)', animation: 'torchFlicker1 2s ease-in-out infinite', zIndex: 5 }} />
+        <div style={{ position: 'absolute', bottom: '68px', width: '22px', height: '28px', borderRadius: '50% 50% 40% 40%', background: 'linear-gradient(to top, #b45309, #f59e0b)', opacity: 0.6, filter: 'blur(1px)', animation: 'torchFlicker1 2s ease-in-out infinite', zIndex: 5 }} />
       )}
 
-      {/* GOLDEN ROYAL TORCH BOWL & CUP HANDLE BASE */}
-      <svg width="60" height="42" viewBox="0 0 60 42" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 10, filter: isLit ? 'drop-shadow(0 0 14px rgba(245, 158, 11, 0.95))' : 'none' }}>
-        <path d="M5 6 C12 2, 48 2, 55 6 L44 32 C40 38, 20 38, 16 32 Z" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1.5" />
-        <ellipse cx="30" cy="6" rx="25" ry="4" fill="#78350f" stroke="#fef08a" strokeWidth="1" />
-        <rect x="25" y="32" width="10" height="10" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1" />
+      {/* REALISTIC SVG HAND HOLDING THE GOLDEN TORCH */}
+      <svg width="80" height="90" viewBox="0 0 80 90" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ zIndex: 10, filter: isLit ? 'drop-shadow(0 0 14px rgba(245, 158, 11, 0.95))' : 'none', animation: isLit ? 'handRaise 3s ease-in-out infinite' : 'none' }}>
+        {/* TORCH CUP BOWL */}
+        <path d="M15 12 C24 6, 56 6, 65 12 L52 42 C46 48, 34 48, 28 42 Z" fill="url(#torchGoldGrad)" stroke="#fef08a" strokeWidth="1.5" />
+        <ellipse cx="40" cy="12" rx="25" ry="4" fill="#78350f" stroke="#fef08a" strokeWidth="1" />
+        
+        {/* METALLIC TORCH HANDLE SHAFT */}
+        <path d="M34 42 L34 85 C34 88, 46 88, 46 85 L46 42 Z" fill="url(#torchShaftGrad)" stroke="#fef08a" strokeWidth="1" />
+
+        {/* REALISTIC HAND & FINGERS GRIPPING THE TORCH */}
+        {/* ARM SLEEVE / WRIST BASE */}
+        <path d="M22 88 C26 76, 54 76, 58 88 L62 90 L18 90 Z" fill="url(#sleeveGrad)" stroke="#fef08a" strokeWidth="1" />
+
+        {/* THUMB & PALM GRIP */}
+        <path d="M26 62 C22 58, 24 50, 32 52 C36 53, 38 58, 35 64 Z" fill="url(#handSkinGrad)" stroke="#fef08a" strokeWidth="1.2" />
+        
+        {/* FINGERS WRAPPING AROUND HANDLE */}
+        <path d="M30 52 C30 48, 48 46, 50 50 C51 52, 46 56, 38 56 Z" fill="url(#handSkinGrad)" stroke="#fef08a" strokeWidth="1" />
+        <path d="M31 58 C31 54, 49 52, 51 56 C52 58, 47 62, 39 62 Z" fill="url(#handSkinGrad)" stroke="#fef08a" strokeWidth="1" />
+        <path d="M32 64 C32 60, 48 58, 50 62 C51 64, 46 68, 38 68 Z" fill="url(#handSkinGrad)" stroke="#fef08a" strokeWidth="1" />
+        <path d="M33 70 C33 66, 46 65, 48 68 C49 71, 45 74, 38 74 Z" fill="url(#handSkinGrad)" stroke="#fef08a" strokeWidth="1" />
+
         <defs>
-          <linearGradient id="torchGoldGrad" x1="0" y1="0" x2="60" y2="42" gradientUnits="userSpaceOnUse">
+          <linearGradient id="torchGoldGrad" x1="15" y1="6" x2="65" y2="48" gradientUnits="userSpaceOnUse">
             <stop stopColor="#fef08a" />
             <stop offset="0.4" stopColor="#d97706" />
             <stop offset="0.7" stopColor="#b45309" />
             <stop offset="1" stopColor="#78350f" />
+          </linearGradient>
+          <linearGradient id="torchShaftGrad" x1="34" y1="42" x2="46" y2="88" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#fef08a" />
+            <stop offset="0.5" stopColor="#b45309" />
+            <stop offset="1" stopColor="#451a03" />
+          </linearGradient>
+          <linearGradient id="handSkinGrad" x1="20" y1="45" x2="55" y2="75" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#fef08a" />
+            <stop offset="0.5" stopColor="#f59e0b" />
+            <stop offset="1" stopColor="#b45309" />
+          </linearGradient>
+          <linearGradient id="sleeveGrad" x1="18" y1="76" x2="62" y2="90" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#be123c" />
+            <stop offset="0.7" stopColor="#881337" />
+            <stop offset="1" stopColor="#4c0519" />
           </linearGradient>
         </defs>
       </svg>
@@ -147,9 +184,6 @@ export default function StageLedTorch() {
   const grandFinaleStep = soarStep + 1;
 
   // 3-SUBSTEP LOGIC FOR EACH TRANSFER PAIR:
-  // Substep % 3 === 1: HOLD_LEFT
-  // Substep % 3 === 2: FLYING_TO_RIGHT
-  // Substep % 3 === 0: CENTER_HONOR_SPOTLIGHT
   const currentPairIdx = Math.min(totalTransfers - 1, Math.floor(Math.max(0, activeStep - 1) / 3));
   const subStepType = activeStep === 0 ? 0 : activeStep >= soarStep ? 99 : ((activeStep - 1) % 3 + 1);
 
@@ -159,7 +193,7 @@ export default function StageLedTorch() {
   const isFlying = subStepType === 2;
   const isCenterHonor = subStepType === 3;
   const isLeftLit = (subStepType === 1 || subStepType === 2) && activeStep < soarStep;
-  const isRightLit = isCenterHonor; // Right Torch ignites when receiving and entering Center Spotlight!
+  const isRightLit = isCenterHonor;
 
   // LISTEN TO SUPABASE REALTIME BROADCAST & LOCALSTORAGE
   useEffect(() => {
@@ -605,7 +639,7 @@ export default function StageLedTorch() {
         {/* CARDS CONTAINER & CENTER SPOTLIGHT STAGE */}
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 25 }}>
           
-          {/* CENTER HONOR SPOTLIGHT CARD (SUBSTEP 3: WHEN RIGHT PERSON RECEIVES FLAME & SHOWS IN CENTER) */}
+          {/* CENTER HONOR SPOTLIGHT CARD WITH REALISTIC HAND HOLDING SACRED TORCH */}
           {isCenterHonor ? (
             <div style={{
               position: 'absolute',
@@ -628,8 +662,8 @@ export default function StageLedTorch() {
                 </span>
               </div>
 
-              {/* GIANT REALISTIC BURNING TORCH AT CENTER */}
-              <RealisticTorch isLit={true} />
+              {/* REALISTIC HAND HOLDING SACRED TORCH AT CENTER */}
+              <RealisticHandHoldingTorch isLit={true} />
 
               <h2 style={{ margin: '8px 0 4px 0', fontSize: '30px', fontWeight: '900', color: '#ffffff', textShadow: '0 0 25px rgba(245, 158, 11, 0.9)' }}>
                 {rightPerson.name}
@@ -655,7 +689,7 @@ export default function StageLedTorch() {
                 boxShadow: isLeftLit ? '0 0 50px rgba(245, 158, 11, 0.8)' : 'none',
                 transform: isLeftLit ? 'scale(1.05)' : 'scale(0.95)'
               }}>
-                <RealisticTorch isLit={isLeftLit} />
+                <RealisticHandHoldingTorch isLit={isLeftLit} />
 
                 <div style={{ fontSize: '11.5px', fontWeight: '900', color: isLeftLit ? '#fef08a' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
                   {isLeftLit ? `🔥 THẾ HỆ #${currentPairIdx + 1} (ĐANG GIỮ LỬA)` : `📍 THẾ HỆ #${currentPairIdx + 1} (BÊN TRÁI)`}
@@ -693,10 +727,10 @@ export default function StageLedTorch() {
                 boxShadow: 'none',
                 transform: 'scale(0.95)'
               }}>
-                <RealisticTorch isLit={false} />
+                <RealisticHandHoldingTorch isLit={false} />
 
                 <div style={{ fontSize: '11.5px', fontWeight: '900', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-                  📍 THẾ HỆ #{currentPairIdx + 2} (BÊN PHẢI CHỜ NHẬN)
+                  📍 THẾ HỆ #${currentPairIdx + 2} (BÊN PHẢI CHỜ NHẬN)
                 </div>
 
                 <h2 style={{ margin: '4px 0', fontSize: '24px', fontWeight: '900', color: '#ffffff' }}>
