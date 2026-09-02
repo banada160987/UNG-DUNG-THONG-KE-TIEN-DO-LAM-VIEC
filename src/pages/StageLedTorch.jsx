@@ -154,9 +154,9 @@ export default function StageLedTorch() {
   const rightPerson = personsList[currentPairIdx + 1] || personsList[personsList.length - 1];
 
   // Flame lighting status
-  const isLeftLit = activeStep % 2 === 1 && activeStep < soarStep;
-  const isRightLit = activeStep % 2 === 0 && activeStep > 0 && activeStep < soarStep;
   const isFlying = activeStep % 2 === 0 && activeStep > 0 && activeStep < soarStep;
+  const isLeftLit = activeStep > 0 && activeStep < soarStep; // Current Holder on Left is Lit
+  const isRightLit = false; // Receiver on Right remains OFF/Dim until fireball arrives and shifts to Left!
 
   // LISTEN TO SUPABASE REALTIME BROADCAST & LOCALSTORAGE
   useEffect(() => {
