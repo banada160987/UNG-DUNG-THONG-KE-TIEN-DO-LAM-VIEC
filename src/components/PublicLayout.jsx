@@ -64,7 +64,7 @@ export default function PublicLayout() {
             <img src="/logo.jpg" alt="Logo" style={styles.mainLogo} />
             <div>
               <h1 style={styles.bannerTitle}>TRƯỜNG THPT CAO BÁ QUÁT</h1>
-              <h2 style={styles.bannerSubtitle}>CỔNG THÔNG TIN ĐIỆN TỬ & DỊCH VỤ GIÁO DỤC (1996 - 2026)</h2>
+              <h2 style={styles.bannerSubtitle}>CỔNG THÔNG TIN ĐIỆN TỬ & QUẢN LÝ HOẠT ĐỘNG NHÀ TRƯỜNG</h2>
             </div>
           </div>
         </div>
@@ -84,13 +84,13 @@ export default function PublicLayout() {
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>🏠 Trang chủ</Link>
             
-            {/* DROPDOWN 1: VẬN HÀNH NHÀ TRƯỜNG (ƯU TIÊN 1) */}
+            {/* DROPDOWN 1: QUẢN LÝ VẬN HÀNH NHÀ TRƯỜNG */}
             <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('school')}
                 style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon') || isActive('/dang-ky-xe-may') || isActive('/van-ban') || isActive('/gop-y') || isActive('/cham-diem-thi-dua')) ? styles.navItemActive : styles.navItem}
               >
-                🏫 Vận hành Nhà trường ▾
+                🏫 Quản lý Vận hành Nhà trường ▾
               </span>
               <div className="nav-dropdown-content">
                 {publicMenus
@@ -104,13 +104,13 @@ export default function PublicLayout() {
               </div>
             </div>
 
-            {/* DROPDOWN 2: TIN TỨC & THƯ VIỆN */}
+            {/* DROPDOWN 2: TIN TỨC & HOẠT ĐỘNG */}
             <div className={`nav-dropdown ${activeDropdown === 'media' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('media')}
                 style={(isActive('/tin-tuc') || isActive('/thu-vien-anh') || isActive('/bang-vang')) ? styles.navItemActive : styles.navItem}
               >
-                📰 Tin tức & Thư viện ▾
+                📰 Tin tức & Hoạt động ▾
               </span>
               <div className="nav-dropdown-content">
                 {publicMenus
@@ -124,13 +124,13 @@ export default function PublicLayout() {
               </div>
             </div>
 
-            {/* DROPDOWN 3: TƯ LIỆU KỶ NIỆM 30 NĂM */}
+            {/* DROPDOWN 3: TƯ LIỆU TRUYỀN THỐNG 30 NĂM */}
             <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('anniversary')}
                 style={(isActive('/gioi-thieu') || isActive('/tap-san') || isActive('/huong-dan') || isActive('/luu-but') || isActive('/cuoc-thi') || isActive('/dang-ky-the-thao') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}
               >
-                🏆 Kỷ Niệm 30 Năm (Lưu Trữ) ▾
+                📁 Tư liệu Truyền thống (Lưu Trữ) ▾
               </span>
               <div className="nav-dropdown-content">
                 {publicMenus

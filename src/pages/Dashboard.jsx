@@ -206,6 +206,67 @@ export default function Dashboard() {
             </div>
           </div>
 
+          {/* QUICK ACTION SHORTCUTS HUB (THAO TÁC NHANH 1-TOUCH) */}
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '14px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            padding: '18px 20px'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={18} color="#0284c7" />
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                  LỐI TẮT THAO TÁC NHANH CHUYÊN MÔN & BAN GIÁM HIỆU
+                </h3>
+              </div>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>⚡ Xử lý nhanh trong 1 touch</span>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+              <Link to="/admin/department-drives" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <FolderOpen size={20} color="#0284c7" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#0369a1' }}>Duyệt Giáo Án / Kế Hoạch</div>
+                    <div style={{ fontSize: '11px', color: '#0284c7' }}>Tổ chuyên môn GDPT</div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/emulation" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <Award size={20} color="#16a34a" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#15803d' }}>Báo Cáo Thi Đua Tuần</div>
+                    <div style={{ fontSize: '11px', color: '#16a34a' }}>Xuất điểm nề nếp lớp</div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/schedule" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#fffbebfb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <Calendar size={20} color="#d97706" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#b45309' }}>Lịch Công Tác BGH</div>
+                    <div style={{ fontSize: '11px', color: '#d97706' }}>Lịch tuần & Báo giảng</div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/digital-vault" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <FileText size={20} color="#9333ea" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#6b21a8' }}>Tra Cứu Học Bạ Số</div>
+                    <div style={{ fontSize: '11px', color: '#9333ea' }}>Sổ sách & Văn bằng</div>
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+
           {/* ACADEMIC MODULE TABS HEADER */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', padding: '16px 20px' }}>
             <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>

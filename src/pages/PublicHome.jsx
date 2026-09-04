@@ -439,6 +439,59 @@ export default function PublicHome() {
             </div>
           </div>
 
+          {/* WIDGET LỊCH CÔNG TÁC & THỜI KHÓA BIỂU TUẦN TRỰC TUYẾN */}
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '14px',
+            border: '1.5px solid #bfdbfe',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+            overflow: 'hidden',
+            marginBottom: '20px'
+          }}>
+            <div style={{
+              backgroundColor: '#1d4ed8',
+              color: '#ffffff',
+              padding: '12px 18px',
+              fontWeight: 'bold',
+              fontSize: '15px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} /> LỊCH CÔNG TÁC & BÁO GIẢNG TUẦN NHÀ TRƯỜNG
+              </div>
+              <span style={{ fontSize: '12px', backgroundColor: '#3b82f6', padding: '2px 10px', borderRadius: '12px' }}>
+                Năm học 2025 - 2026
+              </span>
+            </div>
+
+            <div style={{ padding: '16px' }}>
+              <div style={{ display: 'flex', gap: '12px', flexDirection: 'column' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', backgroundColor: '#f8fafc', padding: '12px', borderRadius: '10px', borderLeft: '4px solid #3b82f6' }}>
+                  <div style={{ backgroundColor: '#dbeafe', padding: '8px 12px', borderRadius: '8px', textAlign: 'center', minWidth: '70px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1e40af' }}>TỪ NGÀY</div>
+                    <div style={{ fontSize: '14px', fontWeight: '900', color: '#1d4ed8' }}>08/09</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>📌 Lịch Công tác Ban Giám hiệu & Chuyên môn Tuần mới</div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#475569', lineHeight: '1.4' }}>
+                      • Sinh hoạt chuyên môn Tổ Toán - Lý - Hóa - Văn - Anh chuẩn GDPT 2018.<br />
+                      • Kiểm tra tiến độ nộp Sổ sách điện tử & Kế hoạch bài dạy trên hệ thống.<br />
+                      • Đội Cờ đỏ thực hiện chấm điểm thi đua nề nếp tuần mới các khối 10, 11, 12.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                  <a href="/lich-cong-tac" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#eff6ff', color: '#1d4ed8', textDecoration: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '12.5px' }}>
+                    <ChevronRight size={14} /> Xem Toàn Bộ Lịch Công Tác BGH
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* LƯU TRỮ TRA CỨU THIỆP MỜI KỶ NIỆM 30 NĂM */}
           <div style={styles.rsvpHighlightBlock}>
             <div style={styles.rsvpHighlightHeader}>
