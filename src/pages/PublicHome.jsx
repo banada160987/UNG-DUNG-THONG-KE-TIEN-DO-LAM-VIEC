@@ -250,37 +250,30 @@ export default function PublicHome() {
 
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
-          {/* COUNTDOWN & STATS */}
-          <PortalBlock title="HƯỚNG VỀ LỄ KỶ NIỆM" color="#d32f2f" icon="⏳">
+          {/* 30TH ANNIVERSARY SUCCESS ANNOUNCEMENT & STATS */}
+          <PortalBlock title="THÔNG BÁO ĐẠI LỄ 30 NĂM" color="#166534" icon="🎉">
             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>ĐẾM NGƯỢC THỜI GIAN LỄ KỶ NIỆM</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '8px' }}>
-                {Object.keys(timeLeft).length > 0 ? (
-                  <>
-                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.days}</span><small style={{ fontSize: '10px' }}>Ngày</small></div>
-                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.hours}</span><small style={{ fontSize: '10px' }}>Giờ</small></div>
-                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.minutes}</span><small style={{ fontSize: '10px' }}>Phút</small></div>
-                    <div style={styles.timeBox}><span style={{ fontSize: '18px', fontWeight: 'bold' }}>{timeLeft.seconds}</span><small style={{ fontSize: '10px' }}>Giây</small></div>
-                  </>
-                ) : (
-                  <div style={{ fontWeight: 'bold', color: '#d32f2f', padding: '10px' }}>🎉 SỰ KIỆN ĐANG DIỄN RA!</div>
-                )}
+              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                🎉 THÀNH CÔNG RỰC RỠ!
+              </div>
+              <div style={{ fontSize: '14.5px', fontWeight: 'bold', color: '#be123c', padding: '8px 12px', backgroundColor: '#fff1f2', borderRadius: '10px', border: '1px solid #fecdd3', lineHeight: '1.5' }}>
+                ĐẠI LỄ KỶ NIỆM 30 NĂM THÀNH LẬP THPT CAO BÁ QUÁT (1996 - 2026) ĐÃ THÀNH CÔNG TỐT ĐẸP!
               </div>
             </div>
             
-            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '15px' }}>
+            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                 <div style={styles.statIcon}>👥</div>
                 <div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Đại biểu xác nhận tham dự</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#166534' }}>{attendingGuests} người</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Đại biểu tham dự Đại lễ</div>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#166534' }}>{attendingGuests || 19} đại biểu</div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <div style={styles.statIcon}>💝</div>
                 <div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Tổng tài trợ (Công khai)</div>
-                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#be123c' }}>{totalDonation.toLocaleString()} VNĐ</div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Ủng hộ & Tài trợ (Công khai)</div>
+                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#be123c' }}>{totalDonation.toLocaleString()} VNĐ</div>
                 </div>
               </div>
             </div>
@@ -407,14 +400,53 @@ export default function PublicHome() {
         {/* CENTER COLUMN */}
         <div style={styles.centerCol}>
 
-          {/* NỔI BẬT: Tra cứu thiệp mời đặt ở giữa để khách dễ thấy nhất */}
+          {/* ACADEMIC OPERATION & SCHOOL SERVICES QUICK ACCESS */}
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1.5px solid #bbf7d0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '20px' }}>
+            <div style={{ backgroundColor: '#166534', color: '#ffffff', padding: '12px 18px', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>🏫</span> CỔNG DỊCH VỤ GIÁO DỤC & VẬN HÀNH NHÀ TRƯỜNG
+            </div>
+            
+            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', textDecoration: 'none', color: '#166534', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>📅</span>
+                <span>Lịch Công Tác Tuần</span>
+              </a>
+
+              <a href="/to-chuyen-mon" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none', color: '#1d4ed8', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>👨‍🏫</span>
+                <span>Đội Ngũ & Chuyên Môn</span>
+              </a>
+
+              <a href="/van-ban" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', textDecoration: 'none', color: '#7e22ce', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>📜</span>
+                <span>Văn Bản - Thông Báo</span>
+              </a>
+
+              <a href="/cham-diem-thi-dua" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#fffbebfb', border: '1px solid #fef08a', textDecoration: 'none', color: '#b45309', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>📋</span>
+                <span>Thi Đua Trực Tuần</span>
+              </a>
+
+              <a href="/dang-ky-xe-may" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', textDecoration: 'none', color: '#be123c', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>🛵</span>
+                <span>Đăng Ký Xe Máy HS</span>
+              </a>
+
+              <a href="/gop-y" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', textDecoration: 'none', color: '#0f766e', fontWeight: 'bold', fontSize: '13px' }}>
+                <span style={{ fontSize: '20px' }}>✍️</span>
+                <span>Góp Ý & Đề Án</span>
+              </a>
+            </div>
+          </div>
+
+          {/* LƯU TRỮ TRA CỨU THIỆP MỜI KỶ NIỆM 30 NĂM */}
           <div style={styles.rsvpHighlightBlock}>
             <div style={styles.rsvpHighlightHeader}>
-              <span style={{ marginRight: '6px' }}>✉️</span> TRA CỨU THIỆP MỜI ĐIỆN TỬ
+              <span style={{ marginRight: '6px' }}>✉️</span> KHO TRA CỨU THIỆP MỜI & TƯ LIỆU KỶ NIỆM 30 NĂM
             </div>
             <div style={styles.rsvpHighlightBody}>
-              <p style={{ marginBottom: '12px', fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>
-                Nhập <strong>Họ và Tên</strong> hoặc <strong>Mã số thiệp mời</strong> để tra cứu phiên bản điện tử và gửi phản hồi xác nhận tham dự.
+              <p style={{ marginBottom: '12px', fontSize: '13.5px', color: '#475569', lineHeight: '1.5' }}>
+                Tra cứu lại <strong>Phiên bản Thiệp mời Điện tử Kỷ niệm 30 năm</strong> và danh sách tham dự lưu trữ của quý đại biểu.
               </p>
 
               <div style={{ position: 'relative', width: '100%' }}>
