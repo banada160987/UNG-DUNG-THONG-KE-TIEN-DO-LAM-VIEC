@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { AlertTriangle, CheckCircle, Clock, Plus, FolderOpen, Award, Users, Calendar, FileText, LayoutDashboard, Bike, Bus, QrCode, MessageSquare, Download, Trophy, Sparkles } from 'lucide-react';
+import { 
+  FolderOpen, Award, Users, Calendar, FileText, LayoutDashboard, 
+  Bike, Bus, QrCode, MessageSquare, Download, Trophy, Sparkles, 
+  BookOpen, CheckCircle, Clock, AlertTriangle, Plus, ChevronRight, ShieldCheck
+} from 'lucide-react';
 import * as XLSX from 'xlsx';
 import TaskModal from '../components/TaskModal';
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState('teaching'); // 'teaching' | 'student' | 'archive'
   const [tasks, setTasks] = useState([]);
   const [committees, setCommittees] = useState([]);
-  const [sponsors, setSponsors] = useState([]);
   const [parkingCount, setParkingCount] = useState(0);
   const [busCount, setBusCount] = useState(0);
   const [feedbackCount, setFeedbackCount] = useState(0);
@@ -22,7 +26,7 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData();
 
-    const channel = supabase.channel('academic_dashboard_realtime')
+    const channel = supabase.channel('academic_dashboard_realtime_v2')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_tasks' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_students' }, () => fetchData())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_department_drives' }, () => fetchData())
@@ -38,10 +42,9 @@ export default function Dashboard() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [tasksRes, committeesRes, sponsorsRes, parkingRes, busRes, feedbackRes, studentsRes, vaultRes, drivesRes] = await Promise.all([
+      const [tasksRes, committeesRes, parkingRes, busRes, feedbackRes, studentsRes, vaultRes, drivesRes] = await Promise.all([
         supabase.from('cbq_tasks').select('*'),
         supabase.from('cbq_committees').select('*'),
-        supabase.from('cbq_sponsors').select('donation_amount').eq('is_public', true),
         supabase.from('cbq_parking_registrations').select('id', { count: 'exact' }),
         supabase.from('cbq_bus_registrations').select('id', { count: 'exact' }),
         supabase.from('cbq_feedback_topics').select('id', { count: 'exact' }),
@@ -52,7 +55,6 @@ export default function Dashboard() {
 
       setTasks(tasksRes.data || []);
       setCommittees(committeesRes.data || []);
-      setSponsors(sponsorsRes.data || []);
       setParkingCount(parkingRes.count || 0);
       setBusCount(busRes.count || 0);
       setFeedbackCount(feedbackRes.count || 0);
@@ -60,7 +62,7 @@ export default function Dashboard() {
       setDigitalVaultCount(vaultRes.count || 0);
       setDrivesCount(drivesRes.count || 0);
     } catch (error) {
-      console.error('Lỗi tải dữ liệu điều hành:', error);
+      console.error('Lỗi tải dữ liệu điều hành chuyên môn:', error);
     } finally {
       setLoading(false);
     }
@@ -80,7 +82,7 @@ export default function Dashboard() {
 
   const redAlertTasks = getRedAlertTasks();
 
-  const handleExportPerformance = () => {
+  const handleExportAcademicReport = () => {
     const assignees = {};
     tasks.forEach(t => {
       const name = t.assignee || 'Chưa phân công';
@@ -97,8 +99,8 @@ export default function Dashboard() {
       const stats = assignees[name];
       const rate = stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0;
       return {
-        'Họ và Tên Cán Bộ': name,
-        'Tổng Công Việc Được Giao': stats.total,
+        'Cán Bộ / Giáo Viên': name,
+        'Tổng Nhiệm Vụ Chuyên Môn': stats.total,
         'Đã Hoàn Thành': stats.completed,
         'Đang Thực Hiện': stats.pending,
         'Trễ Hạn': stats.overdue,
@@ -108,217 +110,299 @@ export default function Dashboard() {
 
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Hiệu Suất Chuyên Môn");
-    XLSX.writeFile(wb, "BaoCao_HieuSuatChuyenMon.xlsx");
+    XLSX.utils.book_append_sheet(wb, ws, "BaoCao_ChuyenMon");
+    XLSX.writeFile(wb, "BaoCao_QuanLyChuyenMon_SoSach.xlsx");
   };
 
   return (
-    <Layout title="Bảng Điều Hành Quản Lý & Vận Hành Chuyên Môn">
+    <Layout title="Bảng Điều Hành Quản Lý Chuyên Môn & Sổ Sách Điện Tử">
       {loading ? (
         <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b', fontWeight: 'bold' }}>
-          Đang kết nối hệ thống Quản lý Chuyên môn Nhà trường...
+          ⏳ Đang kết nối hệ thống Sổ sách & Chuyên môn Nhà trường...
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
-          {/* CELEBRATION CONGRATULATIONS & ACADEMIC TRANSITION ANNOUNCEMENT */}
+          {/* TOP PROFESSIONAL HEADER BANNER */}
           <div style={{
-            background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0369a1 100%)',
             color: '#ffffff',
-            borderRadius: '20px',
-            padding: '24px 28px',
-            boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
-            border: '1px solid #3b82f6',
+            borderRadius: '16px',
+            padding: '22px 26px',
+            boxShadow: '0 10px 25px rgba(15, 23, 42, 0.15)',
             position: 'relative',
             overflow: 'hidden'
           }}>
-            <div style={{ position: 'relative', zIndex: 10 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 16px', backgroundColor: '#0284c7', color: '#ffffff', borderRadius: '30px', fontWeight: 'bold', fontSize: '13px', marginBottom: '12px' }}>
-                <Sparkles size={16} color="#fef08a" /> ĐẠI LỄ KỶ NIỆM 30 NĂM ĐÃ THÀNH CÔNG RỰC RỠ!
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10 }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#fef08a', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '8px' }}>
+                  <ShieldCheck size={15} color="#4ade80" /> HỆ THỐNG ĐIỀU HÀNH CHUYÊN MÔN & SỔ SÁCH 4.0
+                </div>
+                <h1 style={{ margin: 0, fontSize: '24px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.3px' }}>
+                  TRƯỜNG THPT CAO BÁ QUÁT • QUẢN LÝ CHUYÊN MÔN & SỔ SÁCH ĐIỆN TỬ
+                </h1>
+                <p style={{ margin: '6px 0 0 0', fontSize: '13.5px', color: '#cbd5e1' }}>
+                  Điều hành toàn bộ Hồ sơ Tổ Chuyên môn - Sổ Thi đua Kỷ luật - Lịch Báo giảng & Kho Văn bằng Số.
+                </p>
               </div>
 
-              <h1 style={{ margin: '0 0 8px 0', fontSize: '26px', fontWeight: '900', color: '#fef08a', letterSpacing: '0.5px' }}>
-                HỆ THỐNG QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN THPT CAO BÁ QUÁT
-              </h1>
-
-              <p style={{ margin: 0, fontSize: '15px', color: '#e2e8f0', lineHeight: 1.6, maxWidth: '900px' }}>
-                Hệ thống đã chính thức chuyển đổi trọng tâm vận hành sang **Quản lý Chuyên môn - Đội ngũ Cán bộ - Thi đua Kỷ luật Học sinh - Kho Hồ sơ Tổ chuyên môn & Lịch công tác hàng tuần** cho năm học mới.
-              </p>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={handleExportAcademicReport}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#ffffff', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                >
+                  <Download size={15} color="#0284c7" /> Xuất Báo Cáo Chuyên Môn (Excel)
+                </button>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#22c55e', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
+                >
+                  <Plus size={16} /> Giao Việc Báo Giảng / Chuyên Môn
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* TOP ACTION BAR */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '900', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <LayoutDashboard size={24} color="#0284c7" /> Lối Tắt Tiện Ích Chuyên Môn Trọng Tâm
-            </h2>
+          {/* REALTIME ACADEMIC KPI INDICATORS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
+            <div style={styles.kpiCard('#eff6ff', '#3b82f6', '#1d4ed8')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#1e40af', fontWeight: 'bold' }}>Hồ Sơ Tổ Chuyên Môn</span>
+                <FolderOpen size={22} color="#1d4ed8" />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#1e3a8a', marginTop: '6px' }}>{drivesCount} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#3b82f6' }}>hồ sơ</small></div>
+            </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={styles.kpiCard('#f0fdf4', '#22c55e', '#166534')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#15803d', fontWeight: 'bold' }}>Sổ Điểm Thi Đua Lớp</span>
+                <Award size={22} color="#166534" />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#14532d', marginTop: '6px' }}>100% <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#16a34a' }}>nề nếp khối</small></div>
+            </div>
+
+            <div style={styles.kpiCard('#fffbebfb', '#f59e0b', '#b45309')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#a16207', fontWeight: 'bold' }}>Hồ Sơ Học Sinh</span>
+                <Users size={22} color="#b45309" />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#78350f', marginTop: '6px' }}>{studentsCount} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#ca8a04' }}>học sinh</small></div>
+            </div>
+
+            <div style={styles.kpiCard('#faf5ff', '#a855f7', '#7e22ce')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#6b21a8', fontWeight: 'bold' }}>Kho Văn Bằng Số</span>
+                <FileText size={22} color="#7e22ce" />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#581c87', marginTop: '6px' }}>{digitalVaultCount} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#9333ea' }}>văn bằng</small></div>
+            </div>
+
+            <div style={styles.kpiCard('#fff1f2', '#f43f5e', '#be123c')}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', color: '#9f1239', fontWeight: 'bold' }}>Nhiệm Vụ Chuyên Môn</span>
+                <Clock size={22} color="#be123c" />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#881337', marginTop: '6px' }}>{tasks.length} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#e11d48' }}>công việc</small></div>
+            </div>
+          </div>
+
+          {/* ACADEMIC MODULE TABS HEADER */}
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', padding: '16px 20px' }}>
+            <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
               <button 
-                onClick={handleExportPerformance}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)' }}
+                onClick={() => setActiveTab('teaching')}
+                style={styles.tabBtn(activeTab === 'teaching', '#0284c7')}
               >
-                <Download size={16} /> Xuất Báo Cáo Hiệu Suất (Excel)
+                <BookOpen size={16} /> 📚 PHÂN HỆ TỔ CHUYÊN MÔN & GIẢNG DẠY
               </button>
 
               <button 
-                onClick={() => setIsModalOpen(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.25)' }}
+                onClick={() => setActiveTab('student')}
+                style={styles.tabBtn(activeTab === 'student', '#166534')}
               >
-                <Plus size={16} /> Giao Việc Chuyên Môn Mới
+                <Users size={16} /> 👨‍🎓 PHÂN HỆ SỔ SÁCH HỌC SINH & NỀ NẾP
+              </button>
+
+              <button 
+                onClick={() => setActiveTab('archive')}
+                style={styles.tabBtn(activeTab === 'archive', '#b45309')}
+              >
+                <FileText size={16} /> 📄 VĂN BẢN & TƯ LIỆU NỘI BỘ
               </button>
             </div>
+
+            {/* TAB 1: TEACHING & DEPARTMENT MANAGEMENT */}
+            {activeTab === 'teaching' && (
+              <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <Link to="/admin/department-drives" style={styles.recordBox('#eff6ff', '#3b82f6')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dbeafe', '#1d4ed8')}>📁</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#1e3a8a')}>Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn</h3>
+                      <p style={styles.boxDesc}>Quản lý hồ sơ giáo án, kế hoạch bài dạy & biên bản tổ ({drivesCount} mục)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#3b82f6" />
+                </Link>
+
+                <Link to="/admin/schedule" style={styles.recordBox('#fff1f2', '#f43f5e')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#ffe4e6', '#be123c')}>📅</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#881337')}>Sổ Lịch Báo Giảng & Công Tác Tuần</h3>
+                      <p style={styles.boxDesc}>Theo dõi lịch dạy, lịch trực BGH, lịch họp chuyên môn tuần</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#f43f5e" />
+                </Link>
+
+                <Link to="/admin/staff" style={styles.recordBox('#f0fdf4', '#22c55e')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dcfce7', '#166534')}>👨‍🏫</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#14532d')}>Sổ Cán Bộ & Phân Công Giảng Dạy</h3>
+                      <p style={styles.boxDesc}>Danh sách ban giám hiệu, giáo viên bộ môn & tổ chuyên môn</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#22c55e" />
+                </Link>
+
+                <Link to="/admin/gop-y" style={styles.recordBox('#f0fdfa', '#14b8a6')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#ccfbf1', '#0f766e')}>✍️</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#134e4a')}>Sổ Góp Ý & Đánh Giá Chuyên Môn</h3>
+                      <p style={styles.boxDesc}>Tiếp nhận góp ý, giải pháp nâng cao chất lượng dạy học ({feedbackCount} ý kiến)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#14b8a6" />
+                </Link>
+
+                <Link to="/admin/app-hub" style={styles.recordBox('#faf5ff', '#a855f7')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#f3e8ff', '#7e22ce')}>🎯</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#581c87')}>Cổng Tiện Ích Sổ Sách Điện Tử (Hub)</h3>
+                      <p style={styles.boxDesc}>Kho công cụ & tiện ích tra cứu công việc giảng dạy cho giáo viên</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#a855f7" />
+                </Link>
+              </div>
+            )}
+
+            {/* TAB 2: STUDENT & CLASS REGISTERS */}
+            {activeTab === 'student' && (
+              <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <Link to="/admin/emulation" style={styles.recordBox('#f0fdf4', '#22c55e')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dcfce7', '#166534')}>📋</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#14532d')}>Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp</h3>
+                      <p style={styles.boxDesc}>Theo dõi xếp hạng thi đua tuần, nề nếp kỷ luật các khối lớp</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#22c55e" />
+                </Link>
+
+                <Link to="/admin/students" style={styles.recordBox('#fffbebfb', '#f59e0b')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#fef9c3', '#b45309')}>👨‍🎓</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#78350f')}>Sổ Danh Sách Học Sinh & Chuyển Lớp</h3>
+                      <p style={styles.boxDesc}>Quản lý hồ sơ học sinh toàn trường & sổ chuyển lớp ({studentsCount} học sinh)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#f59e0b" />
+                </Link>
+
+                <Link to="/admin/digital-vault" style={styles.recordBox('#faf5ff', '#a855f7')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#f3e8ff', '#7e22ce')}>📜</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#581c87')}>Kho Văn Bằng Số & Học Bạ Điện Tử</h3>
+                      <p style={styles.boxDesc}>Tra cứu bằng tốt nghiệp THPT, chứng chỉ & học bạ số ({digitalVaultCount} hồ sơ)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#a855f7" />
+                </Link>
+
+                <Link to="/admin/parking" style={styles.recordBox('#eff6ff', '#3b82f6')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dbeafe', '#1d4ed8')}>🛵</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#1e3a8a')}>Sổ Quản Lý Xe Máy Học Sinh</h3>
+                      <p style={styles.boxDesc}>Theo dõi danh sách đăng ký xe máy & vé xe học sinh ({parkingCount} vé)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#3b82f6" />
+                </Link>
+
+                <Link to="/admin/bus" style={styles.recordBox('#fff1f2', '#f43f5e')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#ffe4e6', '#be123c')}>🚌</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#881337')}>Sổ Quản Lý Xe Đưa Đón Học Sinh</h3>
+                      <p style={styles.boxDesc}>Theo dõi các tuyến xe đưa đón học sinh an toàn ({busCount} tuyến)</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#f43f5e" />
+                </Link>
+              </div>
+            )}
+
+            {/* TAB 3: INTERNAL DOCUMENTS & TRADITION ARCHIVE */}
+            {activeTab === 'archive' && (
+              <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <Link to="/admin/docs" style={styles.recordBox('#eff6ff', '#3b82f6')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dbeafe', '#1d4ed8')}>📄</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#1e3a8a')}>Sổ Văn Bản - Thông Báo Chỉ Đạo Nội Bộ</h3>
+                      <p style={styles.boxDesc}>Lưu trữ công văn, quyết định chỉ đạo & văn bản hành chính nhà trường</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#3b82f6" />
+                </Link>
+
+                <Link to="/admin/news" style={styles.recordBox('#f0fdf4', '#22c55e')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dcfce7', '#166534')}>📰</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#14532d')}>Quản Lý Tin Tức & Truyền Thông</h3>
+                      <p style={styles.boxDesc}>Đăng tải tin tức hoạt động dạy học, sự kiện & thông báo công khai</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#22c55e" />
+                </Link>
+
+                <Link to="/admin/committee" style={styles.recordBox('#fffbebfb', '#f59e0b')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#fef9c3', '#b45309')}>🏆</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#78350f')}>Kho Tư Liệu Kỷ Niệm 30 Năm Thành Lập</h3>
+                      <p style={styles.boxDesc}>Lưu trữ thông tin tiểu ban, giải thể thao, tập san & danh sách tri ân</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#f59e0b" />
+                </Link>
+              </div>
+            )}
           </div>
 
-          {/* PRIMARY ACADEMIC MODULE CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '16px' }}>
-            
-            {/* Department Drives */}
-            <Link to="/admin/department-drives" style={styles.moduleCard('#eff6ff', '#bfdbfe', '#1d4ed8')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <FolderOpen size={32} color="#1d4ed8" />
-                <span style={styles.badge('#dbeafe', '#1e40af')}>Chuyên môn</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#1e3a8a', fontWeight: 'bold' }}>
-                Hồ Sơ Tổ Chuyên Môn
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#3b82f6' }}>
-                Lưu trữ giáo án, biên bản họp tổ & tài liệu giảng dạy ({drivesCount} mục)
-              </p>
-            </Link>
-
-            {/* Class Emulation */}
-            <Link to="/admin/emulation" style={styles.moduleCard('#f0fdf4', '#bbf7d0', '#166534')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Award size={32} color="#166534" />
-                <span style={styles.badge('#dcfce7', '#15803d')}>Nề nếp</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#14532d', fontWeight: 'bold' }}>
-                Chấm Điểm Thi Đua Lớp
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#16a34a' }}>
-                Theo dõi xếp hạng thi đua tuần, nề nếp kỷ luật học sinh các khối
-              </p>
-            </Link>
-
-            {/* Students List */}
-            <Link to="/admin/students" style={styles.moduleCard('#fffbebfb', '#fef08a', '#b45309')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Users size={32} color="#b45309" />
-                <span style={styles.badge('#fef9c3', '#a16207')}>Học sinh</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#78350f', fontWeight: 'bold' }}>
-                Danh Sách Học Sinh & Chuyển Lớp
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#ca8a04' }}>
-                Hồ sơ học sinh toàn trường & danh sách chuyển lớp ({studentsCount} học sinh)
-              </p>
-            </Link>
-
-            {/* Digital Vault */}
-            <Link to="/admin/digital-vault" style={styles.moduleCard('#faf5ff', '#e9d5ff', '#7e22ce')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <FileText size={32} color="#7e22ce" />
-                <span style={styles.badge('#f3e8ff', '#6b21a8')}>Hồ sơ số</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#581c87', fontWeight: 'bold' }}>
-                Kho Văn Bằng Số
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#9333ea' }}>
-                Tra cứu bằng tốt nghiệp, học bạ số & chứng chỉ ({digitalVaultCount} hồ sơ)
-              </p>
-            </Link>
-
-            {/* Weekly Schedule */}
-            <Link to="/admin/schedule" style={styles.moduleCard('#fff1f2', '#fecdd3', '#be123c')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <Calendar size={32} color="#be123c" />
-                <span style={styles.badge('#ffe4e6', '#9f1239')}>Lịch tuần</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#881337', fontWeight: 'bold' }}>
-                Lịch Công Tác Tuần
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#e11d48' }}>
-                Lịch báo giảng, lịch họp chuyên môn & sự kiện nhà trường
-              </p>
-            </Link>
-
-            {/* App Hub */}
-            <Link to="/admin/app-hub" style={styles.moduleCard('#f0fdfa', '#99f6e4', '#0f766e')}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <LayoutDashboard size={32} color="#0f766e" />
-                <span style={styles.badge('#ccfbf1', '#115e59')}>Tiện ích Hub</span>
-              </div>
-              <h3 style={{ margin: '10px 0 4px 0', fontSize: '17px', color: '#134e4a', fontWeight: 'bold' }}>
-                Cổng Tiện Ích Chuyên Môn
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#0d9488' }}>
-                Kho ứng dụng & tiện ích tra cứu công việc cho giáo viên
-              </p>
-            </Link>
-
-          </div>
-
-          {/* ACADEMIC OPERATIONAL STATS SUMMARY GRID */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
-            <div style={styles.statBox('#ffffff', '#e2e8f0')}>
-              <Clock color="#0284c7" size={28} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>
-                  {tasks.filter(t => t.status !== 'completed').length}
-                </div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Nhiệm vụ Chuyên môn Đang làm</div>
-              </div>
-            </div>
-
-            <div style={styles.statBox('#ffffff', '#e2e8f0')}>
-              <CheckCircle color="#166534" size={28} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>
-                  {tasks.filter(t => t.status === 'completed').length}
-                </div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Nhiệm vụ Đã hoàn thành</div>
-              </div>
-            </div>
-
-            <div style={styles.statBox('#ffffff', '#e2e8f0')}>
-              <Bike color="#b45309" size={28} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>{parkingCount}</div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Vé Xe Máy Học Sinh</div>
-              </div>
-            </div>
-
-            <div style={styles.statBox('#ffffff', '#e2e8f0')}>
-              <Bus color="#1d4ed8" size={28} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>{busCount}</div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Tuyến Xe Đưa Đón Học Sinh</div>
-              </div>
-            </div>
-
-            <div style={styles.statBox('#ffffff', '#e2e8f0')}>
-              <MessageSquare color="#be123c" size={28} />
-              <div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#1e293b' }}>{feedbackCount}</div>
-                <div style={{ fontSize: '13px', color: '#64748b' }}>Góp Ý & Kiến Nghị Chuyên Môn</div>
-              </div>
-            </div>
-          </div>
-
-          {/* RED ALERT OVERDUE TASKS SECTION */}
+          {/* RED ALERT PROGRESS WARNING SECTION */}
           {redAlertTasks.length > 0 && (
-            <div style={{ backgroundColor: '#fff1f2', border: '1.5px solid #fecdd3', borderRadius: '16px', padding: '20px' }}>
-              <h3 style={{ margin: '0 0 12px 0', color: '#9f1239', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '17px' }}>
-                <AlertTriangle color="#be123c" size={20} /> Báo Động Tiến Độ Chuyên Môn ({redAlertTasks.length} việc cần nhắc nhở)
+            <div style={{ backgroundColor: '#fff1f2', border: '1.5px solid #fecdd3', borderRadius: '14px', padding: '18px 22px' }}>
+              <h3 style={{ margin: '0 0 12px 0', color: '#9f1239', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
+                <AlertTriangle color="#be123c" size={20} /> Cảnh Báo Tiến Độ Công Việc Chuyên Môn ({redAlertTasks.length} việc gần hạn chót)
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {redAlertTasks.map(t => (
                   <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', padding: '12px 16px', borderRadius: '10px', border: '1px solid #ffe4e6' }}>
                     <div>
-                      <strong style={{ color: '#991b1b' }}>{t.title}</strong>
+                      <strong style={{ color: '#991b1b', fontSize: '14px' }}>{t.title}</strong>
                       <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px' }}>
-                        Người thực hiện: {t.assignee || 'Chưa rõ'} | Hạn chót: {new Date(t.deadline).toLocaleDateString('vi-VN')}
+                        Cán bộ phụ trách: <strong>{t.assignee || 'Chưa phân công'}</strong> | Hạn chót: {new Date(t.deadline).toLocaleDateString('vi-VN')}
                       </div>
                     </div>
                     <span style={{ padding: '4px 12px', backgroundColor: '#fee2e2', color: '#991b1b', borderRadius: '20px', fontWeight: 'bold', fontSize: '12px' }}>
@@ -329,27 +413,6 @@ export default function Dashboard() {
               </div>
             </div>
           )}
-
-          {/* ARCHIVED 30TH ANNIVERSARY EVENT RECORD SECTION */}
-          <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-              <div>
-                <h3 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
-                  <Trophy size={20} color="#d97706" /> Kho Tư Liệu Kỷ Niệm 30 Năm Thành Lập (1996 - 2026)
-                </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
-                  Toàn bộ hồ sơ tiểu ban, thông tin khách mời, nhà tài trợ, giải thể thao & tập san đã được cất giữ trân trọng trong mục Lưu trữ Kỷ niệm.
-                </p>
-              </div>
-
-              <Link 
-                to="/admin/committee" 
-                style={{ padding: '8px 16px', backgroundColor: '#fffbebfb', color: '#b45309', border: '1px solid #fef08a', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', textDecoration: 'none' }}
-              >
-                Xem Kho Tư Liệu 30 Năm ➔
-              </Link>
-            </div>
-          </div>
 
         </div>
       )}
@@ -381,34 +444,59 @@ export default function Dashboard() {
 }
 
 const styles = {
-  moduleCard: (bg, border, color) => ({
-    display: 'flex',
-    flexDirection: 'column',
-    justify: 'space-between',
-    padding: '20px',
+  kpiCard: (bg, border, color) => ({
+    padding: '16px 18px',
     backgroundColor: bg,
     border: `1.5px solid ${border}`,
-    borderRadius: '16px',
-    textDecoration: 'none',
-    transition: 'all 0.2s ease',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
-  }),
-  badge: (bg, color) => ({
-    padding: '4px 10px',
-    backgroundColor: bg,
-    color: color,
-    borderRadius: '20px',
-    fontWeight: 'bold',
-    fontSize: '11.5px'
-  }),
-  statBox: (bg, border) => ({
-    display: 'flex',
-    alignItems: 'center',
-    gap: '14px',
-    padding: '16px 20px',
-    backgroundColor: bg,
-    border: `1px solid ${border}`,
     borderRadius: '14px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-  })
+  }),
+  tabBtn: (isActive, color) => ({
+    padding: '10px 18px',
+    borderRadius: '8px',
+    border: 'none',
+    backgroundColor: isActive ? color : '#f1f5f9',
+    color: isActive ? '#ffffff' : '#475569',
+    fontWeight: 'bold',
+    fontSize: '13px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '8px',
+    transition: 'all 0.2s ease',
+    boxShadow: isActive ? '0 4px 12px rgba(0,0,0,0.15)' : 'none'
+  }),
+  recordBox: (bg, border) => ({
+    display: 'flex',
+    alignItems: 'center',
+    justify: 'space-between',
+    padding: '16px',
+    backgroundColor: bg,
+    border: `1.5px solid ${border}`,
+    borderRadius: '12px',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease'
+  }),
+  iconCircle: (bg, color) => ({
+    width: '42px',
+    height: '42px',
+    borderRadius: '10px',
+    backgroundColor: bg,
+    display: 'flex',
+    alignItems: 'center',
+    justify: 'center',
+    fontSize: '20px',
+    flexShrink: 0
+  }),
+  boxTitle: (color) => ({
+    margin: 0,
+    fontSize: '15px',
+    fontWeight: 'bold',
+    color: color
+  }),
+  boxDesc: {
+    margin: '2px 0 0 0',
+    fontSize: '12.5px',
+    color: '#64748b'
+  }
 };

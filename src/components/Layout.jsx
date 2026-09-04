@@ -62,52 +62,42 @@ export default function Layout({ children, title }) {
   const isAdmin = role === 'admin';
 
   const menuItems = [
-    // 1. 🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN (ƯU TIÊN HÀNG ĐẦU)
-    { path: '/admin', icon: Home, label: '📊 Tổng Quan Điều Hành', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || role === 'secretary' },
-    { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Chuyên Môn (Hub)', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: true },
-    { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Hồ sơ Tổ Chuyên Môn', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || role === 'secretary' },
-    { path: '/admin/emulation', icon: Trophy, label: '📋 Chấm Điểm Thi Đua Lớp', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewEmulation },
-    { path: '/admin/students', icon: Users, label: '👨‍🎓 Danh Sách Học Sinh & Chuyển Lớp', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewStudents },
-    { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin },
-    { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác Tuần', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewDocs },
-    { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewDocs },
-    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Xe Máy Học Sinh', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewStudents },
-    { path: '/admin/bus', icon: Bus, label: '🚌 Quản Lý Xe Đưa Đón Học Sinh', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewStudents },
-    { path: '/admin/gop-y', icon: FileText, label: '✍️ Quản Lý Góp Ý & Đánh Giá', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewFeedback },
-    { path: '/admin/docs', icon: FileText, label: '📄 Văn Bản - Thông Báo Nội Bộ', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewDocs },
-    { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR / Check-in', group: '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN', show: isAdmin || !!permissions.canViewStudents },
+    // 1. 📚 QUẢN LÝ TỔ CHUYÊN MÔN & SỔ SÁCH GIẢNG DẠY
+    { path: '/admin', icon: Home, label: '📊 Tổng Quan Điều Hành Sổ Sách', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
+    { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
+    { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Báo Giảng & Công Tác Tuần', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ Cán Bộ & Phân Công Dạy', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/gop-y', icon: FileText, label: '✍️ Sổ Góp Ý & Đánh Giá Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewFeedback },
+    { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Sổ Sách (Hub)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
 
-    // 2. 🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG
-    { path: '/admin/news', icon: Image, label: 'Tin tức - Sự kiện', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewNews },
-    { path: '/admin/gallery', icon: Image, label: 'Thư viện ảnh', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewNews },
-    { path: '/admin/luu-but', icon: BookOpen, label: '📓 Quản lý Lưu bút', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewGuestbook },
-    { path: '/admin/pages', icon: Globe, label: 'Trang Giới thiệu & Nội dung', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewPages },
-    { path: '/admin/invite-config', icon: Settings, label: 'Cấu hình Thiệp Mời', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewPages },
-    { path: '/admin/links', icon: Link2, label: 'Cấu hình Liên kết trang', group: '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG', show: isAdmin || !!permissions.canViewLinks },
+    // 2. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
+    { path: '/admin/emulation', icon: Trophy, label: '📋 Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewEmulation },
+    { path: '/admin/students', icon: Users, label: '👨‍🎓 Sổ Học Sinh & Chuyển Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số & Hồ Sơ HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin },
+    { path: '/admin/parking', icon: Bike, label: '🛵 Sổ Quản Lý Xe Máy Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/bus', icon: Bus, label: '🚌 Sổ Quản Lý Xe Đưa Đón Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
 
-    // 3. 🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)
-    { path: '/admin/committee', icon: CheckSquare, label: 'Hồ sơ Việc Tiểu ban 30 năm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: true },
-    { path: '/admin/truyen-lua-control', icon: Flame, label: '🔥 LED Truyền Lửa Kỷ Niệm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: true },
-    { path: '/admin/guests', icon: Users, label: 'Danh sách Khách mời Đại lễ', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewGuests },
-    { path: '/admin/sponsors', icon: Gift, label: 'Danh sách Tài trợ Đại lễ', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewSponsors },
-    { path: '/admin/quizzes', icon: Trophy, label: 'Cuộc thi Tìm hiểu 30 năm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewQuizzes },
-    { path: '/admin/voting', icon: Trophy, label: 'Bình chọn Tác phẩm Kỷ niệm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewQuizzes },
-    { path: '/admin/the-thao', icon: Activity, label: '⚽ Giải Thể thao Kỷ niệm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewSports },
-    { path: '/admin/tap-san', icon: BookOpen, label: '📖 Tập San Kỷ niệm 30 năm', group: '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)', show: isAdmin || !!permissions.canViewMagazine },
+    // 3. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
+    { path: '/admin/docs', icon: FileText, label: '📄 Sổ Văn Bản - Thông Báo Nội Bộ', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/news', icon: Image, label: '📰 Tin tức - Sự kiện Nhà trường', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },
+    { path: '/admin/gallery', icon: Image, label: '🖼️ Thư viện ảnh Hoạt động', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },
+    { path: '/admin/luu-but', icon: BookOpen, label: '📓 Quản lý Sổ Lưu bút', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewGuestbook },
+    { path: '/admin/committee', icon: CheckSquare, label: '🏆 Kho Tư Liệu Kỷ Niệm 30 Năm', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
 
     // 4. ⚙️ QUẢN TRỊ HỆ THỐNG
-    { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
+    { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản Cán bộ', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
     { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
-    { path: '/admin/audit', icon: Activity, label: 'Nhật ký Hoạt động', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
+    { path: '/admin/audit', icon: Activity, label: '📋 Nhật ký Hoạt động Hệ thống', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
   ];
 
   const visibleMenuItems = useMemo(() => menuItems.filter(item => item.show), [isAdmin, role, permissions]);
 
   // Accordion State for Sidebar Groups
   const [openGroups, setOpenGroups] = useState({
-    '🏫 QUẢN LÝ & VẬN HÀNH CHUYÊN MÔN': true,
-    '🌐 NỘI DUNG WEBSITE & TRUYỀN THÔNG': true,
-    '🏆 TƯ LIỆU KỶ NIỆM 30 NĂM (1996 - 2026)': false, // Collapsed by default after successful event
+    '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY': true,
+    '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP': true,
+    '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG': true,
     '⚙️ QUẢN TRỊ HỆ THỐNG': true
   });
 
