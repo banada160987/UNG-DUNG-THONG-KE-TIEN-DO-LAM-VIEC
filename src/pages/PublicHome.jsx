@@ -869,29 +869,29 @@ export default function PublicHome() {
             </div>
           </PortalBlock>
 
-          <PortalBlock title="BẢNG VÀNG TRI ÂN" color="#d32f2f" icon="💝">
+          <PortalBlock title="THƯ TRI ÂN ĐỒNG HÀNH" color="#166534" icon="📜">
             {sponsors.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '16px 10px', backgroundColor: '#fffdf5', borderRadius: '12px', border: '1px solid #fef08a' }}>
-                <div style={{ fontSize: '26px', marginBottom: '4px' }}>💝</div>
-                <div style={{ fontWeight: 'bold', color: '#b45309', fontSize: '13.5px' }}>Đồng Hành Cùng Đại Lễ Kỷ Niệm 30 Năm</div>
+                <div style={{ fontSize: '26px', marginBottom: '4px' }}>📜</div>
+                <div style={{ fontWeight: 'bold', color: '#b45309', fontSize: '13.5px' }}>Tri Ân Quý Nhà Tài Trợ & Cựu Học Sinh</div>
                 <p style={{ fontSize: '12px', color: '#854d0e', margin: '6px 0 12px 0', lineHeight: '1.5' }}>
-                  Ban Tổ Chức trân trọng cảm ơn sự ủng hộ & tài trợ từ Quý cơ quan, cựu học sinh và nhà tài trợ.
+                  Ban Giám Hiệu & Nhà trường trân trọng tri ân sự ủng hộ, tài trợ quý báu từ quý cơ quan, các thế hệ thầy cô và cựu học sinh cho Đại lễ 30 năm.
                 </p>
                 <a 
                   href="/tai-tro" 
                   style={{
                     display: 'inline-block',
-                    background: 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)',
+                    background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)',
                     color: 'white',
                     padding: '7px 16px',
                     borderRadius: '20px',
                     fontSize: '12px',
                     fontWeight: 'bold',
                     textDecoration: 'none',
-                    boxShadow: '0 2px 8px rgba(190,18,60,0.25)'
+                    boxShadow: '0 2px 8px rgba(22, 101, 52, 0.25)'
                   }}
                 >
-                  Đóng Góp Tài Trợ ➔
+                  Xem Danh Sách Tri Ân ➔
                 </a>
               </div>
             ) : (

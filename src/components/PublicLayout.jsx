@@ -164,7 +164,7 @@ export default function PublicLayout() {
         <div style={styles.dateInfo}>{currentDate}</div>
         <div style={styles.marqueeWrapper}>
           <marquee style={styles.marqueeText} scrollamount="5">
-            CHÀO MỪNG QUÝ VỊ ĐẠI BIỂU, QUÝ THẦY CÔ VÀ CÁC THẾ HỆ HỌC SINH VỀ DỰ LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT! CHƯƠNG TRÌNH SẼ ĐƯỢC TỔ CHỨC VÀO NGÀY 03/9/2026.
+            CHÀO MỪNG ĐẾN VỚI CỔNG THÔNG TIN ĐIỆN TỬ & DỊCH VỤ GIÁO DỤC TRƯỜNG THPT CAO BÁ QUÁT • CHÚC MỪNG ĐẠI LỄ KỶ NIỆM 30 NĂM THÀNH LẬP (1996 - 2026) THÀNH CÔNG RỰC RỠ!
           </marquee>
         </div>
       </div>
