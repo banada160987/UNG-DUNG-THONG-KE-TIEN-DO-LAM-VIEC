@@ -132,11 +132,17 @@ export default function PublicSchedule() {
   const getLessonForTeacher = (day, period) => timetableData.find(t => t.teacher_name === selectedTeacher && t.day_of_week === day && Number(t.period) === period);
 
   const handleExportClassTkbExcel = () => {
-    const matrixData = [];
+    const matrixData = [
+      { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": `THỜI KHÓA BIỂU LỚP ${selectedClass}`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": "Năm học: 2026 - 2027 • Áp dụng từ ngày 01/09/2026", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": "", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" }
+    ];
+
     const periods = [
-      { label: '--- CA SÁNG ---', isHeader: true },
+      { label: '=== CA SÁNG ===', isHeader: true },
       1, 2, 3, 4, 5,
-      { label: '--- CA CHIỀU ---', isHeader: true },
+      { label: '=== CA CHIỀU ===', isHeader: true },
       6, 7, 8, 9, 10
     ];
 
@@ -154,17 +160,26 @@ export default function PublicSchedule() {
     });
 
     const ws = XLSX.utils.json_to_sheet(matrixData);
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_Lop_${selectedClass}`);
     XLSX.writeFile(wb, `ThoiKhoaBieu_Lop_${selectedClass}_2026_2027.xlsx`);
   };
 
   const handleExportTeacherTkbExcel = () => {
-    const matrixData = [];
+    const matrixData = [
+      { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN: ${selectedTeacher.toUpperCase()}`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": "Năm học: 2026 - 2027 • Áp dụng từ ngày 01/09/2026", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": "", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" }
+    ];
+
     const periods = [
-      { label: '--- CA SÁNG ---', isHeader: true },
+      { label: '=== CA SÁNG ===', isHeader: true },
       1, 2, 3, 4, 5,
-      { label: '--- CA CHIỀU ---', isHeader: true },
+      { label: '=== CA CHIỀU ===', isHeader: true },
       6, 7, 8, 9, 10
     ];
 
@@ -182,25 +197,12 @@ export default function PublicSchedule() {
     });
 
     const ws = XLSX.utils.json_to_sheet(matrixData);
+    ws['!cols'] = [
+      { wch: 18 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }, { wch: 22 }
+    ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_${selectedTeacher}`);
     XLSX.writeFile(wb, `ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
-  };
-
-  const handleCopyDirectLink = () => {
-    const params = new URLSearchParams();
-    params.set('tab', activeMainTab);
-    if (activeMainTab === 'class_tkb') {
-      params.set('class', selectedClass);
-    } else if (activeMainTab === 'teacher_tkb') {
-      params.set('teacher', selectedTeacher);
-    }
-
-    const fullUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
-    navigator.clipboard.writeText(fullUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    });
   };
 
   const handleTabChange = (tab) => {
@@ -225,9 +227,10 @@ export default function PublicSchedule() {
         @media print { 
           header, nav, footer, .no-print { display: none !important; } 
           .print-only { display: block !important; }
-          .print-full { width: 100% !important; margin: 0 !important; border: none !important; box-shadow: none !important; } 
-          table { width: 100% !important; border-collapse: collapse !important; }
-          th, td { border: 1px solid #000 !important; padding: 6px !important; }
+          .print-full { width: 100% !important; margin: 0 !important; border: none !important; box-shadow: none !important; padding: 0 !important; } 
+          table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px !important; }
+          th, td { border: 1px solid #1e293b !important; padding: 6px 8px !important; font-size: 12px !important; }
+          th { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
         }
       `}</style>
       
@@ -272,12 +275,33 @@ export default function PublicSchedule() {
       {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (
         <div style={styles.sheetCard} className="print-full">
           {/* Official Print Header */}
-          <div className="print-only" style={{ textAlign: 'center', marginBottom: '15px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO • TRƯỜNG THPT CAO BÁ QUÁT</div>
-            <h2 style={{ margin: '6px 0 2px 0', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
-              {activeMainTab === 'class_tkb' ? `THỜI KHÓA BIỂU LỚP ${selectedClass}` : `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN: ${selectedTeacher}`}
-            </h2>
-            <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#475569' }}>Áp dụng Năm học 2026 - 2027</div>
+          <div className="print-only" style={{ marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO</div>
+                <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
+                <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+              </div>
+            </div>
+
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <h2 style={{ margin: '4px 0', fontSize: '18px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                {activeMainTab === 'class_tkb' ? `THỜI KHÓA BIỂU LỚP ${selectedClass}` : `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN`}
+              </h2>
+              {activeMainTab === 'teacher_tkb' && (
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
+                  Giáo viên: {selectedTeacher}
+                </div>
+              )}
+              <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
+                Áp dụng Học kỳ I • Năm học 2026 - 2027
+              </div>
+            </div>
           </div>
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }} className="no-print">
@@ -297,14 +321,6 @@ export default function PublicSchedule() {
             </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={handleCopyDirectLink} 
-                style={{ ...styles.printBtn, backgroundColor: copied ? '#16a34a' : '#0284c7' }}
-                title="Sao chép đường dẫn trực tiếp đến TKB này để gửi Zalo/FB"
-              >
-                {copied ? <Check size={16} /> : <Share2 size={16} />}
-                {copied ? 'Đã sao chép link!' : '🔗 Gửi Link Zalo/FB'}
-              </button>
               <button 
                 onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel} 
                 style={{ ...styles.printBtn, backgroundColor: '#15803d' }}

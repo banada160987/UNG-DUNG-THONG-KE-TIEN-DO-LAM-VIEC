@@ -3,8 +3,10 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { 
   Calendar, Plus, Save, Trash2, Edit3, Eye, Clock, MapPin, CheckCircle2, 
-  RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck 
+  RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck,
+  Share2, Check
 } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
 
 export default function AdminSchedule() {
@@ -15,6 +17,12 @@ export default function AdminSchedule() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Admin Link Generator State
+  const [shareType, setShareType] = useState('class'); // 'class' | 'teacher'
+  const [shareClass, setShareClass] = useState('10A1');
+  const [shareTeacher, setShareTeacher] = useState('');
+  const [adminCopied, setAdminCopied] = useState(false);
 
   // Form State for BGH Schedule
   const [title, setTitle] = useState('');
@@ -391,6 +399,33 @@ export default function AdminSchedule() {
 
     return matchesSearch && matchesGrade;
   });
+
+  const availableClasses = Array.from(new Set(timetableData.map(t => t.student_class))).filter(Boolean).sort();
+  const availableTeachers = Array.from(new Set(timetableData.map(t => t.teacher_name))).filter(Boolean).sort();
+
+  useEffect(() => {
+    if (availableTeachers.length > 0 && !shareTeacher) {
+      setShareTeacher(availableTeachers[0]);
+    }
+  }, [availableTeachers, shareTeacher]);
+
+  const handleAdminCopyShareLink = () => {
+    const targetVal = shareType === 'class' ? shareClass : shareTeacher;
+    if (!targetVal) {
+      alert("Vui lòng chọn đối tượng cần tạo link!");
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set('tab', shareType === 'class' ? 'class_tkb' : 'teacher_tkb');
+    if (shareType === 'class') params.set('class', targetVal);
+    else params.set('teacher', targetVal);
+
+    const shareableUrl = `${window.location.origin}/lich-cong-tac?${params.toString()}`;
+    navigator.clipboard.writeText(shareableUrl).then(() => {
+      setAdminCopied(true);
+      setTimeout(() => setAdminCopied(false), 2500);
+    });
+  };
 
   const uniqueClassesCount = new Set(timetableData.map(t => t.student_class)).size;
   const uniqueTeachersCount = new Set(timetableData.map(t => t.teacher_name)).size;
