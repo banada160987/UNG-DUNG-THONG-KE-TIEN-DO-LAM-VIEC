@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function AdminRegistrations() {
   const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'results'
@@ -24,6 +25,11 @@ export default function AdminRegistrations() {
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [results, setResults] = useState([]);
   const [loadingResults, setLoadingResults] = useState(false);
+
+  // Edit result states
+  const [showEditResultModal, setShowEditResultModal] = useState(false);
+  const [editingResultData, setEditingResultData] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   useEffect(() => {
     fetchCampaigns();
@@ -183,24 +189,20 @@ export default function AdminRegistrations() {
     }
   };
 
-  const exportToCSV = () => {
+  const exportToExcel = () => {
     if (results.length === 0) return;
     
-    // Find campaign schema to know columns
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
     const schema = campaign?.form_schema || [];
     
-    // Headers
-    let csv = "Thời gian,Mã Học Sinh,Họ và Tên,Lớp";
-    schema.forEach(field => {
-      csv += `,${field.label.replace(/,/g, ' ')}`;
-    });
-    csv += "\n";
-
-    // Rows
-    results.forEach(r => {
-      const date = new Date(r.created_at).toLocaleString('vi-VN');
-      let row = `"${date}","${r.student_code}","${r.student_name}","${r.student_class}"`;
+    // Prepare Data
+    const excelData = results.map(r => {
+      const row = {
+        'Thời gian': new Date(r.created_at).toLocaleString('vi-VN'),
+        'Mã Học Sinh': r.student_code,
+        'Họ và Tên': r.student_name,
+        'Lớp': r.student_class
+      };
       
       schema.forEach(field => {
         const ans = r.responses[field.id];
@@ -210,17 +212,64 @@ export default function AdminRegistrations() {
         } else if (ans) {
           ansStr = String(ans);
         }
-        row += `,"${ansStr.replace(/"/g, '""')}"`;
+        row[field.label] = ansStr;
       });
-      csv += row + "\n";
+      return row;
     });
 
-    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Danh_sach_dang_ky_${campaign?.title || 'x'}.csv`;
-    a.click();
+    // Create Worksheet
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    
+    // Auto size columns based on content
+    const colWidths = Object.keys(excelData[0]).map(key => {
+      const maxLen = Math.max(
+        key.length,
+        ...excelData.map(row => (row[key] ? row[key].toString().length : 0))
+      );
+      return { wch: maxLen + 2 };
+    });
+    worksheet['!cols'] = colWidths;
+
+    // Create Workbook and append worksheet
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh_sach");
+    
+    // Download
+    XLSX.writeFile(workbook, `Danh_sach_dang_ky_${campaign?.title || 'x'}.xlsx`);
+  };
+
+  const handleDeleteResult = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bài đăng ký này?")) return;
+    try {
+      const { error } = await supabase.from('cbq_student_registrations').delete().eq('id', id);
+      if (error) throw error;
+      fetchResults(selectedCampaignId);
+    } catch (err) {
+      alert("Lỗi khi xóa: " + err.message);
+    }
+  };
+
+  const handleEditResult = (r) => {
+    setEditingResultData(r);
+    setEditFormData(r.responses || {});
+    setShowEditResultModal(true);
+  };
+
+  const handleSaveResult = async (e) => {
+    e.preventDefault();
+    try {
+      const { error } = await supabase
+        .from('cbq_student_registrations')
+        .update({ responses: editFormData })
+        .eq('id', editingResultData.id);
+        
+      if (error) throw error;
+      alert("Cập nhật bài đăng ký thành công!");
+      setShowEditResultModal(false);
+      fetchResults(selectedCampaignId);
+    } catch (err) {
+      alert("Lỗi khi cập nhật: " + err.message);
+    }
   };
 
   return (
@@ -482,10 +531,52 @@ export default function AdminRegistrations() {
                     {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                   </select>
                 </div>
-                <button onClick={exportToCSV} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
-                  <Download size={16} /> Xuất file CSV
+                <button onClick={exportToExcel} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.3)' }}>
+                  <Download size={16} /> Xuất file Excel
                 </button>
               </div>
+
+              {/* THỐNG KÊ NHANH */}
+              {!loadingResults && results.length > 0 && (
+                <div style={{ marginBottom: '20px', padding: '15px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px' }}>
+                  <h4 style={{ margin: '0 0 10px 0', color: '#166534', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    📊 Thống kê nhanh
+                  </h4>
+                  <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+                    <div style={{ background: '#fff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #dcfce7' }}>
+                      <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 'bold' }}>TỔNG LƯỢT ĐĂNG KÝ</div>
+                      <div style={{ fontSize: '24px', fontWeight: '900', color: '#166534' }}>{results.length}</div>
+                    </div>
+                    
+                    {/* Thống kê tự động theo các câu hỏi trắc nghiệm */}
+                    {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || [])
+                      .filter(f => ['select', 'radio', 'checkbox'].includes(f.type))
+                      .map(field => {
+                        const counts = {};
+                        results.forEach(r => {
+                          const ans = r.responses[field.id];
+                          if (Array.isArray(ans)) {
+                            ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
+                          } else if (ans) {
+                            counts[ans] = (counts[ans] || 0) + 1;
+                          }
+                        });
+                        return (
+                          <div key={field.id} style={{ background: '#fff', padding: '10px 15px', borderRadius: '6px', border: '1px solid #dcfce7', minWidth: '150px' }}>
+                            <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 'bold', marginBottom: '5px' }}>{field.label}</div>
+                            {Object.entries(counts).map(([opt, count]) => (
+                              <div key={opt} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', color: '#334155', borderBottom: '1px dashed #e2e8f0', paddingBottom: '3px', marginBottom: '3px' }}>
+                                <span>{opt}:</span>
+                                <strong style={{ color: '#0f172a' }}>{count}</strong>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })
+                    }
+                  </div>
+                </div>
+              )}
 
               {loadingResults ? <p>Đang tải danh sách học sinh đăng ký...</p> : (
                 <div style={{ overflowX: 'auto' }}>
@@ -500,6 +591,7 @@ export default function AdminRegistrations() {
                         {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => (
                           <th key={field.id} style={{ padding: '10px', color: '#0284c7' }}>{field.label}</th>
                         ))}
+                        <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -518,6 +610,14 @@ export default function AdminRegistrations() {
                             if (Array.isArray(ans)) displayAns = ans.join(', ');
                             return <td key={field.id} style={{ padding: '10px' }}>{displayAns || '-'}</td>;
                           })}
+                          <td style={{ padding: '10px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                            <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
+                              <Edit3 size={16} />
+                            </button>
+                            <button onClick={() => handleDeleteResult(r.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Xóa">
+                              <Trash2 size={16} />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -527,6 +627,109 @@ export default function AdminRegistrations() {
             </div>
           )}
         </>
+      )}
+
+      {/* EDIT RESULT MODAL */}
+      {showEditResultModal && editingResultData && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <form onSubmit={handleSaveResult} style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', width: '100%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h3 style={{ margin: '0 0 16px 0', color: '#1e293b', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
+              ✏️ Sửa thông tin đăng ký
+            </h3>
+            
+            <div style={{ marginBottom: '16px', fontSize: '13.5px', color: '#475569' }}>
+              <strong>Học sinh:</strong> {editingResultData.student_name} ({editingResultData.student_class}) <br/>
+              <strong>Mã HS:</strong> {editingResultData.student_code}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => {
+                const value = editFormData[field.id] || (field.type === 'checkbox' ? [] : '');
+                
+                return (
+                  <div key={field.id}>
+                    <label style={styles.label}>{field.label}</label>
+                    
+                    {field.type === 'text' && (
+                      <input 
+                        type="text" 
+                        value={value} 
+                        onChange={e => setEditFormData({...editFormData, [field.id]: e.target.value})} 
+                        style={styles.input} 
+                      />
+                    )}
+                    
+                    {field.type === 'textarea' && (
+                      <textarea 
+                        value={value} 
+                        rows={3}
+                        onChange={e => setEditFormData({...editFormData, [field.id]: e.target.value})} 
+                        style={styles.input} 
+                      />
+                    )}
+                    
+                    {field.type === 'select' && (
+                      <select 
+                        value={value} 
+                        onChange={e => setEditFormData({...editFormData, [field.id]: e.target.value})} 
+                        style={styles.input}
+                      >
+                        <option value="">-- Chọn --</option>
+                        {(field.options || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    )}
+                    
+                    {field.type === 'radio' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '5px' }}>
+                        {(field.options || []).map(opt => (
+                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input 
+                              type="radio" 
+                              name={`field_${field.id}`}
+                              value={opt}
+                              checked={value === opt}
+                              onChange={e => setEditFormData({...editFormData, [field.id]: e.target.value})}
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {field.type === 'checkbox' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', marginTop: '5px' }}>
+                        {(field.options || []).map(opt => (
+                          <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={Array.isArray(value) && value.includes(opt)}
+                              onChange={e => {
+                                let newArr = Array.isArray(value) ? [...value] : [];
+                                if (e.target.checked) newArr.push(opt);
+                                else newArr = newArr.filter(item => item !== opt);
+                                setEditFormData({...editFormData, [field.id]: newArr});
+                              }}
+                            />
+                            {opt}
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '24px' }}>
+              <button type="button" onClick={() => setShowEditResultModal(false)} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}>
+                Hủy
+              </button>
+              <button type="submit" style={{ padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+                Lưu Thay Đổi
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </Layout>
   );
