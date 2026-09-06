@@ -377,6 +377,17 @@ export default function Dashboard() {
                   <ChevronRight size={18} color="#f59e0b" />
                 </Link>
 
+                <Link to="/admin/registrations" style={styles.recordBox('#ecfeff', '#06b6d4')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#cffafe', '#0891b2')}>📋</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#164e63')}>Sổ Quản Lý Đăng Ký Động</h3>
+                      <p style={styles.boxDesc}>Quản lý các đợt đăng ký sự kiện, CLB, chuyên đề học sinh</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#06b6d4" />
+                </Link>
+
                 <Link to="/admin/digital-vault" style={styles.recordBox('#faf5ff', '#a855f7')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={styles.iconCircle('#f3e8ff', '#7e22ce')}>📜</div>
