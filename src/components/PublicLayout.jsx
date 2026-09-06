@@ -5,7 +5,7 @@ import { GraduationCap, Briefcase, ShieldCheck } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 
 const DEFAULT_SCHOOL_MENUS = [
-  { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
+  { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác & Thời khóa biểu', path: '/lich-cong-tac', sort_order: 1, is_active: true },
   { id: 'm2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
   { id: 'm3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
   { id: 'm4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
@@ -83,6 +83,18 @@ export default function PublicLayout() {
 
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>🏠 Trang chủ</Link>
+            
+            {/* MENU ĐỘC LẬP: THỜI KHÓA BIỂU & LỊCH TUẦN */}
+            <Link 
+              to="/lich-cong-tac" 
+              style={{
+                ...(isActive('/lich-cong-tac') ? styles.navItemActive : styles.navItem),
+                fontWeight: 'bold',
+                color: isActive('/lich-cong-tac') ? '#ffffff' : '#fef08a'
+              }}
+            >
+              📅 THỜI KHÓA BIỂU & LỊCH TUẦN
+            </Link>
             
             {/* DROPDOWN 1: QUẢN LÝ VẬN HÀNH NHÀ TRƯỜNG */}
             <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>

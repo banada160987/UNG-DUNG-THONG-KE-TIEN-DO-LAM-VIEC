@@ -407,9 +407,12 @@ export default function PublicHome() {
             </div>
             
             <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', textDecoration: 'none', color: '#166534', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>📅</span>
-                <span>Lịch Công Tác Tuần</span>
+              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1.5px solid #22c55e', textDecoration: 'none', color: '#15803d', fontWeight: '900', fontSize: '13.5px', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.15)' }}>
+                <span style={{ fontSize: '22px' }}>📅</span>
+                <div>
+                  <div>Thời Khóa Biểu & Lịch Tuần</div>
+                  <div style={{ fontSize: '10.5px', color: '#16a34a', fontWeight: 'normal' }}>Tra cứu Lớp & Giáo viên</div>
+                </div>
               </a>
 
               <a href="/to-chuyen-mon" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none', color: '#1d4ed8', fontWeight: 'bold', fontSize: '13px' }}>
