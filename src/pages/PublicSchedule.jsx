@@ -103,26 +103,73 @@ export default function PublicSchedule() {
   const getLessonForTeacher = (day, period) => timetableData.find(t => t.teacher_name === selectedTeacher && t.day_of_week === day && Number(t.period) === period);
 
   const handleExportClassTkbExcel = () => {
-    const classLessons = timetableData.filter(t => t.student_class === selectedClass);
-    const dataToExport = classLessons.map(t => ({ "Lớp": t.student_class, "Thứ": t.day_of_week, "Tiết": t.period, "Môn Học": t.subject, "Giáo Viên": t.teacher_name, "Phòng": t.room || 'Lớp học' }));
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const matrixData = [];
+    const periods = [
+      { label: '--- CA SÁNG ---', isHeader: true },
+      1, 2, 3, 4, 5,
+      { label: '--- CA CHIỀU ---', isHeader: true },
+      6, 7, 8, 9, 10
+    ];
+
+    periods.forEach(p => {
+      if (p.isHeader) {
+        matrixData.push({ "Tiết / Ngày": p.label, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" });
+      } else {
+        const row = { "Tiết / Ngày": `Tiết ${p}` };
+        DAYS.forEach(d => {
+          const item = getLessonForClass(d, p);
+          row[d] = item ? `${item.subject} (${item.teacher_name})` : '-';
+        });
+        matrixData.push(row);
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(matrixData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_Lop_${selectedClass}`);
-    XLSX.writeFile(wb, `ThoiKhoaBieu_Lop_${selectedClass}.xlsx`);
+    XLSX.writeFile(wb, `ThoiKhoaBieu_Lop_${selectedClass}_2026_2027.xlsx`);
   };
 
   const handleExportTeacherTkbExcel = () => {
-    const teacherLessons = timetableData.filter(t => t.teacher_name === selectedTeacher);
-    const dataToExport = teacherLessons.map(t => ({ "Giáo Viên": t.teacher_name, "Thứ": t.day_of_week, "Tiết": t.period, "Lớp": t.student_class, "Môn Học": t.subject, "Phòng": t.room || 'Lớp học' }));
-    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const matrixData = [];
+    const periods = [
+      { label: '--- CA SÁNG ---', isHeader: true },
+      1, 2, 3, 4, 5,
+      { label: '--- CA CHIỀU ---', isHeader: true },
+      6, 7, 8, 9, 10
+    ];
+
+    periods.forEach(p => {
+      if (p.isHeader) {
+        matrixData.push({ "Tiết / Ngày": p.label, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" });
+      } else {
+        const row = { "Tiết / Ngày": `Tiết ${p}` };
+        DAYS.forEach(d => {
+          const item = getLessonForTeacher(d, p);
+          row[d] = item ? `${item.subject} (${item.student_class})` : '-';
+        });
+        matrixData.push(row);
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(matrixData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_${selectedTeacher}`);
-    XLSX.writeFile(wb, `ThoiKhoaBieu_GiaoVien_${selectedTeacher.replace(/\s+/g, '_')}.xlsx`);
+    XLSX.writeFile(wb, `ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
   };
 
   return (
     <div style={styles.container}>
-      <style>{`@media print { header, nav, footer, .no-print { display: none !important; } .print-full { width: 100% !important; margin: 0 !important; } }`}</style>
+      <style>{`
+        .print-only { display: none !important; }
+        @media print { 
+          header, nav, footer, .no-print { display: none !important; } 
+          .print-only { display: block !important; }
+          .print-full { width: 100% !important; margin: 0 !important; border: none !important; box-shadow: none !important; } 
+          table { width: 100% !important; border-collapse: collapse !important; }
+          th, td { border: 1px solid #000 !important; padding: 6px !important; }
+        }
+      `}</style>
       
       <div style={styles.headerCard} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -164,6 +211,15 @@ export default function PublicSchedule() {
 
       {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (
         <div style={styles.sheetCard} className="print-full">
+          {/* Official Print Header */}
+          <div className="print-only" style={{ textAlign: 'center', marginBottom: '15px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO • TRƯỜNG THPT CAO BÁ QUÁT</div>
+            <h2 style={{ margin: '6px 0 2px 0', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+              {activeMainTab === 'class_tkb' ? `THỜI KHÓA BIỂU LỚP ${selectedClass}` : `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN: ${selectedTeacher}`}
+            </h2>
+            <div style={{ fontSize: '12px', fontStyle: 'italic', color: '#475569' }}>Áp dụng Năm học 2026 - 2027</div>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }} className="no-print">
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
               <span style={{ fontWeight: 'bold', color: '#1e293b' }}>
@@ -243,6 +299,20 @@ export default function PublicSchedule() {
               })}
             </tbody>
           </table>
+
+          {/* Official Print Signatures */}
+          <div className="print-only" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 40px', fontSize: '12px' }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold' }}>BAN GIÁM HIỆU DUYỆT</div>
+              <div style={{ height: '50px' }}></div>
+              <div style={{ fontStyle: 'italic' }}>(Ký và ghi rõ họ tên)</div>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold' }}>NGƯỜI LẬP BẢNG / GIÁO VIÊN</div>
+              <div style={{ height: '50px' }}></div>
+              <div style={{ fontStyle: 'italic' }}>{selectedTeacher || 'Giáo viên'}</div>
+            </div>
+          </div>
         </div>
       )}
     </div>
