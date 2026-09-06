@@ -32,7 +32,7 @@ export default function PublicSchedule() {
   const [selectedSchedule, setSelectedSchedule] = useState(DEFAULT_SCHEDULE);
   const [timetableData, setTimetableData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClass, setSelectedClass] = useState('10A1');
+  const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedTeacher, setSelectedTeacher] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -119,6 +119,12 @@ export default function PublicSchedule() {
 
   const availableClasses = Array.from(new Set(timetableData.map(t => t.student_class))).filter(Boolean).sort();
   const availableTeachers = Array.from(new Set(timetableData.map(t => t.teacher_name))).filter(Boolean).sort();
+
+  useEffect(() => {
+    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
+      setSelectedClass(availableClasses[0]);
+    }
+  }, [availableClasses, selectedClass]);
 
   useEffect(() => {
     if (availableTeachers.length > 0 && !selectedTeacher) {
