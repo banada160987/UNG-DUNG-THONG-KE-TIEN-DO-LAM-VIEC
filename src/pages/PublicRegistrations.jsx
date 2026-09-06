@@ -299,7 +299,7 @@ export default function PublicRegistrations() {
           📝 CỔNG ĐĂNG KÝ HOẠT ĐỘNG
         </h2>
         <p style={{ margin: 0, fontSize: '14px', color: '#e0f2fe', fontWeight: '500' }}>
-          Trường THPT Cao Bá Quát - Quốc Oai
+          Trường THPT Cao Bá Quát - Tân An
         </p>
       </div>
 

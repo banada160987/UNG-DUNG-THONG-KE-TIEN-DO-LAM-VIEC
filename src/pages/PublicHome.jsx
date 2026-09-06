@@ -49,6 +49,16 @@ export default function PublicHome() {
   const [attendingGuests, setAttendingGuests] = useState(0);
   const [externalLinks, setExternalLinks] = useState([]);
   const [searchParams] = useSearchParams();
+  const [homeConfig, setHomeConfig] = useState({
+    show_announcement: true,
+    show_gallery_slider: true,
+    show_contact: true,
+    show_external_links: true,
+    show_services: true,
+    show_calendar_widget: true,
+    show_rsvp_search: true,
+    show_gold_board: true
+  });
   
   const calculateTimeLeft = (targetDateString) => {
     const target = targetDateString ? new Date(targetDateString) : new Date("2026-09-03T07:30:00");
@@ -110,19 +120,30 @@ export default function PublicHome() {
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*', { count: 'exact', head: true }).eq('rsvp_status', 'attending'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
-        supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single(),
+        supabase.from('cbq_pages').select('*').in('slug', ['invite-config', 'home-config']),
         supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10),
         supabase.from('cbq_quizzes').select('*').limit(1),
         supabase.from('cbq_gallery').select('*').eq('is_approved', true).order('created_at', { ascending: false })
       ]);
       
-      if (configRes.data && configRes.data.content) {
-        try {
-          const parsed = typeof configRes.data.content === 'string' ? JSON.parse(configRes.data.content) : configRes.data.content;
-          setInviteConfig(parsed);
-        } catch (e) {
-          console.error("Lỗi parse cấu hình thiệp", e);
-        }
+      if (configRes.data && configRes.data.length > 0) {
+        configRes.data.forEach(page => {
+          if (page.slug === 'invite-config') {
+            try {
+              const parsed = typeof page.content === 'string' ? JSON.parse(page.content) : page.content;
+              setInviteConfig(parsed);
+            } catch (e) {
+              console.error("Lỗi parse cấu hình thiệp", e);
+            }
+          } else if (page.slug === 'home-config') {
+            try {
+              const parsed = typeof page.content === 'string' ? JSON.parse(page.content) : page.content;
+              setHomeConfig(prev => ({ ...prev, ...parsed }));
+            } catch (e) {
+              console.error("Lỗi parse home config", e);
+            }
+          }
+        });
       }
 
       if (!sponsorsRes.error) {
@@ -267,6 +288,7 @@ export default function PublicHome() {
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
           {/* 30TH ANNIVERSARY SUCCESS ANNOUNCEMENT & STATS */}
+          {homeConfig.show_announcement && (
           <PortalBlock title="THÔNG BÁO ĐẠI LỄ 30 NĂM" color="#166534" icon="🎉">
             <div style={{ textAlign: 'center', marginBottom: '15px' }}>
               <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -294,7 +316,9 @@ export default function PublicHome() {
               </div>
             </div>
           </PortalBlock>
+          )}
 
+          {homeConfig.show_gallery_slider && (
           <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534" icon="📸">
             <div style={{ position: 'relative', width: '100%', height: '175px', overflow: 'hidden', backgroundColor: '#0f172a' }}>
               {galleryList.length > 0 && (
@@ -388,7 +412,9 @@ export default function PublicHome() {
               )}
             </div>
           </PortalBlock>
+          )}
 
+          {homeConfig.show_contact && (
           <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534" icon="📞">
             <ul style={styles.listStyle}>
               <li>📍 Địa chỉ trường THPT Cao Bá Quát</li>
@@ -396,7 +422,9 @@ export default function PublicHome() {
               <li>✉️ Email: lk@caobaquat.edu.vn</li>
             </ul>
           </PortalBlock>
+          )}
 
+          {homeConfig.show_external_links && (
           <PortalBlock title="LIÊN KẾT TRANG" color="#166534" icon="🔗">
             <ul style={styles.linkList}>
               {externalLinks.length > 0 ? (
@@ -411,6 +439,7 @@ export default function PublicHome() {
               )}
             </ul>
           </PortalBlock>
+          )}
         </div>
 
         {/* CENTER COLUMN */}
@@ -458,7 +487,9 @@ export default function PublicHome() {
             </div>
           </div>
 
+
           {/* WIDGET LỊCH CÔNG TÁC & THỜI KHÓA BIỂU TUẦN TRỰC TUYẾN */}
+          {homeConfig.show_calendar_widget && (
           <div style={{
             backgroundColor: '#ffffff',
             borderRadius: '14px',
@@ -510,8 +541,10 @@ export default function PublicHome() {
               </div>
             </div>
           </div>
+          )}
 
           {/* LƯU TRỮ TRA CỨU THIỆP MỜI KỶ NIỆM 30 NĂM */}
+          {homeConfig.show_rsvp_search && (
           <div style={styles.rsvpHighlightBlock}>
             <div style={styles.rsvpHighlightHeader}>
               <span style={{ marginRight: '6px' }}>✉️</span> KHO TRA CỨU THIỆP MỜI & TƯ LIỆU KỶ NIỆM 30 NĂM
@@ -725,8 +758,10 @@ export default function PublicHome() {
               )}
             </div>
           </div>
+          )}
 
           {/* BẢNG VÀNG THỦ KHOA - XUẤT BẢN THEO CẤU HÌNH ADMIN */}
+          {homeConfig.show_gold_board && (
           <div style={styles.goldBoardBlock}>
             <div style={styles.goldBoardHeader}>
               <span style={{ fontSize: '20px' }}>👑</span>
@@ -878,6 +913,7 @@ export default function PublicHome() {
               )}
             </div>
           </div>
+          )}
 
           {/* Tin Tức - Sự Kiện */}
           <div style={styles.newsBlock}>
@@ -924,6 +960,7 @@ export default function PublicHome() {
 
         {/* RIGHT COLUMN */}
         <div style={styles.rightCol}>
+          {homeConfig.show_notifications && (
           <PortalBlock title="THÔNG BÁO MỚI" color="#d32f2f" icon="📢">
             <div style={styles.marqueeVertical}>
               <ul style={styles.linkList}>
@@ -940,6 +977,7 @@ export default function PublicHome() {
               </ul>
             </div>
           </PortalBlock>
+          )}
 
           <PortalBlock title="THƯ TRI ÂN ĐỒNG HÀNH" color="#166534" icon="📜">
             {sponsors.length === 0 ? (
