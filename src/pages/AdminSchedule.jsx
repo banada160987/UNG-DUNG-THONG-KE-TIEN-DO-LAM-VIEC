@@ -197,6 +197,19 @@ export default function AdminSchedule() {
     XLSX.writeFile(wb, "Mau_ThoiKhoaBieu_THPT_CaoBaQuat.xlsx");
   };
 
+  const normalizeClassName = (cls) => {
+    if (!cls) return '';
+    const clean = String(cls).trim().toUpperCase();
+    return clean.replace('A0', 'A');
+  };
+
+  const SUBJECT_MAP = {
+    'TOAN': 'Toán', 'VAN': 'Ngữ văn', 'NN': 'Tiếng Anh', 'LY': 'Vật lý', 'HOA': 'Hóa học',
+    'SINH': 'Sinh học', 'SU': 'Lịch sử', 'DIA': 'Địa lý', 'TIN': 'Tin học', 'CN': 'Công nghệ',
+    'GDTC': 'Thể dục', 'QPAN': 'GDQP-AN', 'GD': 'GDCD/KTLP', 'TrNg': 'HĐ Trải nghiệm',
+    'GDĐP': 'GD Địa phương', 'CC': 'Chào cờ', 'SH': 'Sinh hoạt lớp'
+  };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -211,38 +224,104 @@ export default function AdminSchedule() {
 
         wb.SheetNames.forEach((sheetName) => {
           const ws = wb.Sheets[sheetName];
-          const rawJson = XLSX.utils.sheet_to_json(ws, { defval: '' });
-          if (!rawJson || rawJson.length === 0) return;
-
           const isAfternoonSheet = sheetName.toLowerCase().includes('chieu') || sheetName.toLowerCase().includes('chiều');
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+          if (!rows || rows.length === 0) return;
 
-          rawJson.forEach((row, idx) => {
-            const studentClass = row['Lớp'] || row['Lop'] || row['Class'] || row['CLASS'] || row['student_class'] || '10A1';
-            const day = row['Thứ'] || row['Thu'] || row['Day'] || row['day_of_week'] || 'Thứ 2';
-            let period = Number(row['Tiết'] || row['Tiet'] || row['Period'] || row['period']) || 1;
-            const session = String(row['Buổi'] || row['Buoi'] || row['Session'] || '').toLowerCase();
-            
-            // Auto map afternoon periods 1..5 to 6..10 if explicitly specified or in Afternoon Sheet
-            if ((session.includes('chiều') || session.includes('chieu') || isAfternoonSheet) && period <= 5) {
-              period = period + 5;
+          // Check if this is a matrix sheet with class names in header row (e.g. 10A01, 10A1, 10A02...)
+          let headerRowIndex = -1;
+          let classHeaderRow = [];
+
+          for (let i = 0; i < rows.length; i++) {
+            const r = rows[i];
+            if (r && r.some(cell => String(cell).includes('10A01') || String(cell).includes('10A1') || String(cell).includes('10A02'))) {
+              headerRowIndex = i;
+              classHeaderRow = r;
+              break;
             }
+          }
 
-            const subject = row['Môn Học'] || row['Môn'] || row['Mon'] || row['Subject'] || row['subject'] || 'Chưa rõ';
-            const teacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
-            const room = row['Phòng Học'] || row['Phòng'] || row['Phong'] || row['Room'] || row['room'] || 'Lớp học';
+          if (headerRowIndex !== -1 && classHeaderRow.length > 2) {
+            // Parse Matrix Format
+            let currentDay = 'Thứ 2';
+            for (let i = headerRowIndex + 1; i < rows.length; i++) {
+              const row = rows[i];
+              if (!row || row.length === 0) continue;
 
-            if (studentClass || teacher) {
-              allParsedItems.push({
-                id: `excel-${sheetName}-${idx}-${Date.now()}`,
-                student_class: String(studentClass).trim().toUpperCase(),
-                day_of_week: String(day).trim(),
-                period: period,
-                subject: String(subject).trim(),
-                teacher_name: String(teacher).trim(),
-                room: String(room).trim()
-              });
+              if (row[0] && String(row[0]).trim().startsWith('Thứ')) {
+                currentDay = String(row[0]).trim();
+              }
+
+              const rawPeriod = Number(row[1]);
+              if (isNaN(rawPeriod) || rawPeriod <= 0) continue;
+
+              let period = rawPeriod;
+              if (isAfternoonSheet && period <= 5) period = period + 5;
+
+              for (let c = 2; c < classHeaderRow.length; c++) {
+                let rawClassName = String(classHeaderRow[c] || '').trim();
+                if (!rawClassName) continue;
+
+                const normalizedClass = normalizeClassName(rawClassName);
+                const cellVal = String(row[c] || '').trim();
+                if (!cellVal) continue;
+
+                let subject = cellVal;
+                let teacher = 'BGH & GVCN';
+
+                if (cellVal.includes('-')) {
+                  const parts = cellVal.split('-').map(p => p.trim());
+                  const subCode = parts[0];
+                  subject = SUBJECT_MAP[subCode] || subCode;
+                  teacher = parts.slice(1).join(' - ');
+                } else if (SUBJECT_MAP[cellVal]) {
+                  subject = SUBJECT_MAP[cellVal];
+                }
+
+                allParsedItems.push({
+                  id: `excel-matrix-${sheetName}-${i}-${c}-${Date.now()}`,
+                  student_class: normalizedClass,
+                  day_of_week: currentDay,
+                  period: period,
+                  subject: subject,
+                  teacher_name: teacher,
+                  room: `Phòng ${normalizedClass}`
+                });
+              }
             }
-          });
+          } else {
+            // Parse List Format
+            const rawJson = XLSX.utils.sheet_to_json(ws, { defval: '' });
+            rawJson.forEach((row, idx) => {
+              const rawClass = row['Lớp'] || row['Lop'] || row['Class'] || row['CLASS'] || row['student_class'];
+              if (!rawClass) return;
+
+              const studentClass = normalizeClassName(rawClass);
+              const day = row['Thứ'] || row['Thu'] || row['Day'] || row['day_of_week'] || 'Thứ 2';
+              let period = Number(row['Tiết'] || row['Tiet'] || row['Period'] || row['period']) || 1;
+              const session = String(row['Buổi'] || row['Buoi'] || row['Session'] || '').toLowerCase();
+              
+              if ((session.includes('chiều') || session.includes('chieu') || isAfternoonSheet) && period <= 5) {
+                period = period + 5;
+              }
+
+              const subject = row['Môn Học'] || row['Môn'] || row['Mon'] || row['Subject'] || row['subject'] || 'Chưa rõ';
+              const teacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
+              const room = row['Phòng Học'] || row['Phòng'] || row['Phong'] || row['Room'] || row['room'] || `Phòng ${studentClass}`;
+
+              if (studentClass || teacher) {
+                allParsedItems.push({
+                  id: `excel-${sheetName}-${idx}-${Date.now()}`,
+                  student_class: studentClass,
+                  day_of_week: String(day).trim(),
+                  period: period,
+                  subject: String(subject).trim(),
+                  teacher_name: String(teacher).trim(),
+                  room: String(room).trim()
+                });
+              }
+            });
+          }
         });
 
         if (allParsedItems.length === 0) {
