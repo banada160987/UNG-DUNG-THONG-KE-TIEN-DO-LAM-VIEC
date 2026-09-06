@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
-  Calendar, Clock, MapPin, Printer, FileSpreadsheet 
+  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -25,6 +26,7 @@ const DEFAULT_SCHEDULE = {
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
 export default function PublicSchedule() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
   const [schedules, setSchedules] = useState([DEFAULT_SCHEDULE]);
   const [selectedSchedule, setSelectedSchedule] = useState(DEFAULT_SCHEDULE);
@@ -32,6 +34,33 @@ export default function PublicSchedule() {
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState('10A1');
   const [selectedTeacher, setSelectedTeacher] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  // Initialize state from URL params
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    const classParam = searchParams.get('class');
+    const teacherParam = searchParams.get('teacher');
+
+    if (tabParam && ['bgh_schedule', 'class_tkb', 'teacher_tkb'].includes(tabParam)) {
+      setActiveMainTab(tabParam);
+    }
+    if (classParam) {
+      setSelectedClass(classParam);
+    }
+    if (teacherParam) {
+      setSelectedTeacher(teacherParam);
+    }
+  }, []);
+
+  // Sync state to URL search params
+  const updateUrlParams = (tab, cls, teacher) => {
+    const params = new URLSearchParams();
+    params.set('tab', tab);
+    if (tab === 'class_tkb' && cls) params.set('class', cls);
+    if (tab === 'teacher_tkb' && teacher) params.set('teacher', teacher);
+    setSearchParams(params, { replace: true });
+  };
 
   useEffect(() => {
     fetchSchedules();
@@ -158,6 +187,37 @@ export default function PublicSchedule() {
     XLSX.writeFile(wb, `ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
   };
 
+  const handleCopyDirectLink = () => {
+    const params = new URLSearchParams();
+    params.set('tab', activeMainTab);
+    if (activeMainTab === 'class_tkb') {
+      params.set('class', selectedClass);
+    } else if (activeMainTab === 'teacher_tkb') {
+      params.set('teacher', selectedTeacher);
+    }
+
+    const fullUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    });
+  };
+
+  const handleTabChange = (tab) => {
+    setActiveMainTab(tab);
+    updateUrlParams(tab, selectedClass, selectedTeacher);
+  };
+
+  const handleClassChange = (newClass) => {
+    setSelectedClass(newClass);
+    updateUrlParams(activeMainTab, newClass, selectedTeacher);
+  };
+
+  const handleTeacherChange = (newTeacher) => {
+    setSelectedTeacher(newTeacher);
+    updateUrlParams(activeMainTab, selectedClass, newTeacher);
+  };
+
   return (
     <div style={styles.container}>
       <style>{`
@@ -181,7 +241,7 @@ export default function PublicSchedule() {
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
           {['bgh_schedule', 'class_tkb', 'teacher_tkb'].map(tab => (
-            <button key={tab} onClick={() => setActiveMainTab(tab)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab ? '#be123c' : '#f1f5f9', color: activeMainTab === tab ? '#fff' : '#334' }}>
+            <button key={tab} onClick={() => handleTabChange(tab)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab ? '#be123c' : '#f1f5f9', color: activeMainTab === tab ? '#fff' : '#334' }}>
               {tab === 'bgh_schedule' ? '📅 Lịch BGH' : tab === 'class_tkb' ? '🎓 TKB Lớp' : '👨‍🏫 TKB Giáo viên'}
             </button>
           ))}
@@ -226,17 +286,25 @@ export default function PublicSchedule() {
                 {activeMainTab === 'class_tkb' ? 'Chọn Lớp:' : 'Chọn Giáo Viên:'}
               </span>
               {activeMainTab === 'class_tkb' ? (
-                <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} style={styles.select}>
+                <select value={selectedClass} onChange={e => handleClassChange(e.target.value)} style={styles.select}>
                   {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               ) : (
-                <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} style={styles.select}>
+                <select value={selectedTeacher} onChange={e => handleTeacherChange(e.target.value)} style={styles.select}>
                   {availableTeachers.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={handleCopyDirectLink} 
+                style={{ ...styles.printBtn, backgroundColor: copied ? '#16a34a' : '#0284c7' }}
+                title="Sao chép đường dẫn trực tiếp đến TKB này để gửi Zalo/FB"
+              >
+                {copied ? <Check size={16} /> : <Share2 size={16} />}
+                {copied ? 'Đã sao chép link!' : '🔗 Gửi Link Zalo/FB'}
+              </button>
               <button 
                 onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel} 
                 style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
