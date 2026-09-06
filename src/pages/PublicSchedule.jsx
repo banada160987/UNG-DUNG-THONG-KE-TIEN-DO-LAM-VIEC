@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { 
-  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check 
+import {
+  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -93,7 +93,7 @@ export default function PublicSchedule() {
 
   // Initialize state from URL params
   useEffect(() => {
-    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Quốc Oai";
+    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Phường Tân An - Tỉnh Đắk Lắk";
     const tabParam = searchParams.get('tab');
     const classParam = searchParams.get('class');
     const teacherParam = searchParams.get('teacher');
@@ -304,7 +304,7 @@ export default function PublicSchedule() {
           th { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
         }
       `}</style>
-      
+
       <div style={styles.headerCard} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Calendar size={32} color="#be123c" />
@@ -392,8 +392,8 @@ export default function PublicSchedule() {
             </div>
 
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button 
-                onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel} 
+              <button
+                onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel}
                 style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
               >
                 <FileSpreadsheet size={16} /> Xuất Excel
@@ -432,10 +432,10 @@ export default function PublicSchedule() {
                       Tiết {p}
                     </td>
                     {DAYS.map(d => {
-                      const item = activeMainTab === 'class_tkb' 
-                        ? getLessonForClass(d, p) 
+                      const item = activeMainTab === 'class_tkb'
+                        ? getLessonForClass(d, p)
                         : getLessonForTeacher(d, p);
-                      
+
                       if (!item) return <td key={d} style={{ ...styles.td, color: '#94a3b8', textAlign: 'center' }}>-</td>;
 
                       return (
