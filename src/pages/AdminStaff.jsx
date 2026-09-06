@@ -42,6 +42,7 @@ export default function AdminStaff() {
       const { data, error } = await supabase
         .from('cbq_staff')
         .select('*')
+        .or('is_active.eq.true,is_active.is.null')
         .order('sort_order', { ascending: true });
 
       if (!error && data) {
@@ -73,11 +74,31 @@ export default function AdminStaff() {
         }
       }
 
-      // Fallback Base64
+      // Fallback Base64 with resize
       const reader = new FileReader();
       reader.onload = (ev) => {
-        setAvatarUrl(ev.target.result);
-        setUploading(false);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_SIZE = 800;
+          let { width, height } = img;
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            if (width > height) {
+              height = Math.round(height * (MAX_SIZE / width));
+              width = MAX_SIZE;
+            } else {
+              width = Math.round(width * (MAX_SIZE / height));
+              height = MAX_SIZE;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          setAvatarUrl(canvas.toDataURL('image/jpeg', 0.8));
+          setUploading(false);
+        };
+        img.src = ev.target.result;
       };
       reader.readAsDataURL(file);
     } catch (err) {
@@ -105,7 +126,7 @@ export default function AdminStaff() {
   const handleDeleteStaff = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa Giáo viên này khỏi danh mục?")) return;
     try {
-      const { error } = await supabase.from('cbq_staff').delete().eq('id', id);
+      const { error } = await supabase.from('cbq_staff').update({ is_active: false }).eq('id', id);
       if (error) throw error;
       fetchStaff();
     } catch (err) {

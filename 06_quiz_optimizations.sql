@@ -21,3 +21,13 @@ BEGIN
   ORDER BY s.student_class ASC, s.student_name ASC;
 END;
 $$ LANGUAGE plpgsql;
+
+-- Tối ưu hóa truy vấn trên bằng Expression Index (Chạy độc lập sau khi tạo bảng)
+-- Lưu ý: Bạn cần chạy 2 lệnh CREATE INDEX này trong mục SQL Editor để tăng tốc
+-- truy vấn sử dụng hàm LOWER(TRIM(student_code)).
+
+CREATE INDEX IF NOT EXISTS idx_stu_code_cbq_students 
+ON cbq_students (LOWER(TRIM(student_code)));
+
+CREATE INDEX IF NOT EXISTS idx_stu_code_cbq_quiz 
+ON cbq_quiz_submissions (LOWER(TRIM(student_code)));

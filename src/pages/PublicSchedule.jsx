@@ -149,31 +149,50 @@ export default function PublicSchedule() {
       if (!error && data && data.length > 0) {
         const cleaned = processRawTimetableItems(data);
         setTimetableData(cleaned);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(cleaned));
+        localStorage.setItem('cbq_master_timetable', JSON.stringify({
+          data: cleaned,
+          timestamp: Date.now()
+        }));
       } else {
-        const cached = localStorage.getItem('cbq_master_timetable');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.length > 0) {
-            setTimetableData(processRawTimetableItems(parsed));
-          } else {
-            const masterCleaned = processRawTimetableItems(masterTimetableData);
-            setTimetableData(masterCleaned);
-          }
-        } else {
-          const masterCleaned = processRawTimetableItems(masterTimetableData);
-          setTimetableData(masterCleaned);
-          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterCleaned));
-        }
+        loadTimetableFromCacheOrMaster();
       }
     } catch (err) {
-      const cached = localStorage.getItem('cbq_master_timetable');
-      if (cached) {
-        setTimetableData(processRawTimetableItems(JSON.parse(cached)));
-      } else {
-        setTimetableData(processRawTimetableItems(masterTimetableData));
+      loadTimetableFromCacheOrMaster();
+    }
+  }
+
+  function loadTimetableFromCacheOrMaster() {
+    const cached = localStorage.getItem('cbq_master_timetable');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        let cachedData = parsed;
+        
+        // Format mới có timestamp
+        if (parsed && !Array.isArray(parsed) && parsed.data) {
+          cachedData = parsed.data;
+          const isOld = Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000;
+          if (isOld) {
+            console.warn("Dữ liệu TKB trong máy đã cũ hơn 24 giờ. Đang dùng tạm.");
+          }
+        }
+
+        if (Array.isArray(cachedData) && cachedData.length > 0) {
+          setTimetableData(processRawTimetableItems(cachedData));
+          return;
+        }
+      } catch(e) {
+        console.error("Lỗi parse cache", e);
       }
     }
+    
+    // Fallback JSON cuối cùng
+    const masterCleaned = processRawTimetableItems(masterTimetableData);
+    setTimetableData(masterCleaned);
+    localStorage.setItem('cbq_master_timetable', JSON.stringify({
+      data: masterCleaned,
+      timestamp: Date.now()
+    }));
   }
 
   const availableClasses = Array.from(new Set(timetableData.map(t => t.student_class))).filter(Boolean).sort();

@@ -44,13 +44,15 @@ export default function PublicHome() {
   const [isSearching, setIsSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   
+  const searchTimeoutRef = useRef(null);
   const [totalDonation, setTotalDonation] = useState(0);
   const [attendingGuests, setAttendingGuests] = useState(0);
   const [externalLinks, setExternalLinks] = useState([]);
   const [searchParams] = useSearchParams();
   
-  const calculateTimeLeft = () => {
-    const difference = +new Date("2026-09-03T08:00:00") - +new Date();
+  const calculateTimeLeft = (targetDateString) => {
+    const target = targetDateString ? new Date(targetDateString) : new Date("2026-09-03T07:30:00");
+    const difference = +target - +new Date();
     let timeLeft = {};
     if (difference > 0) {
       timeLeft = {
@@ -67,7 +69,7 @@ export default function PublicHome() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setTimeLeft(calculateTimeLeft());
+      setTimeLeft(calculateTimeLeft(inviteConfig?.event_datetime));
     }, 1000);
     return () => clearTimeout(timer);
   });
@@ -103,10 +105,10 @@ export default function PublicHome() {
   async function fetchPublicData() {
     setLoading(true);
     try {
-      const [sponsorsRes, newsRes, guestsRes, linksRes, configRes, quizRes, quizInfoRes, galleryRes] = await Promise.all([
+      const [sponsorsRes, newsRes, guestsCountRes, linksRes, configRes, quizRes, quizInfoRes, galleryRes] = await Promise.all([
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
-        supabase.from('cbq_guests').select('*'),
+        supabase.from('cbq_guests').select('*', { count: 'exact', head: true }).eq('rsvp_status', 'attending'),
         supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').eq('slug', 'invite-config').single(),
         supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10),
@@ -134,11 +136,8 @@ export default function PublicHome() {
       if (galleryRes && !galleryRes.error && galleryRes.data?.length > 0) {
         setGalleryList([...galleryRes.data, ...FALLBACK_SLIDER_IMAGES]);
       }
-      if (!guestsRes.error) {
-        const guestData = guestsRes.data || [];
-        setAllGuests(guestData);
-        const attendingCount = guestData.filter(g => g.rsvp_status === 'attending').length;
-        setAttendingGuests(attendingCount);
+      if (!guestsCountRes.error) {
+        setAttendingGuests(guestsCountRes.count || 0);
       }
       if (!linksRes.error) setExternalLinks(linksRes.data || []);
     } catch (error) {
@@ -151,22 +150,34 @@ export default function PublicHome() {
   const handleSearchInputChange = (value) => {
     setRsvpCode(value);
     const q = value.trim();
-    if (!q || q.length < 1) {
+    if (!q || q.length < 2) {
       setSearchResults([]);
       setShowDropdown(false);
       return;
     }
 
-    const qNorm = removeAccents(q);
-    const matches = allGuests.filter(g => {
-      const nameNorm = removeAccents(g.name);
-      const codeNorm = removeAccents(g.invitation_code);
-      const groupNorm = removeAccents(g.group_name || g.note || '');
-      return nameNorm.includes(qNorm) || codeNorm.includes(qNorm) || groupNorm.includes(qNorm);
-    }).slice(0, 10);
-
-    setSearchResults(matches);
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    
+    setIsSearching(true);
     setShowDropdown(true);
+
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from('cbq_guests')
+          .select('*')
+          .or(`name.ilike.%${q}%,invitation_code.ilike.%${q}%,group_name.ilike.%${q}%`)
+          .limit(10);
+        
+        if (!error && data) {
+          setSearchResults(data);
+        }
+      } catch (err) {
+        console.error("Lỗi tìm kiếm", err);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500);
   };
 
   const handleSelectGuest = (guestItem) => {
@@ -175,22 +186,26 @@ export default function PublicHome() {
     setShowDropdown(false);
   };
 
-  const handleRsvpSearch = (e) => {
+  const handleRsvpSearch = async (e) => {
     if (e) e.preventDefault();
     const q = rsvpCode.trim();
     if (!q) return;
 
-    const qNorm = removeAccents(q);
-    const match = allGuests.find(g => 
-      removeAccents(g.invitation_code) === qNorm || 
-      removeAccents(g.name).includes(qNorm)
-    );
+    try {
+      const { data, error } = await supabase
+        .from('cbq_guests')
+        .select('*')
+        .or(`invitation_code.eq.${q},name.ilike.%${q}%`)
+        .limit(1);
 
-    if (match) {
-      setRsvpResult({ success: true, guest: match });
-      setShowDropdown(false);
-    } else {
-      setRsvpResult({ error: `Không tìm thấy thông tin khách mời phù hợp từ khóa "${rsvpCode}". Vui lòng kiểm tra lại.` });
+      if (!error && data && data.length > 0) {
+        setRsvpResult({ success: true, guest: data[0] });
+        setShowDropdown(false);
+      } else {
+        setRsvpResult({ error: `Không tìm thấy thông tin khách mời phù hợp từ khóa "${rsvpCode}". Vui lòng kiểm tra lại.` });
+      }
+    } catch(err) {
+      setRsvpResult({ error: `Có lỗi xảy ra, vui lòng thử lại.` });
     }
   };
 
@@ -218,6 +233,7 @@ export default function PublicHome() {
   const handleDownloadInvite = async () => {
     if (!inviteRef.current) return;
     try {
+      await document.fonts.ready;
       const canvas = await html2canvas(inviteRef.current, { scale: 2, useCORS: true });
       const image = canvas.toDataURL("image/png", 1.0);
       const link = document.createElement("a");
