@@ -76,6 +76,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số & Hồ Sơ HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin },
     { path: '/admin/parking', icon: Bike, label: '🛵 Sổ Quản Lý Xe Máy Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
     { path: '/admin/bus', icon: Bus, label: '🚌 Sổ Quản Lý Xe Đưa Đón Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/registrations', icon: FileText, label: '📋 Sổ Quản Lý Đăng Ký Động', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || role === 'secretary' },
     { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
 
     // 3. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
