@@ -18,10 +18,10 @@ const DEFAULT_FULL_PUBLIC_MENUS = [
   { id: 'pub_school_1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
   { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
   { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
-  { id: 'pub_school_3_1', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3.5, is_active: true },
-  { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
-  { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
-  { id: 'pub_school_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true },
+  { id: 'pub_school_3_1', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 4, is_active: true },
+  { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 5, is_active: true },
+  { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 6, is_active: true },
+  { id: 'pub_school_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 7, is_active: true },
 
   // Group 3: Tin tức & Thư viện
   { id: 'pub_media_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },
@@ -178,7 +178,10 @@ export default function AdminMenuConfig() {
     try {
       // Upsert into Supabase
       await supabase.from('cbq_navigation_menus').delete().eq('target_type', targetType);
-      await supabase.from('cbq_navigation_menus').insert(defaultList);
+      
+      const insertPayload = defaultList.map(({ id, ...rest }) => rest);
+      await supabase.from('cbq_navigation_menus').insert(insertPayload);
+      
       alert("🎉 ĐÃ KHÔI PHỤC ĐẦY ĐỦ TẤT CẢ MENU MẶC ĐỊNH!");
     } catch (err) {
       console.warn("Lỗi reset DB:", err);

@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS public.cbq_quizzes (
     start_time TEXT,
     end_time TEXT,
     is_active BOOLEAN DEFAULT TRUE,
+    show_leaderboard BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
