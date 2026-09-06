@@ -93,6 +93,7 @@ export default function PublicSchedule() {
 
   // Initialize state from URL params
   useEffect(() => {
+    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Quốc Oai";
     const tabParam = searchParams.get('tab');
     const classParam = searchParams.get('class');
     const teacherParam = searchParams.get('teacher');
