@@ -171,20 +171,22 @@ export default function AdminMenuConfig() {
   const handleResetDefaultMenus = async () => {
     if (!window.confirm(`Bạn có chắc chắn muốn KHÔI PHỤC ĐẦY ĐỦ tất cả danh mục menu mặc định cho ${targetType === 'public' ? 'Trang Công Khai' : 'Trang Admin'}?`)) return;
     
-    const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
-    setMenus(defaultList);
-    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(defaultList));
-
     try {
-      // Upsert into Supabase
+      const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
+      
+      // Upsert into Supabase first
       await supabase.from('cbq_navigation_menus').delete().eq('target_type', targetType);
       
       const insertPayload = defaultList.map(({ id, ...rest }) => rest);
       await supabase.from('cbq_navigation_menus').insert(insertPayload);
       
+      // Re-fetch to get real UUIDs assigned by Postgres
+      await fetchMenus();
+      
       alert("🎉 ĐÃ KHÔI PHỤC ĐẦY ĐỦ TẤT CẢ MENU MẶC ĐỊNH!");
     } catch (err) {
       console.warn("Lỗi reset DB:", err);
+      alert("Lỗi: " + err.message);
     }
   };
 
