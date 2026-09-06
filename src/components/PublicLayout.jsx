@@ -34,11 +34,13 @@ export default function PublicLayout() {
     fetchPublicMenus();
   }, [location.pathname]);
 
-  async function fetchPublicMenus() {
+  async function fetchPublicMenus(force = false) {
     try {
-      const cached = localStorage.getItem('cbq_menus_public');
-      if (cached) {
-        setPublicMenus(JSON.parse(cached));
+      if (!force) {
+        const cached = localStorage.getItem('cbq_menus_public');
+        if (cached) {
+          setPublicMenus(JSON.parse(cached));
+        }
       }
 
       const { data, error } = await supabase
@@ -55,6 +57,24 @@ export default function PublicLayout() {
       console.warn("Dùng menu công khai mặc định:", err);
     }
   }
+
+  useEffect(() => {
+    const channel = supabase.channel('public:cbq_navigation_menus')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_navigation_menus' }, () => {
+        fetchPublicMenus(true);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const isGroupActive = (groupName) => {
+    return publicMenus
+      .filter(m => (m.parent_group === groupName || (!m.parent_group && groupName === 'school')) && m.is_active !== false)
+      .some(m => isActive(m.path));
+  };
 
   return (
     <div style={styles.portalContainer}>
@@ -101,7 +121,7 @@ export default function PublicLayout() {
             <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('school')}
-                style={(isActive('/lich-cong-tac') || isActive('/to-chuyen-mon') || isActive('/dang-ky-xe-may') || isActive('/van-ban') || isActive('/gop-y') || isActive('/cham-diem-thi-dua')) ? styles.navItemActive : styles.navItem}
+                style={isGroupActive('school') ? styles.navItemActive : styles.navItem}
               >
                 🏫 Quản lý Vận hành Nhà trường ▾
               </span>
@@ -121,7 +141,7 @@ export default function PublicLayout() {
             <div className={`nav-dropdown ${activeDropdown === 'media' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('media')}
-                style={(isActive('/tin-tuc') || isActive('/thu-vien-anh') || isActive('/bang-vang')) ? styles.navItemActive : styles.navItem}
+                style={isGroupActive('media') ? styles.navItemActive : styles.navItem}
               >
                 📰 Tin tức & Hoạt động ▾
               </span>
@@ -141,7 +161,7 @@ export default function PublicLayout() {
             <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
               <span 
                 onClick={() => toggleDropdown('anniversary')}
-                style={(isActive('/gioi-thieu') || isActive('/tap-san') || isActive('/huong-dan') || isActive('/luu-but') || isActive('/cuoc-thi') || isActive('/dang-ky-the-thao') || isActive('/binh-chon') || isActive('/nop-bai-thi')) ? styles.navItemActive : styles.navItem}
+                style={isGroupActive('anniversary') ? styles.navItemActive : styles.navItem}
               >
                 📁 Tư liệu Truyền thống (Lưu Trữ) ▾
               </span>
