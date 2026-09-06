@@ -71,6 +71,27 @@ export default function AdminSchedule() {
     }
   }
 
+  const normalizeClassCode = (cls) => {
+    if (!cls) return '';
+    const clean = String(cls).trim().toUpperCase();
+    const match = clean.match(/^(\d{2}A)(\d{1,2})$/);
+    if (match) {
+      const prefix = match[1];
+      const num = match[2].padStart(2, '0');
+      return `${prefix}${num}`;
+    }
+    return clean;
+  };
+
+  const processRawTimetableItems = (items) => {
+    if (!Array.isArray(items)) return [];
+    return items.map(item => ({
+      ...item,
+      student_class: normalizeClassCode(item.student_class),
+      teacher_name: TEACHER_FULL_MAP[String(item.teacher_name).trim()] || String(item.teacher_name).trim()
+    }));
+  };
+
   async function fetchTimetableData() {
     try {
       const { data, error } = await supabase
@@ -79,26 +100,29 @@ export default function AdminSchedule() {
         .order('student_class', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        setTimetableData(data);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(data));
+        const cleaned = processRawTimetableItems(data);
+        setTimetableData(cleaned);
+        localStorage.setItem('cbq_master_timetable', JSON.stringify(cleaned));
       } else {
         const cached = localStorage.getItem('cbq_master_timetable');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && parsed.length > 0) {
-            setTimetableData(parsed);
+            setTimetableData(processRawTimetableItems(parsed));
           } else {
-            setTimetableData(masterTimetableData);
+            const masterCleaned = processRawTimetableItems(masterTimetableData);
+            setTimetableData(masterCleaned);
           }
         } else {
-          setTimetableData(masterTimetableData);
-          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterTimetableData));
+          const masterCleaned = processRawTimetableItems(masterTimetableData);
+          setTimetableData(masterCleaned);
+          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterCleaned));
         }
       }
     } catch (err) {
       const cached = localStorage.getItem('cbq_master_timetable');
-      if (cached) setTimetableData(JSON.parse(cached));
-      else setTimetableData(masterTimetableData);
+      if (cached) setTimetableData(processRawTimetableItems(JSON.parse(cached)));
+      else setTimetableData(processRawTimetableItems(masterTimetableData));
     }
   }
 
@@ -207,8 +231,7 @@ export default function AdminSchedule() {
 
   const normalizeClassName = (cls) => {
     if (!cls) return '';
-    const clean = String(cls).trim().toUpperCase();
-    return clean.replace('A0', 'A');
+    return String(cls).trim().toUpperCase();
   };
 
   const SUBJECT_MAP = {
@@ -216,6 +239,34 @@ export default function AdminSchedule() {
     'SINH': 'Sinh học', 'SU': 'Lịch sử', 'DIA': 'Địa lý', 'TIN': 'Tin học', 'CN': 'Công nghệ',
     'GDTC': 'Thể dục', 'QPAN': 'GDQP-AN', 'GD': 'GDCD/KTLP', 'TrNg': 'HĐ Trải nghiệm',
     'GDĐP': 'GD Địa phương', 'CC': 'Chào cờ', 'SH': 'Sinh hoạt lớp'
+  };
+
+  const TEACHER_FULL_MAP = {
+    "Thảo": "Lê Thị Thảo", "Thơ": "Phạm Thị Nguyệt Thơ", "Lam (T)": "Nguyễn Hữu Lam",
+    "Chuyên": "Nguyễn Thị Chuyên", "Hoa (T)": "Nguyễn Thị Ngọc Hoa", "Hà (T)": "Nguyễn Thị Thanh Hà",
+    "Khoa": "Vương Quốc Khoa", "Khuyến": "Nguyễn Thị Khuyến", "Khánh": "Nguyễn Ngọc Khánh",
+    "Thu": "Lương Thị Kim Thu", "Thùy": "Đặng Thị Thanh Thùy", "Xe": "Võ Xe", "Bão": "Bùi Phong Bão",
+    "Huyền": "Nguyễn Thị Thanh Huyền", "Hà (CN)": "Nguyễn Thị Thu Hà", "Thắng (L)": "Nguyễn Hàm Thắng",
+    "Hảo": "Nguyễn Đại Vĩnh Hảo", "Yến": "Phạm Thị Hải Yến", "Định": "Nguyễn Thanh Định",
+    "Lam (H)": "Trương Thị Hoàng Lam", "Thương": "Văn Thị Thương", "Hồng (H)": "Nguyễn Thị Thúy Hồng",
+    "Minh": "Dương Văn Minh", "Phượng": "Nguyễn Thị Kim Phượng", "Thắm": "Phạm Thị Thắm",
+    "Tuyết (H)": "Nguyễn Thị Ánh Tuyết", "Tuấn (H)": "Cao Thanh Tuấn", "Êban": "Y Duy Êban",
+    "Giang": "Phạm Thị Hương Giang", "Hiền (S)": "Vũ Thị Thu Hiền", "Oanh (S)": "Phạm Thị Ngọc Oanh",
+    "Thủy": "Trần Thị Thanh Thủy", "Vinh": "Lương Chấn Vinh", "Hiền (AV)": "Phạm Thị Thu Hiền",
+    "Hoa (AV)": "Trần Thị Quỳnh Hoa", "Hà (AV)": "Nguyễn Thị Hà", "Hậu": "Nguyễn Thị Hậu",
+    "Hồng (AV)": "Nguyễn Thị Hồng", "Ngọc": "Bùi Hoài Thanh Ngọc", "Quy": "Võ Thị Kim Quy",
+    "Thơm": "Đặng Thị Thơm", "Hà (Văn)": "Nguyễn Thị Hà", "Lan": "Phạm Thị Ngọc Lan",
+    "Lài": "Vũ Thị Lài", "Lý": "Võ Thị Minh Lý", "Mùi": "Nguyễn Thị Mùi", "Quyên": "Trần Thị Quế Quyên",
+    "Thi": "Phạm Thị Ngọc Thi", "Thúy": "Nguyễn Thị Huỳnh Thúy", "Huệ": "Huỳnh Thị Kim Huệ",
+    "Hương": "Lê Thị Mai Hương", "Tâm": "Hoàng Thi Minh Tâm", "Vy": "Lê Đặng Hạnh Vy",
+    "Xuân": "Huỳnh Thị Lệ Xuân", "H' Phương": "H' Phương Byă", "Quỳnh": "Nguyễn Thị Hoàng Quỳnh",
+    "Thắng (Đ)": "Nguyễn Viết Thắng", "Tú": "Nguyễn Thị Ngọc Tú", "Dũng": "Lê Công Dũng",
+    "Oanh": "Lê Ngọc Oanh", "Sự": "Nguyễn Công Sự", "Triều": "Phạm Ngọc Triều",
+    "Tuấn (TD)": "Hồ Anh Tuấn", "Tú (TD)": "Huỳnh Thanh Tú", "Đại": "Nguyễn Văn Đại",
+    "Tam": "Tam Bou Branh", "Dung": "Phạm Thị Dung", "Hải": "Nguyễn Thị Minh Hải",
+    "Nhung": "Lê Thị Hồng Nhung", "Phương": "Lê Thị Phương", "Sáng": "Phạm Quang Sáng",
+    "Thuận": "Trần Thị Thuận", "Bảo (CD)": "Khương Văn Bảo", "Tuyết (CD)": "Vương Thị Tuyết",
+    "Đại (CD)": "Võ Ngọc Đại", "Hòa": "Phan Thị Hòa", "Đạt": "Ngô Văn Tiến Đạt"
   };
 
   const handleFileUpload = (e) => {
@@ -281,7 +332,8 @@ export default function AdminSchedule() {
                   const parts = cellVal.split('-').map(p => p.trim());
                   const subCode = parts[0];
                   subject = SUBJECT_MAP[subCode] || subCode;
-                  teacher = parts.slice(1).join(' - ');
+                  const rawTeacherCode = parts.slice(1).join(' - ');
+                  teacher = TEACHER_FULL_MAP[rawTeacherCode] || rawTeacherCode;
                 } else if (SUBJECT_MAP[cellVal]) {
                   subject = SUBJECT_MAP[cellVal];
                 }
@@ -314,7 +366,8 @@ export default function AdminSchedule() {
               }
 
               const subject = row['Môn Học'] || row['Môn'] || row['Mon'] || row['Subject'] || row['subject'] || 'Chưa rõ';
-              const teacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
+              const rawTeacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
+              const teacher = TEACHER_FULL_MAP[String(rawTeacher).trim()] || String(rawTeacher).trim();
               const room = row['Phòng Học'] || row['Phòng'] || row['Phong'] || row['Room'] || row['room'] || `Phòng ${studentClass}`;
 
               if (studentClass || teacher) {
@@ -324,7 +377,7 @@ export default function AdminSchedule() {
                   day_of_week: String(day).trim(),
                   period: period,
                   subject: String(subject).trim(),
-                  teacher_name: String(teacher).trim(),
+                  teacher_name: teacher,
                   room: String(room).trim()
                 });
               }

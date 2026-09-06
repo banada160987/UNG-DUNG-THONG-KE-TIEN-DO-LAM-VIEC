@@ -25,6 +25,61 @@ const DEFAULT_SCHEDULE = {
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
+const TEACHER_FULL_MAP = {
+  "Thảo": "Lê Thị Thảo", "Thơ": "Phạm Thị Nguyệt Thơ", "Lam (T)": "Nguyễn Hữu Lam",
+  "Chuyên": "Nguyễn Thị Chuyên", "Hoa (T)": "Nguyễn Thị Ngọc Hoa", "Hà (T)": "Nguyễn Thị Thanh Hà",
+  "Khoa": "Vương Quốc Khoa", "Khuyến": "Nguyễn Thị Khuyến", "Khánh": "Nguyễn Ngọc Khánh",
+  "Thu": "Lương Thị Kim Thu", "Thùy": "Đặng Thị Thanh Thùy", "Xe": "Võ Xe", "Bão": "Bùi Phong Bão",
+  "Huyền": "Nguyễn Thị Thanh Huyền", "Hà (CN)": "Nguyễn Thị Thu Hà", "Thắng (L)": "Nguyễn Hàm Thắng",
+  "Hảo": "Nguyễn Đại Vĩnh Hảo", "Yến": "Phạm Thị Hải Yến", "Định": "Nguyễn Thanh Định",
+  "Lam (H)": "Trương Thị Hoàng Lam", "Thương": "Văn Thị Thương", "Hồng (H)": "Nguyễn Thị Thúy Hồng",
+  "Minh": "Dương Văn Minh", "Phượng": "Nguyễn Thị Kim Phượng", "Thắm": "Phạm Thị Thắm",
+  "Tuyết (H)": "Nguyễn Thị Ánh Tuyết", "Tuấn (H)": "Cao Thanh Tuấn", "Êban": "Y Duy Êban",
+  "Giang": "Phạm Thị Hương Giang", "Hiền (S)": "Vũ Thị Thu Hiền", "Oanh (S)": "Phạm Thị Ngọc Oanh",
+  "Thủy": "Trần Thị Thanh Thủy", "Vinh": "Lương Chấn Vinh", "Hiền (AV)": "Phạm Thị Thu Hiền",
+  "Hoa (AV)": "Trần Thị Quỳnh Hoa", "Hà (AV)": "Nguyễn Thị Hà", "Hậu": "Nguyễn Thị Hậu",
+  "Hồng (AV)": "Nguyễn Thị Hồng", "Ngọc": "Bùi Hoài Thanh Ngọc", "Quy": "Võ Thị Kim Quy",
+  "Thơm": "Đặng Thị Thơm", "Hà (Văn)": "Nguyễn Thị Hà", "Lan": "Phạm Thị Ngọc Lan",
+  "Lài": "Vũ Thị Lài", "Lý": "Võ Thị Minh Lý", "Mùi": "Nguyễn Thị Mùi", "Quyên": "Trần Thị Quế Quyên",
+  "Thi": "Phạm Thị Ngọc Thi", "Thúy": "Nguyễn Thị Huỳnh Thúy", "Huệ": "Huỳnh Thị Kim Huệ",
+  "Hương": "Lê Thị Mai Hương", "Tâm": "Hoàng Thi Minh Tâm", "Vy": "Lê Đặng Hạnh Vy",
+  "Xuân": "Huỳnh Thị Lệ Xuân", "H' Phương": "H' Phương Byă", "Quỳnh": "Nguyễn Thị Hoàng Quỳnh",
+  "Thắng (Đ)": "Nguyễn Viết Thắng", "Tú": "Nguyễn Thị Ngọc Tú", "Dũng": "Lê Công Dũng",
+  "Oanh": "Lê Ngọc Oanh", "Sự": "Nguyễn Công Sự", "Triều": "Phạm Ngọc Triều",
+  "Tuấn (TD)": "Hồ Anh Tuấn", "Tú (TD)": "Huỳnh Thanh Tú", "Đại": "Nguyễn Văn Đại",
+  "Tam": "Tam Bou Branh", "Dung": "Phạm Thị Dung", "Hải": "Nguyễn Thị Minh Hải",
+  "Nhung": "Lê Thị Hồng Nhung", "Phương": "Lê Thị Phương", "Sáng": "Phạm Quang Sáng",
+  "Thuận": "Trần Thị Thuận", "Bảo (CD)": "Khương Văn Bảo", "Tuyết (CD)": "Vương Thị Tuyết",
+  "Đại (CD)": "Võ Ngọc Đại", "Hòa": "Phan Thị Hòa", "Đạt": "Ngô Văn Tiến Đạt"
+};
+
+const getFullTeacherName = (name) => {
+  if (!name) return '';
+  const trimmed = String(name).trim();
+  return TEACHER_FULL_MAP[trimmed] || trimmed;
+};
+
+const normalizeClassCode = (cls) => {
+  if (!cls) return '';
+  const clean = String(cls).trim().toUpperCase();
+  const match = clean.match(/^(\d{2}A)(\d{1,2})$/);
+  if (match) {
+    const prefix = match[1];
+    const num = match[2].padStart(2, '0');
+    return `${prefix}${num}`;
+  }
+  return clean;
+};
+
+const processRawTimetableItems = (items) => {
+  if (!Array.isArray(items)) return [];
+  return items.map(item => ({
+    ...item,
+    student_class: normalizeClassCode(item.student_class),
+    teacher_name: getFullTeacherName(item.teacher_name)
+  }));
+};
+
 export default function PublicSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
@@ -46,12 +101,12 @@ export default function PublicSchedule() {
       setActiveMainTab(tabParam);
     }
     if (classParam) {
-      setSelectedClass(classParam);
+      setSelectedClass(normalizeClassCode(classParam));
     }
     if (teacherParam) {
-      setSelectedTeacher(teacherParam);
+      setSelectedTeacher(getFullTeacherName(teacherParam));
     }
-  }, []);
+  }, [searchParams]);
 
   // Sync state to URL search params
   const updateUrlParams = (tab, cls, teacher) => {
@@ -91,34 +146,37 @@ export default function PublicSchedule() {
     try {
       const { data, error } = await supabase.from('cbq_timetable_items').select('*');
       if (!error && data && data.length > 0) {
-        setTimetableData(data);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(data));
+        const cleaned = processRawTimetableItems(data);
+        setTimetableData(cleaned);
+        localStorage.setItem('cbq_master_timetable', JSON.stringify(cleaned));
       } else {
         const cached = localStorage.getItem('cbq_master_timetable');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && parsed.length > 0) {
-            setTimetableData(parsed);
+            setTimetableData(processRawTimetableItems(parsed));
           } else {
-            setTimetableData(masterTimetableData);
+            const masterCleaned = processRawTimetableItems(masterTimetableData);
+            setTimetableData(masterCleaned);
           }
         } else {
-          setTimetableData(masterTimetableData);
-          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterTimetableData));
+          const masterCleaned = processRawTimetableItems(masterTimetableData);
+          setTimetableData(masterCleaned);
+          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterCleaned));
         }
       }
     } catch (err) {
       const cached = localStorage.getItem('cbq_master_timetable');
       if (cached) {
-        setTimetableData(JSON.parse(cached));
+        setTimetableData(processRawTimetableItems(JSON.parse(cached)));
       } else {
-        setTimetableData(masterTimetableData);
+        setTimetableData(processRawTimetableItems(masterTimetableData));
       }
     }
   }
 
   const availableClasses = Array.from(new Set(timetableData.map(t => t.student_class))).filter(Boolean).sort();
-  const availableTeachers = Array.from(new Set(timetableData.map(t => t.teacher_name))).filter(Boolean).sort();
+  const availableTeachers = Array.from(new Set(timetableData.map(t => getFullTeacherName(t.teacher_name)))).filter(Boolean).sort();
 
   useEffect(() => {
     if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
@@ -127,15 +185,21 @@ export default function PublicSchedule() {
   }, [availableClasses, selectedClass]);
 
   useEffect(() => {
-    if (availableTeachers.length > 0 && !selectedTeacher) {
-      setSelectedTeacher(availableTeachers[0]);
+    if (availableTeachers.length > 0 && (!selectedTeacher || !availableTeachers.includes(selectedTeacher))) {
+      // Try to find if selectedTeacher is a short code mapped to full name
+      const full = getFullTeacherName(selectedTeacher);
+      if (availableTeachers.includes(full)) {
+        setSelectedTeacher(full);
+      } else if (!availableTeachers.includes(selectedTeacher)) {
+        setSelectedTeacher(availableTeachers[0]);
+      }
     }
   }, [availableTeachers, selectedTeacher]);
 
   const handlePrint = () => window.print();
 
   const getLessonForClass = (day, period) => timetableData.find(t => t.student_class === selectedClass && t.day_of_week === day && Number(t.period) === period);
-  const getLessonForTeacher = (day, period) => timetableData.find(t => t.teacher_name === selectedTeacher && t.day_of_week === day && Number(t.period) === period);
+  const getLessonForTeacher = (day, period) => timetableData.find(t => getFullTeacherName(t.teacher_name) === selectedTeacher && t.day_of_week === day && Number(t.period) === period);
 
   const handleExportClassTkbExcel = () => {
     const matrixData = [
