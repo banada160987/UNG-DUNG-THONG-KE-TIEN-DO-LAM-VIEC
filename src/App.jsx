@@ -59,6 +59,8 @@ const AdminMenuConfig = lazy(() => import('./pages/AdminMenuConfig'));
 const AdminDigitalVault = lazy(() => import('./pages/AdminDigitalVault'));
 const AppHub = lazy(() => import('./pages/AppHub'));
 const DepartmentDrive = lazy(() => import('./pages/DepartmentDrive'));
+const PublicRegistrations = lazy(() => import('./pages/PublicRegistrations'));
+const AdminRegistrations = lazy(() => import('./pages/AdminRegistrations'));
 
 // Student Features
 const ClassJournal = lazy(() => import('./pages/student_features/ClassJournal'));
@@ -119,6 +121,7 @@ function App() {
             <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
             <Route path="/gop-y" element={<PublicFeedbackSystem />} />
             <Route path="/gop-y-quy-hoc-bong" element={<Navigate to="/gop-y" replace />} />
+            <Route path="/dang-ky-hoat-dong" element={<PublicRegistrations />} />
             <Route path="/dang-ky" element={<StudentRegister />} />
             <Route path="/dang-nhap-hoc-sinh" element={<StudentLogin />} />
             <Route path="/student-dashboard" element={<StudentDashboard />} />
@@ -165,6 +168,7 @@ function App() {
               <Route path="/admin/links" element={permissions.canViewLinks ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/department-drives" element={(role === 'admin' || role === 'secretary') ? <DepartmentDrive /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/app-hub" element={(role === 'admin' || role === 'secretary') ? <AppHub /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/registrations" element={(role === 'admin' || role === 'secretary') ? <AdminRegistrations /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/users" element={role === 'admin' ? <AdminUsers /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/menu-config" element={role === 'admin' ? <AdminMenuConfig /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/audit" element={role === 'admin' ? <AdminAuditLog /> : <Navigate to="/admin/committee" replace />} />
