@@ -5,33 +5,7 @@ import {
   Calendar, Plus, Save, Trash2, Edit3, Eye, Clock, MapPin, CheckCircle2, 
   RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck 
 } from 'lucide-react';
-import * as XLSX from 'xlsx';
-
-const SAMPLE_TIMETABLE_DATA = [
-  { id: '1', student_class: '10A1', day_of_week: 'Thứ 2', period: 1, subject: 'Chào cờ', teacher_name: 'BGH & GVCN', room: 'Sân trường' },
-  { id: '2', student_class: '10A1', day_of_week: 'Thứ 2', period: 2, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.101' },
-  { id: '3', student_class: '10A1', day_of_week: 'Thứ 2', period: 3, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.101' },
-  { id: '4', student_class: '10A1', day_of_week: 'Thứ 2', period: 4, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.101' },
-  { id: '5', student_class: '10A1', day_of_week: 'Thứ 2', period: 5, subject: 'Tiếng Anh', teacher_name: 'Cô Lê Thị D', room: 'P.101' },
-  
-  { id: '6', student_class: '10A1', day_of_week: 'Thứ 3', period: 1, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.101' },
-  { id: '7', student_class: '10A1', day_of_week: 'Thứ 3', period: 2, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.101' },
-  { id: '8', student_class: '10A1', day_of_week: 'Thứ 3', period: 3, subject: 'Hóa học', teacher_name: 'Cô Hoàng Thị E', room: 'P.Lab1' },
-  { id: '9', student_class: '10A1', day_of_week: 'Thứ 3', period: 4, subject: 'Lịch sử', teacher_name: 'Thầy Đỗ Văn F', room: 'P.101' },
-  { id: '10', student_class: '10A1', day_of_week: 'Thứ 3', period: 5, subject: 'Địa lý', teacher_name: 'Cô Bùi Thị G', room: 'P.101' },
-
-  { id: '11', student_class: '11A1', day_of_week: 'Thứ 2', period: 1, subject: 'Chào cờ', teacher_name: 'BGH & GVCN', room: 'Sân trường' },
-  { id: '12', student_class: '11A1', day_of_week: 'Thứ 2', period: 2, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.201' },
-  { id: '13', student_class: '11A1', day_of_week: 'Thứ 2', period: 3, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.201' },
-  { id: '14', student_class: '11A1', day_of_week: 'Thứ 2', period: 4, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.201' },
-  { id: '15', student_class: '11A1', day_of_week: 'Thứ 2', period: 5, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.201' },
-
-  { id: '16', student_class: '12A1', day_of_week: 'Thứ 4', period: 1, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.301' },
-  { id: '17', student_class: '12A1', day_of_week: 'Thứ 4', period: 2, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.301' },
-  { id: '18', student_class: '12A1', day_of_week: 'Thứ 4', period: 3, subject: 'Tiếng Anh', teacher_name: 'Cô Lê Thị D', room: 'P.301' },
-  { id: '19', student_class: '12A1', day_of_week: 'Thứ 4', period: 4, subject: 'Hóa học', teacher_name: 'Cô Hoàng Thị E', room: 'P.301' },
-  { id: '20', student_class: '12A1', day_of_week: 'Thứ 4', period: 5, subject: 'Sinh học', teacher_name: 'Thầy Vũ Văn H', room: 'P.301' }
-];
+import masterTimetableData from '../data/master_timetable.json';
 
 export default function AdminSchedule() {
   const [activeTab, setActiveTab] = useState('bgh_schedule'); // 'bgh_schedule' | 'timetable_excel'
@@ -102,16 +76,21 @@ export default function AdminSchedule() {
       } else {
         const cached = localStorage.getItem('cbq_master_timetable');
         if (cached) {
-          setTimetableData(JSON.parse(cached));
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 0) {
+            setTimetableData(parsed);
+          } else {
+            setTimetableData(masterTimetableData);
+          }
         } else {
-          setTimetableData(SAMPLE_TIMETABLE_DATA);
-          localStorage.setItem('cbq_master_timetable', JSON.stringify(SAMPLE_TIMETABLE_DATA));
+          setTimetableData(masterTimetableData);
+          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterTimetableData));
         }
       }
     } catch (err) {
       const cached = localStorage.getItem('cbq_master_timetable');
       if (cached) setTimetableData(JSON.parse(cached));
-      else setTimetableData(SAMPLE_TIMETABLE_DATA);
+      else setTimetableData(masterTimetableData);
     }
   }
 
@@ -227,37 +206,52 @@ export default function AdminSchedule() {
       try {
         const bstr = evt.target.result;
         const wb = XLSX.read(bstr, { type: 'binary' });
-        const wsName = wb.SheetNames[0];
-        const ws = wb.Sheets[wsName];
-        const rawJson = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        
+        let allParsedItems = [];
 
-        if (!rawJson || rawJson.length === 0) {
-          alert("File Excel rỗng hoặc không đúng định dạng!");
+        wb.SheetNames.forEach((sheetName) => {
+          const ws = wb.Sheets[sheetName];
+          const rawJson = XLSX.utils.sheet_to_json(ws, { defval: '' });
+          if (!rawJson || rawJson.length === 0) return;
+
+          const isAfternoonSheet = sheetName.toLowerCase().includes('chieu') || sheetName.toLowerCase().includes('chiều');
+
+          rawJson.forEach((row, idx) => {
+            const studentClass = row['Lớp'] || row['Lop'] || row['Class'] || row['CLASS'] || row['student_class'] || '10A1';
+            const day = row['Thứ'] || row['Thu'] || row['Day'] || row['day_of_week'] || 'Thứ 2';
+            let period = Number(row['Tiết'] || row['Tiet'] || row['Period'] || row['period']) || 1;
+            const session = String(row['Buổi'] || row['Buoi'] || row['Session'] || '').toLowerCase();
+            
+            // Auto map afternoon periods 1..5 to 6..10 if explicitly specified or in Afternoon Sheet
+            if ((session.includes('chiều') || session.includes('chieu') || isAfternoonSheet) && period <= 5) {
+              period = period + 5;
+            }
+
+            const subject = row['Môn Học'] || row['Môn'] || row['Mon'] || row['Subject'] || row['subject'] || 'Chưa rõ';
+            const teacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
+            const room = row['Phòng Học'] || row['Phòng'] || row['Phong'] || row['Room'] || row['room'] || 'Lớp học';
+
+            if (studentClass || teacher) {
+              allParsedItems.push({
+                id: `excel-${sheetName}-${idx}-${Date.now()}`,
+                student_class: String(studentClass).trim().toUpperCase(),
+                day_of_week: String(day).trim(),
+                period: period,
+                subject: String(subject).trim(),
+                teacher_name: String(teacher).trim(),
+                room: String(room).trim()
+              });
+            }
+          });
+        });
+
+        if (allParsedItems.length === 0) {
+          alert("Không tìm thấy dữ liệu hợp lệ trong file Excel!");
           return;
         }
 
-        // Normalize keys
-        const parsed = rawJson.map((row, idx) => {
-          const studentClass = row['Lớp'] || row['Lop'] || row['Class'] || row['CLASS'] || row['student_class'] || '10A1';
-          const day = row['Thứ'] || row['Thu'] || row['Day'] || row['day_of_week'] || 'Thứ 2';
-          const period = Number(row['Tiết'] || row['Tiet'] || row['Period'] || row['period']) || 1;
-          const subject = row['Môn Học'] || row['Môn'] || row['Mon'] || row['Subject'] || row['subject'] || 'Chưa rõ';
-          const teacher = row['Giáo Viên'] || row['Giao Vien'] || row['GV'] || row['Teacher'] || row['teacher_name'] || 'Chưa phân công';
-          const room = row['Phòng Học'] || row['Phòng'] || row['Phong'] || row['Room'] || row['room'] || 'Lớp học';
-
-          return {
-            id: `excel-${idx}-${Date.now()}`,
-            student_class: String(studentClass).trim().toUpperCase(),
-            day_of_week: String(day).trim(),
-            period: period,
-            subject: String(subject).trim(),
-            teacher_name: String(teacher).trim(),
-            room: String(room).trim()
-          };
-        });
-
-        setExcelPreview(parsed);
-        alert(`🎉 Đã đọc thành công ${parsed.length} tiết học từ file Excel! Vui lòng kiểm tra và bấm nút "Lưu TKB Toàn Trường".`);
+        setExcelPreview(allParsedItems);
+        alert(`🎉 Đã đọc thành công ${allParsedItems.length} tiết học từ ${wb.SheetNames.length} sheet Excel! Vui lòng kiểm tra và bấm nút "Lưu TKB Toàn Trường".`);
       } catch (err) {
         alert("Lỗi đọc file Excel: " + err.message);
       }

@@ -4,6 +4,7 @@ import {
   Calendar, Clock, MapPin, Printer, FileSpreadsheet 
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import masterTimetableData from '../data/master_timetable.json';
 
 const DEFAULT_SCHEDULE = {
   title: 'LỊCH CÔNG TÁC TUẦN 01 (Từ 01/09/2026 đến 07/09/2026)',
@@ -20,29 +21,6 @@ const DEFAULT_SCHEDULE = {
     { day: "Thứ Sáu (05/09)", time: "07:30", content: "LỄ KHAI GIẢNG NĂM HỌC MỚI 2026 - 2027", location: "Sân trường", chair: "Hiệu trưởng", participants: "Toàn thể GV & Học sinh" }
   ]
 };
-
-const SAMPLE_TIMETABLE_DATA = [
-  { id: '1', student_class: '10A1', day_of_week: 'Thứ 2', period: 1, subject: 'Chào cờ', teacher_name: 'BGH & GVCN', room: 'Sân trường' },
-  { id: '2', student_class: '10A1', day_of_week: 'Thứ 2', period: 2, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.101' },
-  { id: '3', student_class: '10A1', day_of_week: 'Thứ 2', period: 3, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.101' },
-  { id: '4', student_class: '10A1', day_of_week: 'Thứ 2', period: 4, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.101' },
-  { id: '5', student_class: '10A1', day_of_week: 'Thứ 2', period: 5, subject: 'Tiếng Anh', teacher_name: 'Cô Lê Thị D', room: 'P.101' },
-  { id: '6', student_class: '10A1', day_of_week: 'Thứ 3', period: 1, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.101' },
-  { id: '7', student_class: '10A1', day_of_week: 'Thứ 3', period: 2, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.101' },
-  { id: '8', student_class: '10A1', day_of_week: 'Thứ 3', period: 3, subject: 'Hóa học', teacher_name: 'Cô Hoàng Thị E', room: 'P.Lab1' },
-  { id: '9', student_class: '10A1', day_of_week: 'Thứ 3', period: 4, subject: 'Lịch sử', teacher_name: 'Thầy Đỗ Văn F', room: 'P.101' },
-  { id: '10', student_class: '10A1', day_of_week: 'Thứ 3', period: 5, subject: 'Địa lý', teacher_name: 'Cô Bùi Thị G', room: 'P.101' },
-  { id: '11', student_class: '11A1', day_of_week: 'Thứ 2', period: 1, subject: 'Chào cờ', teacher_name: 'BGH & GVCN', room: 'Sân trường' },
-  { id: '12', student_class: '11A1', day_of_week: 'Thứ 2', period: 2, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.201' },
-  { id: '13', student_class: '11A1', day_of_week: 'Thứ 2', period: 3, subject: 'Ngữ văn', teacher_name: 'Cô Trần Thị B', room: 'P.201' },
-  { id: '14', student_class: '11A1', day_of_week: 'Thứ 2', period: 4, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.201' },
-  { id: '15', student_class: '11A1', day_of_week: 'Thứ 2', period: 5, subject: 'Vật lý', teacher_name: 'Thầy Phạm Văn C', room: 'P.201' },
-  { id: '16', student_class: '12A1', day_of_week: 'Thứ 4', period: 1, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.301' },
-  { id: '17', student_class: '12A1', day_of_week: 'Thứ 4', period: 2, subject: 'Toán', teacher_name: 'Thầy Nguyễn Văn A', room: 'P.301' },
-  { id: '18', student_class: '12A1', day_of_week: 'Thứ 4', period: 3, subject: 'Tiếng Anh', teacher_name: 'Cô Lê Thị D', room: 'P.301' },
-  { id: '19', student_class: '12A1', day_of_week: 'Thứ 4', period: 4, subject: 'Hóa học', teacher_name: 'Cô Hoàng Thị E', room: 'P.301' },
-  { id: '20', student_class: '12A1', day_of_week: 'Thứ 4', period: 5, subject: 'Sinh học', teacher_name: 'Thầy Vũ Văn H', room: 'P.301' }
-];
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
@@ -88,13 +66,25 @@ export default function PublicSchedule() {
         localStorage.setItem('cbq_master_timetable', JSON.stringify(data));
       } else {
         const cached = localStorage.getItem('cbq_master_timetable');
-        if (cached) setTimetableData(JSON.parse(cached));
-        else setTimetableData(SAMPLE_TIMETABLE_DATA);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && parsed.length > 0) {
+            setTimetableData(parsed);
+          } else {
+            setTimetableData(masterTimetableData);
+          }
+        } else {
+          setTimetableData(masterTimetableData);
+          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterTimetableData));
+        }
       }
     } catch (err) {
       const cached = localStorage.getItem('cbq_master_timetable');
-      if (cached) setTimetableData(JSON.parse(cached));
-      else setTimetableData(SAMPLE_TIMETABLE_DATA);
+      if (cached) {
+        setTimetableData(JSON.parse(cached));
+      } else {
+        setTimetableData(masterTimetableData);
+      }
     }
   }
 
@@ -139,7 +129,7 @@ export default function PublicSchedule() {
           <Calendar size={32} color="#be123c" />
           <div>
             <h2 style={styles.pageTitle}>TRA CỨU LỊCH CÔNG TÁC & THỜI KHÓA BIỂU</h2>
-            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Hệ thống quản lý điều hành</p>
+            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Hệ thống quản lý điều hành ({timetableData.length} tiết đã nạp)</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
@@ -174,20 +164,83 @@ export default function PublicSchedule() {
 
       {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (
         <div style={styles.sheetCard} className="print-full">
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }} className="no-print">
-            {activeMainTab === 'class_tkb' ? (
-              <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} style={styles.select}>{availableClasses.map(c => <option key={c} value={c}>{c}</option>)}</select>
-            ) : (
-              <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} style={styles.select}>{availableTeachers.map(t => <option key={t} value={t}>{t}</option>)}</select>
-            )}
-            <button onClick={handlePrint} style={styles.printBtn}><Printer size={16} /> In</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }} className="no-print">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontWeight: 'bold', color: '#1e293b' }}>
+                {activeMainTab === 'class_tkb' ? 'Chọn Lớp:' : 'Chọn Giáo Viên:'}
+              </span>
+              {activeMainTab === 'class_tkb' ? (
+                <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)} style={styles.select}>
+                  {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              ) : (
+                <select value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)} style={styles.select}>
+                  {availableTeachers.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button 
+                onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel} 
+                style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
+              >
+                <FileSpreadsheet size={16} /> Xuất Excel
+              </button>
+              <button onClick={handlePrint} style={styles.printBtn}><Printer size={16} /> In TKB</button>
+            </div>
           </div>
+
           <table style={styles.table}>
-            <thead><tr style={styles.tableHeadRow}>{['Tiết', ...DAYS].map(h => <th key={h} style={styles.th}>{h}</th>)}</tr></thead>
+            <thead>
+              <tr style={styles.tableHeadRow}>
+                <th style={{ ...styles.th, width: '70px', textAlign: 'center' }}>Tiết</th>
+                {DAYS.map(h => <th key={h} style={styles.th}>{h}</th>)}
+              </tr>
+            </thead>
             <tbody>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => (
-                <tr key={p} style={styles.tableRow}><td style={styles.td}>{p}</td>{DAYS.map(d => <td key={d} style={styles.td}>{activeMainTab === 'class_tkb' ? (getLessonForClass(d, p)?.subject || '-') : (getLessonForTeacher(d, p)?.subject || '-')}</td>)}</tr>
-              ))}
+              {[
+                { label: '--- SÁNG ---', isHeader: true },
+                1, 2, 3, 4, 5,
+                { label: '--- CHIỀU ---', isHeader: true },
+                6, 7, 8, 9, 10
+              ].map((p, idx) => {
+                if (p.isHeader) {
+                  return (
+                    <tr key={`h-${idx}`} style={{ backgroundColor: '#f8fafc' }}>
+                      <td colSpan={7} style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', textAlign: 'center', letterSpacing: '1px' }}>
+                        {p.label}
+                      </td>
+                    </tr>
+                  );
+                }
+
+                return (
+                  <tr key={p} style={styles.tableRow}>
+                    <td style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', backgroundColor: '#fdf2f8' }}>
+                      Tiết {p}
+                    </td>
+                    {DAYS.map(d => {
+                      const item = activeMainTab === 'class_tkb' 
+                        ? getLessonForClass(d, p) 
+                        : getLessonForTeacher(d, p);
+                      
+                      if (!item) return <td key={d} style={{ ...styles.td, color: '#94a3b8', textAlign: 'center' }}>-</td>;
+
+                      return (
+                        <td key={d} style={styles.td}>
+                          <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px' }}>
+                            {item.subject}
+                          </div>
+                          <div style={{ fontSize: '11px', color: activeMainTab === 'class_tkb' ? '#2563eb' : '#059669', marginTop: '2px', fontWeight: '600' }}>
+                            {activeMainTab === 'class_tkb' ? item.teacher_name : `Lớp ${item.student_class}`}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

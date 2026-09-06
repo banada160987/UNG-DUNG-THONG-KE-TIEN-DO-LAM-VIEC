@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard, FolderOpen } from 'lucide-react';
+import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard, FolderOpen, Calendar } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
@@ -45,10 +45,22 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Dashboard Grid */}
-        <h2 style={{ fontSize: '18px', color: '#334155', marginBottom: '16px' }}>Công cụ Quản lý Chủ nhiệm</h2>
+        <h2 style={{ fontSize: '18px', color: '#334155', marginBottom: '16px' }}>Công cụ Quản lý Chủ nhiệm & Chuyên môn</h2>
         
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
           
+          {/* Thời Khóa Biểu & Lịch Tuần */}
+          <div style={{ background: 'white', borderRadius: '20px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#ffe4e6', color: '#be123c', borderRadius: '16px' }}><Calendar size={28} /></div>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>TKB & Lịch Tuần BGH</h3>
+            </div>
+            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Tra cứu Thời khóa biểu cá nhân, lịch dạy theo lớp, lịch công tác BGH và lịch trực ban toàn trường.
+            </p>
+            <Link to="/lich-cong-tac" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#be123c', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Tra cứu TKB Toàn Trường</Link>
+          </div>
+
           {/* Quản lý Thu Chi */}
           <div style={{ background: 'white', borderRadius: '20px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', transition: 'transform 0.2s' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>

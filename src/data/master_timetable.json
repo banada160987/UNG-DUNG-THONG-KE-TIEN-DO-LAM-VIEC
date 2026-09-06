@@ -1,0 +1,8660 @@
+[
+  {
+    "id": "tkb-10A1-Thứ 2-1",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-1",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Vinh",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-1",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-1",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-1",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-1",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-1",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-1",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-1",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thơm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-1",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thùy",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-1",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-1",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-1",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-1",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-1",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-1",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thuận",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-1",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-1",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-1",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Phương",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-1",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-1",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-1",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-1",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-1",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-1",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-1",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-1",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-1",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-1",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Quy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-1",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-1",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Giang",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-1",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-1",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-1",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 1,
+    "subject": "Chào cờ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-2",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-2",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Vinh",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-2",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-2",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-2",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-2",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-2",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-2",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-2",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thơm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-2",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thùy",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-2",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-2",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-2",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-2",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-2",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-2",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thuận",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-2",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-2",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-2",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Phương",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-2",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-2",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-2",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-2",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-2",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-2",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-2",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-2",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-2",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-2",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Quy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-2",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-2",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Giang",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-2",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-2",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-2",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 2,
+    "subject": "Sinh hoạt lớp",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-3",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-3",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-3",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-3",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Hóa học",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-3",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-3",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-3",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-3",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-3",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-3",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-3",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-3",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-3",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-3",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-3",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-3",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-3",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-3",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-3",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-3",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-3",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-3",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-3",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-3",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-3",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-3",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-3",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-3",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-3",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-3",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-3",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-3",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-3",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-3",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-4",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-4",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-4",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-4",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-4",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-4",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-4",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-4",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-4",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-4",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-4",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-4",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-4",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-4",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đạt",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-4",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-4",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-4",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-4",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-4",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơ",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-4",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-4",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-4",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-4",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-4",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-4",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-4",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-4",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-4",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-4",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-4",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-4",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-4",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-4",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-4",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-5",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-5",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-5",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-5",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-5",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-5",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-5",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-5",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-5",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-5",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-5",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-5",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-5",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-5",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-5",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đạt",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-5",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-5",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-5",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-5",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-5",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Yến",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-5",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-5",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Vinh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-5",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-5",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-5",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-5",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-5",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-5",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-5",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-5",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-5",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-5",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-5",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-5",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-1",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-1",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-1",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-1",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-1",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-1",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-1",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-1",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-1",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-1",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-1",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-1",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-1",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-1",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-1",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-1",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-1",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-1",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-1",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-1",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-1",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-1",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-1",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-1",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-1",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-1",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-1",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-1",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-1",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-1",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-1",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-1",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-1",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-1",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 1,
+    "subject": "Sinh học",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-2",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-2",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-2",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-2",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-2",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-2",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-2",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-2",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-2",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-2",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-2",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-2",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-2",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-2",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-2",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-2",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-2",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-2",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-2",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-2",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-2",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-2",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-2",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-2",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-2",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-2",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-2",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-2",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-2",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-2",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-2",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-2",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-2",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-2",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-3",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-3",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-3",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-3",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-3",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-3",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-3",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Lam (T)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-3",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-3",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-3",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-3",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-3",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-3",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-3",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-3",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-3",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-3",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-3",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-3",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-3",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-3",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-3",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-3",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-3",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-3",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-3",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-3",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-3",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-3",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-3",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-3",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Tuyết (CD)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-3",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-3",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-3",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-4",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-4",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-4",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-4",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-4",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-4",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-4",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Lam (T)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-4",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-4",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-4",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-4",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-4",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-4",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-4",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-4",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đạt",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-4",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-4",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-4",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-4",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-4",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-4",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-4",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-4",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-4",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-4",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-4",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-4",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-4",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thảo",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-4",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-4",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-4",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-4",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-4",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-4",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-5",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-5",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-5",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-5",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-5",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-5",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-5",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-5",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-5",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-5",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-5",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-5",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-5",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-5",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đạt",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-5",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-5",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-5",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-5",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-5",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-5",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-5",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-5",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-5",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-5",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-5",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-5",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-5",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-5",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-5",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-5",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-5",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-5",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-5",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-5",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 4-1",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 4-1",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 4-1",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 4-1",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 4-1",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 4-1",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 4-1",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 4-1",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 4-1",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 4-1",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 4-1",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 4-1",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 4-1",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 4-1",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 4-1",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 4-1",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 4-1",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 4-1",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 4-1",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 4-1",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 4-1",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 4-1",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 4-1",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 4-1",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 4-1",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Êban",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 4-1",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 4-1",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 4-1",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 4-1",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 4-1",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 4-1",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 4-1",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 4-1",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 4-1",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 4",
+    "period": 1,
+    "subject": "Sinh học",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 4-2",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 4-2",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 4-2",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 4-2",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 4-2",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 4-2",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 4-2",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 4-2",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 4-2",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 4-2",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 4-2",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 4-2",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 4-2",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 4-2",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 4-2",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 4-2",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 4-2",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 4-2",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 4-2",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 4-2",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 4-2",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 4-2",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 4-2",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 4-2",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 4-2",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Minh",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 4-2",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Sinh học",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 4-2",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 4-2",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 4-2",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 4-2",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 4-2",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 4-2",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 4-2",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 4-2",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 4",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 4-3",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 4-3",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 4-3",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 4-3",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 4-3",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 4-3",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 4-3",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 4-3",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 4-3",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 4-3",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 4-3",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 4-3",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 4-3",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 4-3",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 4-3",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 4-3",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 4-3",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 4-3",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 4-3",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơ",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 4-3",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 4-3",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 4-3",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 4-3",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 4-3",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 4-3",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 4-3",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 4-3",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 4-3",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 4-3",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 4-3",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 4-3",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 4-3",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 4-3",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 4-3",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 4",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 4-4",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 4-4",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 4-4",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 4-4",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 4-4",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 4-4",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 4-4",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 4-4",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 4-4",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 4-4",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 4-4",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 4-4",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 4-4",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 4-4",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 4-4",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 4-4",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 4-4",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 4-4",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 4-4",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơ",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 4-4",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 4-4",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 4-4",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 4-4",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 4-4",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 4-4",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 4-4",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 4-4",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 4-4",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 4-4",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 4-4",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 4-4",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 4-4",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 4-4",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 4-4",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 4",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 4-5",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 4-5",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Huyền",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 4-5",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 4-5",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 4-5",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 4-5",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 4-5",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 4-5",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 4-5",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 4-5",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 4-5",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 4-5",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 4-5",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 4-5",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 4-5",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 4-5",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 4-5",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 4-5",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 4-5",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 4-5",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 4-5",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 4-5",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 4-5",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 4-5",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 4-5",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 4-5",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Sinh học",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 4-5",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 4-5",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 4-5",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 4-5",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 4-5",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 4-5",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 4-5",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 4-5",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 4",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 5-1",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 5-1",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 5-1",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 5-1",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 5-1",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 5-1",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 5-1",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 5-1",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Thương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 5-1",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 5-1",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 5-1",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 5-1",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 5-1",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 5-1",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 5-1",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 5-1",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 5-1",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 5-1",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 5-1",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 5-1",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 5-1",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 5-1",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 5-1",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 5-1",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 5-1",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 5-1",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 5-1",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 5-1",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 5-1",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 5-1",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 5-1",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 5-1",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 5-1",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 5-1",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 5",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 5-2",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 5-2",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 5-2",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 5-2",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 5-2",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 5-2",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 5-2",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "GD Địa phương",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 5-2",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 5-2",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 5-2",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 5-2",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 5-2",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 5-2",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 5-2",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 5-2",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 5-2",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 5-2",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 5-2",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Minh",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 5-2",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 5-2",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Yến",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 5-2",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 5-2",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 5-2",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 5-2",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 5-2",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 5-2",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Sinh học",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 5-2",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 5-2",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 5-2",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 5-2",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 5-2",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 5-2",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 5-2",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 5-2",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 5",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 5-3",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 5-3",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 5-3",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Hóa học",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 5-3",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 5-3",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 5-3",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 5-3",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Lam (T)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 5-3",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 5-3",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 5-3",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 5-3",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 5-3",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hồng (AV)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 5-3",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Hoa (T)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 5-3",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 5-3",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 5-3",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 5-3",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 5-3",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 5-3",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 5-3",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 5-3",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 5-3",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Vinh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 5-3",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 5-3",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 5-3",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 5-3",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 5-3",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 5-3",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 5-3",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 5-3",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 5-3",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Tuyết (CD)",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 5-3",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 5-3",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 5-3",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 5",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 5-4",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 5-4",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 5-4",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 5-4",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 5-4",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 5-4",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 5-4",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Lam (T)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 5-4",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 5-4",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Thu",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 5-4",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 5-4",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 5-4",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 5-4",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 5-4",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 5-4",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 5-4",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 5-4",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 5-4",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 5-4",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 5-4",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 5-4",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 5-4",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 5-4",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 5-4",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 5-4",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 5-4",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 5-4",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thảo",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 5-4",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 5-4",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 5-4",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 5-4",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 5-4",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 5-4",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 5-4",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 5",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 5-5",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 5-5",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 5-5",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 5-5",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 5-5",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 5-5",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 5-5",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 5-5",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 5-5",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Thơm",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 5-5",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 5-5",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 5-5",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 5-5",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 5-5",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 5-5",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "MT",
+    "teacher_name": "Hòa",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 5-5",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 5-5",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 5-5",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hậu",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 5-5",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 5-5",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 5-5",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 5-5",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 5-5",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 5-5",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 5-5",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Minh",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 5-5",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 5-5",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 5-5",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Lịch sử",
+    "teacher_name": "Vy",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 5-5",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 5-5",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 5-5",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 5-5",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 5-5",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 5-5",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 5",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 6-1",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 6-1",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 6-1",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 6-1",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 6-1",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 6-1",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 6-1",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 6-1",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 6-1",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 6-1",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 6-1",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 6-1",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 6-1",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 6-1",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 6-1",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 6-1",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 6-1",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 6-1",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 6-1",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 6-1",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 6-1",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thúy",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 6-1",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 6-1",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Thương",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 6-1",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 6-1",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 6-1",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 6-1",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 6-1",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 6-1",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 6-1",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 6-1",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 6-1",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 6-1",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 6-1",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 6",
+    "period": 1,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 6-2",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Tuấn (H)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 6-2",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 6-2",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 6-2",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 6-2",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 6-2",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 6-2",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 6-2",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 6-2",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 6-2",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 6-2",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 6-2",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 6-2",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 6-2",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 6-2",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 6-2",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 6-2",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 6-2",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 6-2",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 6-2",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 6-2",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 6-2",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 6-2",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 6-2",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 6-2",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 6-2",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 6-2",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 6-2",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 6-2",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 6-2",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 6-2",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 6-2",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 6-2",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 6-2",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 6",
+    "period": 2,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 6-3",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 6-3",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 6-3",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 6-3",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 6-3",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 6-3",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 6-3",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 6-3",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 6-3",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 6-3",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 6-3",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 6-3",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 6-3",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 6-3",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 6-3",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 6-3",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 6-3",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 6-3",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 6-3",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 6-3",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 6-3",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 6-3",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 6-3",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 6-3",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 6-3",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 6-3",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 6-3",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 6-3",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 6-3",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 6-3",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Thủy",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 6-3",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 6-3",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Công nghệ",
+    "teacher_name": "Hảo",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 6-3",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 6-3",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 6",
+    "period": 3,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 6-4",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khuyến",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 6-4",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 6-4",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 6-4",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 6-4",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hoa (AV)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 6-4",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 6-4",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thúy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 6-4",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "H' Phương",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 6-4",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Lam (H)",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 6-4",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tuấn (TD)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 6-4",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 6-4",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 6-4",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 6-4",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 6-4",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 6-4",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 6-4",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Xe",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 6-4",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 6-4",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Mùi",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 6-4",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 6-4",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 6-4",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 6-4",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Vật lý",
+    "teacher_name": "Bão",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 6-4",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Nhung",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 6-4",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 6-4",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 6-4",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 6-4",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 6-4",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 6-4",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 6-4",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "GD Địa phương",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 6-4",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 6-4",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Công nghệ",
+    "teacher_name": "Hảo",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 6-4",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 6",
+    "period": 4,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-12A1-Thứ 6-5",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Khoa",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 6-5",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Quyên",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 6-5",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Công nghệ",
+    "teacher_name": "Hà (CN)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 6-5",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 6-5",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 6-5",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 6-5",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Thi",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 6-5",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 6-5",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 6-5",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 6",
+    "period": 5,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-7",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-7",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-7",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-7",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-7",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-7",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-7",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-7",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-7",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-7",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-7",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-7",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-7",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-7",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-7",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-7",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-7",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-7",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-7",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-7",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-7",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-7",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-7",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-7",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Ngữ văn",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-7",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-7",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-7",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-7",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-7",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-7",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-7",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-7",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Hảo",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-7",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-7",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 2-8",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 2-8",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Tuyết (H)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 2-8",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 2-8",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hà (AV)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 2-8",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 2-8",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 2-8",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 2-8",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 2-8",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Phương",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 2-8",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 2-8",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 2-8",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 2-8",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 2-8",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 2-8",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 2-8",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 2-8",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 2-8",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Công nghệ",
+    "teacher_name": "Hiền (S)",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 2-8",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 2-8",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Dung",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 2-8",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 2-8",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Sinh học",
+    "teacher_name": "Vinh",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 2-8",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 2-8",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 2-8",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 2-8",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 2-8",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 2-8",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Oanh",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 2-8",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 2-8",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 2-8",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Địa lý",
+    "teacher_name": "Tú",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 2-8",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lài",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 2-8",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Công nghệ",
+    "teacher_name": "Hảo",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 2-8",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 2",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-7",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-7",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-7",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-7",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Hóa học",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-7",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-7",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-7",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-7",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-7",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-7",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Thuận",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-7",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-7",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-7",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-7",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-7",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Toán",
+    "teacher_name": "Chuyên",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-7",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-7",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-7",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lý",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-7",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Định",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-7",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Công nghệ",
+    "teacher_name": "Yến",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-7",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-7",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-7",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-7",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-7",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Sinh học",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-7",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-7",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-7",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-7",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Đại (CD)",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-7",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Lịch sử",
+    "teacher_name": "Hương",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-7",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-7",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-7",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-7",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 7,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A10"
+  },
+  {
+    "id": "tkb-10A1-Thứ 3-8",
+    "student_class": "10A1",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GDQP-AN",
+    "teacher_name": "Dũng",
+    "room": "Phòng 10A1"
+  },
+  {
+    "id": "tkb-10A2-Thứ 3-8",
+    "student_class": "10A2",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GD Địa phương",
+    "teacher_name": "Hà (Văn)",
+    "room": "Phòng 10A2"
+  },
+  {
+    "id": "tkb-10A3-Thứ 3-8",
+    "student_class": "10A3",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Sáng",
+    "room": "Phòng 10A3"
+  },
+  {
+    "id": "tkb-10A4-Thứ 3-8",
+    "student_class": "10A4",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Hồng (H)",
+    "room": "Phòng 10A4"
+  },
+  {
+    "id": "tkb-10A5-Thứ 3-8",
+    "student_class": "10A5",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Tâm",
+    "room": "Phòng 10A5"
+  },
+  {
+    "id": "tkb-10A6-Thứ 3-8",
+    "student_class": "10A6",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Yến",
+    "room": "Phòng 10A6"
+  },
+  {
+    "id": "tkb-10A7-Thứ 3-8",
+    "student_class": "10A7",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Triều",
+    "room": "Phòng 10A7"
+  },
+  {
+    "id": "tkb-10A8-Thứ 3-8",
+    "student_class": "10A8",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Quy",
+    "room": "Phòng 10A8"
+  },
+  {
+    "id": "tkb-10A9-Thứ 3-8",
+    "student_class": "10A9",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Hảo",
+    "room": "Phòng 10A9"
+  },
+  {
+    "id": "tkb-10A10-Thứ 3-8",
+    "student_class": "10A10",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Công nghệ",
+    "teacher_name": "Giang",
+    "room": "Phòng 10A10"
+  },
+  {
+    "id": "tkb-10A11-Thứ 3-8",
+    "student_class": "10A11",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "HĐ Trải nghiệm",
+    "teacher_name": "Êban",
+    "room": "Phòng 10A11"
+  },
+  {
+    "id": "tkb-10A12-Thứ 3-8",
+    "student_class": "10A12",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GDQP-AN",
+    "teacher_name": "Oanh",
+    "room": "Phòng 10A12"
+  },
+  {
+    "id": "tkb-10A13-Thứ 3-8",
+    "student_class": "10A13",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GD Địa phương",
+    "teacher_name": "Lài",
+    "room": "Phòng 10A13"
+  },
+  {
+    "id": "tkb-10A14-Thứ 3-8",
+    "student_class": "10A14",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Hải",
+    "room": "Phòng 10A14"
+  },
+  {
+    "id": "tkb-10A15-Thứ 3-8",
+    "student_class": "10A15",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Địa lý",
+    "teacher_name": "Quỳnh",
+    "room": "Phòng 10A15"
+  },
+  {
+    "id": "tkb-11A1-Thứ 3-8",
+    "student_class": "11A1",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GDCD/KTLP",
+    "teacher_name": "Bảo (CD)",
+    "room": "Phòng 11A1"
+  },
+  {
+    "id": "tkb-11A2-Thứ 3-8",
+    "student_class": "11A2",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "GDQP-AN",
+    "teacher_name": "Sự",
+    "room": "Phòng 11A2"
+  },
+  {
+    "id": "tkb-11A3-Thứ 3-8",
+    "student_class": "11A3",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Xuân",
+    "room": "Phòng 11A3"
+  },
+  {
+    "id": "tkb-11A4-Thứ 3-8",
+    "student_class": "11A4",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Tú (TD)",
+    "room": "Phòng 11A4"
+  },
+  {
+    "id": "tkb-11A5-Thứ 3-8",
+    "student_class": "11A5",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Địa lý",
+    "teacher_name": "Thắng (Đ)",
+    "room": "Phòng 11A5"
+  },
+  {
+    "id": "tkb-11A6-Thứ 3-8",
+    "student_class": "11A6",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Định",
+    "room": "Phòng 11A6"
+  },
+  {
+    "id": "tkb-11A7-Thứ 3-8",
+    "student_class": "11A7",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Ngọc",
+    "room": "Phòng 11A7"
+  },
+  {
+    "id": "tkb-11A8-Thứ 3-8",
+    "student_class": "11A8",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Thể dục",
+    "teacher_name": "Đại",
+    "room": "Phòng 11A8"
+  },
+  {
+    "id": "tkb-11A9-Thứ 3-8",
+    "student_class": "11A9",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Thắm",
+    "room": "Phòng 11A9"
+  },
+  {
+    "id": "tkb-12A1-Thứ 3-8",
+    "student_class": "12A1",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Công nghệ",
+    "teacher_name": "Oanh (S)",
+    "room": "Phòng 12A1"
+  },
+  {
+    "id": "tkb-12A2-Thứ 3-8",
+    "student_class": "12A2",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tiếng Anh",
+    "teacher_name": "Hiền (AV)",
+    "room": "Phòng 12A2"
+  },
+  {
+    "id": "tkb-12A3-Thứ 3-8",
+    "student_class": "12A3",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Vật lý",
+    "teacher_name": "Thắng (L)",
+    "room": "Phòng 12A3"
+  },
+  {
+    "id": "tkb-12A4-Thứ 3-8",
+    "student_class": "12A4",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Hóa học",
+    "teacher_name": "Phượng",
+    "room": "Phòng 12A4"
+  },
+  {
+    "id": "tkb-12A5-Thứ 3-8",
+    "student_class": "12A5",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Ngữ văn",
+    "teacher_name": "Lan",
+    "room": "Phòng 12A5"
+  },
+  {
+    "id": "tkb-12A6-Thứ 3-8",
+    "student_class": "12A6",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Tin học",
+    "teacher_name": "Tam",
+    "room": "Phòng 12A6"
+  },
+  {
+    "id": "tkb-12A7-Thứ 3-8",
+    "student_class": "12A7",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Toán",
+    "teacher_name": "Khánh",
+    "room": "Phòng 12A7"
+  },
+  {
+    "id": "tkb-12A8-Thứ 3-8",
+    "student_class": "12A8",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Toán",
+    "teacher_name": "Thùy",
+    "room": "Phòng 12A8"
+  },
+  {
+    "id": "tkb-12A9-Thứ 3-8",
+    "student_class": "12A9",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Lịch sử",
+    "teacher_name": "Huệ",
+    "room": "Phòng 12A9"
+  },
+  {
+    "id": "tkb-12A10-Thứ 3-8",
+    "student_class": "12A10",
+    "day_of_week": "Thứ 3",
+    "period": 8,
+    "subject": "Toán",
+    "teacher_name": "Hà (T)",
+    "room": "Phòng 12A10"
+  }
+]
