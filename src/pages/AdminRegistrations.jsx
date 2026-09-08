@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase } from '../lib/supabase';
+import { supabase2Admin, supabase2 } from '../lib/supabase';
+const adminClient = supabase2Admin || supabase2;
 import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -44,7 +45,7 @@ export default function AdminRegistrations() {
   async function fetchCampaigns() {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('cbq_registration_campaigns')
         .select('*')
         .order('created_at', { ascending: false });
@@ -64,7 +65,7 @@ export default function AdminRegistrations() {
   async function fetchResults(campaignId) {
     setLoadingResults(true);
     try {
-      const { data, error } = await supabase
+      const { data, error } = await adminClient
         .from('cbq_student_registrations')
         .select('*')
         .eq('campaign_id', campaignId)
@@ -151,7 +152,7 @@ export default function AdminRegistrations() {
   const handleDelete = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa Đợt đăng ký này? Toàn bộ dữ liệu học sinh đăng ký trong đợt này cũng sẽ bị xóa vĩnh viễn!")) return;
     try {
-      const { error } = await supabase.from('cbq_registration_campaigns').delete().eq('id', id);
+      const { error } = await adminClient.from('cbq_registration_campaigns').delete().eq('id', id);
       if (error) throw error;
       fetchCampaigns();
     } catch (err) {
@@ -173,10 +174,10 @@ export default function AdminRegistrations() {
       };
 
       if (editingId) {
-        const { error } = await supabase.from('cbq_registration_campaigns').update(payload).eq('id', editingId);
+        const { error } = await adminClient.from('cbq_registration_campaigns').update(payload).eq('id', editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('cbq_registration_campaigns').insert([payload]);
+        const { error } = await adminClient.from('cbq_registration_campaigns').insert([payload]);
         if (error) throw error;
       }
 
@@ -241,7 +242,7 @@ export default function AdminRegistrations() {
   const handleDeleteResult = async (id) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa bài đăng ký này?")) return;
     try {
-      const { error } = await supabase.from('cbq_student_registrations').delete().eq('id', id);
+      const { error } = await adminClient.from('cbq_student_registrations').delete().eq('id', id);
       if (error) throw error;
       fetchResults(selectedCampaignId);
     } catch (err) {
@@ -258,7 +259,7 @@ export default function AdminRegistrations() {
   const handleSaveResult = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
+      const { error } = await adminClient
         .from('cbq_student_registrations')
         .update({ responses: editFormData })
         .eq('id', editingResultData.id);

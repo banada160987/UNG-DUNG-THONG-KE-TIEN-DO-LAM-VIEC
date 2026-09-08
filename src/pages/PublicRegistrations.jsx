@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabase2 } from '../lib/supabase';
 import { FileText, CheckCircle2, User, Search, Navigation } from 'lucide-react';
 
 export default function PublicRegistrations() {
@@ -45,7 +45,7 @@ export default function PublicRegistrations() {
 
   async function fetchActiveCampaigns() {
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase2
         .from('cbq_registration_campaigns')
         .select('*')
         .eq('is_active', true)
@@ -253,7 +253,7 @@ export default function PublicRegistrations() {
         responses
       };
 
-      const { error } = await supabase.from('cbq_student_registrations').insert([payload]);
+      const { error } = await supabase2.from('cbq_student_registrations').insert([payload]);
       if (error) {
         if (error.code === '23505') {
           alert("Bạn đã đăng ký đợt này rồi. Mỗi học sinh chỉ được nộp 1 lần.");

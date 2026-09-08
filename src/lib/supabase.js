@@ -21,6 +21,30 @@ export const supabaseAdmin = supabaseServiceKey
     }) 
   : null;
 
+// --- SUPABASE 2 ---
+const supabase2Url = import.meta.env.VITE_SUPABASE_2_URL;
+const supabase2AnonKey = import.meta.env.VITE_SUPABASE_2_ANON_KEY;
+const supabase2ServiceKey = import.meta.env.VITE_SUPABASE_2_SERVICE_ROLE_KEY;
+
+if (!supabase2Url || !supabase2AnonKey) {
+  console.warn('Thiếu cấu hình Supabase 2 URL hoặc Anon Key trong file .env');
+}
+
+// Client thông thường cho Supabase 2
+export const supabase2 = supabase2Url && supabase2AnonKey 
+  ? createClient(supabase2Url, supabase2AnonKey) 
+  : null;
+
+// Client Admin cho Supabase 2
+export const supabase2Admin = supabase2Url && supabase2ServiceKey 
+  ? createClient(supabase2Url, supabase2ServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }) 
+  : null;
+
 /**
  * Ghi lại lịch sử hoạt động vào bảng cbq_audit_logs
  * @param {string} entityType - 'parking' hoặc 'bus'
