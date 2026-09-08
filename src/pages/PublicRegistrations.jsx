@@ -45,14 +45,21 @@ export default function PublicRegistrations() {
 
   async function fetchActiveCampaigns() {
     try {
-      const { data, error } = await supabase2
-        .from('cbq_registration_campaigns')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setCampaigns(data);
+      const [res1, res2] = await Promise.allSettled([
+        supabase.from('cbq_registration_campaigns').select('*').eq('is_active', true).order('created_at', { ascending: false }),
+        supabase2.from('cbq_registration_campaigns').select('*').eq('is_active', true).order('created_at', { ascending: false })
+      ]);
+
+      let allData = [];
+      if (res1.status === 'fulfilled' && res1.value.data) {
+        allData = [...allData, ...res1.value.data.map(d => ({ ...d, _source: 'sb1' }))];
       }
+      if (res2.status === 'fulfilled' && res2.value.data) {
+        allData = [...allData, ...res2.value.data.map(d => ({ ...d, _source: 'sb2' }))];
+      }
+
+      allData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setCampaigns(allData);
     } catch (err) {
       console.error(err);
     }
@@ -253,7 +260,8 @@ export default function PublicRegistrations() {
         responses
       };
 
-      const { error } = await supabase2.from('cbq_student_registrations').insert([payload]);
+      const client = selectedCampaign._source === 'sb1' ? supabase : supabase2;
+      const { error } = await client.from('cbq_student_registrations').insert([payload]);
       if (error) {
         if (error.code === '23505') {
           alert("Bạn đã đăng ký đợt này rồi. Mỗi học sinh chỉ được nộp 1 lần.");

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase2Admin, supabase2 } from '../lib/supabase';
+import { supabase, supabase2Admin, supabase2 } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function AdminRegistrations() {
@@ -17,6 +17,7 @@ export default function AdminRegistrations() {
   const [description, setDescription] = useState('');
   const [targetGrades, setTargetGrades] = useState([]); // ['Khối 10', 'Khối 11', 'Khối 12']
   const [isActive, setIsActive] = useState(true);
+  const [targetDb, setTargetDb] = useState('sb2'); // 'sb1' | 'sb2'
   
   // Form Builder states
   const [formSchema, setFormSchema] = useState([]);
@@ -45,15 +46,24 @@ export default function AdminRegistrations() {
   async function fetchCampaigns() {
     setLoading(true);
     try {
-      const { data, error } = await adminClient
-        .from('cbq_registration_campaigns')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setCampaigns(data);
-        if (data.length > 0 && !selectedCampaignId) {
-          setSelectedCampaignId(data[0].id);
-        }
+      const [res1, res2] = await Promise.allSettled([
+        supabase.from('cbq_registration_campaigns').select('*').order('created_at', { ascending: false }),
+        adminClient.from('cbq_registration_campaigns').select('*').order('created_at', { ascending: false })
+      ]);
+
+      let allData = [];
+      if (res1.status === 'fulfilled' && res1.value.data) {
+        allData = [...allData, ...res1.value.data.map(d => ({ ...d, _source: 'sb1' }))];
+      }
+      if (res2.status === 'fulfilled' && res2.value.data) {
+        allData = [...allData, ...res2.value.data.map(d => ({ ...d, _source: 'sb2' }))];
+      }
+
+      allData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setCampaigns(allData);
+      
+      if (allData.length > 0 && !selectedCampaignId) {
+        setSelectedCampaignId(allData[0].id);
       }
     } catch (err) {
       console.error(err);
@@ -65,7 +75,10 @@ export default function AdminRegistrations() {
   async function fetchResults(campaignId) {
     setLoadingResults(true);
     try {
-      const { data, error } = await adminClient
+      const campaign = campaigns.find(c => c.id === campaignId);
+      const client = campaign?._source === 'sb1' ? supabase : adminClient;
+      
+      const { data, error } = await client
         .from('cbq_student_registrations')
         .select('*')
         .eq('campaign_id', campaignId)
@@ -144,15 +157,17 @@ export default function AdminRegistrations() {
     setTargetGrades(cam.target_grades || []);
     setIsActive(cam.is_active);
     setFormSchema(cam.form_schema || []);
+    setTargetDb(cam._source || 'sb2');
     setShowForm(true);
     setActiveTab('campaigns');
     window.scrollTo(0, 0);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (cam) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa Đợt đăng ký này? Toàn bộ dữ liệu học sinh đăng ký trong đợt này cũng sẽ bị xóa vĩnh viễn!")) return;
     try {
-      const { error } = await adminClient.from('cbq_registration_campaigns').delete().eq('id', id);
+      const client = cam._source === 'sb1' ? supabase : adminClient;
+      const { error } = await client.from('cbq_registration_campaigns').delete().eq('id', cam.id);
       if (error) throw error;
       fetchCampaigns();
     } catch (err) {
@@ -174,10 +189,12 @@ export default function AdminRegistrations() {
       };
 
       if (editingId) {
-        const { error } = await adminClient.from('cbq_registration_campaigns').update(payload).eq('id', editingId);
+        const client = targetDb === 'sb1' ? supabase : adminClient;
+        const { error } = await client.from('cbq_registration_campaigns').update(payload).eq('id', editingId);
         if (error) throw error;
       } else {
-        const { error } = await adminClient.from('cbq_registration_campaigns').insert([payload]);
+        const client = targetDb === 'sb1' ? supabase : adminClient;
+        const { error } = await client.from('cbq_registration_campaigns').insert([payload]);
         if (error) throw error;
       }
 
@@ -239,10 +256,13 @@ export default function AdminRegistrations() {
     XLSX.writeFile(workbook, `Danh_sach_dang_ky_${campaign?.title || 'x'}.xlsx`);
   };
 
-  const handleDeleteResult = async (id) => {
+  const handleDeleteResult = async (r) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa bài đăng ký này?")) return;
     try {
-      const { error } = await adminClient.from('cbq_student_registrations').delete().eq('id', id);
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
+      const client = campaign?._source === 'sb1' ? supabase : adminClient;
+      
+      const { error } = await client.from('cbq_student_registrations').delete().eq('id', r.id);
       if (error) throw error;
       fetchResults(selectedCampaignId);
     } catch (err) {
@@ -259,7 +279,10 @@ export default function AdminRegistrations() {
   const handleSaveResult = async (e) => {
     e.preventDefault();
     try {
-      const { error } = await adminClient
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
+      const client = campaign?._source === 'sb1' ? supabase : adminClient;
+      
+      const { error } = await client
         .from('cbq_student_registrations')
         .update({ responses: editFormData })
         .eq('id', editingResultData.id);
@@ -371,6 +394,20 @@ export default function AdminRegistrations() {
                     </div>
 
                     <div>
+                      <label style={styles.label}>Nơi lưu trữ máy chủ (Cân bằng tải)</label>
+                      <select 
+                        value={targetDb}
+                        onChange={(e) => setTargetDb(e.target.value)}
+                        style={{ ...styles.input, marginTop: '5px' }}
+                        disabled={!!editingId} // Cannot change DB after creation
+                      >
+                        <option value="sb1">Supabase 1 (Server Chính)</option>
+                        <option value="sb2">Supabase 2 (Server Phụ - Khuyên dùng)</option>
+                      </select>
+                      {editingId && <small style={{ color: '#64748b', fontSize: '11px' }}>*Không thể đổi máy chủ sau khi tạo.</small>}
+                    </div>
+
+                    <div>
                       <label style={styles.label}>Trạng thái</label>
                       <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', marginTop: '5px' }}>
                         <input 
@@ -478,6 +515,7 @@ export default function AdminRegistrations() {
                       <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
                         <th style={{ padding: '10px' }}>Tiêu đề</th>
                         <th style={{ padding: '10px' }}>Khối áp dụng</th>
+                        <th style={{ padding: '10px' }}>Nơi lưu</th>
                         <th style={{ padding: '10px' }}>Trạng thái</th>
                         <th style={{ padding: '10px' }}>Số Form fields</th>
                         <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
@@ -493,6 +531,11 @@ export default function AdminRegistrations() {
                             {!cam.target_grades || cam.target_grades.length === 0 ? 'Toàn trường' : cam.target_grades.join(', ')}
                           </td>
                           <td style={{ padding: '10px' }}>
+                            <span style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', background: cam._source === 'sb1' ? '#f1f5f9' : '#e0f2fe', color: cam._source === 'sb1' ? '#475569' : '#0369a1', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Server size={12} /> {cam._source === 'sb1' ? 'Server 1' : 'Server 2'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px' }}>
                             {cam.is_active ? <span style={{ color: '#16a34a', fontWeight: 'bold' }}>🟢 Mở</span> : <span style={{ color: '#ef4444' }}>🔴 Đóng</span>}
                           </td>
                           <td style={{ padding: '10px' }}>{(cam.form_schema || []).length} câu</td>
@@ -504,7 +547,7 @@ export default function AdminRegistrations() {
                               <button onClick={() => handleEdit(cam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
                                 <Edit3 size={14} /> Sửa
                               </button>
-                              <button onClick={() => handleDelete(cam.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                                <button onClick={() => handleDelete(cam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
                                 <Trash2 size={14} /> Xóa
                               </button>
                             </div>
@@ -615,7 +658,7 @@ export default function AdminRegistrations() {
                             <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
                               <Edit3 size={16} />
                             </button>
-                            <button onClick={() => handleDeleteResult(r.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Xóa">
+                            <button onClick={() => handleDeleteResult(r)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Xóa">
                               <Trash2 size={16} />
                             </button>
                           </td>
