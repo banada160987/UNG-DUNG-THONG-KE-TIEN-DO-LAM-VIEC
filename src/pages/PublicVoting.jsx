@@ -244,15 +244,22 @@ export default function PublicVoting() {
         return;
       }
 
-      // 4. Increment votes_count in voting_entries
-      const newCount = (votingEntry.votes_count || 0) + 1;
-      await supabase
-        .from('cbq_voting_entries')
-        .update({ votes_count: newCount })
-        .eq('id', votingEntry.id);
+      // 4. Increment votes_count in voting_entries (Atomic RPC chống Race Condition)
+      const { error: rpcErr } = await supabase.rpc('increment_vote', {
+        target_entry_id: votingEntry.id,
+        step: 1
+      });
+
+      if (rpcErr) {
+        const newCount = (votingEntry.votes_count || 0) + 1;
+        await supabase
+          .from('cbq_voting_entries')
+          .update({ votes_count: newCount })
+          .eq('id', votingEntry.id);
+      }
 
       // Update local state
-      setEntries(prev => prev.map(item => item.id === votingEntry.id ? { ...item, votes_count: newCount } : item));
+      setEntries(prev => prev.map(item => item.id === votingEntry.id ? { ...item, votes_count: (item.votes_count || 0) + 1 } : item));
       setSubmittingVote(false);
       setVotingEntry(null);
       setVoterCode('');
@@ -277,16 +284,23 @@ export default function PublicVoting() {
       // 1. Delete vote record
       await supabase.from('cbq_votes').delete().eq('id', myCurrentVote.id);
 
-      // 2. Decrement votes_count in target entry
+      // 2. Decrement votes_count in target entry (Atomic RPC)
       const targetEntry = entries.find(e => e.id === myCurrentVote.entry_id);
-      if (targetEntry && targetEntry.votes_count > 0) {
-        const newCount = targetEntry.votes_count - 1;
-        await supabase
-          .from('cbq_voting_entries')
-          .update({ votes_count: newCount })
-          .eq('id', targetEntry.id);
+      if (targetEntry) {
+        const { error: rpcErr } = await supabase.rpc('increment_vote', {
+          target_entry_id: targetEntry.id,
+          step: -1
+        });
 
-        setEntries(prev => prev.map(e => e.id === targetEntry.id ? { ...e, votes_count: newCount } : e));
+        if (rpcErr && targetEntry.votes_count > 0) {
+          const newCount = targetEntry.votes_count - 1;
+          await supabase
+            .from('cbq_voting_entries')
+            .update({ votes_count: newCount })
+            .eq('id', targetEntry.id);
+        }
+
+        setEntries(prev => prev.map(e => e.id === targetEntry.id ? { ...e, votes_count: Math.max(0, (e.votes_count || 0) - 1) } : e));
       }
 
       setMyCurrentVote(null);
@@ -300,23 +314,11 @@ export default function PublicVoting() {
   // SWITCH VOTE FUNCTION
   const handleSwitchVote = async (oldVoteRecord, newEntry) => {
     try {
-      // 1. Decrement old entry count
-      const oldEntry = entries.find(e => e.id === oldVoteRecord.entry_id);
-      if (oldEntry && oldEntry.votes_count > 0) {
-        await supabase
-          .from('cbq_voting_entries')
-          .update({ votes_count: oldEntry.votes_count - 1 })
-          .eq('id', oldEntry.id);
-      }
+      // 1. Atomic Decrement old entry and Increment new entry via RPC
+      await supabase.rpc('increment_vote', { target_entry_id: oldVoteRecord.entry_id, step: -1 });
+      await supabase.rpc('increment_vote', { target_entry_id: newEntry.id, step: 1 });
 
-      // 2. Increment new entry count
-      const newCount = (newEntry.votes_count || 0) + 1;
-      await supabase
-        .from('cbq_voting_entries')
-        .update({ votes_count: newCount })
-        .eq('id', newEntry.id);
-
-      // 3. Update vote record entry_id
+      // 2. Update vote record entry_id
       await supabase
         .from('cbq_votes')
         .update({
@@ -327,7 +329,7 @@ export default function PublicVoting() {
 
       setEntries(prev => prev.map(e => {
         if (e.id === oldVoteRecord.entry_id) return { ...e, votes_count: Math.max(0, (e.votes_count || 0) - 1) };
-        if (e.id === newEntry.id) return { ...e, votes_count: newCount };
+        if (e.id === newEntry.id) return { ...e, votes_count: (e.votes_count || 0) + 1 };
         return e;
       }));
 

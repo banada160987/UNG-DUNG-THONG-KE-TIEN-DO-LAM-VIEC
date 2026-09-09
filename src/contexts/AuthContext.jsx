@@ -23,8 +23,6 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserRole = async (userId, userEmail) => {
     try {
-      const isAdminEmail = userEmail && (userEmail.toLowerCase().startsWith('admin') || userEmail.toLowerCase().includes('admin'));
-
       const { data, error } = await supabase
         .from('cbq_user_roles')
         .select('role, committee_id, permissions, cbq_committees(name)')
@@ -32,9 +30,7 @@ export const AuthProvider = ({ children }) => {
         .maybeSingle();
 
       let userRole = data?.role;
-      if (!userRole && isAdminEmail) {
-        userRole = 'admin';
-      } else if (!userRole) {
+      if (!userRole) {
         userRole = 'committee_member';
       }
 
@@ -72,45 +68,19 @@ export const AuthProvider = ({ children }) => {
       };
 
       // If admin role, ALWAYS FORCE ALL PERMISSIONS TO TRUE
-      if (userRole === 'admin' || isAdminEmail) {
+      if (userRole === 'admin') {
         Object.keys(mergedPerms).forEach(k => mergedPerms[k] = true);
-        mergedPerms.canViewStudents = true;
-        mergedPerms.canViewEmulation = true;
-        mergedPerms.canViewDocs = true;
-        mergedPerms.canViewNews = true;
-        mergedPerms.canViewSponsors = true;
-        mergedPerms.canViewGuests = true;
-        mergedPerms.canViewSports = true;
-        mergedPerms.canViewPages = true;
-        mergedPerms.canViewLinks = true;
-        mergedPerms.canViewQuizzes = true;
-        mergedPerms.canViewFeedback = true;
-        mergedPerms.canViewMagazine = true;
-        mergedPerms.canViewGuestbook = true;
       }
 
       setPermissions(mergedPerms);
     } catch (err) {
       console.warn('Nạp vai trò:', err);
-      // Fallback for admin email
-      if (userEmail && userEmail.toLowerCase().includes('admin')) {
-        setRole('admin');
-        setPermissions({
-          canViewStudents: true,
-          canViewEmulation: true,
-          canViewDocs: true,
-          canViewNews: true,
-          canViewSponsors: true,
-          canViewGuests: true,
-          canViewSports: true,
-          canViewPages: true,
-          canViewLinks: true,
-          canViewQuizzes: true,
-          canViewFeedback: true,
-          canViewMagazine: true,
-          canViewGuestbook: true
-        });
-      }
+      setRole('guest');
+      setPermissions({
+        canViewStudents: true,
+        canViewEmulation: true,
+        canViewDocs: true,
+      });
     }
   };
 
@@ -118,31 +88,6 @@ export const AuthProvider = ({ children }) => {
     // Check active sessions and sets the user
     const checkUser = async () => {
       try {
-        // --- BYPASS PERSISTENCE ---
-        const isEmergency = localStorage.getItem('emergency_admin_logged_in');
-        if (isEmergency === 'true') {
-          const emergencyUser = { id: 'emergency-admin', email: 'admin@bypass.com' };
-          setUser(emergencyUser);
-          setRole('admin');
-          setPermissions({
-            canViewStudents: true,
-            canViewEmulation: true,
-            canViewDocs: true,
-            canViewNews: true,
-            canViewSponsors: true,
-            canViewGuests: true,
-            canViewSports: true,
-            canViewPages: true,
-            canViewLinks: true,
-            canViewQuizzes: true,
-            canViewFeedback: true,
-            canViewMagazine: true,
-            canViewGuestbook: true
-          });
-          setLoading(false);
-          return;
-        }
-
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
@@ -191,31 +136,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signIn = async (email, password) => {
-    // --- BẮT ĐẦU: BYPASS ĐĂNG NHẬP KHẨN CẤP ---
-    if (email === 'admin@bypass.com' && password === 'admin123456') {
-      const emergencyUser = { id: 'emergency-admin', email: 'admin@bypass.com' };
-      localStorage.setItem('emergency_admin_logged_in', 'true');
-      setUser(emergencyUser);
-      setRole('admin');
-      setPermissions({
-        canViewStudents: true,
-        canViewEmulation: true,
-        canViewDocs: true,
-        canViewNews: true,
-        canViewSponsors: true,
-        canViewGuests: true,
-        canViewSports: true,
-        canViewPages: true,
-        canViewLinks: true,
-        canViewQuizzes: true,
-        canViewFeedback: true,
-        canViewMagazine: true,
-        canViewGuestbook: true
-      });
-      return { user: emergencyUser, session: { access_token: 'emergency_token' } };
-    }
-    // --- KẾT THÚC ---
-
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -225,14 +145,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
-    if (user && user.id === 'emergency-admin') {
-      localStorage.removeItem('emergency_admin_logged_in');
-      setUser(null);
-      setRole(null);
-      setPermissions({});
-      return;
-    }
-
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };
