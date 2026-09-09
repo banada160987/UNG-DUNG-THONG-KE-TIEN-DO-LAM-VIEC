@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { 
   Calendar, Plus, Save, Trash2, Edit3, Eye, Clock, MapPin, CheckCircle2, 
   RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck,
-  Share2, Check
+  Share2, Check, Link as LinkIcon
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -18,6 +19,7 @@ import {
 } from '../utils/decree30ScheduleWord';
 
 export default function AdminSchedule() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('bgh_schedule'); // 'bgh_schedule' | 'timetable_excel'
   const [schedules, setSchedules] = useState([]);
   const [timetableData, setTimetableData] = useState([]);
@@ -25,6 +27,10 @@ export default function AdminSchedule() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Copy BGH & Public Link State
+  const [copiedAdminLink, setCopiedAdminLink] = useState(false);
+  const [copiedPublicLink, setCopiedPublicLink] = useState(false);
 
   // Multi-Week / 35-Week Flexible Export Modal State
   const [showExportModal, setShowExportModal] = useState(false);
@@ -141,10 +147,37 @@ export default function AdminSchedule() {
     }
   }
 
+  useEffect(() => {
+    const weekParam = searchParams.get('week');
+    if (weekParam && Number(weekParam) >= 1 && Number(weekParam) <= 35) {
+      const wNum = Number(weekParam);
+      if (wNum !== selectedWeekNo) {
+        handleSelectWeek(wNum);
+      }
+    }
+  }, [searchParams, schedules]);
+
+  const handleCopyAdminEditLink = () => {
+    const editUrl = `${window.location.origin}/admin/schedule?week=${selectedWeekNo}`;
+    navigator.clipboard.writeText(editUrl).then(() => {
+      setCopiedAdminLink(true);
+      setTimeout(() => setCopiedAdminLink(false), 2500);
+    });
+  };
+
+  const handleCopyPublicViewLink = () => {
+    const publicUrl = `${window.location.origin}/lich-cong-tac?week=${selectedWeekNo}`;
+    navigator.clipboard.writeText(publicUrl).then(() => {
+      setCopiedPublicLink(true);
+      setTimeout(() => setCopiedPublicLink(false), 2500);
+    });
+  };
+
   // --- 35 WEEKS BGH SCHEDULE ACTIONS ---
   const handleSelectWeek = (wNo) => {
     const wNum = Number(wNo) || 1;
     setSelectedWeekNo(wNum);
+    setSearchParams({ week: wNum }, { replace: true });
     const targetWeek = schoolWeeks[wNum - 1] || schoolWeeks[0];
 
     // Check if this week is already saved in DB or local
@@ -711,8 +744,26 @@ export default function AdminSchedule() {
                 ))}
               </select>
 
-              <div style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold', marginLeft: 'auto' }}>
-                📌 Ngày ban hành: <span style={{ color: '#0284c7' }}>{releaseDateStr}</span>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={handleCopyAdminEditLink}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', backgroundColor: copiedAdminLink ? '#166534' : '#be123c', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                  title="Sao chép đường dẫn trực tiếp mở trang Admin chọn sẵn Tuần này cho BGH / Người nhập lịch"
+                >
+                  {copiedAdminLink ? <Check size={16} /> : <Share2 size={16} />}
+                  {copiedAdminLink ? 'Đã chép Link BGH!' : `🔗 Link BGH Nhập Tuần ${selectedWeekNo}`}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCopyPublicViewLink}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', backgroundColor: copiedPublicLink ? '#166534' : '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', transition: 'all 0.2s' }}
+                  title="Sao chép đường dẫn xem Lịch công tác công khai cho Giáo viên, Học sinh, Phụ huynh"
+                >
+                  {copiedPublicLink ? <Check size={16} /> : <Eye size={16} />}
+                  {copiedPublicLink ? 'Đã chép Link Tra cứu!' : `👁️ Link Tra Cứu Tuần ${selectedWeekNo}`}
+                </button>
               </div>
             </div>
           </div>
