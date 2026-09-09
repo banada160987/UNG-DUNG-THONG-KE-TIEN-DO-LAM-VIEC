@@ -2,32 +2,36 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check
+  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
 import { 
   getSchoolWeeks2026, 
+  getSchoolMonths2026,
   getDefaultScheduleDays, 
   exportScheduleToWordDecree30, 
   exportMultipleSchedulesToWordDecree30, 
   getScheduleDataForWeek, 
-  ROMAN_NUMERALS 
+  aggregateMonthlyPlanFromWeeks,
+  aggregateYearlyPlanFromMonths,
+  exportMonthlyPlanToWordDecree30,
+  exportYearlyPlanToWordDecree30,
+  formatWeekTitle
 } from '../utils/decree30ScheduleWord';
 
 const DEFAULT_SCHEDULE = {
-  title: 'LỊCH CÔNG TÁC TUẦN 01 (Từ 01/09/2026 đến 07/09/2026)',
+  title: 'LỊCH CÔNG TÁC TUẦN 01 - NĂM HỌC 2026-2027',
   week_number: 1,
   start_date: '2026-09-01',
   end_date: '2026-09-07',
   bgh_duty: 'Thầy Lê Văn A - Hiệu trưởng (Trực chính)',
   teacher_duty: 'Cô Nguyễn Thị B - Tổ trưởng Tổ Ngữ văn (Trực ban)',
-  schedule_items: [
-    { day: "Thứ Hai (01/09)", time: "07:30", content: "Chào cờ toàn trường & Quán triệt công tác chuẩn bị Lễ Kỷ Niệm 30 Năm", location: "Sân trường", chair: "BGH", participants: "Toàn thể GV & HS" },
-    { day: "Thứ Hai (01/09)", time: "14:00", content: "Họp Hội đồng Sư phạm mở rộng duyệt kịch bản sự kiện", location: "Phòng Hội đồng", chair: "Hiệu trưởng", participants: "Toàn thể Cán bộ Giáo viên" },
-    { day: "Thứ Ba (02/09)", time: "08:00", content: "Tổng duyệt chương trình Lễ Kỷ Niệm 30 Năm Thành Lập Trường", location: "Sân khấu chính", chair: "Ban Tổ Chức", participants: "CÁC Tiểu ban & Đội văn nghệ" },
-    { day: "Thứ Tư (03/09)", time: "07:30", content: "CHÍNH THỨC TỔ CHỨC LỄ KỶ NIỆM 30 NĂM THÀNH LẬP TRƯỜNG THPT CAO BÁ QUÁT", location: "Khuôn viên nhà trường", chair: "BGH & Lãnh đạo Sở", participants: "Đại biểu, Cựu GV, Cựu HS & Toàn trường" },
-    { day: "Thứ Sáu (05/09)", time: "07:30", content: "LỄ KHAI GIẢNG NĂM HỌC MỚI 2026 - 2027", location: "Sân trường", chair: "Hiệu trưởng", participants: "Toàn thể GV & Học sinh" }
+  day_items: [
+    { day_name: "Thứ 2", date_str: "01/09", session: "Sáng", content: "Chào cờ toàn trường & Quán triệt công tác chuẩn bị năm học mới", location: "Sân trường", participants: "Toàn thể GV & HS" },
+    { day_name: "Thứ 2", date_str: "01/09", session: "Chiều", content: "Họp Hội đồng Sư phạm mở rộng triển khai kế hoạch năm học", location: "Phòng Hội đồng", participants: "Toàn thể Cán bộ Giáo viên" },
+    { day_name: "Thứ Ba", date_str: "02/09", session: "Sáng", content: "Nghỉ lễ Quốc Khánh 2/9", location: "-", participants: "Toàn trường" },
+    { day_name: "Thứ Sáu", date_str: "05/09", session: "Sáng", content: "LỄ KHAI GIẢNG NĂM HỌC MỚI 2026 - 2027", location: "Sân trường", participants: "Toàn thể GV & Học sinh" }
   ]
 };
 
@@ -92,25 +96,29 @@ export default function PublicSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
   
-  // 35-Week Generator for 2026-2027
+  // 35-Week & Month/Year Plan Generators for 2026-2027
   const schoolWeeks = getSchoolWeeks2026();
+  const schoolMonths = getSchoolMonths2026();
+  const [scheduleViewMode, setScheduleViewMode] = useState('week'); // 'week' | 'month' | 'year'
   const [selectedWeekNo, setSelectedWeekNo] = useState(1);
+  const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportMode, setExportMode] = useState('single');
   const [fromWeek, setFromWeek] = useState(1);
   const [toWeek, setToWeek] = useState(35);
 
   const [schedules, setSchedules] = useState([]);
-  const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [timetableData, setTimetableData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedTeacher, setSelectedTeacher] = useState('');
-  const [copied, setCopied] = useState(false);
+  
+  const [copiedAdminLink, setCopiedAdminLink] = useState(false);
+  const [copiedPublicLink, setCopiedPublicLink] = useState(false);
 
   // Initialize state from URL params
   useEffect(() => {
-    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Phường Tân An - Tỉnh Đắk Lắk";
+    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Phường Tân An - Tỉnh Đắc Lắc";
     const tabParam = searchParams.get('tab');
     const classParam = searchParams.get('class');
     const teacherParam = searchParams.get('teacher');
@@ -170,6 +178,22 @@ export default function PublicSchedule() {
     updateUrlParams(activeMainTab, selectedClass, selectedTeacher, wNum);
   };
 
+  const handleCopyAdminLink = () => {
+    const editUrl = `${window.location.origin}/nhap-lich-bgh?week=${selectedWeekNo}`;
+    navigator.clipboard.writeText(editUrl).then(() => {
+      setCopiedAdminLink(true);
+      setTimeout(() => setCopiedAdminLink(false), 2500);
+    });
+  };
+
+  const handleCopyPublicLink = () => {
+    const publicUrl = `${window.location.origin}/lich-cong-tac?week=${selectedWeekNo}`;
+    navigator.clipboard.writeText(publicUrl).then(() => {
+      setCopiedPublicLink(true);
+      setTimeout(() => setCopiedPublicLink(false), 2500);
+    });
+  };
+
   // Get current active schedule object for selected week
   const getCurrentScheduleObj = () => {
     const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
@@ -179,17 +203,19 @@ export default function PublicSchedule() {
       return {
         ...targetWeek,
         ...foundInDb,
-        day_items: foundInDb.day_items || foundInDb.schedule_items || []
+        title: formatWeekTitle(foundInDb.title || targetWeek.title, selectedWeekNo),
+        day_items: foundInDb.day_items || foundInDb.schedule_items || getDefaultScheduleDays(targetWeek)
       };
     }
 
     return {
       ...targetWeek,
+      title: formatWeekTitle(targetWeek.title, selectedWeekNo),
       note: '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
       recipients: 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
       signer_name: 'Lê Thị Thảo',
       signer_title: 'HIỆU TRƯỜNG',
-      day_items: []
+      day_items: getDefaultScheduleDays(targetWeek)
     };
   };
 
@@ -229,6 +255,16 @@ export default function PublicSchedule() {
     setShowExportModal(false);
   };
 
+  const handleExportMonthlyPlan = () => {
+    const mData = aggregateMonthlyPlanFromWeeks(selectedMonthIdx + 1, schoolWeeks, schedules);
+    exportMonthlyPlanToWordDecree30(mData);
+  };
+
+  const handleExportYearlyPlan = () => {
+    const yData = aggregateYearlyPlanFromMonths(schoolWeeks, schedules);
+    exportYearlyPlanToWordDecree30(yData);
+  };
+
   async function fetchTimetableData() {
     try {
       const { data, error } = await supabase.from('cbq_timetable_items').select('*');
@@ -253,16 +289,9 @@ export default function PublicSchedule() {
       try {
         const parsed = JSON.parse(cached);
         let cachedData = parsed;
-        
-        // Format mới có timestamp
         if (parsed && !Array.isArray(parsed) && parsed.data) {
           cachedData = parsed.data;
-          const isOld = Date.now() - parsed.timestamp > 24 * 60 * 60 * 1000;
-          if (isOld) {
-            console.warn("Dữ liệu TKB trong máy đã cũ hơn 24 giờ. Đang dùng tạm.");
-          }
         }
-
         if (Array.isArray(cachedData) && cachedData.length > 0) {
           setTimetableData(processRawTimetableItems(cachedData));
           return;
@@ -271,8 +300,6 @@ export default function PublicSchedule() {
         console.error("Lỗi parse cache", e);
       }
     }
-    
-    // Fallback JSON cuối cùng
     const masterCleaned = processRawTimetableItems(masterTimetableData);
     setTimetableData(masterCleaned);
     localStorage.setItem('cbq_master_timetable', JSON.stringify({
@@ -292,7 +319,6 @@ export default function PublicSchedule() {
 
   useEffect(() => {
     if (availableTeachers.length > 0 && (!selectedTeacher || !availableTeachers.includes(selectedTeacher))) {
-      // Try to find if selectedTeacher is a short code mapped to full name
       const full = getFullTeacherName(selectedTeacher);
       if (availableTeachers.includes(full)) {
         setSelectedTeacher(full);
@@ -383,18 +409,22 @@ export default function PublicSchedule() {
 
   const handleTabChange = (tab) => {
     setActiveMainTab(tab);
-    updateUrlParams(tab, selectedClass, selectedTeacher);
+    updateUrlParams(tab, selectedClass, selectedTeacher, selectedWeekNo);
   };
 
   const handleClassChange = (newClass) => {
     setSelectedClass(newClass);
-    updateUrlParams(activeMainTab, newClass, selectedTeacher);
+    updateUrlParams(activeMainTab, newClass, selectedTeacher, selectedWeekNo);
   };
 
   const handleTeacherChange = (newTeacher) => {
     setSelectedTeacher(newTeacher);
-    updateUrlParams(activeMainTab, selectedClass, newTeacher);
+    updateUrlParams(activeMainTab, selectedClass, newTeacher, selectedWeekNo);
   };
+
+  const currentSched = getCurrentScheduleObj();
+  const currentMonthData = aggregateMonthlyPlanFromWeeks(selectedMonthIdx + 1, schoolWeeks, schedules);
+  const currentYearData = aggregateYearlyPlanFromMonths(schoolWeeks, schedules);
 
   return (
     <div style={styles.container}>
@@ -410,6 +440,7 @@ export default function PublicSchedule() {
         }
       `}</style>
 
+      {/* HEADER TOP CARD */}
       <div style={styles.headerCard} className="no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Calendar size={32} color="#be123c" />
@@ -421,188 +452,334 @@ export default function PublicSchedule() {
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
           {['bgh_schedule', 'class_tkb', 'teacher_tkb'].map(tab => (
             <button key={tab} onClick={() => handleTabChange(tab)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab ? '#be123c' : '#f1f5f9', color: activeMainTab === tab ? '#fff' : '#334' }}>
-              {tab === 'bgh_schedule' ? '📅 Lịch BGH' : tab === 'class_tkb' ? '🎓 TKB Lớp' : '👨‍🏫 TKB Giáo viên'}
+              {tab === 'bgh_schedule' ? '📅 Lịch Công Tác BGH' : tab === 'class_tkb' ? '🎓 TKB Lớp' : '👨‍🏫 TKB Giáo viên'}
             </button>
           ))}
         </div>
       </div>
 
+      {/* TAB 1: BGH SCHEDULE (WEEK / MONTH / YEAR VIEWS) */}
       {activeMainTab === 'bgh_schedule' && (
         <div style={styles.sheetCard} className="print-full">
           
-          {/* WEEK SELECTOR & ACTIONS BAR */}
-          <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tuần Học (1 - 35):</span>
-              <select
-                value={selectedWeekNo}
-                onChange={e => handleSelectWeekNo(Number(e.target.value))}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: '2px solid #be123c', fontWeight: 'bold', fontSize: '14px', color: '#be123c', background: '#ffffff', cursor: 'pointer' }}
+          {/* VIEW MODE SWITCHER BAR */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '2px solid #f1f5f9' }} className="no-print">
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => setScheduleViewMode('week')} 
+                style={{ ...styles.tabBtn, backgroundColor: scheduleViewMode === 'week' ? '#0284c7' : '#e0f2fe', color: scheduleViewMode === 'week' ? '#ffffff' : '#0369a1' }}
               >
-                {schoolWeeks.map(w => (
-                  <option key={w.week_number} value={w.week_number}>
-                    Tuần {w.roman} ({w.week_number}) - {w.date_range_str}
-                  </option>
-                ))}
-              </select>
+                📅 Lịch Tuần (35 Tuần)
+              </button>
+              <button 
+                onClick={() => setScheduleViewMode('month')} 
+                style={{ ...styles.tabBtn, backgroundColor: scheduleViewMode === 'month' ? '#0284c7' : '#e0f2fe', color: scheduleViewMode === 'month' ? '#ffffff' : '#0369a1' }}
+              >
+                🗓️ Kế Hoạch Tháng (Từ Tuần Suy Ra)
+              </button>
+              <button 
+                onClick={() => setScheduleViewMode('year')} 
+                style={{ ...styles.tabBtn, backgroundColor: scheduleViewMode === 'year' ? '#0284c7' : '#e0f2fe', color: scheduleViewMode === 'year' ? '#ffffff' : '#0369a1' }}
+              >
+                🏛️ Kế Hoạch Năm Học 2026 - 2027
+              </button>
             </div>
 
+            {/* ACTION BUTTONS ACCORDING TO VIEW MODE */}
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setShowExportModal(true)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
-              >
-                📄 Xuất File Word (35 Tuần / Linh Hoạt)
-              </button>
-              
-              <button
-                type="button"
-                onClick={handlePrint}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 16px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
-              >
-                <Printer size={16} /> In Lịch / PDF (A4)
+              {scheduleViewMode === 'week' && (
+                <>
+                  <button onClick={() => setShowExportModal(true)} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
+                    <Download size={16} /> 📄 Xuất File Word (NĐ 30)
+                  </button>
+                  <button onClick={handleCopyAdminLink} style={{ ...styles.printBtn, backgroundColor: '#475569' }}>
+                    {copiedAdminLink ? <Check size={16} /> : <LinkIcon size={16} />}
+                    {copiedAdminLink ? 'Đã sao chép link BGH!' : `🔗 Link BGH Nhập Tuần ${selectedWeekNo}`}
+                  </button>
+                  <a href={`/nhap-lich-bgh?week=${selectedWeekNo}`} style={{ ...styles.printBtn, backgroundColor: '#be123c', textDecoration: 'none' }}>
+                    ✏️ Nhập / Sửa Lịch Tuần {selectedWeekNo}
+                  </a>
+                  <button onClick={handleCopyPublicLink} style={{ ...styles.printBtn, backgroundColor: '#059669' }}>
+                    {copiedPublicLink ? <Check size={16} /> : <Share2 size={16} />}
+                    {copiedPublicLink ? 'Đã sao chép link Xem!' : `👁️ Link Tra Cứu Tuần ${selectedWeekNo}`}
+                  </button>
+                </>
+              )}
+
+              {scheduleViewMode === 'month' && (
+                <button onClick={handleExportMonthlyPlan} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
+                  <Download size={16} /> 📄 Xuất Kế Hoạch Tháng Word (NĐ 30)
+                </button>
+              )}
+
+              {scheduleViewMode === 'year' && (
+                <button onClick={handleExportYearlyPlan} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
+                  <Download size={16} /> 📄 Xuất Kế Hoạch Năm Word (NĐ 30)
+                </button>
+              )}
+
+              <button onClick={handlePrint} style={styles.printBtn}>
+                <Printer size={16} /> In Văn Bản
               </button>
             </div>
           </div>
 
-          {/* OFFICIAL DECREE 30 SCHEDULE VIEW (MATCHING EXPLICIT TEMPLATE) */}
-          {(() => {
-            const currentSched = getCurrentScheduleObj();
-            const dayRows = currentSched.day_items && currentSched.day_items.length > 0
-              ? currentSched.day_items
-              : getDefaultScheduleDays(schoolWeeks[selectedWeekNo - 1]);
+          {/* VIEW MODE 1: WEEK VIEW */}
+          {scheduleViewMode === 'week' && (
+            <div>
+              {/* WEEK SELECTOR DROPDOWN */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }} className="no-print">
+                <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tuần Học (Năm học 2026 - 2027):</span>
+                <select 
+                  value={selectedWeekNo} 
+                  onChange={e => handleSelectWeekNo(e.target.value)}
+                  style={{ ...styles.select, padding: '9px 16px', fontSize: '14px', border: '1.5px solid #0284c7', color: '#0369a1' }}
+                >
+                  {schoolWeeks.map(w => (
+                    <option key={w.week_number} value={w.week_number}>
+                      Tuần {String(w.week_number).padStart(2, '0')} ({w.date_range_str})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-            // Group items by day
-            const groupedDays = [];
-            const map = new Map();
-
-            dayRows.forEach(item => {
-              const key = `${item.day_name}_${item.date_str}`;
-              if (!map.has(key)) {
-                const dayObj = { day_name: item.day_name, date_str: item.date_str, sessions: [] };
-                map.set(key, dayObj);
-                groupedDays.push(dayObj);
-              }
-              map.get(key).sessions.push(item);
-            });
-
-            return (
-              <div style={{ fontFamily: '"Times New Roman", Times, serif', color: '#000000', padding: '20px 10px' }}>
-                
-                {/* DECREE 30 HEADER */}
-                <table style={{ width: '100%', border: 'none', borderCollapse: 'collapse', marginBottom: '15px' }}>
-                  <tbody>
-                    <tr>
-                      <td style={{ width: '45%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                        <div style={{ fontSize: '12pt' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-                        <div style={{ borderBottom: '1px solid #000', width: '130px', margin: '3px auto 0 auto' }}></div>
-                      </td>
-                      <td style={{ width: '55%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                        <div style={{ fontSize: '12.5pt', fontWeight: 'bold' }}>Độc lập - Tự do - Hạnh phúc</div>
-                        <div style={{ borderBottom: '1px solid #000', width: '160px', margin: '3px auto 0 auto' }}></div>
-                        <div style={{ fontSize: '12pt', fontStyle: 'italic', marginTop: '8px' }}>
-                          {currentSched.release_date_str || 'Tân An ngày 06 tháng 9 năm 2026'}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                {/* DOCUMENT TITLE */}
-                <div style={{ textAlign: 'center', marginTop: '20px', marginBottom: '20px' }}>
-                  <div style={{ fontSize: '14pt', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                    {currentSched.title || `LỊCH CÔNG TÁC TUẦN ${ROMAN_NUMERALS[selectedWeekNo - 1]} - NĂM HỌC 2026-2027`}
-                  </div>
-                  <div style={{ fontSize: '13pt', fontStyle: 'italic', fontWeight: 'bold', marginTop: '4px' }}>
-                    {currentSched.subtitle || `(${currentSched.date_range_str})`}
-                  </div>
+              {/* OFFICIAL DECREE 30 HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
+                <div style={{ textAlign: 'center', minWidth: '220px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
+                  <div style={{ fontSize: '13px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <div style={{ width: '80px', height: '1px', backgroundColor: '#0f172a', margin: '4px auto 0 auto' }}></div>
                 </div>
+                <div style={{ textAlign: 'center', minWidth: '260px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
+                  <div style={{ width: '110px', height: '1px', backgroundColor: '#0f172a', margin: '4px auto 0 auto' }}></div>
+                  <div style={{ fontSize: '11px', fontStyle: 'italic', color: '#64748b', marginTop: '6px' }}>{currentSched.release_date_str}</div>
+                </div>
+              </div>
 
-                {/* MAIN TABLE */}
-                <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontSize: '11.5pt' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#ffffff', borderBottom: '1px solid #000' }}>
-                      <th style={{ border: '1px solid #000', padding: '8px', width: '22%' }} colSpan={2}>Thời gian</th>
-                      <th style={{ border: '1px solid #000', padding: '8px', width: '44%', textAlign: 'center' }}>Nội dung</th>
-                      <th style={{ border: '1px solid #000', padding: '8px', width: '17%', textAlign: 'center' }}>Địa điểm</th>
-                      <th style={{ border: '1px solid #000', padding: '8px', width: '17%', textAlign: 'center' }}>Thành phần</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {groupedDays.map((day, dIdx) => {
-                      const rowSpan = day.sessions.length || 1;
-                      return day.sessions.map((s, sIdx) => (
-                        <tr key={`${dIdx}-${sIdx}`}>
-                          {sIdx === 0 && (
+              {/* TITLE & SUBTITLE */}
+              <div style={{ textAlign: 'center', margin: '15px 0 20px 0' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '20px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                  {formatWeekTitle(currentSched.title, selectedWeekNo)}
+                </h2>
+                <div style={{ fontSize: '14px', fontStyle: 'italic', color: '#475569', fontWeight: '600' }}>
+                  {currentSched.subtitle || currentSched.date_range_str}
+                </div>
+              </div>
+
+              {/* DUTY OFFICERS BOX */}
+              {(currentSched.bgh_duty || currentSched.teacher_duty) && (
+                <div style={styles.dutyBox}>
+                  {currentSched.bgh_duty && <div style={styles.dutyItem}><span style={styles.dutyLabel}>BGH Trực:</span> {currentSched.bgh_duty}</div>}
+                  {currentSched.teacher_duty && <div style={styles.dutyItem}><span style={styles.dutyLabel}>GV Trực ban:</span> {currentSched.teacher_duty}</div>}
+                </div>
+              )}
+
+              {/* SCHEDULE TABLE */}
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeadRow}>
+                    <th style={{ ...styles.th, width: '12%', textAlign: 'center' }}>Thứ / Ngày</th>
+                    <th style={{ ...styles.th, width: '8%', textAlign: 'center' }}>Buổi</th>
+                    <th style={{ ...styles.th, width: '45%' }}>Nội dung công việc</th>
+                    <th style={{ ...styles.th, width: '17.5%' }}>Địa điểm</th>
+                    <th style={{ ...styles.th, width: '17.5%' }}>Thành phần / Trực</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(currentSched.day_items || []).length > 0 ? (
+                    currentSched.day_items.map((item, idx) => {
+                      const isFirstSession = idx % 2 === 0;
+                      return (
+                        <tr key={idx} style={styles.tableRow}>
+                          {isFirstSession && (
                             <td 
-                              rowSpan={rowSpan} 
-                              style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', verticalAlign: 'middle', fontWeight: 'bold', width: '14%' }}
+                              rowSpan={2} 
+                              style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', verticalAlign: 'middle', backgroundColor: '#f8fafc', color: '#be123c', width: '12%' }}
                             >
-                              <div>{day.day_name}</div>
-                              <div>{day.date_str}</div>
+                              <div>{item.day_name}</div>
+                              <div style={{ fontSize: '12.5px', color: '#0f172a', marginTop: '2px' }}>{item.date_str}</div>
                             </td>
                           )}
 
-                          <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center', verticalAlign: 'top', width: '8%' }}>
-                            {s.session}
+                          <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: item.session === 'Sáng' ? '#0369a1' : '#b45309' }}>
+                            {item.session}
                           </td>
 
-                          <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', verticalAlign: 'top', whiteSpace: 'pre-line', width: '44%' }}>
-                            {s.content}
+                          <td style={{ ...styles.td, whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                            {item.content || '-'}
                           </td>
 
-                          <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', verticalAlign: 'top', whiteSpace: 'pre-line', width: '17%' }}>
-                            {s.location}
+                          <td style={{ ...styles.td, whiteSpace: 'pre-line', color: '#334155' }}>
+                            {item.location || '-'}
                           </td>
 
-                          <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'left', verticalAlign: 'top', whiteSpace: 'pre-line', width: '17%' }}>
-                            {s.participants}
+                          <td style={{ ...styles.td, whiteSpace: 'pre-line', color: '#334155' }}>
+                            {item.participants || '-'}
                           </td>
                         </tr>
-                      ));
-                    })}
-                  </tbody>
-                </table>
-
-                {/* NOTES BLOCK */}
-                <div style={{ fontSize: '12pt', marginTop: '12px', marginBottom: '20px', lineHeight: '1.4' }}>
-                  <strong>*<u>Lưu ý</u>:</strong> {(currentSched.note || '*Lưu ý: - Văn phòng chuẩn bị phòng họp...').replace(/^\*Lưu ý:\s*/i, '')}
-                </div>
-
-                {/* SIGNATURE FOOTER */}
-                <table style={{ width: '100%', border: 'none', borderCollapse: 'collapse', marginTop: '20px' }}>
-                  <tbody>
+                      );
+                    })
+                  ) : (
                     <tr>
-                      <td style={{ width: '45%', textAlign: 'left', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                        <div style={{ fontSize: '11pt', fontWeight: 'bold', fontStyle: 'italic' }}>Nơi nhận:</div>
-                        <div style={{ fontSize: '11pt', lineHeight: '1.4', whiteSpace: 'pre-line' }}>
-                          {(currentSched.recipients || 'Nơi nhận:\n- GV, NV (để t/h);...').replace(/^Nơi nhận:\s*/i, '')}
-                        </div>
-                      </td>
-                      <td style={{ width: '55%', textAlign: 'center', verticalAlign: 'top', border: 'none', padding: 0 }}>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                          {currentSched.signer_title || 'HIỆU TRƯỜNG'}
-                        </div>
-                        <div style={{ fontSize: '11pt', fontStyle: 'italic' }}>(Ký, đóng dấu và ghi rõ họ tên)</div>
-                        <div style={{ height: '65px' }}></div>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold' }}>
-                          {currentSched.signer_name || 'Lê Thị Thảo'}
-                        </div>
+                      <td colSpan={5} style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                        Chưa có dữ liệu chi tiết cho tuần này.
                       </td>
                     </tr>
-                  </tbody>
-                </table>
+                  )}
+                </tbody>
+              </table>
 
+              {/* NOTE & FOOTER */}
+              <div style={styles.noteBox}>
+                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>*Lưu ý:</div>
+                <div style={{ whiteSpace: 'pre-line', lineHeight: '1.5' }}>{currentSched.note ? currentSched.note.replace(/^\*Lưu ý:\s*/i, '') : 'Văn phòng chuẩn bị phòng họp, thiết bị âm thanh.'}</div>
               </div>
-            );
-          })()}
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 20px', fontSize: '13px' }}>
+                <div style={{ whiteSpace: 'pre-line', lineHeight: '1.4', color: '#475569' }}>
+                  {currentSched.recipients || "Nơi nhận:\n- GV, NV (để t/h);\n- Đăng Web, Zalo;\n- Lưu: VT."}
+                </div>
+                <div style={{ textAlign: 'center', minWidth: '200px' }}>
+                  <div style={{ fontWeight: 'bold', textTransform: 'uppercase', color: '#0f172a' }}>{currentSched.signer_title || 'HIỆU TRƯỜNG'}</div>
+                  <div style={{ height: '60px' }}></div>
+                  <div style={{ fontWeight: 'bold', color: '#be123c', fontSize: '14px' }}>{currentSched.signer_name || 'Lê Thị Thảo'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW MODE 2: MONTH VIEW */}
+          {scheduleViewMode === 'month' && (
+            <div>
+              {/* MONTH SELECTOR DROPDOWN */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }} className="no-print">
+                <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tháng Kế Hoạch (Năm học 2026 - 2027):</span>
+                <select 
+                  value={selectedMonthIdx} 
+                  onChange={e => setSelectedMonthIdx(Number(e.target.value))}
+                  style={{ ...styles.select, padding: '9px 16px', fontSize: '14px', border: '1.5px solid #0284c7', color: '#0369a1' }}
+                >
+                  {schoolMonths.map((m, idx) => (
+                    <option key={idx} value={idx}>
+                      {m.label} ({m.term})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* MONTH TITLE */}
+              <div style={{ textAlign: 'center', margin: '15px 0 20px 0' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '20px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                  {currentMonthData.title}
+                </h2>
+                <div style={{ fontSize: '14px', fontStyle: 'italic', color: '#475569', fontWeight: '600' }}>
+                  {currentMonthData.subtitle}
+                </div>
+              </div>
+
+              {/* MONTH TABLE */}
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeadRow}>
+                    <th style={{ ...styles.th, width: '20%', textAlign: 'center' }}>Tuần Học</th>
+                    <th style={{ ...styles.th, width: '45%' }}>Nhiệm Vụ & Trọng Tâm Công Tác</th>
+                    <th style={{ ...styles.th, width: '17.5%' }}>Địa Điểm</th>
+                    <th style={{ ...styles.th, width: '17.5%' }}>Thành Phần / Đơn Vị</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentMonthData.weeks.map((w) => {
+                    const activeItems = (w.day_items || []).filter(item => item.content && !item.content.includes('Nghỉ'));
+                    const contentSummary = activeItems.map(i => `• ${i.day_name} (${i.session}): ${i.content}`).join('\n') || 'Thực hiện nhiệm vụ chuyên môn theo thời khóa biểu.';
+                    const locationSummary = Array.from(new Set(activeItems.map(i => i.location).filter(Boolean))).join('\n') || 'Các lớp học & Phòng họp';
+                    const participantSummary = Array.from(new Set(activeItems.map(i => i.participants).filter(Boolean))).join('\n') || 'GV & Học sinh toàn trường';
+
+                    return (
+                      <tr key={w.week_number} style={styles.tableRow}>
+                        <td style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', verticalAlign: 'top', backgroundColor: '#f8fafc', color: '#be123c' }}>
+                          <div>Tuần {String(w.week_number).padStart(2, '0')}</div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'normal', marginTop: '4px' }}>
+                            {w.date_range_str}
+                          </div>
+                        </td>
+                        <td style={{ ...styles.td, whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                          {contentSummary}
+                        </td>
+                        <td style={{ ...styles.td, whiteSpace: 'pre-line', color: '#334155' }}>
+                          {locationSummary}
+                        </td>
+                        <td style={{ ...styles.td, whiteSpace: 'pre-line', color: '#334155' }}>
+                          {participantSummary}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* VIEW MODE 3: YEAR VIEW */}
+          {scheduleViewMode === 'year' && (
+            <div>
+              {/* YEAR TITLE */}
+              <div style={{ textAlign: 'center', margin: '15px 0 20px 0' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '20px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                  {currentYearData.title}
+                </h2>
+                <div style={{ fontSize: '14px', fontStyle: 'italic', color: '#475569', fontWeight: '600' }}>
+                  {currentYearData.subtitle}
+                </div>
+              </div>
+
+              {/* YEAR TABLE */}
+              <table style={styles.table}>
+                <thead>
+                  <tr style={styles.tableHeadRow}>
+                    <th style={{ ...styles.th, width: '18%', textAlign: 'center' }}>Tháng</th>
+                    <th style={{ ...styles.th, width: '22%', textAlign: 'center' }}>Khung Tuần Học</th>
+                    <th style={{ ...styles.th, width: '40%' }}>Tóm Tắt Trọng Tâm Công Tác</th>
+                    <th style={{ ...styles.th, width: '20%', textAlign: 'center' }}>Chỉ Đạo & Thực Hiện</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentYearData.allMonths.map((m, idx) => {
+                    const weekCount = m.weeks.length;
+                    const weekRangeStr = weekCount > 0 ? `Tuần ${m.weeks[0].week_number} đến Tuần ${m.weeks[weekCount - 1].week_number}` : '';
+
+                    const monthSummary = m.weeks.map(w => {
+                      const activeCount = (w.day_items || []).filter(i => i.content && !i.content.includes('Nghỉ')).length;
+                      return `• Tuần ${String(w.week_number).padStart(2, '0')}: ${activeCount} mục công việc chính`;
+                    }).join('\n');
+
+                    return (
+                      <tr key={idx} style={styles.tableRow}>
+                        <td style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', backgroundColor: '#f8fafc', color: '#be123c' }}>
+                          {m.monthLabel}
+                        </td>
+                        <td style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', color: '#0369a1' }}>
+                          {weekRangeStr}
+                        </td>
+                        <td style={{ ...styles.td, whiteSpace: 'pre-line', lineHeight: '1.5' }}>
+                          {monthSummary}
+                        </td>
+                        <td style={{ ...styles.td, textAlign: 'center', color: '#334155' }}>
+                          BGH & Các Tổ Chuyên Môn
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
 
         </div>
       )}
 
+      {/* TAB 2 & 3: CLASS & TEACHER TIMETABLE */}
       {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (
         <div style={styles.sheetCard} className="print-full">
           {/* Official Print Header */}
@@ -752,7 +929,7 @@ export default function PublicSchedule() {
               {/* OPTION 1: SINGLE WEEK */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'single' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'single' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
                 <input type="radio" name="exportMode" value="single" checked={exportMode === 'single'} onChange={() => setExportMode('single')} />
-                <span>📌 <strong>Chỉ xuất Tuần đang chọn</strong> (Tuần {selectedWeekNo} - {ROMAN_NUMERALS[selectedWeekNo - 1]})</span>
+                <span>📌 <strong>Chỉ xuất Tuần đang chọn</strong> (Tuần {selectedWeekNo})</span>
               </label>
 
               {/* OPTION 2: ALL 35 WEEKS */}
@@ -784,14 +961,14 @@ export default function PublicSchedule() {
                   <span style={{ fontSize: '13.5px', color: '#475569' }}>Từ:</span>
                   <select value={fromWeek} onChange={e => setFromWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
                     {schoolWeeks.map(w => (
-                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number}</option>
                     ))}
                   </select>
 
                   <span style={{ fontSize: '13.5px', color: '#475569' }}>Đến:</span>
                   <select value={toWeek} onChange={e => setToWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
                     {schoolWeeks.map(w => (
-                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number}</option>
                     ))}
                   </select>
                 </div>
@@ -877,12 +1054,6 @@ const styles = {
     padding: '25px',
     boxShadow: '0 10px 30px rgba(0,0,0,0.06)',
     border: '1px solid #e2e8f0'
-  },
-  sheetHeader: {
-    textAlign: 'center',
-    borderBottom: '2px solid #f1f5f9',
-    paddingBottom: '15px',
-    marginBottom: '15px'
   },
   dutyBox: {
     display: 'flex',

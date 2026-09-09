@@ -99,6 +99,10 @@ function App() {
           <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <Login />} />
           <Route path="/thiep/:code" element={<OnlineInvitation />} />
           <Route path="/invite/:code" element={<OnlineInvitation />} />
+
+          {/* Direct BGH Schedule Editor Routes (No Admin Login Required) */}
+          <Route path="/nhap-lich-bgh" element={<AdminSchedule />} />
+          <Route path="/bgh/schedule" element={<AdminSchedule />} />
           
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>

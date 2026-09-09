@@ -158,7 +158,7 @@ export default function AdminSchedule() {
   }, [searchParams, schedules]);
 
   const handleCopyAdminEditLink = () => {
-    const editUrl = `${window.location.origin}/admin/schedule?week=${selectedWeekNo}`;
+    const editUrl = `${window.location.origin}/nhap-lich-bgh?week=${selectedWeekNo}`;
     navigator.clipboard.writeText(editUrl).then(() => {
       setCopiedAdminLink(true);
       setTimeout(() => setCopiedAdminLink(false), 2500);
@@ -739,7 +739,7 @@ export default function AdminSchedule() {
               >
                 {schoolWeeks.map(w => (
                   <option key={w.week_number} value={w.week_number}>
-                    Tuần {w.roman} ({w.week_number}) - {w.date_range_str}
+                    Tuần {String(w.week_number).padStart(2, '0')} - {w.date_range_str}
                   </option>
                 ))}
               </select>
@@ -1142,7 +1142,7 @@ export default function AdminSchedule() {
               {/* OPTION 1: SINGLE WEEK */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'single' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'single' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
                 <input type="radio" name="exportMode" value="single" checked={exportMode === 'single'} onChange={() => setExportMode('single')} />
-                <span>📌 <strong>Chỉ xuất Tuần đang chọn</strong> (Tuần {selectedWeekNo} - {ROMAN_NUMERALS[selectedWeekNo - 1]})</span>
+                <span>📌 <strong>Chỉ xuất Tuần đang chọn</strong> (Tuần {selectedWeekNo})</span>
               </label>
 
               {/* OPTION 2: ALL 35 WEEKS */}
@@ -1174,14 +1174,14 @@ export default function AdminSchedule() {
                   <span style={{ fontSize: '13.5px', color: '#475569' }}>Từ:</span>
                   <select value={fromWeek} onChange={e => setFromWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
                     {schoolWeeks.map(w => (
-                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number}</option>
                     ))}
                   </select>
 
                   <span style={{ fontSize: '13.5px', color: '#475569' }}>Đến:</span>
                   <select value={toWeek} onChange={e => setToWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
                     {schoolWeeks.map(w => (
-                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number}</option>
                     ))}
                   </select>
                 </div>
