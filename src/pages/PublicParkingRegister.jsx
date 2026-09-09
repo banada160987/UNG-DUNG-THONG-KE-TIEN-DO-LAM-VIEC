@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, logActivity } from '../lib/supabase';
+import { supabase, logActivity, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
 import { Bike, ShieldCheck, CheckCircle2, QrCode, Printer, Calendar, ArrowRight, UserCheck, Search, Bus, MapPin, Navigation } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
@@ -168,50 +168,8 @@ export default function PublicParkingRegister() {
   }
 
   async function fetchStudentRoster() {
-    try {
-      const localData = localStorage.getItem('cbq_students_data');
-      if (localData) {
-        try {
-          setStudentRoster(JSON.parse(localData));
-          // Đã loại bỏ 'return' ở đây để dữ liệu luôn được fetch mới ngầm và cập nhật
-        } catch (e) {}
-      }
-
-      let allStudents = [];
-      let from = 0;
-      const step = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('cbq_students')
-          .select('*')
-          .eq('is_active', true)
-          .range(from, from + step - 1);
-
-        if (error) {
-          console.warn("Lỗi phân trang tải danh sách học sinh:", error);
-          break;
-        }
-
-        if (data && data.length > 0) {
-          allStudents = [...allStudents, ...data];
-          from += step;
-          if (data.length < step) {
-            hasMore = false;
-          }
-        } else {
-          hasMore = false;
-        }
-      }
-
-      if (allStudents.length > 0) {
-        setStudentRoster(allStudents);
-        localStorage.setItem('cbq_students_data', JSON.stringify(allStudents));
-      }
-    } catch (err) {
-      console.warn("Lỗi tải danh sách học sinh:", err);
-    }
+    // 🟢 CÁCH 02: Không nạp 3,000 học sinh khi vừa mở trang nữa!
+    // Hệ thống sẽ tự nạp ngầm ~35 học sinh theo Lớp khi chọn Lớp.
   }
 
   const [classSuggestions, setClassSuggestions] = useState([]);

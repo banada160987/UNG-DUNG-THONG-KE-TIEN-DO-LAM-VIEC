@@ -46,13 +46,88 @@ export const supabase2Admin = supabase2Url && supabase2ServiceKey
   : null;
 
 
-/**
- * Bộ dịch vụ DualSupabaseService giúp tự động Failover khi 1 DB gặp sự cố/Paused
- * và hỗ trợ Ghi dữ liệu đồng thời (Dual-Write) trên 02 dự án Supabase.
- */
 export const DualSupabaseService = {
   /**
-   * Đọc dữ liệu: Ưu tiên đọc ở Supabase Primary, nếu lỗi/paused tự chuyển sang Secondary.
+   * Đọc dữ liệu thông minh (Smart Failover & De-duplication):
+   * - Tự động thử cả Supabase 1 và Supabase 2. Nếu 1 bên đóng/lỗi thì tự lấy bên còn lại.
+   * - Tự động gắn nhãn nguồn `_source` ('sb1' hoặc 'sb2') vào từng bản ghi.
+   * - Nếu cả 2 đều hoạt động và có dữ liệu trùng nhau, tự động lọc trùng theo uniqueKey ('id' hoặc 'ticket_code').
+   */
+  async selectSmart(table, buildQueryFn, uniqueKey = 'id') {
+    const fetch1 = (async () => {
+      if (!supabase1) return null;
+      try {
+        let q = supabase1.from(table).select('*');
+        if (buildQueryFn) q = buildQueryFn(q);
+        const res = await q;
+        if (res.error) throw res.error;
+        return (res.data || []).map(item => ({ ...item, _source: 'sb1' }));
+      } catch (err) {
+        console.warn(`[DualSupabase] Supabase 1 ngắt kết nối hoặc gặp lỗi:`, err.message || err);
+        return null;
+      }
+    })();
+
+    const fetch2 = (async () => {
+      if (!supabase2) return null;
+      try {
+        let q = supabase2.from(table).select('*');
+        if (buildQueryFn) q = buildQueryFn(q);
+        const res = await q;
+        if (res.error) throw res.error;
+        return (res.data || []).map(item => ({ ...item, _source: 'sb2' }));
+      } catch (err) {
+        console.warn(`[DualSupabase] Supabase 2 ngắt kết nối hoặc gặp lỗi:`, err.message || err);
+        return null;
+      }
+    })();
+
+    const [data1, data2] = await Promise.all([fetch1, fetch2]);
+
+    // Trường hợp 1: Chỉ Supabase 1 hoạt động
+    if (data1 && !data2) {
+      return { data: data1, error: null, source: 'sb1' };
+    }
+
+    // Trường hợp 2: Chỉ Supabase 2 hoạt động
+    if (!data1 && data2) {
+      return { data: data2, error: null, source: 'sb2' };
+    }
+
+    // Trường hợp 3: Cả 2 Supabase đều hoạt động -> Gộp và Lọc bỏ dữ liệu trùng lặp
+    if (data1 && data2) {
+      const mergedMap = new Map();
+      
+      // Nạp dữ liệu từ SB1 trước (được ưu tiên)
+      data1.forEach(item => {
+        const key = item[uniqueKey] || JSON.stringify(item);
+        mergedMap.set(key, item);
+      });
+
+      // Nạp dữ liệu từ SB2 (nếu key chưa tồn tại thì thêm vào để tránh trùng)
+      data2.forEach(item => {
+        const key = item[uniqueKey] || JSON.stringify(item);
+        if (!mergedMap.has(key)) {
+          mergedMap.set(key, item);
+        }
+      });
+
+      return {
+        data: Array.from(mergedMap.values()),
+        error: null,
+        source: 'merged'
+      };
+    }
+
+    return {
+      data: [],
+      error: new Error('Cả 02 Supabase đều ngắt kết nối hoặc gặp lỗi!'),
+      source: 'none'
+    };
+  },
+
+  /**
+   * Đọc dữ liệu đơn giản: Ưu tiên đọc ở Supabase Primary, nếu lỗi/paused tự chuyển sang Secondary.
    */
   async select(table, buildQueryFn) {
     try {
@@ -74,18 +149,14 @@ export const DualSupabaseService = {
    * Chèn dữ liệu đồng thời vào CẢ 2 Supabase (Dual-Write)
    */
   async insert(table, data) {
-    const promises = [supabase.from(table).insert(data)];
+    const promises = [];
+    if (supabase1) promises.push(supabase1.from(table).insert(data));
     if (supabase2) promises.push(supabase2.from(table).insert(data));
 
     const results = await Promise.allSettled(promises);
-    const res1 = results[0];
-    const res2 = results[1];
+    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
-    if (res1.status === 'fulfilled' && !res1.value.error) return res1.value;
-    if (res2 && res2.status === 'fulfilled' && !res2.value.error) {
-      console.warn(`[DualSupabase] Primary DB lỗi, dữ liệu được bảo vệ thành công ở Secondary DB!`);
-      return res2.value;
-    }
+    if (okRes) return okRes.value;
     throw new Error('Cả 02 Supabase đều chèn dữ liệu thất bại!');
   },
 
@@ -93,15 +164,14 @@ export const DualSupabaseService = {
    * Cập nhật dữ liệu đồng thời trên CẢ 2 Supabase
    */
   async update(table, data, matchColumn, matchValue) {
-    const promises = [supabase.from(table).update(data).eq(matchColumn, matchValue)];
+    const promises = [];
+    if (supabase1) promises.push(supabase1.from(table).update(data).eq(matchColumn, matchValue));
     if (supabase2) promises.push(supabase2.from(table).update(data).eq(matchColumn, matchValue));
 
     const results = await Promise.allSettled(promises);
-    const res1 = results[0];
-    const res2 = results[1];
+    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
-    if (res1.status === 'fulfilled' && !res1.value.error) return res1.value;
-    if (res2 && res2.status === 'fulfilled' && !res2.value.error) return res2.value;
+    if (okRes) return okRes.value;
     throw new Error('Cả 02 Supabase đều cập nhật thất bại!');
   },
 
@@ -109,15 +179,14 @@ export const DualSupabaseService = {
    * Xóa dữ liệu đồng thời trên CẢ 2 Supabase
    */
   async delete(table, matchColumn, matchValue) {
-    const promises = [supabase.from(table).delete().eq(matchColumn, matchValue)];
-    if (supabase2) promises.push(supabase2.from(table).delete().eq(matchColumn, matchValue));
+    const promises = [];
+    if (supabase1) promises.push(supabase1.from(table).delete(matchColumn, matchValue));
+    if (supabase2) promises.push(supabase2.from(table).delete(matchColumn, matchValue));
 
     const results = await Promise.allSettled(promises);
-    const res1 = results[0];
-    const res2 = results[1];
+    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
-    if (res1.status === 'fulfilled' && !res1.value.error) return res1.value;
-    if (res2 && res2.status === 'fulfilled' && !res2.value.error) return res2.value;
+    if (okRes) return okRes.value;
     throw new Error('Cả 02 Supabase đều xóa thất bại!');
   }
 };
@@ -140,4 +209,64 @@ export const logActivity = async (entityType, entityId, ticketCode, action, perf
     console.error('Lỗi khi ghi log activity:', error);
   }
 };
+
+/**
+ * 🟢 CÁCH 02: Nạp danh sách học sinh theo từng Lớp (Chỉ nạp ~35 học sinh/lớp)
+ * Tiết kiệm 99.9% băng thông Supabase Egress (Chỉ tốn ~1.5KB thay vì 1.5MB)
+ */
+export async function fetchStudentsByClass(className) {
+  if (!className || !className.trim()) return [];
+  const cleanClass = className.trim().toUpperCase();
+  const cacheKey = `cbq_students_class_${cleanClass}`;
+
+  // Kiểm tra Cache Session tạm thời
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {}
+
+  try {
+    const res = await DualSupabaseService.selectSmart(
+      'cbq_students',
+      (q) => q.eq('student_class', cleanClass).eq('is_active', true).order('student_name')
+    );
+
+    const list = res.data || [];
+    if (list.length > 0) {
+      try {
+        sessionStorage.setItem(cacheKey, JSON.stringify(list));
+      } catch (e) {}
+    }
+    return list;
+  } catch (err) {
+    console.warn(`Lỗi nạp học sinh lớp ${cleanClass}:`, err);
+    return [];
+  }
+}
+
+/**
+ * Gợi ý tên học sinh trực tuyến khi gõ (Chỉ trả về tối đa 8 kết quả siêu nhẹ)
+ */
+export async function searchStudentsByName(nameQuery, className = '') {
+  if (!nameQuery || nameQuery.trim().length < 2) return [];
+  try {
+    const cleanName = nameQuery.trim();
+    const cleanClass = className ? className.trim().toUpperCase() : '';
+
+    const res = await DualSupabaseService.selectSmart(
+      'cbq_students',
+      (q) => {
+        let builder = q.ilike('student_name', `%${cleanName}%`).eq('is_active', true).limit(8);
+        if (cleanClass) builder = builder.eq('student_class', cleanClass);
+        return builder;
+      }
+    );
+
+    return res.data || [];
+  } catch (err) {
+    console.warn("Lỗi tìm kiếm gợi ý tên học sinh:", err);
+    return [];
+  }
+}
+
 

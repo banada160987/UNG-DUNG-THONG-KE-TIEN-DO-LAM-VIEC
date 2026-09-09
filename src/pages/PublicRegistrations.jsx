@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, supabase2 } from '../lib/supabase';
+import { supabase, supabase2, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
 import { FileText, CheckCircle2, User, Search, Navigation } from 'lucide-react';
 
 export default function PublicRegistrations() {
@@ -66,44 +66,8 @@ export default function PublicRegistrations() {
   }
 
   async function fetchStudentRoster() {
-    try {
-      const localData = localStorage.getItem('cbq_students_data');
-      if (localData) {
-        try {
-          setStudentRoster(JSON.parse(localData));
-        } catch (e) {}
-      }
-
-      let allStudents = [];
-      let from = 0;
-      const step = 1000;
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('cbq_students')
-          .select('*')
-          .eq('is_active', true)
-          .range(from, from + step - 1);
-
-        if (error) break;
-
-        if (data && data.length > 0) {
-          allStudents = [...allStudents, ...data];
-          from += step;
-          if (data.length < step) hasMore = false;
-        } else {
-          hasMore = false;
-        }
-      }
-
-      if (allStudents.length > 0) {
-        setStudentRoster(allStudents);
-        localStorage.setItem('cbq_students_data', JSON.stringify(allStudents));
-      }
-    } catch (err) {
-      console.warn("Lỗi tải danh sách học sinh:", err);
-    }
+    // 🟢 CÁCH 02: Không nạp 3,000 học sinh khi vừa mở trang nữa!
+    // Hệ thống sẽ tự nạp ngầm ~35 học sinh theo Lớp khi người dùng chọn Lớp.
   }
 
   const getUniqueClassesList = () => {
@@ -111,42 +75,33 @@ export default function PublicRegistrations() {
     ['10', '11', '12'].forEach(g => {
       for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
     });
-    const fromRoster = studentRoster.map(s => s.student_class?.trim().toUpperCase()).filter(Boolean);
-    const combined = Array.from(new Set([...fromRoster, ...defaults]));
-    return combined.sort((a, b) => {
-      const gradeA = parseInt(a.slice(0, 2)) || 10;
-      const gradeB = parseInt(b.slice(0, 2)) || 10;
-      if (gradeA !== gradeB) return gradeA - gradeB;
-      const numA = parseInt(a.replace(/\D/g, '')) || 0;
-      const numB = parseInt(b.replace(/\D/g, '')) || 0;
-      return numA - numB;
-    });
+    return defaults;
   };
 
-  const filterNameSuggestions = (nameVal, classVal = studentClass) => {
-    const cleanName = (nameVal || '').trim().toLowerCase();
-    const cleanClass = (classVal || '').trim().toLowerCase();
+  const filterNameSuggestions = async (nameVal, classVal = studentClass) => {
+    const cleanName = (nameVal || '').trim();
+    const cleanClass = (classVal || '').trim();
 
-    const normalize = (str) => {
-      return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
-    };
-    const cleanNameNormalized = normalize(cleanName);
-
-    let matches = studentRoster;
     if (cleanClass) {
-      matches = matches.filter(s => s.student_class?.toLowerCase() === cleanClass);
+      // Nạp danh sách ~35 học sinh của Lớp đó
+      const studentsInClass = await fetchStudentsByClass(cleanClass);
+      let matches = studentsInClass;
+      if (cleanName) {
+        matches = matches.filter(s => 
+          s.student_name.toLowerCase().includes(cleanName.toLowerCase()) ||
+          s.student_code.toLowerCase().includes(cleanName.toLowerCase())
+        );
+      }
+      setSuggestions(matches.slice(0, 10));
+      setShowSuggestions(matches.length > 0);
+    } else if (cleanName.length >= 2) {
+      const matches = await searchStudentsByName(cleanName);
+      setSuggestions(matches);
+      setShowSuggestions(matches.length > 0);
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
     }
-    if (cleanName) {
-      matches = matches.filter(s => {
-        const sName = s.student_name?.toLowerCase() || '';
-        const sCode = s.student_code?.toLowerCase() || '';
-        return sName.includes(cleanName) || normalize(sName).includes(cleanNameNormalized) || sCode.includes(cleanName);
-      });
-    }
-
-    const sliced = matches.slice(0, 10);
-    setSuggestions(sliced);
-    setShowSuggestions(sliced.length > 0);
   };
 
   const filterClassSuggestions = (val) => {
@@ -171,11 +126,13 @@ export default function PublicRegistrations() {
   const handleClassChange = (val) => {
     setStudentClass(val);
     filterClassSuggestions(val);
+    if (val) fetchStudentsByClass(val);
   };
 
   const handleSelectClassSuggestion = (clsName) => {
     setStudentClass(clsName);
     setShowClassSuggestions(false);
+    fetchStudentsByClass(clsName);
     filterNameSuggestions(studentName, clsName);
   };
 

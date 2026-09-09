@@ -51,23 +51,13 @@ export default function PublicEmulationScoring() {
         setScoreChange(criteriaRes.data[0].score_change);
       }
 
-      // 2. Fetch distinct student classes from DB or LocalStorage cache
-      const studentsRes = await supabase.from('cbq_students').select('student_class');
-      let unique = [];
-      if (!studentsRes.error && studentsRes.data && studentsRes.data.length > 0) {
-        unique = Array.from(new Set(studentsRes.data.map(s => s.student_class))).filter(Boolean).sort();
-      } else {
-        const cached = localStorage.getItem('cbq_students_data');
-        if (cached) {
-          const parsed = JSON.parse(cached);
-          unique = Array.from(new Set(parsed.map(s => s.student_class))).filter(Boolean).sort();
-        }
-      }
-
-      if (unique.length > 0) {
-        setClassList(unique);
-        setSelectedClass(unique[0]);
-      }
+      // 2. Tải danh sách các Lớp (Cách 02 - siêu nhẹ 0.5KB)
+      const defaultClasses = [];
+      ['10', '11', '12'].forEach(g => {
+        for (let i = 1; i <= 15; i++) defaultClasses.push(`${g}A${i}`);
+      });
+      setClassList(defaultClasses);
+      if (defaultClasses.length > 0) setSelectedClass(defaultClasses[0]);
 
       // 3. Fetch today's logs
       fetchTodayLogs();

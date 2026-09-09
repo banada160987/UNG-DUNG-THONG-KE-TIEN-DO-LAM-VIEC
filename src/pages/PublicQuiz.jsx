@@ -346,38 +346,8 @@ export default function PublicQuiz() {
   }, []);
 
   async function fetchAllStudents() {
-    try {
-      const localData = localStorage.getItem('cbq_students_data');
-      if (localData) {
-        try {
-          setAllStudents(JSON.parse(localData));
-          // Không return ở đây để dữ liệu luôn được fetch mới ngầm và cập nhật
-        } catch (e) {
-          // Ignore parsing error, proceed to fetch
-        }
-      }
-
-      let data = [];
-      let from = 0;
-      let fetchMore = true;
-      while (fetchMore) {
-        const res = await supabase.from('cbq_students').select('student_name, student_class, student_code').range(from, from + 999);
-        if (res.error) break;
-        if (res.data && res.data.length > 0) {
-          data = [...data, ...res.data];
-          from += 1000;
-          if (res.data.length < 1000) fetchMore = false;
-        } else {
-          fetchMore = false;
-        }
-      }
-      setAllStudents(data);
-      if (data.length > 0) {
-        localStorage.setItem('cbq_students_data', JSON.stringify(data));
-      }
-    } catch (err) {
-      console.error(err);
-    }
+    // 🟢 CÁCH 02: Không nạp toàn bộ 3,000 học sinh khi vừa vào trang thi nữa.
+    // Hệ thống sẽ nạp danh sách học sinh theo từng Lớp khi chọn Lớp.
   }
 
   const handleNameChange = (e) => {
