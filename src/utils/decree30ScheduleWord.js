@@ -145,7 +145,7 @@ export function getDefaultScheduleDays(weekObj) {
           day_name: d.name,
           date_str: d.dateStr,
           session: 'Sáng',
-          content: "Nghi",
+          content: "Nghỉ",
           location: "",
           participants: ""
         },
@@ -153,7 +153,7 @@ export function getDefaultScheduleDays(weekObj) {
           day_name: d.name,
           date_str: d.dateStr,
           session: 'Chiều',
-          content: "Nghi",
+          content: "Nghỉ",
           location: "",
           participants: ""
         }
@@ -163,9 +163,48 @@ export function getDefaultScheduleDays(weekObj) {
 }
 
 /**
- * Export Schedule Data to Word (.doc) matching Decree 30/2020/NĐ-CP formatting
+ * Helper to construct complete schedule object for any week (1..35), falling back to defaults if not in DB
  */
-export function exportScheduleToWordDecree30(scheduleData) {
+export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
+  const allWeeks = getSchoolWeeks2026();
+  const weekObj = allWeeks.find(w => w.week_number === Number(weekNo)) || allWeeks[0];
+
+  const dbMatch = Array.isArray(dbSchedules) 
+    ? dbSchedules.find(s => Number(s.week_number) === Number(weekNo)) 
+    : null;
+
+  if (dbMatch && dbMatch.day_items && dbMatch.day_items.length > 0) {
+    return {
+      week_number: Number(weekNo),
+      title: dbMatch.title || weekObj.title,
+      subtitle: dbMatch.subtitle || `(${weekObj.date_range_str})`,
+      release_date_str: dbMatch.release_date_str || weekObj.release_date_str,
+      note: dbMatch.note || '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
+      recipients: dbMatch.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
+      signer_name: dbMatch.signer_name || 'Lê Thị Thảo',
+      signer_title: dbMatch.signer_title || 'HIỆU TRƯỜNG',
+      day_items: dbMatch.day_items
+    };
+  }
+
+  // Fallback default schedule object
+  return {
+    week_number: Number(weekNo),
+    title: weekObj.title,
+    subtitle: `(${weekObj.date_range_str})`,
+    release_date_str: weekObj.release_date_str,
+    day_items: getDefaultScheduleDays(weekObj),
+    note: '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
+    recipients: 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
+    signer_name: 'Lê Thị Thảo',
+    signer_title: 'HIỆU TRƯỜNG'
+  };
+}
+
+/**
+ * Builds HTML string for a single week schedule matching Decree 30 format
+ */
+export function buildWeekScheduleHtml(scheduleData) {
   const weekNumber = scheduleData?.week_number || 1;
   const roman = ROMAN_NUMERALS[weekNumber - 1] || weekNumber;
   const titleText = scheduleData?.title || `LỊCH CÔNG TÁC TUẦN ${roman} - NĂM HỌC 2026-2027`;
@@ -179,7 +218,6 @@ export function exportScheduleToWordDecree30(scheduleData) {
 
   const dayRows = scheduleData?.day_items || [];
 
-  // Format multi-line strings for HTML table cells
   const formatCellText = (text) => {
     if (!text) return '';
     return String(text)
@@ -216,7 +254,6 @@ export function exportScheduleToWordDecree30(scheduleData) {
     day.sessions.forEach((s, idx) => {
       tableRowsHtml += '<tr>';
       
-      // If first session of the day, print the day name & date (rowspan)
       if (idx === 0) {
         tableRowsHtml += `
           <td rowspan="${rowSpan}" style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: middle; font-weight: bold; width: 14%;">
@@ -244,52 +281,8 @@ export function exportScheduleToWordDecree30(scheduleData) {
     });
   });
 
-  const htmlContent = `
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-    <head>
-      <meta charset='utf-8'>
-      <title>${titleText}</title>
-      <style>
-        @page {
-          size: A4 portrait;
-          margin: 1.5cm 1.5cm 1.5cm 2.0cm;
-        }
-        body {
-          font-family: 'Times New Roman', serif;
-          font-size: 13pt;
-          line-height: 1.35;
-          color: #000000;
-        }
-        table {
-          width: 100%;
-          border-collapse: collapse;
-          margin-top: 10px;
-          margin-bottom: 10px;
-        }
-        th, td {
-          font-family: 'Times New Roman', serif;
-          font-size: 11.5pt;
-          line-height: 1.25;
-        }
-        th {
-          font-weight: bold;
-          text-align: center;
-          background-color: #ffffff;
-        }
-        .header-table td {
-          border: none !important;
-          padding: 0;
-          font-size: 12pt;
-        }
-        .footer-table td {
-          border: none !important;
-          padding: 0;
-          font-size: 12pt;
-        }
-      </style>
-    </head>
-    <body>
-      
+  return `
+    <div class="week-section">
       <!-- HEADER TABLE -->
       <table class="header-table" style="width: 100%; border: none;">
         <tr>
@@ -349,18 +342,150 @@ export function exportScheduleToWordDecree30(scheduleData) {
           </td>
         </tr>
       </table>
+    </div>
+  `;
+}
 
+/**
+ * Export Single Week Schedule Data to Word (.doc) matching Decree 30/2020/NĐ-CP formatting
+ */
+export function exportScheduleToWordDecree30(scheduleData) {
+  const weekNumber = scheduleData?.week_number || 1;
+  const titleText = scheduleData?.title || `LỊCH CÔNG TÁC TUẦN - NĂM HỌC 2026-2027`;
+  const weekHtml = buildWeekScheduleHtml(scheduleData);
+
+  const htmlContent = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>${titleText}</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 1.5cm 1.5cm 1.5cm 2.0cm;
+        }
+        body {
+          font-family: 'Times New Roman', serif;
+          font-size: 13pt;
+          line-height: 1.35;
+          color: #000000;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          margin-bottom: 10px;
+        }
+        th, td {
+          font-family: 'Times New Roman', serif;
+          font-size: 11.5pt;
+          line-height: 1.25;
+        }
+        th {
+          font-weight: bold;
+          text-align: center;
+          background-color: #ffffff;
+        }
+        .header-table td, .footer-table td {
+          border: none !important;
+          padding: 0;
+          font-size: 12pt;
+        }
+      </style>
+    </head>
+    <body>
+      ${weekHtml}
     </body>
     </html>
   `;
 
-  // Create Blob & Download .doc File
   const blob = new Blob(['\ufeff', htmlContent], {
     type: 'application/msword;charset=utf-8'
   });
   
   const fileName = `Lich_Cong_Tac_Tuan_${weekNumber}_THPT_CaoBaQuat.doc`;
   
+  if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+    window.navigator.msSaveOrOpenBlob(blob, fileName);
+  } else {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(link.href);
+  }
+}
+
+/**
+ * Export Multiple Weeks or All 35 Weeks into a single Word (.doc) document
+ */
+export function exportMultipleSchedulesToWordDecree30(schedulesArray, customFileName = '') {
+  if (!Array.isArray(schedulesArray) || schedulesArray.length === 0) {
+    alert("Không có dữ liệu lịch tuần để xuất file Word!");
+    return;
+  }
+
+  const bodyContentHtml = schedulesArray.map((sch, idx) => {
+    const weekHtml = buildWeekScheduleHtml(sch);
+    if (idx < schedulesArray.length - 1) {
+      return weekHtml + `<br clear="all" style="page-break-before: always; mso-break-type: section-break;" />`;
+    }
+    return weekHtml;
+  }).join('\n');
+
+  const htmlDocument = `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>Lịch Công Tác Nhiều Tuần - THPT Cao Bá Quát</title>
+      <style>
+        @page {
+          size: A4 portrait;
+          margin: 1.5cm 1.5cm 1.5cm 2.0cm;
+        }
+        body {
+          font-family: 'Times New Roman', serif;
+          font-size: 13pt;
+          line-height: 1.35;
+          color: #000000;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+          margin-bottom: 10px;
+        }
+        th, td {
+          font-family: 'Times New Roman', serif;
+          font-size: 11.5pt;
+          line-height: 1.25;
+        }
+        th {
+          font-weight: bold;
+          text-align: center;
+          background-color: #ffffff;
+        }
+        .header-table td, .footer-table td {
+          border: none !important;
+          padding: 0;
+          font-size: 12pt;
+        }
+      </style>
+    </head>
+    <body>
+      ${bodyContentHtml}
+    </body>
+    </html>
+  `;
+
+  const blob = new Blob(['\ufeff', htmlDocument], {
+    type: 'application/msword;charset=utf-8'
+  });
+
+  const fileName = customFileName || `Lich_Cong_Tac_${schedulesArray.length}_Tuan_THPT_CaoBaQuat.doc`;
+
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, fileName);
   } else {

@@ -8,7 +8,14 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
-import { getSchoolWeeks2026, getDefaultScheduleDays, exportScheduleToWordDecree30, ROMAN_NUMERALS } from '../utils/decree30ScheduleWord';
+import { 
+  getSchoolWeeks2026, 
+  getDefaultScheduleDays, 
+  exportScheduleToWordDecree30, 
+  exportMultipleSchedulesToWordDecree30, 
+  getScheduleDataForWeek, 
+  ROMAN_NUMERALS 
+} from '../utils/decree30ScheduleWord';
 
 export default function AdminSchedule() {
   const [activeTab, setActiveTab] = useState('bgh_schedule'); // 'bgh_schedule' | 'timetable_excel'
@@ -18,6 +25,12 @@ export default function AdminSchedule() {
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
+
+  // Multi-Week / 35-Week Flexible Export Modal State
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [exportMode, setExportMode] = useState('single'); // 'single' | 'all35' | 'term1' | 'term2' | 'custom'
+  const [fromWeek, setFromWeek] = useState(1);
+  const [toWeek, setToWeek] = useState(35);
 
   // Admin Link Generator State
   const [shareType, setShareType] = useState('class'); // 'class' | 'teacher'
@@ -201,6 +214,54 @@ export default function AdminSchedule() {
       day_items: dayItems
     };
     exportScheduleToWordDecree30(payload);
+  };
+
+  const handleExecuteExport = () => {
+    if (exportMode === 'single') {
+      handleExportWordDecree30();
+      setShowExportModal(false);
+      return;
+    }
+
+    let targetRange = [];
+    let customName = '';
+
+    if (exportMode === 'all35') {
+      for (let w = 1; w <= 35; w++) targetRange.push(w);
+      customName = `Lich_Cong_Tac_Full_35_Tuan_THPT_CaoBaQuat.doc`;
+    } else if (exportMode === 'term1') {
+      for (let w = 1; w <= 18; w++) targetRange.push(w);
+      customName = `Lich_Cong_Tac_Hoc_Ky_I_Tu_Tuan_1_den_18_THPT_CaoBaQuat.doc`;
+    } else if (exportMode === 'term2') {
+      for (let w = 19; w <= 35; w++) targetRange.push(w);
+      customName = `Lich_Cong_Tac_Hoc_Ky_II_Tu_Tuan_19_den_35_THPT_CaoBaQuat.doc`;
+    } else if (exportMode === 'custom') {
+      const start = Math.min(Number(fromWeek), Number(toWeek));
+      const end = Math.max(Number(fromWeek), Number(toWeek));
+      for (let w = start; w <= end; w++) targetRange.push(w);
+      customName = `Lich_Cong_Tac_Tu_Tuan_${start}_den_Tuan_${end}_THPT_CaoBaQuat.doc`;
+    }
+
+    const list = targetRange.map(wNo => {
+      if (wNo === Number(selectedWeekNo)) {
+        const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+        return {
+          week_number: selectedWeekNo,
+          title: title || targetWeek.title,
+          subtitle: dateRangeStr || targetWeek.date_range_str,
+          release_date_str: releaseDateStr || targetWeek.release_date_str,
+          note,
+          recipients,
+          signer_name: signerName,
+          signer_title: signerTitle,
+          day_items: dayItems
+        };
+      }
+      return getScheduleDataForWeek(wNo, schedules);
+    });
+
+    exportMultipleSchedulesToWordDecree30(list, customName);
+    setShowExportModal(false);
   };
 
   const handleSubmitBghSchedule = async (e) => {
@@ -607,10 +668,10 @@ export default function AdminSchedule() {
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
-                  onClick={handleExportWordDecree30}
+                  onClick={() => setShowExportModal(true)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                 >
-                  <Download size={18} /> 📄 Xuất File Word (Nghị định 30)
+                  <Download size={18} /> 📄 Xuất File Word (35 Tuần / Linh Hoạt)
                 </button>
 
                 <button
@@ -795,10 +856,10 @@ export default function AdminSchedule() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
               <button
                 type="button"
-                onClick={handleExportWordDecree30}
+                onClick={() => setShowExportModal(true)}
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '11px 22px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
               >
-                <Download size={18} /> 📄 Tải File Word (Chuẩn Nghị định 30)
+                <Download size={18} /> 📄 Tải File Word (35 Tuần / Linh Hoạt)
               </button>
 
               <button
@@ -1005,6 +1066,87 @@ export default function AdminSchedule() {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* MULTI-WEEK / 35-WEEK FLEXIBLE EXPORT MODAL */}
+      {showExportModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.6)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '560px', width: '100%', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid #e2e8f0' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Download size={22} color="#0284c7" /> 📄 TUỲ CHỌN XUẤT FILE WORD (NGHỊ ĐỊNH 30)
+              </h3>
+              <button type="button" onClick={() => setShowExportModal(false)} style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#475569', lineHeight: '1.5' }}>
+              Chọn phạm vi tuần bạn muốn xuất ra file Word (.doc) theo chuẩn văn bản hành chính Nghị định 30/2020/NĐ-CP:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              
+              {/* OPTION 1: SINGLE WEEK */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'single' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'single' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="single" checked={exportMode === 'single'} onChange={() => setExportMode('single')} />
+                <span>📌 <strong>Chỉ xuất Tuần đang chọn</strong> (Tuần {selectedWeekNo} - {ROMAN_NUMERALS[selectedWeekNo - 1]})</span>
+              </label>
+
+              {/* OPTION 2: ALL 35 WEEKS */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'all35' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'all35' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="all35" checked={exportMode === 'all35'} onChange={() => setExportMode('all35')} />
+                <span>🏆 <strong>Xuất toàn bộ 35 tuần năm học 2026 - 2027</strong> (1 File Word duy nhất)</span>
+              </label>
+
+              {/* OPTION 3: TERM I */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'term1' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'term1' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="term1" checked={exportMode === 'term1'} onChange={() => setExportMode('term1')} />
+                <span>📚 <strong>Xuất Học kỳ I</strong> (18 tuần: Tuần 1 đến Tuần 18)</span>
+              </label>
+
+              {/* OPTION 4: TERM II */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'term2' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'term2' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="term2" checked={exportMode === 'term2'} onChange={() => setExportMode('term2')} />
+                <span>📚 <strong>Xuất Học kỳ II</strong> (17 tuần: Tuần 19 đến Tuần 35)</span>
+              </label>
+
+              {/* OPTION 5: CUSTOM RANGE */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'custom' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'custom' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="custom" checked={exportMode === 'custom'} onChange={() => setExportMode('custom')} />
+                <span>⚙️ <strong>Tùy chọn khoảng số tuần:</strong></span>
+              </label>
+
+              {exportMode === 'custom' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '32px', marginTop: '-4px' }}>
+                  <span style={{ fontSize: '13.5px', color: '#475569' }}>Từ:</span>
+                  <select value={fromWeek} onChange={e => setFromWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
+                    {schoolWeeks.map(w => (
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                    ))}
+                  </select>
+
+                  <span style={{ fontSize: '13.5px', color: '#475569' }}>Đến:</span>
+                  <select value={toWeek} onChange={e => setToWeek(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
+                    {schoolWeeks.map(w => (
+                      <option key={w.week_number} value={w.week_number}>Tuần {w.week_number} ({w.roman})</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setShowExportModal(false)} style={{ padding: '10px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}>
+                Hủy bỏ
+              </button>
+              <button type="button" onClick={handleExecuteExport} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
+                📥 Tải File Word (.doc)
+              </button>
+            </div>
+
           </div>
         </div>
       )}
