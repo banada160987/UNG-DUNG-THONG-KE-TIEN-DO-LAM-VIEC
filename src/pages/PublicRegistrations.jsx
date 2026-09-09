@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, supabase2, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
+import { supabase, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
 import { FileText, CheckCircle2, User, Search, Navigation } from 'lucide-react';
 
 export default function PublicRegistrations() {
@@ -45,21 +45,12 @@ export default function PublicRegistrations() {
 
   async function fetchActiveCampaigns() {
     try {
-      const [res1, res2] = await Promise.allSettled([
-        supabase.from('cbq_registration_campaigns').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-        supabase2.from('cbq_registration_campaigns').select('*').eq('is_active', true).order('created_at', { ascending: false })
-      ]);
-
-      let allData = [];
-      if (res1.status === 'fulfilled' && res1.value.data) {
-        allData = [...allData, ...res1.value.data.map(d => ({ ...d, _source: 'sb1' }))];
-      }
-      if (res2.status === 'fulfilled' && res2.value.data) {
-        allData = [...allData, ...res2.value.data.map(d => ({ ...d, _source: 'sb2' }))];
-      }
-
-      allData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      setCampaigns(allData);
+      const res = await DualSupabaseService.selectSmart(
+        'cbq_registration_campaigns',
+        (q) => q.eq('is_active', true).order('created_at', { ascending: false }),
+        'id'
+      );
+      setCampaigns(res.data || []);
     } catch (err) {
       console.error(err);
     }

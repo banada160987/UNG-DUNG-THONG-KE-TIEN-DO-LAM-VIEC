@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase, supabase2Admin, supabase2 } from '../lib/supabase';
+import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
 import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -46,20 +46,12 @@ export default function AdminRegistrations() {
   async function fetchCampaigns() {
     setLoading(true);
     try {
-      const [res1, res2] = await Promise.allSettled([
-        supabase.from('cbq_registration_campaigns').select('*').order('created_at', { ascending: false }),
-        adminClient.from('cbq_registration_campaigns').select('*').order('created_at', { ascending: false })
-      ]);
-
-      let allData = [];
-      if (res1.status === 'fulfilled' && res1.value.data) {
-        allData = [...allData, ...res1.value.data.map(d => ({ ...d, _source: 'sb1' }))];
-      }
-      if (res2.status === 'fulfilled' && res2.value.data) {
-        allData = [...allData, ...res2.value.data.map(d => ({ ...d, _source: 'sb2' }))];
-      }
-
-      allData.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const res = await DualSupabaseService.selectSmart(
+        'cbq_registration_campaigns',
+        (q) => q.order('created_at', { ascending: false }),
+        'id'
+      );
+      const allData = res.data || [];
       setCampaigns(allData);
       
       if (allData.length > 0 && !selectedCampaignId) {
