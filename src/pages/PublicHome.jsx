@@ -50,14 +50,14 @@ export default function PublicHome() {
   const [externalLinks, setExternalLinks] = useState([]);
   const [searchParams] = useSearchParams();
   const [homeConfig, setHomeConfig] = useState({
-    show_announcement: true,
+    show_announcement: false,
     show_gallery_slider: true,
     show_contact: true,
     show_external_links: true,
     show_services: true,
     show_calendar_widget: true,
-    show_rsvp_search: true,
-    show_gold_board: true
+    show_rsvp_search: false,
+    show_gold_board: false
   });
   
   const calculateTimeLeft = (targetDateString) => {
@@ -287,36 +287,32 @@ export default function PublicHome() {
 
         {/* LEFT COLUMN */}
         <div style={styles.leftCol}>
-          {/* 30TH ANNIVERSARY SUCCESS ANNOUNCEMENT & STATS */}
-          {homeConfig.show_announcement && (
-          <PortalBlock title="THÔNG BÁO ĐẠI LỄ 30 NĂM" color="#166534" icon="🎉">
-            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+          {/* ACADEMIC & PROFESSIONAL GUIDANCE NOTICE FOR TEACHERS, STUDENTS & PARENTS */}
+          <PortalBlock title="📌 THÔNG BÁO CHUYÊN MÔN" color="#166534" icon="📢">
+            <div style={{ marginBottom: '12px' }}>
               <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                🎉 THÀNH CÔNG RỰC RỠ!
+                📖 KẾ HOẠCH GIẢNG DẠY & HỌC TẬP
               </div>
-              <div style={{ fontSize: '14.5px', fontWeight: 'bold', color: '#be123c', padding: '8px 12px', backgroundColor: '#fff1f2', borderRadius: '10px', border: '1px solid #fecdd3', lineHeight: '1.5' }}>
-                ĐẠI LỄ KỶ NIỆM 30 NĂM THÀNH LẬP THPT CAO BÁ QUÁT (1996 - 2026) ĐÃ THÀNH CÔNG TỐT ĐẸP!
+              <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', padding: '10px 12px', backgroundColor: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0', lineHeight: '1.5' }}>
+                Cổng thông tin chuyên môn tổng hợp dành cho Giáo viên, Học sinh và Phụ huynh trường THPT Cao Bá Quát.
               </div>
             </div>
             
-            <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-                <div style={styles.statIcon}>👥</div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Đại biểu tham dự Đại lễ</div>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#166534' }}>{attendingGuests || 19} đại biểu</div>
-                </div>
+            <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '12.5px', color: '#334155' }}>
+                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
+                <div><strong>Giáo viên:</strong> Nộp Kế hoạch bài dạy & Cập nhật Sổ đầu bài điện tử tuần mới.</div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={styles.statIcon}>💝</div>
-                <div>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>Ủng hộ & Tài trợ (Công khai)</div>
-                  <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#be123c' }}>{totalDonation.toLocaleString()} VNĐ</div>
-                </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '12.5px', color: '#334155' }}>
+                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
+                <div><strong>Học sinh:</strong> Tra cứu Thời khóa biểu, lịch thi đua & đăng ký dịch vụ trường.</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
+                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
+                <div><strong>Phụ huynh:</strong> Theo dõi lịch công tác BGH & văn bản thông báo chính thức.</div>
               </div>
             </div>
           </PortalBlock>
-          )}
 
           {homeConfig.show_gallery_slider && (
           <PortalBlock title="HÌNH ẢNH TIÊU BIỂU" color="#166534" icon="📸">
@@ -979,42 +975,30 @@ export default function PublicHome() {
           </PortalBlock>
           )}
 
-          <PortalBlock title="THƯ TRI ÂN ĐỒNG HÀNH" color="#166534" icon="📜">
-            {sponsors.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '16px 10px', backgroundColor: '#fffdf5', borderRadius: '12px', border: '1px solid #fef08a' }}>
-                <div style={{ fontSize: '26px', marginBottom: '4px' }}>📜</div>
-                <div style={{ fontWeight: 'bold', color: '#b45309', fontSize: '13.5px' }}>Tri Ân Quý Nhà Tài Trợ & Cựu Học Sinh</div>
-                <p style={{ fontSize: '12px', color: '#854d0e', margin: '6px 0 12px 0', lineHeight: '1.5' }}>
-                  Ban Giám Hiệu & Nhà trường trân trọng tri ân sự ủng hộ, tài trợ quý báu từ quý cơ quan, các thế hệ thầy cô và cựu học sinh cho Đại lễ 30 năm.
-                </p>
-                <a 
-                  href="/tai-tro" 
-                  style={{
-                    display: 'inline-block',
-                    background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)',
-                    color: 'white',
-                    padding: '7px 16px',
-                    borderRadius: '20px',
-                    fontSize: '12px',
-                    fontWeight: 'bold',
-                    textDecoration: 'none',
-                    boxShadow: '0 2px 8px rgba(22, 101, 52, 0.25)'
-                  }}
-                >
-                  Xem Danh Sách Tri Ân ➔
-                </a>
-              </div>
-            ) : (
-              <ul style={styles.sponsorList}>
-                {sponsors.slice(0, 10).map((s, i) => (
-                  <li key={i} style={styles.sponsorItem}>
-                    <span style={{ fontWeight: 'bold', color: '#0f172a' }}>{s.name}</span>
-                    {s.donation_amount > 0 && <span style={{ color: '#d32f2f', fontWeight: 'bold', display: 'block' }}>{Number(s.donation_amount).toLocaleString()} VNĐ</span>}
-                    {s.donation_item && <span style={{ color: '#059669', display: 'block', fontSize: '12px' }}>{s.donation_item}</span>}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <PortalBlock title="🏆 VINH DANH THI ĐUA & THÀNH TÍCH" color="#166534" icon="🎖️">
+            <div style={{ textAlign: 'center', padding: '14px 10px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: '24px', marginBottom: '4px' }}>🎖️</div>
+              <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '13.5px' }}>Thi Đua Chuyên Môn & Nề Nếp Tuần</div>
+              <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 12px 0', lineHeight: '1.5' }}>
+                Tuyên dương các Tập thể Lớp đạt Cờ Nhất thi đua tuần & Cán bộ Giáo viên đạt tích xuất sắc trong giảng dạy.
+              </p>
+              <a 
+                href="/cham-diem-thi-dua" 
+                style={{
+                  display: 'inline-block',
+                  background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)',
+                  color: 'white',
+                  padding: '7px 16px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  textDecoration: 'none',
+                  boxShadow: '0 2px 8px rgba(22, 101, 52, 0.25)'
+                }}
+              >
+                Xem Sổ Thi Đua Trực Tuần ➔
+              </a>
+            </div>
           </PortalBlock>
         </div>
 

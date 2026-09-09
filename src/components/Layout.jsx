@@ -153,10 +153,10 @@ export default function Layout({ children, title }) {
       {/* Sidebar */}
       <aside className={`layout-sidebar ${isSidebarOpen ? 'open' : ''}`} style={styles.sidebar}>
         <div style={styles.logoArea}>
-          <img src="/logo.jpg" alt="Logo 30 năm" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
+          <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
           <div>
             <h2 style={{margin: 0, fontSize: '16px', color: 'white'}}>CBQ Admin</h2>
-            <small style={{color: '#94a3b8'}}>Kỷ niệm 30 năm</small>
+            <small style={{color: '#94a3b8'}}>Quản lý Chuyên môn</small>
           </div>
         </div>
 
@@ -208,12 +208,6 @@ export default function Layout({ children, title }) {
             <h1 className="header-title" style={styles.headerTitle}>{title}</h1>
           </div>
           <div style={styles.headerRight}>
-            
-            <div className="layout-header-countdown" style={styles.countdown}>
-              <Calendar size={18} color="#ef4444" />
-              <span>Còn <strong style={{color: '#ef4444'}}>{daysLeft > 0 ? daysLeft : 0} ngày</strong> đến Lễ 30 năm</span>
-            </div>
-
             <div style={{position: 'relative'}} ref={notifRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
