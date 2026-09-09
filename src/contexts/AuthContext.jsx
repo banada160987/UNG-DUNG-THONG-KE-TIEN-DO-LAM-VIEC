@@ -25,9 +25,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data, error } = await supabase
         .from('cbq_user_roles')
-        .select('role, committee_id, permissions, cbq_committees(name)')
+        .select('role, committee_id, permissions')
         .eq('user_id', userId)
         .maybeSingle();
+
+      if (error) {
+        console.warn('Lỗi đọc vai trò từ CSDL:', error.message);
+      }
 
       let userRole = data?.role;
       if (!userRole) {
@@ -35,7 +39,15 @@ export const AuthProvider = ({ children }) => {
       }
 
       const commId = data?.committee_id || null;
-      const commName = data?.cbq_committees?.name || null;
+      let commName = null;
+      if (commId) {
+        const { data: commData } = await supabase
+          .from('cbq_committees')
+          .select('name')
+          .eq('id', commId)
+          .maybeSingle();
+        commName = commData?.name || null;
+      }
       const customPerms = data?.permissions || {};
 
       setRole(userRole);

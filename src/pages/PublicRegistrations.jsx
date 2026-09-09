@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { supabase, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
+import { supabase, supabase2, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
 import { FileText, CheckCircle2, User, Search, Navigation } from 'lucide-react';
 
 export default function PublicRegistrations() {
@@ -208,8 +208,9 @@ export default function PublicRegistrations() {
         responses
       };
 
-      const client = selectedCampaign._source === 'sb1' ? supabase : supabase2;
-      const { error } = await client.from('cbq_student_registrations').insert([payload]);
+      const targetClient = (selectedCampaign._source === 'sb1' && supabase) ? supabase : (supabase2 || supabase);
+      const { error } = await targetClient.from('cbq_student_registrations').insert([payload]);
+
       if (error) {
         if (error.code === '23505') {
           alert("Bạn đã đăng ký đợt này rồi. Mỗi học sinh chỉ được nộp 1 lần.");
@@ -220,7 +221,7 @@ export default function PublicRegistrations() {
         setSuccess(true);
       }
     } catch (err) {
-      alert("Lỗi khi nộp: " + err.message);
+      alert("Lỗi khi nộp: " + (err.message || 'Không thể lưu bản ghi'));
     } finally {
       setSubmitting(false);
     }
