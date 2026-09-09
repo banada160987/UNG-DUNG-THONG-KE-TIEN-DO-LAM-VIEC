@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -67,26 +67,31 @@ export default function Layout({ children, title }) {
     { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác & Thời Khóa Biểu', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ Cán Bộ & Phân Công Dạy', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
-    { path: '/admin/gop-y', icon: FileText, label: '✍️ Sổ Góp Ý & Đánh Giá Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewFeedback },
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Sổ Sách (Hub)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
 
-    // 2. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
+    // 2. 📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN
+    { path: '/admin/registrations', icon: FileText, label: '📋 Quản Lý Đợt Đăng Ký Động', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' },
+    { path: '/admin/quizzes', icon: CheckSquare, label: '📝 Quản Lý Cuộc Thi & Quiz Online', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
+    { path: '/admin/voting', icon: Heart, label: '❤️ Quản Lý Bầu Chọn & Tác Phẩm', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
+    { path: '/admin/the-thao', icon: Activity, label: '⚽ Quản Lý Đăng Ký Thể Thao', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewSports },
+    { path: '/admin/parking', icon: Bike, label: '🛵 Quản Lý Đăng Ký Xe Máy', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/bus', icon: Bus, label: '🚌 Quản Lý Đăng Ký Xe Đưa Đón', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewStudents },
+    { path: '/admin/gop-y', icon: FileText, label: '✍️ Tiếp Nhận Phản Hồi & Góp Ý', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewFeedback },
+
+    // 3. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
     { path: '/admin/emulation', icon: Trophy, label: '📋 Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Sổ Học Sinh & Chuyển Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số & Hồ Sơ HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin },
-    { path: '/admin/parking', icon: Bike, label: '🛵 Sổ Quản Lý Xe Máy Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
-    { path: '/admin/bus', icon: Bus, label: '🚌 Sổ Quản Lý Xe Đưa Đón Học Sinh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
-    { path: '/admin/registrations', icon: FileText, label: '📋 Sổ Quản Lý Đăng Ký Động', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || role === 'secretary' },
     { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
 
-    // 3. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
+    // 4. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
     { path: '/admin/docs', icon: FileText, label: '📄 Sổ Văn Bản - Thông Báo Nội Bộ', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/news', icon: Image, label: '📰 Tin tức - Sự kiện Nhà trường', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },
     { path: '/admin/gallery', icon: Image, label: '🖼️ Thư viện ảnh Hoạt động', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },
     { path: '/admin/luu-but', icon: BookOpen, label: '📓 Quản lý Sổ Lưu bút', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewGuestbook },
     { path: '/admin/committee', icon: CheckSquare, label: '🏆 Kho Tư Liệu Kỷ Niệm 30 Năm', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
 
-    // 4. ⚙️ QUẢN TRỊ HỆ THỐNG
+    // 5. ⚙️ QUẢN TRỊ HỆ THỐNG
     { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản Cán bộ', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
     { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
     { path: '/admin/audit', icon: Activity, label: '📋 Nhật ký Hoạt động Hệ thống', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
@@ -97,6 +102,7 @@ export default function Layout({ children, title }) {
   // Accordion State for Sidebar Groups
   const [openGroups, setOpenGroups] = useState({
     '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY': true,
+    '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN': true,
     '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP': true,
     '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG': true,
     '⚙️ QUẢN TRỊ HỆ THỐNG': true
