@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
+import { getSchoolWeeks2026, getDefaultScheduleDays, exportScheduleToWordDecree30, ROMAN_NUMERALS } from '../utils/decree30ScheduleWord';
 
 export default function AdminSchedule() {
   const [activeTab, setActiveTab] = useState('bgh_schedule'); // 'bgh_schedule' | 'timetable_excel'
@@ -24,24 +25,25 @@ export default function AdminSchedule() {
   const [shareTeacher, setShareTeacher] = useState('');
   const [adminCopied, setAdminCopied] = useState(false);
 
-  // Form State for BGH Schedule
+  // 35 Weeks Generator (Năm học 2026 - 2027)
+  const schoolWeeks = getSchoolWeeks2026();
+  const [selectedWeekNo, setSelectedWeekNo] = useState(1);
+
+  // Form State for BGH Schedule & Decree 30 Export
   const [title, setTitle] = useState('');
   const [weekNumber, setWeekNumber] = useState(1);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [dateRangeStr, setDateRangeStr] = useState('');
+  const [releaseDateStr, setReleaseDateStr] = useState('');
   const [bghDuty, setBghDuty] = useState('');
   const [teacherDuty, setTeacherDuty] = useState('');
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState('*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
+  const [recipients, setRecipients] = useState('Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
+  const [signerName, setSignerName] = useState('Lê Thị Thảo');
+  const [signerTitle, setSignerTitle] = useState('HIỆU TRƯỜNG');
   const [isActive, setIsActive] = useState(true);
-  const [items, setItems] = useState([]);
-
-  // New Item State for BGH Schedule
-  const [newItemDay, setNewItemDay] = useState('Thứ Hai');
-  const [newItemTime, setNewItemTime] = useState('07:30');
-  const [newItemContent, setNewItemContent] = useState('');
-  const [newItemLocation, setNewItemLocation] = useState('Sân trường');
-  const [newItemChair, setNewItemChair] = useState('BGH');
-  const [newItemParticipants, setNewItemParticipants] = useState('Toàn thể GV & HS');
+  const [dayItems, setDayItems] = useState([]);
 
   // Excel TKB State
   const [excelPreview, setExcelPreview] = useState([]);
@@ -126,67 +128,101 @@ export default function AdminSchedule() {
     }
   }
 
-  // --- BGH SCHEDULE ACTIONS ---
-  const handleAddItem = () => {
-    if (!newItemContent.trim()) {
-      alert("Vui lòng nhập nội dung công việc!");
-      return;
+  // --- 35 WEEKS BGH SCHEDULE ACTIONS ---
+  const handleSelectWeek = (wNo) => {
+    const wNum = Number(wNo) || 1;
+    setSelectedWeekNo(wNum);
+    const targetWeek = schoolWeeks[wNum - 1] || schoolWeeks[0];
+
+    // Check if this week is already saved in DB or local
+    const existing = schedules.find(s => Number(s.week_number) === wNum);
+
+    if (existing) {
+      setEditingId(existing.id);
+      setTitle(existing.title || targetWeek.title);
+      setWeekNumber(wNum);
+      setStartDate(existing.start_date || targetWeek.start_date);
+      setEndDate(existing.end_date || targetWeek.end_date);
+      setDateRangeStr(existing.date_range_str || targetWeek.date_range_str);
+      setReleaseDateStr(existing.release_date_str || targetWeek.release_date_str);
+      setBghDuty(existing.bgh_duty || '');
+      setTeacherDuty(existing.teacher_duty || '');
+      setNote(existing.note || '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
+      setRecipients(existing.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
+      setSignerName(existing.signer_name || 'Lê Thị Thảo');
+      setSignerTitle(existing.signer_title || 'HIỆU TRƯỜNG');
+      setIsActive(existing.is_active ?? true);
+      setDayItems(existing.day_items || existing.schedule_items || getDefaultScheduleDays(targetWeek));
+    } else {
+      setEditingId(null);
+      setTitle(targetWeek.title);
+      setWeekNumber(wNum);
+      setStartDate(targetWeek.start_date);
+      setEndDate(targetWeek.end_date);
+      setDateRangeStr(targetWeek.date_range_str);
+      setReleaseDateStr(targetWeek.release_date_str);
+      setBghDuty('');
+      setTeacherDuty('');
+      setNote('*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
+      setRecipients('Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
+      setSignerName('Lê Thị Thảo');
+      setSignerTitle('HIỆU TRƯỜNG');
+      setIsActive(true);
+      setDayItems(getDefaultScheduleDays(targetWeek));
     }
-    const newItem = {
-      day: newItemDay,
-      time: newItemTime,
-      content: newItemContent.trim(),
-      location: newItemLocation.trim(),
-      chair: newItemChair.trim(),
-      participants: newItemParticipants.trim()
+  };
+
+  useEffect(() => {
+    handleSelectWeek(1);
+  }, [schedules]);
+
+  const handleUpdateDayItem = (index, field, value) => {
+    const updated = [...dayItems];
+    updated[index] = { ...updated[index], [field]: value };
+    setDayItems(updated);
+  };
+
+  const handleResetDefaultTemplate = () => {
+    const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+    setDayItems(getDefaultScheduleDays(targetWeek));
+  };
+
+  const handleExportWordDecree30 = () => {
+    const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+    const payload = {
+      week_number: selectedWeekNo,
+      title: title || targetWeek.title,
+      subtitle: dateRangeStr || targetWeek.date_range_str,
+      release_date_str: releaseDateStr || targetWeek.release_date_str,
+      note,
+      recipients,
+      signer_name: signerName,
+      signer_title: signerTitle,
+      day_items: dayItems
     };
-    setItems([...items, newItem]);
-    setNewItemContent('');
-  };
-
-  const handleDeleteItem = (index) => {
-    setItems(items.filter((_, idx) => idx !== index));
-  };
-
-  const handleEditSchedule = (s) => {
-    setEditingId(s.id);
-    setTitle(s.title || '');
-    setWeekNumber(s.week_number || 1);
-    setStartDate(s.start_date || '');
-    setEndDate(s.end_date || '');
-    setBghDuty(s.bgh_duty || '');
-    setTeacherDuty(s.teacher_duty || '');
-    setNote(s.note || '');
-    setIsActive(s.is_active ?? true);
-    setItems(s.schedule_items || []);
-    setShowForm(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const handleDeleteSchedule = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa Lịch công tác tuần này?")) return;
-    try {
-      const { error } = await supabase.from('cbq_schedules').delete().eq('id', id);
-      if (error) throw error;
-      fetchSchedules();
-    } catch (err) {
-      alert("Lỗi khi xóa: " + err.message);
-    }
+    exportScheduleToWordDecree30(payload);
   };
 
   const handleSubmitBghSchedule = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setSaving(true);
     try {
+      const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
       const payload = {
-        title,
-        week_number: Number(weekNumber) || 1,
-        start_date: startDate,
-        end_date: endDate,
+        title: title || targetWeek.title,
+        week_number: Number(selectedWeekNo) || 1,
+        start_date: startDate || targetWeek.start_date,
+        end_date: endDate || targetWeek.end_date,
+        date_range_str: dateRangeStr || targetWeek.date_range_str,
+        release_date_str: releaseDateStr || targetWeek.release_date_str,
         bgh_duty: bghDuty,
         teacher_duty: teacherDuty,
-        schedule_items: items,
         note,
+        recipients,
+        signer_name: signerName,
+        signer_title: signerTitle,
+        day_items: dayItems,
+        schedule_items: dayItems,
         is_active: isActive,
         updated_at: new Date().toISOString()
       };
@@ -195,13 +231,12 @@ export default function AdminSchedule() {
         const { error } = await supabase.from('cbq_schedules').update(payload).eq('id', editingId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('cbq_schedules').insert([payload]);
+        const { error, data } = await supabase.from('cbq_schedules').insert([payload]).select();
         if (error) throw error;
+        if (data && data[0]) setEditingId(data[0].id);
       }
 
-      alert("🎉 ĐÃ LƯU LỊCH CÔNG TÁC TUẦN THÀNH CÔNG!");
-      setShowForm(false);
-      setEditingId(null);
+      alert(`🎉 ĐÃ LƯU THÀNH CÔNG LỊCH CÔNG TÁC TUẦN ${selectedWeekNo} (NĂM HỌC 2026 - 2027)!`);
       fetchSchedules();
     } catch (err) {
       alert("Lỗi khi lưu lịch: " + err.message);
@@ -552,177 +587,230 @@ export default function AdminSchedule() {
         </button>
       </div>
 
-      {/* TAB 1: BGH WEEKLY SCHEDULE */}
+      {/* TAB 1: BGH WEEKLY SCHEDULE (35 WEEKS - NĂM HỌC 2026-2027) */}
       {activeTab === 'bgh_schedule' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
-            <button 
-              onClick={() => {
-                setEditingId(null);
-                setTitle(`LỊCH CÔNG TÁC TUẦN ${schedules.length + 1}`);
-                setWeekNumber(schedules.length + 1);
-                setItems([]);
-                setShowForm(!showForm);
-              }} 
-              className="btn-primary" 
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 22px', backgroundColor: '#be123c' }}
-            >
-              <Plus size={18} /> {showForm ? 'Đóng Form' : 'Tạo Lịch Tuần Mới'}
-            </button>
-          </div>
-
-          {showForm && (
-            <form onSubmit={handleSubmitBghSchedule} className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '2rem' }}>
-              <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-                {editingId ? '📝 Cập nhật Lịch công tác tuần' : '➕ Tạo Lịch công tác tuần mới'}
-              </h3>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '15px', marginTop: '15px' }}>
-                <div>
-                  <label style={styles.label}>Tiêu đề Lịch tuần (*)</label>
-                  <input type="text" required value={title} onChange={e => setTitle(e.target.value)} style={styles.input} placeholder="VD: LỊCH CÔNG TÁC TUẦN 01" />
-                </div>
-
-                <div>
-                  <label style={styles.label}>Tuần thứ (*)</label>
-                  <input type="number" required value={weekNumber} onChange={e => setWeekNumber(e.target.value)} style={styles.input} />
-                </div>
-
-                <div>
-                  <label style={styles.label}>Từ Ngày</label>
-                  <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} style={styles.input} />
-                </div>
-
-                <div>
-                  <label style={styles.label}>Đến Ngày</label>
-                  <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} style={styles.input} />
-                </div>
-
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={styles.label}>Trực Ban Giám Hiệu</label>
-                  <input type="text" value={bghDuty} onChange={e => setBghDuty(e.target.value)} style={styles.input} placeholder="VD: Thầy Lê Văn A - Hiệu trưởng" />
-                </div>
-
-                <div style={{ gridColumn: 'span 2' }}>
-                  <label style={styles.label}>Trực Ban Giáo Viên</label>
-                  <input type="text" value={teacherDuty} onChange={e => setTeacherDuty(e.target.value)} style={styles.input} placeholder="VD: Cô Nguyễn Thị B - Trực ban" />
-                </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* 35 WEEKS SELECTOR BAR */}
+          <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '16px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 15px rgba(0,0,0,0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#be123c', fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📅 KHUNG LỊCH CÔNG TÁC 35 TUẦN (NĂM HỌC 2026 - 2027)
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: '#64748b' }}>
+                  Khung thời gian năm học của Bộ Giáo dục & Đào tạo (Từ 07/09/2026 đến tháng 05/2027)
+                </p>
               </div>
 
-              <div style={{ marginTop: '20px', padding: '15px', backgroundColor: '#f8fafc', borderRadius: '10px', border: '1px dashed #cbd5e1' }}>
-                <h4 style={{ margin: '0 0 10px 0', color: '#1e293b' }}>📌 Danh sách Công việc các ngày trong tuần ({items.length} mục)</h4>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr 1fr 1fr 1fr auto', gap: '8px', alignItems: 'end', marginBottom: '15px' }}>
-                  <div>
-                    <label style={styles.label}>Thứ / Ngày</label>
-                    <input type="text" value={newItemDay} onChange={e => setNewItemDay(e.target.value)} style={styles.input} placeholder="Thứ Hai (01/09)" />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Thời gian</label>
-                    <input type="text" value={newItemTime} onChange={e => setNewItemTime(e.target.value)} style={styles.input} placeholder="07:30" />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Nội dung công việc (*)</label>
-                    <input type="text" value={newItemContent} onChange={e => setNewItemContent(e.target.value)} style={styles.input} placeholder="Nội dung họp/hoạt động..." />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Địa điểm</label>
-                    <input type="text" value={newItemLocation} onChange={e => setNewItemLocation(e.target.value)} style={styles.input} placeholder="Phòng họp" />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Chủ trì</label>
-                    <input type="text" value={newItemChair} onChange={e => setNewItemChair(e.target.value)} style={styles.input} placeholder="BGH" />
-                  </div>
-                  <div>
-                    <label style={styles.label}>Thành phần</label>
-                    <input type="text" value={newItemParticipants} onChange={e => setNewItemParticipants(e.target.value)} style={styles.input} placeholder="Toàn trường" />
-                  </div>
-                  <button type="button" onClick={handleAddItem} className="btn-primary" style={{ padding: '10px 14px', backgroundColor: '#166534' }}>
-                    <Plus size={16} /> Thêm
-                  </button>
-                </div>
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleExportWordDecree30}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+                >
+                  <Download size={18} /> 📄 Xuất File Word (Nghị định 30)
+                </button>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#ffffff' }}>
-                      <th style={{ padding: '8px' }}>Thứ / Ngày</th>
-                      <th style={{ padding: '8px' }}>Giờ</th>
-                      <th style={{ padding: '8px' }}>Nội dung</th>
-                      <th style={{ padding: '8px' }}>Địa điểm</th>
-                      <th style={{ padding: '8px' }}>Chủ trì</th>
-                      <th style={{ padding: '8px' }}>Thành phần</th>
-                      <th style={{ padding: '8px', textAlign: 'right' }}>Xóa</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((it, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '8px', fontWeight: 'bold', color: '#be123c' }}>{it.day}</td>
-                        <td style={{ padding: '8px', fontWeight: 'bold' }}>{it.time}</td>
-                        <td style={{ padding: '8px' }}>{it.content}</td>
-                        <td style={{ padding: '8px', color: '#0284c7' }}>{it.location}</td>
-                        <td style={{ padding: '8px', fontWeight: 'bold', color: '#b45309' }}>{it.chair}</td>
-                        <td style={{ padding: '8px', color: '#64748b' }}>{it.participants}</td>
-                        <td style={{ padding: '8px', textAlign: 'right' }}>
-                          <button type="button" onClick={() => handleDeleteItem(idx)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>
-                            <Trash2 size={16} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                <button
+                  type="button"
+                  onClick={handleResetDefaultTemplate}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  <RefreshCw size={16} /> 📋 Nạp Mẫu Chuẩn Tuần Này
+                </button>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
-                <button type="button" onClick={() => setShowForm(false)} style={{ padding: '10px 20px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Hủy</button>
-                <button type="submit" disabled={saving} className="btn-primary" style={{ padding: '10px 24px', backgroundColor: '#be123c' }}>
-                  <Save size={18} /> {saving ? 'Đang lưu...' : 'Lưu & Xuất Bản'}
+                <button
+                  type="button"
+                  onClick={handleSubmitBghSchedule}
+                  disabled={saving}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 20px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(22, 101, 52, 0.3)' }}
+                >
+                  <Save size={18} /> {saving ? 'Đang lưu...' : '💾 Lưu Lịch Tuần Này'}
                 </button>
               </div>
-            </form>
-          )}
+            </div>
 
-          <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-            <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-              📋 Danh sách Lịch công tác tuần đã đăng ({schedules.length})
-            </h3>
+            {/* WEEK SELECTOR DROPDOWN & GRID */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <label style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px', whiteSpace: 'nowrap' }}>
+                Chọn Tuần Học (1 - 35):
+              </label>
+              
+              <select
+                value={selectedWeekNo}
+                onChange={e => handleSelectWeek(Number(e.target.value))}
+                style={{ padding: '9px 14px', borderRadius: '8px', border: '2px solid #be123c', fontWeight: 'bold', fontSize: '14.5px', color: '#be123c', background: '#ffffff', minWidth: '320px', cursor: 'pointer' }}
+              >
+                {schoolWeeks.map(w => (
+                  <option key={w.week_number} value={w.week_number}>
+                    Tuần {w.roman} ({w.week_number}) - {w.date_range_str}
+                  </option>
+                ))}
+              </select>
 
-            {loading ? <p>Đang nạp dữ liệu...</p> : (
+              <div style={{ fontSize: '13px', color: '#475569', fontWeight: 'bold', marginLeft: 'auto' }}>
+                📌 Ngày ban hành: <span style={{ color: '#0284c7' }}>{releaseDateStr}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* DECREE 30 EDITOR FORM */}
+          <div className="glass" style={{ padding: '24px', borderRadius: '16px', backgroundColor: 'white', border: '1px solid #cbd5e1', boxShadow: '0 4px 15px rgba(0,0,0,0.03)' }}>
+            
+            {/* HEADER CONFIGURATION */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1.5fr', gap: '15px', marginBottom: '20px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <label style={styles.label}>Tiêu đề Lịch công tác (*)</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} style={styles.input} />
+              </div>
+              <div>
+                <label style={styles.label}>Khoảng thời gian tuần (*)</label>
+                <input type="text" value={dateRangeStr} onChange={e => setDateRangeStr(e.target.value)} style={styles.input} />
+              </div>
+              <div>
+                <label style={styles.label}>Ngày ban hành văn bản (*)</label>
+                <input type="text" value={releaseDateStr} onChange={e => setReleaseDateStr(e.target.value)} style={styles.input} />
+              </div>
+            </div>
+
+            {/* MAIN 7-DAY SCHEDULE TABLE EDITOR */}
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ margin: '0 0 12px 0', color: '#166534', fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📝 Bảng Chi Tiết Lịch Công Tác Từ Thứ 2 Đến Chủ Nhật (Mẫu Chuẩn Nghị Định 30)
+              </h4>
+
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #cbd5e1' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
-                      <th style={{ padding: '10px' }}>Tuần</th>
-                      <th style={{ padding: '10px' }}>Tiêu đề lịch tuần</th>
-                      <th style={{ padding: '10px' }}>Trực BGH</th>
-                      <th style={{ padding: '10px' }}>Số mục công việc</th>
-                      <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
+                    <tr style={{ background: '#f1f5f9', color: '#0f172a', borderBottom: '2px solid #cbd5e1' }}>
+                      <th style={{ padding: '10px', width: '12%', border: '1px solid #cbd5e1', textAlign: 'center' }}>Thứ / Ngày</th>
+                      <th style={{ padding: '10px', width: '8%', border: '1px solid #cbd5e1', textAlign: 'center' }}>Buổi</th>
+                      <th style={{ padding: '10px', width: '45%', border: '1px solid #cbd5e1', textAlign: 'center' }}>Nội dung công việc (*)</th>
+                      <th style={{ padding: '10px', width: '17.5%', border: '1px solid #cbd5e1', textAlign: 'center' }}>Địa điểm</th>
+                      <th style={{ padding: '10px', width: '17.5%', border: '1px solid #cbd5e1', textAlign: 'center' }}>Thành phần tham dự</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {schedules.map((s, idx) => (
-                      <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>Tuần {s.week_number}</td>
-                        <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.title}</td>
-                        <td style={{ padding: '10px', color: '#b45309' }}>{s.bgh_duty || 'Chưa phân công'}</td>
-                        <td style={{ padding: '10px', fontWeight: 'bold' }}>{s.schedule_items?.length || 0} mục</td>
-                        <td style={{ padding: '10px', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                            <button type="button" onClick={() => handleEditSchedule(s)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
-                              <Edit3 size={14} /> Sửa
-                            </button>
-                            <button type="button" onClick={() => handleDeleteSchedule(s.id)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-                              <Trash2 size={14} /> Xóa
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {dayItems.map((item, idx) => {
+                      const isFirstSession = idx % 2 === 0;
+                      return (
+                        <tr key={idx} style={{ background: idx % 4 < 2 ? '#ffffff' : '#fafafa', borderBottom: '1px solid #e2e8f0' }}>
+                          {isFirstSession && (
+                            <td 
+                              rowSpan={2} 
+                              style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', verticalAlign: 'middle', fontWeight: 'bold', backgroundColor: '#f8fafc', color: '#be123c' }}
+                            >
+                              <div>{item.day_name}</div>
+                              <div style={{ fontSize: '13.5px', color: '#0f172a', marginTop: '2px' }}>{item.date_str}</div>
+                            </td>
+                          )}
+
+                          <td style={{ padding: '8px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: 'bold', color: item.session === 'Sáng' ? '#0369a1' : '#b45309' }}>
+                            {item.session}
+                          </td>
+
+                          <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
+                            <textarea
+                              rows={3}
+                              value={item.content}
+                              onChange={e => handleUpdateDayItem(idx, 'content', e.target.value)}
+                              style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                              placeholder="Nhập nội dung công việc..."
+                            ></textarea>
+                          </td>
+
+                          <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
+                            <textarea
+                              rows={3}
+                              value={item.location}
+                              onChange={e => handleUpdateDayItem(idx, 'location', e.target.value)}
+                              style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                              placeholder="Nhập địa điểm..."
+                            ></textarea>
+                          </td>
+
+                          <td style={{ padding: '6px', border: '1px solid #cbd5e1' }}>
+                            <textarea
+                              rows={3}
+                              value={item.participants}
+                              onChange={e => handleUpdateDayItem(idx, 'participants', e.target.value)}
+                              style={{ width: '100%', padding: '6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                              placeholder="Nhập thành phần tham dự..."
+                            ></textarea>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
-            )}
+            </div>
+
+            {/* NOTES, RECIPIENTS & SIGNATURE FOOTER CONFIGURATION */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px', padding: '16px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+              <div>
+                <label style={styles.label}>Ghi chú (*Lưu ý cuối bảng)</label>
+                <textarea
+                  rows={4}
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                ></textarea>
+              </div>
+
+              <div>
+                <label style={styles.label}>Nơi nhận (Góc dưới bên trái)</label>
+                <textarea
+                  rows={4}
+                  value={recipients}
+                  onChange={e => setRecipients(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                ></textarea>
+              </div>
+
+              <div>
+                <label style={styles.label}>Thẩm quyền ký & Họ tên Hiệu trưởng</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={signerTitle}
+                    onChange={e => setSignerTitle(e.target.value)}
+                    placeholder="HIỆU TRƯỜNG"
+                    style={{ ...styles.input, fontWeight: 'bold' }}
+                  />
+                  <input
+                    type="text"
+                    value={signerName}
+                    onChange={e => setSignerName(e.target.value)}
+                    placeholder="Lê Thị Thảo"
+                    style={{ ...styles.input, fontWeight: 'bold', color: '#be123c' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* BOTTOM SAVE & EXPORT WORD BUTTONS */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={handleExportWordDecree30}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '11px 22px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+              >
+                <Download size={18} /> 📄 Tải File Word (Chuẩn Nghị định 30)
+              </button>
+
+              <button
+                type="button"
+                onClick={handleSubmitBghSchedule}
+                disabled={saving}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '11px 26px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(22, 101, 52, 0.3)' }}
+              >
+                <Save size={18} /> {saving ? 'Đang lưu...' : '💾 Lưu & Xuất Bản Lịch Tuần'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
