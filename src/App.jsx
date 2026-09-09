@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import PublicLayout from './components/PublicLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
 
-// Lazy loaded pages for code splitting
+// Lazy loaded pages with auto-retry on Vercel build chunk updates
 const Login = lazy(() => import('./pages/Login'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const CommitteeView = lazy(() => import('./pages/CommitteeView'));

@@ -13,14 +13,37 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+    
+    // Detect Vercel chunk hash update / dynamic import failure
+    const isChunkError = 
+      error?.message?.includes('Failed to fetch dynamically imported module') ||
+      error?.message?.includes('Loading chunk') ||
+      error?.message?.includes('Unexpected token') ||
+      error?.message?.includes('importing');
+
+    if (isChunkError) {
+      const lastReload = sessionStorage.getItem('cbq_last_chunk_reload');
+      const now = Date.now();
+      if (!lastReload || now - Number(lastReload) > 8000) {
+        sessionStorage.setItem('cbq_last_chunk_reload', String(now));
+        console.warn("Hệ thống tự động nạp phiên bản mới nhất từ Vercel...");
+        window.location.reload();
+      }
+    }
   }
 
   handleReload = () => {
-    window.location.reload();
+    sessionStorage.removeItem('cbq_page_refreshed_for_chunk');
+    sessionStorage.removeItem('cbq_last_chunk_reload');
+    window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
   };
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = 
+        this.state.error?.message?.includes('Failed to fetch dynamically imported module') ||
+        this.state.error?.message?.includes('Loading chunk');
+
       return (
         <div style={{
           minHeight: '100vh',
@@ -44,10 +67,13 @@ export default class ErrorBoundary extends React.Component {
           }}>
             <AlertTriangle size={48} color="#ef4444" style={{ margin: '0 auto 16px' }} />
             <h2 style={{ fontSize: '20px', color: '#0f172a', margin: '0 0 8px 0', fontWeight: 'bold' }}>
-              Đã xảy ra sự cố khi tải trang
+              {isChunkError ? 'Hệ thống vừa cập nhật phiên bản mới' : 'Đã xảy ra sự cố khi tải trang'}
             </h2>
-            <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 20px 0' }}>
-              {this.state.error?.message || 'Trình duyệt gặp lỗi khi xử lý dữ liệu.'}
+            <p style={{ color: '#64748b', fontSize: '14px', margin: '0 0 20px 0', lineHeight: '1.5' }}>
+              {isChunkError 
+                ? 'Hệ thống vừa được nâng cấp. Vui lòng bấm nút bên dưới để tải dữ liệu phiên bản mới nhất.'
+                : (this.state.error?.message || 'Trình duyệt gặp lỗi khi xử lý dữ liệu.')
+              }
             </p>
             <button
               onClick={this.handleReload}
@@ -55,16 +81,18 @@ export default class ErrorBoundary extends React.Component {
                 display: 'inline-flex',
                 alignItems: 'center',
                 gap: '8px',
-                padding: '10px 20px',
+                padding: '11px 24px',
                 background: '#2563eb',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
                 fontWeight: 'bold',
-                cursor: 'pointer'
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
               }}
             >
-              <RefreshCw size={16} /> Tải lại trang
+              <RefreshCw size={18} /> Cập nhật phiên bản mới & Tải lại
             </button>
           </div>
         </div>
