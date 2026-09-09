@@ -231,6 +231,18 @@ export default function PublicSchedule() {
       return;
     }
 
+    if (exportMode === 'month') {
+      handleExportMonthlyPlan();
+      setShowExportModal(false);
+      return;
+    }
+
+    if (exportMode === 'year') {
+      handleExportYearlyPlan();
+      setShowExportModal(false);
+      return;
+    }
+
     let targetRange = [];
     let customName = '';
 
@@ -492,16 +504,9 @@ export default function PublicSchedule() {
                   <button onClick={() => setShowExportModal(true)} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
                     <Download size={16} /> 📄 Xuất File Word (NĐ 30)
                   </button>
-                  <button onClick={handleCopyAdminLink} style={{ ...styles.printBtn, backgroundColor: '#475569' }}>
-                    {copiedAdminLink ? <Check size={16} /> : <LinkIcon size={16} />}
-                    {copiedAdminLink ? 'Đã sao chép link BGH!' : `🔗 Link BGH Nhập Tuần ${selectedWeekNo}`}
-                  </button>
-                  <a href={`/nhap-lich-bgh?week=${selectedWeekNo}`} style={{ ...styles.printBtn, backgroundColor: '#be123c', textDecoration: 'none' }}>
-                    ✏️ Nhập / Sửa Lịch Tuần {selectedWeekNo}
-                  </a>
                   <button onClick={handleCopyPublicLink} style={{ ...styles.printBtn, backgroundColor: '#059669' }}>
                     {copiedPublicLink ? <Check size={16} /> : <Share2 size={16} />}
-                    {copiedPublicLink ? 'Đã sao chép link Xem!' : `👁️ Link Tra Cứu Tuần ${selectedWeekNo}`}
+                    {copiedPublicLink ? 'Đã sao chép link!' : `🔗 Chia Sẻ Link Tuần ${selectedWeekNo}`}
                   </button>
                 </>
               )}
@@ -950,7 +955,19 @@ export default function PublicSchedule() {
                 <span>📚 <strong>Xuất Học kỳ II</strong> (17 tuần: Tuần 19 đến Tuần 35)</span>
               </label>
 
-              {/* OPTION 5: CUSTOM RANGE */}
+              {/* OPTION 5: MONTHLY PLAN */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'month' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'month' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="month" checked={exportMode === 'month'} onChange={() => setExportMode('month')} />
+                <span>🗓️ <strong>Xuất Kế Hoạch Tháng</strong> (Tổng hợp các tuần trong tháng của Tuần {selectedWeekNo})</span>
+              </label>
+
+              {/* OPTION 6: YEARLY PLAN */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'year' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'year' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="year" checked={exportMode === 'year'} onChange={() => setExportMode('year')} />
+                <span>🏛️ <strong>Xuất Kế Hoạch Năm Học 2026 - 2027</strong> (Tổng hợp 9 tháng học tập)</span>
+              </label>
+
+              {/* OPTION 7: CUSTOM RANGE */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'custom' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'custom' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
                 <input type="radio" name="exportMode" value="custom" checked={exportMode === 'custom'} onChange={() => setExportMode('custom')} />
                 <span>⚙️ <strong>Tùy chọn khoảng số tuần:</strong></span>

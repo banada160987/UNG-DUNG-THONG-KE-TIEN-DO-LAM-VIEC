@@ -11,10 +11,15 @@ import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
 import { 
   getSchoolWeeks2026, 
+  getSchoolMonths2026,
   getDefaultScheduleDays, 
   exportScheduleToWordDecree30, 
   exportMultipleSchedulesToWordDecree30, 
   getScheduleDataForWeek, 
+  aggregateMonthlyPlanFromWeeks,
+  aggregateYearlyPlanFromMonths,
+  exportMonthlyPlanToWordDecree30,
+  exportYearlyPlanToWordDecree30,
   ROMAN_NUMERALS 
 } from '../utils/decree30ScheduleWord';
 
@@ -252,6 +257,24 @@ export default function AdminSchedule() {
   const handleExecuteExport = () => {
     if (exportMode === 'single') {
       handleExportWordDecree30();
+      setShowExportModal(false);
+      return;
+    }
+
+    if (exportMode === 'month') {
+      const schoolMonths = getSchoolMonths2026();
+      const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+      const mon = new Date(targetWeek.monday).getMonth() + 1;
+      const mIdx = Math.max(0, schoolMonths.findIndex(m => m.month === mon));
+      const mData = aggregateMonthlyPlanFromWeeks(mIdx + 1, schoolWeeks, schedules);
+      exportMonthlyPlanToWordDecree30(mData);
+      setShowExportModal(false);
+      return;
+    }
+
+    if (exportMode === 'year') {
+      const yData = aggregateYearlyPlanFromMonths(schoolWeeks, schedules);
+      exportYearlyPlanToWordDecree30(yData);
       setShowExportModal(false);
       return;
     }
@@ -1163,7 +1186,19 @@ export default function AdminSchedule() {
                 <span>📚 <strong>Xuất Học kỳ II</strong> (17 tuần: Tuần 19 đến Tuần 35)</span>
               </label>
 
-              {/* OPTION 5: CUSTOM RANGE */}
+              {/* OPTION 5: MONTHLY PLAN */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'month' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'month' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="month" checked={exportMode === 'month'} onChange={() => setExportMode('month')} />
+                <span>🗓️ <strong>Xuất Kế Hoạch Tháng</strong> (Tổng hợp các tuần trong tháng của Tuần {selectedWeekNo})</span>
+              </label>
+
+              {/* OPTION 6: YEARLY PLAN */}
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'year' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'year' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
+                <input type="radio" name="exportMode" value="year" checked={exportMode === 'year'} onChange={() => setExportMode('year')} />
+                <span>🏛️ <strong>Xuất Kế Hoạch Năm Học 2026 - 2027</strong> (Tổng hợp 9 tháng học tập)</span>
+              </label>
+
+              {/* OPTION 7: CUSTOM RANGE */}
               <label style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', border: exportMode === 'custom' ? '2px solid #0284c7' : '1px solid #cbd5e1', backgroundColor: exportMode === 'custom' ? '#f0f9ff' : '#ffffff', cursor: 'pointer' }}>
                 <input type="radio" name="exportMode" value="custom" checked={exportMode === 'custom'} onChange={() => setExportMode('custom')} />
                 <span>⚙️ <strong>Tùy chọn khoảng số tuần:</strong></span>
