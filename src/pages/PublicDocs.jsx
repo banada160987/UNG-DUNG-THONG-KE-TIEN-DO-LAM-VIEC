@@ -7,10 +7,20 @@ import { exportAiRulesToWordDecree30 } from '../utils/decree30AiRulesWord';
 export default function PublicDocs() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [aiRulesPublished, setAiRulesPublished] = useState(false);
 
   useEffect(() => {
     supabase.from('cbq_documents').select('*').order('published_date', { ascending: false }).then(({data}) => {
-      if(data) setDocs(data);
+      if(data) {
+        setDocs(data);
+        const hasAiDoc = data.some(d => d.file_url === 'ai_rules_decree30' || (d.title && d.title.includes('Trí tuệ Nhân tạo')));
+        const localStatus = localStorage.getItem('cbq_ai_rules_status');
+        if (hasAiDoc || localStatus === 'published') {
+          setAiRulesPublished(true);
+        } else {
+          setAiRulesPublished(false);
+        }
+      }
       setLoading(false);
     });
   }, []);
@@ -18,39 +28,41 @@ export default function PublicDocs() {
   return (
     <div style={styles.container}>
 
-      {/* FEATURED BANNER BAN HÀNH QUY TẮC SỬ DỤNG AI TRONG NHÀ TRƯỜNG */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-        borderRadius: '16px',
-        padding: '22px',
-        color: '#ffffff',
-        marginBottom: '20px',
-        boxShadow: '0 8px 20px rgba(2,132,199,0.25)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', width: 'fit-content', marginBottom: '10px' }}>
-          <Bot size={16} color="#38bdf8" /> QUYẾT ĐỊNH BAN HÀNH QUY TẮC SỬ DỤNG AI - NĂM HỌC 2026 - 2027
-        </div>
-        
-        <h2 style={{ margin: '0 0 10px 0', fontSize: '20px', color: '#ffffff', lineHeight: '1.4', fontWeight: '900' }}>
-          🤖 Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường
-        </h2>
-        
-        <p style={{ margin: '0 0 14px 0', fontSize: '13.5px', color: '#e0f2fe', lineHeight: '1.6' }}>
-          Thực hiện hướng dẫn của Bộ Giáo dục & Đào tạo (tối thiểu <strong>12 tiết/lớp/năm học</strong> đối với nội dung cốt lõi); Phân công rõ trách nhiệm cán bộ quản lý, tổ chuyên môn, GV Tin học, GV bộ môn, GVCN & đầu mối kỹ thuật; Bảo vệ dữ liệu cá nhân học sinh theo Nghị định 13/2023/NĐ-CP và đảm bảo trung thực học thuật.
-        </p>
+      {/* FEATURED BANNER BAN HÀNH QUY TẮC SỬ DỤNG AI TRONG NHÀ TRƯỜNG (CHỈ HIỂN THỊ KHI ADMIN ĐÃ BAN HÀNH) */}
+      {aiRulesPublished && (
+        <div style={{
+          background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+          borderRadius: '16px',
+          padding: '22px',
+          color: '#ffffff',
+          marginBottom: '20px',
+          boxShadow: '0 8px 20px rgba(2,132,199,0.25)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.2)', padding: '4px 14px', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', width: 'fit-content', marginBottom: '10px' }}>
+            <Bot size={16} color="#38bdf8" /> QUYẾT ĐỊNH BAN HÀNH QUY TẮC SỬ DỤNG AI - NĂM HỌC 2026 - 2027
+          </div>
+          
+          <h2 style={{ margin: '0 0 10px 0', fontSize: '20px', color: '#ffffff', lineHeight: '1.4', fontWeight: '900' }}>
+            🤖 Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường
+          </h2>
+          
+          <p style={{ margin: '0 0 14px 0', fontSize: '13.5px', color: '#e0f2fe', lineHeight: '1.6' }}>
+            Thực hiện hướng dẫn của Bộ Giáo dục & Đào tạo (tối thiểu <strong>12 tiết/lớp/năm học</strong> đối với nội dung cốt lõi); Phân công rõ trách nhiệm cán bộ quản lý, tổ chuyên môn, GV Tin học, GV bộ môn, GVCN & đầu mối kỹ thuật; Bảo vệ dữ liệu cá nhân học sinh theo Nghị định 13/2023/NĐ-CP và đảm bảo trung thực học thuật.
+          </p>
 
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button
-            onClick={() => exportAiRulesToWordDecree30()}
-            style={{ padding: '10px 20px', background: '#ffffff', color: '#0369a1', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-          >
-            <Download size={18} /> 📥 Tải File Word Quy Tắc AI (.doc chuẩn NĐ 30)
-          </button>
-          <span style={{ fontSize: '12.5px', color: '#f0f9ff', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            <ShieldCheck size={16} /> Áp dụng đối với toàn thể Cán bộ, Giáo viên & Học sinh toàn trường
-          </span>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button
+              onClick={() => exportAiRulesToWordDecree30()}
+              style={{ padding: '10px 20px', background: '#ffffff', color: '#0369a1', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
+            >
+              <Download size={18} /> 📥 Tải File Word Quy Tắc AI (.doc chuẩn NĐ 30)
+            </button>
+            <span style={{ fontSize: '12.5px', color: '#f0f9ff', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <ShieldCheck size={16} /> Áp dụng đối với toàn thể Cán bộ, Giáo viên & Học sinh toàn trường
+            </span>
+          </div>
         </div>
-      </div>
+      )}
       
       {/* FEATURED BANNER CÔNG VĂN QUỸ HỌC BỔNG */}
       <div style={{
@@ -99,25 +111,27 @@ export default function PublicDocs() {
             </tr>
           </thead>
           <tbody>
-            {/* THÊM DÒNG QUYẾT ĐỊNH QUY TẮC AI */}
-            <tr style={{ background: '#f0f9ff' }}>
-              <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#0284c7' }}>📌</td>
-              <td style={{ ...styles.td, fontWeight: 'bold', color: '#0284c7' }}>10/09/2026</td>
-              <td style={styles.td}>
-                <strong style={{ color: '#0369a1' }}>Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường năm học 2026 - 2027</strong>
-                <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                  Ban hành theo hướng dẫn của Bộ GD&ĐT (12 tiết cốt lõi/năm), Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân & Quy tắc trung thực học thuật.
-                </div>
-              </td>
-              <td style={styles.td}>
-                <button 
-                  onClick={() => exportAiRulesToWordDecree30()}
-                  style={{ color: '#0284c7', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
-                >
-                  📥 Tải Word (NĐ 30)
-                </button>
-              </td>
-            </tr>
+            {/* THÊM DÒNG QUYẾT ĐỊNH QUY TẮC AI (CHỈ HIỂN THỊ KHI ĐÃ BAN HÀNH) */}
+            {aiRulesPublished && (
+              <tr style={{ background: '#f0f9ff' }}>
+                <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#0284c7' }}>📌</td>
+                <td style={{ ...styles.td, fontWeight: 'bold', color: '#0284c7' }}>10/09/2026</td>
+                <td style={styles.td}>
+                  <strong style={{ color: '#0369a1' }}>Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường năm học 2026 - 2027</strong>
+                  <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                    Ban hành theo hướng dẫn của Bộ GD&ĐT (12 tiết cốt lõi/năm), Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân & Quy tắc trung thực học thuật.
+                  </div>
+                </td>
+                <td style={styles.td}>
+                  <button 
+                    onClick={() => exportAiRulesToWordDecree30()}
+                    style={{ color: '#0284c7', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
+                  >
+                    📥 Tải Word (NĐ 30)
+                  </button>
+                </td>
+              </tr>
+            )}
 
             {/* THÊM DÒNG NỔI BẬT CÔNG VĂN QUỸ HỌC BỔNG */}
             <tr style={{ background: '#f0fdf4' }}>

@@ -9,6 +9,7 @@ export default function AdminDocs() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ title: '', published_date: '', file_url: '' });
+  const [aiRulesPublished, setAiRulesPublished] = useState(false);
 
   useEffect(() => {
     fetchDocs();
@@ -17,8 +18,40 @@ export default function AdminDocs() {
   async function fetchDocs() {
     setLoading(true);
     const { data } = await supabase.from('cbq_documents').select('*').order('published_date', { ascending: false });
-    if (data) setDocs(data);
+    if (data) {
+      setDocs(data);
+      const hasAiDoc = data.some(d => d.file_url === 'ai_rules_decree30' || (d.title && d.title.includes('Trí tuệ Nhân tạo')));
+      const localStatus = localStorage.getItem('cbq_ai_rules_status');
+      if (hasAiDoc || localStatus === 'published') {
+        setAiRulesPublished(true);
+      } else {
+        setAiRulesPublished(false);
+      }
+    }
     setLoading(false);
+  };
+
+  const handlePublishAiRules = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn BAN HÀNH CHÍNH THỨC Quyết định & Quy tắc sử dụng AI và cho phép hiển thị công khai tại trang /van-ban?')) {
+      const docItem = {
+        title: 'Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường năm học 2026 - 2027',
+        published_date: new Date().toISOString().split('T')[0],
+        file_url: 'ai_rules_decree30'
+      };
+      await supabase.from('cbq_documents').insert([docItem]);
+      localStorage.setItem('cbq_ai_rules_status', 'published');
+      setAiRulesPublished(true);
+      fetchDocs();
+    }
+  };
+
+  const handleUnpublishAiRules = async () => {
+    if (window.confirm('Bạn muốn chuyển văn bản này về dạng DỰ THẢO và ẨN KHỎI trang Văn bản công khai (/van-ban)?')) {
+      await supabase.from('cbq_documents').delete().eq('file_url', 'ai_rules_decree30');
+      localStorage.setItem('cbq_ai_rules_status', 'draft');
+      setAiRulesPublished(false);
+      fetchDocs();
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -40,14 +73,68 @@ export default function AdminDocs() {
 
   return (
     <Layout title="Văn bản & Kế hoạch">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
-        <button 
-          onClick={() => exportAiRulesToWordDecree30()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
-        >
-          <Bot size={18} /> 🤖 Tải Quyết Định & Quy Tắc Sử Dụng AI (Word NĐ 30)
-        </button>
+      {/* BẢNG QUẢN LÝ DỰ THẢO / BAN HÀNH QUY TẮC AI */}
+      <div style={{
+        background: '#f8fafc',
+        border: '1.5px solid #cbd5e1',
+        borderRadius: '14px',
+        padding: '18px 22px',
+        marginBottom: '22px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.04)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
+              <Bot size={22} color="#0284c7" />
+              <strong style={{ fontSize: '15.5px', color: '#0f172a' }}>Dự thảo: Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường (Chuẩn NĐ 30)</strong>
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: '16px',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                backgroundColor: aiRulesPublished ? '#dcfce7' : '#fef3c7',
+                color: aiRulesPublished ? '#15803d' : '#b45309',
+                border: aiRulesPublished ? '1px solid #86efac' : '1px solid #fde68a'
+              }}>
+                {aiRulesPublished ? '🟢 ĐÃ BAN HÀNH (Công khai tại /van-ban)' : '🟡 DỰ THẢO (Chưa ban hành - Đang ẩn)'}
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+              {aiRulesPublished 
+                ? 'Văn bản đã được Admin duyệt Ban hành chính thức và đang hiển thị tại trang Văn bản công khai (/van-ban).'
+                : 'Văn bản đang ở dạng DỰ THẢO. Chỉ hiển thị trong trang Admin để BGH xem trước, tải file Word và duyệt Ban hành khi sẵn sàng.'}
+            </p>
+          </div>
 
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button 
+              onClick={() => exportAiRulesToWordDecree30()}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)' }}
+            >
+              <Download size={16} /> 🤖 Tải Word (.doc NĐ 30)
+            </button>
+
+            {aiRulesPublished ? (
+              <button 
+                onClick={handleUnpublishAiRules}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                🔒 Chuyển về Dự thảo (Ẩn khỏi Public)
+              </button>
+            ) : (
+              <button 
+                onClick={handlePublishAiRules}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)' }}
+              >
+                📢 Chấp nhận Ban hành (Phổ biến Công khai)
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>Danh sách Văn bản & Kế hoạch</h3>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
           <Plus size={20} /> Thêm Văn bản
         </button>
