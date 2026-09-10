@@ -115,7 +115,7 @@ export function exportAiRulesToWordDecree30(customData = {}) {
       <div class="doc-title" style="margin-top: 15px; font-size: 13pt;">HIỆU TRƯỜNG TRƯỜNG THPT CAO BÁ QUÁT</div>
 
       <p style="font-style: italic;">Căn cứ Luật Giáo dục ngày 14 tháng 6 năm 2019;</p>
-      <p style="font-style: italic;">Căn cứ Điều lệ trường trung học cơ sở, trường trung học phổ thông và trường phổ thông có nhiều cấp học ban hành kèm theo Thông tư số 32/2020/TT-BGDĐT ngày 15/9/2020 của Bộ trưởng Bộ Giáo dục và Đào tạo;</p>
+      <p style="font-style: italic;">Căn cứ Điều lệ trường trung học cơ sở, trường trung học phổ thông và trường phổ thông có nhiều cấp học ban hành kèm theo Thông tư số 15/2026/TT-BGDĐT ngày 24/3/2026 của Bộ trưởng Bộ Giáo dục và Đào tạo;</p>
       <p style="font-style: italic;">Căn cứ Nghị định số 13/2023/NĐ-CP ngày 17 tháng 4 năm 2023 của Chính phủ về bảo vệ dữ liệu cá nhân;</p>
       <p style="font-style: italic;">Căn cứ Hướng dẫn của Bộ Giáo dục và Đào tạo về việc thực hiện giáo dục Trí tuệ Nhân tạo (AI) trong cơ sở giáo dục phổ thông (đảm bảo thực hiện tối thiểu 12 tiết/lớp/năm học đối với nội dung cốt lõi);</p>
       <p style="font-style: italic;">Xét đề nghị của Hội đồng Chuyên môn và Tổ trưởng Tổ Tin học - Công nghệ.</p>
