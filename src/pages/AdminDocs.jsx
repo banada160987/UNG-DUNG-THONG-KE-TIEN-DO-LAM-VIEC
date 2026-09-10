@@ -4,6 +4,69 @@ import { supabase } from '../lib/supabase';
 import { Plus, Trash2, Download, Bot, Edit3, Settings, Save, X } from 'lucide-react';
 import { exportAiRulesToWordDecree30 } from '../utils/decree30AiRulesWord';
 
+const DEFAULT_RULES_TEXT = `<!-- CHƯƠNG I -->
+<div class="chapter-title">Chương I. QUY ĐỊNH CHUNG</div>
+
+<div class="article-title">Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng</div>
+<p>1. Quy tắc này quy định về mục tiêu, nguyên tắc, thời lượng giáo dục, phân công trách nhiệm, ứng xử văn hóa, an toàn dữ liệu cá nhân và trung thực học thuật khi ứng dụng các công cụ Trí tuệ Nhân tạo (AI) trong các hoạt động dạy học, giáo dục, quản lý và vận hành tại nhà trường.</p>
+<p>2. Quy tắc này áp dụng đối với cán bộ quản lý, giáo viên, nhân viên, học sinh và sự phối hợp của Cha mẹ học sinh trong toàn trường.</p>
+
+<div class="article-title">Điều 2. Mục tiêu ứng dụng AI trong nhà trường</div>
+<p>1. Thúc đẩy đổi mới sáng tạo, nâng cao chất lượng giảng dạy và học tập, phát triển năng lực số, tư duy phản biện và kỹ năng công nghệ cho học sinh chuẩn bị cho kỷ nguyên số.</p>
+<p>2. Khai thác công cụ AI như một phương tiện hỗ trợ giảng dạy, học tập và nghiên cứu; tuyệt đối không thay thế vai trò tư duy độc lập, sáng tạo cá nhân và đạo đức học đường.</p>
+
+<div class="article-title">Điều 3. Nguyên tắc cốt lõi khi sử dụng AI</div>
+<p>1. <b>Trung thực học thuật:</b> Đề cao tính chính trực, tôn trọng bản quyền tác giả. Sản phẩm từ AI chỉ mang tính chất tham khảo, gợi ý.</p>
+<p>2. <b>An toàn và Bảo mật dữ liệu:</b> Tuân thủ nghiêm ngặt quy định bảo vệ dữ liệu cá nhân theo Nghị định 13/2023/NĐ-CP. Không đưa hình ảnh, danh tính, thông tin nhạy cảm của học sinh và nhà trường lên các nền tảng AI công cộng.</p>
+<p>3. <b>Trách nhiệm giải trình và Kiểm chứng:</b> Giáo viên và học sinh phải chịu trách nhiệm về tính chính xác của thông tin do AI tạo ra; luôn kiểm chứng thông tin trước khi sử dụng.</p>
+
+<!-- CHƯƠNG II -->
+<div class="chapter-title">Chương II. KHUNG THỜI LƯỢNG VÀ PHÂN CÔNG TRÁCH NHIỆM</div>
+
+<div class="article-title">Điều 4. Khung thời lượng giáo dục AI cốt lõi</div>
+<p>1. Bảo đảm thực hiện <b>tối thiểu 12 tiết/lớp/năm học</b> đối với nội dung cốt lõi về giáo dục Trí tuệ Nhân tạo (AI) trong chương trình giáo dục của nhà trường theo hướng dẫn của Bộ Giáo dục và Đào tạo.</p>
+<p>2. Nhà trường chủ động bổ sung, củng cố những kiến thức, kỹ năng tiền đề cần thiết; chủ động lựa chọn nội dung mở rộng, hình thức tổ chức, thời lượng và công cụ AI phù hợp với điều kiện cơ sở vật chất và năng lực thực tế của học sinh.</p>
+
+<div class="article-title">Điều 5. Phân công trách nhiệm tổ chức thực hiện</div>
+<p>1. <b>Ban Giám hiệu:</b> Cụ thể hóa kế hoạch giáo dục AI; phê duyệt danh mục công cụ AI được phép sử dụng; tổ chức kiểm tra, giám sát, đánh giá việc thực hiện quy tắc trong toàn trường.</p>
+<p>2. <b>Tổ / Nhóm chuyên môn:</b> Phân công trách nhiệm rõ ràng cho giáo viên; tổ chức sinh hoạt chuyên môn định kỳ để phối hợp thiết kế, thử nghiệm, quan sát và điều chỉnh các bài giảng, dự án học tập có ứng dụng AI.</p>
+<p>3. <b>Giáo viên Tin học & Đầu mối hỗ trợ kỹ thuật:</b></p>
+<ul>
+  <li>Chủ trì giảng dạy các tiết cốt lõi AI theo kế hoạch giáo dục;</li>
+  <li>Rà soát công cụ, tài khoản, hạ tầng kỹ thuật và an toàn dữ liệu trước khi đưa vào ứng dụng;</li>
+  <li>Hỗ trợ kỹ thuật, hướng dẫn giáo viên các bộ môn tích hợp AI an toàn, hiệu quả.</li>
+</ul>
+<p>4. <b>Giáo viên Bộ môn:</b> Định hướng công cụ AI phù hợp với đặc thù môn học; hướng dẫn học sinh khai thác AI hỗ trợ tự học; kiểm soát chặt chẽ tính trung thực học thuật trong các bài tập, dự án của học sinh.</p>
+<p>5. <b>Giáo viên Chủ nhiệm:</b> Tuyên truyền quy tắc đến học sinh và Cha mẹ học sinh; theo dõi, nắm bắt tâm lý, hành vi sử dụng công nghệ của học sinh lớp chủ nhiệm.</p>
+
+<!-- CHƯƠNG III -->
+<div class="chapter-title">Chương III. QUY TẮC SỬ DỤNG AI ĐỐI VỚI GIÁO VIÊN VÀ HỌC SINH</div>
+
+<div class="article-title">Điều 6. Quy tắc dành cho Giáo viên và Cán bộ quản lý</div>
+<p>1. Được phép sử dụng AI để hỗ trợ soạn kế hoạch bài dạy, thiết kế hình ảnh, tư liệu minh họa, ngân hàng câu hỏi tham khảo và tối ưu hóa công tác quản lý chuyên môn.</p>
+<p>2. Phải thẩm định kỹ độ chính xác, tính chuẩn mực sư phạm và giá trị giáo dục của mọi nội dung do AI gợi ý trước khi áp dụng vào giảng dạy và kiểm tra đánh giá.</p>
+<p>3. Nghiêm cấm đưa đề thi bảo mật, đáp án kiểm tra chưa công bố, hoặc hồ sơ cá nhân của học sinh/đồng nghiệp vào các ứng dụng AI trực tuyến công cộng.</p>
+
+<div class="article-title">Điều 7. Quy tắc dành cho Học sinh</div>
+<p>1. Được khuyến khích sử dụng AI như một "trợ lý học tập" để giải đáp thắc mắc, gợi ý ý tưởng, luyện tập ngoại ngữ, kiểm tra mã nguồn hoặc mở rộng tri thức.</p>
+<p>2. <b>Nghiêm cấm các hành vi gian lận học thuật:</b> Sao chép 100% nội dung do AI tạo ra để nộp làm bài tập, bài luận, bài kiểm tra hoặc sản phẩm dự án cá nhân/nhóm.</p>
+<p>3. Khi có sử dụng AI tham khảo trong bài làm, học sinh phải có phần trích dẫn công khai (ghi rõ tên công cụ AI và mục đích sử dụng).</p>
+
+<!-- CHƯƠNG IV -->
+<div class="chapter-title">Chương IV. PHỐI HỢP VỚI CHA MẸ HỌC SINH VÀ XỬ LÝ SỰ CỐ</div>
+
+<div class="article-title">Điều 8. Phối hợp với Cha mẹ học sinh</div>
+<p>1. Thông tin công khai, minh bạch đến Cha mẹ học sinh về mục tiêu giáo dục AI, danh mục công cụ, dữ liệu được sử dụng, quyền lựa chọn và kênh phản ánh của phụ huynh.</p>
+<p>2. Khuyên cha mẹ học sinh đồng hành cùng nhà trường trong việc định hướng con em sử dụng máy tính, điện thoại thông minh và các ứng dụng AI an toàn, văn minh tại gia đình.</p>
+
+<div class="article-title">Điều 9. Tiếp nhận và xử lý sự cố vi phạm</div>
+<p>1. Nhà trường thiết lập kênh tiếp nhận phản ánh (qua hộp thư góp ý, giáo viên chủ nhiệm, website trường) để xử lý kịp thời các nguy cơ sai lệch thông tin, vi phạm bản quyền hoặc hành vi xấu trên không gian mạng.</p>
+<p>2. Học sinh hoặc giáo viên cố tình vi phạm quy tắc trung thực học thuật, phát tán thông tin sai lệch hoặc vi phạm an toàn dữ liệu cá nhân sẽ bị xử lý kỷ luật theo quy định của nhà trường và pháp luật.</p>
+
+<div class="article-title">Điều 10. Đánh giá, theo dõi và Báo cáo</div>
+<p>1. Nhà trường tổ chức theo dõi, đánh giá việc triển khai giáo dục AI dựa trên minh chứng từ quá trình học tập, sản phẩm thực hành và phản hồi thực tế của học sinh, giáo viên.</p>
+<p>2. Định kỳ tổng hợp, báo cáo kết quả triển khai, những khó khăn, vướng mắc và sự cố (nếu có) về Sở Giáo dục và Đào tạo theo yêu cầu./.`;
+
 export default function AdminDocs() {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -245,7 +308,6 @@ export default function AdminDocs() {
                   <input type="text" value={aiForm.lessonsCount} onChange={e => setAiForm({...aiForm, lessonsCount: e.target.value})} required style={styles.input} />
                 </div>
               </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Chức vụ Người ký</label>
@@ -254,6 +316,39 @@ export default function AdminDocs() {
                 <div>
                   <label style={{ fontSize: '13px', fontWeight: 'bold' }}>Họ và tên Người ký</label>
                   <input type="text" value={aiForm.signerName} onChange={e => setAiForm({...aiForm, signerName: e.target.value})} required style={styles.input} />
+                </div>
+              </div>
+
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0369a1' }}>
+                    📜 Nội dung chi tiết các Chương & Điều khoản (Sửa nội dung văn bản trực tiếp):
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setAiForm({ ...aiForm, customArticlesHtml: DEFAULT_RULES_TEXT })}
+                    style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', border: '1px solid #7dd3fc', padding: '3px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    🔄 Khôi phục Văn bản Mẫu Mặc định
+                  </button>
+                </div>
+                <textarea
+                  rows={12}
+                  value={aiForm.customArticlesHtml !== undefined ? aiForm.customArticlesHtml : DEFAULT_RULES_TEXT}
+                  onChange={e => setAiForm({...aiForm, customArticlesHtml: e.target.value})}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '13px',
+                    lineHeight: '1.5',
+                    fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                    backgroundColor: '#fafafa'
+                  }}
+                />
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                  💡 Bạn có thể trực tiếp sửa lại các đoạn văn, tiêu đề các Điều, thêm/bớt các điểm quy định. Nội dung này sẽ tự động đưa vào file Word khi tải về và hiển thị khi ban hành.
                 </div>
               </div>
 
