@@ -11,12 +11,15 @@ export function exportAiRulesToWordDecree30(customData = {}) {
   const docNumber = customData.docNumber || "158/QĐ-THPTCBQ";
   const signerName = customData.signerName || "Lê Thị Thảo";
   const signerTitle = customData.signerTitle || "HIỆU TRƯỜNG";
+  const lessonsCount = customData.lessonsCount || "12";
+  const schoolYear = customData.schoolYear || "2026 - 2027";
+  const customArticlesHtml = customData.customArticlesHtml || null;
 
   const htmlDocument = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
     <head>
       <meta charset='utf-8'>
-      <title>Quy tắc sử dụng AI trong nhà trường - THPT Cao Bá Quát</title>
+      <title>Quy tắc sử dụng AI trong nhà trường - ${schoolName}</title>
       <style>
         @page {
           size: A4 portrait;
@@ -110,21 +113,21 @@ export function exportAiRulesToWordDecree30(customData = {}) {
 
       <!-- TRÍCH YẾU VĂN BẢN -->
       <div class="doc-title" style="margin-top: 25px;">QUYẾT ĐỊNH</div>
-      <div class="doc-subtitle">Về việc ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI)<br/>trong nhà trường năm học 2026 - 2027</div>
+      <div class="doc-subtitle">Về việc ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI)<br/>trong nhà trường năm học ${schoolYear}</div>
 
-      <div class="doc-title" style="margin-top: 15px; font-size: 13pt;">HIỆU TRƯỜNG TRƯỜNG THPT CAO BÁ QUÁT</div>
+      <div class="doc-title" style="margin-top: 15px; font-size: 13pt;">${signerTitle} ${schoolName}</div>
 
       <p style="font-style: italic;">Căn cứ Luật Giáo dục ngày 14 tháng 6 năm 2019;</p>
       <p style="font-style: italic;">Căn cứ Điều lệ trường trung học cơ sở, trường trung học phổ thông và trường phổ thông có nhiều cấp học ban hành kèm theo Thông tư số 15/2026/TT-BGDĐT ngày 24/3/2026 của Bộ trưởng Bộ Giáo dục và Đào tạo;</p>
       <p style="font-style: italic;">Căn cứ Nghị định số 13/2023/NĐ-CP ngày 17 tháng 4 năm 2023 của Chính phủ về bảo vệ dữ liệu cá nhân;</p>
-      <p style="font-style: italic;">Căn cứ Hướng dẫn của Bộ Giáo dục và Đào tạo về việc thực hiện giáo dục Trí tuệ Nhân tạo (AI) trong cơ sở giáo dục phổ thông (đảm bảo thực hiện tối thiểu 12 tiết/lớp/năm học đối với nội dung cốt lõi);</p>
+      <p style="font-style: italic;">Căn cứ Hướng dẫn của Bộ Giáo dục và Đào tạo về việc thực hiện giáo dục Trí tuệ Nhân tạo (AI) trong cơ sở giáo dục phổ thông (đảm bảo thực hiện tối thiểu ${lessonsCount} tiết/lớp/năm học đối với nội dung cốt lõi);</p>
       <p style="font-style: italic;">Xét đề nghị của Hội đồng Chuyên môn và Tổ trưởng Tổ Tin học - Công nghệ.</p>
 
       <div class="doc-title" style="margin-top: 10px; margin-bottom: 10px;">QUYẾT ĐỊNH:</div>
 
-      <p class="no-indent"><b>Điều 1.</b> Ban hành kèm theo Quyết định này <b>"Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường"</b> áp dụng đối với toàn thể cán bộ quản lý, giáo viên, nhân viên và học sinh Trường THPT Cao Bá Quát năm học 2026 - 2027.</p>
+      <p class="no-indent"><b>Điều 1.</b> Ban hành kèm theo Quyết định này <b>"Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường"</b> áp dụng đối với toàn thể cán bộ quản lý, giáo viên, nhân viên và học sinh ${schoolName} năm học ${schoolYear}.</p>
       <p class="no-indent"><b>Điều 2.</b> Quyết định này có hiệu lực thi hành kể từ ngày ký.</p>
-      <p class="no-indent"><b>Điều 3.</b> Các ông (bà) Trưởng các bộ phận, Tổ trưởng chuyên môn, Giáo viên Tin học, Giáo viên chủ nhiệm, các tổ chức đoàn thể và toàn thể học sinh Trường THPT Cao Bá Quát chịu trách nhiệm thi hành Quyết định này./.</p>
+      <p class="no-indent"><b>Điều 3.</b> Các ông (bà) Trưởng các bộ phận, Tổ trưởng chuyên môn, Giáo viên Tin học, Giáo viên chủ nhiệm, các tổ chức đoàn thể và toàn thể học sinh ${schoolName} chịu trách nhiệm thi hành Quyết định này./.</p>
 
       <br clear="all" style="page-break-before: always; mso-break-type: section-break;" />
 
@@ -132,23 +135,24 @@ export function exportAiRulesToWordDecree30(customData = {}) {
       <table class="header-table" style="width: 100%; border: none;">
         <tr>
           <td style="width: 50%; text-align: left; vertical-align: top;">
-            <div style="font-size: 11pt; font-weight: bold;">TRƯỜNG THPT CAO BÁ QUÁT</div>
+            <div style="font-size: 11pt; font-weight: bold;">${schoolName}</div>
           </td>
           <td style="width: 50%; text-align: right; vertical-align: top;">
             <div style="font-size: 11pt; font-style: italic;">Ban hành kèm theo Quyết định số ${docNumber}</div>
-            <div style="font-size: 11pt; font-style: italic;">ngày 10 tháng 09 năm 2026 của Hiệu trưởng</div>
+            <div style="font-size: 11pt; font-style: italic;">của Hiệu trưởng ${schoolName}</div>
           </td>
         </tr>
       </table>
 
       <div class="doc-title" style="margin-top: 20px;">QUY TẮC SỬ DỤNG TRÍ TUỆ NHÂN TẠO (AI) TRONG NHÀ TRƯỜNG</div>
-      <div class="doc-subtitle">NĂM HỌC 2026 - 2027</div>
+      <div class="doc-subtitle">NĂM HỌC ${schoolYear}</div>
 
+      ${customArticlesHtml ? customArticlesHtml : `
       <!-- CHƯƠNG I -->
       <div class="chapter-title">Chương I. QUY ĐỊNH CHUNG</div>
 
       <div class="article-title">Điều 1. Phạm vi điều chỉnh và đối tượng áp dụng</div>
-      <p>1. Quy tắc này quy định về mục tiêu, nguyên tắc, thời lượng giáo dục, phân công trách nhiệm, ứng xử văn hóa, an toàn dữ liệu cá nhân và trung thực học thuật khi ứng dụng các công cụ Trí tuệ Nhân tạo (AI) trong các hoạt động dạy học, giáo dục, quản lý và vận hành tại Trường THPT Cao Bá Quát.</p>
+      <p>1. Quy tắc này quy định về mục tiêu, nguyên tắc, thời lượng giáo dục, phân công trách nhiệm, ứng xử văn hóa, an toàn dữ liệu cá nhân và trung thực học thuật khi ứng dụng các công cụ Trí tuệ Nhân tạo (AI) trong các hoạt động dạy học, giáo dục, quản lý và vận hành tại ${schoolName}.</p>
       <p>2. Quy tắc này áp dụng đối với cán bộ quản lý, giáo viên, nhân viên, học sinh và sự phối hợp của Cha mẹ học sinh trong toàn trường.</p>
 
       <div class="article-title">Điều 2. Mục tiêu ứng dụng AI trong nhà trường</div>
@@ -164,7 +168,7 @@ export function exportAiRulesToWordDecree30(customData = {}) {
       <div class="chapter-title">Chương II. KHUNG THỜI LƯỢNG VÀ PHÂN CÔNG TRÁCH NHIỆM</div>
 
       <div class="article-title">Điều 4. Khung thời lượng giáo dục AI cốt lõi</div>
-      <p>1. Bảo đảm thực hiện <b>tối thiểu 12 tiết/lớp/năm học</b> đối với nội dung cốt lõi về giáo dục Trí tuệ Nhân tạo (AI) trong chương trình giáo dục của nhà trường theo hướng dẫn của Bộ Giáo dục và Đào tạo.</p>
+      <p>1. Bảo đảm thực hiện <b>tối thiểu ${lessonsCount} tiết/lớp/năm học</b> đối với nội dung cốt lõi về giáo dục Trí tuệ Nhân tạo (AI) trong chương trình giáo dục của nhà trường theo hướng dẫn của Bộ Giáo dục và Đào tạo.</p>
       <p>2. Nhà trường chủ động bổ sung, củng cố những kiến thức, kỹ năng tiền đề cần thiết; chủ động lựa chọn nội dung mở rộng, hình thức tổ chức, thời lượng và công cụ AI phù hợp với điều kiện cơ sở vật chất và năng lực thực tế của học sinh.</p>
 
       <div class="article-title">Điều 5. Phân công trách nhiệm tổ chức thực hiện</div>
@@ -172,7 +176,7 @@ export function exportAiRulesToWordDecree30(customData = {}) {
       <p>2. <b>Tổ / Nhóm chuyên môn:</b> Phân công trách nhiệm rõ ràng cho giáo viên; tổ chức sinh hoạt chuyên môn định kỳ để phối hợp thiết kế, thử nghiệm, quan sát và điều chỉnh các bài giảng, dự án học tập có ứng dụng AI.</p>
       <p>3. <b>Giáo viên Tin học & Đầu mối hỗ trợ kỹ thuật:</b></p>
       <ul>
-        <li>Chủ trì giảng dạy 12 tiết cốt lõi AI theo kế hoạch giáo dục;</li>
+        <li>Chủ trì giảng dạy ${lessonsCount} tiết cốt lõi AI theo kế hoạch giáo dục;</li>
         <li>Rà soát công cụ, tài khoản, hạ tầng kỹ thuật và an toàn dữ liệu trước khi đưa vào ứng dụng;</li>
         <li>Hỗ trợ kỹ thuật, hướng dẫn giáo viên các bộ môn tích hợp AI an toàn, hiệu quả.</li>
       </ul>
@@ -206,8 +210,7 @@ export function exportAiRulesToWordDecree30(customData = {}) {
       <div class="article-title">Điều 10. Đánh giá, theo dõi và Báo cáo</div>
       <p>1. Nhà trường tổ chức theo dõi, đánh giá việc triển khai giáo dục AI dựa trên minh chứng từ quá trình học tập, sản phẩm thực hành và phản hồi thực tế của học sinh, giáo viên.</p>
       <p>2. Định kỳ tổng hợp, báo cáo kết quả triển khai, những khó khăn, vướng mắc và sự cố (nếu có) về Sở Giáo dục và Đào tạo Đắk Lắk theo yêu cầu./.</p>
-
-      <!-- KÝ TÊN VÀ NƠI NHẬN CHUẨN NGHỊ ĐỊNH 30 -->
+      `}  <!-- KÝ TÊN VÀ NƠI NHẬN CHUẨN NGHỊ ĐỊNH 30 -->
       <br/>
       <table class="footer-table" style="width: 100%; border: none; margin-top: 20px;">
         <tr>
