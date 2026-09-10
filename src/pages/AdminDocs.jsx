@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Download, Bot } from 'lucide-react';
+import { exportAiRulesToWordDecree30 } from '../utils/decree30AiRulesWord';
 
 export default function AdminDocs() {
   const [docs, setDocs] = useState([]);
@@ -39,7 +40,14 @@ export default function AdminDocs() {
 
   return (
     <Layout title="Văn bản & Kế hoạch">
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <button 
+          onClick={() => exportAiRulesToWordDecree30()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+        >
+          <Bot size={18} /> 🤖 Tải Quyết Định & Quy Tắc Sử Dụng AI (Word NĐ 30)
+        </button>
+
         <button onClick={() => setShowForm(!showForm)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
           <Plus size={20} /> Thêm Văn bản
         </button>
