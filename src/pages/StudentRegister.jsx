@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
-import { UserPlus, Sparkles, CheckCircle2, ArrowLeft, Lock, User, GraduationCap, Phone } from 'lucide-react';
+import { UserPlus, Sparkles, CheckCircle2, ArrowLeft, Lock, User, GraduationCap, Phone, IdCard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function StudentRegister() {
@@ -10,25 +10,42 @@ export default function StudentRegister() {
     password: '',
     confirm_password: '',
     full_name: '',
-    student_class: 'Lớp 12A01',
+    identity_card: '', // Mandatory 12 digits
+    grade_level: 'Khối 12',
+    student_class: '12A01',
+    father_phone: '',
     role: 'member'
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  const classList = [
-    // Khối 12: 12A01 -> 12A10
-    'Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05', 'Lớp 12A06', 'Lớp 12A07', 'Lớp 12A08', 'Lớp 12A09', 'Lớp 12A10',
-    // Khối 11: 11A01 -> 11A09
-    'Lớp 11A01', 'Lớp 11A02', 'Lớp 11A03', 'Lớp 11A04', 'Lớp 11A05', 'Lớp 11A06', 'Lớp 11A07', 'Lớp 11A08', 'Lớp 11A09',
-    // Khối 10: 10A01 -> 10A15
-    'Lớp 10A01', 'Lớp 10A02', 'Lớp 10A03', 'Lớp 10A04', 'Lớp 10A05', 'Lớp 10A06', 'Lớp 10A07', 'Lớp 10A08', 'Lớp 10A09', 'Lớp 10A10', 'Lớp 10A11', 'Lớp 10A12', 'Lớp 10A13', 'Lớp 10A14', 'Lớp 10A15',
-    // Cán bộ / Giáo viên
-    'Cán Bộ / Giáo Viên / Nhân Viên',
-    // Khác
-    'Cựu Học Sinh', 'Phụ Huynh Học Sinh', 'Khách Mời / Đại Biểu'
-  ];
+  const getClassesByGrade = (grade) => {
+    if (grade === 'Khối 10') {
+      return Array.from({ length: 15 }, (_, i) => `10A${String(i + 1).padStart(2, '0')}`);
+    }
+    if (grade === 'Khối 11') {
+      return Array.from({ length: 9 }, (_, i) => `11A${String(i + 1).padStart(2, '0')}`);
+    }
+    if (grade === 'Khối 12') {
+      return Array.from({ length: 10 }, (_, i) => `12A${String(i + 1).padStart(2, '0')}`);
+    }
+    return [
+      'Cán Bộ / Giáo Viên / Nhân Viên',
+      'Cựu Học Sinh',
+      'Phụ Huynh Học Sinh',
+      'Khách Mời / Đại Biểu'
+    ];
+  };
+
+  const handleGradeChange = (grade) => {
+    const availableClasses = getClassesByGrade(grade);
+    setFormData(prev => ({
+      ...prev,
+      grade_level: grade,
+      student_class: availableClasses[0] || '12A01'
+    }));
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -36,6 +53,17 @@ export default function StudentRegister() {
 
     if (!formData.username.trim() || !formData.password || !formData.full_name.trim()) {
       setErrorMsg("Vui lòng điền đầy đủ thông tin bắt buộc (*).");
+      return;
+    }
+
+    // MANDATORY CCCD VALIDATION
+    const cleanCCCD = (formData.identity_card || '').trim();
+    if (!cleanCCCD) {
+      setErrorMsg("Số CCCD / Mã định danh cá nhân là BẮT BUỘC theo quy định CSDL Dân cư & SMAS.");
+      return;
+    }
+    if (!/^\d{12}$/.test(cleanCCCD)) {
+      setErrorMsg("Số CCCD / Mã định danh cá nhân phải chứa đúng 12 chữ số.");
       return;
     }
 
@@ -70,7 +98,11 @@ export default function StudentRegister() {
         username: cleanUsername,
         password: formData.password, // Stored securely
         full_name: formData.full_name.trim(),
+        identity_card: cleanCCCD,
+        grade_level: formData.grade_level,
         student_class: formData.student_class,
+        father_phone: formData.father_phone.trim(),
+        parent_phone: formData.father_phone.trim(),
         role: formData.role,
         created_at: new Date().toISOString()
       };
@@ -104,8 +136,10 @@ export default function StudentRegister() {
     }
   };
 
+  const currentClassOptions = getClassesByGrade(formData.grade_level);
+
   return (
-    <div style={{ maxWidth: '520px', margin: '40px auto', padding: '0 16px' }}>
+    <div style={{ maxWidth: '560px', margin: '30px auto', padding: '0 16px' }}>
       
       <div style={{
         background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #be123c 100%)',
@@ -119,10 +153,10 @@ export default function StudentRegister() {
           <Sparkles size={14} color="#fde047" /> THPT CAO BÁ QUÁT - 30 NĂM
         </div>
         <h2 style={{ margin: '0 0 6px 0', fontSize: '25px', fontFamily: 'Playfair Display, Georgia, serif', color: '#fde047', textShadow: '0 2px 10px rgba(0,0,0,0.6)', fontWeight: '800' }}>
-          👤 ĐĂNG KÝ TÀI KHOẢN
+          👤 ĐĂNG KÝ TÀI KHOẢN HỌC SINH
         </h2>
         <p style={{ margin: 0, fontSize: '13.5px', color: '#ffffff', textShadow: '0 1px 4px rgba(0,0,0,0.4)', fontWeight: '500' }}>
-          Tạo tài khoản cá nhân để truy cập Cổng Không Gian Học Sinh
+          Cập nhật chuẩn Dữ liệu Dân cư, SMAS & CSDL Ngành
         </p>
       </div>
 
@@ -138,7 +172,7 @@ export default function StudentRegister() {
           
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Tên Đăng Nhập / Số Điện Thoại (*)
+              Tên Đăng Nhập / Số Điện Thoại Cá Nhân (*)
             </label>
             <div style={{ position: 'relative' }}>
               <User size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -155,7 +189,7 @@ export default function StudentRegister() {
 
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Họ và Tên (*)
+              Họ và Tên Học sinh (*)
             </label>
             <div style={{ position: 'relative' }}>
               <GraduationCap size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -170,34 +204,94 @@ export default function StudentRegister() {
             </div>
           </div>
 
+          {/* MANDATORY CCCD FIELD */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Chọn Lớp / Tập Thể Khóa (*)
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#be123c', marginBottom: '6px' }}>
+              Số CCCD / Mã Định Danh Cá Nhân (Đúng 12 chữ số) (*)
             </label>
-            <select 
-              value={formData.student_class} 
-              onChange={e => setFormData(prev => ({ ...prev, student_class: e.target.value }))}
-              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
-            >
-              {classList.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <div style={{ position: 'relative' }}>
+              <IdCard size={18} color="#be123c" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input 
+                type="text" 
+                required 
+                maxLength={12}
+                placeholder="VD: 001205012345 (Bắt buộc theo CSDL Dân cư)"
+                value={formData.identity_card}
+                onChange={e => setFormData(prev => ({ ...prev, identity_card: e.target.value.replace(/\D/g, '') }))}
+                style={{ width: '100%', padding: '11px 11px 11px 40px', borderRadius: '10px', border: '1.5px solid #fca5a5', fontSize: '14px', boxSizing: 'border-box', backgroundColor: '#fff5f5', fontWeight: 'bold' }}
+              />
+            </div>
+            <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block' }}>
+              💡 Yêu cầu theo quy định xác thực dữ liệu dân cư SMAS Bộ GD&ĐT.
+            </span>
           </div>
 
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Chức Vụ Trong Lớp (*)
-            </label>
-            <select 
-              value={formData.role} 
-              onChange={e => setFormData(prev => ({ ...prev, role: e.target.value }))}
-              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
-            >
-              <option value="member">🧑‍🎓 Học sinh bình thường</option>
-              <option value="class_president">👑 Lớp trưởng</option>
-              <option value="vp_academics">📚 Lớp phó Học tập</option>
-              <option value="inspector">🚩 Đội Cờ đỏ</option>
-              <option value="youth_union_secretary">🌟 Bí thư Chi đoàn</option>
-            </select>
+          {/* GRADE LEVEL & DYNAMIC CLASS SELECT */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                Chọn Khối Học (*)
+              </label>
+              <select 
+                value={formData.grade_level} 
+                onChange={e => handleGradeChange(e.target.value)}
+                style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', fontWeight: 'bold' }}
+              >
+                <option value="Khối 10">🏫 Khối 10</option>
+                <option value="Khối 11">🏫 Khối 11</option>
+                <option value="Khối 12">🎓 Khối 12</option>
+                <option value="Khác">👥 Khác / Cán bộ</option>
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                Chọn Lớp Học (*)
+              </label>
+              <select 
+                value={formData.student_class} 
+                onChange={e => setFormData(prev => ({ ...prev, student_class: e.target.value }))}
+                style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', fontWeight: 'bold', color: '#be123c' }}
+              >
+                {currentClassOptions.map(c => <option key={c} value={c}>{c.startsWith('10') || c.startsWith('11') || c.startsWith('12') ? `Lớp ${c}` : c}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* PARENT PHONE & ROLE */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                Số Điện Thoại Phụ Huynh
+              </label>
+              <div style={{ position: 'relative' }}>
+                <Phone size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input 
+                  type="tel" 
+                  placeholder="VD: 0912345678"
+                  value={formData.father_phone}
+                  onChange={e => setFormData(prev => ({ ...prev, father_phone: e.target.value }))}
+                  style={{ width: '100%', padding: '11px 11px 11px 36px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                Chức Vụ Trong Lớp (*)
+              </label>
+              <select 
+                value={formData.role} 
+                onChange={e => setFormData(prev => ({ ...prev, role: e.target.value }))}
+                style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
+              >
+                <option value="member">🧑‍🎓 Học sinh bình thường</option>
+                <option value="class_president">👑 Lớp trưởng</option>
+                <option value="vp_academics">📚 Lớp phó Học tập</option>
+                <option value="inspector">🚩 Đội Cờ đỏ</option>
+                <option value="youth_union_secretary">🌟 Bí thư Chi đoàn</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
@@ -256,3 +350,4 @@ export default function StudentRegister() {
     </div>
   );
 }
+

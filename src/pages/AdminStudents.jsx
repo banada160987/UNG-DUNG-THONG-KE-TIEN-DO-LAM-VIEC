@@ -34,6 +34,25 @@ export default function AdminStudents() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [className, setClassName] = useState('');
+  const [identityCard, setIdentityCard] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [gender, setGender] = useState('Nam');
+  const [address, setAddress] = useState('');
+  const [fatherName, setFatherName] = useState('');
+  const [fatherPhone, setFatherPhone] = useState('');
+
+  const resetFormState = () => {
+    setEditingId(null);
+    setCode('');
+    setName('');
+    setClassName('');
+    setIdentityCard('');
+    setBirthDate('');
+    setGender('Nam');
+    setAddress('');
+    setFatherName('');
+    setFatherPhone('');
+  };
 
   useEffect(() => {
     fetchStudents();
@@ -62,7 +81,6 @@ export default function AdminStudents() {
         if (data && data.length > 0) {
           allStudents = [...allStudents, ...data];
           from += step;
-          // Nếu số lượng trả về nhỏ hơn số lượng yêu cầu, nghĩa là đã hết dữ liệu
           if (data.length < step) {
             fetchMore = false;
           }
@@ -95,7 +113,6 @@ export default function AdminStudents() {
     if (!clsName) return 'Khối 10';
     const clean = String(clsName).trim().toUpperCase();
 
-    // Match class prefix: e.g. "10A12", "10A1" -> Khối 10; "11A1" -> Khối 11; "12A3" -> Khối 12
     const matchPrefix = clean.match(/^(10|11|12)/);
     if (matchPrefix) {
       return `Khối ${matchPrefix[1]}`;
@@ -138,7 +155,6 @@ export default function AdminStudents() {
         const wsname = workbook.SheetNames[0];
         const ws = workbook.Sheets[wsname];
 
-        // 1. Smart Header Row Detection (Handles title headers at the top of Excel files)
         const sheet2D = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
         let headerRowIndex = 0;
         for (let r = 0; r < Math.min(sheet2D.length, 20); r++) {
@@ -167,6 +183,12 @@ export default function AdminStudents() {
           const sCode = getValByKeywords(row, ['mã hs', 'mã học sinh', 'mã', 'stt', 'code', 'studentcode', 'id']);
           const sName = getValByKeywords(row, ['họ và tên', 'họ tên', 'tên học sinh', 'tên', 'studentname', 'name', 'full name']);
           const sClass = getValByKeywords(row, ['lớp', 'tên lớp', 'lớp học', 'class']);
+          const sCCCD = getValByKeywords(row, ['cccd', 'số cccd', 'mã định danh', 'cmnd', 'identity']);
+          const sBirthDate = getValByKeywords(row, ['ngày sinh', 'dob', 'birth_date', 'birthdate']);
+          const sGender = getValByKeywords(row, ['giới tính', 'gioi tinh', 'gender', 'sex']);
+          const sAddress = getValByKeywords(row, ['địa chỉ', 'dia chi', 'address', 'thường trú']);
+          const sFatherName = getValByKeywords(row, ['bố', 'mẹ', 'phụ huynh', 'người giám hộ', 'parent']);
+          const sFatherPhone = getValByKeywords(row, ['sđt bố', 'sđt mẹ', 'sđt phụ huynh', 'sđt người giám hộ', 'phone']);
 
           if (sName && String(sName).trim()) {
             const cleanClass = sClass ? String(sClass).trim().toUpperCase() : '10A1';
@@ -177,6 +199,13 @@ export default function AdminStudents() {
               student_name: String(sName).trim(),
               student_class: cleanClass,
               grade_level: getGradeLevel(cleanClass),
+              identity_card: sCCCD ? String(sCCCD).trim().replace(/\D/g, '') : '',
+              birth_date: sBirthDate ? String(sBirthDate).trim() : '',
+              gender: sGender ? String(sGender).trim() : 'Nam',
+              current_address: sAddress ? String(sAddress).trim() : '',
+              father_name: sFatherName ? String(sFatherName).trim() : '',
+              father_phone: sFatherPhone ? String(sFatherPhone).trim() : '',
+              parent_phone: sFatherPhone ? String(sFatherPhone).trim() : '',
               is_active: true
             });
           }
@@ -188,7 +217,6 @@ export default function AdminStudents() {
           return;
         }
 
-        // Helper generator UUID ngẫu nhiên đảm bảo 100% bản ghi không bị null ID khi nạp CSDL
         const generateUUID = () => {
           if (typeof crypto !== 'undefined' && crypto.randomUUID) {
             return crypto.randomUUID();
@@ -200,7 +228,6 @@ export default function AdminStudents() {
           });
         };
 
-        // Check duplicates vs existing roster
         const existingCodesMap = new Map(students.map(s => [s.student_code, s.id]));
         let newCount = 0;
         let updateCount = 0;
@@ -208,15 +235,14 @@ export default function AdminStudents() {
         formattedList.forEach(item => {
           const existingId = existingCodesMap.get(item.student_code);
           if (existingId) {
-            item.id = existingId; // Set ID for upsert by primary key
+            item.id = existingId;
             updateCount++;
           } else {
-            item.id = generateUUID(); // Gán UUID mới cho học sinh mới để 100% bản ghi có id hợp lệ (tránh lỗi null value in column "id")
+            item.id = generateUUID();
             newCount++;
           }
         });
 
-        // Merge with current state & save to LocalStorage immediately
         setStudents(prev => {
           const map = new Map();
           prev.forEach(item => map.set(item.student_code, item));
@@ -226,9 +252,7 @@ export default function AdminStudents() {
             if (existing) {
               map.set(newItem.student_code, {
                 ...existing,
-                student_name: newItem.student_name,
-                student_class: newItem.student_class,
-                grade_level: newItem.grade_level,
+                ...newItem,
                 is_active: true
               });
             } else {
@@ -241,7 +265,6 @@ export default function AdminStudents() {
           return newList;
         });
 
-      // Batch Upsert to Supabase in chunks of 100 rows to avoid HTTP payload limits
         let dbSuccessCount = 0;
         let dbErrorMsg = null;
         const BATCH_SIZE = 100;
@@ -258,7 +281,6 @@ export default function AdminStudents() {
             dbErrorMsg = batchErr.message;
           } else {
             dbSuccessCount += chunk.length;
-            // Tự động đồng bộ Lớp mới và Họ tên mới sang Vé xe (cbq_parking_registrations) & Đăng ký xe bus (cbq_bus_registrations)
             chunk.forEach(item => {
               dbClient.from('cbq_parking_registrations').update({ student_class: item.student_class, student_name: item.student_name }).eq('student_code', item.student_code).then(() => {});
               dbClient.from('cbq_bus_registrations').update({ student_class: item.student_class, student_name: item.student_name }).eq('student_code', item.student_code).then(() => {});
@@ -266,7 +288,6 @@ export default function AdminStudents() {
           }
         }
 
-        // Re-fetch from Supabase to synchronize full list immediately
         await fetchStudents();
 
         let reportMsg = `🎉 IMPORT DỮ LIỆU HỌC SINH THÀNH CÔNG!\n\n`;
@@ -301,11 +322,24 @@ export default function AdminStudents() {
     }
 
     const cleanClass = className.trim().toUpperCase();
+    const cleanCCCD = identityCard.trim().replace(/\D/g, '');
+    if (cleanCCCD && cleanCCCD.length !== 12) {
+      alert("Số CCCD nếu nhập phải chứa đúng 12 chữ số theo quy định CSDL Dân cư & SMAS.");
+      return;
+    }
+
     const payload = {
       student_code: code.trim().toUpperCase() || `HS-${Date.now()}`,
       student_name: name.trim(),
       student_class: cleanClass,
       grade_level: getGradeLevel(cleanClass),
+      identity_card: cleanCCCD,
+      birth_date: birthDate.trim(),
+      gender: gender,
+      current_address: address.trim(),
+      father_name: fatherName.trim(),
+      father_phone: fatherPhone.trim(),
+      parent_phone: fatherPhone.trim(),
       is_active: true
     };
 
@@ -316,7 +350,6 @@ export default function AdminStudents() {
         const targetStudent = students.find(s => s.id === editingId);
         res = await dbClient.from('cbq_students').update(payload).eq('id', editingId);
         if (targetStudent && targetStudent.student_code) {
-          // Tự động đồng bộ Lớp mới & Tên mới sang Thẻ xe & Đăng ký Xe bus
           await Promise.all([
             dbClient.from('cbq_parking_registrations').update({ student_class: cleanClass, student_name: name.trim() }).eq('student_code', targetStudent.student_code),
             dbClient.from('cbq_bus_registrations').update({ student_class: cleanClass, student_name: name.trim() }).eq('student_code', targetStudent.student_code)
@@ -333,7 +366,7 @@ export default function AdminStudents() {
       }
 
       setShowForm(false);
-      setEditingId(null);
+      resetFormState();
       fetchStudents();
     } catch (err) {
       alert("Lỗi khi lưu: " + err.message);
@@ -354,46 +387,65 @@ export default function AdminStudents() {
   const handleDownloadTemplate = () => {
     const templateData = [
       {
-        "Mã Học Sinh": "HS10A1-001",
+        "Mã Học Sinh": "HS10A01-001",
         "Họ và Tên": "Nguyễn Văn An",
-        "Lớp": "10A1"
+        "Số CCCD / Mã Định Danh (12 số)": "001205012345",
+        "Lớp": "10A01",
+        "Ngày Sinh": "2008-05-15",
+        "Giới Tính": "Nam",
+        "Địa Chỉ Liên Lạc": "xã Phú Thị, huyện Gia Lâm, Hà Nội",
+        "Họ Tên Phụ Huynh": "Nguyễn Văn Bình",
+        "SĐT Phụ Huynh": "0912345678"
       },
       {
-        "Mã Học Sinh": "HS11A2-015",
+        "Mã Học Sinh": "HS11A02-015",
         "Họ và Tên": "Trần Thị Bích",
-        "Lớp": "11A2"
-      },
-      {
-        "Mã Học Sinh": "HS12A5-020",
-        "Họ và Tên": "Phạm Minh Cường",
-        "Lớp": "12A5"
+        "Số CCCD / Mã Định Danh (12 số)": "001206098765",
+        "Lớp": "11A02",
+        "Ngày Sinh": "2007-08-20",
+        "Giới Tính": "Nữ",
+        "Địa Chỉ Liên Lạc": "thị trấn Sài Đồng, huyện Gia Lâm, Hà Nội",
+        "Họ Tên Phụ Huynh": "Trần Văn Cường",
+        "SĐT Phụ Huynh": "0987654321"
       }
     ];
 
     const worksheet = XLSX.utils.json_to_sheet(templateData);
     worksheet['!cols'] = [
       { wch: 15 },
-      { wch: 25 },
-      { wch: 12 }
+      { wch: 22 },
+      { wch: 30 },
+      { wch: 10 },
+      { wch: 14 },
+      { wch: 10 },
+      { wch: 35 },
+      { wch: 22 },
+      { wch: 15 }
     ];
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Mau_Hoc_Sinh");
-    XLSX.writeFile(workbook, "Mau_Import_Danh_Sach_Hoc_Sinh_THPT_CBQ.xlsx");
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Mau_Hoc_Sinh_SMAS");
+    XLSX.writeFile(workbook, "Mau_Import_Danh_Sach_Hoc_Sinh_THPT_CBQ_SMAS.xlsx");
   };
 
   const handleExportExcel = () => {
     const dataToExport = filteredStudents.map(s => ({
-      "Mã Học Sinh": s.student_code,
-      "Họ và Tên": s.student_name,
-      "Lớp": s.student_class,
-      "Khối": s.grade_level
+      "Mã Học Sinh": s.student_code || '',
+      "Họ và Tên": s.student_name || s.full_name || '',
+      "Số CCCD": s.identity_card || '',
+      "Lớp": s.student_class || '',
+      "Khối": s.grade_level || getGradeLevel(s.student_class),
+      "Ngày Sinh": s.birth_date || '',
+      "Giới Tính": s.gender || '',
+      "Địa Chỉ": s.current_address || s.permanent_address || s.address || '',
+      "Họ Tên Phụ Huynh": s.father_name || s.mother_name || s.parent_name || '',
+      "SĐT Phụ Huynh": s.father_phone || s.mother_phone || s.parent_phone || ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachHocSinh");
-    XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachHocSinh_SMAS");
+    XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_SMAS_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Bulk Class Transfer State
@@ -401,12 +453,10 @@ export default function AdminStudents() {
   const [sourceClass, setSourceClass] = useState('');
   const [targetClass, setTargetClass] = useState('');
 
-  // Get list of unique current classes
   const uniqueClassesList = Array.from(new Set(students.map(s => s.student_class))).filter(Boolean).sort();
 
-  // Individual Class Transfer Handler
   const handleIndividualTransfer = async (student) => {
-    const newClassInput = window.prompt(`Chuyển lớp cho học sinh: ${student.student_name} (${student.student_class})\n\nNhập Tên Lớp Mới (VD: 11A1, 12A5):`, student.student_class);
+    const newClassInput = window.prompt(`Chuyển lớp cho học sinh: ${student.student_name || student.full_name} (${student.student_class})\n\nNhập Tên Lớp Mới (VD: 11A01, 12A05):`, student.student_class);
     if (!newClassInput || !newClassInput.trim()) return;
 
     const cleanNewClass = newClassInput.trim().toUpperCase();
@@ -419,14 +469,12 @@ export default function AdminStudents() {
         grade_level: newGradeLevel
       };
 
-      // Update Local State & LocalStorage
       setStudents(prev => {
         const newList = prev.map(s => s.student_code === student.student_code ? updatedItem : s);
         localStorage.setItem('cbq_students_data', JSON.stringify(newList));
         return newList;
       });
 
-      // Update Supabase & Sync to Parking & Bus Registrations
       const dbClient = supabaseAdmin || supabase;
       await Promise.all([
         dbClient.from('cbq_students').update({ student_class: cleanNewClass, grade_level: newGradeLevel }).eq('student_code', student.student_code),
@@ -434,13 +482,12 @@ export default function AdminStudents() {
         dbClient.from('cbq_bus_registrations').update({ student_class: cleanNewClass }).eq('student_code', student.student_code)
       ]);
 
-      alert(`🎉 Đã chuyển học sinh ${student.student_name} sang Lớp ${cleanNewClass} (${newGradeLevel}) và tự động cập nhật Thẻ giữ xe & Xe bus!`);
+      alert(`🎉 Đã chuyển học sinh ${student.student_name || student.full_name} sang Lớp ${cleanNewClass} (${newGradeLevel}) và tự động cập nhật Thẻ giữ xe & Xe bus!`);
     } catch (err) {
       alert("Lỗi khi chuyển lớp: " + err.message);
     }
   };
 
-  // Bulk Class Transfer Handler
   const handleBulkTransferSubmit = async (e) => {
     e.preventDefault();
     if (!sourceClass || !targetClass.trim()) {
@@ -462,7 +509,6 @@ export default function AdminStudents() {
     }
 
     try {
-      // 1. Update Local State & LocalStorage
       setStudents(prev => {
         const newList = prev.map(s => {
           if (s.student_class === sourceClass) {
@@ -478,7 +524,6 @@ export default function AdminStudents() {
         return newList;
       });
 
-      // 2. Update Supabase & Sync to Parking & Bus Registrations
       const dbClient = supabaseAdmin || supabase;
       const codesToMove = studentsToMove.map(s => s.student_code);
       await Promise.all([
@@ -499,14 +544,15 @@ export default function AdminStudents() {
   const filteredStudents = students.filter(s => {
     const computedGrade = getGradeLevel(s.student_class);
     const matchSearch = !searchTerm ||
-      s.student_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.student_name || s.full_name)?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       s.student_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.student_class?.toLowerCase().includes(searchTerm.toLowerCase());
+      s.student_class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.identity_card?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.father_phone || s.parent_phone)?.includes(searchTerm);
     const matchGrade = selectedGrade === 'ALL' || computedGrade === selectedGrade;
     return matchSearch && matchGrade;
   });
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -517,7 +563,7 @@ export default function AdminStudents() {
     const testPayload = {
       student_code: testCode,
       student_name: "Học Sinh Test CSDL",
-      student_class: "10A1",
+      student_class: "10A01",
       grade_level: "Khối 10",
       is_active: true
     };
@@ -525,21 +571,18 @@ export default function AdminStudents() {
     try {
       const dbClient = supabaseAdmin || supabase;
 
-      // Test 1: SELECT
       const { data: selData, error: selErr } = await dbClient.from('cbq_students').select('*').limit(1);
       if (selErr) {
         alert(`❌ LỖI TRUY VẤN CSDL (SELECT):\n${selErr.code}: ${selErr.message}\n\n👉 Nguyên nhân: Bảng 'cbq_students' chưa có hoặc sai tên cột trên Supabase!\nHãy chạy file SQL tạo bảng trong Supabase SQL Editor.`);
         return;
       }
 
-      // Test 2: INSERT
       const { data: insData, error: insErr } = await dbClient.from('cbq_students').insert([testPayload]).select();
       if (insErr) {
         alert(`❌ LỖI GHI CSDL (INSERT):\n${insErr.code}: ${insErr.message}\n\n👉 Nguyên nhân: RLS của Supabase đang khóa quyền ghi!\nHãy mở Supabase SQL Editor và chạy câu lệnh này:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`);
         return;
       }
 
-      // Test 3: CLEANUP
       await dbClient.from('cbq_students').delete().eq('student_code', testCode);
 
       alert("🎉 KẾT NỐI VÀ GHI DỮ LIỆU THÀNH CÔNG 100% LÊN CSDL SUPABASE!");
@@ -553,10 +596,10 @@ export default function AdminStudents() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={26} color="#be123c" /> Quản Lý Danh Sách Học Sinh Nhà Trường
+            <Users size={26} color="#be123c" /> Quản Lý Danh Sách Học Sinh Nhà Trường (Chuẩn SMAS)
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Import danh sách học sinh từ Excel giúp tự động gợi ý chính xác khi học sinh đăng ký gửi xe
+            Quản lý CCCD, Lớp, Khối, Nhân thân và Đồng bộ tự động sang dịch vụ Vé xe & Xe bus
           </p>
         </div>
 
@@ -575,14 +618,14 @@ export default function AdminStudents() {
           </button>
 
           <button onClick={handleDownloadTemplate} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Download size={18} /> Tải File Mẫu Import
+            <Download size={18} /> Tải File Mẫu Import (SMAS)
           </button>
 
           <button onClick={handleExportExcel} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7' }}>
-            <Download size={18} /> Xuất Excel
+            <Download size={18} /> Xuất Excel (SMAS)
           </button>
 
-          <button onClick={() => { setEditingId(null); setCode(''); setName(''); setClassName(''); setShowForm(!showForm); }} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c' }}>
+          <button onClick={() => { resetFormState(); setShowForm(!showForm); }} className="btn-primary" style={{ padding: '10px 18px', backgroundColor: '#be123c' }}>
             <Plus size={18} /> {showForm ? 'Đóng Form' : 'Thêm Học Sinh'}
           </button>
         </div>
@@ -617,7 +660,7 @@ export default function AdminStudents() {
                 value={targetClass}
                 onChange={e => setTargetClass(e.target.value)}
                 style={{ ...styles.input, fontWeight: 'bold' }}
-                placeholder="VD: 11A1, 12A5..."
+                placeholder="VD: 11A01, 12A05..."
               />
             </div>
           </div>
@@ -631,30 +674,71 @@ export default function AdminStudents() {
         </form>
       )}
 
-      {/* FORM SECTION */}
+      {/* FORM SECTION (EXPLICIT SMAS / CSDL NGÀNH FIELDS) */}
       {showForm && (
         <form onSubmit={handleSubmitForm} className="glass" style={{ padding: '1.5rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem' }}>
           <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-            {editingId ? '📝 Sửa thông tin Học sinh' : '➕ Thêm Học sinh Mới'}
+            {editingId ? '📝 Sửa thông tin Học sinh (Chuẩn SMAS)' : '➕ Thêm Học sinh Mới (Chuẩn SMAS)'}
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
               <label style={styles.label}>Mã Học Sinh (*)</label>
-              <input type="text" value={code} onChange={e => setCode(e.target.value)} style={styles.input} placeholder="VD: HS11A1-001" />
+              <input type="text" value={code} onChange={e => setCode(e.target.value)} style={styles.input} placeholder="VD: HS10A01-001" />
             </div>
             <div>
               <label style={styles.label}>Họ và Tên Học sinh (*)</label>
               <input type="text" required value={name} onChange={e => setName(e.target.value)} style={styles.input} placeholder="VD: Nguyễn Văn An" />
             </div>
             <div>
-              <label style={styles.label}>Lớp học (*)</label>
-              <input type="text" required value={className} onChange={e => setClassName(e.target.value)} style={styles.input} placeholder="VD: 11A1" />
+              <label style={{ ...styles.label, color: '#be123c' }}>Số CCCD / Mã Định Danh (12 số)</label>
+              <input 
+                type="text" 
+                maxLength={12}
+                value={identityCard} 
+                onChange={e => setIdentityCard(e.target.value.replace(/\D/g, ''))} 
+                style={{ ...styles.input, borderColor: '#fca5a5', backgroundColor: '#fff5f5', fontWeight: 'bold' }} 
+                placeholder="VD: 001205012345" 
+              />
             </div>
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 2fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={styles.label}>Lớp học (*)</label>
+              <input type="text" required value={className} onChange={e => setClassName(e.target.value)} style={styles.input} placeholder="VD: 10A01" />
+            </div>
+            <div>
+              <label style={styles.label}>Ngày Sinh</label>
+              <input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} style={styles.input} />
+            </div>
+            <div>
+              <label style={styles.label}>Giới Tính</label>
+              <select value={gender} onChange={e => setGender(e.target.value)} style={styles.input}>
+                <option value="Nam">Nam</option>
+                <option value="Nữ">Nữ</option>
+              </select>
+            </div>
+            <div>
+              <label style={styles.label}>Địa Chỉ Liên Lạc</label>
+              <input type="text" value={address} onChange={e => setAddress(e.target.value)} style={styles.input} placeholder="Xã/Phường, Quận/Huyện, Tỉnh/TP" />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div>
+              <label style={styles.label}>Họ Tên Phụ Huynh / Người Giám Hộ</label>
+              <input type="text" value={fatherName} onChange={e => setFatherName(e.target.value)} style={styles.input} placeholder="VD: Nguyễn Văn Bình" />
+            </div>
+            <div>
+              <label style={styles.label}>Số Điện Thoại Phụ Huynh</label>
+              <input type="tel" value={fatherPhone} onChange={e => setFatherPhone(e.target.value)} style={styles.input} placeholder="VD: 0912345678" />
+            </div>
+          </div>
+
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '15px' }}>
-            <button type="button" onClick={() => setShowForm(false)} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
+            <button type="button" onClick={() => { setShowForm(false); resetFormState(); }} style={{ padding: '8px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold' }}>Hủy</button>
             <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#be123c' }}>
-              <Save size={16} /> Lưu Thông Tin
+              <Save size={16} /> Lưu Thông Tin Học Sinh
             </button>
           </div>
         </form>
@@ -666,7 +750,7 @@ export default function AdminStudents() {
           <Search size={18} color="#64748b" />
           <input
             type="text"
-            placeholder="Tìm theo Mã học sinh, Họ và Tên, Lớp..."
+            placeholder="Tìm theo Mã HS, CCCD, Họ tên, Lớp, SĐT Phụ huynh..."
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
             style={{ border: 'none', outline: 'none', background: 'transparent', width: '100%', fontSize: '13.5px' }}
@@ -689,40 +773,76 @@ export default function AdminStudents() {
 
         {loading ? <p>Đang nạp danh sách học sinh...</p> : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
                   <th style={{ padding: '10px' }}>STT</th>
                   <th style={{ padding: '10px' }}>Mã Học Sinh</th>
+                  <th style={{ padding: '10px' }}>Số CCCD (12 số)</th>
                   <th style={{ padding: '10px' }}>Họ và Tên</th>
-                  <th style={{ padding: '10px' }}>Lớp</th>
-                  <th style={{ padding: '10px' }}>Khối</th>
+                  <th style={{ padding: '10px' }}>Lớp / Khối</th>
+                  <th style={{ padding: '10px' }}>Ngày Sinh / Giới Tính</th>
+                  <th style={{ padding: '10px' }}>Phụ Huynh & SĐT</th>
                   <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
-                {currentItems.map((s, idx) => (
-                  <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                    <td style={{ padding: '10px', fontWeight: 'bold' }}>#{indexOfFirstItem + idx + 1}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{s.student_code}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.student_name}</td>
-                    <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>{s.student_class}</td>
-                    <td style={{ padding: '10px', color: '#475569' }}>{s.grade_level}</td>
-                    <td style={{ padding: '10px', textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        <button type="button" onClick={() => handleIndividualTransfer(s)} title="Chuyển lớp học sinh" style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #7c3aed', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <RefreshCw size={12} /> Chuyển Lớp
-                        </button>
-                        <button type="button" onClick={() => { setEditingId(s.id); setCode(s.student_code); setName(s.student_name); setClassName(s.student_class); setShowForm(true); }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
-                          <Edit3 size={14} />
-                        </button>
-                        <button type="button" onClick={() => handleDelete(s.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {currentItems.map((s, idx) => {
+                  const sName = s.student_name || s.full_name || '';
+                  const sCccd = s.identity_card || 'Chưa cập nhật';
+                  const sClass = s.student_class || '';
+                  const sGrade = s.grade_level || getGradeLevel(sClass);
+                  const sBirth = s.birth_date || '---';
+                  const sGender = s.gender || 'Nam';
+                  const pName = s.father_name || s.mother_name || s.parent_name || '';
+                  const pPhone = s.father_phone || s.mother_phone || s.parent_phone || '';
+
+                  return (
+                    <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px', fontWeight: 'bold' }}>#{indexOfFirstItem + idx + 1}</td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{s.student_code}</td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: s.identity_card ? '#059669' : '#94a3b8' }}>
+                        {sCccd}
+                      </td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{sName}</td>
+                      <td style={{ padding: '10px', fontWeight: 'bold', color: '#be123c' }}>
+                        {sClass} <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>({sGrade})</span>
+                      </td>
+                      <td style={{ padding: '10px', color: '#475569' }}>
+                        {sBirth} | {sGender}
+                      </td>
+                      <td style={{ padding: '10px', color: '#334155' }}>
+                        {pName ? <div><strong>{pName}</strong></div> : null}
+                        {pPhone ? <div style={{ fontSize: '12px', color: '#0284c7' }}>📞 {pPhone}</div> : <span style={{ color: '#cbd5e1' }}>---</span>}
+                      </td>
+                      <td style={{ padding: '10px', textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                          <button type="button" onClick={() => handleIndividualTransfer(s)} title="Chuyển lớp học sinh" style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #7c3aed', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <RefreshCw size={12} /> Chuyển Lớp
+                          </button>
+                          <button type="button" onClick={() => {
+                            setEditingId(s.id);
+                            setCode(s.student_code || '');
+                            setName(sName);
+                            setClassName(sClass);
+                            setIdentityCard(s.identity_card || '');
+                            setBirthDate(s.birth_date || '');
+                            setGender(s.gender || 'Nam');
+                            setAddress(s.current_address || s.permanent_address || s.address || '');
+                            setFatherName(pName);
+                            setFatherPhone(pPhone);
+                            setShowForm(true);
+                          }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
+                            <Edit3 size={14} />
+                          </button>
+                          <button type="button" onClick={() => handleDelete(s.id)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 
