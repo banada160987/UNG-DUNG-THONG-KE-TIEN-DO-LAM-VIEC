@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function AdminRegistrations() {
@@ -17,7 +17,17 @@ export default function AdminRegistrations() {
   const [description, setDescription] = useState('');
   const [targetGrades, setTargetGrades] = useState([]); // ['Khối 10', 'Khối 11', 'Khối 12']
   const [isActive, setIsActive] = useState(true);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [closedNotice, setClosedNotice] = useState('');
   const [targetDb, setTargetDb] = useState('sb2'); // 'sb1' | 'sb2'
+
+  // Teacher Reminder Modal States
+  const [showTeacherReminderModal, setShowTeacherReminderModal] = useState(false);
+  const [reminderCampaign, setReminderCampaign] = useState(null);
+  const [reminderMessage, setReminderMessage] = useState('');
+  const [loadingReminderData, setLoadingReminderData] = useState(false);
+  const [copiedReminder, setCopiedReminder] = useState(false);
 
   // Results & Filtering & Sorting & Report States
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
@@ -152,7 +162,18 @@ export default function AdminRegistrations() {
     setDescription(cam.description || '');
     setTargetGrades(cam.target_grades || []);
     setIsActive(cam.is_active);
-    setFormSchema(cam.form_schema || []);
+    setStartDate(cam.start_date ? new Date(new Date(cam.start_date).getTime() - (new Date(cam.start_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
+    setEndDate(cam.end_date ? new Date(new Date(cam.end_date).getTime() - (new Date(cam.end_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
+    
+    // Extract closed notice if stored in form_schema metadata
+    let notice = cam.closed_notice || '';
+    if (!notice && cam.form_schema && !Array.isArray(cam.form_schema)) {
+      notice = cam.form_schema.closed_notice || '';
+    }
+    setClosedNotice(notice);
+
+    const schemaFields = Array.isArray(cam.form_schema) ? cam.form_schema : (cam.form_schema?.fields || []);
+    setFormSchema(schemaFields);
     setTargetDb(cam._source || 'sb2');
     setShowForm(true);
     setActiveTab('campaigns');
@@ -171,17 +192,119 @@ export default function AdminRegistrations() {
     }
   };
 
+  const handleQuickToggleLock = async (cam) => {
+    try {
+      const nextActive = !cam.is_active;
+      const client = cam._source === 'sb1' ? supabase : adminClient;
+      const { error } = await client
+        .from('cbq_registration_campaigns')
+        .update({ is_active: nextActive })
+        .eq('id', cam.id);
+      if (error) throw error;
+      setCampaigns(campaigns.map(c => c.id === cam.id ? { ...c, is_active: nextActive } : c));
+    } catch (err) {
+      alert("Lỗi khi đổi trạng thái khóa: " + err.message);
+    }
+  };
+
+  const handleBulkToggleLock = async (targetActive) => {
+    const actionName = targetActive ? "MỞ ĐĂNG KÝ TẤT CẢ" : "KHÓA TẤT CẢ";
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionName} các cuộc đăng ký?`)) return;
+    try {
+      for (const cam of campaigns) {
+        const client = cam._source === 'sb1' ? supabase : adminClient;
+        await client.from('cbq_registration_campaigns').update({ is_active: targetActive }).eq('id', cam.id);
+      }
+      setCampaigns(campaigns.map(c => ({ ...c, is_active: targetActive })));
+      alert(`Đã ${actionName} thành công!`);
+    } catch (err) {
+      alert("Lỗi khi thao tác hàng loạt: " + err.message);
+    }
+  };
+
+  const openTeacherReminderModal = async (cam) => {
+    setReminderCampaign(cam);
+    setShowTeacherReminderModal(true);
+    setLoadingReminderData(true);
+    setCopiedReminder(false);
+    
+    try {
+      const client = cam._source === 'sb1' ? supabase : adminClient;
+      const { data: regData } = await client
+        .from('cbq_student_registrations')
+        .select('student_class, student_code, student_name')
+        .eq('campaign_id', cam.id);
+
+      const regList = regData || [];
+      
+      const classMap = {};
+      regList.forEach(r => {
+        const cls = (r.student_class || 'Khác').trim().toUpperCase();
+        classMap[cls] = (classMap[cls] || 0) + 1;
+      });
+
+      const targetGradesStr = cam.target_grades && cam.target_grades.length > 0
+        ? cam.target_grades.join(', ')
+        : 'Tất cả các khối';
+
+      const endDateStr = cam.end_date 
+        ? new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) 
+        : 'Theo thông báo của nhà trường';
+
+      const sortedClasses = Object.keys(classMap).sort();
+      let classStatsText = '';
+      if (sortedClasses.length > 0) {
+        classStatsText = sortedClasses.map(cls => `- Lớp ${cls}: ${classMap[cls]} học sinh đã hoàn thành`).join('\n');
+      } else {
+        classStatsText = '- Chưa có học sinh nào đăng ký.';
+      }
+
+      const msg = `KÍNH GỬI QUÝ THẦY/CÔ GIÁO VIÊN CHỦ NHIỆM
+
+📌 THÔNG BÁO ĐÔN ĐỐC ĐĂNG KÝ: ${cam.title.trim().toUpperCase()}
+🎯 Đối tượng áp dụng: ${targetGradesStr}
+⏰ Hạn chót đăng ký: ${endDateStr}
+
+Thưa Thầy/Cô, hệ thống ghi nhận tiến độ đăng ký của các lớp tính đến thời điểm hiện tại:
+📊 TỔNG SỐ HỌC SINH ĐÃ ĐĂNG KÝ: ${regList.length} học sinh
+
+📋 CHI TIẾT TIẾN ĐỘ THEO LỚP:
+${classStatsText}
+
+Kính đề nghị Thầy/Cô GVCN thông báo và đôn đốc các em học sinh chưa đăng ký khẩn trương hoàn thành trước hạn chót.
+
+🔗 Đường link đăng ký trực tuyến: ${window.location.origin}/registrations
+
+Trân trọng cảm ơn Thầy/Cô!`;
+
+      setReminderMessage(msg);
+    } catch (err) {
+      console.error(err);
+      setReminderMessage("Lỗi khi tạo tin nhắn đôn đốc.");
+    } finally {
+      setLoadingReminderData(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title) return alert("Vui lòng nhập tên đợt đăng ký");
 
     try {
+      // Store form schema along with closed_notice metadata cleanly
+      const schemaWithNotice = {
+        fields: formSchema,
+        closed_notice: closedNotice.trim()
+      };
+
       const payload = {
         title,
         description,
         target_grades: targetGrades.length > 0 ? targetGrades : null, // null means all
         is_active: isActive,
-        form_schema: formSchema
+        start_date: startDate ? new Date(startDate).toISOString() : null,
+        end_date: endDate ? new Date(endDate).toISOString() : null,
+        form_schema: schemaWithNotice
       };
 
       if (editingId) {
@@ -194,7 +317,7 @@ export default function AdminRegistrations() {
         if (error) throw error;
       }
 
-      alert("Lưu thành công!");
+      alert("Lưu đợt đăng ký thành công!");
       setShowForm(false);
       setEditingId(null);
       fetchCampaigns();
@@ -489,17 +612,58 @@ export default function AdminRegistrations() {
                     </div>
 
                     <div>
-                      <label style={styles.label}>Trạng thái</label>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', marginTop: '5px' }}>
+                      <label style={styles.label}>Trạng thái Khóa / Mở</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
                         <input 
                           type="checkbox" 
                           checked={isActive}
                           onChange={(e) => setIsActive(e.target.checked)}
+                          style={{ width: '18px', height: '18px' }}
                         />
-                        <span style={{ fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#16a34a' : '#94a3b8' }}>
-                          {isActive ? '🟢 Đang mở đăng ký' : '🔴 Đã đóng'}
+                        <span style={{ fontWeight: isActive ? 'bold' : 'normal', color: isActive ? '#16a34a' : '#ef4444', fontSize: '14px' }}>
+                          {isActive ? '🟢 Mở đăng ký (Hợp lệ)' : '🔴 Đã khóa (Tạm dừng đăng ký)'}
                         </span>
                       </label>
+                    </div>
+
+                    {/* HẠN CHÓT & HẸN GIỜ ĐÓNG MỞ TỰ ĐỘNG */}
+                    <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                      <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 'bold' }}>
+                        <Clock size={16} color="#0284c7" /> Lịch Đóng / Mở Đăng Ký Tự Động (Tùy chọn)
+                      </div>
+                      
+                      <div>
+                        <label style={styles.label}>Thời gian mở tự động (Start Date)</label>
+                        <input 
+                          type="datetime-local" 
+                          value={startDate} 
+                          onChange={e => setStartDate(e.target.value)} 
+                          style={styles.input} 
+                        />
+                        <small style={{ color: '#64748b', fontSize: '11px' }}>Để trống nếu muốn mở ngay lập tức</small>
+                      </div>
+
+                      <div>
+                        <label style={styles.label}>Hạn chót tự động đóng (End Date)</label>
+                        <input 
+                          type="datetime-local" 
+                          value={endDate} 
+                          onChange={e => setEndDate(e.target.value)} 
+                          style={styles.input} 
+                        />
+                        <small style={{ color: '#64748b', fontSize: '11px' }}>Tự động chuyển sang trạng thái ⏰ Đã hết hạn</small>
+                      </div>
+
+                      <div style={{ gridColumn: '1 / -1' }}>
+                        <label style={styles.label}>Thông báo hiển thị khi đợt bị Khóa / Hết hạn (Notice Message)</label>
+                        <textarea 
+                          rows={2} 
+                          value={closedNotice} 
+                          onChange={e => setClosedNotice(e.target.value)} 
+                          style={styles.input} 
+                          placeholder="VD: Đợt đăng ký này đã đóng lúc 17:00 ngày 15/10. Vui lòng liên hệ Thầy/Cô GVCN để biết thêm chi tiết."
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -525,24 +689,22 @@ export default function AdminRegistrations() {
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                               <div>
                                 <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Loại dữ liệu</label>
-                                <select value={field.type} onChange={(e) => handleUpdateField(field.id, 'type', e.target.value)} style={{ ...styles.input, padding: '6px', fontSize: '13px' }}>
+                                <select value={field.type} onChange={(e) => handleUpdateField(field.id, 'type', e.target.value)} style={{ ...styles.input, padding: '4px 8px', fontSize: '12px' }}>
                                   <option value="text">Văn bản ngắn (Text)</option>
-                                  <option value="textarea">Văn bản dài (Textarea)</option>
-                                  <option value="select">Hộp thoại chọn 1 (Dropdown)</option>
-                                  <option value="radio">Trắc nghiệm chọn 1 (Radio)</option>
-                                  <option value="checkbox">Trắc nghiệm chọn nhiều (Checkbox)</option>
+                                  <option value="select">Chọn 1 từ danh sách (Dropdown)</option>
+                                  <option value="radio">Chọn 1 phương án (Radio)</option>
+                                  <option value="checkbox">Chọn nhiều phương án (Checkbox)</option>
                                 </select>
                               </div>
                               <div>
-                                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Bắt buộc trả lời?</label>
-                                <div style={{ marginTop: '5px' }}>
-                                  <input type="checkbox" checked={field.required} onChange={(e) => handleUpdateField(field.id, 'required', e.target.checked)} />
-                                </div>
+                                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Tên câu hỏi / Nhãn câu hỏi (*)</label>
+                                <input type="text" value={field.label} onChange={(e) => handleUpdateField(field.id, 'label', e.target.value)} style={{ ...styles.input, padding: '4px 8px', fontSize: '12px' }} required />
                               </div>
-                              <div style={{ gridColumn: '1 / -1' }}>
-                                <label style={{ fontSize: '12px', fontWeight: 'bold' }}>Tiêu đề câu hỏi / Nội dung (*)</label>
-                                <input type="text" value={field.label} onChange={(e) => handleUpdateField(field.id, 'label', e.target.value)} style={{ ...styles.input, padding: '6px', fontSize: '13px' }} placeholder="VD: Đăng ký size áo" required />
-                              </div>
+                            </div>
+
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <input type="checkbox" id={`req_${field.id}`} checked={field.required} onChange={(e) => handleUpdateField(field.id, 'required', e.target.checked)} />
+                              <label htmlFor={`req_${field.id}`} style={{ fontSize: '12px', cursor: 'pointer', color: '#475569' }}>Bắt buộc nhập câu hỏi này</label>
                             </div>
 
                             {/* Options manager for select, radio, checkbox */}
@@ -586,9 +748,29 @@ export default function AdminRegistrations() {
               )}
 
               <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-                <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-                  📋 Danh sách các Đợt đăng ký ({campaigns.length})
-                </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                  <h3 style={{ margin: 0, color: '#be123c' }}>
+                    📋 Danh sách các Đợt đăng ký ({campaigns.length})
+                  </h3>
+
+                  {/* NÚT THAO TÁC HÀNG LOẠT */}
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      onClick={() => handleBulkToggleLock(false)}
+                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      title="Khóa tất cả các đợt đăng ký"
+                    >
+                      <Lock size={14} /> Khóa Tất Cả
+                    </button>
+                    <button 
+                      onClick={() => handleBulkToggleLock(true)}
+                      style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #86efac', background: '#f0fdf4', color: '#16a34a', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      title="Mở lại tất cả các đợt đăng ký"
+                    >
+                      <Unlock size={14} /> Mở Tất Cả
+                    </button>
+                  </div>
+                </div>
 
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
@@ -598,43 +780,94 @@ export default function AdminRegistrations() {
                         <th style={{ padding: '10px' }}>Khối áp dụng</th>
                         <th style={{ padding: '10px' }}>Nơi lưu</th>
                         <th style={{ padding: '10px' }}>Trạng thái</th>
-                        <th style={{ padding: '10px' }}>Số Form fields</th>
+                        <th style={{ padding: '10px' }}>Hạn chót</th>
                         <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
                       {campaigns.length === 0 ? (
-                        <tr><td colSpan="5" style={{ padding: '15px', textAlign: 'center', color: '#64748b' }}>Chưa có đợt đăng ký nào</td></tr>
-                      ) : campaigns.map(cam => (
-                        <tr key={cam.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{cam.title}</td>
-                          <td style={{ padding: '10px', color: '#64748b' }}>
-                            {!cam.target_grades || cam.target_grades.length === 0 ? 'Toàn trường' : cam.target_grades.join(', ')}
-                          </td>
-                          <td style={{ padding: '10px' }}>
-                            <span style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', background: cam._source === 'sb1' ? '#f1f5f9' : '#e0f2fe', color: cam._source === 'sb1' ? '#475569' : '#0369a1', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                              <Server size={12} /> {cam._source === 'sb1' ? 'Server 1' : 'Server 2'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px' }}>
-                            {cam.is_active ? <span style={{ color: '#16a34a', fontWeight: 'bold' }}>🟢 Mở</span> : <span style={{ color: '#ef4444' }}>🔴 Đóng</span>}
-                          </td>
-                          <td style={{ padding: '10px' }}>{(cam.form_schema || []).length} câu</td>
-                          <td style={{ padding: '10px', textAlign: 'right' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                              <button onClick={() => { setSelectedCampaignId(cam.id); setActiveTab('results'); }} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0284c7', cursor: 'pointer' }}>
-                                Xem kết quả
-                              </button>
-                              <button onClick={() => handleEdit(cam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer' }}>
-                                <Edit3 size={14} /> Sửa
-                              </button>
-                                <button onClick={() => handleDelete(cam)} style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-                                <Trash2 size={14} /> Xóa
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                        <tr><td colSpan="6" style={{ padding: '15px', textAlign: 'center', color: '#64748b' }}>Chưa có đợt đăng ký nào</td></tr>
+                      ) : campaigns.map(cam => {
+                        const now = new Date();
+                        const isExpired = cam.end_date && now > new Date(cam.end_date);
+                        const isPending = cam.start_date && now < new Date(cam.start_date);
+                        const schemaFields = Array.isArray(cam.form_schema) ? cam.form_schema : (cam.form_schema?.fields || []);
+
+                        return (
+                          <tr key={cam.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>
+                              {cam.title}
+                              <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                                ({schemaFields.length} câu hỏi form)
+                              </div>
+                            </td>
+                            <td style={{ padding: '10px', color: '#64748b' }}>
+                              {!cam.target_grades || cam.target_grades.length === 0 ? 'Toàn trường' : cam.target_grades.join(', ')}
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', background: cam._source === 'sb1' ? '#f1f5f9' : '#e0f2fe', color: cam._source === 'sb1' ? '#475569' : '#0369a1', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <Server size={12} /> {cam._source === 'sb1' ? 'Server 1' : 'Server 2'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              {!cam.is_active ? (
+                                <span style={{ color: '#ef4444', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fef2f2', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                  <Lock size={12} /> Đã khóa
+                                </span>
+                              ) : isPending ? (
+                                <span style={{ color: '#d97706', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fffbeb', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                  <Clock size={12} /> Chờ đến giờ
+                                </span>
+                              ) : isExpired ? (
+                                <span style={{ color: '#ea580c', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff7ed', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                  <Clock size={12} /> Đã hết hạn
+                                </span>
+                              ) : (
+                                <span style={{ color: '#16a34a', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f0fdf4', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                  🟢 Đang mở
+                                </span>
+                              )}
+                            </td>
+                            <td style={{ padding: '10px', fontSize: '12px', color: '#64748b' }}>
+                              {cam.end_date ? new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Không có'}
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'right' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                {/* NÚT QUICK LOCK TOGGLE */}
+                                <button 
+                                  onClick={() => handleQuickToggleLock(cam)} 
+                                  style={{ padding: '6px 10px', borderRadius: '6px', border: cam.is_active ? '1px solid #fca5a5' : '1px solid #86efac', background: cam.is_active ? '#fef2f2' : '#f0fdf4', color: cam.is_active ? '#ef4444' : '#16a34a', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                  title={cam.is_active ? 'Bấm để Khóa đợt này' : 'Bấm để Mở lại đợt này'}
+                                >
+                                  {cam.is_active ? <Lock size={13} /> : <Unlock size={13} />}
+                                  {cam.is_active ? 'Khóa' : 'Mở'}
+                                </button>
+
+                                {/* NÚT SOẠN TIN NHẮN GVCN */}
+                                <button 
+                                  onClick={() => openTeacherReminderModal(cam)} 
+                                  style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #bae6fd', background: '#f0f9ff', color: '#0369a1', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                  title="Tạo tin nhắn Zalo/SMS đôn đốc gửi Giáo viên chủ nhiệm"
+                                >
+                                  <MessageSquare size={13} /> Soạn tin GVCN
+                                </button>
+
+                                <button onClick={() => { setSelectedCampaignId(cam.id); setActiveTab('results'); }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0284c7', cursor: 'pointer', fontSize: '12px' }}>
+                                  Kết quả
+                                </button>
+
+                                <button onClick={() => handleEdit(cam)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', cursor: 'pointer', fontSize: '12px' }}>
+                                  <Edit3 size={13} /> Sửa
+                                </button>
+
+                                <button onClick={() => handleDelete(cam)} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: '12px' }}>
+                                  <Trash2 size={13} /> Xóa
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -1165,6 +1398,61 @@ export default function AdminRegistrations() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {/* TEACHER REMINDER MODAL (SOẠN TIN NHẮN GVCN) */}
+      {showTeacherReminderModal && reminderCampaign && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
+                <MessageSquare size={20} color="#0284c7" /> Soạn Tin Nhắn Đôn Đốc Gửi Giáo Viên Chủ Nhiệm
+              </h3>
+              <button onClick={() => setShowTeacherReminderModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ marginBottom: '16px', fontSize: '13px', color: '#475569', background: '#f0f9ff', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #0284c7' }}>
+              💡 <strong>Mẹo:</strong> Tin nhắn dưới đây đã được hệ thống tự động tổng hợp số liệu tiến độ của đợt <strong>"{reminderCampaign.title}"</strong>. Bạn có thể chỉnh sửa nội dung trước khi bấm sao chép để gửi vào nhóm Zalo/SMS của GVCN.
+            </div>
+
+            {loadingReminderData ? (
+              <div style={{ padding: '30px', textAlign: 'center', color: '#0284c7', fontWeight: 'bold' }}>
+                ⏳ Đang tổng hợp số liệu đăng ký theo từng lớp...
+              </div>
+            ) : (
+              <div>
+                <label style={styles.label}>Nội dung tin nhắn (Có thể chỉnh sửa):</label>
+                <textarea 
+                  rows={13} 
+                  value={reminderMessage} 
+                  onChange={e => setReminderMessage(e.target.value)} 
+                  style={{ ...styles.input, fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.5', background: '#f8fafc', color: '#0f172a' }}
+                />
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ fontSize: '12px', color: copiedReminder ? '#16a34a' : '#64748b', fontWeight: 'bold' }}>
+                    {copiedReminder ? '✅ Đã sao chép vào bộ nhớ tạm!' : 'Sẵn sàng gửi Zalo/SMS cho GVCN.'}
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setShowTeacherReminderModal(false)} style={{ padding: '9px 18px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}>
+                      Đóng
+                    </button>
+                    <button 
+                      type="button" 
+                      onClick={handleCopyReminderText} 
+                      style={{ padding: '9px 20px', background: copiedReminder ? '#16a34a' : '#0284c7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                    >
+                      {copiedReminder ? <Check size={16} /> : <Copy size={16} />}
+                      {copiedReminder ? 'Đã Sao Chép!' : 'Sao Chép Tin Nhắn Zalo'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </Layout>

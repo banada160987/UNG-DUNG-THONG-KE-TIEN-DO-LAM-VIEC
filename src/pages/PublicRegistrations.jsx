@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase, supabase2, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
-import { FileText, CheckCircle2, User, Search, Navigation } from 'lucide-react';
+import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle } from 'lucide-react';
 
 export default function PublicRegistrations() {
   const [campaigns, setCampaigns] = useState([]);
@@ -47,7 +47,7 @@ export default function PublicRegistrations() {
     try {
       const res = await DualSupabaseService.selectSmart(
         'cbq_registration_campaigns',
-        (q) => q.eq('is_active', true).order('created_at', { ascending: false }),
+        (q) => q.order('created_at', { ascending: false }),
         'id'
       );
       setCampaigns(res.data || []);
@@ -55,6 +55,48 @@ export default function PublicRegistrations() {
       console.error(err);
     }
   }
+
+  const getClosedNotice = (cam) => {
+    if (!cam) return '';
+    if (cam.closed_notice) return cam.closed_notice;
+    if (cam.form_schema && !Array.isArray(cam.form_schema) && cam.form_schema.closed_notice) {
+      return cam.form_schema.closed_notice;
+    }
+    return '';
+  };
+
+  const getCampaignStatus = (cam) => {
+    if (!cam) return { code: 'open', label: '🟢 Đang mở', isLocked: false, message: '' };
+    const now = new Date();
+    
+    if (cam.is_active === false) {
+      return { 
+        code: 'locked', 
+        label: '🔴 Đã khóa', 
+        isLocked: true, 
+        message: getClosedNotice(cam) || 'Đợt đăng ký này hiện đã bị khóa bởi Quản trị viên.' 
+      };
+    }
+    if (cam.start_date && now < new Date(cam.start_date)) {
+      const timeStr = new Date(cam.start_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+      return { 
+        code: 'not_started', 
+        label: '🟡 Chờ mở đăng ký', 
+        isLocked: true, 
+        message: `Đợt đăng ký sẽ mở vào lúc ${timeStr}. Vui lòng quay lại sau.` 
+      };
+    }
+    if (cam.end_date && now > new Date(cam.end_date)) {
+      const timeStr = new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
+      return { 
+        code: 'expired', 
+        label: '⏰ Đã hết hạn', 
+        isLocked: true, 
+        message: getClosedNotice(cam) || `Đợt đăng ký đã chính thức kết thúc vào lúc ${timeStr}.` 
+      };
+    }
+    return { code: 'open', label: '🟢 Đang mở', isLocked: false, message: '' };
+  };
 
   async function fetchStudentRoster() {
     // 🟢 CÁCH 02: Không nạp 3,000 học sinh khi vừa mở trang nữa!
@@ -264,22 +306,62 @@ export default function PublicRegistrations() {
         
         {!selectedCampaign ? (
           <div>
-            <h3 style={{ marginTop: 0, color: '#334155' }}>Các đợt đang mở ({campaigns.length})</h3>
+            <h3 style={{ marginTop: 0, color: '#334155' }}>Danh sách các đợt đăng ký ({campaigns.length})</h3>
             {campaigns.length === 0 ? (
               <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', color: '#64748b' }}>
-                Hiện tại nhà trường không có đợt đăng ký nào đang mở.
+                Hiện tại nhà trường chưa tạo đợt đăng ký nào.
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {campaigns.map(cam => (
-                  <div key={cam.id} onClick={() => selectCampaign(cam)} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '16px', cursor: 'pointer', transition: 'all 0.2s', ':hover': { borderColor: '#0284c7', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.1)' } }}>
-                    <h4 style={{ margin: '0 0 8px 0', color: '#0284c7', fontSize: '16px' }}>{cam.title}</h4>
-                    {cam.description && <p style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: '#64748b' }}>{cam.description}</p>}
-                    <div style={{ display: 'inline-block', padding: '4px 10px', background: '#f1f5f9', color: '#475569', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
-                      Đối tượng: {!cam.target_grades || cam.target_grades.length === 0 ? 'Tất cả học sinh' : cam.target_grades.join(', ')}
+                {campaigns.map(cam => {
+                  const status = getCampaignStatus(cam);
+                  return (
+                    <div 
+                      key={cam.id} 
+                      onClick={() => selectCampaign(cam)} 
+                      style={{ 
+                        border: status.isLocked ? '1px solid #fca5a5' : '1px solid #cbd5e1', 
+                        borderRadius: '12px', 
+                        padding: '16px', 
+                        cursor: 'pointer', 
+                        transition: 'all 0.2s', 
+                        background: status.isLocked ? '#fff5f5' : '#ffffff',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                        <h4 style={{ margin: '0 0 8px 0', color: status.isLocked ? '#991b1b' : '#0284c7', fontSize: '16px' }}>
+                          {cam.title}
+                        </h4>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          fontWeight: 'bold', 
+                          padding: '4px 10px', 
+                          borderRadius: '12px', 
+                          whiteSpace: 'nowrap',
+                          background: status.code === 'open' ? '#f0fdf4' : status.code === 'locked' ? '#fef2f2' : '#fff7ed',
+                          color: status.code === 'open' ? '#16a34a' : status.code === 'locked' ? '#ef4444' : '#ea580c',
+                          border: status.code === 'open' ? '1px solid #86efac' : '1px solid #fca5a5'
+                        }}>
+                          {status.label}
+                        </span>
+                      </div>
+                      
+                      {cam.description && <p style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: '#64748b' }}>{cam.description}</p>}
+                      
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ padding: '3px 10px', background: '#f1f5f9', color: '#475569', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+                          Đối tượng: {!cam.target_grades || cam.target_grades.length === 0 ? 'Tất cả học sinh' : cam.target_grades.join(', ')}
+                        </div>
+                        {cam.end_date && (
+                          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Clock size={12} /> Hạn chót: {new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -297,7 +379,38 @@ export default function PublicRegistrations() {
               </p>
             )}
 
-            <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
+            {/* HIỂN THỊ CẢNH BÁO NẾU ĐỢT ĐĂNG KÝ BỊ KHÓA / HẾT HẠN */}
+            {getCampaignStatus(selectedCampaign).isLocked ? (
+              <div style={{ 
+                background: '#fef2f2', 
+                border: '2px solid #fca5a5', 
+                borderRadius: '16px', 
+                padding: '30px 20px', 
+                textAlign: 'center', 
+                marginTop: '20px',
+                boxShadow: '0 4px 15px rgba(239, 68, 68, 0.08)'
+              }}>
+                <div style={{ width: '64px', height: '64px', background: '#fee2e2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+                  <Lock size={32} color="#ef4444" />
+                </div>
+                <h3 style={{ color: '#991b1b', margin: '0 0 10px 0', fontSize: '20px', fontWeight: 'bold' }}>
+                  Đợt Đăng Ký Đã Tạm Khóa Hoặc Hết Hạn
+                </h3>
+                <div style={{ color: '#7f1d1d', fontSize: '15px', lineHeight: '1.6', marginBottom: '20px', maxWidth: '500px', margin: '0 auto 20px auto', background: '#ffffff', padding: '14px', borderRadius: '10px', border: '1px solid #fecaca' }}>
+                  {getCampaignStatus(selectedCampaign).message}
+                </div>
+                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 20px 0' }}>
+                  Nếu có thắc mắc hoặc cần bổ sung thông tin, em vui lòng liên hệ Văn phòng nhà trường hoặc Giáo viên chủ nhiệm để được hỗ trợ.
+                </p>
+                <button 
+                  onClick={() => setSelectedCampaign(null)} 
+                  style={{ padding: '10px 24px', background: '#475569', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }}
+                >
+                  ← Quay lại danh sách đợt đăng ký
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} style={{ marginTop: '20px' }}>
               
               {/* PHẦN XÁC THỰC DANH TÍNH */}
               <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '20px', marginBottom: '25px' }}>
@@ -460,6 +573,7 @@ export default function PublicRegistrations() {
               )}
 
             </form>
+            )}
           </div>
         )}
       </div>
