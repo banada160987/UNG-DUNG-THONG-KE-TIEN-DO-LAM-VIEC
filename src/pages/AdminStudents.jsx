@@ -188,6 +188,18 @@ export default function AdminStudents() {
           return;
         }
 
+        // Helper generator UUID ngẫu nhiên đảm bảo 100% bản ghi không bị null ID khi nạp CSDL
+        const generateUUID = () => {
+          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            return crypto.randomUUID();
+          }
+          return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+          });
+        };
+
         // Check duplicates vs existing roster
         const existingCodesMap = new Map(students.map(s => [s.student_code, s.id]));
         let newCount = 0;
@@ -199,6 +211,7 @@ export default function AdminStudents() {
             item.id = existingId; // Set ID for upsert by primary key
             updateCount++;
           } else {
+            item.id = generateUUID(); // Gán UUID mới cho học sinh mới để 100% bản ghi có id hợp lệ (tránh lỗi null value in column "id")
             newCount++;
           }
         });
@@ -259,7 +272,7 @@ export default function AdminStudents() {
         }
         reportMsg += `\n💾 ĐÃ GHI VÀO CSDL SUPABASE: ${dbSuccessCount}/${formattedList.length} bản ghi\n`;
         if (dbErrorMsg) {
-          reportMsg += `\n⚠️ Cảnh báo CSDL Supabase (Bảo vệ RLS): ${dbErrorMsg}\n👉 Nếu chưa ghi được CSDL, bạn hãy chạy câu lệnh SQL này trong Supabase Editor:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`;
+          reportMsg += `\n⚠️ Cảnh báo CSDL Supabase: ${dbErrorMsg}\n👉 Nếu gặp sự cố ghi CSDL, bạn hãy chạy câu lệnh SQL này trong Supabase Editor:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`;
         }
 
         alert(reportMsg);
