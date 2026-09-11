@@ -241,7 +241,7 @@ export default function AdminStudents() {
           return newList;
         });
 
-        // Batch Upsert to Supabase in chunks of 100 rows to avoid HTTP payload limits
+      // Batch Upsert to Supabase in chunks of 100 rows to avoid HTTP payload limits
         let dbSuccessCount = 0;
         let dbErrorMsg = null;
         const BATCH_SIZE = 100;
@@ -258,6 +258,11 @@ export default function AdminStudents() {
             dbErrorMsg = batchErr.message;
           } else {
             dbSuccessCount += chunk.length;
+            // Tự động đồng bộ Lớp mới và Họ tên mới sang Vé xe (cbq_parking_registrations) & Đăng ký xe bus (cbq_bus_registrations)
+            chunk.forEach(item => {
+              dbClient.from('cbq_parking_registrations').update({ student_class: item.student_class, student_name: item.student_name }).eq('student_code', item.student_code).then(() => {});
+              dbClient.from('cbq_bus_registrations').update({ student_class: item.student_class, student_name: item.student_name }).eq('student_code', item.student_code).then(() => {});
+            });
           }
         }
 
@@ -271,6 +276,7 @@ export default function AdminStudents() {
           reportMsg += `🔄 Cập nhật thông tin mới (trùng Mã HS): ${updateCount} học sinh\n`;
         }
         reportMsg += `\n💾 ĐÃ GHI VÀO CSDL SUPABASE: ${dbSuccessCount}/${formattedList.length} bản ghi\n`;
+        reportMsg += `🚗 Đã tự động đồng bộ Lớp mới sang Thẻ giữ xe & Dịch vụ Xe đưa đón cho học sinh!`;
         if (dbErrorMsg) {
           reportMsg += `\n⚠️ Cảnh báo CSDL Supabase: ${dbErrorMsg}\n👉 Nếu gặp sự cố ghi CSDL, bạn hãy chạy câu lệnh SQL này trong Supabase Editor:\n\nALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;\nGRANT ALL ON TABLE cbq_students TO public, anon, authenticated;`;
         }
@@ -307,7 +313,15 @@ export default function AdminStudents() {
       const dbClient = supabaseAdmin || supabase;
       let res;
       if (editingId) {
+        const targetStudent = students.find(s => s.id === editingId);
         res = await dbClient.from('cbq_students').update(payload).eq('id', editingId);
+        if (targetStudent && targetStudent.student_code) {
+          // Tự động đồng bộ Lớp mới & Tên mới sang Thẻ xe & Đăng ký Xe bus
+          await Promise.all([
+            dbClient.from('cbq_parking_registrations').update({ student_class: cleanClass, student_name: name.trim() }).eq('student_code', targetStudent.student_code),
+            dbClient.from('cbq_bus_registrations').update({ student_class: cleanClass, student_name: name.trim() }).eq('student_code', targetStudent.student_code)
+          ]);
+        }
       } else {
         res = await dbClient.from('cbq_students').insert([payload]);
       }
@@ -315,7 +329,7 @@ export default function AdminStudents() {
       if (res.error) {
         alert("⚠️ Lỗi từ Supabase (Do RLS Bảo vệ CSDL): " + res.error.message + "\nHãy chạy lệnh SQL: ALTER TABLE cbq_students DISABLE ROW LEVEL SECURITY;");
       } else {
-        alert("🎉 ĐÃ LƯU THÔNG TIN HỌC SINH THÀNH CÔNG VÀO CSDL!");
+        alert("🎉 ĐÃ LƯU THÔNG TIN HỌC SINH THÀNH CÔNG VÀ ĐỒNG BỘ SANG CÁC DỊCH VỤ DỰ BÁO/VÉ XE!");
       }
 
       setShowForm(false);
@@ -412,13 +426,15 @@ export default function AdminStudents() {
         return newList;
       });
 
-      // Update Supabase
-      await supabase
-        .from('cbq_students')
-        .update({ student_class: cleanNewClass, grade_level: newGradeLevel })
-        .eq('student_code', student.student_code);
+      // Update Supabase & Sync to Parking & Bus Registrations
+      const dbClient = supabaseAdmin || supabase;
+      await Promise.all([
+        dbClient.from('cbq_students').update({ student_class: cleanNewClass, grade_level: newGradeLevel }).eq('student_code', student.student_code),
+        dbClient.from('cbq_parking_registrations').update({ student_class: cleanNewClass }).eq('student_code', student.student_code),
+        dbClient.from('cbq_bus_registrations').update({ student_class: cleanNewClass }).eq('student_code', student.student_code)
+      ]);
 
-      alert(`🎉 Đã chuyển học sinh ${student.student_name} sang Lớp ${cleanNewClass} (${newGradeLevel}) thành công!`);
+      alert(`🎉 Đã chuyển học sinh ${student.student_name} sang Lớp ${cleanNewClass} (${newGradeLevel}) và tự động cập nhật Thẻ giữ xe & Xe bus!`);
     } catch (err) {
       alert("Lỗi khi chuyển lớp: " + err.message);
     }
@@ -462,14 +478,16 @@ export default function AdminStudents() {
         return newList;
       });
 
-      // 2. Update Supabase
+      // 2. Update Supabase & Sync to Parking & Bus Registrations
+      const dbClient = supabaseAdmin || supabase;
       const codesToMove = studentsToMove.map(s => s.student_code);
-      await supabase
-        .from('cbq_students')
-        .update({ student_class: cleanTargetClass, grade_level: targetGradeLevel })
-        .in('student_code', codesToMove);
+      await Promise.all([
+        dbClient.from('cbq_students').update({ student_class: cleanTargetClass, grade_level: targetGradeLevel }).in('student_code', codesToMove),
+        dbClient.from('cbq_parking_registrations').update({ student_class: cleanTargetClass }).in('student_code', codesToMove),
+        dbClient.from('cbq_bus_registrations').update({ student_class: cleanTargetClass }).in('student_code', codesToMove)
+      ]);
 
-      alert(`🎉 ĐÃ CHUYỂN THÀNH CÔNG ${studentsToMove.length} HỌC SINH TỪ LỚP ${sourceClass} SANG LỚP ${cleanTargetClass} (${targetGradeLevel})!`);
+      alert(`🎉 ĐÃ CHUYỂN THÀNH CÔNG ${studentsToMove.length} HỌC SINH TỪ LỚP ${sourceClass} SANG LỚP ${cleanTargetClass} (${targetGradeLevel}) VÀ ĐỒNG BỘ TOÀN BỘ THẺ XE, XE BUS!`);
       setShowBulkTransferForm(false);
       setSourceClass('');
       setTargetClass('');
