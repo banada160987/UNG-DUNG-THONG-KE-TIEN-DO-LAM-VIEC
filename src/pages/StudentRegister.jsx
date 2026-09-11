@@ -330,10 +330,25 @@ export default function StudentRegister() {
             </div>
           </div>
 
+          {/* DECREE 13 PERSONAL DATA PROTECTION CONSENT DISCLAIMER */}
+          <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px', marginTop: '6px' }}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', cursor: 'pointer', fontSize: '12.5px', color: '#334155', lineHeight: '1.45' }}>
+              <input 
+                type="checkbox" 
+                required 
+                defaultChecked={true}
+                style={{ marginTop: '2px', accentColor: '#be123c' }}
+              />
+              <span>
+                🔒 <strong>Cam kết Bảo vệ Dữ liệu Cá nhân:</strong> Tôi và Phụ huynh/Người giám hộ xác nhận đồng ý cung cấp và cho phép nhà trường thu thập, lưu trữ, xử lý thông tin cá nhân (Họ tên, CCCD, SĐT, Ngày sinh, Nhân thân) <strong>duy nhất cho mục đích quản lý giáo dục, tiện ích nhà trường & báo cáo CSDL Ngành</strong> theo đúng quy định tại <strong>Nghị định 13/2023/NĐ-CP</strong> & <strong>Công văn 4567/BGDĐT-CNTT</strong>.
+              </span>
+            </label>
+          </div>
+
           <button 
             type="submit" 
             disabled={submitting}
-            style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', marginTop: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' }}
+            style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #be123c, #881337)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer', marginTop: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' }}
           >
             <UserPlus size={18} /> {submitting ? 'Đang tạo tài khoản...' : 'TẠO TÀI KHOẢN'}
           </button>
