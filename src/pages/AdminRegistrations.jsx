@@ -183,9 +183,7 @@ export default function AdminRegistrations() {
   const handleDelete = async (cam) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa Đợt đăng ký này? Toàn bộ dữ liệu học sinh đăng ký trong đợt này cũng sẽ bị xóa vĩnh viễn!")) return;
     try {
-      const client = cam._source === 'sb1' ? supabase : adminClient;
-      const { error } = await client.from('cbq_registration_campaigns').delete().eq('id', cam.id);
-      if (error) throw error;
+      await DualSupabaseService.delete('cbq_registration_campaigns', 'id', cam.id);
       fetchCampaigns();
     } catch (err) {
       alert("Lỗi khi xóa: " + err.message);
@@ -195,12 +193,7 @@ export default function AdminRegistrations() {
   const handleQuickToggleLock = async (cam) => {
     try {
       const nextActive = !cam.is_active;
-      const client = cam._source === 'sb1' ? supabase : adminClient;
-      const { error } = await client
-        .from('cbq_registration_campaigns')
-        .update({ is_active: nextActive })
-        .eq('id', cam.id);
-      if (error) throw error;
+      await DualSupabaseService.update('cbq_registration_campaigns', { is_active: nextActive }, 'id', cam.id);
       setCampaigns(campaigns.map(c => c.id === cam.id ? { ...c, is_active: nextActive } : c));
     } catch (err) {
       alert("Lỗi khi đổi trạng thái khóa: " + err.message);
@@ -212,8 +205,7 @@ export default function AdminRegistrations() {
     if (!window.confirm(`Bạn có chắc chắn muốn ${actionName} các cuộc đăng ký?`)) return;
     try {
       for (const cam of campaigns) {
-        const client = cam._source === 'sb1' ? supabase : adminClient;
-        await client.from('cbq_registration_campaigns').update({ is_active: targetActive }).eq('id', cam.id);
+        await DualSupabaseService.update('cbq_registration_campaigns', { is_active: targetActive }, 'id', cam.id);
       }
       setCampaigns(campaigns.map(c => ({ ...c, is_active: targetActive })));
       alert(`Đã ${actionName} thành công!`);
@@ -229,13 +221,13 @@ export default function AdminRegistrations() {
     setCopiedReminder(false);
     
     try {
-      const client = cam._source === 'sb1' ? supabase : adminClient;
-      const { data: regData } = await client
-        .from('cbq_student_registrations')
-        .select('student_class, student_code, student_name')
-        .eq('campaign_id', cam.id);
+      const res = await DualSupabaseService.selectSmart(
+        'cbq_student_registrations',
+        (q) => q.eq('campaign_id', cam.id),
+        'id'
+      );
 
-      const regList = regData || [];
+      const regList = res.data || [];
       
       const classMap = {};
       regList.forEach(r => {
@@ -291,7 +283,6 @@ Trân trọng cảm ơn Thầy/Cô!`;
     if (!title) return alert("Vui lòng nhập tên đợt đăng ký");
 
     try {
-      // Store form schema along with closed_notice metadata cleanly
       const schemaWithNotice = {
         fields: formSchema,
         closed_notice: closedNotice.trim()
@@ -300,7 +291,7 @@ Trân trọng cảm ơn Thầy/Cô!`;
       const payload = {
         title,
         description,
-        target_grades: targetGrades.length > 0 ? targetGrades : null, // null means all
+        target_grades: targetGrades.length > 0 ? targetGrades : null,
         is_active: isActive,
         start_date: startDate ? new Date(startDate).toISOString() : null,
         end_date: endDate ? new Date(endDate).toISOString() : null,
@@ -308,13 +299,9 @@ Trân trọng cảm ơn Thầy/Cô!`;
       };
 
       if (editingId) {
-        const client = targetDb === 'sb1' ? supabase : adminClient;
-        const { error } = await client.from('cbq_registration_campaigns').update(payload).eq('id', editingId);
-        if (error) throw error;
+        await DualSupabaseService.update('cbq_registration_campaigns', payload, 'id', editingId);
       } else {
-        const client = targetDb === 'sb1' ? supabase : adminClient;
-        const { error } = await client.from('cbq_registration_campaigns').insert([payload]);
-        if (error) throw error;
+        await DualSupabaseService.insert('cbq_registration_campaigns', [payload]);
       }
 
       alert("Lưu đợt đăng ký thành công!");

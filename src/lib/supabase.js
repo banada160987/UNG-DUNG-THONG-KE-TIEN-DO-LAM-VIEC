@@ -94,23 +94,29 @@ export const DualSupabaseService = {
       return { data: data2, error: null, source: 'sb2' };
     }
 
-    // Trường hợp 3: Cả 2 Supabase đều hoạt động -> Gộp và Lọc bỏ dữ liệu trùng lặp
-    if (data1 && data2) {
+    // Trường hợp 3: Cả 2 Supabase đều hoạt động -> Gộp và Lọc bỏ dữ liệu trùng lặp (Ưu tiên DB Primary)
+    if (data1 || data2) {
       const mergedMap = new Map();
-      
-      // Nạp dữ liệu từ SB1 trước (được ưu tiên)
-      data1.forEach(item => {
-        const key = item[uniqueKey] || JSON.stringify(item);
-        mergedMap.set(key, item);
-      });
+      const primaryData = USE_SUPABASE_2_AS_PRIMARY ? data2 : data1;
+      const secondaryData = USE_SUPABASE_2_AS_PRIMARY ? data1 : data2;
 
-      // Nạp dữ liệu từ SB2 (nếu key chưa tồn tại thì thêm vào để tránh trùng)
-      data2.forEach(item => {
-        const key = item[uniqueKey] || JSON.stringify(item);
-        if (!mergedMap.has(key)) {
+      // Nạp dữ liệu từ Primary DB trước (được ưu tiên tuyệt đối)
+      if (primaryData) {
+        primaryData.forEach(item => {
+          const key = item[uniqueKey] || JSON.stringify(item);
           mergedMap.set(key, item);
-        }
-      });
+        });
+      }
+
+      // Nạp dữ liệu từ Secondary DB (chỉ nạp các key chưa tồn tại ở Primary DB)
+      if (secondaryData) {
+        secondaryData.forEach(item => {
+          const key = item[uniqueKey] || JSON.stringify(item);
+          if (!mergedMap.has(key)) {
+            mergedMap.set(key, item);
+          }
+        });
+      }
 
       return {
         data: Array.from(mergedMap.values()),
