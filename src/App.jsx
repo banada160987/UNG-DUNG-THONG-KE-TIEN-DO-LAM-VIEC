@@ -74,6 +74,7 @@ const StudentDigitalVault = lazy(() => import('./pages/student_features/StudentD
 
 // Teacher Features
 const TeacherLogin = lazy(() => import('./pages/TeacherLogin'));
+const TeacherRegister = lazy(() => import('./pages/TeacherRegister'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
 const TeacherFundsManager = lazy(() => import('./pages/teacher_features/TeacherFundsManager'));
 const TeacherDiscipline = lazy(() => import('./pages/teacher_features/TeacherDiscipline'));
@@ -142,6 +143,7 @@ function App() {
             
             {/* Teacher Portal */}
             <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
+            <Route path="/dang-ky-giao-vien" element={<TeacherRegister />} />
             <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
             <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
             <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />

@@ -102,7 +102,10 @@ export default function TeacherLogin() {
         </form>
         
         <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#64748b' }}>
-          * Tài khoản do Ban Giám Hiệu cấp.
+          Chưa có tài khoản Giáo viên?{' '}
+          <Link to="/dang-ky-giao-vien" style={{ color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}>
+            Đăng ký ngay 📝
+          </Link>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function AdminRegistrations() {
@@ -22,12 +22,16 @@ export default function AdminRegistrations() {
   const [closedNotice, setClosedNotice] = useState('');
   const [targetDb, setTargetDb] = useState('sb2'); // 'sb1' | 'sb2'
 
-  // Teacher Reminder Modal States
-  const [showTeacherReminderModal, setShowTeacherReminderModal] = useState(false);
-  const [reminderCampaign, setReminderCampaign] = useState(null);
-  const [reminderMessage, setReminderMessage] = useState('');
-  const [loadingReminderData, setLoadingReminderData] = useState(false);
-  const [copiedReminder, setCopiedReminder] = useState(false);
+  // Zalo Campaign Reminder Modal States
+  const [showZaloCampaignModal, setShowZaloCampaignModal] = useState(false);
+  const [zaloCampaign, setZaloCampaign] = useState(null);
+  const [zaloAllStudents, setZaloAllStudents] = useState([]);
+  const [zaloCampaignRegistrations, setZaloCampaignRegistrations] = useState([]);
+  const [loadingZaloData, setLoadingZaloData] = useState(false);
+  const [zaloTargetClass, setZaloTargetClass] = useState('ALL');
+  const [zaloTargetGrade, setZaloTargetGrade] = useState('ALL');
+  const [zaloTemplateType, setZaloTemplateType] = useState('class_group'); // 'class_group' | 'school_report' | 'simple_list'
+  const [zaloCopiedToast, setZaloCopiedToast] = useState(false);
 
   // Results & Filtering & Sorting & Report States
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
@@ -214,68 +218,231 @@ export default function AdminRegistrations() {
     }
   };
 
-  const openTeacherReminderModal = async (cam) => {
-    setReminderCampaign(cam);
-    setShowTeacherReminderModal(true);
-    setLoadingReminderData(true);
-    setCopiedReminder(false);
+  const getStudentGradeLevel = (studentClass) => {
+    if (!studentClass) return 'Khối 10';
+    const clean = String(studentClass).trim().toUpperCase();
+    if (clean.startsWith('10')) return 'Khối 10';
+    if (clean.startsWith('11')) return 'Khối 11';
+    if (clean.startsWith('12')) return 'Khối 12';
+    return 'Khối 10';
+  };
+
+  const openZaloCampaignReminderModal = async (cam) => {
+    const targetCam = cam || campaigns.find(c => c.id === selectedCampaignId);
+    if (!targetCam) return alert("Vui lòng chọn đợt đăng ký!");
     
+    setZaloCampaign(targetCam);
+    setShowZaloCampaignModal(true);
+    setLoadingZaloData(true);
+    setZaloTargetClass('ALL');
+    setZaloTargetGrade('ALL');
+    setZaloTemplateType('class_group');
+    setZaloCopiedToast(false);
+
     try {
-      const res = await DualSupabaseService.selectSmart(
+      // 1. Fetch all master students
+      const studRes = await DualSupabaseService.selectSmart(
+        'cbq_students',
+        (q) => q.order('student_class', { ascending: true }).order('student_name', { ascending: true }),
+        'student_code'
+      );
+      const masterStudents = studRes.data || [];
+      setZaloAllStudents(masterStudents);
+
+      // 2. Fetch campaign registrations
+      const regRes = await DualSupabaseService.selectSmart(
         'cbq_student_registrations',
-        (q) => q.eq('campaign_id', cam.id),
+        (q) => q.eq('campaign_id', targetCam.id),
         'id'
       );
+      const campaignRegs = regRes.data || [];
+      setZaloCampaignRegistrations(campaignRegs);
+    } catch (err) {
+      console.error("Lỗi khi tải dữ liệu đôn đốc Zalo:", err);
+    } finally {
+      setLoadingZaloData(false);
+    }
+  };
 
-      const regList = res.data || [];
-      
-      const classMap = {};
-      regList.forEach(r => {
-        const cls = (r.student_class || 'Khác').trim().toUpperCase();
-        classMap[cls] = (classMap[cls] || 0) + 1;
+  const generateZaloCampaignReminderMessage = () => {
+    if (!zaloCampaign) return '';
+
+    const currentDomain = window.location.origin;
+    const registerUrl = `${currentDomain}/dang-ky-hoat-dong`;
+    const campaignTitle = (zaloCampaign.title || 'ĐỢT ĐĂNG KÝ').trim().toUpperCase();
+    const endDateStr = zaloCampaign.end_date 
+      ? new Date(zaloCampaign.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) 
+      : 'Theo thông báo của nhà trường';
+
+    const targetGradesStr = zaloCampaign.target_grades && zaloCampaign.target_grades.length > 0
+      ? zaloCampaign.target_grades.join(', ')
+      : 'Tất cả các khối';
+
+    // Eligible students pool based on campaign target_grades
+    const eligibleStudents = zaloAllStudents.filter(s => {
+      if (!zaloCampaign.target_grades || zaloCampaign.target_grades.length === 0) return true;
+      const sGrade = s.grade_level || getStudentGradeLevel(s.student_class);
+      return zaloCampaign.target_grades.includes(sGrade);
+    });
+
+    // Set of registered student codes
+    const regCodeSet = new Set(
+      zaloCampaignRegistrations
+        .map(r => String(r.student_code || r.responses?.student_code || '').trim().toUpperCase())
+        .filter(Boolean)
+    );
+
+    // Unregistered students pool
+    const unregisteredPool = eligibleStudents.filter(s => {
+      const code = String(s.student_code || '').trim().toUpperCase();
+      return !regCodeSet.has(code);
+    });
+
+    // Filtered by target class & grade selection
+    const unregisteredInSelection = unregisteredPool.filter(s => {
+      const sClass = (s.student_class || '').trim();
+      const sGrade = s.grade_level || getStudentGradeLevel(sClass);
+      const matchClass = zaloTargetClass === 'ALL' || sClass === zaloTargetClass;
+      const matchGrade = zaloTargetGrade === 'ALL' || sGrade === zaloTargetGrade;
+      return matchClass && matchGrade;
+    });
+
+    if (zaloTemplateType === 'class_group') {
+      const classNameLabel = zaloTargetClass !== 'ALL' ? `LỚP ${zaloTargetClass}` : 'CÁC LỚP';
+      let msg = `📢 [THPT CAO BÁ QUÁT - THÔNG BÁO TỪ GVCN ${classNameLabel}]\n`;
+      msg += `📌 THÔNG BÁO ĐÔN ĐỐC ĐĂNG KÝ: ${campaignTitle}\n`;
+      msg += `🎯 Đối tượng áp dụng: ${targetGradesStr}\n`;
+      msg += `⏰ Hạn chót đăng ký: ${endDateStr}\n\n`;
+      msg += `Kính gửi Phụ huynh và các em Học sinh ${zaloTargetClass !== 'ALL' ? `lớp ${zaloTargetClass}` : ''},\n`;
+      msg += `Nhà trường triển khai đợt đăng ký trực tuyến nội dung: "${zaloCampaign.title}".\n\n`;
+
+      if (unregisteredInSelection.length === 0) {
+        msg += `🎉 CHÚC MỪNG: 100% Học sinh ${zaloTargetClass !== 'ALL' ? `lớp ${zaloTargetClass}` : ''} đã hoàn tất đăng ký!\n`;
+        msg += `Xin chân thành cảm ơn Quý Phụ huynh và các em Học sinh đã tích cực hợp tác.\n`;
+      } else {
+        msg += `📌 Hiện tại hệ thống ghi nhận còn ${unregisteredInSelection.length} học sinh CHƯA HOÀN THÀNH ĐĂNG KÝ:\n`;
+        unregisteredInSelection.forEach((s, idx) => {
+          const sName = s.student_name || s.full_name || '';
+          const sCode = s.student_code ? ` (Mã HS: ${s.student_code})` : '';
+          const sClass = zaloTargetClass === 'ALL' ? ` [Lớp ${s.student_class}]` : '';
+          msg += `${idx + 1}. ${sName}${sClass}${sCode}\n`;
+        });
+        msg += `\n👉 Các em chưa đăng ký vui lòng truy cập ngay link bên dưới để hoàn tất:\n`;
+        msg += `🔗 Link đăng ký: ${registerUrl}\n`;
+      }
+      msg += `\nTrân trọng cảm ơn!`;
+      return msg;
+    }
+
+    if (zaloTemplateType === 'school_report') {
+      const allUniqueClasses = Array.from(new Set(eligibleStudents.map(s => s.student_class).filter(Boolean))).sort();
+      const totalEligible = eligibleStudents.length;
+      const totalRegistered = totalEligible - unregisteredPool.length;
+      const percent = totalEligible > 0 ? Math.round((totalRegistered / totalEligible) * 100) : 0;
+
+      let msg = `📊 [BÁO CÁO TIẾN ĐỘ ĐĂNG KÝ: ${campaignTitle}]\n`;
+      msg += `📅 Cập nhật lúc: ${new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} ngày ${new Date().toLocaleDateString('vi-VN')}\n`;
+      msg += `🎯 Đối tượng: ${targetGradesStr} | Hạn chót: ${endDateStr}\n\n`;
+      msg += `🎯 TỔNG QUAN TOÀN TRƯỜNG:\n`;
+      msg += `• Tổng số học sinh thuộc đối tượng: ${totalEligible} học sinh\n`;
+      msg += `• Đã hoàn thành đăng ký: ${totalRegistered} học sinh (${percent}%)\n`;
+      msg += `• CHƯA ĐĂNG KÝ: ${unregisteredPool.length} học sinh\n\n`;
+      msg += `📋 TIẾN ĐỘ THỐNG KÊ THEO TỪNG LỚP HỌC:\n`;
+
+      allUniqueClasses.forEach(cls => {
+        const classStudents = eligibleStudents.filter(s => s.student_class === cls);
+        const unregInClass = unregisteredPool.filter(s => s.student_class === cls);
+        const regInClass = classStudents.length - unregInClass.length;
+        const statusStr = unregInClass.length === 0 ? '🟢 Hoàn thành (100%)' : `🔴 Còn ${unregInClass.length} HS chưa đăng ký`;
+        msg += `- Lớp ${cls}: ${regInClass}/${classStudents.length} HS -> ${statusStr}\n`;
       });
 
-      const targetGradesStr = cam.target_grades && cam.target_grades.length > 0
-        ? cam.target_grades.join(', ')
-        : 'Tất cả các khối';
-
-      const endDateStr = cam.end_date 
-        ? new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) 
-        : 'Theo thông báo của nhà trường';
-
-      const sortedClasses = Object.keys(classMap).sort();
-      let classStatsText = '';
-      if (sortedClasses.length > 0) {
-        classStatsText = sortedClasses.map(cls => `- Lớp ${cls}: ${classMap[cls]} học sinh đã hoàn thành`).join('\n');
-      } else {
-        classStatsText = '- Chưa có học sinh nào đăng ký.';
-      }
-
-      const msg = `KÍNH GỬI QUÝ THẦY/CÔ GIÁO VIÊN CHỦ NHIỆM
-
-📌 THÔNG BÁO ĐÔN ĐỐC ĐĂNG KÝ: ${cam.title.trim().toUpperCase()}
-🎯 Đối tượng áp dụng: ${targetGradesStr}
-⏰ Hạn chót đăng ký: ${endDateStr}
-
-Thưa Thầy/Cô, hệ thống ghi nhận tiến độ đăng ký của các lớp tính đến thời điểm hiện tại:
-📊 TỔNG SỐ HỌC SINH ĐÃ ĐĂNG KÝ: ${regList.length} học sinh
-
-📋 CHI TIẾT TIẾN ĐỘ THEO LỚP:
-${classStatsText}
-
-Kính đề nghị Thầy/Cô GVCN thông báo và đôn đốc các em học sinh chưa đăng ký khẩn trương hoàn thành trước hạn chót.
-
-🔗 Đường link đăng ký trực tuyến: ${window.location.origin}/registrations
-
-Trân trọng cảm ơn Thầy/Cô!`;
-
-      setReminderMessage(msg);
-    } catch (err) {
-      console.error(err);
-      setReminderMessage("Lỗi khi tạo tin nhắn đôn đốc.");
-    } finally {
-      setLoadingReminderData(false);
+      msg += `\n👉 Đề nghị Quý Thầy/Cô GVCN các lớp chưa hoàn thành nhắc nhở học sinh truy cập link đăng ký:\n`;
+      msg += `🔗 Link đăng ký: ${registerUrl}\n\n`;
+      msg += `Trân trọng cảm ơn Thầy/Cô!`;
+      return msg;
     }
+
+    // Simple List Template
+    let msg = `📋 DANH SÁCH HỌC SINH CHƯA ĐĂNG KÝ: ${campaignTitle} (${unregisteredInSelection.length} HS):\n\n`;
+    unregisteredInSelection.forEach((s, idx) => {
+      const sName = s.student_name || s.full_name || '';
+      const sCode = s.student_code ? ` (Mã: ${s.student_code})` : '';
+      msg += `${idx + 1}. ${sName} - Lớp ${s.student_class}${sCode}\n`;
+    });
+    msg += `\n🔗 Link đăng ký: ${registerUrl}`;
+    return msg;
+  };
+
+  const exportUnregisteredCampaignToExcel = () => {
+    if (!zaloCampaign) return;
+    
+    const eligibleStudents = zaloAllStudents.filter(s => {
+      if (!zaloCampaign.target_grades || zaloCampaign.target_grades.length === 0) return true;
+      const sGrade = s.grade_level || getStudentGradeLevel(s.student_class);
+      return zaloCampaign.target_grades.includes(sGrade);
+    });
+
+    const regCodeSet = new Set(
+      zaloCampaignRegistrations
+        .map(r => String(r.student_code || r.responses?.student_code || '').trim().toUpperCase())
+        .filter(Boolean)
+    );
+
+    const unregisteredPool = eligibleStudents.filter(s => {
+      const code = String(s.student_code || '').trim().toUpperCase();
+      return !regCodeSet.has(code);
+    });
+
+    const unregisteredInSelection = unregisteredPool.filter(s => {
+      const sClass = (s.student_class || '').trim();
+      const sGrade = s.grade_level || getStudentGradeLevel(sClass);
+      const matchClass = zaloTargetClass === 'ALL' || sClass === zaloTargetClass;
+      const matchGrade = zaloTargetGrade === 'ALL' || sGrade === zaloTargetGrade;
+      return matchClass && matchGrade;
+    });
+
+    if (unregisteredInSelection.length === 0) {
+      return alert("Không có học sinh chưa đăng ký trong danh sách đã chọn!");
+    }
+
+    const excelData = unregisteredInSelection.map((s, idx) => ({
+      'STT': idx + 1,
+      'Mã Học Sinh': s.student_code || '',
+      'Họ và Tên': s.student_name || s.full_name || '',
+      'Lớp': s.student_class || '',
+      'Khối': s.grade_level || getStudentGradeLevel(s.student_class),
+      'Đợt Đăng Ký': zaloCampaign.title,
+      'Trạng Thái': 'Chưa đăng ký'
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(excelData);
+    const colWidths = [
+      { wch: 6 },
+      { wch: 15 },
+      { wch: 25 },
+      { wch: 10 },
+      { wch: 12 },
+      { wch: 30 },
+      { wch: 15 }
+    ];
+    worksheet['!cols'] = colWidths;
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Chua_Dang_Ky");
+
+    const cleanTitle = (zaloCampaign.title || 'Dot_Dang_Ky').replace(/[^a-zA-Z0-9]/g, '_');
+    XLSX.writeFile(workbook, `Danh_sach_CHUA_DANG_KY_${cleanTitle}.xlsx`);
+  };
+
+  const handleCopyZaloCampaignMessage = () => {
+    const message = generateZaloCampaignReminderMessage();
+    navigator.clipboard.writeText(message).then(() => {
+      setZaloCopiedToast(true);
+      setTimeout(() => setZaloCopiedToast(false), 3000);
+    }).catch(() => {
+      alert("Không thể tự động sao chép. Vui lòng chọn văn bản và nhấn Ctrl+C!");
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -830,13 +997,13 @@ Trân trọng cảm ơn Thầy/Cô!`;
                                   {cam.is_active ? 'Khóa' : 'Mở'}
                                 </button>
 
-                                {/* NÚT SOẠN TIN NHẮN GVCN */}
+                                {/* NÚT SOẠN TIN NHẮN ZALO & BÁO CÁO HS CHƯA ĐĂNG KÝ */}
                                 <button 
-                                  onClick={() => openTeacherReminderModal(cam)} 
+                                  onClick={() => openZaloCampaignReminderModal(cam)} 
                                   style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #bae6fd', background: '#f0f9ff', color: '#0369a1', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                                  title="Tạo tin nhắn Zalo/SMS đôn đốc gửi Giáo viên chủ nhiệm"
+                                  title="Tạo tin nhắn Zalo đôn đốc và báo cáo danh sách học sinh chưa đăng ký cho GVCN"
                                 >
-                                  <MessageSquare size={13} /> Soạn tin GVCN
+                                  <MessageSquare size={13} /> 📲 Nhắc Zalo & Báo cáo
                                 </button>
 
                                 <button onClick={() => { setSelectedCampaignId(cam.id); setActiveTab('results'); }} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#0284c7', cursor: 'pointer', fontSize: '12px' }}>
@@ -904,6 +1071,14 @@ Trân trọng cảm ơn Thầy/Cô!`;
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => openZaloCampaignReminderModal(campaigns.find(c => c.id === selectedCampaignId))} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#be123c', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(190,18,60,0.3)' }}
+                    title="Tạo tin nhắn Zalo đôn đốc và báo cáo danh sách học sinh chưa đăng ký cho đợt này"
+                  >
+                    <MessageSquare size={16} /> 📲 Xuất Tin Nhắn Zalo Nhắc Nhở
+                  </button>
+
                   <button 
                     onClick={() => setShowReportModal(true)} 
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(2,132,199,0.3)' }}
@@ -1387,56 +1562,134 @@ Trân trọng cảm ơn Thầy/Cô!`;
           </form>
         </div>
       )}
-      {/* TEACHER REMINDER MODAL (SOẠN TIN NHẮN GVCN) */}
-      {showTeacherReminderModal && reminderCampaign && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
-          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
-              <h3 style={{ margin: 0, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
-                <MessageSquare size={20} color="#0284c7" /> Soạn Tin Nhắn Đôn Đốc Gửi Giáo Viên Chủ Nhiệm
-              </h3>
-              <button onClick={() => setShowTeacherReminderModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
+      {/* 📲 MODAL ZALO REMINDER & UNREGISTERED REPORT FOR DYNAMIC CAMPAIGNS */}
+      {showZaloCampaignModal && zaloCampaign && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', width: '100%', maxWidth: '750px', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px' }}>
+                  <MessageSquare size={22} color="#be123c" /> Xuất Tin Nhắn Zalo Nhắc Nhở & Báo Cáo HS Chưa Đăng Ký
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Đợt đăng ký: <strong>{zaloCampaign.title}</strong>
+                </p>
+              </div>
+              <button onClick={() => setShowZaloCampaignModal(false)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}>
                 <X size={20} />
               </button>
             </div>
 
-            <div style={{ marginBottom: '16px', fontSize: '13px', color: '#475569', background: '#f0f9ff', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #0284c7' }}>
-              💡 <strong>Mẹo:</strong> Tin nhắn dưới đây đã được hệ thống tự động tổng hợp số liệu tiến độ của đợt <strong>"{reminderCampaign.title}"</strong>. Bạn có thể chỉnh sửa nội dung trước khi bấm sao chép để gửi vào nhóm Zalo/SMS của GVCN.
-            </div>
-
-            {loadingReminderData ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: '#0284c7', fontWeight: 'bold' }}>
-                ⏳ Đang tổng hợp số liệu đăng ký theo từng lớp...
+            {loadingZaloData ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#be123c', fontWeight: 'bold' }}>
+                ⏳ Đang tải danh sách học sinh và tổng hợp dữ liệu chưa đăng ký...
               </div>
             ) : (
               <div>
-                <label style={styles.label}>Nội dung tin nhắn (Có thể chỉnh sửa):</label>
-                <textarea 
-                  rows={13} 
-                  value={reminderMessage} 
-                  onChange={e => setReminderMessage(e.target.value)} 
-                  style={{ ...styles.input, fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.5', background: '#f8fafc', color: '#0f172a' }}
-                />
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ fontSize: '12px', color: copiedReminder ? '#16a34a' : '#64748b', fontWeight: 'bold' }}>
-                    {copiedReminder ? '✅ Đã sao chép vào bộ nhớ tạm!' : 'Sẵn sàng gửi Zalo/SMS cho GVCN.'}
+                {/* Filters Section */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px', background: '#fff1f2', padding: '12px', borderRadius: '10px', border: '1px solid #fecdd3' }}>
+                  <div>
+                    <label style={{ ...styles.label, color: '#9f1239' }}>1. Lọc Theo Lớp:</label>
+                    <select 
+                      value={zaloTargetClass} 
+                      onChange={e => setZaloTargetClass(e.target.value)}
+                      style={{ ...styles.input, backgroundColor: 'white', fontWeight: 'bold' }}
+                    >
+                      <option value="ALL">-- Tất cả các Lớp --</option>
+                      {Array.from(new Set(zaloAllStudents.map(s => s.student_class).filter(Boolean))).sort().map(cls => (
+                        <option key={cls} value={cls}>Lớp {cls}</option>
+                      ))}
+                    </select>
                   </div>
-                  
-                  <div style={{ display: 'flex', gap: '10px' }}>
-                    <button type="button" onClick={() => setShowTeacherReminderModal(false)} style={{ padding: '9px 18px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569' }}>
-                      Đóng
-                    </button>
+
+                  <div>
+                    <label style={{ ...styles.label, color: '#9f1239' }}>2. Lọc Theo Khối:</label>
+                    <select 
+                      value={zaloTargetGrade} 
+                      onChange={e => setZaloTargetGrade(e.target.value)}
+                      style={{ ...styles.input, backgroundColor: 'white', fontWeight: 'bold' }}
+                    >
+                      <option value="ALL">-- Tất cả Khối --</option>
+                      <option value="Khối 10">Khối 10</option>
+                      <option value="Khối 11">Khối 11</option>
+                      <option value="Khối 12">Khối 12</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ ...styles.label, color: '#9f1239' }}>3. Mẫu Tin Nhắn Zalo:</label>
+                    <select 
+                      value={zaloTemplateType} 
+                      onChange={e => setZaloTemplateType(e.target.value)}
+                      style={{ ...styles.input, backgroundColor: 'white', fontWeight: 'bold' }}
+                    >
+                      <option value="class_group">💬 Mẫu 1: Nhóm Zalo Lớp (GVCN)</option>
+                      <option value="school_report">📊 Mẫu 2: Tiến Độ Toàn Trường</option>
+                      <option value="simple_list">📋 Mẫu 3: Danh Sách Rút Gọn</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Textarea displaying message */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ ...styles.label, margin: 0 }}>Nội dung tin nhắn Zalo (Đã tự động tổng hợp & sẵn sàng copy):</label>
+                    {zaloCopiedToast && (
+                      <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Check size={14} /> Đã sao chép vào bộ nhớ tạm!
+                      </span>
+                    )}
+                  </div>
+                  <textarea 
+                    rows={12} 
+                    readOnly
+                    value={generateZaloCampaignReminderMessage()} 
+                    style={{ ...styles.input, fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.5', background: '#f8fafc', color: '#0f172a', resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Footer Action Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+                  <a 
+                    href="https://chat.zalo.me" 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 14px', background: '#0284c7', color: 'white', textDecoration: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px' }}
+                  >
+                    <ExternalLink size={16} /> Mở Zalo Web (chat.zalo.me)
+                  </a>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                     <button 
                       type="button" 
-                      onClick={handleCopyReminderText} 
-                      style={{ padding: '9px 20px', background: copiedReminder ? '#16a34a' : '#0284c7', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}
+                      onClick={exportUnregisteredCampaignToExcel} 
+                      style={{ padding: '9px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                      title="Tải file Excel danh sách học sinh chưa hoàn thành đăng ký"
                     >
-                      {copiedReminder ? <Check size={16} /> : <Copy size={16} />}
-                      {copiedReminder ? 'Đã Sao Chép!' : 'Sao Chép Tin Nhắn Zalo'}
+                      <Download size={16} /> Xuất Excel Chưa Đăng Ký
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={handleCopyZaloCampaignMessage} 
+                      style={{ padding: '9px 20px', background: zaloCopiedToast ? '#16a34a' : '#be123c', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', transition: 'all 0.2s' }}
+                    >
+                      {zaloCopiedToast ? <Check size={16} /> : <Copy size={16} />}
+                      {zaloCopiedToast ? 'Đã Sao Chép!' : 'Sao Chép Tin Nhắn Zalo'}
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={() => setShowZaloCampaignModal(false)} 
+                      style={{ padding: '9px 16px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', color: '#475569', fontSize: '13px' }}
+                    >
+                      Đóng
                     </button>
                   </div>
                 </div>
+
               </div>
             )}
           </div>

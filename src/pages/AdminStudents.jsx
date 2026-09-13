@@ -662,6 +662,71 @@ export default function AdminStudents() {
     });
   };
 
+  // Generator function for Official MOET CSDL Ngành & Đề Án 06 Report Export
+  const handleExportMoetCsdlReport = () => {
+    const totalStudents = students.length;
+    const withCccd = students.filter(s => s.identity_card && /^\d{12}$/.test(s.identity_card.trim())).length;
+    const registered = students.filter(s => Boolean(s.has_account || s.account_username)).length;
+    const missingCccd = totalStudents - withCccd;
+    const missingPhone = students.filter(s => !(s.father_phone || s.mother_phone || s.parent_phone)).length;
+    const missingBirth = students.filter(s => !s.birth_date).length;
+
+    const summarySheetData = [
+      ["BÁO CÁO THỐNG KÊ CHUẨN HÓA CSDL NGÀNH & ĐỀ ÁN 06 - BỘ GIÁO DỤC VÀ ĐÀO TẠO"],
+      [`Trường: THPT Cao Bá Quát | Ngày báo cáo: ${new Date().toLocaleDateString('vi-VN')}`],
+      [""],
+      ["TỔNG QUAN CHỈ SỐ BÁO CÁO:"],
+      ["1. Tổng số học sinh toàn trường", totalStudents],
+      ["2. Học sinh đã tạo tài khoản hệ thống", registered, `${totalStudents > 0 ? Math.round((registered/totalStudents)*100) : 0}%`],
+      ["3. Học sinh đã chuẩn hóa CCCD 12 số", withCccd, `${totalStudents > 0 ? Math.round((withCccd/totalStudents)*100) : 0}%`],
+      ["4. Học sinh CHƯA cập nhật CCCD 12 số", missingCccd],
+      ["5. Học sinh thiếu SĐT Phụ huynh", missingPhone],
+      ["6. Học sinh thiếu Ngày sinh chuẩn", missingBirth],
+      [""],
+      ["CHI TIẾT TIẾN ĐỘ THEO LỚP HỌC:"]
+    ];
+
+    const uniqueClasses = Array.from(new Set(students.map(s => s.student_class).filter(Boolean))).sort();
+    summarySheetData.push(["STT", "Lớp", "Khối", "Tổng HS", "Đã có TK", "Đã có CCCD 12 số", "Thiếu CCCD", "Tỷ lệ chuẩn hóa (%)"]);
+
+    uniqueClasses.forEach((cls, idx) => {
+      const classStudents = students.filter(s => s.student_class === cls);
+      const cReg = classStudents.filter(s => Boolean(s.has_account || s.account_username)).length;
+      const cCccd = classStudents.filter(s => s.identity_card && /^\d{12}$/.test(s.identity_card.trim())).length;
+      const cMissingCccd = classStudents.length - cCccd;
+      const cRate = classStudents.length > 0 ? Math.round((cCccd / classStudents.length) * 100) : 0;
+      const grade = getGradeLevel(cls);
+
+      summarySheetData.push([idx + 1, cls, grade, classStudents.length, cReg, cCccd, cMissingCccd, `${cRate}%`]);
+    });
+
+    const detailedSheetData = students.map((s, idx) => ({
+      "STT": idx + 1,
+      "Mã Học Sinh": s.student_code || '',
+      "Họ và Tên": s.student_name || s.full_name || '',
+      "Lớp": s.student_class || '',
+      "Khối": s.grade_level || getGradeLevel(s.student_class),
+      "Số CCCD (12 số)": s.identity_card || 'Chưa cập nhật',
+      "Trạng Thái CCCD": (s.identity_card && /^\d{12}$/.test(s.identity_card.trim())) ? "🟢 Đạt chuẩn CSDL Dân cư" : "🔴 Chưa có / Chưa đủ 12 số",
+      "Ngày Sinh": s.birth_date || '',
+      "Giới Tính": s.gender || 'Nam',
+      "Địa Chỉ": s.address || '',
+      "Họ Tên Phụ Huynh": s.father_name || s.mother_name || s.parent_name || '',
+      "SĐT Phụ Huynh": s.father_phone || s.mother_phone || s.parent_phone || '',
+      "Trạng Thái Tài Khoản": Boolean(s.has_account || s.account_username) ? "🟢 Đã tạo TK" : "⚪ Chưa tạo TK"
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const wsSummary = XLSX.utils.aoa_to_sheet(summarySheetData);
+    const wsDetail = XLSX.utils.json_to_sheet(detailedSheetData);
+
+    XLSX.utils.book_append_sheet(wb, wsSummary, "Tong_Hop_CSDL_Nganh");
+    XLSX.utils.book_append_sheet(wb, wsDetail, "Chi_Tiet_Hoc_Sinh");
+
+    const fileName = `BaoCao_CSDL_Nganh_DeAn06_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+  };
+
   const handleExportUnregisteredExcel = () => {
     const unregistered = students.filter(s => {
       const hasAccount = Boolean(s.has_account || s.account_username);
@@ -802,6 +867,10 @@ export default function AdminStudents() {
 
           <button onClick={handleExportExcel} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7' }}>
             <Download size={18} /> Xuất Excel (SMAS)
+          </button>
+
+          <button onClick={handleExportMoetCsdlReport} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px' }} title="Xuất Báo cáo Thống kê CSDL Ngành & Đề án 06 theo quy định Bộ GD&ĐT">
+            <ShieldCheck size={18} /> Báo Cáo CSDL Ngành (Sở GD&ĐT)
           </button>
 
           <button 
