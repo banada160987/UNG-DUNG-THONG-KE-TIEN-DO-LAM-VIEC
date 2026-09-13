@@ -346,6 +346,52 @@ export default function TeacherDashboard() {
             <Link to="/teacher-dashboard/app-hub" style={{ display: 'block', textAlign: 'center', padding: '12px', background: '#4f46e5', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold' }}>Mở Kho Ứng Dụng</Link>
           </div>
 
+          {/* Soạn Giáo Án Chuẩn CV 5512 */}
+          <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%)', borderRadius: '20px', padding: '24px', border: '2px solid #bae6fd', boxShadow: '0 10px 25px rgba(2, 132, 199, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#e0f2fe', color: '#0284c7', borderRadius: '16px' }}>
+                <BookOpen size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#0369a1', fontWeight: 'bold' }}>
+                  Soạn Giáo Án (CV 5512)
+                </h3>
+                <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>
+                  ✨ Kế hoạch bài dạy GDPT 2018
+                </span>
+              </div>
+            </div>
+            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Tự động tạo bài soạn 4 bước & 3 nhóm mục tiêu (Kiến thức, Năng lực, Phẩm chất). Xuất file Word (.doc) chuẩn 5512.
+            </p>
+            <Link to="/giao-vien/soan-giao-an-5512" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(2,132,199,0.3)' }}>
+              📝 Soạn Giáo Án 5512
+            </Link>
+          </div>
+
+          {/* Ra Đề Thi & Đảo Mã Đề (THPT 2025) */}
+          <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #fffbeb 100%)', borderRadius: '20px', padding: '24px', border: '2px solid #fde68a', boxShadow: '0 10px 25px rgba(217, 119, 6, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#fef3c7', color: '#d97706', borderRadius: '16px' }}>
+                <Activity size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#78350f', fontWeight: 'bold' }}>
+                  Ra Đề Thi & Đảo Đề 2025
+                </h3>
+                <span style={{ fontSize: '12px', color: '#d97706', fontWeight: 'bold' }}>
+                  🎲 Trắc nghiệm 4 dạng & Ma trận 3175
+                </span>
+              </div>
+            </div>
+            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Hỗ trợ 4 dạng câu hỏi chuẩn đề thi THPT 2025 (Đúng/Sai, trả lời ngắn). Tự động đảo mã đề (101, 102...) & xuất Word.
+            </p>
+            <Link to="/giao-vien/ra-de-thi" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #d97706, #b45309)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(217,119,6,0.3)' }}>
+              🎲 Ra Đề Thi & Đảo Đề
+            </Link>
+          </div>
+
         </div>
 
       </div>
