@@ -81,7 +81,7 @@ export default function StudentRegister() {
     try {
       const cleanUsername = formData.username.trim().toLowerCase();
 
-      // Check if username already exists in db or local
+      // 1. Anti-Duplicate Check: Check if username already exists in cbq_student_users
       const { data: existingUser } = await supabase
         .from('cbq_student_users')
         .select('*')
@@ -94,10 +94,66 @@ export default function StudentRegister() {
         return;
       }
 
+      // 2. Anti-Duplicate CCCD Check: Check if CCCD already registered in cbq_student_users
+      const { data: existingCccdUser } = await supabase
+        .from('cbq_student_users')
+        .select('*')
+        .eq('identity_card', cleanCCCD)
+        .limit(1);
+
+      if (existingCccdUser && existingCccdUser.length > 0) {
+        setErrorMsg(`Số CCCD / Mã định danh [${cleanCCCD}] đã được đăng ký tài khoản cho học sinh (${existingCccdUser[0].full_name}). Vui lòng Đăng nhập hoặc liên hệ Admin.`);
+        setSubmitting(false);
+        return;
+      }
+
+      // 3. Smart School Roster Matching (Ghép nối hồ sơ nhà trường trong cbq_students)
+      let matchedStudentCode = `HS${formData.student_class}-${Date.now().toString().slice(-4)}`;
+      
+      const { data: matchedRoster } = await supabase
+        .from('cbq_students')
+        .select('*')
+        .or(`identity_card.eq.${cleanCCCD},and(student_name.ilike.${formData.full_name.trim()},student_class.eq.${formData.student_class})`)
+        .limit(1);
+
+      if (matchedRoster && matchedRoster.length > 0) {
+        // Reuse existing student_code from pre-loaded school roster
+        matchedStudentCode = matchedRoster[0].student_code || matchedStudentCode;
+        
+        // Update existing roster record with latest registered details
+        await supabase
+          .from('cbq_students')
+          .update({
+            identity_card: cleanCCCD,
+            parent_phone: formData.father_phone.trim(),
+            father_phone: formData.father_phone.trim(),
+            has_account: true,
+            account_username: cleanUsername
+          })
+          .eq('id', matchedRoster[0].id);
+      } else {
+        // Insert new record into cbq_students
+        await supabase
+          .from('cbq_students')
+          .insert([{
+            student_code: matchedStudentCode,
+            student_name: formData.full_name.trim(),
+            student_class: formData.student_class,
+            grade_level: formData.grade_level,
+            identity_card: cleanCCCD,
+            parent_phone: formData.father_phone.trim(),
+            father_phone: formData.father_phone.trim(),
+            has_account: true,
+            account_username: cleanUsername,
+            is_active: true
+          }]);
+      }
+
       const newStudentUser = {
         username: cleanUsername,
         password: formData.password, // Stored securely
         full_name: formData.full_name.trim(),
+        student_code: matchedStudentCode,
         identity_card: cleanCCCD,
         grade_level: formData.grade_level,
         student_class: formData.student_class,
@@ -125,7 +181,7 @@ export default function StudentRegister() {
 
       // Auto login newly registered student
       localStorage.setItem('cbq_current_student', JSON.stringify(newStudentUser));
-      alert(`🎉 ĐĂNG KÝ TÀI KHOẢN THÀNH CÔNG!\n\nChào mừng bạn ${formData.full_name} (${formData.student_class}). Hệ thống đã tự động đăng nhập tài khoản cho bạn.`);
+      alert(`🎉 ĐĂNG KÝ TÀI KHOẢN THÀNH CÔNG!\n\nMã học sinh: [${matchedStudentCode}]\nChào mừng bạn ${formData.full_name} (Lớp ${formData.student_class}). Hệ thống đã tự động ghép nối với danh sách nhà trường và đăng nhập tài khoản cho bạn.`);
       navigate('/binh-chon');
 
     } catch (err) {

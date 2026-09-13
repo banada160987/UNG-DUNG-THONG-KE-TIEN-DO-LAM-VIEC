@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabaseAdmin } from '../lib/supabase';
-import { Users, Upload, Search, Download, Plus, Save, Trash2, Edit3, CheckCircle2, AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { Users, Upload, Search, Download, Plus, Save, Trash2, Edit3, CheckCircle2, AlertCircle, RefreshCw, FileSpreadsheet, Lock, Unlock, ShieldCheck, ShieldAlert } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const DEFAULT_STUDENTS = [
@@ -19,6 +19,24 @@ export default function AdminStudents() {
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('ALL');
+
+  // Profile Update Global Lock State
+  const [isProfileLocked, setIsProfileLocked] = useState(() => {
+    return localStorage.getItem('cbq_profile_update_locked') === 'true';
+  });
+
+  const handleToggleLockUpdate = () => {
+    const nextState = !isProfileLocked;
+    const msg = nextState 
+      ? "Bạn có chắc chắn muốn KHÓA đợt cập nhật thông tin học sinh?\n(Học sinh sẽ không thể chỉnh sửa hồ sơ sau khi khóa)."
+      : "Bạn có chắc chắn muốn MỞ lại đợt cập nhật thông tin học sinh?";
+    
+    if (window.confirm(msg)) {
+      setIsProfileLocked(nextState);
+      localStorage.setItem('cbq_profile_update_locked', String(nextState));
+      alert(nextState ? "🔴 ĐÃ KHÓA đợt cập nhật hồ sơ cá nhân thành công!" : "🟢 ĐÃ MỞ đợt cập nhật hồ sơ cá nhân cho học sinh!");
+    }
+  };
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -541,6 +559,9 @@ export default function AdminStudents() {
     }
   };
 
+  // Account Filter State
+  const [selectedAccountFilter, setSelectedAccountFilter] = useState('ALL');
+
   const filteredStudents = students.filter(s => {
     const computedGrade = getGradeLevel(s.student_class);
     const matchSearch = !searchTerm ||
@@ -550,7 +571,13 @@ export default function AdminStudents() {
       s.identity_card?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (s.father_phone || s.parent_phone)?.includes(searchTerm);
     const matchGrade = selectedGrade === 'ALL' || computedGrade === selectedGrade;
-    return matchSearch && matchGrade;
+    
+    const hasAccount = Boolean(s.has_account || s.account_username);
+    const matchAccount = selectedAccountFilter === 'ALL' ||
+      (selectedAccountFilter === 'REGISTERED' && hasAccount) ||
+      (selectedAccountFilter === 'NOT_REGISTERED' && !hasAccount);
+
+    return matchSearch && matchGrade && matchAccount;
   });
 
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
@@ -604,6 +631,22 @@ export default function AdminStudents() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button 
+            onClick={handleToggleLockUpdate} 
+            className="btn-primary" 
+            style={{ 
+              padding: '10px 16px', 
+              backgroundColor: isProfileLocked ? '#dc2626' : '#16a34a', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px' 
+            }}
+            title="Bật/Khóa đợt cập nhật hồ sơ cá nhân của toàn bộ học sinh"
+          >
+            {isProfileLocked ? <Lock size={18} /> : <Unlock size={18} />} 
+            {isProfileLocked ? 'ĐÃ KHÓA CẬP NHẬT HỒ SƠ' : 'MỞ ĐỢT CẬP NHẬT HỒ SƠ'}
+          </button>
+
           <button onClick={handleTestDatabaseConnection} className="btn-primary" style={{ padding: '10px 16px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }} title="Kiểm tra xem CSDL Supabase có cho phép ghi dữ liệu không">
             <CheckCircle2 size={18} /> Test Ghi CSDL
           </button>
@@ -763,6 +806,12 @@ export default function AdminStudents() {
           <option value="Khối 11">Khối 11</option>
           <option value="Khối 12">Khối 12</option>
         </select>
+
+        <select value={selectedAccountFilter} onChange={e => setSelectedAccountFilter(e.target.value)} style={{ ...styles.filterSelect, backgroundColor: '#f0fdf4', borderColor: '#86efac', color: '#166534' }}>
+          <option value="ALL">Tất cả Trạng thái TK</option>
+          <option value="REGISTERED">🟢 Đã Đăng Ký Tài Khoản</option>
+          <option value="NOT_REGISTERED">⚪ Chưa Đăng Ký Tài Khoản</option>
+        </select>
       </div>
 
       {/* DATA TABLE */}
@@ -778,6 +827,7 @@ export default function AdminStudents() {
                 <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
                   <th style={{ padding: '10px' }}>STT</th>
                   <th style={{ padding: '10px' }}>Mã Học Sinh</th>
+                  <th style={{ padding: '10px' }}>Trạng Thái TK</th>
                   <th style={{ padding: '10px' }}>Số CCCD (12 số)</th>
                   <th style={{ padding: '10px' }}>Họ và Tên</th>
                   <th style={{ padding: '10px' }}>Lớp / Khối</th>
@@ -796,11 +846,23 @@ export default function AdminStudents() {
                   const sGender = s.gender || 'Nam';
                   const pName = s.father_name || s.mother_name || s.parent_name || '';
                   const pPhone = s.father_phone || s.mother_phone || s.parent_phone || '';
+                  const hasAccount = Boolean(s.has_account || s.account_username);
 
                   return (
                     <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '10px', fontWeight: 'bold' }}>#{indexOfFirstItem + idx + 1}</td>
                       <td style={{ padding: '10px', fontWeight: 'bold', color: '#0284c7' }}>{s.student_code}</td>
+                      <td style={{ padding: '10px' }}>
+                        {hasAccount ? (
+                          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <CheckCircle2 size={12} /> Đã Đăng Ký
+                          </span>
+                        ) : (
+                          <span style={{ background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+                            ⚪ Chưa tạo TK
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: '10px', fontWeight: 'bold', color: s.identity_card ? '#059669' : '#94a3b8' }}>
                         {sCccd}
                       </td>

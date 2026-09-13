@@ -122,9 +122,73 @@ export default function StudentDashboard() {
     }));
   };
 
+  // SMART CCCD VALIDATION (ĐỀ ÁN 06 & CSDL DÂN CƯ)
+  const validateCCCDSmart = (cccd, birthDateStr, gender) => {
+    const clean = String(cccd || '').trim();
+    if (!clean) return { valid: false, message: "Số CCCD / Mã định danh cá nhân là BẮT BUỘC theo quy định CSDL Dân cư & SMAS." };
+    if (!/^\d{12}$/.test(clean)) return { valid: false, message: "Số CCCD / Mã định danh cá nhân phải chứa đúng 12 chữ số." };
+
+    const provCode = parseInt(clean.substring(0, 3), 10);
+    if (isNaN(provCode) || (provCode > 96 && provCode !== 0)) {
+      return { valid: false, message: "3 chữ số đầu của CCCD không hợp lệ (mã Tỉnh/Thành phố từ 001 - 096)." };
+    }
+
+    if (birthDateStr && birthDateStr.includes('-')) {
+      const parts = birthDateStr.split('-');
+      const year = parts[0];
+      const birthYearShort = year.substring(2);
+      const cccdYearShort = clean.substring(4, 6);
+
+      if (birthYearShort !== cccdYearShort) {
+        return { valid: false, message: `Năm sinh (${year}) không khớp với 2 chữ số năm sinh trên CCCD (${cccdYearShort}).` };
+      }
+
+      const genderDigit = parseInt(clean.substring(3, 4), 10);
+      const fullYear = parseInt(year, 10);
+      let expectedGenderDigit = -1;
+      if (fullYear >= 1900 && fullYear <= 1999) {
+        expectedGenderDigit = (gender === 'Nữ') ? 1 : 0;
+      } else if (fullYear >= 2000 && fullYear <= 2099) {
+        expectedGenderDigit = (gender === 'Nữ') ? 3 : 2;
+      }
+
+      if (expectedGenderDigit !== -1 && genderDigit !== expectedGenderDigit) {
+        return { valid: false, message: `Chữ số thứ 4 của CCCD ('${genderDigit}') không khớp với giới tính '${gender}' và năm sinh (${year}).` };
+      }
+    }
+
+    return { valid: true };
+  };
+
+  const updateProfileForm = (updater) => {
+    setProfileForm(prev => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      if (student && student.username) {
+        try {
+          localStorage.setItem(`cbq_profile_draft_${student.username}`, JSON.stringify(next));
+        } catch (e) {
+          console.warn("Lỗi lưu nháp:", e);
+        }
+      }
+      return next;
+    });
+  };
+
   const openProfileModal = () => {
-    if (student) initProfileForm(student);
-    setProfileErrorMsg('');
+    if (student) {
+      const draftStr = localStorage.getItem(`cbq_profile_draft_${student.username}`);
+      if (draftStr) {
+        try {
+          const draftObj = JSON.parse(draftStr);
+          setProfileForm(draftObj);
+          setProfileErrorMsg("💡 Đã tự động khôi phục bản nháp chưa lưu trước đó.");
+        } catch (e) {
+          initProfileForm(student);
+        }
+      } else {
+        initProfileForm(student);
+      }
+    }
     setShowProfileModal(true);
   };
 
@@ -132,19 +196,23 @@ export default function StudentDashboard() {
     e.preventDefault();
     setProfileErrorMsg('');
 
+    // Check if Admin has locked profile updates
+    const isProfileLocked = localStorage.getItem('cbq_profile_update_locked') === 'true';
+    if (isProfileLocked) {
+      setProfileErrorMsg("🔴 Đợt cập nhật hồ sơ cá nhân hiện đang KHÓA theo quy định nhà trường. Học sinh không thể lưu thông tin vào lúc này.");
+      return;
+    }
+
     if (!profileForm.full_name.trim()) {
       setProfileErrorMsg("Vui lòng nhập Họ và Tên học sinh.");
       return;
     }
 
-    // MANDATORY CCCD VALIDATION
+    // SMART CCCD VALIDATION
     const cleanCCCD = profileForm.identity_card.trim();
-    if (!cleanCCCD) {
-      setProfileErrorMsg("Số CCCD / Mã định danh cá nhân là BẮT BUỘC theo quy định CSDL Dân cư & SMAS.");
-      return;
-    }
-    if (!/^\d{12}$/.test(cleanCCCD)) {
-      setProfileErrorMsg("Số CCCD / Mã định danh cá nhân phải chứa đúng 12 chữ số.");
+    const cccdCheck = validateCCCDSmart(cleanCCCD, profileForm.birth_date, profileForm.gender);
+    if (!cccdCheck.valid) {
+      setProfileErrorMsg(cccdCheck.message);
       return;
     }
 
@@ -183,9 +251,12 @@ export default function StudentDashboard() {
         }]);
 
       localStorage.setItem('cbq_current_student', JSON.stringify(updatedStudent));
+      if (student && student.username) {
+        localStorage.removeItem(`cbq_profile_draft_${student.username}`);
+      }
       setStudent(updatedStudent);
 
-      alert("🎉 CẬP NHẬT HỒ SƠ THÀNH CÔNG!\n\nThông tin cá nhân & nhân thân đã được lưu đồng bộ chuẩn CSDL Dân cư, SMAS & CSDL Ngành.");
+      alert("🎉 CẬP NHẬT HỒ SƠ THÀNH CÔNG!\n\nThông tin cá nhân & nhân thân đã được lưu đồng bộ chuẩn CSDL Dân cư (Đề án 06), SMAS & CSDL Ngành.");
       setShowProfileModal(false);
     } catch (err) {
       console.error(err);
