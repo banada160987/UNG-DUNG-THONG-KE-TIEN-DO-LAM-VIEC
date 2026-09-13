@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard, FolderOpen, Calendar, Users, Key, RefreshCw, Copy, Check, Search, Download, X, AlertCircle, ShieldCheck } from 'lucide-react';
+import { LogOut, BookOpen, Wallet, Activity, ShieldAlert, GraduationCap, LayoutDashboard, FolderOpen, Calendar, Users, Key, RefreshCw, Copy, Check, Search, Download, X, AlertCircle, ShieldCheck, Award, FileCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import * as XLSX from 'xlsx';
 
@@ -389,6 +389,52 @@ export default function TeacherDashboard() {
             </p>
             <Link to="/giao-vien/ra-de-thi" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #d97706, #b45309)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(217,119,6,0.3)' }}>
               🎲 Ra Đề Thi & Đảo Đề
+            </Link>
+          </div>
+
+          {/* Đánh Giá Học Sinh TT 22 & AI Nhận Xét */}
+          <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)', borderRadius: '20px', padding: '24px', border: '2px solid #bbf7d0', boxShadow: '0 10px 25px rgba(22, 163, 74, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#dcfce7', color: '#16a34a', borderRadius: '16px' }}>
+                <Award size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#14532d', fontWeight: 'bold' }}>
+                  Đánh Giá Học Sinh (TT 22)
+                </h3>
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>
+                  🤖 Trợ lý AI gợi ý 5 phẩm chất & 3 năng lực
+                </span>
+              </div>
+            </div>
+            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Sổ đánh giá học sinh chuẩn Thông tư 22/2021/TT-BGDĐT. AI nhận xét tự động theo phẩm chất, năng lực GDPT 2018 & Xuất CSDL.
+            </p>
+            <Link to="/giao-vien/danh-gia-tt22" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}>
+              🏆 Đánh Giá TT 22 & Nhận Xét AI
+            </Link>
+          </div>
+
+          {/* Quản Lý Tổ Chuyên Môn & Ký Duyệt Giáo Án */}
+          <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #faf5ff 100%)', borderRadius: '20px', padding: '24px', border: '2px solid #e9d5ff', boxShadow: '0 10px 25px rgba(147, 51, 234, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#f3e8ff', color: '#9333ea', borderRadius: '16px' }}>
+                <FileCheck size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#581c87', fontWeight: 'bold' }}>
+                  Quản Lý Tổ Chuyên Môn
+                </h3>
+                <span style={{ fontSize: '12px', color: '#9333ea', fontWeight: 'bold' }}>
+                  ✍️ Ký duyệt Giáo án điện tử & SHCM
+                </span>
+              </div>
+            </div>
+            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Dành cho TTCM/TPCM ký duyệt giáo án 5512 trực tuyến, quản lý khung Phân phối chương trình (PPCT) & Biên bản NCBH.
+            </p>
+            <Link to="/giao-vien/quan-ly-to-chuyen-mon" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #9333ea, #7e22ce)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(147,51,234,0.3)' }}>
+              📑 Quản Lý Tổ & Ký Duyệt Giáo Án
             </Link>
           </div>
 
