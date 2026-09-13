@@ -85,17 +85,32 @@ export default function AdminRegistrations() {
   async function fetchResults(campaignId) {
     setLoadingResults(true);
     try {
-      const campaign = campaigns.find(c => c.id === campaignId);
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
       const client = campaign?._source === 'sb1' ? supabase : adminClient;
       
-      const { data, error } = await client
-        .from('cbq_student_registrations')
-        .select('*')
-        .eq('campaign_id', campaignId)
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        setResults(data);
+      let allRegs = [];
+      let from = 0;
+      const step = 1000;
+      let fetchMore = true;
+
+      while (fetchMore) {
+        const { data, error } = await client
+          .from('cbq_student_registrations')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1);
+
+        if (!error && data && data.length > 0) {
+          allRegs = [...allRegs, ...data];
+          from += step;
+          if (data.length < step) fetchMore = false;
+        } else {
+          fetchMore = false;
+        }
       }
+
+      setResults(allRegs);
     } catch (err) {
       console.error(err);
     } finally {
@@ -240,22 +255,61 @@ export default function AdminRegistrations() {
     setZaloCopiedToast(false);
 
     try {
-      // 1. Fetch all master students
-      const studRes = await DualSupabaseService.selectSmart(
-        'cbq_students',
-        (q) => q.order('student_class', { ascending: true }).order('student_name', { ascending: true }),
-        'student_code'
-      );
-      const masterStudents = studRes.data || [];
+      // 1. Fetch all master students with pagination loop (overcoming Supabase 1000 row limit)
+      let masterStudents = [];
+      let from = 0;
+      const step = 1000;
+      let fetchMore = true;
+
+      while (fetchMore) {
+        const studRes = await DualSupabaseService.selectSmart(
+          'cbq_students',
+          (q) => q.order('student_class', { ascending: true }).order('student_name', { ascending: true }).range(from, from + step - 1),
+          'student_code'
+        );
+        const chunk = studRes.data || [];
+        if (chunk.length > 0) {
+          masterStudents = [...masterStudents, ...chunk];
+          from += step;
+          if (chunk.length < step) fetchMore = false;
+        } else {
+          fetchMore = false;
+        }
+      }
+
+      // Fallback to localStorage if Supabase returns empty
+      if (masterStudents.length === 0) {
+        try {
+          const cached = localStorage.getItem('cbq_students_data');
+          if (cached) masterStudents = JSON.parse(cached);
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+
       setZaloAllStudents(masterStudents);
 
-      // 2. Fetch campaign registrations
-      const regRes = await DualSupabaseService.selectSmart(
-        'cbq_student_registrations',
-        (q) => q.eq('campaign_id', targetCam.id),
-        'id'
-      );
-      const campaignRegs = regRes.data || [];
+      // 2. Fetch campaign registrations with pagination loop
+      let campaignRegs = [];
+      let regFrom = 0;
+      let fetchMoreRegs = true;
+
+      while (fetchMoreRegs) {
+        const regRes = await DualSupabaseService.selectSmart(
+          'cbq_student_registrations',
+          (q) => q.eq('campaign_id', targetCam.id).range(regFrom, regFrom + step - 1),
+          'id'
+        );
+        const chunk = regRes.data || [];
+        if (chunk.length > 0) {
+          campaignRegs = [...campaignRegs, ...chunk];
+          regFrom += step;
+          if (chunk.length < step) fetchMoreRegs = false;
+        } else {
+          fetchMoreRegs = false;
+        }
+      }
+
       setZaloCampaignRegistrations(campaignRegs);
     } catch (err) {
       console.error("Lỗi khi tải dữ liệu đôn đốc Zalo:", err);
@@ -1598,9 +1652,11 @@ export default function AdminRegistrations() {
                       style={{ ...styles.input, backgroundColor: 'white', fontWeight: 'bold' }}
                     >
                       <option value="ALL">-- Tất cả các Lớp --</option>
-                      {Array.from(new Set(zaloAllStudents.map(s => s.student_class).filter(Boolean))).sort().map(cls => (
-                        <option key={cls} value={cls}>Lớp {cls}</option>
-                      ))}
+                      {Array.from(new Set(zaloAllStudents.map(s => s.student_class).filter(Boolean)))
+                        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+                        .map(cls => (
+                          <option key={cls} value={cls}>Lớp {cls}</option>
+                        ))}
                     </select>
                   </div>
 
