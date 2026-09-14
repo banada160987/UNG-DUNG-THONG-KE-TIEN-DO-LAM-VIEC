@@ -207,14 +207,9 @@ export default function TeacherRegister() {
         .from('cbq_teacher_users')
         .insert([newTeacherUser]);
 
-      if (insertErr) {
-        // Fallback local storage registry
-        const localTeacherAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
-        if (localTeacherAccounts.some(u => u.username === cleanUsername)) {
-          setErrorMsg(`Tên đăng nhập [${cleanUsername}] đã tồn tại.`);
-          setSubmitting(false);
-          return;
-        }
+      // Always save a local copy as backup so login works even if DB/network is unreachable
+      const localTeacherAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
+      if (!localTeacherAccounts.some(u => u.username === cleanUsername)) {
         localTeacherAccounts.push(newTeacherUser);
         localStorage.setItem('cbq_teacher_accounts', JSON.stringify(localTeacherAccounts));
       }

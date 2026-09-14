@@ -16,27 +16,57 @@ export default function TeacherLogin() {
     setLoading(true);
 
     try {
-      const { data, error: dbError } = await supabase
-        .from('cbq_teacher_users')
-        .select('*')
-        .eq('username', username)
-        .eq('password_hash', password)
-        .single();
+      const cleanUsername = username.trim().toLowerCase();
+      const cleanPassword = password.trim();
 
-      if (dbError || !data) {
+      let matchedUser = null;
+
+      // 1. Try querying Supabase cbq_teacher_users
+      try {
+        const { data: users, error: dbError } = await supabase
+          .from('cbq_teacher_users')
+          .select('*')
+          .ilike('username', cleanUsername);
+
+        if (!dbError && users && users.length > 0) {
+          const found = users.find(u => 
+            (u.password_hash === cleanPassword || u.password === cleanPassword)
+          );
+          if (found) {
+            matchedUser = found;
+          }
+        }
+      } catch (dbErr) {
+        console.warn("Lỗi tra cứu Supabase:", dbErr);
+      }
+
+      // 2. Fallback to local storage cbq_teacher_accounts if Supabase fails or not found
+      if (!matchedUser) {
+        const localAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
+        const localMatch = localAccounts.find(u => 
+          (u.username || '').trim().toLowerCase() === cleanUsername &&
+          (u.password_hash === cleanPassword || u.password === cleanPassword)
+        );
+        if (localMatch) {
+          matchedUser = localMatch;
+        }
+      }
+
+      if (!matchedUser) {
         setError('Tài khoản hoặc mật khẩu không đúng!');
         setLoading(false);
         return;
       }
 
-      // Lưu thông tin giáo viên vào localStorage
-      localStorage.setItem('cbq_current_teacher', JSON.stringify(data));
+      // Save logged-in teacher state
+      localStorage.setItem('cbq_current_teacher', JSON.stringify(matchedUser));
       navigate('/teacher-dashboard');
       
     } catch (err) {
       setError('Lỗi kết nối máy chủ. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
