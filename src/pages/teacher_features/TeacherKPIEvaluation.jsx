@@ -167,6 +167,37 @@ export default function TeacherKPIEvaluation() {
     is_homeroom: false
   });
 
+  // Role & Scope State (GVBM vs TTCM vs BGH)
+  const [viewScope, setViewScope] = useState('ALL_DEPT'); // 'ALL_DEPT' | 'ONLY_ME'
+  
+  // Is School Admin / Principal with cross-department oversight rights
+  const isSchoolAdmin = useMemo(() => {
+    if (!currentTeacher) return false;
+    const title = (currentTeacher.title || '').toLowerCase();
+    const role = (currentTeacher.role || '').toLowerCase();
+    return (
+      title.includes('hiệu trưởng') ||
+      title.includes('bgh') ||
+      title.includes('phó hiệu trưởng') ||
+      role === 'admin' ||
+      role === 'secretary'
+    );
+  }, [currentTeacher]);
+
+  // Is Department Head or Manager (TTCM / TPCM / BGH)
+  const isManager = useMemo(() => {
+    if (!currentTeacher) return true; // Default fallback
+    const title = (currentTeacher.title || '').toLowerCase();
+    const role = (currentTeacher.role || '').toLowerCase();
+    return (
+      isSchoolAdmin ||
+      title.includes('tổ trưởng') ||
+      title.includes('ttcm') ||
+      title.includes('tổ phó') ||
+      title.includes('tpcm')
+    );
+  }, [currentTeacher, isSchoolAdmin]);
+
   // 1. Initial Load: Teacher session, Departments from DB, Staff from DB
   useEffect(() => {
     const teacherStr = localStorage.getItem('cbq_current_teacher');
@@ -197,7 +228,6 @@ export default function TeacherKPIEvaluation() {
       if (!deptErr && deptData && deptData.length > 0) {
         depts = deptData.map(d => d.name);
       } else {
-        // Fallback: fetch distinct departments from cbq_staff
         const { data: staffDeptData } = await supabase
           .from('cbq_staff')
           .select('department')
@@ -713,11 +743,14 @@ export default function TeacherKPIEvaluation() {
   // Filtered Evaluations for Display
   const filteredEvaluations = useMemo(() => {
     return evaluations.filter(ev => {
+      if (viewScope === 'ONLY_ME' && currentTeacher?.full_name) {
+        if (ev.teacher_name !== currentTeacher.full_name) return false;
+      }
       const matchSearch = !searchTerm || ev.teacher_name.toLowerCase().includes(searchTerm.toLowerCase()) || (ev.teacher_title && ev.teacher_title.toLowerCase().includes(searchTerm.toLowerCase()));
       const matchGrade = filterGrade === 'ALL' || ev.kpi_grade === filterGrade;
       return matchSearch && matchGrade;
     });
-  }, [evaluations, searchTerm, filterGrade]);
+  }, [evaluations, searchTerm, filterGrade, viewScope, currentTeacher]);
 
   // Export to Excel (.xlsx)
   const handleExportExcel = () => {
@@ -834,17 +867,26 @@ export default function TeacherKPIEvaluation() {
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
                 <Building2 size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                Tổ Chuyên Môn (Dữ liệu hệ thống)
+                Tổ Chuyên Môn {isSchoolAdmin ? '(Toàn trường - BGH)' : '(Nội bộ tổ của bạn)'}
               </label>
-              <select
-                value={selectedDept}
-                onChange={(e) => handleDepartmentChange(e.target.value)}
-                style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#1e293b', background: '#f8fafc' }}
-              >
-                {departments.map((dept, i) => (
-                  <option key={i} value={dept}>{dept}</option>
-                ))}
-              </select>
+              {isSchoolAdmin ? (
+                <select
+                  value={selectedDept}
+                  onChange={(e) => handleDepartmentChange(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#1e293b', background: '#f8fafc' }}
+                >
+                  {departments.map((dept, i) => (
+                    <option key={i} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f1f5f9', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: '#0369a1', fontSize: '14px' }}>
+                  <span>{selectedDept || 'Tổ Chuyên Môn'}</span>
+                  <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                    🔒 Phân quyền nội bộ
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Evaluation Month */}
@@ -1091,6 +1133,45 @@ export default function TeacherKPIEvaluation() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                
+                {/* View Scope Switcher: All Dept vs Only Me */}
+                <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                  <button
+                    type="button"
+                    onClick={() => setViewScope('ALL_DEPT')}
+                    style={{
+                      padding: '5px 12px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      background: viewScope === 'ALL_DEPT' ? '#0284c7' : 'transparent',
+                      color: viewScope === 'ALL_DEPT' ? 'white' : '#475569',
+                      transition: '0.2s'
+                    }}
+                  >
+                    👥 Toàn Bộ Tổ ({evaluations.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewScope('ONLY_ME')}
+                    style={{
+                      padding: '5px 12px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '12.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      background: viewScope === 'ONLY_ME' ? '#0284c7' : 'transparent',
+                      color: viewScope === 'ONLY_ME' ? 'white' : '#475569',
+                      transition: '0.2s'
+                    }}
+                  >
+                    👤 Phiếu Cá Nhân Của Tôi
+                  </button>
+                </div>
+
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '13px', color: '#64748b' }}>Lọc xếp loại:</span>
                   <select
