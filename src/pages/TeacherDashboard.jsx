@@ -438,6 +438,29 @@ export default function TeacherDashboard() {
             </Link>
           </div>
 
+          {/* Đánh Giá KPI & Xếp Loại Viên Chức (NĐ 48/2023 & Luật TĐKT 2022) */}
+          <div style={{ background: 'linear-gradient(135deg, #ffffff 0%, #f0fdfa 100%)', borderRadius: '20px', padding: '24px', border: '2px solid #99f6e4', boxShadow: '0 10px 25px rgba(13, 148, 136, 0.08)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
+              <div style={{ padding: '12px', background: '#ccfbf1', color: '#0d9488', borderRadius: '16px' }}>
+                <Award size={28} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#115e59', fontWeight: 'bold' }}>
+                  Đánh Giá KPI Viên Chức
+                </h3>
+                <span style={{ fontSize: '12px', color: '#0d9488', fontWeight: 'bold' }}>
+                  🎯 Chuẩn NĐ 48/2023 & Luật TĐKT 2022
+                </span>
+              </div>
+            </div>
+            <p style={{ color: '#475569', fontSize: '14px', marginBottom: '24px', lineHeight: '1.5' }}>
+              Đánh giá KPI hàng tháng của Tổ chuyên môn với 4 nhóm tiêu chí chuẩn, tự động khống chế trần 20% xuất sắc & xuất Excel/In biên bản.
+            </p>
+            <Link to="/giao-vien/danh-gia-kpi-to-chuyen-mon" style={{ display: 'block', textAlign: 'center', padding: '12px', background: 'linear-gradient(135deg, #0d9488, #0f766e)', color: 'white', borderRadius: '10px', textDecoration: 'none', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(13,148,136,0.3)' }}>
+              🏆 Đánh Giá KPI Tổ Chuyên Môn
+            </Link>
+          </div>
+
         </div>
 
       </div>

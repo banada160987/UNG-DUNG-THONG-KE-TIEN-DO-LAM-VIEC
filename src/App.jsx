@@ -83,6 +83,7 @@ const TeacherLessonPlanBuilder = lazy(() => import('./pages/teacher_features/Tea
 const TeacherExamMaker = lazy(() => import('./pages/teacher_features/TeacherExamMaker'));
 const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/TeacherAssessmentTT22'));
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
+const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -156,6 +157,8 @@ function App() {
             <Route path="/giao-vien/ra-de-thi" element={<TeacherExamMaker />} />
             <Route path="/giao-vien/danh-gia-tt22" element={<TeacherAssessmentTT22 />} />
             <Route path="/giao-vien/quan-ly-to-chuyen-mon" element={<TeacherDepartmentManagement />} />
+            <Route path="/giao-vien/danh-gia-kpi-to-chuyen-mon" element={<TeacherKPIEvaluation />} />
+            <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherKPIEvaluation />} />
             <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
             <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
           </Route>

@@ -130,16 +130,39 @@ export default function TeacherDepartmentManagement() {
       </div>
 
       {/* Tabs Bar */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
-        <button onClick={() => setActiveTab('approval')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'approval' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'approval' ? '#4f46e5' : '#64748b' }}>
-          <CheckCircle2 size={18} /> Duyệt Giáo Án Điện Tử ({departmentPlans.filter(p => p.status === 'PENDING').length} Chờ duyệt)
-        </button>
-        <button onClick={() => setActiveTab('ppct')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'ppct' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'ppct' ? '#4f46e5' : '#64748b' }}>
-          <FileText size={18} /> Khung PPCT & Chuyên Đề Lựa Chọn (GDPT 2018)
-        </button>
-        <button onClick={() => setActiveTab('shcm')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'shcm' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'shcm' ? '#4f46e5' : '#64748b' }}>
-          <Users size={18} /> Sinh Hoạt Chuyên Môn (NCBH)
-        </button>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button onClick={() => setActiveTab('approval')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'approval' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'approval' ? '#4f46e5' : '#64748b' }}>
+            <CheckCircle2 size={18} /> Duyệt Giáo Án Điện Tử ({departmentPlans.filter(p => p.status === 'PENDING').length} Chờ duyệt)
+          </button>
+          <button onClick={() => setActiveTab('ppct')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'ppct' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'ppct' ? '#4f46e5' : '#64748b' }}>
+            <FileText size={18} /> Khung PPCT & Chuyên Đề Lựa Chọn (GDPT 2018)
+          </button>
+          <button onClick={() => setActiveTab('shcm')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'shcm' ? '3px solid #4f46e5' : '3px solid transparent', color: activeTab === 'shcm' ? '#4f46e5' : '#64748b' }}>
+            <Users size={18} /> Sinh Hoạt Chuyên Môn (NCBH)
+          </button>
+        </div>
+
+        <Link
+          to="/giao-vien/danh-gia-kpi-to-chuyen-mon"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            background: 'linear-gradient(135deg, #0d9488, #0f766e)',
+            color: 'white',
+            borderRadius: '10px',
+            textDecoration: 'none',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 10px rgba(13,148,136,0.25)',
+            marginBottom: '6px'
+          }}
+        >
+          <Award size={16} />
+          🎯 Đánh Giá KPI Hàng Tháng (NĐ 48/2023)
+        </Link>
       </div>
 
       {/* TAB 1: APPROVAL PORTAL */}
