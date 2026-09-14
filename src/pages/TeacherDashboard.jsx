@@ -40,210 +40,504 @@ export default function TeacherDashboard() {
   const isHomeroomTeacher = teacher?.role === 'gv_homeroom' || teacher?.homeroomClass;
 
   return (
-    <div className="min-h-screen bg-slate-50/50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '32px 20px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1e293b' }}>
+      <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+        
         {/* 1. TOP BANNER & HỒ SƠ GIÁO VIÊN */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xl shadow-inner border border-indigo-200">
-              {teacher?.name ? teacher.name.charAt(0) : 'GV'}
+        <div style={{
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          borderRadius: '20px',
+          padding: '24px 28px',
+          color: '#ffffff',
+          boxShadow: '0 10px 25px -5px rgba(15,23,42,0.2)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '20px',
+          marginBottom: '28px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+              color: '#ffffff',
+              fontSize: '22px',
+              fontWeight: '700',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(59,130,246,0.4)',
+              border: '2px solid rgba(255,255,255,0.2)'
+            }}>
+              {teacher?.name ? teacher.name.charAt(0).toUpperCase() : 'G'}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold text-slate-800">
-                  Giáo viên: {teacher?.name || 'Chưa cập nhật'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#ffffff' }}>
+                  Giáo viên: {teacher?.name || 'Tam Bou Branh'}
                 </h1>
                 {isHomeroomTeacher ? (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                    <UserCheck className="w-3.5 h-3.5" /> GVCN Lớp {teacher?.homeroomClass || '12A01'}
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    color: '#34d399',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}>
+                    <UserCheck size={14} /> GVCN Lớp {teacher?.homeroomClass || '12A01'}
                   </span>
                 ) : (
-                  <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: '600',
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    color: '#93c5fd',
+                    border: '1px solid rgba(59, 130, 246, 0.4)'
+                  }}>
                     Giáo viên Bộ môn {teacher?.subject ? `(${teacher.subject})` : ''}
                   </span>
                 )}
               </div>
-              <p className="text-sm text-slate-500 mt-0.5">
-                Cổng thông tin & Tiện ích quản lý giảng dạy - Trường THPT Cao Bá Quát
+              <p style={{ margin: '6px 0 0 0', fontSize: '13px', color: '#94a3b8' }}>
+                Cổng Quản lý Nghiệp vụ & Tiện ích Giảng dạy — Trường THPT Cao Bá Quát
               </p>
             </div>
           </div>
 
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-600 hover:text-red-600 bg-slate-100 hover:bg-red-50 rounded-xl transition-colors border border-slate-200"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              color: '#f87171',
+              backgroundColor: 'rgba(239, 68, 68, 0.12)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
           >
-            <LogOut className="w-4 h-4" /> Đăng xuất
+            <LogOut size={16} /> Đăng xuất
           </button>
         </div>
 
         {/* 2. THANH CHUYỂN TAB PHÂN NHÓM NGHIỆP VỤ */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          marginBottom: '28px',
+          overflowX: 'auto',
+          paddingBottom: '8px',
+          borderBottom: '2px solid #e2e8f0',
+          flexWrap: 'wrap'
+        }}>
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'all'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-              }`}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'all' ? '#0f172a' : '#ffffff',
+              color: activeTab === 'all' ? '#ffffff' : '#64748b',
+              boxShadow: activeTab === 'all' ? '0 4px 12px rgba(15,23,42,0.2)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
           >
-            <Filter className="w-4 h-4" /> Tất cả công cụ
+            <Filter size={16} /> Tất cả công cụ
           </button>
 
           <button
             onClick={() => setActiveTab('teaching')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'teaching'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200'
-              }`}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'teaching' ? '#4f46e5' : '#ffffff',
+              color: activeTab === 'teaching' ? '#ffffff' : '#64748b',
+              boxShadow: activeTab === 'teaching' ? '0 4px 12px rgba(79,70,229,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
           >
-            <BookOpen className="w-4 h-4" /> 1. Chuyên Môn & Giảng Dạy
+            <BookOpen size={16} /> 1. Chuyên Môn & Giảng Dạy
           </button>
 
           {isHomeroomTeacher && (
             <button
               onClick={() => setActiveTab('homeroom')}
-              className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'homeroom'
-                  ? 'bg-emerald-600 text-white shadow-sm'
-                  : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-600 border border-slate-200'
-                }`}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '12px',
+                fontSize: '13.5px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: 'none',
+                backgroundColor: activeTab === 'homeroom' ? '#059669' : '#ffffff',
+                color: activeTab === 'homeroom' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'homeroom' ? '0 4px 12px rgba(5,150,105,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s'
+              }}
             >
-              <Users className="w-4 h-4" /> 2. Công Tác Chủ Nhiệm ({teacher?.homeroomClass || '12A01'})
+              <Users size={16} /> 2. Công Tác Chủ Nhiệm ({teacher?.homeroomClass || '12A01'})
             </button>
           )}
 
           <button
             onClick={() => setActiveTab('utilities')}
-            className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition-all flex items-center gap-2 ${activeTab === 'utilities'
-                ? 'bg-purple-600 text-white shadow-sm'
-                : 'bg-white text-slate-600 hover:bg-purple-50 hover:text-purple-600 border border-slate-200'
-              }`}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'utilities' ? '#7c3aed' : '#ffffff',
+              color: activeTab === 'utilities' ? '#ffffff' : '#64748b',
+              boxShadow: activeTab === 'utilities' ? '0 4px 12px rgba(124,58,237,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
           >
-            <Calendar className="w-4 h-4" /> 3. Tra Cứu & Tiện Ích
+            <Calendar size={16} /> 3. Tra Cứu & Tiện Ích
           </button>
         </div>
 
         {/* 3. KHỐI NỘI DUNG CHỨC NĂNG DẠNG GROUPED CARDS */}
-        <div className="space-y-8">
-
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '36px' }}>
+          
           {/* KHỐI 1: 📘 NGHIỆP VỤ CHUYÊN MÔN & GIẢNG DẠY */}
           {(activeTab === 'all' || activeTab === 'teaching') && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Chuyên Môn & Giảng Dạy</h2>
-                    <p className="text-xs text-slate-500">Soạn giáo án, ra đề thi THPT 2025, đánh giá học sinh TT 22 & theo dõi sổ đầu bài</p>
-                  </div>
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#e0e7ff',
+                  color: '#4338ca',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(79,70,229,0.15)'
+                }}>
+                  <BookOpen size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
+                    1. Nghiệp Vụ Chuyên Môn & Giảng Dạy
+                  </h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Soạn kế hoạch bài dạy 5512, ra đề thi chuẩn THPT 2025, đánh giá học sinh TT 22 & theo dõi sổ đầu bài
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px'
+              }}>
+                
                 {/* CARD 1: SOẠN GIÁO ÁN */}
-                <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #e0e7ff',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold">
-                        <FileText className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#eef2ff',
+                        color: '#4f46e5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileText size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
-                        Kế hoạch bài dạy
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#eef2ff',
+                        color: '#4338ca',
+                        border: '1px solid #c7d2fe'
+                      }}>
+                        CV 5512 BGDĐT
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Soạn Giáo Án (CV 5512)
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Tự động tạo bài soạn 4 bước & 3 nhóm mục tiêu (Kiến thức, Năng lực, Phẩm chất). Xuất file Word (.doc) chuẩn 5512.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Tự động tạo kế hoạch bài dạy 4 bước & 3 nhóm mục tiêu (Kiến thức, Năng lực, Phẩm chất). Xuất file Word (.doc) chuẩn 5512.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/lesson-plans')}
-                    className="mt-5 w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#4f46e5',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(79,70,229,0.3)',
+                      transition: 'background 0.2s'
+                    }}
                   >
-                    <FileText className="w-4 h-4" /> Soạn Giáo Án 5512
+                    <FileText size={16} /> Soạn Giáo Án 5512
                   </button>
                 </div>
 
                 {/* CARD 2: RA ĐỀ THI 2025 */}
-                <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fef3c7',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-semibold">
-                        <Zap className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fffbeb',
+                        color: '#d97706',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Zap size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                        BGDĐT 2025
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fffbeb',
+                        color: '#b45309',
+                        border: '1px solid #fde68a'
+                      }}>
+                        Đề Thi THPT 2025
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-amber-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Ra Đề Thi & Đảo Đề 2025
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Hỗ trợ 4 dạng câu hỏi chuẩn đề thi THPT 2025 (Đúng/Sai, trả lời ngắn). Tự động đảo mã đề (101, 102...) & xuất đáp án.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Hỗ trợ 4 dạng câu hỏi chuẩn THPT 2025 (Đúng/Sai, trả lời ngắn). Tự động đảo mã đề (101, 102...), xuất ma trận & đáp án.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/exam-maker')}
-                    className="mt-5 w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#d97706',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
+                    }}
                   >
-                    <Zap className="w-4 h-4" /> Ra Đề Thi & Đảo Đề
+                    <Zap size={16} /> Ra Đề Thi & Đảo Đề
                   </button>
                 </div>
 
                 {/* CARD 3: ĐÁNH GIÁ TT 22 */}
-                <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #d1fae5',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold">
-                        <Award className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#ecfdf5',
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Award size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        AI Gợi ý
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#ecfdf5',
+                        color: '#047857',
+                        border: '1px solid #a7f3d0'
+                      }}>
+                        AI Gợi Ý Nhận Xét
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-emerald-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Đánh Giá Học Sinh (TT 22)
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Sổ đánh giá học sinh chuẩn Thông tư 22/2021/TT-BGDĐT. AI nhận xét tự động theo phẩm chất, năng lực GDPT 2018.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Sổ đánh giá học sinh chuẩn Thông tư 22/2021/TT-BGDĐT. Tích hợp AI tự động gợi ý nhận xét phẩm chất, năng lực GDPT 2018.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/assessment-tt22')}
-                    className="mt-5 w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(5,150,105,0.3)'
+                    }}
                   >
-                    <Award className="w-4 h-4" /> Đánh Giá TT 22 & Nhận Xét AI
+                    <Award size={16} /> Đánh Giá TT 22 & Nhận Xét AI
                   </button>
                 </div>
 
                 {/* CARD 4: SỔ ĐẦU BÀI & HỌC TẬP */}
-                <div className="bg-white rounded-2xl p-5 border border-indigo-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #e0f2fe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-semibold">
-                        <BookOpen className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f0f9ff',
+                        color: '#0284c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <BookOpen size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100">
-                        Sổ điện tử
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f0f9ff',
+                        color: '#0369a1',
+                        border: '1px solid #bae6fd'
+                      }}>
+                        Sổ Điện Tử
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-blue-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Tình hình Học tập & Sổ Đầu Bài
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Kiểm tra Sổ đầu bài điện tử do Lớp trưởng ghi và Báo cáo thiếu BTVN từ Lớp phó Học tập.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Kiểm tra Sổ đầu bài điện tử do Lớp trưởng ghi và Báo cáo thiếu bài tập về nhà hàng ngày từ Ban cán sự lớp.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/academics')}
-                    className="mt-5 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                    }}
                   >
-                    <Search className="w-4 h-4" /> Xem Tình Hình Học Tập
+                    <Search size={16} /> Xem Tình Hình Học Tập
                   </button>
                 </div>
 
@@ -253,98 +547,238 @@ export default function TeacherDashboard() {
 
           {/* KHỐI 2: 👥 CÔNG TÁC CHỦ NHIỆM */}
           {isHomeroomTeacher && (activeTab === 'all' || activeTab === 'homeroom') && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">
-                      Công Tác Chủ Nhiệm - Lớp {teacher?.homeroomClass || '12A01'}
-                    </h2>
-                    <p className="text-xs text-slate-500">Quản lý tài khoản học sinh, nề nếp thi đua cờ đỏ và sổ quỹ lớp thu/chi</p>
-                  </div>
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#d1fae5',
+                  color: '#047857',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(5,150,105,0.15)'
+                }}>
+                  <Users size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
+                    2. Công Tác Chủ Nhiệm — Lớp {teacher?.homeroomClass || '12A01'}
+                  </h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Quản lý danh sách học sinh, cấp lại mật khẩu tài khoản, theo dõi quỹ thu/chi và nề nếp thi đua cờ đỏ
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px'
+              }}>
+                
                 {/* CARD 1: QUẢN LÝ HỌC SINH */}
-                <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #d1fae5',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-semibold">
-                        <Users className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#ecfdf5',
+                        color: '#059669',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Users size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100">
-                        Reset Mật khẩu
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fef2f2',
+                        color: '#b91c1c',
+                        border: '1px solid #fecaca'
+                      }}>
+                        Reset Mật Khẩu
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-emerald-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Quản Lý HS Lớp Chủ Nhiệm
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Xem danh sách lớp chủ nhiệm, theo dõi trạng thái tài khoản, reset mật khẩu nhanh cho học sinh và xuất CSDL ngành.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Xem danh sách lớp chủ nhiệm, theo dõi trạng thái tài khoản, reset mật khẩu nhanh cho học sinh quên MK và xuất CSDL ngành.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/homeroom')}
-                    className="mt-5 w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(5,150,105,0.3)'
+                    }}
                   >
-                    <Users className="w-4 h-4" /> Quản Lý Lớp & Reset MK ({teacher?.homeroomClass || '12A01'})
+                    <Users size={16} /> Quản Lý Lớp & Reset MK ({teacher?.homeroomClass || '12A01'})
                   </button>
                 </div>
 
                 {/* CARD 2: QUẢN LÝ THU CHI QUỸ LỚP */}
-                <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #ccfbf1',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-semibold">
-                        <Wallet className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f0fdfa',
+                        color: '#0d9488',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Wallet size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-100">
-                        Sổ quỹ
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f0fdfa',
+                        color: '#0f766e',
+                        border: '1px solid #99f6e4'
+                      }}>
+                        Sổ Thu / Chi
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-teal-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Quản Lý Thu / Chi Quỹ Lớp
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Tạo đợt thu BHYT, BHTT, Quỹ lớp. Tích chọn học sinh đã đóng tiền, tự động thống kê số dư minh bạch.
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Tạo đợt thu BHYT, BHTT, Quỹ lớp. Tích chọn học sinh đã nộp tiền, tự động tổng kết số dư minh bạch.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/funds')}
-                    className="mt-5 w-full py-2.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#0d9488',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(13,148,136,0.3)'
+                    }}
                   >
-                    <Wallet className="w-4 h-4" /> Mở Sổ Quỹ Lớp
+                    <Wallet size={16} /> Mở Sổ Quỹ Lớp
                   </button>
                 </div>
 
                 {/* CARD 3: BÁO CÁO NỀ NẾP & CỜ ĐỎ */}
-                <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #ffe4e6',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-semibold">
-                        <ShieldAlert className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff1f2',
+                        color: '#e11d48',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <ShieldAlert size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100">
-                        Cờ đỏ chấm
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff1f2',
+                        color: '#be123c',
+                        border: '1px solid #fecdd3'
+                      }}>
+                        Cờ Đỏ Chấm
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-rose-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Báo Cáo Nề Nếp & Vi Phạm
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Xem danh sách vi phạm của lớp hôm nay do Đội Cờ đỏ chấm (kèm hình ảnh minh chứng vi phạm).
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Xem danh sách vi phạm nề nếp của lớp hôm nay do Đội Cờ đỏ chấm (kèm hình ảnh minh chứng vi phạm).
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/teacher/discipline')}
-                    className="mt-5 w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#e11d48',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(225,29,72,0.3)'
+                    }}
                   >
-                    <ShieldAlert className="w-4 h-4" /> Xem Báo Cáo Vi Phạm
+                    <ShieldAlert size={16} /> Xem Báo Cáo Vi Phạm
                   </button>
                 </div>
 
@@ -354,70 +788,170 @@ export default function TeacherDashboard() {
 
           {/* KHỐI 3: 🗓️ TRA CỨU & TIỆN ÍCH TRƯỜNG HỌC */}
           {(activeTab === 'all' || activeTab === 'utilities') && (
-            <section className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                    <Calendar className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Tra Cứu & Tiện Ích Trường Học</h2>
-                    <p className="text-xs text-slate-500">Thời khóa biểu toàn trường, lịch trực ban BGH & Cổng liên kết ứng dụng</p>
-                  </div>
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#ede9fe',
+                  color: '#6d28d9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(124,58,237,0.15)'
+                }}>
+                  <Calendar size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
+                    3. Tra Cứu & Tiện Ích Trường Học
+                  </h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Thời khóa biểu giảng dạy, lịch trực ban Ban Giám Hiệu & kho ứng dụng liên kết
+                  </p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px'
+              }}>
                 
                 {/* CARD 1: TKB & LỊCH TUẦN */}
-                <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #ede9fe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-semibold">
-                        <Calendar className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f5f3ff',
+                        color: '#7c3aed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Calendar size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
-                        Toàn trường
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f5f3ff',
+                        color: '#6d28d9',
+                        border: '1px solid #ddd6fe'
+                      }}>
+                        Toàn Trường
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-purple-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       TKB & Lịch Tuần BGH
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
                       Tra cứu Thời khóa biểu cá nhân, lịch dạy theo lớp, lịch công tác BGH và lịch trực ban toàn trường.
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/lich-cong-tac')}
-                    className="mt-5 w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#7c3aed',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(124,58,237,0.3)'
+                    }}
                   >
-                    <Calendar className="w-4 h-4" /> Tra Cứu TKB Toàn Trường
+                    <Calendar size={16} /> Tra Cứu TKB Toàn Trường
                   </button>
                 </div>
 
                 {/* CARD 2: CỔNG TIỆN ÍCH LINKING */}
-                <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #dbeafe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
                   <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold">
-                        <Grid className="w-5 h-5" />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#eff6ff',
+                        color: '#2563eb',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Grid size={22} />
                       </div>
-                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#eff6ff',
+                        color: '#1d4ed8',
+                        border: '1px solid #bfdbfe'
+                      }}>
                         SMAS / Azota / K12
                       </span>
                     </div>
-                    <h3 className="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
                       Cổng Tiện Ích & Phần Mềm
                     </h3>
-                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
-                      Truy cập nhanh vào các phần mềm trường học: SMAS, Azota, K12Online, Email ngành...
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Truy cập nhanh vào các phần mềm trường học liên kết: SMAS, Azota, K12Online, Email ngành...
                     </p>
                   </div>
                   <button
                     onClick={() => navigate('/hub')}
-                    className="mt-5 w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(37,99,235,0.3)'
+                    }}
                   >
-                    <Grid className="w-4 h-4" /> Mở Kho Ứng Dụng
+                    <Grid size={16} /> Mở Kho Ứng Dụng
                   </button>
                 </div>
 
