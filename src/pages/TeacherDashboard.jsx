@@ -321,3 +321,113 @@ export default function TeacherDashboard() {
                     <Wallet className="w-4 h-4" /> Mở Sổ Quỹ Lớp
                   </button>
                 </div>
+
+                {/* CARD 3: BÁO CÁO NỀ NẾP & CỜ ĐỎ */}
+                <div className="bg-white rounded-2xl p-5 border border-emerald-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-semibold">
+                        <ShieldAlert className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-100">
+                        Cờ đỏ chấm
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-base group-hover:text-rose-600 transition-colors">
+                      Báo Cáo Nề Nếp & Vi Phạm
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                      Xem danh sách vi phạm của lớp hôm nay do Đội Cờ đỏ chấm (kèm hình ảnh minh chứng vi phạm).
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/teacher/discipline')}
+                    className="mt-5 w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ShieldAlert className="w-4 h-4" /> Xem Báo Cáo Vi Phạm
+                  </button>
+                </div>
+
+              </div>
+            </section>
+          )}
+
+          {/* KHỐI 3: 🗓️ TRA CỨU & TIỆN ÍCH TRƯỜNG HỌC */}
+          {(activeTab === 'all' || activeTab === 'utilities') && (
+            <section className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+                    <Calendar className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Tra Cứu & Tiện Ích Trường Học</h2>
+                    <p className="text-xs text-slate-500">Thời khóa biểu toàn trường, lịch trực ban BGH & Cổng liên kết ứng dụng</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                
+                {/* CARD 1: TKB & LỊCH TUẦN */}
+                <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-semibold">
+                        <Calendar className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-100">
+                        Toàn trường
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-base group-hover:text-purple-600 transition-colors">
+                      TKB & Lịch Tuần BGH
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                      Tra cứu Thời khóa biểu cá nhân, lịch dạy theo lớp, lịch công tác BGH và lịch trực ban toàn trường.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/lich-cong-tac')}
+                    className="mt-5 w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Calendar className="w-4 h-4" /> Tra Cứu TKB Toàn Trường
+                  </button>
+                </div>
+
+                {/* CARD 2: CỔNG TIỆN ÍCH LINKING */}
+                <div className="bg-white rounded-2xl p-5 border border-purple-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between group">
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-semibold">
+                        <Grid className="w-5 h-5" />
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">
+                        SMAS / Azota / K12
+                      </span>
+                    </div>
+                    <h3 className="font-bold text-slate-800 text-base group-hover:text-indigo-600 transition-colors">
+                      Cổng Tiện Ích & Phần Mềm
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-1 line-clamp-2">
+                      Truy cập nhanh vào các phần mềm trường học: SMAS, Azota, K12Online, Email ngành...
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/hub')}
+                    className="mt-5 w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Grid className="w-4 h-4" /> Mở Kho Ứng Dụng
+                  </button>
+                </div>
+
+              </div>
+            </section>
+          )}
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
