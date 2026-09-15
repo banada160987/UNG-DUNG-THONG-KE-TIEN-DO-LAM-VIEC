@@ -113,18 +113,25 @@ export default function PublicSchedule() {
   const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedTeacher, setSelectedTeacher] = useState('');
   
+  // State for TKB Toan Truong (Theo Khoi)
+  const [selectedGrade, setSelectedGrade] = useState('10'); // '10' | '11' | '12' | 'all'
+  const [selectedGradeDay, setSelectedGradeDay] = useState('Thứ 2'); // 'Thứ 2'..'Thứ 7' | 'all'
+  const [selectedGradeSession, setSelectedGradeSession] = useState('all'); // 'all' | 'morning' | 'afternoon'
+  const [gradeSearchQuery, setGradeSearchQuery] = useState('');
+
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [copiedPublicLink, setCopiedPublicLink] = useState(false);
 
   // Initialize state from URL params
   useEffect(() => {
-    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Phường Tân An - Tỉnh Đắc Lắc";
+    document.title = "Lịch Công Tác & Thời Khóa Biểu | THPT Cao Bá Quát - Phường Tân An - Tỉnh Đắk Lắk";
     const tabParam = searchParams.get('tab');
     const classParam = searchParams.get('class');
     const teacherParam = searchParams.get('teacher');
     const weekParam = searchParams.get('week');
+    const gradeParam = searchParams.get('grade');
 
-    if (tabParam && ['bgh_schedule', 'class_tkb', 'teacher_tkb'].includes(tabParam)) {
+    if (tabParam && ['bgh_schedule', 'class_tkb', 'teacher_tkb', 'grade_tkb'].includes(tabParam)) {
       setActiveMainTab(tabParam);
     }
     if (classParam) {
@@ -136,14 +143,18 @@ export default function PublicSchedule() {
     if (weekParam && Number(weekParam) >= 1 && Number(weekParam) <= 35) {
       setSelectedWeekNo(Number(weekParam));
     }
+    if (gradeParam && ['10', '11', '12', 'all'].includes(gradeParam)) {
+      setSelectedGrade(gradeParam);
+    }
   }, [searchParams]);
 
   // Sync state to URL search params
-  const updateUrlParams = (tab, cls, teacher, week) => {
+  const updateUrlParams = (tab, cls, teacher, week, grade) => {
     const params = new URLSearchParams();
     params.set('tab', tab);
     if (tab === 'class_tkb' && cls) params.set('class', cls);
     if (tab === 'teacher_tkb' && teacher) params.set('teacher', teacher);
+    if (tab === 'grade_tkb' && grade) params.set('grade', grade);
     if (week) params.set('week', week);
     setSearchParams(params, { replace: true });
   };
@@ -419,19 +430,92 @@ export default function PublicSchedule() {
     XLSX.writeFile(wb, `ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
   };
 
+  const getClassesForGrade = (grade) => {
+    if (grade === '10') return availableClasses.filter(c => c.startsWith('10'));
+    if (grade === '11') return availableClasses.filter(c => c.startsWith('11'));
+    if (grade === '12') return availableClasses.filter(c => c.startsWith('12'));
+    return availableClasses;
+  };
+
+  const getLessonForClassAndDay = (cls, day, period) => {
+    return timetableData.find(t => t.student_class === cls && t.day_of_week === day && Number(t.period) === period);
+  };
+
+  const handleExportGradeTkbExcel = () => {
+    const targetClasses = getClassesForGrade(selectedGrade);
+    const gradeLabel = selectedGrade === 'all' ? 'Toàn Trường (Khối 10, 11, 12)' : `Khối ${selectedGrade}`;
+    
+    const matrixData = [
+      { "Tiết / Ngày": "SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT - PHƯỜNG TÂN AN - TỈNH ĐẮK LẮK", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": `BẢNG THỜI KHÓA BIỂU TỔNG HỢP ${gradeLabel.toUpperCase()} - NĂM HỌC 2026-2027`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": `Áp dụng từ ngày 01/09/2026 • Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": "", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) }
+    ];
+
+    const daysToExport = selectedGradeDay === 'all' ? DAYS : [selectedGradeDay];
+
+    daysToExport.forEach(day => {
+      matrixData.push({
+        "Tiết / Ngày": `=== ${day.toUpperCase()} ===`,
+        ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {})
+      });
+
+      const periods = [
+        { label: '--- SÁNG ---', isHeader: true },
+        1, 2, 3, 4, 5,
+        { label: '--- CHIỀU ---', isHeader: true },
+        6, 7, 8, 9, 10
+      ];
+
+      periods.forEach(p => {
+        if (p.isHeader) {
+          matrixData.push({
+            "Tiết / Ngày": p.label,
+            ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {})
+          });
+        } else {
+          const row = { "Tiết / Ngày": `Tiết ${p}` };
+          targetClasses.forEach(cls => {
+            const item = timetableData.find(t => t.student_class === cls && t.day_of_week === day && Number(t.period) === p);
+            row[cls] = item ? `${item.subject} (${item.teacher_name})` : '-';
+          });
+          matrixData.push(row);
+        }
+      });
+
+      matrixData.push({ "Tiết / Ngày": "", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(matrixData);
+    const cols = [{ wch: 18 }];
+    targetClasses.forEach(() => cols.push({ wch: 22 }));
+    ws['!cols'] = cols;
+
+    const wb = XLSX.utils.book_new();
+    const sheetName = selectedGrade === 'all' ? 'TKB_ToanTruong' : `TKB_Khoi_${selectedGrade}`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `ThoiKhoaBieu_${sheetName}_2026_2027.xlsx`);
+  };
+
   const handleTabChange = (tab) => {
     setActiveMainTab(tab);
-    updateUrlParams(tab, selectedClass, selectedTeacher, selectedWeekNo);
+    updateUrlParams(tab, selectedClass, selectedTeacher, selectedWeekNo, selectedGrade);
+  };
+
+  const handleGradeChange = (newGrade) => {
+    setSelectedGrade(newGrade);
+    updateUrlParams(activeMainTab, selectedClass, selectedTeacher, selectedWeekNo, newGrade);
   };
 
   const handleClassChange = (newClass) => {
     setSelectedClass(newClass);
-    updateUrlParams(activeMainTab, newClass, selectedTeacher, selectedWeekNo);
+    updateUrlParams(activeMainTab, newClass, selectedTeacher, selectedWeekNo, selectedGrade);
   };
 
   const handleTeacherChange = (newTeacher) => {
     setSelectedTeacher(newTeacher);
-    updateUrlParams(activeMainTab, selectedClass, newTeacher, selectedWeekNo);
+    updateUrlParams(activeMainTab, selectedClass, newTeacher, selectedWeekNo, selectedGrade);
   };
 
   const currentSched = getCurrentScheduleObj();
@@ -462,9 +546,14 @@ export default function PublicSchedule() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
-          {['bgh_schedule', 'class_tkb', 'teacher_tkb'].map(tab => (
-            <button key={tab} onClick={() => handleTabChange(tab)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab ? '#be123c' : '#f1f5f9', color: activeMainTab === tab ? '#fff' : '#334' }}>
-              {tab === 'bgh_schedule' ? '📅 Lịch Công Tác BGH' : tab === 'class_tkb' ? '🎓 TKB Lớp' : '👨‍🏫 TKB Giáo viên'}
+          {[
+            { id: 'bgh_schedule', label: '📅 Lịch Công Tác BGH' },
+            { id: 'class_tkb', label: '🎓 TKB Lớp' },
+            { id: 'teacher_tkb', label: '👨‍🏫 TKB Giáo viên' },
+            { id: 'grade_tkb', label: '🏫 TKB Toàn Trường (Theo Khối)' }
+          ].map(tab => (
+            <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab.id ? '#be123c' : '#f1f5f9', color: activeMainTab === tab.id ? '#fff' : '#334' }}>
+              {tab.label}
             </button>
           ))}
         </div>
@@ -912,6 +1001,409 @@ export default function PublicSchedule() {
           </div>
         </div>
       )}
+
+      {/* TAB 4: 🏫 TKB TOÀN TRƯỜNG (THEO KHỐI) - MA TRẬN ĐẦY ĐỦ CHUẨN XÁC 100% */}
+      {activeMainTab === 'grade_tkb' && (() => {
+        const targetClasses = getClassesForGrade(selectedGrade);
+        const gradeLabel = selectedGrade === 'all' ? 'Toàn Trường (Khối 10, 11, 12)' : `Khối ${selectedGrade}`;
+        const daysToRender = selectedGradeDay === 'all' ? DAYS : [selectedGradeDay];
+
+        // Stats calculation
+        const activeItemsInSelection = timetableData.filter(t => 
+          targetClasses.includes(t.student_class) && 
+          (selectedGradeDay === 'all' || t.day_of_week === selectedGradeDay)
+        );
+        const uniqueTeachersInSelection = Array.from(new Set(activeItemsInSelection.map(t => t.teacher_name))).filter(Boolean);
+
+        return (
+          <div style={styles.sheetCard} className="print-full">
+            
+            {/* OFFICIAL PRINT HEADER (ND 30) */}
+            <div className="print-only" style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
+                  <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '18px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                  BẢNG THỜI KHÓA BIỂU TỔNG HỢP {gradeLabel.toUpperCase()}
+                </h2>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>
+                  {selectedGradeDay === 'all' ? 'Toàn bộ các ngày trong tuần (Thứ 2 đến Thứ 7)' : `Thời khóa biểu ngày: ${selectedGradeDay}`}
+                </div>
+                <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
+                  Năm học 2026 - 2027 • Áp dụng từ ngày 01/09/2026
+                </div>
+              </div>
+            </div>
+
+            {/* CONTROL TOOLBAR (NO-PRINT) */}
+            <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              
+              {/* ROW 1: GRADE FILTER & DAY SELECTOR */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                
+                {/* GRADE BUTTONS */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '13.5px' }}>Chọn Khối:</span>
+                  {[
+                    { id: '10', label: 'Khối 10', count: getClassesForGrade('10').length },
+                    { id: '11', label: 'Khối 11', count: getClassesForGrade('11').length },
+                    { id: '12', label: 'Khối 12', count: getClassesForGrade('12').length },
+                    { id: 'all', label: 'Toàn Trường', count: availableClasses.length }
+                  ].map(g => (
+                    <button
+                      key={g.id}
+                      onClick={() => handleGradeChange(g.id)}
+                      style={{
+                        padding: '8px 14px',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        border: 'none',
+                        backgroundColor: selectedGrade === g.id ? '#be123c' : '#ffffff',
+                        color: selectedGrade === g.id ? '#ffffff' : '#334155',
+                        boxShadow: selectedGrade === g.id ? '0 4px 10px rgba(190,18,60,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                        border: selectedGrade === g.id ? 'none' : '1px solid #cbd5e1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span>{g.label}</span>
+                      <span style={{
+                        fontSize: '11px',
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: selectedGrade === g.id ? 'rgba(255,255,255,0.25)' : '#f1f5f9',
+                        color: selectedGrade === g.id ? '#ffffff' : '#64748b'
+                      }}>
+                        {g.count} lớp
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* ACTION BUTTONS */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleExportGradeTkbExcel}
+                    style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
+                  >
+                    <FileSpreadsheet size={16} /> Xuất Excel Ma Trận {selectedGrade === 'all' ? 'Toàn Trường' : `Khối ${selectedGrade}`}
+                  </button>
+                  <button onClick={handlePrint} style={styles.printBtn}>
+                    <Printer size={16} /> In Bảng TKB
+                  </button>
+                </div>
+              </div>
+
+              {/* ROW 2: DAY FILTER & SESSION & SEARCH */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
+                
+                {/* DAY FILTER BUTTONS */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '13.5px' }}>Xem Ngày:</span>
+                  {[...DAYS, 'all'].map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setSelectedGradeDay(d)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        border: 'none',
+                        backgroundColor: selectedGradeDay === d ? '#0284c7' : '#ffffff',
+                        color: selectedGradeDay === d ? '#ffffff' : '#475569',
+                        border: selectedGradeDay === d ? 'none' : '1px solid #cbd5e1'
+                      }}
+                    >
+                      {d === 'all' ? '📋 Xem Toàn Tuần' : d}
+                    </button>
+                  ))}
+                </div>
+
+                {/* SESSION FILTER & SEARCH INPUT */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  
+                  {/* SESSION FILTER */}
+                  <select
+                    value={selectedGradeSession}
+                    onChange={e => setSelectedGradeSession(e.target.value)}
+                    style={{ ...styles.select, padding: '6px 10px', fontSize: '12.5px' }}
+                  >
+                    <option value="all">🕒 Cả ngày (Tiết 1 - 10)</option>
+                    <option value="morning">🌅 Ca Sáng (Tiết 1 - 5)</option>
+                    <option value="afternoon">🌇 Ca Chiều (Tiết 6 - 10)</option>
+                  </select>
+
+                  {/* SEARCH KEYWORD INPUT */}
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Tìm GV hoặc Môn học..."
+                      value={gradeSearchQuery}
+                      onChange={e => setGradeSearchQuery(e.target.value)}
+                      style={{
+                        padding: '7px 12px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12.5px',
+                        width: '200px',
+                        outline: 'none'
+                      }}
+                    />
+                    {gradeSearchQuery && (
+                      <button
+                        onClick={() => setGradeSearchQuery('')}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* QUICK STATS STRIP (NO-PRINT) */}
+            <div className="no-print" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              backgroundColor: '#eff6ff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '10px',
+              padding: '10px 16px',
+              marginBottom: '20px',
+              fontSize: '13px',
+              color: '#1e40af',
+              flexWrap: 'wrap',
+              gap: '8px'
+            }}>
+              <div>
+                <strong>🏫 Danh sách ({targetClasses.length} lớp {gradeLabel}):</strong> {targetClasses.join(', ')}
+              </div>
+              <div style={{ display: 'flex', gap: '15px' }}>
+                <span>📖 Tổng số tiết: <strong>{activeItemsInSelection.length} tiết</strong></span>
+                <span>👨‍🏫 Giáo viên đứng lớp: <strong>{uniqueTeachersInSelection.length} thầy/cô</strong></span>
+              </div>
+            </div>
+
+            {/* MATRIX TABLES RENDERING */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              {daysToRender.map(day => {
+                const periodsToRender = [
+                  ...(selectedGradeSession === 'afternoon' ? [] : [
+                    { label: `--- SÁNG (${day}) ---`, isHeader: true },
+                    1, 2, 3, 4, 5
+                  ]),
+                  ...(selectedGradeSession === 'morning' ? [] : [
+                    { label: `--- CHIỀU (${day}) ---`, isHeader: true },
+                    6, 7, 8, 9, 10
+                  ])
+                ];
+
+                return (
+                  <div key={day} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                    
+                    {/* DAY TITLE BANNER */}
+                    <div style={{
+                      backgroundColor: '#0f172a',
+                      color: '#ffffff',
+                      padding: '12px 18px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <div style={{ fontSize: '15px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>📅 THỜI KHÓA BIỂU {day.toUpperCase()}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#94a3b8' }}>({gradeLabel})</span>
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {targetClasses.length} lớp học
+                      </span>
+                    </div>
+
+                    {/* HORIZONTALLY SCROLLABLE MATRIX TABLE */}
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ ...styles.table, margin: 0, minWidth: targetClasses.length > 8 ? `${targetClasses.length * 110 + 90}px` : '100%' }}>
+                        <thead>
+                          <tr style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
+                            <th style={{
+                              ...styles.th,
+                              width: '80px',
+                              textAlign: 'center',
+                              position: 'sticky',
+                              left: 0,
+                              backgroundColor: '#1e293b',
+                              zIndex: 10,
+                              boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                            }}>
+                              Tiết / Lớp
+                            </th>
+                            {targetClasses.map(cls => (
+                              <th key={cls} style={{
+                                ...styles.th,
+                                textAlign: 'center',
+                                backgroundColor: '#1e293b',
+                                borderLeft: '1px solid #334155',
+                                minWidth: '105px'
+                              }}>
+                                <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#38bdf8' }}>{cls}</div>
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {periodsToRender.map((p, pIdx) => {
+                            if (p.isHeader) {
+                              return (
+                                <tr key={`hdr-${pIdx}`} style={{ backgroundColor: '#f1f5f9' }}>
+                                  <td
+                                    colSpan={targetClasses.length + 1}
+                                    style={{
+                                      padding: '8px 14px',
+                                      fontSize: '11.5px',
+                                      fontWeight: '800',
+                                      color: '#475569',
+                                      textAlign: 'center',
+                                      letterSpacing: '1px',
+                                      backgroundColor: p.label.includes('SÁNG') ? '#e0f2fe' : '#fef3c7',
+                                      color: p.label.includes('SÁNG') ? '#0369a1' : '#b45309'
+                                    }}
+                                  >
+                                    {p.label}
+                                  </td>
+                                </tr>
+                              );
+                            }
+
+                            const isMorning = p <= 5;
+
+                            return (
+                              <tr key={p} style={{ ...styles.tableRow, backgroundColor: isMorning ? '#ffffff' : '#fafafa' }}>
+                                
+                                {/* STICKY PERIOD COLUMN */}
+                                <td style={{
+                                  ...styles.td,
+                                  fontWeight: '800',
+                                  textAlign: 'center',
+                                  backgroundColor: isMorning ? '#f0f9ff' : '#fffbeb',
+                                  color: isMorning ? '#0369a1' : '#b45309',
+                                  position: 'sticky',
+                                  left: 0,
+                                  zIndex: 5,
+                                  boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
+                                  borderRight: '1px solid #cbd5e1'
+                                }}>
+                                  Tiết {p}
+                                </td>
+
+                                {/* EACH CLASS CELL */}
+                                {targetClasses.map(cls => {
+                                  const item = getLessonForClassAndDay(cls, day, p);
+
+                                  if (!item) {
+                                    return (
+                                      <td key={cls} style={{ ...styles.td, textAlign: 'center', color: '#cbd5e1', borderLeft: '1px solid #f1f5f9' }}>
+                                        -
+                                      </td>
+                                    );
+                                  }
+
+                                  const isMatched = gradeSearchQuery && (
+                                    item.subject.toLowerCase().includes(gradeSearchQuery.toLowerCase()) ||
+                                    (item.teacher_name && item.teacher_name.toLowerCase().includes(gradeSearchQuery.toLowerCase()))
+                                  );
+
+                                  return (
+                                    <td
+                                      key={cls}
+                                      style={{
+                                        ...styles.td,
+                                        borderLeft: '1px solid #e2e8f0',
+                                        backgroundColor: isMatched ? '#fef08a' : 'transparent',
+                                        transition: 'background-color 0.2s',
+                                        padding: '8px 10px'
+                                      }}
+                                    >
+                                      <div style={{
+                                        fontWeight: '700',
+                                        color: isMatched ? '#854d0e' : '#0f172a',
+                                        fontSize: '13px',
+                                        lineHeight: '1.3'
+                                      }}>
+                                        {item.subject}
+                                      </div>
+                                      <div style={{
+                                        fontSize: '11px',
+                                        color: isMatched ? '#713f12' : '#2563eb',
+                                        marginTop: '3px',
+                                        fontWeight: '600',
+                                        lineHeight: '1.2'
+                                      }}>
+                                        {item.teacher_name || '-'}
+                                      </div>
+                                    </td>
+                                  );
+                                })}
+
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* OFFICIAL PRINT SIGNATURES (ND 30) */}
+            <div className="print-only" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 40px', fontSize: '12px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>BAN GIÁM HIỆU DUYỆT</div>
+                <div style={{ height: '50px' }}></div>
+                <div style={{ fontStyle: 'italic' }}>(Ký và ghi rõ họ tên)</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>NGƯỜI LẬP BẢNG TỔNG HỢP</div>
+                <div style={{ height: '50px' }}></div>
+                <div style={{ fontStyle: 'italic' }}>Ban Chuyên Môn THPT Cao Bá Quát</div>
+              </div>
+            </div>
+
+          </div>
+        );
+      })()}
 
       {/* MULTI-WEEK / 35-WEEK FLEXIBLE EXPORT MODAL */}
       {showExportModal && (
