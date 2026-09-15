@@ -1213,105 +1213,110 @@ export default function AdminRegistrations() {
                 </div>
               </div>
 
-              {/* THỐNG KÊ NHANH (CLICK-TO-FILTER THEO CÂU LẠC BỘ) */}
-              {!loadingResults && results.length > 0 && (
-                <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <h4 style={{ margin: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px' }}>
-                      📊 Thống kê nhanh & Bộ lọc Câu lạc bộ (Bấm vào CLB để lọc danh sách)
-                    </h4>
-                    {selectedOptionFilter !== 'all' && (
-                      <button 
-                        onClick={() => setSelectedOptionFilter('all')} 
-                        style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
-                      >
-                        <X size={14} /> Bỏ lọc ({selectedOptionFilter})
-                      </button>
-                    )}
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                    {/* Tổng số */}
-                    <div 
-                      onClick={() => setSelectedOptionFilter('all')}
-                      style={{ 
-                        background: selectedOptionFilter === 'all' ? '#166534' : '#fff', 
-                        color: selectedOptionFilter === 'all' ? '#fff' : '#166534', 
-                        padding: '10px 16px', 
-                        borderRadius: '8px', 
-                        border: '1px solid #dcfce7',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 'bold', opacity: 0.9 }}>TỔNG ĐĂNG KÝ</div>
-                      <div style={{ fontSize: '24px', fontWeight: '900' }}>{results.length}</div>
+              {/* THỐNG KÊ NHANH & BỘ LỌC THEO LỰA CHỌN */}
+              {!loadingResults && results.length > 0 && (() => {
+                const currentCampaign = campaigns.find(c => c.id === selectedCampaignId);
+                const campaignTitle = currentCampaign?.title || 'Đợt đăng ký';
+                return (
+                  <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                      <h4 style={{ margin: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '15px' }}>
+                        📊 Thống kê nhanh & Bộ lọc: <span style={{ color: '#047857', fontWeight: '800' }}>{campaignTitle}</span> (Bấm vào từng mục để lọc danh sách)
+                      </h4>
+                      {selectedOptionFilter !== 'all' && (
+                        <button 
+                          onClick={() => setSelectedOptionFilter('all')} 
+                          style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                        >
+                          <X size={14} /> Bỏ lọc ({selectedOptionFilter})
+                        </button>
+                      )}
                     </div>
-                    
-                    {/* Thống kê từng câu lạc bộ/lựa chọn */}
-                    {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || [])
-                      .filter(f => ['select', 'radio', 'checkbox'].includes(f.type))
-                      .map(field => {
-                        const counts = {};
-                        results.forEach(r => {
-                          const ans = r.responses[field.id];
-                          if (Array.isArray(ans)) {
-                            ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
-                          } else if (ans) {
-                            counts[ans] = (counts[ans] || 0) + 1;
-                          }
-                        });
 
-                        return (
-                          <div key={field.id} style={{ background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1, minWidth: '260px' }}>
-                            <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
-                              {field.label}
+                    <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                      {/* Tổng số */}
+                      <div 
+                        onClick={() => setSelectedOptionFilter('all')}
+                        style={{ 
+                          background: selectedOptionFilter === 'all' ? '#166534' : '#fff', 
+                          color: selectedOptionFilter === 'all' ? '#fff' : '#166534', 
+                          padding: '10px 16px', 
+                          borderRadius: '8px', 
+                          border: '1px solid #dcfce7',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          minWidth: '110px'
+                        }}
+                      >
+                        <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 'bold', opacity: 0.9 }}>TỔNG ĐĂNG KÝ</div>
+                        <div style={{ fontSize: '24px', fontWeight: '900' }}>{results.length}</div>
+                      </div>
+                      
+                      {/* Thống kê từng lựa chọn */}
+                      {(currentCampaign?.form_schema || [])
+                        .filter(f => ['select', 'radio', 'checkbox'].includes(f.type))
+                        .map(field => {
+                          const counts = {};
+                          results.forEach(r => {
+                            const ans = r.responses[field.id];
+                            if (Array.isArray(ans)) {
+                              ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
+                            } else if (ans) {
+                              counts[ans] = (counts[ans] || 0) + 1;
+                            }
+                          });
+
+                          return (
+                            <div key={field.id} style={{ background: '#fff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', flex: 1, minWidth: '260px' }}>
+                              <div style={{ fontSize: '12px', color: '#15803d', fontWeight: 'bold', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                                {field.label}
+                              </div>
+                              
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                {Object.entries(counts).map(([opt, count]) => {
+                                  const isSelected = selectedOptionFilter === opt;
+                                  return (
+                                    <div 
+                                      key={opt} 
+                                      onClick={() => setSelectedOptionFilter(isSelected ? 'all' : opt)}
+                                      style={{ 
+                                        display: 'flex', 
+                                        justify: 'space-between', 
+                                        alignItems: 'center',
+                                        fontSize: '13px', 
+                                        padding: '5px 8px',
+                                        borderRadius: '5px',
+                                        backgroundColor: isSelected ? '#15803d' : '#f8fafc',
+                                        color: isSelected ? '#ffffff' : '#334155',
+                                        cursor: 'pointer',
+                                        fontWeight: isSelected ? 'bold' : 'normal',
+                                        border: isSelected ? '1px solid #166534' : '1px solid #f1f5f9',
+                                        transition: 'all 0.15s'
+                                      }}
+                                    >
+                                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{opt}</span>
+                                      <span style={{ 
+                                        backgroundColor: isSelected ? '#ffffff' : '#e2e8f0', 
+                                        color: isSelected ? '#15803d' : '#0f172a',
+                                        padding: '2px 8px',
+                                        borderRadius: '12px',
+                                        fontSize: '12px',
+                                        fontWeight: 'bold'
+                                      }}>
+                                        {count}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                            
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                              {Object.entries(counts).map(([opt, count]) => {
-                                const isSelected = selectedOptionFilter === opt;
-                                return (
-                                  <div 
-                                    key={opt} 
-                                    onClick={() => setSelectedOptionFilter(isSelected ? 'all' : opt)}
-                                    style={{ 
-                                      display: 'flex', 
-                                      justify: 'space-between', 
-                                      alignItems: 'center',
-                                      fontSize: '13px', 
-                                      padding: '5px 8px',
-                                      borderRadius: '5px',
-                                      backgroundColor: isSelected ? '#15803d' : '#f8fafc',
-                                      color: isSelected ? '#ffffff' : '#334155',
-                                      cursor: 'pointer',
-                                      fontWeight: isSelected ? 'bold' : 'normal',
-                                      border: isSelected ? '1px solid #166534' : '1px solid #f1f5f9',
-                                      transition: 'all 0.15s'
-                                    }}
-                                  >
-                                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '220px' }}>{opt}</span>
-                                    <span style={{ 
-                                      backgroundColor: isSelected ? '#ffffff' : '#e2e8f0', 
-                                      color: isSelected ? '#15803d' : '#0f172a',
-                                      padding: '2px 8px',
-                                      borderRadius: '12px',
-                                      fontSize: '12px',
-                                      fontWeight: 'bold'
-                                    }}>
-                                      {count}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        );
-                      })
-                    }
+                          );
+                        })
+                      }
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* BẢNG DANH SÁCH HỌC SINH NỘP */}
               {loadingResults ? <p>Đang tải danh sách học sinh đăng ký...</p> : (
@@ -1329,8 +1334,8 @@ export default function AdminRegistrations() {
 
                       {selectedOptionFilter !== 'all' && (
                         <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #bbf7d0' }}>
-                          📌 {selectedOptionFilter}
-                          <button onClick={() => setSelectedOptionFilter('all')} style={{ background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }} title="Bỏ lọc CLB"><X size={12} /></button>
+                          📌 Lựa chọn: {selectedOptionFilter}
+                          <button onClick={() => setSelectedOptionFilter('all')} style={{ background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }} title="Bỏ lọc"><X size={12} /></button>
                         </span>
                       )}
 
