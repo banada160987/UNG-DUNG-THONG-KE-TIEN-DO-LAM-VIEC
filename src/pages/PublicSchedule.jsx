@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
-  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText
+  Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText,
+  Sparkles, BookOpen, User, Users, Search, Filter, Flame, Info, CheckCircle2, X, Star, Bell
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -36,6 +37,119 @@ const DEFAULT_SCHEDULE = {
 };
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+
+export const PERIOD_TIMINGS = [
+  { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
+  { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
+  { period: 3, session: 'Sáng', start: '08:55', end: '09:40', label: 'Tiết 3 (08:55 - 09:40)' },
+  { period: 4, session: 'Sáng', start: '09:45', end: '10:30', label: 'Tiết 4 (09:45 - 10:30)' },
+  { period: 5, session: 'Sáng', start: '10:35', end: '11:20', label: 'Tiết 5 (10:35 - 11:20)' },
+  { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
+  { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
+  { period: 8, session: 'Chiều', start: '15:25', end: '16:10', label: 'Tiết 8 (15:25 - 16:10)' },
+  { period: 9, session: 'Chiều', start: '16:15', end: '17:00', label: 'Tiết 9 (16:15 - 17:00)' },
+  { period: 10, session: 'Chiều', start: '17:05', end: '17:50', label: 'Tiết 10 (17:05 - 17:50)' }
+];
+
+export const getSubjectTheme = (subject) => {
+  if (!subject) return { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', icon: '📝', badgeBg: '#f1f5f9', label: 'Khác' };
+  const s = String(subject).trim();
+  const lower = s.toLowerCase();
+  
+  if (lower.includes('toán')) {
+    return { bg: '#eff6ff', border: '#93c5fd', text: '#1d4ed8', icon: '📐', badgeBg: '#dbeafe', label: 'Toán học' };
+  }
+  if (lower.includes('văn')) {
+    return { bg: '#fdf2f8', border: '#f9a8d4', text: '#be185d', icon: '📖', badgeBg: '#fce7f3', label: 'Ngữ văn' };
+  }
+  if (lower.includes('anh') || lower.includes('tiếng anh') || lower.includes('av')) {
+    return { bg: '#f0fdf4', border: '#86efac', text: '#15803d', icon: '🇬🇧', badgeBg: '#dcfce7', label: 'Tiếng Anh' };
+  }
+  if (lower.includes('vật lý') || lower.includes('vật lí') || lower === 'lý') {
+    return { bg: '#fefce8', border: '#fde047', text: '#a16207', icon: '⚡', badgeBg: '#fef9c3', label: 'Vật lí' };
+  }
+  if (lower.includes('hóa') || lower.includes('hoá')) {
+    return { bg: '#faf5ff', border: '#d8b4fe', text: '#7e22ce', icon: '🧪', badgeBg: '#f3e8ff', label: 'Hóa học' };
+  }
+  if (lower.includes('sinh')) {
+    return { bg: '#ecfdf5', border: '#6ee7b7', text: '#047857', icon: '🧬', badgeBg: '#d1fae5', label: 'Sinh học' };
+  }
+  if (lower.includes('sử') || lower.includes('lịch sử')) {
+    return { bg: '#fff7ed', border: '#fdba74', text: '#c2410c', icon: '🏛️', badgeBg: '#ffedd5', label: 'Lịch sử' };
+  }
+  if (lower.includes('địa') || lower.includes('địa lý') || lower.includes('địa lí')) {
+    return { bg: '#ecfeff', border: '#67e8f9', text: '#0e7490', icon: '🌍', badgeBg: '#cffafe', label: 'Địa lí' };
+  }
+  if (lower.includes('tin') || lower.includes('tin học')) {
+    return { bg: '#f0fdfa', border: '#5eead4', text: '#0f766e', icon: '💻', badgeBg: '#ccfbf1', label: 'Tin học' };
+  }
+  if (lower.includes('thể dục') || lower.includes('gdtc') || lower.includes('td')) {
+    return { bg: '#fef2f2', border: '#fca5a5', text: '#b91c1c', icon: '⚽', badgeBg: '#fee2e2', label: 'Thể dục' };
+  }
+  if (lower.includes('gdqp') || lower.includes('quốc phòng')) {
+    return { bg: '#f1f5f9', border: '#94a3b8', text: '#334155', icon: '🛡️', badgeBg: '#e2e8f0', label: 'GDQP-AN' };
+  }
+  if (lower.includes('công nghệ') || lower.includes('cn')) {
+    return { bg: '#e0f2fe', border: '#7dd3fc', text: '#0369a1', icon: '⚙️', badgeBg: '#bae6fd', label: 'Công nghệ' };
+  }
+  if (lower.includes('gdcd') || lower.includes('ktlp') || lower.includes('gdkt')) {
+    return { bg: '#fdf4ff', border: '#f0abfc', text: '#86198f', icon: '⚖️', badgeBg: '#fae8ff', label: 'GDKT&PL' };
+  }
+  if (lower.includes('địa phương') || lower.includes('gdđp')) {
+    return { bg: '#fef3c7', border: '#fcd34d', text: '#b45309', icon: '🌾', badgeBg: '#fef3c7', label: 'GD Địa phương' };
+  }
+  if (lower.includes('chào cờ') || lower.includes('shdc')) {
+    return { bg: '#fff1f2', border: '#fda4af', text: '#be123c', icon: '🚩', badgeBg: '#ffe4e6', label: 'Chào cờ' };
+  }
+  if (lower.includes('trải nghiệm') || lower.includes('hđtn') || lower.includes('sinh hoạt')) {
+    return { bg: '#fffbeb', border: '#fde68a', text: '#b45309', icon: '🌟', badgeBg: '#fef3c7', label: 'HĐTN - SHL' };
+  }
+  if (lower.includes('mĩ thuật') || lower.includes('mỹ thuật') || lower === 'mt') {
+    return { bg: '#fdf4ff', border: '#f5d0fe', text: '#c026d3', icon: '🎨', badgeBg: '#fae8ff', label: 'Mĩ thuật' };
+  }
+  if (lower.includes('âm nhạc')) {
+    return { bg: '#fdf2f8', border: '#f5d0fe', text: '#a21caf', icon: '🎵', badgeBg: '#fae8ff', label: 'Âm nhạc' };
+  }
+
+  return { bg: '#f8fafc', border: '#cbd5e1', text: '#334155', icon: '📚', badgeBg: '#e2e8f0', label: s };
+};
+
+export const getTodayVN = () => {
+  const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  const now = new Date();
+  const dayIndex = now.getDay();
+  const dayName = dayNames[dayIndex];
+  const isSchoolDay = dayIndex >= 1 && dayIndex <= 6;
+  const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  let currentPeriod = null;
+  let statusText = 'Ngoài giờ học';
+
+  for (const pt of PERIOD_TIMINGS) {
+    const [sh, sm] = pt.start.split(':').map(Number);
+    const [eh, em] = pt.end.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    const endMin = eh * 60 + em;
+    if (currentMinutes >= startMin && currentMinutes <= endMin) {
+      currentPeriod = pt.period;
+      statusText = `Đang diễn ra Tiết ${pt.period} (${pt.start} - ${pt.end})`;
+      break;
+    }
+  }
+
+  if (!currentPeriod && isSchoolDay) {
+    if (currentMinutes >= 7 * 60 && currentMinutes < 11 * 60 + 20) {
+      statusText = 'Giờ giải lao / Chuẩn bị đổi tiết sáng';
+    } else if (currentMinutes >= 11 * 60 + 20 && currentMinutes < 13 * 60 + 30) {
+      statusText = 'Nghỉ trưa bán trú / Chuyển ca';
+    } else if (currentMinutes >= 13 * 60 + 30 && currentMinutes < 17 * 60 + 50) {
+      statusText = 'Giờ giải lao / Chuẩn bị đổi tiết chiều';
+    }
+  }
+
+  return { dayName, isSchoolDay, dateStr, currentPeriod, statusText };
+};
 
 const TEACHER_FULL_MAP = {
   "Thảo": "Lê Thị Thảo", "Thơ": "Phạm Thị Nguyệt Thơ", "Lam (T)": "Nguyễn Hữu Lam",
@@ -118,6 +232,16 @@ export default function PublicSchedule() {
   const [selectedGradeDay, setSelectedGradeDay] = useState('Thứ 2'); // 'Thứ 2'..'Thứ 7' | 'all'
   const [selectedGradeSession, setSelectedGradeSession] = useState('all'); // 'all' | 'morning' | 'afternoon'
   const [gradeSearchQuery, setGradeSearchQuery] = useState('');
+
+  // Interactive Excitement Features State
+  const [selectedHighlightSubject, setSelectedHighlightSubject] = useState(null);
+  const [selectedLessonDetail, setSelectedLessonDetail] = useState(null);
+  const [classGradeFilterTab, setClassGradeFilterTab] = useState('10'); // '10' | '11' | '12'
+  const [teacherSearchInput, setTeacherSearchInput] = useState('');
+  const [todayViewFocus, setTodayViewFocus] = useState(false);
+
+  const todayInfo = useMemo(() => getTodayVN(), []);
+
 
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [copiedPublicLink, setCopiedPublicLink] = useState(false);
@@ -874,133 +998,640 @@ export default function PublicSchedule() {
       )}
 
       {/* TAB 2 & 3: CLASS & TEACHER TIMETABLE */}
-      {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (
-        <div style={styles.sheetCard} className="print-full">
-          {/* Official Print Header */}
-          <div className="print-only" style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO</div>
-                <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
-                <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+      {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (() => {
+        // Calculate Subject Breakdown Stats
+        const currentTargetLessons = activeMainTab === 'class_tkb'
+          ? timetableData.filter(t => t.student_class === selectedClass)
+          : timetableData.filter(t => getFullTeacherName(t.teacher_name) === selectedTeacher);
+
+        const subjectCounts = currentTargetLessons.reduce((acc, t) => {
+          const s = t.subject || 'Khác';
+          acc[s] = (acc[s] || 0) + 1;
+          return acc;
+        }, {});
+        const sortedSubjectBreakdown = Object.entries(subjectCounts).sort((a, b) => b[1] - a[1]);
+
+        // Today's lessons for selected target
+        const todayLessons = currentTargetLessons
+          .filter(t => t.day_of_week === todayInfo.dayName)
+          .sort((a, b) => Number(a.period) - Number(b.period));
+
+        // Filtered teachers list for teacher tab
+        const filteredTeachersList = availableTeachers.filter(t => 
+          !teacherSearchInput || t.toLowerCase().includes(teacherSearchInput.toLowerCase())
+        );
+
+        // Grade classes for quick switcher
+        const grade10Classes = availableClasses.filter(c => c.startsWith('10'));
+        const grade11Classes = availableClasses.filter(c => c.startsWith('11'));
+        const grade12Classes = availableClasses.filter(c => c.startsWith('12'));
+        const currentGradeClasses = classGradeFilterTab === '10' ? grade10Classes : (classGradeFilterTab === '11' ? grade11Classes : grade12Classes);
+
+        return (
+          <div style={styles.sheetCard} className="print-full">
+            
+            {/* OFFICIAL PRINT HEADER (ND 30) */}
+            <div className="print-only" style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
+                  <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
-                <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
-                <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '18px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
+                  {activeMainTab === 'class_tkb' ? `THỜI KHÓA BIỂU LỚP ${selectedClass}` : `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN`}
+                </h2>
+                {activeMainTab === 'teacher_tkb' && (
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
+                    Giáo viên: {selectedTeacher}
+                  </div>
+                )}
+                <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
+                  Áp dụng Học kỳ I • Năm học 2026 - 2027 • Trường THPT Cao Bá Quát
+                </div>
               </div>
             </div>
 
-            <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <h2 style={{ margin: '4px 0', fontSize: '18px', fontWeight: '900', color: '#be123c', textTransform: 'uppercase' }}>
-                {activeMainTab === 'class_tkb' ? `THỜI KHÓA BIỂU LỚP ${selectedClass}` : `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN`}
-              </h2>
-              {activeMainTab === 'teacher_tkb' && (
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a', marginBottom: '4px' }}>
-                  Giáo viên: {selectedTeacher}
+            {/* CONTROL TOOLBAR (NO-PRINT) */}
+            <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              
+              {/* ROW 1: QUICK TARGET SELECTOR */}
+              {activeMainTab === 'class_tkb' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Users size={18} color="#be123c" /> Chọn Khối Lớp:
+                      </span>
+                      {['10', '11', '12'].map(g => (
+                        <button
+                          key={g}
+                          onClick={() => setClassGradeFilterTab(g)}
+                          style={{
+                            padding: '5px 14px',
+                            borderRadius: '8px',
+                            fontSize: '12.5px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            border: classGradeFilterTab === g ? 'none' : '1px solid #cbd5e1',
+                            backgroundColor: classGradeFilterTab === g ? '#be123c' : '#ffffff',
+                            color: classGradeFilterTab === g ? '#ffffff' : '#475569',
+                            boxShadow: classGradeFilterTab === g ? '0 2px 6px rgba(190,18,60,0.3)' : 'none'
+                          }}
+                        >
+                          Khối {g}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleExportClassTkbExcel}
+                        style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
+                      >
+                        <FileSpreadsheet size={16} /> Xuất Excel Lớp {selectedClass}
+                      </button>
+                      <button onClick={handlePrint} style={styles.printBtn}>
+                        <Printer size={16} /> In TKB Lớp
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* QUICK CLASS CHIPS */}
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginRight: '4px' }}>Lớp nhanh:</span>
+                    {currentGradeClasses.map(cls => (
+                      <button
+                        key={cls}
+                        onClick={() => handleClassChange(cls)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          border: selectedClass === cls ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                          backgroundColor: selectedClass === cls ? '#e0f2fe' : '#f8fafc',
+                          color: selectedClass === cls ? '#0369a1' : '#334155',
+                          boxShadow: selectedClass === cls ? '0 2px 8px rgba(2, 132, 199, 0.25)' : 'none',
+                          transform: selectedClass === cls ? 'scale(1.05)' : 'scale(1)',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {cls}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                /* TEACHER SELECTION CONTROLS */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+                      <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <User size={18} color="#be123c" /> Chọn Giáo Viên:
+                      </span>
+                      
+                      {/* TEACHER SEARCH BOX */}
+                      <div style={{ position: 'relative', minWidth: '220px', flex: 1, maxWidth: '320px' }}>
+                        <input
+                          type="text"
+                          placeholder="🔍 Gõ tên giáo viên cần tìm..."
+                          value={teacherSearchInput}
+                          onChange={e => setTeacherSearchInput(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '8px 12px',
+                            borderRadius: '8px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '13px',
+                            outline: 'none',
+                            backgroundColor: '#ffffff'
+                          }}
+                        />
+                        {teacherSearchInput && (
+                          <button
+                            onClick={() => setTeacherSearchInput('')}
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94a3b8',
+                              cursor: 'pointer',
+                              fontSize: '12px'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {/* SELECT DROPDOWN */}
+                      <select
+                        value={selectedTeacher}
+                        onChange={e => handleTeacherChange(e.target.value)}
+                        style={{ ...styles.select, padding: '7px 12px', fontSize: '13px', maxWidth: '260px' }}
+                      >
+                        {filteredTeachersList.map(t => (
+                          <option key={t} value={t}>{t}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={handleExportTeacherTkbExcel}
+                        style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
+                      >
+                        <FileSpreadsheet size={16} /> Xuất Excel GV {selectedTeacher}
+                      </button>
+                      <button onClick={handlePrint} style={styles.printBtn}>
+                        <Printer size={16} /> In TKB GV
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* QUICK TEACHER MATCH SUGGESTIONS (IF SEARCHING) */}
+                  {teacherSearchInput && filteredTeachersList.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', backgroundColor: '#ffffff', padding: '8px 12px', borderRadius: '10px', border: '1px solid #fed7aa' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#c2410c' }}>Kết quả ({filteredTeachersList.length}):</span>
+                      {filteredTeachersList.slice(0, 8).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => {
+                            handleTeacherChange(t);
+                            setTeacherSearchInput('');
+                          }}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
+                            border: selectedTeacher === t ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                            backgroundColor: selectedTeacher === t ? '#e0f2fe' : '#f8fafc',
+                            color: selectedTeacher === t ? '#0369a1' : '#334155'
+                          }}
+                        >
+                          👨‍🏫 {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
-              <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
-                Áp dụng Học kỳ I • Năm học 2026 - 2027
-              </div>
-            </div>
-          </div>
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }} className="no-print">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ fontWeight: 'bold', color: '#1e293b' }}>
-                {activeMainTab === 'class_tkb' ? 'Chọn Lớp:' : 'Chọn Giáo Viên:'}
-              </span>
-              {activeMainTab === 'class_tkb' ? (
-                <select value={selectedClass} onChange={e => handleClassChange(e.target.value)} style={styles.select}>
-                  {availableClasses.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
+            </div>
+
+            {/* TODAY HERO WIDGET (EXCITING FOR STUDENTS & TEACHERS) */}
+            <div className="no-print" style={{
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)',
+              borderRadius: '16px',
+              padding: '20px 24px',
+              color: '#ffffff',
+              marginBottom: '24px',
+              boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              position: 'relative',
+              overflow: 'hidden'
+            }}>
+              {/* Decorative Orb */}
+              <div style={{ position: 'absolute', right: '-40px', top: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
+              
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid rgba(56, 189, 248, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px'
+                  }}>
+                    {activeMainTab === 'class_tkb' ? '🎒' : '👨‍🏫'}
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: '#38bdf8' }}>
+                        {activeMainTab === 'class_tkb' ? 'TIÊU ĐIỂM HỌC TẬP HÔM NAY' : 'LỊCH GIẢNG DẠY HÔM NAY'}
+                      </span>
+                      <span style={{
+                        fontSize: '10px',
+                        fontWeight: '800',
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        backgroundColor: todayInfo.isSchoolDay ? '#10b981' : '#64748b',
+                        color: '#ffffff'
+                      }}>
+                        {todayInfo.isSchoolDay ? '🔥 ĐANG TRONG TUẦN HỌC' : '🏖️ NGÀY NGHỈ'}
+                      </span>
+                    </div>
+                    <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff' }}>
+                      {todayInfo.dayName} • Ngày {todayInfo.dateStr} — {activeMainTab === 'class_tkb' ? `Lớp ${selectedClass}` : `Thầy/Cô ${selectedTeacher}`}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Live Status Indicator */}
+                <div style={{
+                  backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                  border: '1px solid rgba(56, 189, 248, 0.3)',
+                  borderRadius: '10px',
+                  padding: '8px 14px',
+                  fontSize: '12.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  color: '#e2e8f0'
+                }}>
+                  <Clock size={15} color="#38bdf8" />
+                  <span>Trạng thái: <strong style={{ color: '#38bdf8' }}>{todayInfo.statusText}</strong></span>
+                </div>
+              </div>
+
+              {/* TODAY'S LESSONS ROW */}
+              {todayLessons.length > 0 ? (
+                <div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600' }}>
+                    Lộ trình {todayLessons.length} tiết hôm nay ({todayInfo.dayName}):
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                    {todayLessons.map((l, idx) => {
+                      const lTheme = getSubjectTheme(l.subject);
+                      const isCurrent = todayInfo.currentPeriod === Number(l.period);
+                      const timing = PERIOD_TIMINGS.find(pt => pt.period === Number(l.period));
+
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => setSelectedLessonDetail({ ...l, day: todayInfo.dayName, period: l.period })}
+                          style={{
+                            backgroundColor: isCurrent ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.12)',
+                            border: isCurrent ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.15)',
+                            borderRadius: '12px',
+                            padding: '10px 12px',
+                            color: isCurrent ? '#0f172a' : '#ffffff',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: isCurrent ? '0 0 15px rgba(56, 189, 248, 0.5)' : 'none'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <span style={{ fontSize: '11px', fontWeight: '800', color: isCurrent ? '#0284c7' : '#38bdf8' }}>
+                              Tiết {l.period} • {timing?.start || ''}
+                            </span>
+                            {isCurrent && (
+                              <span style={{ fontSize: '9px', fontWeight: '900', padding: '1px 5px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#fff' }}>
+                                LIVE
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span>{lTheme.icon}</span>
+                            <span style={{ color: isCurrent ? lTheme.text : '#ffffff' }}>{l.subject}</span>
+                          </div>
+                          <div style={{ fontSize: '11.5px', marginTop: '4px', opacity: 0.85 }}>
+                            {activeMainTab === 'class_tkb' ? `GV: ${l.teacher_name}` : `Lớp: ${l.student_class}`}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : (
-                <select value={selectedTeacher} onChange={e => handleTeacherChange(e.target.value)} style={styles.select}>
-                  {availableTeachers.map(t => <option key={t} value={t}>{t}</option>)}
-                </select>
+                <div style={{ backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px', textAlign: 'center', fontSize: '13px', color: '#94a3b8' }}>
+                  {todayInfo.isSchoolDay ? '🎉 Hôm nay không có tiết học / giảng dạy xếp trên hệ thống.' : '🏖️ Hôm nay Chủ Nhật - Nghỉ ngơi nạp năng lượng chuẩn bị cho tuần mới! ✨'}
+                </div>
               )}
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-              <button
-                onClick={activeMainTab === 'class_tkb' ? handleExportClassTkbExcel : handleExportTeacherTkbExcel}
-                style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
-              >
-                <FileSpreadsheet size={16} /> Xuất Excel
-              </button>
-              <button onClick={handlePrint} style={styles.printBtn}><Printer size={16} /> In TKB</button>
-            </div>
-          </div>
+            {/* SUBJECT BREAKDOWN & HIGHLIGHT STRIP (NO-PRINT) */}
+            <div className="no-print" style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '14px',
+              padding: '14px 18px',
+              border: '1px solid #e2e8f0',
+              marginBottom: '20px',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Sparkles size={16} color="#f59e0b" />
+                  <span>Phân bổ môn học trong tuần (Tổng: {currentTargetLessons.length} tiết):</span>
+                </div>
+                {selectedHighlightSubject && (
+                  <button
+                    onClick={() => setSelectedHighlightSubject(null)}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#f1f5f9',
+                      fontSize: '11.5px',
+                      fontWeight: '700',
+                      color: '#475569',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    ✕ Xoá làm nổi bật môn
+                  </button>
+                )}
+              </div>
 
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeadRow}>
-                <th style={{ ...styles.th, width: '70px', textAlign: 'center' }}>Tiết</th>
-                {DAYS.map(h => <th key={h} style={styles.th}>{h}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { label: '--- SÁNG ---', isHeader: true },
-                1, 2, 3, 4, 5,
-                { label: '--- CHIỀU ---', isHeader: true },
-                6, 7, 8, 9, 10
-              ].map((p, idx) => {
-                if (p.isHeader) {
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                {sortedSubjectBreakdown.map(([subName, count]) => {
+                  const sTheme = getSubjectTheme(subName);
+                  const isSelected = selectedHighlightSubject === subName;
+
                   return (
-                    <tr key={`h-${idx}`} style={{ backgroundColor: '#f8fafc' }}>
-                      <td colSpan={7} style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', textAlign: 'center', letterSpacing: '1px' }}>
-                        {p.label}
-                      </td>
-                    </tr>
+                    <button
+                      key={subName}
+                      onClick={() => setSelectedHighlightSubject(isSelected ? null : subName)}
+                      className="tkb-badge-pill"
+                      style={{
+                        padding: '5px 10px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        border: isSelected ? `2px solid ${sTheme.text}` : `1px solid ${sTheme.border}`,
+                        backgroundColor: isSelected ? sTheme.badgeBg : sTheme.bg,
+                        color: sTheme.text,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px',
+                        boxShadow: isSelected ? '0 0 0 2px #f59e0b' : 'none'
+                      }}
+                    >
+                      <span>{sTheme.icon}</span>
+                      <span>{subName}:</span>
+                      <span style={{
+                        padding: '1px 6px',
+                        borderRadius: '10px',
+                        backgroundColor: isSelected ? sTheme.text : 'rgba(0,0,0,0.06)',
+                        color: isSelected ? '#ffffff' : sTheme.text,
+                        fontSize: '11px',
+                        fontWeight: '800'
+                      }}>
+                        {count}
+                      </span>
+                    </button>
                   );
-                }
+                })}
+              </div>
+            </div>
 
-                return (
-                  <tr key={p} style={styles.tableRow}>
-                    <td style={{ ...styles.td, fontWeight: 'bold', textAlign: 'center', backgroundColor: '#fdf2f8' }}>
-                      Tiết {p}
-                    </td>
-                    {DAYS.map(d => {
-                      const item = activeMainTab === 'class_tkb'
-                        ? getLessonForClass(d, p)
-                        : getLessonForTeacher(d, p);
-
-                      if (!item) return <td key={d} style={{ ...styles.td, color: '#94a3b8', textAlign: 'center' }}>-</td>;
-
+            {/* VIBRANT TIMETABLE MATRIX */}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ ...styles.table, borderCollapse: 'separate', borderSpacing: '6px' }}>
+                <thead>
+                  <tr style={styles.tableHeadRow}>
+                    <th style={{ ...styles.th, width: '90px', textAlign: 'center', borderRadius: '8px 0 0 8px' }}>Tiết</th>
+                    {DAYS.map(h => {
+                      const isToday = h === todayInfo.dayName;
                       return (
-                        <td key={d} style={styles.td}>
-                          <div style={{ fontWeight: '700', color: '#0f172a', fontSize: '13px' }}>
-                            {item.subject}
-                          </div>
-                          <div style={{ fontSize: '11px', color: activeMainTab === 'class_tkb' ? '#2563eb' : '#059669', marginTop: '2px', fontWeight: '600' }}>
-                            {activeMainTab === 'class_tkb' ? item.teacher_name : `Lớp ${item.student_class}`}
-                          </div>
-                        </td>
+                        <th
+                          key={h}
+                          className={isToday ? 'today-column-header' : ''}
+                          style={{
+                            ...styles.th,
+                            textAlign: 'center',
+                            borderRadius: isToday ? '8px' : '0',
+                            boxShadow: isToday ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none'
+                          }}
+                        >
+                          <div style={{ fontSize: '13.5px', fontWeight: '800' }}>{h}</div>
+                          {isToday && (
+                            <div style={{ fontSize: '10px', fontWeight: '800', color: '#fef08a', marginTop: '2px', letterSpacing: '0.5px' }}>
+                              🌟 HÔM NAY
+                            </div>
+                          )}
+                        </th>
                       );
                     })}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
 
-          {/* Official Print Signatures */}
-          <div className="print-only" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 40px', fontSize: '12px' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontWeight: 'bold' }}>BAN GIÁM HIỆU DUYỆT</div>
-              <div style={{ height: '50px' }}></div>
-              <div style={{ fontStyle: 'italic' }}>(Ký và ghi rõ họ tên)</div>
+                <tbody>
+                  {[
+                    { label: '🌅 BUỔI SÁNG (07:00 - 11:20)', isHeader: true, session: 'morning' },
+                    1, 2, 3, 4, 5,
+                    { label: '🌇 BUỔI CHIỀU (13:30 - 17:50)', isHeader: true, session: 'afternoon' },
+                    6, 7, 8, 9, 10
+                  ].map((p, idx) => {
+                    if (p.isHeader) {
+                      return (
+                        <tr key={`h-${idx}`}>
+                          <td
+                            colSpan={7}
+                            style={{
+                              padding: '10px 14px',
+                              fontSize: '12px',
+                              fontWeight: '800',
+                              textAlign: 'center',
+                              letterSpacing: '1px',
+                              borderRadius: '8px',
+                              backgroundColor: p.session === 'morning' ? '#e0f2fe' : '#fef3c7',
+                              color: p.session === 'morning' ? '#0369a1' : '#b45309'
+                            }}
+                          >
+                            {p.label}
+                          </td>
+                        </tr>
+                      );
+                    }
+
+                    const timing = PERIOD_TIMINGS.find(pt => pt.period === p);
+                    const isMorning = p <= 5;
+
+                    return (
+                      <tr key={p}>
+                        {/* PERIOD TITLE CELL */}
+                        <td style={{
+                          padding: '10px 8px',
+                          textAlign: 'center',
+                          borderRadius: '8px',
+                          backgroundColor: isMorning ? '#f0f9ff' : '#fffbeb',
+                          border: `1px solid ${isMorning ? '#bae6fd' : '#fde68a'}`,
+                          verticalAlign: 'middle'
+                        }}>
+                          <div style={{ fontWeight: '800', fontSize: '13px', color: isMorning ? '#0369a1' : '#b45309' }}>
+                            Tiết {p}
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
+                            {timing?.start}
+                          </div>
+                        </td>
+
+                        {/* DAY CELLS */}
+                        {DAYS.map(d => {
+                          const item = activeMainTab === 'class_tkb'
+                            ? getLessonForClass(d, p)
+                            : getLessonForTeacher(d, p);
+
+                          const isToday = d === todayInfo.dayName;
+                          const isCurrentActive = isToday && todayInfo.currentPeriod === p;
+
+                          if (!item) {
+                            return (
+                              <td
+                                key={d}
+                                className={isToday ? 'today-column-cell' : ''}
+                                style={{
+                                  padding: '8px',
+                                  borderRadius: '8px',
+                                  backgroundColor: isToday ? 'rgba(239, 246, 255, 0.4)' : '#f8fafc',
+                                  border: '1px dashed #e2e8f0',
+                                  textAlign: 'center',
+                                  color: '#cbd5e1',
+                                  fontSize: '12px',
+                                  verticalAlign: 'middle'
+                                }}
+                              >
+                                —
+                              </td>
+                            );
+                          }
+
+                          const theme = getSubjectTheme(item.subject);
+                          const isHighlighted = selectedHighlightSubject && item.subject.toLowerCase().includes(selectedHighlightSubject.toLowerCase());
+
+                          return (
+                            <td
+                              key={d}
+                              className={isToday ? 'today-column-cell' : ''}
+                              style={{
+                                padding: '4px',
+                                borderRadius: '8px',
+                                verticalAlign: 'top',
+                                backgroundColor: isToday ? 'rgba(239, 246, 255, 0.5)' : 'transparent'
+                              }}
+                            >
+                              <div
+                                className={`tkb-cell-card ${isHighlighted ? 'tkb-highlighted' : ''}`}
+                                onClick={() => setSelectedLessonDetail({ ...item, day: d, period: p })}
+                                style={{
+                                  backgroundColor: isHighlighted ? '#fef08a' : theme.bg,
+                                  border: isHighlighted ? '2px solid #ca8a04' : `1.5px solid ${theme.border}`,
+                                  borderLeft: `4px solid ${isHighlighted ? '#ca8a04' : theme.text}`,
+                                  borderRadius: '10px',
+                                  padding: '8px 10px',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '3px',
+                                  boxShadow: isCurrentActive ? '0 0 12px rgba(2, 132, 199, 0.4)' : '0 1px 3px rgba(0,0,0,0.03)',
+                                  position: 'relative'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                                  <span style={{ fontSize: '13px', fontWeight: '800', color: theme.text, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    <span>{theme.icon}</span>
+                                    <span>{item.subject}</span>
+                                  </span>
+                                  {isCurrentActive && (
+                                    <span style={{ fontSize: '9px', fontWeight: '900', padding: '1px 5px', borderRadius: '6px', backgroundColor: '#ef4444', color: '#ffffff' }}>
+                                      LIVE
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '2px' }}>
+                                  <span style={{
+                                    fontSize: '11px',
+                                    fontWeight: '600',
+                                    color: activeMainTab === 'class_tkb' ? '#1d4ed8' : '#047857',
+                                    backgroundColor: theme.badgeBg || '#ffffff',
+                                    padding: '1px 6px',
+                                    borderRadius: '6px',
+                                    border: `1px solid ${theme.border}`
+                                  }}>
+                                    {activeMainTab === 'class_tkb' ? (item.teacher_name || 'GV') : `Lớp ${item.student_class}`}
+                                  </span>
+                                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                    {timing?.start}
+                                  </span>
+                                </div>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontWeight: 'bold' }}>NGƯỜI LẬP BẢNG / GIÁO VIÊN</div>
-              <div style={{ height: '50px' }}></div>
-              <div style={{ fontStyle: 'italic' }}>{selectedTeacher || 'Giáo viên'}</div>
+
+            {/* Official Print Signatures */}
+            <div className="print-only" style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', padding: '0 40px', fontSize: '12px' }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>BAN GIÁM HIỆU DUYỆT</div>
+                <div style={{ height: '50px' }}></div>
+                <div style={{ fontStyle: 'italic' }}>(Ký và ghi rõ họ tên)</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontWeight: 'bold' }}>NGƯỜI LẬP BẢNG / GIÁO VIÊN</div>
+                <div style={{ height: '50px' }}></div>
+                <div style={{ fontStyle: 'italic' }}>{selectedTeacher || 'Giáo viên'}</div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 4: 🏫 TKB TOÀN TRƯỜNG (THEO KHỐI) - MA TRẬN ĐẦY ĐỦ CHUẨN XÁC 100% */}
       {activeMainTab === 'grade_tkb' && (() => {
@@ -1273,7 +1904,7 @@ export default function PublicSchedule() {
                                 textAlign: 'center',
                                 backgroundColor: '#1e293b',
                                 borderLeft: '1px solid #334155',
-                                minWidth: '105px'
+                                minWidth: '115px'
                               }}>
                                 <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#38bdf8' }}>{cls}</div>
                               </th>
@@ -1306,6 +1937,7 @@ export default function PublicSchedule() {
                             }
 
                             const isMorning = p <= 5;
+                            const timing = PERIOD_TIMINGS.find(pt => pt.period === p);
 
                             return (
                               <tr key={p} style={{ ...styles.tableRow, backgroundColor: isMorning ? '#ffffff' : '#fafafa' }}>
@@ -1323,7 +1955,8 @@ export default function PublicSchedule() {
                                   boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
                                   borderRight: '1px solid #cbd5e1'
                                 }}>
-                                  Tiết {p}
+                                  <div>Tiết {p}</div>
+                                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'normal' }}>{timing?.start}</div>
                                 </td>
 
                                 {/* EACH CLASS CELL */}
@@ -1338,6 +1971,7 @@ export default function PublicSchedule() {
                                     );
                                   }
 
+                                  const sTheme = getSubjectTheme(item.subject);
                                   const isMatched = gradeSearchQuery && (
                                     item.subject.toLowerCase().includes(gradeSearchQuery.toLowerCase()) ||
                                     (item.teacher_name && item.teacher_name.toLowerCase().includes(gradeSearchQuery.toLowerCase()))
@@ -1346,25 +1980,31 @@ export default function PublicSchedule() {
                                   return (
                                     <td
                                       key={cls}
+                                      onClick={() => setSelectedLessonDetail({ ...item, day, period: p })}
                                       style={{
                                         ...styles.td,
                                         borderLeft: '1px solid #e2e8f0',
-                                        backgroundColor: isMatched ? '#fef08a' : 'transparent',
+                                        backgroundColor: isMatched ? '#fef08a' : sTheme.bg,
                                         transition: 'background-color 0.2s',
-                                        padding: '8px 10px'
+                                        padding: '7px 9px',
+                                        cursor: 'pointer'
                                       }}
                                     >
                                       <div style={{
-                                        fontWeight: '700',
-                                        color: isMatched ? '#854d0e' : '#0f172a',
-                                        fontSize: '13px',
-                                        lineHeight: '1.3'
+                                        fontWeight: '800',
+                                        color: isMatched ? '#854d0e' : sTheme.text,
+                                        fontSize: '12.5px',
+                                        lineHeight: '1.3',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
                                       }}>
-                                        {item.subject}
+                                        <span>{sTheme.icon}</span>
+                                        <span>{item.subject}</span>
                                       </div>
                                       <div style={{
                                         fontSize: '11px',
-                                        color: isMatched ? '#713f12' : '#2563eb',
+                                        color: isMatched ? '#713f12' : '#475569',
                                         marginTop: '3px',
                                         fontWeight: '600',
                                         lineHeight: '1.2'
@@ -1404,6 +2044,107 @@ export default function PublicSchedule() {
           </div>
         );
       })()}
+
+      {/* INTERACTIVE LESSON DETAIL MODAL */}
+      {selectedLessonDetail && (() => {
+        const dTheme = getSubjectTheme(selectedLessonDetail.subject);
+        const timing = PERIOD_TIMINGS.find(pt => pt.period === Number(selectedLessonDetail.period));
+
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '20px' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '460px', width: '100%', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: `2px solid ${dTheme.border}` }}>
+              
+              {/* MODAL HEADER */}
+              <div style={{ backgroundColor: dTheme.bg, borderBottom: `1px solid ${dTheme.border}`, padding: '20px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '32px' }}>{dTheme.icon}</span>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: dTheme.text }}>
+                      {selectedLessonDetail.subject}
+                    </h3>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      Thông tin tiết học chi tiết
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedLessonDetail(null)}
+                  style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', backgroundColor: 'rgba(0,0,0,0.06)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#475569', fontSize: '16px' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* MODAL BODY */}
+              <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Ngày học</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                      {selectedLessonDetail.day || selectedLessonDetail.day_of_week}
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Tiết & Ca học</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                      Tiết {selectedLessonDetail.period} ({timing?.session || (Number(selectedLessonDetail.period) <= 5 ? 'Sáng' : 'Chiều')})
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', textTransform: 'uppercase' }}>Thời gian tiết học</div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', color: '#0284c7', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Clock size={16} />
+                    <span>{timing?.time || `${timing?.start} - ${timing?.end}`}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div style={{ backgroundColor: '#eff6ff', padding: '12px', borderRadius: '10px', border: '1px solid #bfdbfe' }}>
+                    <div style={{ fontSize: '11px', color: '#1e40af', fontWeight: 'bold', textTransform: 'uppercase' }}>Lớp học</div>
+                    <div style={{ fontSize: '15px', fontWeight: '900', color: '#1d4ed8', marginTop: '2px' }}>
+                      {selectedLessonDetail.student_class}
+                    </div>
+                  </div>
+                  <div style={{ backgroundColor: '#ecfdf5', padding: '12px', borderRadius: '10px', border: '1px solid #a7f3d0' }}>
+                    <div style={{ fontSize: '11px', color: '#065f46', fontWeight: 'bold', textTransform: 'uppercase' }}>Giáo viên bộ môn</div>
+                    <div style={{ fontSize: '14px', fontWeight: '800', color: '#047857', marginTop: '2px' }}>
+                      {selectedLessonDetail.teacher_name || 'Đang cập nhật'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* HELPFUL NOTE */}
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px', fontSize: '12.5px', color: '#92400e', lineHeight: '1.4' }}>
+                  💡 <strong>Gợi ý học sinh:</strong> Chuẩn bị đầy đủ SGK, vở ghi môn <strong>{selectedLessonDetail.subject}</strong> và đồ dùng học tập trước giờ vào lớp!
+                </div>
+              </div>
+
+              {/* MODAL FOOTER */}
+              <div style={{ padding: '16px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setSelectedLessonDetail(null)}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#0f172a',
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    fontSize: '13px'
+                  }}
+                >
+                  Đã hiểu & Đóng
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
 
       {/* MULTI-WEEK / 35-WEEK FLEXIBLE EXPORT MODAL */}
       {showExportModal && (

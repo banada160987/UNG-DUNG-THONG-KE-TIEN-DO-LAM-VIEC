@@ -834,3 +834,50 @@ input, select, textarea, button {
     justify-content: center !important;
   }
 }
+
+/* ==========================================================================
+   VIBRANT & INTERACTIVE TIMETABLE (TKB) STYLES
+   ========================================================================== */
+.tkb-cell-card {
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.tkb-cell-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  filter: brightness(1.02);
+}
+
+.tkb-highlighted {
+  box-shadow: 0 0 0 2.5px #f59e0b, 0 8px 20px rgba(245, 158, 11, 0.35) !important;
+  transform: scale(1.03) !important;
+  z-index: 10 !important;
+  animation: pulse-border 1.5s infinite alternate;
+}
+
+@keyframes pulse-border {
+  0% { box-shadow: 0 0 0 2px #f59e0b, 0 4px 12px rgba(245, 158, 11, 0.3); }
+  100% { box-shadow: 0 0 0 3.5px #f59e0b, 0 8px 24px rgba(245, 158, 11, 0.6); }
+}
+
+.today-column-header {
+  background: linear-gradient(135deg, #1e3a8a, #0284c7) !important;
+  color: #ffffff !important;
+  position: relative;
+}
+
+.today-column-cell {
+  background-color: rgba(239, 246, 255, 0.65);
+}
+
+.tkb-badge-pill {
+  transition: all 0.2s ease;
+}
+
+.tkb-badge-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.1);
+}
+
