@@ -112,7 +112,7 @@ export default function PublicGallery() {
             <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
               <div>
                 <label style={styles.label}>Tên người/Tập thể đóng góp *</label>
-                <input required type="text" value={uploaderName} onChange={e => setUploaderName(e.target.value)} style={styles.input} placeholder="VD: Lớp 12A1 niên khóa 1996-1999" />
+                <input required type="text" value={uploaderName} onChange={e => setUploaderName(e.target.value)} style={styles.input} placeholder="VD: Lớp 12A01 niên khóa 1996-1999" />
               </div>
               <div>
                 <label style={styles.label}>Tải ảnh lên *</label>

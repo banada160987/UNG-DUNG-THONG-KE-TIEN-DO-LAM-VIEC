@@ -45,7 +45,7 @@ export default function AdminSchedule() {
 
   // Admin Link Generator State
   const [shareType, setShareType] = useState('class'); // 'class' | 'teacher'
-  const [shareClass, setShareClass] = useState('10A1');
+  const [shareClass, setShareClass] = useState('10A01');
   const [shareTeacher, setShareTeacher] = useState('');
   const [adminCopied, setAdminCopied] = useState(false);
 
@@ -365,14 +365,14 @@ export default function AdminSchedule() {
   // --- EXCEL TIMETABLE IMPORT & HANDLING ---
   const handleDownloadSampleExcel = () => {
     const sampleData = [
-      { "Lớp": "10A1", "Thứ": "Thứ 2", "Tiết": 1, "Môn Học": "Chào cờ", "Giáo Viên": "BGH & GVCN", "Phòng Học": "Sân trường" },
-      { "Lớp": "10A1", "Thứ": "Thứ 2", "Tiết": 2, "Môn Học": "Toán", "Giáo Viên": "Thầy Nguyễn Văn A", "Phòng Học": "P.101" },
-      { "Lớp": "10A1", "Thứ": "Thứ 2", "Tiết": 3, "Môn Học": "Toán", "Giáo Viên": "Thầy Nguyễn Văn A", "Phòng Học": "P.101" },
-      { "Lớp": "10A1", "Thứ": "Thứ 2", "Tiết": 4, "Môn Học": "Ngữ văn", "Giáo Viên": "Cô Trần Thị B", "Phòng Học": "P.101" },
-      { "Lớp": "10A1", "Thứ": "Thứ 2", "Tiết": 5, "Môn Học": "Tiếng Anh", "Giáo Viên": "Cô Lê Thị D", "Phòng Học": "P.101" },
-      { "Lớp": "11A1", "Thứ": "Thứ 3", "Tiết": 1, "Môn Học": "Vật lý", "Giáo Viên": "Thầy Phạm Văn C", "Phòng Học": "P.201" },
-      { "Lớp": "11A1", "Thứ": "Thứ 3", "Tiết": 2, "Môn Học": "Vật lý", "Giáo Viên": "Thầy Phạm Văn C", "Phòng Học": "P.201" },
-      { "Lớp": "12A1", "Thứ": "Thứ 4", "Tiết": 1, "Môn Học": "Hóa học", "Giáo Viên": "Cô Hoàng Thị E", "Phòng Học": "P.301" }
+      { "Lớp": "10A01", "Thứ": "Thứ 2", "Tiết": 1, "Môn Học": "Chào cờ", "Giáo Viên": "BGH & GVCN", "Phòng Học": "Sân trường" },
+      { "Lớp": "10A01", "Thứ": "Thứ 2", "Tiết": 2, "Môn Học": "Toán", "Giáo Viên": "Thầy Nguyễn Văn A", "Phòng Học": "P.101" },
+      { "Lớp": "10A01", "Thứ": "Thứ 2", "Tiết": 3, "Môn Học": "Toán", "Giáo Viên": "Thầy Nguyễn Văn A", "Phòng Học": "P.101" },
+      { "Lớp": "10A01", "Thứ": "Thứ 2", "Tiết": 4, "Môn Học": "Ngữ văn", "Giáo Viên": "Cô Trần Thị B", "Phòng Học": "P.101" },
+      { "Lớp": "10A01", "Thứ": "Thứ 2", "Tiết": 5, "Môn Học": "Tiếng Anh", "Giáo Viên": "Cô Lê Thị D", "Phòng Học": "P.101" },
+      { "Lớp": "11A01", "Thứ": "Thứ 3", "Tiết": 1, "Môn Học": "Vật lý", "Giáo Viên": "Thầy Phạm Văn C", "Phòng Học": "P.201" },
+      { "Lớp": "11A01", "Thứ": "Thứ 3", "Tiết": 2, "Môn Học": "Vật lý", "Giáo Viên": "Thầy Phạm Văn C", "Phòng Học": "P.201" },
+      { "Lớp": "12A01", "Thứ": "Thứ 4", "Tiết": 1, "Môn Học": "Hóa học", "Giáo Viên": "Cô Hoàng Thị E", "Phòng Học": "P.301" }
     ];
 
     const ws = XLSX.utils.json_to_sheet(sampleData);
@@ -383,7 +383,14 @@ export default function AdminSchedule() {
 
   const normalizeClassName = (cls) => {
     if (!cls) return '';
-    return String(cls).trim().toUpperCase();
+    const clean = String(cls).trim().toUpperCase();
+    const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
+    if (match) {
+      const prefix = match[1];
+      const num = match[2].padStart(2, '0');
+      return `${prefix}${num}`;
+    }
+    return clean;
   };
 
   const SUBJECT_MAP = {

@@ -763,7 +763,7 @@ export default function DepartmentDrive() {
                   type="text"
                   value={submitForm.title}
                   onChange={e => setSubmitForm({ ...submitForm, title: e.target.value })}
-                  placeholder="Ví dụ: Giáo án Tuần 5 - Bài 3: Cấp số cộng (Lớp 11A1)"
+                  placeholder="Ví dụ: Giáo án Tuần 5 - Bài 3: Cấp số cộng (Lớp 11A01)"
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
                 />
               </div>

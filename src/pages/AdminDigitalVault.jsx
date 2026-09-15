@@ -128,7 +128,7 @@ export default function AdminDigitalVault() {
             </div>
             <div>
               <label style={labelStyle}>Lớp (*)</label>
-              <input type="text" required placeholder="VD: 10A1" value={formData.student_class} onChange={e => setFormData({...formData, student_class: e.target.value})} style={inputStyle} />
+              <input type="text" required placeholder="VD: 10A01" value={formData.student_class} onChange={e => setFormData({...formData, student_class: e.target.value})} style={inputStyle} />
             </div>
             <div>
               <label style={labelStyle}>Loại giấy tờ (*)</label>

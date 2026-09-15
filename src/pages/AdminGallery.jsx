@@ -8,7 +8,7 @@ const DEFAULT_SAMPLE_PHOTOS = [
   { image_url: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=800&q=80", uploaded_by: "Cựu Học Sinh Khóa 1996 - 1999", is_approved: true },
   { image_url: "https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&q=80", uploaded_by: "Thầy Cô & Học Sinh Niên Khóa 2002 - 2005", is_approved: true },
   { image_url: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&q=80", uploaded_by: "Hội Cựu Học Sinh THPT Cao Bá Quát", is_approved: true },
-  { image_url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80", uploaded_by: "Lớp 12A1 Khóa 2005 - 2008", is_approved: true },
+  { image_url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=800&q=80", uploaded_by: "Lớp 12A01 Khóa 2005 - 2008", is_approved: true },
   { image_url: "https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=800&q=80", uploaded_by: "Đoàn Trường THPT Cao Bá Quát", is_approved: true }
 ];
 

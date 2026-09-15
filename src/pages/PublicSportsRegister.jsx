@@ -286,7 +286,7 @@ export default function PublicSportsRegister() {
               <label style={styles.label}>Niên Khóa / Lớp</label>
               <input
                 type="text"
-                placeholder="VD: 2005 - 2008 / Lớp 12A1 / Tổ Giáo Viên"
+                placeholder="VD: 2005 - 2008 / Lớp 12A01 / Tổ Giáo Viên"
                 value={cohortYear}
                 onChange={e => setCohortYear(e.target.value)}
                 style={styles.input}
@@ -299,7 +299,7 @@ export default function PublicSportsRegister() {
               <input
                 type="text"
                 required
-                placeholder="VD: Hội CHS Niên Khóa 2002 / Chi Đoàn Lớp 12A1 / Tổ Toán"
+                placeholder="VD: Hội CHS Niên Khóa 2002 / Chi Đoàn Lớp 12A01 / Tổ Toán"
                 value={unitName}
                 onChange={e => setUnitName(e.target.value)}
                 style={styles.input}

@@ -6,9 +6,9 @@ import * as XLSX from 'xlsx';
 import { generateParkingWordReport } from '../lib/wordExportParking';
 
 const DEFAULT_PARKING_LIST = [
-  { id: '1', ticket_code: 'PARK-11A1-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A1-01', student_class: '11A1', grade_level: 'Khối 11', license_plate: '29B1-567.89', vehicle_type: 'Xe máy điện', vehicle_color: 'Đen nhám', package_type: 'term', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 200000, status: 'active' },
-  { id: '2', ticket_code: 'PARK-12A3-002', student_name: 'Trần Thị Bích', student_code: 'HS12A3-05', student_class: '12A3', grade_level: 'Khối 12', license_plate: '29H1-888.66', vehicle_type: 'Xe máy 50cc', vehicle_color: 'Trắng đỏ', package_type: 'year', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 450000, status: 'active' },
-  { id: '3', ticket_code: 'PARK-10A2-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A2-12', student_class: '10A2', grade_level: 'Khối 10', license_plate: '29K1-345.12', vehicle_type: 'Xe máy điện', vehicle_color: 'Xanh dương', package_type: 'month', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 50000, status: 'active' }
+  { id: '1', ticket_code: 'PARK-11A01-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A01-01', student_class: '11A01', grade_level: 'Khối 11', license_plate: '29B1-567.89', vehicle_type: 'Xe máy điện', vehicle_color: 'Đen nhám', package_type: 'term', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 200000, status: 'active' },
+  { id: '2', ticket_code: 'PARK-12A03-002', student_name: 'Trần Thị Bích', student_code: 'HS12A03-05', student_class: '12A03', grade_level: 'Khối 12', license_plate: '29H1-888.66', vehicle_type: 'Xe máy 50cc', vehicle_color: 'Trắng đỏ', package_type: 'year', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 450000, status: 'active' },
+  { id: '3', ticket_code: 'PARK-10A02-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A02-12', student_class: '10A02', grade_level: 'Khối 10', license_plate: '29K1-345.12', vehicle_type: 'Xe máy điện', vehicle_color: 'Xanh dương', package_type: 'month', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 50000, status: 'active' }
 ];
 
 const DEFAULT_PACKAGES = [

@@ -6,9 +6,9 @@ import * as XLSX from 'xlsx';
 import { generateBusWordReport } from '../lib/wordExportBus';
 
 const DEFAULT_BUS_LIST = [
-  { id: '1', ticket_code: 'BUS-11A1-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A1-01', student_class: '11A1', grade_level: 'Khối 11', pickup_point: 'Ngã tư Trần Phú', route_type: '2-way', distance_km: 15, package_type: 'term_2way', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 1400000, status: 'active' },
-  { id: '2', ticket_code: 'BUS-12A3-002', student_name: 'Trần Thị Bích', student_code: 'HS12A3-05', student_class: '12A3', grade_level: 'Khối 12', pickup_point: 'Cổng làng B', route_type: '1-way', distance_km: 10, package_type: 'year_1way', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 1500000, status: 'active' },
-  { id: '3', ticket_code: 'BUS-10A2-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A2-12', student_class: '10A2', grade_level: 'Khối 10', pickup_point: 'UBND Phường Y', route_type: '2-way', distance_km: 5, package_type: 'month_2way', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 300000, status: 'active' }
+  { id: '1', ticket_code: 'BUS-11A01-001', student_name: 'Nguyễn Văn An', student_code: 'HS11A01-01', student_class: '11A01', grade_level: 'Khối 11', pickup_point: 'Ngã tư Trần Phú', route_type: '2-way', distance_km: 15, package_type: 'term_2way', start_date: '2026-09-01', end_date: '2027-01-15', fee_amount: 1400000, status: 'active' },
+  { id: '2', ticket_code: 'BUS-12A03-002', student_name: 'Trần Thị Bích', student_code: 'HS12A03-05', student_class: '12A03', grade_level: 'Khối 12', pickup_point: 'Cổng làng B', route_type: '1-way', distance_km: 10, package_type: 'year_1way', start_date: '2026-09-01', end_date: '2027-05-31', fee_amount: 1500000, status: 'active' },
+  { id: '3', ticket_code: 'BUS-10A02-003', student_name: 'Phạm Minh Cường', student_code: 'HS10A02-12', student_class: '10A02', grade_level: 'Khối 10', pickup_point: 'UBND Phường Y', route_type: '2-way', distance_km: 5, package_type: 'month_2way', start_date: '2026-09-01', end_date: '2026-09-30', fee_amount: 300000, status: 'active' }
 ];
 
 const DEFAULT_PACKAGES = [

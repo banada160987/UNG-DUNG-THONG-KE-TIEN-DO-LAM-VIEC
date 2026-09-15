@@ -73,7 +73,7 @@ export default function PublicSponsorsList() {
             <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: '15px'}}>
               <div>
                 <label style={styles.label}>Tên Cá nhân / Tập thể lớp *</label>
-                <input required type="text" name="name" value={formData.name} onChange={handleChange} style={styles.input} placeholder="VD: Tập thể lớp 12A1 khóa 1996-1999" />
+                <input required type="text" name="name" value={formData.name} onChange={handleChange} style={styles.input} placeholder="VD: Tập thể lớp 12A01 khóa 1996-1999" />
               </div>
               <div>
                 <label style={styles.label}>Số tiền đóng góp (VNĐ)</label>

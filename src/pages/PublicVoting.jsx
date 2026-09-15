@@ -95,7 +95,7 @@ export default function PublicVoting() {
     {
       id: 'sample-1',
       title: 'Bức Tranh Thư Pháp "Mái Trường 30 Năm Chắp Cánh"',
-      author_name: 'Tập thể Lớp 12A1 (Niên khóa 2023 - 2026)',
+      author_name: 'Tập thể Lớp 12A01 (Niên khóa 2023 - 2026)',
       category: 'Tranh vẽ',
       image_url: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
       description: 'Tác phẩm được vẽ bằng màu nước và nét bút thư pháp tinh xảo, phác họa hình ảnh tượng Cao Bá Quát rạng rỡ cùng hàng cây lâu năm trường mình.',
@@ -785,20 +785,20 @@ export default function PublicVoting() {
                   type="text"
                   required
                   list="class-suggestions"
-                  placeholder="VD: Lớp 12A1 hoặc Khóa 2002-2005"
+                  placeholder="VD: Lớp 12A01 hoặc Khóa 2002-2005"
                   value={voterCode}
                   onChange={e => setVoterCode(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #be123c', fontSize: '14px', fontWeight: 'bold', color: '#be123c', boxSizing: 'border-box' }}
                 />
                 <datalist id="class-suggestions">
-                  <option value="Lớp 12A1" />
-                  <option value="Lớp 12A2" />
-                  <option value="Lớp 12A3" />
-                  <option value="Lớp 12A4" />
-                  <option value="Lớp 12A5" />
-                  <option value="Lớp 11A1" />
-                  <option value="Lớp 11A2" />
-                  <option value="Lớp 10A1" />
+                  <option value="Lớp 12A01" />
+                  <option value="Lớp 12A02" />
+                  <option value="Lớp 12A03" />
+                  <option value="Lớp 12A04" />
+                  <option value="Lớp 12A05" />
+                  <option value="Lớp 11A01" />
+                  <option value="Lớp 11A02" />
+                  <option value="Lớp 10A01" />
                   <option value="Khóa 2023-2026" />
                   <option value="Cựu Học Sinh" />
                 </datalist>

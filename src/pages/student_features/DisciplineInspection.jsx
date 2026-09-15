@@ -80,8 +80,20 @@ export default function DisciplineInspection() {
       return;
     }
 
+    const normalizeClassCode = (cls) => {
+      if (!cls) return '';
+      const clean = String(cls).trim().toUpperCase();
+      const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
+      if (match) {
+        const prefix = match[1];
+        const num = match[2].padStart(2, '0');
+        return `${prefix}${num}`;
+      }
+      return clean;
+    };
+
     const newRecord = {
-      inspected_class: formData.inspected_class.toUpperCase(),
+      inspected_class: normalizeClassCode(formData.inspected_class),
       inspection_date: new Date().toISOString().split('T')[0],
       violation_type: formData.violation_type,
       point_deduction: formData.point_deduction,
@@ -136,7 +148,7 @@ export default function DisciplineInspection() {
               <label style={labelStyle}>Lớp vi phạm (*)</label>
               <div style={{ position: 'relative' }}>
                 <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input type="text" required placeholder="VD: 10A1" value={formData.inspected_class} onChange={e => setFormData({...formData, inspected_class: e.target.value})} style={{...inputStyle, paddingLeft: '40px', fontSize: '18px', textTransform: 'uppercase'}} />
+                <input type="text" required placeholder="VD: 10A01" value={formData.inspected_class} onChange={e => setFormData({...formData, inspected_class: e.target.value})} style={{...inputStyle, paddingLeft: '40px', fontSize: '18px', textTransform: 'uppercase'}} />
               </div>
             </div>
             <div>

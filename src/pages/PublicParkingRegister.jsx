@@ -269,10 +269,21 @@ export default function PublicParkingRegister() {
   const getUniqueClassesList = () => {
     const defaults = [];
     ['10', '11', '12'].forEach(g => {
-      for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
+      for (let i = 1; i <= 15; i++) {
+        const num = String(i).padStart(2, '0');
+        defaults.push(`${g}A${num}`);
+      }
     });
 
-    const fromRoster = studentRoster.map(s => s.student_class?.trim().toUpperCase()).filter(Boolean);
+    const normalizeCode = (cls) => {
+      if (!cls) return '';
+      const clean = String(cls).trim().toUpperCase();
+      const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
+      if (match) return `${match[1]}${match[2].padStart(2, '0')}`;
+      return clean;
+    };
+
+    const fromRoster = studentRoster.map(s => normalizeCode(s.student_class)).filter(Boolean);
     const combined = Array.from(new Set([...fromRoster, ...defaults]));
 
     return combined.sort((a, b) => {
@@ -912,7 +923,7 @@ export default function PublicParkingRegister() {
                 type="text" 
                 required 
                 readOnly={isVerifiedStudent || !!editingTicket}
-                placeholder="Bấm hoặc gõ Lớp (VD: 10A1, 11A2, 12A3)..."
+                placeholder="Bấm hoặc gõ Lớp (VD: 10A01, 11A02, 12A03)..."
                 value={studentClass}
                 onChange={e => handleClassChange(e.target.value)}
                 onFocus={handleClassFocus}
@@ -1001,7 +1012,7 @@ export default function PublicParkingRegister() {
               <input 
                 type="text" 
                 readOnly={isVerifiedStudent || !!editingTicket}
-                placeholder="VD: HS11A1-025"
+                placeholder="VD: HS11A01-025"
                 value={studentCode}
                 onChange={e => setStudentCode(e.target.value)}
                 style={{ 
@@ -1115,7 +1126,7 @@ export default function PublicParkingRegister() {
                 type="text" 
                 required 
                 readOnly={isVerifiedStudent || !!editingTicket}
-                placeholder="VD: 10A1, 11A2..."
+                placeholder="VD: 10A01, 11A02..."
                 value={studentClass}
                 onChange={e => handleClassChange(e.target.value)}
                 onFocus={handleClassFocus}

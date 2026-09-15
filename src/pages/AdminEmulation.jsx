@@ -5,9 +5,9 @@ import { Award, Trophy, Printer, Search, Plus, Trash2, Edit3, Settings, ShieldAl
 import * as XLSX from 'xlsx';
 
 const DEFAULT_CLASSES = [
-  '10A1', '10A2', '10A3', '10A4', '10A5',
-  '11A1', '11A2', '11A3', '11A4', '11A5',
-  '12A1', '12A2', '12A3', '12A4', '12A5'
+  '10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12',
+  '11A01', '11A02', '11A03', '11A04', '11A05', '11A06', '11A07', '11A08', '11A09', '11A10', '11A11', '11A12',
+  '12A01', '12A02', '12A03', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10', '12A11', '12A12'
 ];
 
 const DEFAULT_CRITERIA = [

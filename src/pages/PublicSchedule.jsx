@@ -74,7 +74,7 @@ const getFullTeacherName = (name) => {
 const normalizeClassCode = (cls) => {
   if (!cls) return '';
   const clean = String(cls).trim().toUpperCase();
-  const match = clean.match(/^(\d{2}A)(\d{1,2})$/);
+  const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
   if (match) {
     const prefix = match[1];
     const num = match[2].padStart(2, '0');

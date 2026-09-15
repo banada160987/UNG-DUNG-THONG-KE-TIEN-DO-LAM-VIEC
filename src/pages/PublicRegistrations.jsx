@@ -106,7 +106,10 @@ export default function PublicRegistrations() {
   const getUniqueClassesList = () => {
     const defaults = [];
     ['10', '11', '12'].forEach(g => {
-      for (let i = 1; i <= 15; i++) defaults.push(`${g}A${i}`);
+      for (let i = 1; i <= 15; i++) {
+        const num = String(i).padStart(2, '0');
+        defaults.push(`${g}A${num}`);
+      }
     });
     return defaults;
   };

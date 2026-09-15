@@ -4,12 +4,24 @@ import { supabase, supabaseAdmin } from '../lib/supabase';
 import { Users, Upload, Search, Download, Plus, Save, Trash2, Edit3, CheckCircle2, AlertCircle, RefreshCw, FileSpreadsheet, Lock, Unlock, ShieldCheck, ShieldAlert, MessageSquare, Copy, Check, ExternalLink, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
+const normalizeClassCode = (cls) => {
+  if (!cls) return '';
+  const clean = String(cls).trim().toUpperCase();
+  const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
+  if (match) {
+    const prefix = match[1];
+    const num = match[2].padStart(2, '0');
+    return `${prefix}${num}`;
+  }
+  return clean;
+};
+
 const DEFAULT_STUDENTS = [
-  { id: '1', student_code: 'HS11A1-001', student_name: 'Nguyễn Văn An', student_class: '11A1', grade_level: 'Khối 11' },
-  { id: '2', student_code: 'HS11A1-002', student_name: 'Lê Thị Bình', student_class: '11A1', grade_level: 'Khối 11' },
-  { id: '3', student_code: 'HS12A3-005', student_name: 'Trần Thị Bích', student_class: '12A3', grade_level: 'Khối 12' },
-  { id: '4', student_code: 'HS12A3-008', student_name: 'Nguyễn Đức Cường', student_class: '12A3', grade_level: 'Khối 12' },
-  { id: '5', student_code: 'HS10A2-012', student_name: 'Phạm Minh Cường', student_class: '10A2', grade_level: 'Khối 10' }
+  { id: '1', student_code: 'HS11A01-001', student_name: 'Nguyễn Văn An', student_class: '11A01', grade_level: 'Khối 11' },
+  { id: '2', student_code: 'HS11A01-002', student_name: 'Lê Thị Bình', student_class: '11A01', grade_level: 'Khối 11' },
+  { id: '3', student_code: 'HS12A03-005', student_name: 'Trần Thị Bích', student_class: '12A03', grade_level: 'Khối 12' },
+  { id: '4', student_code: 'HS12A03-008', student_name: 'Nguyễn Đức Cường', student_class: '12A03', grade_level: 'Khối 12' },
+  { id: '5', student_code: 'HS10A02-012', student_name: 'Phạm Minh Cường', student_class: '10A02', grade_level: 'Khối 10' }
 ];
 
 
@@ -209,7 +221,7 @@ export default function AdminStudents() {
           const sFatherPhone = getValByKeywords(row, ['sđt bố', 'sđt mẹ', 'sđt phụ huynh', 'sđt người giám hộ', 'phone']);
 
           if (sName && String(sName).trim()) {
-            const cleanClass = sClass ? String(sClass).trim().toUpperCase() : '10A1';
+            const cleanClass = sClass ? normalizeClassCode(sClass) : '10A01';
             const cleanCode = sCode && String(sCode).trim() ? String(sCode).trim().toUpperCase() : `HS${cleanClass}-${idx + 1}`;
 
             formattedList.push({

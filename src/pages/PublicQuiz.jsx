@@ -839,7 +839,7 @@ export default function PublicQuiz() {
                 type="text"
                 required
                 readOnly
-                placeholder="VD: Lớp 12A1 (sẽ tự động điền)"
+                placeholder="VD: Lớp 12A01 (sẽ tự động điền)"
                 value={studentGroup}
                 onChange={e => setStudentGroup(e.target.value)}
                 style={{ ...styles.input, backgroundColor: '#f1f5f9', cursor: 'not-allowed', color: '#475569' }}

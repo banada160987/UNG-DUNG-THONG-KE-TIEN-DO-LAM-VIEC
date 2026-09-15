@@ -554,7 +554,7 @@ export default function PublicHome() {
                 <form onSubmit={handleRsvpSearch} style={styles.searchForm}>
                   <input
                     type="text"
-                    placeholder="Nhập Họ Tên hoặc Mã thiệp (VD: Nguyễn Văn A, 12A1 hoặc CBQ-12345)..."
+                    placeholder="Nhập Họ Tên hoặc Mã thiệp (VD: Nguyễn Văn A, 12A01 hoặc CBQ-12345)..."
                     value={rsvpCode}
                     onChange={(e) => handleSearchInputChange(e.target.value)}
                     onFocus={() => { if(searchResults.length > 0) setShowDropdown(true); }}

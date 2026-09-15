@@ -86,7 +86,7 @@ export default function AdminVoting() {
     const totalVotes = votesLogs.length;
 
     votesLogs.forEach(v => {
-      // Extract class from voter_name e.g. "Nguyễn Văn A (Lớp 12A1)" -> "Lớp 12A1"
+      // Extract class from voter_name e.g. "Nguyễn Văn A (Lớp 12A01)" -> "Lớp 12A01"
       let className = 'Khác';
       if (v.voter_name && v.voter_name.includes('(') && v.voter_name.includes(')')) {
         const match = v.voter_name.match(/\(([^)]+)\)/);
@@ -125,10 +125,10 @@ export default function AdminVoting() {
 
     if (resultList.length === 0) {
       return [
-        { className: 'Lớp 12A1', votedCount: 42, percent: 32 },
-        { className: 'Lớp 12A2', votedCount: 38, percent: 29 },
-        { className: 'Lớp 12A3', votedCount: 28, percent: 21 },
-        { className: 'Lớp 11A1', votedCount: 15, percent: 11 },
+        { className: 'Lớp 12A01', votedCount: 42, percent: 32 },
+        { className: 'Lớp 12A02', votedCount: 38, percent: 29 },
+        { className: 'Lớp 12A03', votedCount: 28, percent: 21 },
+        { className: 'Lớp 11A01', votedCount: 15, percent: 11 },
         { className: 'Khóa Cựu Học Sinh 2002-2005', votedCount: 10, percent: 7 }
       ];
     }
@@ -137,9 +137,9 @@ export default function AdminVoting() {
   };
 
   const seedSampleStudents = async () => {
-    if (!window.confirm("Nạp 50 học sinh và 5 lớp mẫu (12A1, 12A2, 12A3, 12A4, 12A5) để kiểm thử báo cáo thống kê?")) return;
+    if (!window.confirm("Nạp 50 học sinh và 5 lớp mẫu (12A01, 12A02, 12A03, 12A04, 12A05) để kiểm thử báo cáo thống kê?")) return;
     
-    const sampleClasses = ['Lớp 12A1', 'Lớp 12A2', 'Lớp 12A3', 'Lớp 12A4', 'Lớp 12A5'];
+    const sampleClasses = ['Lớp 12A01', 'Lớp 12A02', 'Lớp 12A03', 'Lớp 12A04', 'Lớp 12A05'];
     const newGuests = [];
 
     for (let c = 0; c < sampleClasses.length; c++) {
@@ -870,7 +870,7 @@ export default function AdminVoting() {
                     required 
                     value={formData.author_name} 
                     onChange={e => setFormData(prev => ({ ...prev, author_name: e.target.value }))}
-                    placeholder="VD: Lớp 12A1 (2023-2026)"
+                    placeholder="VD: Lớp 12A01 (2023-2026)"
                     style={{ width: '100%', padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }} 
                   />
                 </div>

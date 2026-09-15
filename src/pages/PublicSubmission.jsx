@@ -146,7 +146,7 @@ export default function PublicSubmission() {
                 <input 
                   type="text" 
                   required 
-                  placeholder="VD: Nguyễn Văn Anh hoặc Tập thể 12A1"
+                  placeholder="VD: Nguyễn Văn Anh hoặc Tập thể 12A01"
                   value={formData.author_name}
                   onChange={e => setFormData(prev => ({ ...prev, author_name: e.target.value }))}
                   style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
@@ -160,7 +160,7 @@ export default function PublicSubmission() {
                 <input 
                   type="text" 
                   required 
-                  placeholder="VD: Lớp 12A1 hoặc Khóa 2002-2005"
+                  placeholder="VD: Lớp 12A01 hoặc Khóa 2002-2005"
                   value={formData.student_class}
                   onChange={e => setFormData(prev => ({ ...prev, student_class: e.target.value }))}
                   style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}

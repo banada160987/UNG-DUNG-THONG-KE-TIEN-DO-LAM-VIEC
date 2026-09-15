@@ -1499,7 +1499,7 @@ export default function OnlineInvitation() {
                     <label style={{display: 'block', fontSize: '12.5px', color: '#334155', marginBottom: '4px', fontWeight: 'bold'}}>Lớp / Niên Khóa (Nhiệm kỳ)</label>
                     <input 
                       type="text" 
-                      placeholder="VD: Khóa 2005 - 2008 (Lớp 12A2)" 
+                      placeholder="VD: Khóa 2005 - 2008 (Lớp 12A02)" 
                       style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box', fontSize: '13px'}} 
                       value={publicGuestGroup} 
                       onChange={e => setPublicGuestGroup(e.target.value)} 
@@ -1663,7 +1663,7 @@ export default function OnlineInvitation() {
                 type="text" 
                 value={memoryCaption} 
                 onChange={(e) => setMemoryCaption(e.target.value)} 
-                placeholder="VD: Lớp 12A1 khóa 2002 - 2005" 
+                placeholder="VD: Lớp 12A01 khóa 2002 - 2005" 
                 style={{width: '100%', padding: '10px', border: '1px solid #cbd5e1', borderRadius: '8px', boxSizing: 'border-box'}}
               />
             </div>

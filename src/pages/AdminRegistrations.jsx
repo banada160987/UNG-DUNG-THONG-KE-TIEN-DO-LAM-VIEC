@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function AdminRegistrations() {
@@ -38,6 +38,7 @@ export default function AdminRegistrations() {
   const [results, setResults] = useState([]);
   const [loadingResults, setLoadingResults] = useState(false);
   const [selectedOptionFilter, setSelectedOptionFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState('created_at'); // 'created_at' | 'student_class' | 'student_name' | 'student_code'
   const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
   const [showReportModal, setShowReportModal] = useState(false);
@@ -535,13 +536,14 @@ export default function AdminRegistrations() {
   };
 
   const exportToExcel = () => {
-    if (results.length === 0) return;
+    const dataToExport = filteredAndSortedResults.length > 0 ? filteredAndSortedResults : results;
+    if (dataToExport.length === 0) return;
     
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
     const schema = campaign?.form_schema || [];
     
     // Prepare Data
-    const excelData = results.map(r => {
+    const excelData = dataToExport.map(r => {
       const row = {
         'Thời gian': new Date(r.created_at).toLocaleString('vi-VN'),
         'Mã Học Sinh': r.student_code,
@@ -587,7 +589,35 @@ export default function AdminRegistrations() {
   const filteredAndSortedResults = useMemo(() => {
     let list = [...results];
     
-    // Lọc theo Lựa chọn / Câu lạc bộ
+    // 1. Lọc theo Tìm kiếm Họ tên / Mã HS / Lớp / Câu trả lời (Hỗ trợ tiếng Việt có dấu & không dấu)
+    if (searchQuery && searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase();
+      const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
+      const qNorm = normalize(q);
+
+      list = list.filter(r => {
+        const name = r.student_name || '';
+        const nameNorm = normalize(name);
+        const code = (r.student_code || '').toLowerCase();
+        const sClass = (r.student_class || '').toLowerCase();
+
+        // Khớp họ tên, mã HS, lớp
+        if (name.toLowerCase().includes(q) || nameNorm.includes(qNorm) || code.includes(q) || sClass.includes(q)) {
+          return true;
+        }
+
+        // Khớp nội dung câu trả lời (CLB, options)
+        const responses = r.responses || {};
+        return Object.values(responses).some(val => {
+          if (Array.isArray(val)) {
+            return val.some(v => String(v).toLowerCase().includes(q) || normalize(String(v)).includes(qNorm));
+          }
+          return String(val).toLowerCase().includes(q) || normalize(String(val)).includes(qNorm);
+        });
+      });
+    }
+
+    // 2. Lọc theo Lựa chọn / Câu lạc bộ
     if (selectedOptionFilter !== 'all') {
       list = list.filter(r => {
         const responses = r.responses || {};
@@ -598,7 +628,7 @@ export default function AdminRegistrations() {
       });
     }
 
-    // Sắp xếp
+    // 3. Sắp xếp
     list.sort((a, b) => {
       let valA = a[sortField] || '';
       let valB = b[sortField] || '';
@@ -621,7 +651,7 @@ export default function AdminRegistrations() {
     });
 
     return list;
-  }, [results, selectedOptionFilter, sortField, sortOrder]);
+  }, [results, searchQuery, selectedOptionFilter, sortField, sortOrder]);
 
   // 📄 XUẤT BÁO CÁO FILE WORD (.DOC) THEO CHUẨN NGHỊ ĐỊNH 30/2020/NĐ-CP
   const exportToWordDecree30 = () => {
@@ -1087,27 +1117,30 @@ export default function AdminRegistrations() {
             <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <label style={{ fontWeight: 'bold', color: '#334155' }}>Chọn đợt đăng ký:</label>
-                  <select 
-                    value={selectedCampaignId} 
-                    onChange={e => {
-                      setSelectedCampaignId(e.target.value);
-                      setSelectedOptionFilter('all');
-                    }}
-                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', minWidth: '250px', fontWeight: 'bold', color: '#0f172a' }}
-                  >
-                    {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
-                  </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <label style={{ fontWeight: 'bold', color: '#334155', fontSize: '13.5px', whiteSpace: 'nowrap' }}>Chọn đợt đăng ký:</label>
+                    <select 
+                      value={selectedCampaignId} 
+                      onChange={e => {
+                        setSelectedCampaignId(e.target.value);
+                        setSelectedOptionFilter('all');
+                        setSearchQuery('');
+                      }}
+                      style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', minWidth: '220px', fontWeight: 'bold', color: '#0f172a', fontSize: '13px' }}
+                    >
+                      {campaigns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
+                    </select>
+                  </div>
 
                   {/* Sắp xếp */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <ArrowUpDown size={16} color="#64748b" />
-                    <span style={{ fontSize: '13px', color: '#64748b' }}>Xếp theo:</span>
+                    <span style={{ fontSize: '13px', color: '#64748b', whiteSpace: 'nowrap' }}>Xếp theo:</span>
                     <select 
                       value={sortField} 
                       onChange={e => setSortField(e.target.value)}
-                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
                     >
                       <option value="created_at">Thời gian nộp</option>
                       <option value="student_class">Lớp học</option>
@@ -1117,10 +1150,41 @@ export default function AdminRegistrations() {
 
                     <button 
                       onClick={() => setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc')} 
-                      style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '12px', cursor: 'pointer' }}
+                      style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
                     >
                       {sortOrder === 'asc' ? '⬆️ Tăng dần' : '⬇️ Giảm dần'}
                     </button>
+                  </div>
+
+                  {/* 🔍 Ô Tìm kiếm trực tiếp theo Tên / Mã HS / Lớp */}
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center', minWidth: '260px', flex: '1 1 260px' }}>
+                    <Search size={16} color="#0284c7" style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }} />
+                    <input 
+                      type="text"
+                      placeholder="🔍 Tìm theo Họ Tên, Mã HS, Lớp hoặc CLB..."
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '7px 32px 7px 32px',
+                        borderRadius: '6px',
+                        border: '1.5px solid #0284c7',
+                        backgroundColor: '#f0f9ff',
+                        fontSize: '13px',
+                        color: '#0f172a',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {searchQuery && (
+                      <button 
+                        onClick={() => setSearchQuery('')}
+                        style={{ position: 'absolute', right: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                        title="Xóa tìm kiếm"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1252,10 +1316,32 @@ export default function AdminRegistrations() {
               {/* BẢNG DANH SÁCH HỌC SINH NỘP */}
               {loadingResults ? <p>Đang tải danh sách học sinh đăng ký...</p> : (
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <div style={{ fontSize: '13.5px', color: '#475569' }}>
-                      Hiển thị <strong>{filteredAndSortedResults.length}</strong> / <strong>{results.length}</strong> học sinh 
-                      {selectedOptionFilter !== 'all' && <span style={{ color: '#0284c7', fontWeight: 'bold' }}> (Đang lọc: {selectedOptionFilter})</span>}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '13.5px', color: '#475569', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span>Hiển thị <strong>{filteredAndSortedResults.length}</strong> / <strong>{results.length}</strong> học sinh</span>
+                      
+                      {searchQuery && (
+                        <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #bae6fd' }}>
+                          🔍 Tìm: "{searchQuery}"
+                          <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#0369a1', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }} title="Bỏ tìm kiếm"><X size={12} /></button>
+                        </span>
+                      )}
+
+                      {selectedOptionFilter !== 'all' && (
+                        <span style={{ backgroundColor: '#dcfce7', color: '#15803d', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid #bbf7d0' }}>
+                          📌 {selectedOptionFilter}
+                          <button onClick={() => setSelectedOptionFilter('all')} style={{ background: 'none', border: 'none', color: '#15803d', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }} title="Bỏ lọc CLB"><X size={12} /></button>
+                        </span>
+                      )}
+
+                      {(searchQuery || selectedOptionFilter !== 'all') && (
+                        <button 
+                          onClick={() => { setSearchQuery(''); setSelectedOptionFilter('all'); }}
+                          style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: '2px 6px', fontWeight: 'bold' }}
+                        >
+                          ✕ Xóa bộ lọc
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1263,34 +1349,34 @@ export default function AdminRegistrations() {
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                       <thead>
                         <tr style={{ borderBottom: '2px solid #cbd5e1', textAlign: 'left', background: '#f8fafc' }}>
-                          <th style={{ padding: '10px 12px' }}>STT</th>
-                          <th style={{ padding: '10px 12px' }}>Thời gian</th>
-                          <th style={{ padding: '10px 12px' }}>Mã HS</th>
-                          <th style={{ padding: '10px 12px' }}>Họ và Tên</th>
-                          <th style={{ padding: '10px 12px' }}>Lớp</th>
+                          <th style={{ padding: '10px 12px', whiteSpace: 'nowrap', width: '50px', textAlign: 'center' }}>STT</th>
+                          <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Thời gian</th>
+                          <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Mã HS</th>
+                          <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Họ và Tên</th>
+                          <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '75px', textAlign: 'center' }}>Lớp</th>
                           {/* Render dynamic columns based on campaign schema */}
                           {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => (
                             <th key={field.id} style={{ padding: '10px 12px', color: '#0284c7' }}>{field.label}</th>
                           ))}
-                          <th style={{ padding: '10px 12px', textAlign: 'right' }}>Thao tác</th>
+                          <th style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', width: '80px' }}>Thao tác</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAndSortedResults.length === 0 ? (
-                          <tr><td colSpan="10" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Chưa có dữ liệu phù hợp với bộ lọc</td></tr>
+                          <tr><td colSpan="10" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy học sinh nào phù hợp với từ khóa hoặc bộ lọc</td></tr>
                         ) : filteredAndSortedResults.map((r, idx) => (
                           <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                            <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 'bold' }}>{idx + 1}</td>
-                            <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '12px' }}>{new Date(r.created_at).toLocaleString('vi-VN')}</td>
-                            <td style={{ padding: '10px 12px', fontWeight: 'bold', fontFamily: 'monospace' }}>{r.student_code}</td>
-                            <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b' }}>{r.student_name}</td>
-                            <td style={{ padding: '10px 12px', color: '#be123c', fontWeight: 'bold' }}>{r.student_class}</td>
+                            <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{idx + 1}</td>
+                            <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap' }}>{new Date(r.created_at).toLocaleString('vi-VN')}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{r.student_code}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b', whiteSpace: 'nowrap' }}>{r.student_name}</td>
+                            <td style={{ padding: '10px 14px', color: '#be123c', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{r.student_class}</td>
                             
                             {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => {
                               const ans = r.responses[field.id];
                               let displayAns = ans;
                               if (Array.isArray(ans)) displayAns = ans.join(', ');
-                              return <td key={field.id} style={{ padding: '10px 12px', fontWeight: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? 'bold' : 'normal', color: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? '#166534' : 'inherit' }}>{displayAns || '-'}</td>;
+                              return <td key={field.id} style={{ padding: '10px 12px', fontWeight: (selectedOptionFilter && displayAns?.includes(selectedOptionFilter)) || (searchQuery && displayAns?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bold' : 'normal', color: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? '#166534' : 'inherit' }}>{displayAns || '-'}</td>;
                             })}
                             <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                               <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
