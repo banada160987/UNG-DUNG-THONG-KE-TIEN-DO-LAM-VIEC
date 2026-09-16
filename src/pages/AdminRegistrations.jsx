@@ -537,29 +537,33 @@ export default function AdminRegistrations() {
 
   const exportToExcel = () => {
     const dataToExport = filteredAndSortedResults.length > 0 ? filteredAndSortedResults : results;
-    if (dataToExport.length === 0) return;
+    if (dataToExport.length === 0) {
+      alert("Không có dữ liệu để xuất Excel!");
+      return;
+    }
     
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
     const schema = campaign?.form_schema || [];
     
     // Prepare Data
-    const excelData = dataToExport.map(r => {
+    const excelData = dataToExport.map((r, index) => {
       const row = {
-        'Thời gian': new Date(r.created_at).toLocaleString('vi-VN'),
-        'Mã Học Sinh': r.student_code,
-        'Họ và Tên': r.student_name,
-        'Lớp': r.student_class
+        'STT': index + 1,
+        'Thời gian đăng ký': new Date(r.created_at).toLocaleString('vi-VN'),
+        'Mã Học Sinh': r.student_code || '',
+        'Họ và Tên': r.student_name || '',
+        'Lớp': r.student_class || ''
       };
       
       schema.forEach(field => {
-        const ans = r.responses[field.id];
+        const ans = r.responses ? r.responses[field.id] : '';
         let ansStr = '';
         if (Array.isArray(ans)) {
           ansStr = ans.join('; ');
-        } else if (ans) {
+        } else if (ans !== undefined && ans !== null) {
           ansStr = String(ans);
         }
-        row[field.label] = ansStr;
+        row[field.label || field.id] = ansStr;
       });
       return row;
     });
@@ -573,16 +577,38 @@ export default function AdminRegistrations() {
         key.length,
         ...excelData.map(row => (row[key] ? row[key].toString().length : 0))
       );
-      return { wch: maxLen + 2 };
+      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
     });
     worksheet['!cols'] = colWidths;
 
     // Create Workbook and append worksheet
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh_sach");
+    
+    // Tên Sheet trong Excel (Tối đa 31 ký tự theo chuẩn Excel)
+    let sheetName = "Danh_sach";
+    if (selectedOptionFilter && selectedOptionFilter !== 'all') {
+      sheetName = selectedOptionFilter.replace(/[/\\?*:[\]]/g, '').trim().slice(0, 31);
+    }
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || "Danh_sach");
+    
+    // Đặt tên file theo tên CLB khi đang chọn / lọc, hoặc tên đợt nếu chọn tất cả
+    let fileName = '';
+    if (selectedOptionFilter && selectedOptionFilter !== 'all') {
+      const cleanClubName = selectedOptionFilter
+        .replace(/[/\\?%*:|"<>]/g, '_')
+        .replace(/\s+/g, '_')
+        .trim();
+      fileName = `Danh_sach_${cleanClubName}`;
+    } else {
+      const cleanTitle = (campaign?.title || 'x')
+        .replace(/[/\\?%*:|"<>]/g, '_')
+        .replace(/\s+/g, '_')
+        .trim();
+      fileName = `Danh_sach_dang_ky_${cleanTitle}`;
+    }
     
     // Download
-    XLSX.writeFile(workbook, `Danh_sach_dang_ky_${campaign?.title || 'x'}.xlsx`);
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
 
   // 🟢 LỌC VÀ SẮP XẾP DANH SÁCH HỌC SINH ĐĂNG KÝ (DÙNG CHO BẢNG & BÁO CÁO)
@@ -688,11 +714,12 @@ export default function AdminRegistrations() {
       </html>
     `;
 
-    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Bao_cao_Nghi_dinh_30_${campaignTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+    let reportDocTitle = campaignTitle;
+    if (selectedOptionFilter && selectedOptionFilter !== 'all') {
+      reportDocTitle = `${selectedOptionFilter}`;
+    }
+    const cleanDocName = reportDocTitle.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').trim();
+    a.download = `Bao_cao_Nghi_dinh_30_${cleanDocName}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1207,8 +1234,9 @@ export default function AdminRegistrations() {
                   <button 
                     onClick={exportToExcel} 
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(16,185,129,0.3)' }}
+                    title={selectedOptionFilter !== 'all' ? `Xuất danh sách Excel riêng cho: ${selectedOptionFilter}` : 'Xuất toàn bộ danh sách Excel'}
                   >
-                    <Download size={16} /> Xuất Excel
+                    <Download size={16} /> Xuất Excel {selectedOptionFilter !== 'all' ? `(${selectedOptionFilter})` : ''}
                   </button>
                 </div>
               </div>
