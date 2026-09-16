@@ -545,8 +545,128 @@ export default function AdminRegistrations() {
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
     const schema = campaign?.form_schema || [];
     
-    // Prepare Data
-    const excelData = dataToExport.map((r, index) => {
+    const currentClubName = (selectedOptionFilter && selectedOptionFilter !== 'all') 
+      ? selectedOptionFilter 
+      : (campaign?.title || 'Câu lạc bộ');
+
+    // ==========================================
+    // SHEET 1: SỔ ĐIỂM DANH & ĐÁNH GIÁ TỰ ĐỘNG
+    // ==========================================
+    const attendanceHeaderRows = [
+      ['SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['TRƯỜNG THPT CAO BÁ QUÁT', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['SỔ THEO DÕI ĐIỂM DANH VÀ ĐÁNH GIÁ CHUYÊN CẦN THÀNH VIÊN - NĂM HỌC 2026 - 2027', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      [`Đơn vị / Câu lạc bộ: ${currentClubName.toUpperCase()}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['(Quy ước điểm danh: Nhập 1 = Có mặt, Nhập P = Nghỉ có phép [tính 0.5 buổi], Để trống hoặc 0 = Vắng không phép)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      [
+        'STT', 'Mã Học Sinh', 'Họ và Tên', 'Lớp', 'Nội dung / Chuyên môn đăng ký',
+        'B1 (HK1)', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8 (HK1)',
+        'B9 (HK2)', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16 (HK2)',
+        'Tổng buổi tham gia', 'Tỷ lệ chuyên cần', 'Điểm chuyên cần (100)', 'Tự động Xếp loại', 'Đề xuất Khen thưởng', 'Điểm cộng Hạnh kiểm GVCN', 'Ghi chú'
+      ]
+    ];
+
+    // Build data rows for attendance
+    const attendanceDataRows = dataToExport.map((r, index) => {
+      let majorOrAnswers = '';
+      if (r.responses) {
+        const ansList = [];
+        schema.forEach(field => {
+          const ans = r.responses[field.id];
+          if (ans !== undefined && ans !== null && ans !== '') {
+            const valStr = Array.isArray(ans) ? ans.join(', ') : String(ans);
+            if (valStr !== selectedOptionFilter) {
+              ansList.push(valStr);
+            }
+          }
+        });
+        majorOrAnswers = ansList.length > 0 ? ansList.join(' | ') : '';
+      }
+
+      return [
+        index + 1,
+        r.student_code || '',
+        r.student_name || '',
+        r.student_class || '',
+        majorOrAnswers,
+        '', '', '', '', '', '', '', '', // HK1: B1 -> B8
+        '', '', '', '', '', '', '', '', // HK2: B9 -> B16
+        null, null, null, null, null, null, '' // Formulas will be inserted
+      ];
+    });
+
+    const startStudentRow = 7; // 1-indexed row number in Excel
+    const lastStudentRow = startStudentRow + dataToExport.length - 1;
+
+    // Summary Statistics Rows
+    const summaryRows = [
+      [],
+      ['BẢNG TỔNG HỢP VÀ THỐNG KÊ KẾT QUẢ SINH HOẠT CLB', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Tổng số thành viên tham gia CLB:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Số lượng thành viên xếp loại Xuất sắc (>= 90%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Số lượng thành viên xếp loại Tốt (80% - 89%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Số lượng thành viên xếp loại Đạt (65% - 79%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Số lượng thành viên xếp loại Chưa đạt (< 65%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+      ['Tổng số thành viên đủ điều kiện Đề xuất Khen thưởng:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+    ];
+
+    const allAttendanceGrid = [...attendanceHeaderRows, ...attendanceDataRows, ...summaryRows];
+    const wsAttendance = XLSX.utils.aoa_to_sheet(allAttendanceGrid);
+
+    // Apply Excel formulas to each student row
+    dataToExport.forEach((_, idx) => {
+      const r = startStudentRow + idx;
+      // Col V: Tổng số buổi = COUNTIF(F{r}:U{r}, 1) + COUNTIF(F{r}:U{r}, "P")*0.5 + COUNTIF(F{r}:U{r}, "p")*0.5
+      wsAttendance['V' + r] = { t: 'n', f: `COUNTIF(F${r}:U${r},1)+COUNTIF(F${r}:U${r},"P")*0.5+COUNTIF(F${r}:U${r},"p")*0.5` };
+      // Col W: Tỷ lệ chuyên cần = IF(V{r}>0, V{r}/16, 0)
+      wsAttendance['W' + r] = { t: 'n', f: `IF(V${r}>0,V${r}/16,0)`, z: '0.0%' };
+      // Col X: Điểm chuyên cần (100) = ROUND(W{r}*100,0)
+      wsAttendance['X' + r] = { t: 'n', f: `ROUND(W${r}*100,0)` };
+      // Col Y: Tự động Xếp loại = IF(X{r}>=90,"Xuất sắc",IF(X{r}>=80,"Tốt",IF(X{r}>=65,"Đạt","Chưa đạt")))
+      wsAttendance['Y' + r] = { t: 's', f: `IF(X${r}>=90,"Xuất sắc",IF(X${r}>=80,"Tốt",IF(X${r}>=65,"Đạt","Chưa đạt")))` };
+      // Col Z: Đề xuất Khen thưởng = IF(Y{r}="Xuất sắc","Đề xuất Khen thưởng","")
+      wsAttendance['Z' + r] = { t: 's', f: `IF(Y${r}="Xuất sắc","Đề xuất Khen thưởng","")` };
+      // Col AA: Điểm cộng Hạnh kiểm GVCN = IF(Y{r}="Xuất sắc",10,IF(Y{r}="Tốt",5,IF(Y{r}="Đạt",2,0)))
+      wsAttendance['AA' + r] = { t: 'n', f: `IF(Y${r}="Xuất sắc",10,IF(Y${r}="Tốt",5,IF(Y${r}="Đạt",2,0)))` };
+    });
+
+    // Apply summary formulas
+    const statTotalRow = lastStudentRow + 3;
+    const statXsRow = statTotalRow + 1;
+    const statTotRow = statTotalRow + 2;
+    const statDatRow = statTotalRow + 3;
+    const statChuaDatRow = statTotalRow + 4;
+    const statKhenThuongRow = statTotalRow + 5;
+
+    wsAttendance['B' + statTotalRow] = { t: 'n', f: `COUNTA(C${startStudentRow}:C${lastStudentRow})` };
+    wsAttendance['B' + statXsRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Xuất sắc")` };
+    wsAttendance['B' + statTotRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Tốt")` };
+    wsAttendance['B' + statDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Đạt")` };
+    wsAttendance['B' + statChuaDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Chưa đạt")` };
+    wsAttendance['B' + statKhenThuongRow] = { t: 'n', f: `COUNTIF(Z${startStudentRow}:Z${lastStudentRow},"Đề xuất Khen thưởng")` };
+
+    // Column widths for attendance sheet
+    wsAttendance['!cols'] = [
+      { wch: 6 },  // A: STT
+      { wch: 14 }, // B: Mã HS
+      { wch: 24 }, // C: Họ và Tên
+      { wch: 10 }, // D: Lớp
+      { wch: 30 }, // E: Chuyên môn / Nguyện vọng
+      { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 }, // F-M: B1-B8
+      { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 }, // N-U: B9-B16
+      { wch: 18 }, // V: Tổng buổi tham gia
+      { wch: 16 }, // W: Tỷ lệ chuyên cần
+      { wch: 20 }, // X: Điểm chuyên cần (100)
+      { wch: 18 }, // Y: Tự động Xếp loại
+      { wch: 22 }, // Z: Đề xuất Khen thưởng
+      { wch: 24 }, // AA: Điểm cộng Hạnh kiểm GVCN
+      { wch: 20 }  // AB: Ghi chú
+    ];
+
+    // ==========================================
+    // SHEET 2: DỮ LIỆU ĐĂNG KÝ CHI TIẾT
+    // ==========================================
+    const excelDetailData = dataToExport.map((r, index) => {
       const row = {
         'STT': index + 1,
         'Thời gian đăng ký': new Date(r.created_at).toLocaleString('vi-VN'),
@@ -568,28 +688,24 @@ export default function AdminRegistrations() {
       return row;
     });
 
-    // Create Worksheet
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    
-    // Auto size columns based on content
-    const colWidths = Object.keys(excelData[0]).map(key => {
+    const wsDetail = XLSX.utils.json_to_sheet(excelDetailData);
+    const detailColWidths = Object.keys(excelDetailData[0]).map(key => {
       const maxLen = Math.max(
         key.length,
-        ...excelData.map(row => (row[key] ? row[key].toString().length : 0))
+        ...excelDetailData.map(row => (row[key] ? row[key].toString().length : 0))
       );
       return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
     });
-    worksheet['!cols'] = colWidths;
+    wsDetail['!cols'] = detailColWidths;
 
-    // Create Workbook and append worksheet
+    // Create Workbook and append worksheets
     const workbook = XLSX.utils.book_new();
     
-    // Tên Sheet trong Excel (Tối đa 31 ký tự theo chuẩn Excel)
-    let sheetName = "Danh_sach";
-    if (selectedOptionFilter && selectedOptionFilter !== 'all') {
-      sheetName = selectedOptionFilter.replace(/[/\\?*:[\]]/g, '').trim().slice(0, 31);
-    }
-    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || "Danh_sach");
+    // Add Sheet 1: Sổ Điểm danh & Đánh giá tự động
+    XLSX.utils.book_append_sheet(workbook, wsAttendance, "Diem_Danh_Tu_Dong");
+    
+    // Add Sheet 2: Toàn bộ dữ liệu đăng ký chi tiết
+    XLSX.utils.book_append_sheet(workbook, wsDetail, "Du_Lieu_Dang_Ky_Chi_Tiet");
     
     // Đặt tên file theo tên CLB khi đang chọn / lọc, hoặc tên đợt nếu chọn tất cả
     let fileName = '';
