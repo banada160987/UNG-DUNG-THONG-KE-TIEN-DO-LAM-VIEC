@@ -14,11 +14,20 @@ export default function ClubAttendanceManager({
   campaigns = [],
   registrations: initialRegistrations = []
 }) {
-  // 1. Quản lý Đợt Đăng Ký (Campaign)
+  // 1. Quản lý Đợt Đăng Ký (Campaign) - Chỉ nhận đợt Câu lạc bộ
   const [allCampaigns, setAllCampaigns] = useState(campaigns);
   const [selectedCampaignId, setSelectedCampaignId] = useState('');
   const [campaignRegistrations, setCampaignRegistrations] = useState(initialRegistrations);
   const [loadingRegs, setLoadingRegs] = useState(false);
+
+  // Lọc chỉ giữ các đợt đăng ký liên quan đến Câu lạc bộ (CLB)
+  const clubCampaigns = useMemo(() => {
+    const list = allCampaigns.filter(c => {
+      const title = (c.title || '').toLowerCase();
+      return title.includes('câu lạc bộ') || title.includes('clb');
+    });
+    return list.length > 0 ? list : allCampaigns;
+  }, [allCampaigns]);
 
   // 2. Quản lý Câu Lạc Bộ được chọn (Đọc động từ Form Schema)
   const [selectedClub, setSelectedClub] = useState('ALL');
@@ -542,19 +551,26 @@ export default function ClubAttendanceManager({
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          {/* Chọn Đợt Đăng Ký */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569', whiteSpace: 'nowrap' }}>Đợt đăng ký:</label>
-            <select
-              value={selectedCampaignId}
-              onChange={(e) => setSelectedCampaignId(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #0284c7', fontSize: '13px', fontWeight: '700', color: '#0369a1', outline: 'none', backgroundColor: '#f0f9ff' }}
-            >
-              {allCampaigns.map(c => (
-                <option key={c.id} value={c.id}>{c.title}</option>
-              ))}
-            </select>
-          </div>
+          {/* Chọn Đợt Đăng Ký CLB (Chỉ hiện khi có từ 2 đợt CLB trở lên) */}
+          {clubCampaigns.length > 1 ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569', whiteSpace: 'nowrap' }}>Đợt CLB:</label>
+              <select
+                value={selectedCampaignId}
+                onChange={(e) => setSelectedCampaignId(e.target.value)}
+                style={{ padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #0284c7', fontSize: '13px', fontWeight: '700', color: '#0369a1', outline: 'none', backgroundColor: '#f0f9ff' }}
+              >
+                {clubCampaigns.map(c => (
+                  <option key={c.id} value={c.id}>{c.title}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '10px', backgroundColor: '#f0f9ff', border: '1.5px solid #bae6fd', color: '#0369a1', fontSize: '13px', fontWeight: '700' }}>
+              <span>🏷️</span>
+              <span>{activeCampaign?.title || 'Đăng ký tham gia câu lạc bộ'}</span>
+            </div>
+          )}
 
           <button
             onClick={() => { setShowAIModal(true); runAIEvaluation(); }}
