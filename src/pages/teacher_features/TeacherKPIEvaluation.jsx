@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
+import MonthlyEvaluationDakLakModal from '../../components/MonthlyEvaluationDakLakModal';
+import MonthlyDepartmentSummaryDakLakModal from '../../components/MonthlyDepartmentSummaryDakLakModal';
 
 // Standard 4 Evaluation Criteria Breakdown
 export const KPI_CRITERIA_DEFINITIONS = [
@@ -166,6 +168,10 @@ export default function TeacherKPIEvaluation() {
     notes: '',
     is_homeroom: false
   });
+
+  // Dak Lak Monthly Standard Evaluation & Department Summary Modals
+  const [selectedTeacherForDakLakModal, setSelectedTeacherForDakLakModal] = useState(null);
+  const [isSummaryModalOpen, setIsSummaryModalOpen] = useState(false);
 
   // Role & Scope State (GVBM vs TTCM vs BGH)
   const [viewScope, setViewScope] = useState('ALL_DEPT'); // 'ALL_DEPT' | 'ONLY_ME'
@@ -814,6 +820,14 @@ export default function TeacherKPIEvaluation() {
           {/* Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <button
+              onClick={() => setIsSummaryModalOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', border: 'none', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 12px rgba(2,132,199,0.3)' }}
+              title="Xuất & in Bảng tổng hợp đánh giá tổ theo mẫu Sở GD&ĐT Đắk Lắk"
+            >
+              <FileText size={16} />
+              📑 Bảng Tổng Hợp Tổ (Mẫu Đắk Lắk)
+            </button>
+            <button
               onClick={handleAIOptimizeQuota}
               disabled={aiOptimizing}
               style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', border: 'none', padding: '8px 14px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 12px rgba(139,92,246,0.3)' }}
@@ -838,7 +852,7 @@ export default function TeacherKPIEvaluation() {
             <button
               onClick={handleSaveAll}
               disabled={saving}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 12px rgba(2,132,199,0.3)' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
             >
               {saving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={16} />}
               {saving ? 'Đang lưu...' : 'Lưu Đánh Giá'}
@@ -1293,7 +1307,15 @@ export default function TeacherKPIEvaluation() {
 
                           {/* Action Buttons */}
                           <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <button
+                                onClick={() => setSelectedTeacherForDakLakModal(ev)}
+                                title="Mở Phiếu đánh giá viên chức hàng tháng chuẩn Sở GD&ĐT Đắk Lắk (Chèn chữ ký & In 2 trang A4)"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 10px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', boxShadow: '0 2px 6px rgba(2,132,199,0.3)' }}
+                              >
+                                <PenTool size={13} />
+                                📝 Phiếu Đắk Lắk
+                              </button>
                               <button
                                 onClick={() => handleOpenAIAssistant(ev)}
                                 title="Trợ lý AI phân tích năng lực & nhận xét"
@@ -1987,6 +2009,48 @@ export default function TeacherKPIEvaluation() {
 
           </div>
         </div>
+      )}
+
+      {/* DAK LAK MONTHLY INDIVIDUAL EVALUATION MODAL */}
+      {selectedTeacherForDakLakModal && (
+        <MonthlyEvaluationDakLakModal
+          isOpen={Boolean(selectedTeacherForDakLakModal)}
+          onClose={() => setSelectedTeacherForDakLakModal(null)}
+          teacherData={selectedTeacherForDakLakModal}
+          evaluationMonth={selectedMonth}
+          schoolYear={schoolYear}
+          departmentName={selectedDept}
+          currentTeacher={currentTeacher}
+          isManager={isManager}
+          onSaveEvaluation={async (updatedEval) => {
+            // Update local state and trigger refresh
+            setEvaluations(prev => prev.map(item => {
+              if (item.teacher_name === updatedEval.teacher_name) {
+                return {
+                  ...item,
+                  officer_classification: updatedEval.manager_classification || updatedEval.self_classification,
+                  total_score: updatedEval.manager_total_score || updatedEval.self_total_score,
+                  status: updatedEval.status
+                };
+              }
+              return item;
+            }));
+          }}
+        />
+      )}
+
+      {/* DAK LAK DEPARTMENT SUMMARY REPORT MODAL */}
+      {isSummaryModalOpen && (
+        <MonthlyDepartmentSummaryDakLakModal
+          isOpen={isSummaryModalOpen}
+          onClose={() => setIsSummaryModalOpen(false)}
+          departmentName={selectedDept}
+          evaluationMonth={selectedMonth}
+          schoolYear={schoolYear}
+          staffList={staffInDept}
+          evaluations={evaluations}
+          currentTeacher={currentTeacher}
+        />
       )}
 
     </div>
