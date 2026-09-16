@@ -6,7 +6,7 @@ import {
   Sliders, HelpCircle, ShieldCheck, ChevronRight, BarChart3, 
   Check, RefreshCw, AlertCircle, Info, Calendar, Sparkles, Building2,
   Bot, Brain, Zap, Target, TrendingUp, ThumbsUp, Lightbulb, Compass,
-  Layers, CheckSquare, Plus, Minus, Download, Eye, FileText
+  Layers, CheckSquare, Plus, Minus, Download, Eye, FileText, PenTool
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../lib/supabase';
