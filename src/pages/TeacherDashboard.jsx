@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
-  Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter
+  Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
+  Home, FolderArchive, Layers, Sparkles
 } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'teaching', 'homeroom', 'utilities'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'teaching', 'homeroom', 'department', 'utilities'
 
   useEffect(() => {
     // Lấy thông tin tài khoản giáo viên đã đăng nhập
@@ -114,25 +115,47 @@ export default function TeacherDashboard() {
             </div>
           </div>
 
-          <button
-            onClick={handleLogout}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '10px 18px',
-              fontSize: '13.5px',
-              fontWeight: '600',
-              color: '#f87171',
-              backgroundColor: 'rgba(239, 68, 68, 0.12)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: '12px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <LogOut size={16} /> Đăng xuất
-          </button>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                fontSize: '13.5px',
+                fontWeight: '600',
+                color: '#38bdf8',
+                backgroundColor: 'rgba(56, 189, 248, 0.12)',
+                border: '1px solid rgba(56, 189, 248, 0.3)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <Home size={16} /> Về Trang Chủ
+            </button>
+
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                fontSize: '13.5px',
+                fontWeight: '600',
+                color: '#f87171',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <LogOut size={16} /> Đăng xuất
+            </button>
+          </div>
         </div>
 
         {/* 2. THANH CHUYỂN TAB PHÂN NHÓM NGHIỆP VỤ */}
@@ -211,6 +234,27 @@ export default function TeacherDashboard() {
           )}
 
           <button
+            onClick={() => setActiveTab('department')}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'department' ? '#0284c7' : '#ffffff',
+              color: activeTab === 'department' ? '#ffffff' : '#64748b',
+              boxShadow: activeTab === 'department' ? '0 4px 12px rgba(2,132,199,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Layers size={16} /> 3. Tổ Chuyên Môn & KPI
+          </button>
+
+          <button
             onClick={() => setActiveTab('utilities')}
             style={{
               padding: '10px 18px',
@@ -228,7 +272,7 @@ export default function TeacherDashboard() {
               transition: 'all 0.2s'
             }}
           >
-            <Calendar size={16} /> 3. Tra Cứu & Tiện Ích
+            <Calendar size={16} /> 4. Tra Cứu & Tiện Ích
           </button>
         </div>
 
@@ -313,7 +357,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/lesson-plans')}
+                    onClick={() => navigate('/giao-vien/soan-giao-an-5512')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -382,7 +426,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/exam-maker')}
+                    onClick={() => navigate('/giao-vien/ra-de-thi')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -450,7 +494,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/assessment-tt22')}
+                    onClick={() => navigate('/giao-vien/danh-gia-tt22')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -518,7 +562,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/academics')}
+                    onClick={() => navigate('/teacher-dashboard/academics')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -623,7 +667,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/homeroom')}
+                    onClick={() => navigate('/teacher-dashboard/homeroom')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -691,7 +735,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/funds')}
+                    onClick={() => navigate('/teacher-dashboard/funds')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -759,7 +803,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/teacher/discipline')}
+                    onClick={() => navigate('/teacher-dashboard/discipline')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -786,7 +830,248 @@ export default function TeacherDashboard() {
             </section>
           )}
 
-          {/* KHỐI 3: 🗓️ TRA CỨU & TIỆN ÍCH TRƯỜNG HỌC */}
+          {/* KHỐI 3: 🏢 TỔ CHUYÊN MÔN & ĐÁNH GIÁ KPI */}
+          {(activeTab === 'all' || activeTab === 'department') && (
+            <section>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
+                <div style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '10px',
+                  backgroundColor: '#e0f2fe',
+                  color: '#0369a1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 2px 6px rgba(2,132,199,0.15)'
+                }}>
+                  <Layers size={20} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
+                    3. Tổ Chuyên Môn & Đánh Giá KPI
+                  </h2>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Kế hoạch giáo dục tổ, phân công chuyên môn, đánh giá KPI hàng tháng và kho giáo án dùng chung
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '20px'
+              }}>
+                
+                {/* CARD 1: QUẢN LÝ TỔ CHUYÊN MÔN */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #bae6fd',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f0f9ff',
+                        color: '#0284c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Users size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f0f9ff',
+                        color: '#0369a1',
+                        border: '1px solid #bae6fd'
+                      }}>
+                        Tổ Trưởng & GV
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Quản Lý Tổ Chuyên Môn
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Xem danh sách thành viên tổ, phân công giảng dạy, kế hoạch giáo dục môn học và biên bản sinh hoạt tổ định kỳ.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/quan-ly-to-chuyen-mon')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                    }}
+                  >
+                    <Users size={16} /> Mở Trang Tổ Chuyên Môn
+                  </button>
+                </div>
+
+                {/* CARD 2: ĐÁNH GIÁ KPI TỔ CHUYÊN MÔN */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fed7aa',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff7ed',
+                        color: '#ea580c',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Award size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff7ed',
+                        color: '#c2410c',
+                        border: '1px solid #fed7aa'
+                      }}>
+                        Chuẩn Thi Đua
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Đánh Giá KPI Giáo Viên
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Đánh giá mức độ hoàn thành nhiệm vụ giảng dạy, hồ sơ giáo án, bồi dưỡng học sinh giỏi và chấm điểm thi đua tháng.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/danh-gia-kpi-to-chuyen-mon')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#ea580c',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(234,88,12,0.3)'
+                    }}
+                  >
+                    <Award size={16} /> Bảng Đánh Giá KPI
+                  </button>
+                </div>
+
+                {/* CARD 3: KHO GIÁO ÁN & HỌC LIỆU SỐ TỔ */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #ddd6fe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f5f3ff',
+                        color: '#7c3aed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FolderArchive size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f5f3ff',
+                        color: '#6d28d9',
+                        border: '1px solid #ddd6fe'
+                      }}>
+                        Kho Số Hóa
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Kho Học Liệu & Giáo Án Tổ
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Kho lưu trữ đám mây chia sẻ giáo án mẫu, ma trận đề kiểm tra, bài giảng điện tử và học liệu dùng chung trong tổ.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/teacher-dashboard/department-drive')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#7c3aed',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(124,58,237,0.3)'
+                    }}
+                  >
+                    <FolderArchive size={16} /> Mở Kho Học Liệu Tổ
+                  </button>
+                </div>
+
+              </div>
+            </section>
+          )}
+
+          {/* KHỐI 4: 🗓️ TRA CỨU & TIỆN ÍCH TRƯỜNG HỌC */}
           {(activeTab === 'all' || activeTab === 'utilities') && (
             <section>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '18px' }}>
@@ -805,7 +1090,7 @@ export default function TeacherDashboard() {
                 </div>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
-                    3. Tra Cứu & Tiện Ích Trường Học
+                    4. Tra Cứu & Tiện Ích Trường Học
                   </h2>
                   <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
                     Thời khóa biểu giảng dạy, lịch trực ban Ban Giám Hiệu & kho ứng dụng liên kết
@@ -932,7 +1217,7 @@ export default function TeacherDashboard() {
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/hub')}
+                    onClick={() => navigate('/teacher-dashboard/app-hub')}
                     style={{
                       marginTop: '20px',
                       width: '100%',

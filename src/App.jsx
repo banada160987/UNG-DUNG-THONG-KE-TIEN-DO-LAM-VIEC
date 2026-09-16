@@ -145,6 +145,8 @@ function App() {
             <Route path="/hoc-sinh/quy-doan" element={<UnionFunds />} />
             <Route path="/hoc-sinh/diem-danh-su-kien" element={<EventAttendance />} />
             <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
+            <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
+            <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
             
             {/* Teacher Portal */}
             <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
@@ -153,6 +155,7 @@ function App() {
             <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
             <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
+            <Route path="/teacher-dashboard/homeroom" element={<AdminStudents />} />
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherLessonPlanBuilder />} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherExamMaker />} />
             <Route path="/giao-vien/danh-gia-tt22" element={<TeacherAssessmentTT22 />} />
@@ -161,6 +164,18 @@ function App() {
             <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherKPIEvaluation />} />
             <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
             <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
+
+            {/* Teacher Route Aliases (Ensures all URLs work smoothly without redirecting to /) */}
+            <Route path="/teacher/lesson-plans" element={<TeacherLessonPlanBuilder />} />
+            <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
+            <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
+            <Route path="/teacher/academics" element={<TeacherAcademics />} />
+            <Route path="/teacher/homeroom" element={<AdminStudents />} />
+            <Route path="/teacher/funds" element={<TeacherFundsManager />} />
+            <Route path="/teacher/discipline" element={<TeacherDiscipline />} />
+            <Route path="/teacher/department" element={<TeacherDepartmentManagement />} />
+            <Route path="/teacher/kpi" element={<TeacherKPIEvaluation />} />
+            <Route path="/hub" element={<AppHub />} />
           </Route>
           
           {/* Protected Admin Routes */}
