@@ -41,14 +41,14 @@ const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 export const PERIOD_TIMINGS = [
   { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
   { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
-  { period: 3, session: 'Sáng', start: '08:55', end: '09:40', label: 'Tiết 3 (08:55 - 09:40)' },
-  { period: 4, session: 'Sáng', start: '09:45', end: '10:30', label: 'Tiết 4 (09:45 - 10:30)' },
-  { period: 5, session: 'Sáng', start: '10:35', end: '11:20', label: 'Tiết 5 (10:35 - 11:20)' },
+  { period: 3, session: 'Sáng', start: '08:50', end: '09:35', label: 'Tiết 3 (08:50 - 09:35)' },
+  { period: 4, session: 'Sáng', start: '09:35', end: '10:20', label: 'Tiết 4 (09:35 - 10:20)' },
+  { period: 5, session: 'Sáng', start: '10:20', end: '11:05', label: 'Tiết 5 (10:20 - 11:05)' },
   { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
   { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
-  { period: 8, session: 'Chiều', start: '15:25', end: '16:10', label: 'Tiết 8 (15:25 - 16:10)' },
-  { period: 9, session: 'Chiều', start: '16:15', end: '17:00', label: 'Tiết 9 (16:15 - 17:00)' },
-  { period: 10, session: 'Chiều', start: '17:05', end: '17:50', label: 'Tiết 10 (17:05 - 17:50)' }
+  { period: 8, session: 'Chiều', start: '15:20', end: '16:05', label: 'Tiết 8 (15:20 - 16:05)' },
+  { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
+  { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
 ];
 
 export const getSubjectTheme = (subject) => {
@@ -139,11 +139,11 @@ export const getTodayVN = () => {
   }
 
   if (!currentPeriod && isSchoolDay) {
-    if (currentMinutes >= 7 * 60 && currentMinutes < 11 * 60 + 20) {
+    if (currentMinutes >= 7 * 60 && currentMinutes < 11 * 60 + 5) {
       statusText = 'Giờ giải lao / Chuẩn bị đổi tiết sáng';
-    } else if (currentMinutes >= 11 * 60 + 20 && currentMinutes < 13 * 60 + 30) {
+    } else if (currentMinutes >= 11 * 60 + 5 && currentMinutes < 13 * 60 + 30) {
       statusText = 'Nghỉ trưa bán trú / Chuyển ca';
-    } else if (currentMinutes >= 13 * 60 + 30 && currentMinutes < 17 * 60 + 50) {
+    } else if (currentMinutes >= 13 * 60 + 30 && currentMinutes < 17 * 60 + 45) {
       statusText = 'Giờ giải lao / Chuẩn bị đổi tiết chiều';
     }
   }
@@ -1469,9 +1469,9 @@ export default function PublicSchedule() {
 
                 <tbody>
                   {[
-                    { label: '🌅 BUỔI SÁNG (07:00 - 11:20)', isHeader: true, session: 'morning' },
+                    { label: '🌅 BUỔI SÁNG (07:00 - 11:05)', isHeader: true, session: 'morning' },
                     1, 2, 3, 4, 5,
-                    { label: '🌇 BUỔI CHIỀU (13:30 - 17:50)', isHeader: true, session: 'afternoon' },
+                    { label: '🌇 BUỔI CHIỀU (13:30 - 17:45)', isHeader: true, session: 'afternoon' },
                     6, 7, 8, 9, 10
                   ].map((p, idx) => {
                     if (p.isHeader) {
@@ -1480,11 +1480,11 @@ export default function PublicSchedule() {
                           <td
                             colSpan={7}
                             style={{
-                              padding: '10px 14px',
+                              padding: '8px 14px',
                               fontSize: '12px',
                               fontWeight: '800',
                               textAlign: 'center',
-                              letterSpacing: '1px',
+                              letterSpacing: '0.8px',
                               borderRadius: '8px',
                               backgroundColor: p.session === 'morning' ? '#e0f2fe' : '#fef3c7',
                               color: p.session === 'morning' ? '#0369a1' : '#b45309'
@@ -1503,18 +1503,21 @@ export default function PublicSchedule() {
                       <tr key={p}>
                         {/* PERIOD TITLE CELL */}
                         <td style={{
-                          padding: '10px 8px',
+                          padding: '6px 8px',
                           textAlign: 'center',
                           borderRadius: '8px',
                           backgroundColor: isMorning ? '#f0f9ff' : '#fffbeb',
                           border: `1px solid ${isMorning ? '#bae6fd' : '#fde68a'}`,
-                          verticalAlign: 'middle'
+                          verticalAlign: 'middle',
+                          width: '100px',
+                          minWidth: '100px',
+                          whiteSpace: 'nowrap'
                         }}>
-                          <div style={{ fontWeight: '800', fontSize: '13px', color: isMorning ? '#0369a1' : '#b45309' }}>
+                          <div style={{ fontWeight: '900', fontSize: '13px', color: isMorning ? '#0284c7' : '#b45309' }}>
                             Tiết {p}
                           </div>
-                          <div style={{ fontSize: '10px', color: '#64748b', marginTop: '2px' }}>
-                            {timing?.start}
+                          <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
+                            {timing?.start} - {timing?.end}
                           </div>
                         </td>
 
@@ -1533,7 +1536,7 @@ export default function PublicSchedule() {
                                 key={d}
                                 className={isToday ? 'today-column-cell' : ''}
                                 style={{
-                                  padding: '8px',
+                                  padding: '6px',
                                   borderRadius: '8px',
                                   backgroundColor: isToday ? 'rgba(239, 246, 255, 0.4)' : '#f8fafc',
                                   border: '1px dashed #e2e8f0',
@@ -1556,7 +1559,7 @@ export default function PublicSchedule() {
                               key={d}
                               className={isToday ? 'today-column-cell' : ''}
                               style={{
-                                padding: '4px',
+                                padding: '3px',
                                 borderRadius: '8px',
                                 verticalAlign: 'top',
                                 backgroundColor: isToday ? 'rgba(239, 246, 255, 0.5)' : 'transparent'
@@ -1569,17 +1572,17 @@ export default function PublicSchedule() {
                                   backgroundColor: isHighlighted ? '#fef08a' : theme.bg,
                                   border: isHighlighted ? '2px solid #ca8a04' : `1.5px solid ${theme.border}`,
                                   borderLeft: `4px solid ${isHighlighted ? '#ca8a04' : theme.text}`,
-                                  borderRadius: '10px',
-                                  padding: '8px 10px',
+                                  borderRadius: '8px',
+                                  padding: '6px 8px',
                                   display: 'flex',
                                   flexDirection: 'column',
-                                  gap: '3px',
+                                  gap: '2px',
                                   boxShadow: isCurrentActive ? '0 0 12px rgba(2, 132, 199, 0.4)' : '0 1px 3px rgba(0,0,0,0.03)',
                                   position: 'relative'
                                 }}
                               >
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
-                                  <span style={{ fontSize: '13px', fontWeight: '800', color: theme.text, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                  <span style={{ fontSize: '12.5px', fontWeight: '800', color: theme.text, display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
                                     <span>{theme.icon}</span>
                                     <span>{item.subject}</span>
                                   </span>
@@ -1595,13 +1598,14 @@ export default function PublicSchedule() {
                                     fontWeight: '600',
                                     color: activeMainTab === 'class_tkb' ? '#1d4ed8' : '#047857',
                                     backgroundColor: theme.badgeBg || '#ffffff',
-                                    padding: '1px 6px',
-                                    borderRadius: '6px',
-                                    border: `1px solid ${theme.border}`
+                                    padding: '1px 5px',
+                                    borderRadius: '5px',
+                                    border: `1px solid ${theme.border}`,
+                                    whiteSpace: 'nowrap'
                                   }}>
                                     {activeMainTab === 'class_tkb' ? (item.teacher_name || 'GV') : `Lớp ${item.student_class}`}
                                   </span>
-                                  <span style={{ fontSize: '10px', color: '#94a3b8' }}>
+                                  <span style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 'bold' }}>
                                     {timing?.start}
                                   </span>
                                 </div>
@@ -1851,11 +1855,11 @@ export default function PublicSchedule() {
               {daysToRender.map(day => {
                 const periodsToRender = [
                   ...(selectedGradeSession === 'afternoon' ? [] : [
-                    { label: `--- SÁNG (${day}) ---`, isHeader: true },
+                    { label: `--- SÁNG (${day}) (07:00 - 11:05) ---`, isHeader: true },
                     1, 2, 3, 4, 5
                   ]),
                   ...(selectedGradeSession === 'morning' ? [] : [
-                    { label: `--- CHIỀU (${day}) ---`, isHeader: true },
+                    { label: `--- CHIỀU (${day}) (13:30 - 17:45) ---`, isHeader: true },
                     6, 7, 8, 9, 10
                   ])
                 ];
@@ -1867,12 +1871,12 @@ export default function PublicSchedule() {
                     <div style={{
                       backgroundColor: '#0f172a',
                       color: '#ffffff',
-                      padding: '12px 18px',
+                      padding: '10px 16px',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center'
                     }}>
-                      <div style={{ fontSize: '15px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ fontSize: '14.5px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span>📅 THỜI KHÓA BIỂU {day.toUpperCase()}</span>
                         <span style={{ fontSize: '12px', fontWeight: 'normal', color: '#94a3b8' }}>({gradeLabel})</span>
                       </div>
@@ -1883,18 +1887,22 @@ export default function PublicSchedule() {
 
                     {/* HORIZONTALLY SCROLLABLE MATRIX TABLE */}
                     <div style={{ overflowX: 'auto' }}>
-                      <table style={{ ...styles.table, margin: 0, minWidth: targetClasses.length > 8 ? `${targetClasses.length * 110 + 90}px` : '100%' }}>
+                      <table style={{ ...styles.table, margin: 0, minWidth: targetClasses.length > 8 ? `${targetClasses.length * 115 + 100}px` : '100%' }}>
                         <thead>
                           <tr style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>
                             <th style={{
                               ...styles.th,
-                              width: '80px',
+                              width: '100px',
+                              minWidth: '100px',
                               textAlign: 'center',
                               position: 'sticky',
                               left: 0,
-                              backgroundColor: '#1e293b',
+                              backgroundColor: '#0f172a',
+                              color: '#ffffff',
                               zIndex: 10,
-                              boxShadow: '2px 0 5px rgba(0,0,0,0.1)'
+                              boxShadow: '2px 0 6px rgba(0,0,0,0.15)',
+                              whiteSpace: 'nowrap',
+                              padding: '8px 6px'
                             }}>
                               Tiết / Lớp
                             </th>
@@ -1904,9 +1912,10 @@ export default function PublicSchedule() {
                                 textAlign: 'center',
                                 backgroundColor: '#1e293b',
                                 borderLeft: '1px solid #334155',
-                                minWidth: '115px'
+                                minWidth: '115px',
+                                padding: '8px 6px'
                               }}>
-                                <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#38bdf8' }}>{cls}</div>
+                                <div style={{ fontSize: '13px', fontWeight: '800', color: '#38bdf8' }}>{cls}</div>
                               </th>
                             ))}
                           </tr>
@@ -1920,12 +1929,11 @@ export default function PublicSchedule() {
                                   <td
                                     colSpan={targetClasses.length + 1}
                                     style={{
-                                      padding: '8px 14px',
+                                      padding: '6px 14px',
                                       fontSize: '11.5px',
                                       fontWeight: '800',
-                                      color: '#475569',
                                       textAlign: 'center',
-                                      letterSpacing: '1px',
+                                      letterSpacing: '0.8px',
                                       backgroundColor: p.label.includes('SÁNG') ? '#e0f2fe' : '#fef3c7',
                                       color: p.label.includes('SÁNG') ? '#0369a1' : '#b45309'
                                     }}
@@ -1952,11 +1960,20 @@ export default function PublicSchedule() {
                                   position: 'sticky',
                                   left: 0,
                                   zIndex: 5,
-                                  boxShadow: '2px 0 5px rgba(0,0,0,0.05)',
-                                  borderRight: '1px solid #cbd5e1'
+                                  boxShadow: '2px 0 6px rgba(0,0,0,0.06)',
+                                  borderRight: '1px solid #cbd5e1',
+                                  width: '100px',
+                                  minWidth: '100px',
+                                  whiteSpace: 'nowrap',
+                                  padding: '6px 8px',
+                                  verticalAlign: 'middle'
                                 }}>
-                                  <div>Tiết {p}</div>
-                                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 'normal' }}>{timing?.start}</div>
+                                  <div style={{ fontSize: '13px', fontWeight: '900', color: isMorning ? '#0284c7' : '#b45309' }}>
+                                    Tiết {p}
+                                  </div>
+                                  <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
+                                    {timing?.start} - {timing?.end}
+                                  </div>
                                 </td>
 
                                 {/* EACH CLASS CELL */}
@@ -1965,7 +1982,7 @@ export default function PublicSchedule() {
 
                                   if (!item) {
                                     return (
-                                      <td key={cls} style={{ ...styles.td, textAlign: 'center', color: '#cbd5e1', borderLeft: '1px solid #f1f5f9' }}>
+                                      <td key={cls} style={{ ...styles.td, textAlign: 'center', color: '#cbd5e1', borderLeft: '1px solid #f1f5f9', padding: '6px 8px' }}>
                                         -
                                       </td>
                                     );
@@ -1986,28 +2003,33 @@ export default function PublicSchedule() {
                                         borderLeft: '1px solid #e2e8f0',
                                         backgroundColor: isMatched ? '#fef08a' : sTheme.bg,
                                         transition: 'background-color 0.2s',
-                                        padding: '7px 9px',
-                                        cursor: 'pointer'
+                                        padding: '6px 8px',
+                                        cursor: 'pointer',
+                                        verticalAlign: 'middle'
                                       }}
                                     >
                                       <div style={{
                                         fontWeight: '800',
                                         color: isMatched ? '#854d0e' : sTheme.text,
-                                        fontSize: '12.5px',
-                                        lineHeight: '1.3',
+                                        fontSize: '12px',
+                                        lineHeight: '1.25',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '4px'
+                                        gap: '4px',
+                                        whiteSpace: 'nowrap'
                                       }}>
-                                        <span>{sTheme.icon}</span>
+                                        <span style={{ fontSize: '13px' }}>{sTheme.icon}</span>
                                         <span>{item.subject}</span>
                                       </div>
                                       <div style={{
                                         fontSize: '11px',
                                         color: isMatched ? '#713f12' : '#475569',
-                                        marginTop: '3px',
+                                        marginTop: '2px',
                                         fontWeight: '600',
-                                        lineHeight: '1.2'
+                                        lineHeight: '1.2',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
                                       }}>
                                         {item.teacher_name || '-'}
                                       </div>
