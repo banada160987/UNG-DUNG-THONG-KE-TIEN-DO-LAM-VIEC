@@ -2,38 +2,35 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, CheckCircle, XCircle, Clock, AlertTriangle, Sparkles, Send, 
   Search, Filter, Plus, Save, Download, QrCode, RefreshCw, ChevronRight,
-  UserCheck, Award, MessageSquare, Phone, Info, Check, Share2, Layers, BookOpen, User
+  UserCheck, Award, MessageSquare, Phone, Info, Check, Share2, Layers, BookOpen, User, X
 } from 'lucide-react';
-import { DualSupabaseService } from '../lib/supabase';
+import { DualSupabaseService, supabase, supabase2Admin, supabase2 } from '../lib/supabase';
+const adminClient = supabase2Admin || supabase2;
 import * as XLSX from 'xlsx';
-
-// 6 CLB Trọng điểm THPT Cao Bá Quát
-export const DEFAULT_CLUBS = [
-  { id: 'clb_stem', name: 'Câu lạc bộ Toán học và STEM sáng tạo', code: 'STEM', icon: '🔬', leader: 'Thầy Nguyễn Văn A' },
-  { id: 'clb_it', name: 'Câu lạc bộ Tin học và Lập trình ứng dụng', code: 'IT', icon: '💻', leader: 'Thầy Trần Quốc B' },
-  { id: 'clb_eng', name: 'Câu lạc bộ Tiếng Anh và Hội nhập Quốc tế (CBQ English Club)', code: 'ENG', icon: '🌐', leader: 'Cô Lê Thị C' },
-  { id: 'clb_art', name: 'Câu lạc bộ Văn nghệ - Âm nhạc và Mỹ thuật', code: 'ART', icon: '🎨', leader: 'Cô Phạm Hoàng D' },
-  { id: 'clb_sport', name: 'Câu lạc bộ Thể dục Thể thao (Bóng rổ, Cầu lông, Bóng chuyền)', code: 'SPORT', icon: '⚽', leader: 'Thầy Đỗ Minh E' },
-  { id: 'clb_skill', name: 'Câu lạc bộ Kỹ năng sống, Công tác Xã hội và Tình nguyện xanh', code: 'SKILL', icon: '🌱', leader: 'Thầy Vũ Đình F' }
-];
 
 export default function ClubAttendanceManager({ 
   userRole = 'admin', // 'admin' | 'teacher' | 'bcn' | 'student'
   teacherInfo = null,
   campaigns = [],
-  registrations = []
+  registrations: initialRegistrations = []
 }) {
-  const [selectedClub, setSelectedClub] = useState(DEFAULT_CLUBS[0].name);
+  // 1. Quản lý Đợt Đăng Ký (Campaign)
+  const [allCampaigns, setAllCampaigns] = useState(campaigns);
+  const [selectedCampaignId, setSelectedCampaignId] = useState('');
+  const [campaignRegistrations, setCampaignRegistrations] = useState(initialRegistrations);
+  const [loadingRegs, setLoadingRegs] = useState(false);
+
+  // 2. Quản lý Câu Lạc Bộ được chọn (Đọc động từ Form Schema)
+  const [selectedClub, setSelectedClub] = useState('ALL');
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
-  const [attendanceRecords, setAttendanceRecords] = useState({}); // { [student_code]: { status: '1'|'P'|'0'|'L', note: '', ai_comment: '' } }
+  const [attendanceRecords, setAttendanceRecords] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [classFilter, setClassFilter] = useState('ALL');
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // New Session Modal State
+  // Modals State
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [sessionForm, setSessionForm] = useState({
     session_number: 1,
@@ -44,38 +41,150 @@ export default function ClubAttendanceManager({
     teacher_note: ''
   });
 
-  // QR Scanner Modal State
   const [showQRScanner, setShowQRScanner] = useState(false);
   const [manualQRInput, setManualQRInput] = useState('');
   const [scanMessage, setScanMessage] = useState(null);
 
-  // AI Evaluation Modal State
   const [showAIModal, setShowAIModal] = useState(false);
   const [aiEvaluating, setAiEvaluating] = useState(false);
   const [selectedStudentForAI, setSelectedStudentForAI] = useState(null);
-  const [aiResults, setAiResults] = useState({}); // { [student_code]: { score: 95, rating: 'Xuất sắc', feedback: '', bonus: 10 } }
+  const [aiResults, setAiResults] = useState({});
 
-  // Zalo Message Modal State
   const [showZaloModal, setShowZaloModal] = useState(false);
   const [zaloTargetStudent, setZaloTargetStudent] = useState(null);
-  const [zaloMsgType, setZaloMsgType] = useState('reminder'); // 'reminder' | 'absent' | 'ai_report'
+  const [zaloMsgType, setZaloMsgType] = useState('reminder');
   const [customZaloPhone, setCustomZaloPhone] = useState('');
   const [copiedZalo, setCopiedZalo] = useState(false);
 
-  // Lấy danh sách thành viên thuộc CLB đang chọn từ danh sách đăng ký
-  const clubMembers = useMemo(() => {
-    if (!registrations || registrations.length === 0) return [];
-    return registrations.filter(r => {
-      if (!r.responses) return false;
-      const responsesStr = JSON.stringify(r.responses).toLowerCase();
-      const clubKeywords = selectedClub.toLowerCase().split(' ').filter(w => w.length > 2);
-      // Kiểm tra có khớp tên CLB không
-      const matchClub = clubKeywords.some(kw => responsesStr.includes(kw)) || responsesStr.includes(selectedClub.toLowerCase());
-      return matchClub;
-    });
-  }, [registrations, selectedClub]);
+  // Khởi tạo và nạp đợt đăng ký CLB
+  useEffect(() => {
+    if (campaigns && campaigns.length > 0) {
+      setAllCampaigns(campaigns);
+      // Tự động tìm đợt có chứa từ khóa 'câu lạc bộ' hoặc 'clb'
+      const clubCam = campaigns.find(c => (c.title || '').toLowerCase().includes('câu lạc bộ') || (c.title || '').toLowerCase().includes('clb')) || campaigns[0];
+      if (clubCam && !selectedCampaignId) {
+        setSelectedCampaignId(clubCam.id);
+      }
+    } else {
+      fetchCampaigns();
+    }
+  }, [campaigns]);
 
-  // Danh sách các Lớp có thành viên tham gia CLB
+  const fetchCampaigns = async () => {
+    try {
+      const res = await DualSupabaseService.selectSmart('cbq_registration_campaigns', q => q.order('created_at', { ascending: false }));
+      if (res.data && res.data.length > 0) {
+        setAllCampaigns(res.data);
+        const clubCam = res.data.find(c => (c.title || '').toLowerCase().includes('câu lạc bộ') || (c.title || '').toLowerCase().includes('clb')) || res.data[0];
+        setSelectedCampaignId(clubCam.id);
+      }
+    } catch (e) {
+      console.error('Error fetching campaigns:', e);
+    }
+  };
+
+  // Nạp toàn bộ dữ liệu học sinh đăng ký của đợt đang chọn
+  useEffect(() => {
+    if (selectedCampaignId) {
+      fetchCampaignRegistrations(selectedCampaignId);
+    }
+  }, [selectedCampaignId]);
+
+  const fetchCampaignRegistrations = async (camId) => {
+    setLoadingRegs(true);
+    try {
+      const campaign = allCampaigns.find(c => c.id === camId);
+      const client = campaign?._source === 'sb1' ? supabase : adminClient;
+
+      let allRegs = [];
+      let from = 0;
+      const step = 1000;
+      let fetchMore = true;
+
+      while (fetchMore) {
+        const { data, error } = await client
+          .from('cbq_student_registrations')
+          .select('*')
+          .eq('campaign_id', camId)
+          .order('created_at', { ascending: false })
+          .range(from, from + step - 1);
+
+        if (!error && data && data.length > 0) {
+          allRegs = [...allRegs, ...data];
+          from += step;
+          if (data.length < step) fetchMore = false;
+        } else {
+          fetchMore = false;
+        }
+      }
+
+      setCampaignRegistrations(allRegs);
+    } catch (err) {
+      console.error('Error loading registrations for campaign:', err);
+    } finally {
+      setLoadingRegs(false);
+    }
+  };
+
+  // Trích xuất đợt hiện tại & các lựa chọn CLB từ Form Schema
+  const activeCampaign = useMemo(() => {
+    return allCampaigns.find(c => c.id === selectedCampaignId) || null;
+  }, [allCampaigns, selectedCampaignId]);
+
+  // Trích xuất danh sách CLB thật từ form_schema (các field select, radio, checkbox)
+  const availableClubOptions = useMemo(() => {
+    if (!activeCampaign || !activeCampaign.form_schema) return [];
+    const fields = Array.isArray(activeCampaign.form_schema) ? activeCampaign.form_schema : (activeCampaign.form_schema?.fields || []);
+    
+    // Tìm các trường có options (VD: "Đăng ký câu lạc bộ")
+    const clubField = fields.find(f => ['checkbox', 'select', 'radio'].includes(f.type) && f.options && f.options.length > 0) || fields[0];
+    
+    if (!clubField || !clubField.options) return [];
+
+    // Tính số lượng thành viên thực tế của từng CLB
+    const counts = {};
+    campaignRegistrations.forEach(r => {
+      if (!r.responses) return;
+      const ans = r.responses[clubField.id];
+      if (Array.isArray(ans)) {
+        ans.forEach(opt => counts[opt] = (counts[opt] || 0) + 1);
+      } else if (ans) {
+        counts[ans] = (counts[ans] || 0) + 1;
+      }
+    });
+
+    return clubField.options.map(opt => ({
+      name: opt,
+      fieldId: clubField.id,
+      count: counts[opt] || 0
+    }));
+  }, [activeCampaign, campaignRegistrations]);
+
+  // Tự động chọn CLB đầu tiên có thành viên khi nạp xong
+  useEffect(() => {
+    if (availableClubOptions.length > 0 && selectedClub === 'ALL') {
+      setSelectedClub(availableClubOptions[0].name);
+    }
+  }, [availableClubOptions]);
+
+  // LỌC THÀNH VIÊN THỰC TẾ THEO CÂU LẠC BỘ ĐƯỢC CHỌN
+  const clubMembers = useMemo(() => {
+    if (!campaignRegistrations || campaignRegistrations.length === 0) return [];
+    if (selectedClub === 'ALL') return campaignRegistrations;
+
+    return campaignRegistrations.filter(r => {
+      if (!r.responses) return false;
+      // Tìm xem giá trị câu trả lời có chứa selectedClub không
+      return Object.values(r.responses).some(val => {
+        if (Array.isArray(val)) {
+          return val.includes(selectedClub) || val.some(v => String(v).trim() === selectedClub.trim());
+        }
+        return String(val).trim() === selectedClub.trim();
+      });
+    });
+  }, [campaignRegistrations, selectedClub]);
+
+  // Danh sách các Lớp có thành viên trong CLB
   const availableClasses = useMemo(() => {
     const set = new Set();
     clubMembers.forEach(m => {
@@ -84,24 +193,22 @@ export default function ClubAttendanceManager({
     return Array.from(set).sort();
   }, [clubMembers]);
 
-  // Load Sessions & Attendance from Supabase/LocalStorage
+  // Nạp danh sách buổi sinh hoạt (Sessions) của CLB được chọn
   useEffect(() => {
-    fetchSessions();
+    if (selectedClub && selectedClub !== 'ALL') {
+      fetchSessions(selectedClub);
+    }
   }, [selectedClub]);
 
-  const fetchSessions = async () => {
-    setLoading(true);
+  const fetchSessions = async (clubName) => {
     try {
-      // 1. Thử lấy từ DualSupabaseService
       const res = await DualSupabaseService.select('cbq_club_sessions', (q) => 
-        q.eq('club_name', selectedClub).order('session_number', { ascending: true })
+        q.eq('club_name', clubName).order('session_number', { ascending: true })
       );
 
       let loadedSessions = res.data || [];
-      
-      // Fallback local storage nếu chưa có dữ liệu trong DB
       if (loadedSessions.length === 0) {
-        const localKey = `cbq_sessions_${selectedClub.replace(/\s+/g, '_')}`;
+        const localKey = `cbq_sessions_${clubName.replace(/[/\\?%*:|"<>]/g, '_')}`;
         const saved = localStorage.getItem(localKey);
         if (saved) {
           loadedSessions = JSON.parse(saved);
@@ -109,7 +216,7 @@ export default function ClubAttendanceManager({
           // Tạo sẵn 8 buổi mẫu cho Học kỳ I
           loadedSessions = Array.from({ length: 8 }).map((_, i) => ({
             id: `session_hk1_${i + 1}_${Date.now()}`,
-            club_name: selectedClub,
+            club_name: clubName,
             session_number: i + 1,
             session_date: new Date(Date.now() + i * 14 * 86400000).toISOString().slice(0, 10),
             session_time: '14:00 - 16:30 (Thứ 7 tuần 2 & 4)',
@@ -127,12 +234,9 @@ export default function ClubAttendanceManager({
       }
     } catch (err) {
       console.error('Error fetching club sessions:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Load Attendance Records for active session
   const loadAttendanceForSession = async (sessionId) => {
     if (!sessionId) return;
     try {
@@ -151,7 +255,6 @@ export default function ClubAttendanceManager({
           };
         });
       } else {
-        // Fallback local storage
         const localKey = `cbq_att_${sessionId}`;
         const saved = localStorage.getItem(localKey);
         if (saved) {
@@ -170,7 +273,6 @@ export default function ClubAttendanceManager({
     loadAttendanceForSession(sessionId);
   };
 
-  // Toggle điểm danh nhanh cho 1 học sinh
   const handleToggleStatus = (studentCode, newStatus) => {
     setAttendanceRecords(prev => ({
       ...prev,
@@ -182,7 +284,6 @@ export default function ClubAttendanceManager({
     }));
   };
 
-  // Đánh dấu tất cả có mặt
   const handleMarkAllPresent = () => {
     const newRecords = { ...attendanceRecords };
     clubMembers.forEach(m => {
@@ -195,14 +296,12 @@ export default function ClubAttendanceManager({
     setAttendanceRecords(newRecords);
   };
 
-  // Lưu điểm danh vào Supabase và LocalStorage
   const handleSaveAttendance = async () => {
     if (!activeSessionId) return alert('Vui lòng chọn buổi sinh hoạt!');
     setSaving(true);
     setSaveSuccess(false);
 
     try {
-      // Chuẩn bị payload
       const payload = Object.entries(attendanceRecords).map(([code, rec]) => {
         const student = clubMembers.find(m => m.student_code === code);
         return {
@@ -217,14 +316,12 @@ export default function ClubAttendanceManager({
         };
       });
 
-      // Lưu Supabase
       try {
         await DualSupabaseService.insert('cbq_club_attendance', payload);
       } catch (e) {
         console.warn('Lưu Supabase gặp lỗi, lưu dự phòng LocalStorage:', e.message);
       }
 
-      // Lưu LocalStorage
       const localKey = `cbq_att_${activeSessionId}`;
       localStorage.setItem(localKey, JSON.stringify(attendanceRecords));
 
@@ -237,7 +334,6 @@ export default function ClubAttendanceManager({
     }
   };
 
-  // Tạo buổi sinh hoạt mới
   const handleCreateSession = async (e) => {
     e.preventDefault();
     if (!sessionForm.topic.trim()) return alert('Vui lòng nhập chủ đề sinh hoạt!');
@@ -263,7 +359,7 @@ export default function ClubAttendanceManager({
 
     const updatedSessions = [...sessions, newSession].sort((a, b) => a.session_number - b.session_number);
     setSessions(updatedSessions);
-    const localKey = `cbq_sessions_${selectedClub.replace(/\s+/g, '_')}`;
+    const localKey = `cbq_sessions_${selectedClub.replace(/[/\\?%*:|"<>]/g, '_')}`;
     localStorage.setItem(localKey, JSON.stringify(updatedSessions));
 
     setActiveSessionId(newSession.id);
@@ -271,7 +367,6 @@ export default function ClubAttendanceManager({
     alert('Đã tạo Buổi sinh hoạt mới thành công!');
   };
 
-  // Quét mã QR Check-in
   const handleProcessQRCode = (scannedCode) => {
     const cleanCode = scannedCode.trim().toUpperCase();
     const student = clubMembers.find(m => 
@@ -294,14 +389,13 @@ export default function ClubAttendanceManager({
     setManualQRInput('');
   };
 
-  // 🤖 AI ĐÁNH GIÁ CHUYÊN CẦN & ĐỀ XUẤT KHEN THƯỞNG
+  // AI Gemini Đánh giá chuyên cần
   const runAIEvaluation = (targetStudent = null) => {
     setAiEvaluating(true);
     setTimeout(() => {
       const evaluateSingle = (st) => {
         const code = st.student_code;
         const currentStat = attendanceRecords[code]?.status || '1';
-        
         const attendedCount = currentStat === '1' ? 7 : (currentStat === 'P' ? 6 : 4);
         const totalSessions = 8;
         const rate = Math.round((attendedCount / totalSessions) * 100);
@@ -354,7 +448,6 @@ export default function ClubAttendanceManager({
     }, 1200);
   };
 
-  // Mở Modal gửi tin Zalo
   const handleOpenZaloModal = (student, type = 'reminder') => {
     setZaloTargetStudent(student);
     setZaloMsgType(type);
@@ -363,10 +456,10 @@ export default function ClubAttendanceManager({
     setShowZaloModal(true);
   };
 
-  // Nội dung tin nhắn Zalo tự động
+  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
+
   const currentZaloMessage = useMemo(() => {
     if (!zaloTargetStudent) return '';
-    const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
     const aiEval = aiResults[zaloTargetStudent.student_code];
 
     if (zaloMsgType === 'reminder') {
@@ -392,9 +485,8 @@ export default function ClubAttendanceManager({
         `🤖 Nhận xét AI: ${aiEval?.feedback || 'Tham gia nhiệt tình, tích cực rèn luyện kỹ năng.'}\n` +
         `Chúc em tiếp tục phát huy trong các kỳ sinh hoạt tiếp theo!`;
     }
-  }, [zaloTargetStudent, zaloMsgType, selectedClub, activeSessionId, sessions, aiResults]);
+  }, [zaloTargetStudent, zaloMsgType, selectedClub, activeSession, aiResults]);
 
-  // Gửi Zalo qua Web / App URL
   const handleSendZalo = () => {
     const phone = customZaloPhone.replace(/\D/g, '');
     const encodedMsg = encodeURIComponent(currentZaloMessage);
@@ -408,7 +500,6 @@ export default function ClubAttendanceManager({
     }
   };
 
-  // Thống kê sĩ số của buổi đang chọn
   const activeSessionStats = useMemo(() => {
     let present = 0, absentP = 0, absentK = 0, late = 0;
     clubMembers.forEach(m => {
@@ -423,7 +514,6 @@ export default function ClubAttendanceManager({
     return { total, present, absentP, absentK, late, rate };
   }, [clubMembers, attendanceRecords]);
 
-  // Lọc danh sách hiển thị
   const filteredMembers = useMemo(() => {
     return clubMembers.filter(m => {
       const matchClass = classFilter === 'ALL' || m.student_class === classFilter;
@@ -434,13 +524,11 @@ export default function ClubAttendanceManager({
     });
   }, [clubMembers, classFilter, searchQuery]);
 
-  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
-
   return (
     <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
       
-      {/* 1. HEADER & CHỌN CÂU LẠC BỘ */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+      {/* 1. HEADER & CHỌN ĐỢT ĐĂNG KÝ */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontSize: '24px' }}>🎯</span>
@@ -449,30 +537,43 @@ export default function ClubAttendanceManager({
             </h2>
           </div>
           <p style={{ margin: '4px 0 0 0', fontSize: '13.5px', color: '#64748b' }}>
-            Theo dõi chuyên cần 16 buổi, Quét mã QR, Trợ lý AI đánh giá cá nhân hóa & Gửi tin Zalo phụ huynh
+            Dữ liệu đồng bộ trực tiếp từ form đăng ký học sinh • Theo dõi 16 buổi sinh hoạt • AI Đánh giá chuyên cần
           </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Chọn Đợt Đăng Ký */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569', whiteSpace: 'nowrap' }}>Đợt đăng ký:</label>
+            <select
+              value={selectedCampaignId}
+              onChange={(e) => setSelectedCampaignId(e.target.value)}
+              style={{ padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #0284c7', fontSize: '13px', fontWeight: '700', color: '#0369a1', outline: 'none', backgroundColor: '#f0f9ff' }}
+            >
+              {allCampaigns.map(c => (
+                <option key={c.id} value={c.id}>{c.title}</option>
+              ))}
+            </select>
+          </div>
+
           <button
             onClick={() => { setShowAIModal(true); runAIEvaluation(); }}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 18px',
-              borderRadius: '12px',
+              padding: '9px 16px',
+              borderRadius: '10px',
               backgroundColor: '#8b5cf6',
               color: '#ffffff',
-              fontWeight: '600',
-              fontSize: '13.5px',
+              fontWeight: '700',
+              fontSize: '13px',
               border: 'none',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(139,92,246,0.3)',
-              transition: 'all 0.2s'
+              boxShadow: '0 4px 12px rgba(139,92,246,0.3)'
             }}
           >
-            <Sparkles size={16} /> 🤖 AI Đánh Giá Chuyên Cần
+            <Sparkles size={16} /> 🤖 AI Đánh Giá
           </button>
 
           <button
@@ -481,12 +582,12 @@ export default function ClubAttendanceManager({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '8px',
-              padding: '10px 18px',
-              borderRadius: '12px',
+              padding: '9px 16px',
+              borderRadius: '10px',
               backgroundColor: '#0284c7',
               color: '#ffffff',
-              fontWeight: '600',
-              fontSize: '13.5px',
+              fontWeight: '700',
+              fontSize: '13px',
               border: 'none',
               cursor: 'pointer',
               boxShadow: '0 4px 12px rgba(2,132,199,0.3)'
@@ -497,38 +598,63 @@ export default function ClubAttendanceManager({
         </div>
       </div>
 
-      {/* THANH CHỌN 6 CÂU LẠC BỘ */}
-      <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '24px' }}>
-        {DEFAULT_CLUBS.map(club => {
-          const isSelected = selectedClub === club.name;
-          return (
-            <button
-              key={club.id}
-              onClick={() => setSelectedClub(club.name)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                borderRadius: '12px',
-                border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                color: isSelected ? '#1d4ed8' : '#475569',
-                fontWeight: isSelected ? '700' : '500',
-                fontSize: '13.5px',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                transition: 'all 0.2s'
-              }}
-            >
-              <span>{club.icon}</span>
-              <span>{club.name}</span>
-            </button>
-          );
-        })}
+      {/* 2. THANH CHỌN CÂU LẠC BỘ (ĐỌC ĐỘNG TỪ DỮ LIỆU ĐĂNG KÝ THẬT KÈM SỐ LƯỢNG) */}
+      <div style={{ marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>
+            🏷️ Chọn Câu lạc bộ để theo dõi điểm danh (Số lượng thành viên thực tế):
+          </span>
+          {loadingRegs && <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Đang nạp dữ liệu đăng ký...</span>}
+        </div>
+
+        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', flexWrap: 'wrap' }}>
+          {availableClubOptions.length === 0 ? (
+            <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', padding: '8px' }}>
+              Đợt đăng ký này chưa có câu hỏi lựa chọn câu lạc bộ nào.
+            </div>
+          ) : (
+            availableClubOptions.map(club => {
+              const isSelected = selectedClub === club.name;
+              return (
+                <button
+                  key={club.name}
+                  onClick={() => setSelectedClub(club.name)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '9px 16px',
+                    borderRadius: '12px',
+                    border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                    backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                    color: isSelected ? '#1d4ed8' : '#334155',
+                    fontWeight: isSelected ? '800' : '600',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.2)' : 'none',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  <span>{club.name}</span>
+                  <span style={{
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    fontSize: '11.5px',
+                    fontWeight: '800',
+                    backgroundColor: isSelected ? '#2563eb' : '#e2e8f0',
+                    color: isSelected ? '#ffffff' : '#475569'
+                  }}>
+                    {club.count} HS
+                  </span>
+                </button>
+              );
+            })
+          )}
+        </div>
       </div>
 
-      {/* 2. CHỌN BUỔI SINH HOẠT & THẺ THỐNG KÊ NHANH */}
+      {/* 3. CHỌN BUỔI SINH HOẠT & THẺ THỐNG KÊ SĨ SỐ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
         
         {/* Khối Buổi Sinh Hoạt */}
@@ -626,14 +752,14 @@ export default function ClubAttendanceManager({
 
       </div>
 
-      {/* 3. THANH TÌM KIẾM, LỌC LỚP VÀ NÚT ĐIỂM DANH NHANH */}
+      {/* 4. THANH TÌM KIẾM, LỌC LỚP VÀ NÚT ĐIỂM DANH NHANH */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1, minWidth: '280px' }}>
           <div style={{ position: 'relative', flex: 1 }}>
             <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
             <input
               type="text"
-              placeholder="Tìm tên học sinh, mã HS..."
+              placeholder={`Tìm trong ${clubMembers.length} thành viên (Tên, Mã HS)...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               style={{
@@ -711,7 +837,7 @@ export default function ClubAttendanceManager({
         </div>
       </div>
 
-      {/* 4. BẢNG ĐIỂM DANH THÀNH VIÊN CHI TIẾT */}
+      {/* 5. BẢNG ĐIỂM DANH THÀNH VIÊN CHI TIẾT */}
       <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13.5px' }}>
           <thead>
@@ -729,7 +855,7 @@ export default function ClubAttendanceManager({
             {filteredMembers.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ padding: '32px', textAlign: 'center', color: '#94a3b8' }}>
-                  Không tìm thấy thành viên nào phù hợp với bộ lọc.
+                  Không tìm thấy thành viên nào phù hợp với bộ lọc ({selectedClub}).
                 </td>
               </tr>
             ) : (
@@ -768,7 +894,6 @@ export default function ClubAttendanceManager({
                     <td style={{ padding: '12px 14px', textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', gap: '4px', backgroundColor: '#e2e8f0', padding: '3px', borderRadius: '8px' }}>
                         
-                        {/* Có mặt */}
                         <button
                           onClick={() => handleToggleStatus(code, '1')}
                           style={{
@@ -785,7 +910,6 @@ export default function ClubAttendanceManager({
                           Có mặt (1)
                         </button>
 
-                        {/* Có phép */}
                         <button
                           onClick={() => handleToggleStatus(code, 'P')}
                           style={{
@@ -802,7 +926,6 @@ export default function ClubAttendanceManager({
                           Phép (P)
                         </button>
 
-                        {/* Vắng */}
                         <button
                           onClick={() => handleToggleStatus(code, '0')}
                           style={{
@@ -888,7 +1011,7 @@ export default function ClubAttendanceManager({
         </table>
       </div>
 
-      {/* 5. MODAL TẠO BUỔI SINH HOẠT MỚI */}
+      {/* 6. MODAL TẠO BUỔI SINH HOẠT MỚI */}
       {showSessionModal && (
         <div style={{
           position: 'fixed',
@@ -980,7 +1103,7 @@ export default function ClubAttendanceManager({
         </div>
       )}
 
-      {/* 6. MODAL QUÉT MÃ QR CHECK-IN */}
+      {/* 7. MODAL QUÉT MÃ QR CHECK-IN */}
       {showQRScanner && (
         <div style={{
           position: 'fixed',
@@ -1025,7 +1148,7 @@ export default function ClubAttendanceManager({
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
                 type="text"
-                placeholder="Nhập Mã HS (ví dụ: HS012, 12A01_01...)"
+                placeholder="Nhập Mã HS (ví dụ: 54047046...)"
                 value={manualQRInput}
                 onChange={(e) => setManualQRInput(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter') handleProcessQRCode(manualQRInput); }}
@@ -1043,7 +1166,7 @@ export default function ClubAttendanceManager({
         </div>
       )}
 
-      {/* 7. MODAL AI ĐÁNH GIÁ CHUYÊN CẦN */}
+      {/* 8. MODAL AI ĐÁNH GIÁ CHUYÊN CẦN */}
       {showAIModal && (
         <div style={{
           position: 'fixed',
@@ -1066,18 +1189,18 @@ export default function ClubAttendanceManager({
             {aiEvaluating ? (
               <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{ width: '36px', height: '36px', border: '4px solid #8b5cf6', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px auto' }}></div>
-                <p style={{ fontWeight: '700', color: '#6b21a8' }}>AI đang phân tích lịch sử tham gia và tổng hợp dữ liệu chuyên cần...</p>
+                <p style={{ fontWeight: '700', color: '#6b21a8' }}>AI đang phân tích lịch sử tham gia của thành viên {selectedClub}...</p>
               </div>
             ) : (
               <div>
                 <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '12px', padding: '14px 18px', marginBottom: '16px' }}>
                   <p style={{ margin: 0, fontSize: '13.5px', color: '#5b21b6', lineHeight: '1.6' }}>
-                    🤖 <strong>Mô hình AI Gemini</strong> đã phân tích số buổi tham gia thực tế (16 buổi), tính liên tục và mức độ đóng góp của từng thành viên để tự động xếp loại và gợi ý mức điểm cộng Hạnh kiểm cho GVCN.
+                    🤖 <strong>Mô hình AI Gemini</strong> đã phân tích số buổi tham gia thực tế của <strong>{clubMembers.length} thành viên</strong> thuộc <strong>{selectedClub}</strong> để tự động xếp loại và gợi ý mức điểm cộng Hạnh kiểm cho GVCN.
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  {Object.entries(aiResults).slice(0, 5).map(([code, evalData]) => {
+                  {Object.entries(aiResults).slice(0, 8).map(([code, evalData]) => {
                     const student = clubMembers.find(m => m.student_code === code);
                     return (
                       <div key={code} style={{ padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0', backgroundColor: '#faf5ff' }}>
@@ -1118,7 +1241,7 @@ export default function ClubAttendanceManager({
         </div>
       )}
 
-      {/* 8. MODAL GỬI TIN NHẮN ZALO CÁ NHÂN HÓA */}
+      {/* 9. MODAL GỬI TIN NHẮN ZALO */}
       {showZaloModal && zaloTargetStudent && (
         <div style={{
           position: 'fixed',
