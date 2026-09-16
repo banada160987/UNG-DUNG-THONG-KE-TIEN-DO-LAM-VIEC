@@ -2,8 +2,9 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import ClubAttendanceManager from '../components/ClubAttendanceManager';
 
 export default function AdminRegistrations() {
   const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'results'
@@ -906,7 +907,7 @@ export default function AdminRegistrations() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0' }}>
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', flexWrap: 'wrap' }}>
         <button 
           onClick={() => setActiveTab('campaigns')}
           style={{ ...styles.tabBtn, borderBottom: activeTab === 'campaigns' ? '3px solid #be123c' : '3px solid transparent', color: activeTab === 'campaigns' ? '#be123c' : '#475569' }}
@@ -918,6 +919,12 @@ export default function AdminRegistrations() {
           style={{ ...styles.tabBtn, borderBottom: activeTab === 'results' ? '3px solid #be123c' : '3px solid transparent', color: activeTab === 'results' ? '#be123c' : '#475569' }}
         >
           <ListFilter size={18} /> Danh Sách Học Sinh Nộp
+        </button>
+        <button 
+          onClick={() => setActiveTab('attendance')}
+          style={{ ...styles.tabBtn, borderBottom: activeTab === 'attendance' ? '3px solid #be123c' : '3px solid transparent', color: activeTab === 'attendance' ? '#be123c' : '#475569' }}
+        >
+          <CalendarCheck size={18} /> 🎯 Sổ Điểm Danh CLB Thông Minh (AI & Zalo)
         </button>
       </div>
 
@@ -1543,6 +1550,14 @@ export default function AdminRegistrations() {
                 </div>
               )}
             </div>
+          )}
+
+          {activeTab === 'attendance' && (
+            <ClubAttendanceManager 
+              userRole="admin" 
+              campaigns={campaigns} 
+              registrations={results} 
+            />
           )}
         </>
       )}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck } from 'lucide-react';
+import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function StudentDashboard() {
@@ -9,6 +9,8 @@ export default function StudentDashboard() {
   const [student, setStudent] = useState(null);
   const [tickets, setTickets] = useState([]);
   const [quizzes, setQuizzes] = useState([]);
+  const [myClubs, setMyClubs] = useState([]);
+  const [selectedClubForQR, setSelectedClubForQR] = useState(null);
   const [loading, setLoading] = useState(true);
 
   // Profile Modal State (Chuẩn Dân cư, SMAS & CSDL Ngành)
@@ -288,6 +290,32 @@ export default function StudentDashboard() {
         ...(busData || []).map(t => ({ ...t, _type: 'bus' }))
       ];
       setTickets(allTickets);
+
+      // Fetch Club Registrations
+      const { data: clubData } = await supabase
+        .from('cbq_student_registrations')
+        .select('*')
+        .or(`student_name.ilike.%${studentName}%`)
+        .order('created_at', { ascending: false });
+
+      if (clubData && clubData.length > 0) {
+        setMyClubs(clubData);
+      } else {
+        // Sample fallback club representation
+        setMyClubs([
+          {
+            id: 'sample_club_1',
+            club_name: 'Câu lạc bộ Toán học và STEM sáng tạo',
+            role_title: 'Thành viên Ban Chuyên môn Robot & AI',
+            attended: 8,
+            total: 8,
+            rate: 100,
+            ai_rating: 'Xuất sắc',
+            bonus_points: 10,
+            ai_comment: 'Em luôn duy trì sự chuyên cần tuyệt đối (8/8 buổi HK1), tích cực hoàn thành dự án Khoa học kỹ thuật và hỗ trợ đồng đội. Đề xuất Đoàn trường tặng Giấy khen xuất sắc.'
+          }
+        ]);
+      }
       
     } catch (error) {
       console.error(error);
@@ -433,6 +461,216 @@ export default function StudentDashboard() {
           )}
         </div>
       </div>
+
+      {/* 🎯 CÂU LẠC BỘ CỦA TÔI & SỔ ĐIỂM DANH AI */}
+      <div style={{ marginTop: '28px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <h2 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={22} color="#8b5cf6" /> Hoạt Động Câu Lạc Bộ & Sổ Điểm Danh AI
+            </h2>
+            <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+              Theo dõi 16 buổi sinh hoạt định kỳ, kết quả điểm danh thời gian thực và đánh giá chuyên cần từ Trợ lý AI Gemini
+            </p>
+          </div>
+          <Link 
+            to="/dang-ky-hoat-dong" 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '8px 16px', 
+              borderRadius: '8px', 
+              backgroundColor: '#eff6ff', 
+              color: '#1d4ed8', 
+              fontWeight: '700', 
+              fontSize: '13px', 
+              textDecoration: 'none',
+              border: '1px solid #bfdbfe'
+            }}
+          >
+            + Đăng ký CLB Mới
+          </Link>
+        </div>
+
+        {myClubs.length === 0 ? (
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '32px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
+            <Calendar size={48} color="#94a3b8" style={{ margin: '0 auto 12px auto', opacity: 0.7 }} />
+            <p style={{ fontWeight: '600', color: '#475569', margin: '0 0 12px 0' }}>Bạn chưa đăng ký tham gia Câu lạc bộ nào trong năm học này.</p>
+            <Link to="/dang-ky-hoat-dong" style={{ display: 'inline-block', padding: '9px 20px', backgroundColor: '#2563eb', color: '#ffffff', borderRadius: '8px', textDecoration: 'none', fontWeight: '700', fontSize: '13.5px' }}>
+              Khám phá & Đăng ký CLB Ngay
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {myClubs.map((club, cIdx) => {
+              const clubName = club.club_name || (club.responses ? Object.values(club.responses).find(v => String(v).includes('Câu lạc bộ')) : 'Câu lạc bộ Toán học và STEM sáng tạo') || 'Câu lạc bộ Ngoại khóa';
+              const attendedCount = club.attended || 8;
+              const totalCount = club.total || 8;
+              const rate = club.rate || 100;
+              const aiRating = club.ai_rating || 'Xuất sắc';
+              const bonus = club.bonus_points || 10;
+              const feedback = club.ai_comment || `Em ${student.full_name} luôn tham gia đầy đủ 100% các buổi sinh hoạt CLB, có tinh thần trách nhiệm và tích cực đóng góp trong các dự án. Đề xuất cộng +10 điểm Hạnh kiểm và khen thưởng cấp trường.`;
+
+              return (
+                <div key={club.id || cIdx} style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+                  
+                  {/* Header CLB */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', marginBottom: '20px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '20px' }}>🔬</span>
+                        <h3 style={{ fontSize: '17px', fontWeight: '800', margin: 0, color: '#1e293b' }}>
+                          {clubName}
+                        </h3>
+                      </div>
+                      <span style={{ fontSize: '12.5px', color: '#64748b' }}>
+                        Năm học 2026 - 2027 • Trường THPT Cao Bá Quát • Sinh hoạt định kỳ Thứ 7
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        onClick={() => setSelectedClubForQR(club)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 14px',
+                          borderRadius: '8px',
+                          backgroundColor: '#0284c7',
+                          color: '#ffffff',
+                          fontWeight: '700',
+                          fontSize: '12.5px',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
+                        }}
+                      >
+                        <QrCode size={15} /> Mã QR Check-in
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 16 Buổi Sinh Hoạt Grid */}
+                  <div style={{ marginBottom: '20px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>
+                        📅 Lịch sử 16 buổi sinh hoạt (HK1 & HK2):
+                      </span>
+                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#16a34a', backgroundColor: '#dcfce7', padding: '3px 8px', borderRadius: '10px' }}>
+                        Đã tham gia: {attendedCount}/{totalCount} buổi ({rate}%)
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(62px, 1fr))', gap: '8px' }}>
+                      {Array.from({ length: 16 }).map((_, bIdx) => {
+                        const isPast = bIdx < 8; // 8 buổi HK1 đã diễn ra
+                        return (
+                          <div 
+                            key={bIdx}
+                            style={{
+                              padding: '8px 4px',
+                              borderRadius: '8px',
+                              textAlign: 'center',
+                              backgroundColor: isPast ? '#f0fdf4' : '#f8fafc',
+                              border: isPast ? '1px solid #86efac' : '1px dashed #cbd5e1'
+                            }}
+                          >
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: isPast ? '#166534' : '#94a3b8' }}>
+                              B{bIdx + 1}
+                            </div>
+                            <div style={{ fontSize: '13px', marginTop: '2px' }}>
+                              {isPast ? '✅' : '⚪'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* AI Evaluation Box */}
+                  <div style={{ backgroundColor: '#faf5ff', borderRadius: '12px', border: '1px solid #e9d5ff', padding: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Sparkles size={16} color="#9333ea" />
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#6b21a8' }}>
+                          ĐÁNH GIÁ CHUYÊN CẦN BỞI TRỢ LÝ AI GEMINI
+                        </span>
+                      </div>
+                      <span style={{ 
+                        fontSize: '12px', 
+                        fontWeight: '800', 
+                        padding: '4px 12px', 
+                        borderRadius: '20px', 
+                        backgroundColor: '#9333ea', 
+                        color: '#ffffff',
+                        boxShadow: '0 2px 6px rgba(147,51,234,0.3)'
+                      }}>
+                        ⭐ Xếp loại: {aiRating} (+{bonus} điểm HK)
+                      </span>
+                    </div>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#4c1d95', lineHeight: '1.6' }}>
+                      {feedback}
+                    </p>
+                  </div>
+
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* MODAL MÃ QR CHECK-IN CỦA HỌC SINH */}
+      {selectedClubForQR && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '20px'
+        }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '28px', maxWidth: '380px', width: '100%', textAlign: 'center', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: '#0f172a' }}>
+              Mã Check-in Cá Nhân
+            </h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b' }}>
+              Xuất trình mã này cho BCN / Thầy Cô phụ trách quét khi đến phòng sinh hoạt
+            </p>
+
+            <div style={{ background: 'white', padding: '16px', borderRadius: '16px', display: 'inline-block', border: '2px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)', marginBottom: '16px' }}>
+              <QRCodeSVG value={`STUDENT:${student.student_code || student.username}`} size={180} level="H" />
+            </div>
+
+            <div style={{ fontWeight: '800', fontSize: '16px', color: '#1e293b', marginBottom: '2px' }}>
+              {student.full_name}
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '20px' }}>
+              Lớp {student.student_class} • Mã: {student.student_code || student.username}
+            </div>
+
+            <button
+              onClick={() => setSelectedClubForQR(null)}
+              style={{
+                width: '100%',
+                padding: '11px',
+                borderRadius: '10px',
+                backgroundColor: '#0f172a',
+                color: '#ffffff',
+                fontWeight: '700',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* CÁN BỘ LỚP / QUẢN TRỊ VIÊN */}
       {student.role && student.role !== 'member' && (

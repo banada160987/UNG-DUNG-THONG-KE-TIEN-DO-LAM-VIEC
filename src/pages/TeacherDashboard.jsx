@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
-  Home, FolderArchive, Layers, Sparkles
+  Home, FolderArchive, Layers, Sparkles, CalendarCheck
 } from 'lucide-react';
+import ClubAttendanceManager from '../components/ClubAttendanceManager';
+import { DualSupabaseService } from '../lib/supabase';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState(null);
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'teaching', 'homeroom', 'department', 'utilities'
+  const [activeTab, setActiveTab] = useState('all'); // 'all', 'teaching', 'homeroom', 'department', 'utilities', 'club_management'
+  const [clubRegistrations, setClubRegistrations] = useState([]);
 
   useEffect(() => {
     // Lấy thông tin tài khoản giáo viên đã đăng nhập
@@ -30,6 +33,13 @@ export default function TeacherDashboard() {
         subject: 'Ngữ Văn'
       });
     }
+
+    // Nạp danh sách đăng ký CLB
+    DualSupabaseService.select('cbq_student_registrations', q => q.order('created_at', { ascending: false }))
+      .then(res => {
+        if (res.data) setClubRegistrations(res.data);
+      })
+      .catch(err => console.error('Error fetching club registrations for teacher:', err));
   }, []);
 
   const handleLogout = () => {
@@ -273,6 +283,27 @@ export default function TeacherDashboard() {
             }}
           >
             <Calendar size={16} /> 4. Tra Cứu & Tiện Ích
+          </button>
+
+          <button
+            onClick={() => setActiveTab('club_management')}
+            style={{
+              padding: '10px 18px',
+              borderRadius: '12px',
+              fontSize: '13.5px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              border: 'none',
+              backgroundColor: activeTab === 'club_management' ? '#be123c' : '#ffffff',
+              color: activeTab === 'club_management' ? '#ffffff' : '#64748b',
+              boxShadow: activeTab === 'club_management' ? '0 4px 12px rgba(190,18,60,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <CalendarCheck size={16} /> 5. Điểm Danh & Hoạt Động CLB
           </button>
         </div>
 
@@ -1241,6 +1272,17 @@ export default function TeacherDashboard() {
                 </div>
 
               </div>
+            </section>
+          )}
+
+          {/* KHỐI 5: 🎯 ĐIỂM DANH & HOẠT ĐỘNG CLB THÔNG MINH */}
+          {(activeTab === 'all' || activeTab === 'club_management') && (
+            <section style={{ marginBottom: '20px' }}>
+              <ClubAttendanceManager 
+                userRole="teacher"
+                teacherInfo={teacher}
+                registrations={clubRegistrations}
+              />
             </section>
           )}
 
