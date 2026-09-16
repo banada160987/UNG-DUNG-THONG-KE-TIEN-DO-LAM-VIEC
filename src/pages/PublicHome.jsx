@@ -447,36 +447,36 @@ export default function PublicHome() {
               <span>🏫</span> CỔNG DỊCH VỤ GIÁO DỤC & VẬN HÀNH NHÀ TRƯỜNG
             </div>
             
-            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
-              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1.5px solid #22c55e', textDecoration: 'none', color: '#15803d', fontWeight: '900', fontSize: '13.5px', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.15)' }}>
-                <span style={{ fontSize: '22px' }}>📅</span>
+            <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1.5px solid #22c55e', textDecoration: 'none', color: '#15803d', fontWeight: '900', fontSize: '13px', boxShadow: '0 2px 6px rgba(34, 197, 94, 0.12)' }}>
+                <span style={{ fontSize: '20px' }}>📅</span>
                 <div>
-                  <div>Thời Khóa Biểu & Lịch Tuần</div>
-                  <div style={{ fontSize: '10.5px', color: '#16a34a', fontWeight: 'normal' }}>Tra cứu Lớp & Giáo viên</div>
+                  <div style={{ lineHeight: '1.2' }}>Thời Khóa Biểu & Lịch Tuần</div>
+                  <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'normal', marginTop: '2px' }}>Tra cứu Lớp & GV</div>
                 </div>
               </a>
 
-              <a href="/to-chuyen-mon" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none', color: '#1d4ed8', fontWeight: 'bold', fontSize: '13px' }}>
+              <a href="/to-chuyen-mon" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none', color: '#1d4ed8', fontWeight: 'bold', fontSize: '13px' }}>
                 <span style={{ fontSize: '20px' }}>👨‍🏫</span>
                 <span>Đội Ngũ & Chuyên Môn</span>
               </a>
 
-              <a href="/van-ban" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', textDecoration: 'none', color: '#7e22ce', fontWeight: 'bold', fontSize: '13px' }}>
+              <a href="/van-ban" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', textDecoration: 'none', color: '#7e22ce', fontWeight: 'bold', fontSize: '13px' }}>
                 <span style={{ fontSize: '20px' }}>📜</span>
                 <span>Văn Bản - Thông Báo</span>
               </a>
 
-              <a href="/cham-diem-thi-dua" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#fffbebfb', border: '1px solid #fef08a', textDecoration: 'none', color: '#b45309', fontWeight: 'bold', fontSize: '13px' }}>
+              <a href="/cham-diem-thi-dua" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#fffbebfb', border: '1px solid #fef08a', textDecoration: 'none', color: '#b45309', fontWeight: 'bold', fontSize: '13px' }}>
                 <span style={{ fontSize: '20px' }}>📋</span>
                 <span>Thi Đua Trực Tuần</span>
               </a>
 
-              <a href="/dang-ky-xe-may" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', textDecoration: 'none', color: '#be123c', fontWeight: 'bold', fontSize: '13px' }}>
+              <a href="/dang-ky-xe-may" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', textDecoration: 'none', color: '#be123c', fontWeight: 'bold', fontSize: '13px' }}>
                 <span style={{ fontSize: '20px' }}>🛵</span>
                 <span>Đăng Ký Xe Máy HS</span>
               </a>
 
-              <a href="/gop-y" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px', borderRadius: '10px', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', textDecoration: 'none', color: '#0f766e', fontWeight: 'bold', fontSize: '13px' }}>
+              <a href="/gop-y" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', textDecoration: 'none', color: '#0f766e', fontWeight: 'bold', fontSize: '13px' }}>
                 <span style={{ fontSize: '20px' }}>✍️</span>
                 <span>Góp Ý & Đề Án</span>
               </a>

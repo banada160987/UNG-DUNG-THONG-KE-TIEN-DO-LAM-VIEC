@@ -87,19 +87,19 @@ export default function PublicLayout() {
 
   return (
     <div style={styles.portalContainer}>
-      {/* 1. Cyber Space Header Banner */}
+      {/* 1. Bright & Prestigious School Header Banner */}
       <header style={styles.banner}>
         <div style={styles.bannerOverlay}>
           <div className="portal-banner-content" style={styles.bannerInner}>
             
-            {/* Left: Holographic Logo & School Identity */}
-            <div style={styles.bannerLeft}>
+            {/* Left: School Identity & Logo */}
+            <div style={styles.bannerLeft} className="cbq-banner-left">
               <div className="cyber-logo-frame">
-                <img src="/logo.jpg" alt="THPT Cao Bá Quát Logo" style={styles.mainLogo} />
+                <img src="/logo.jpg" alt="THPT Cao Bá Quát Logo" style={styles.mainLogo} className="cbq-logo-img" />
               </div>
 
-              <div>
-                <div style={styles.superBadgeRow}>
+              <div style={styles.bannerTextCol} className="cbq-banner-text">
+                <div style={styles.superBadgeRow} className="cbq-badge-row">
                   <span style={styles.superBadge}>
                     <Cpu size={12} color="#38bdf8" /> SỞ GD&ĐT ĐẮK LẮK
                   </span>
@@ -108,35 +108,35 @@ export default function PublicLayout() {
                   </span>
                 </div>
 
-                <h1 style={styles.bannerTitle}>
+                <h1 style={styles.bannerTitle} className="cbq-banner-title">
                   TRƯỜNG THPT CAO BÁ QUÁT
                 </h1>
 
-                <h2 style={styles.bannerSubtitle}>
+                <h2 style={styles.bannerSubtitle} className="cbq-banner-sub">
                   TRUNG TÂM ĐIỀU HÀNH KHÔNG GIAN SỐ & CỔNG THÔNG TIN TOÀN TRƯỜNG
                 </h2>
 
-                <div style={styles.taglinePill}>
+                <div style={styles.taglinePill} className="cbq-tagline">
                   <Sparkles size={13} color="#fde047" />
                   <span>Kỷ Nguyên Chuyển Đổi Số Giáo Dục Toàn Diện • Thời Gian Thực 24/7</span>
                 </div>
               </div>
             </div>
 
-            {/* Right: Cyber HUD Telemetry Box */}
-            <div style={styles.bannerRight}>
+            {/* Right: Telemetry & Live Status Box */}
+            <div style={styles.bannerRight} className="cbq-banner-right">
               <div className="cyber-clock-box">
-                <Clock size={16} color="#38bdf8" />
+                <Clock size={16} color="#67e8f9" />
                 <span className="cyber-clock-digits">{liveTime}</span>
               </div>
 
-              <div style={styles.hudBadgeGroup}>
+              <div style={styles.hudBadgeGroup} className="cbq-hud-group">
                 <div className="cyber-badge-live">
                   <span className="cyber-beacon-dot"></span>
                   <span>TRỰC TUYẾN 24/7</span>
                 </div>
                 
-                <div style={styles.hudMiniStats}>
+                <div style={styles.hudMiniStats} className="cbq-hud-stats">
                   <div style={styles.hudStatItem}>
                     <span style={styles.hudStatNum}>34</span>
                     <span style={styles.hudStatLabel}>Lớp Số Hóa</span>
@@ -159,19 +159,37 @@ export default function PublicLayout() {
         </div>
       </header>
 
-      {/* 2. Cyber Glass Navigation Bar */}
-      <nav style={styles.navbar}>
-        <div style={styles.navContainer}>
-          {/* Mobile Hamburger Toggle */}
-          <button 
-            className="mobile-menu-toggle"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? '✖ Đóng Menu' : '☰ Menu Danh Mục Số'}
-          </button>
+      {/* 2. Navigation Bar */}
+      <nav style={styles.navbar} className="cbq-navbar">
+        <div style={styles.navContainer} className="cbq-nav-container">
+          {/* Mobile Top Bar inside Nav: Hamburger Button + Quick Portals */}
+          <div className="mobile-nav-header">
+            <button 
+              className="mobile-menu-toggle"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Menu"
+            >
+              <span style={{ fontSize: '16px' }}>{mobileMenuOpen ? '✖' : '☰'}</span>
+              <span>{mobileMenuOpen ? 'Đóng' : 'Menu'}</span>
+            </button>
 
+            {/* Mobile Compact Portals */}
+            <div className="mobile-portal-quick-btns">
+              <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student compact-btn" title="Cổng Học Sinh">
+                <GraduationCap size={13} /> HS
+              </Link>
+              <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher compact-btn" title="Cổng Giáo Viên">
+                <Briefcase size={13} /> GV
+              </Link>
+              <Link to="/admin" className="premium-nav-btn admin compact-btn" title="Trung Tâm BTC">
+                <ShieldCheck size={13} /> BTC
+              </Link>
+            </div>
+          </div>
+
+          {/* Desktop & Mobile Menu Links */}
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-            <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem}>
+            <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem} onClick={() => setMobileMenuOpen(false)}>
               🏠 Trang chủ
             </Link>
             
@@ -181,6 +199,7 @@ export default function PublicLayout() {
               style={{
                 ...(isActive('/lich-cong-tac') ? styles.navItemHighlightActive : styles.navItemHighlight),
               }}
+              onClick={() => setMobileMenuOpen(false)}
             >
               📅 THỜI KHÓA BIỂU & LỊCH TUẦN
             </Link>
@@ -198,7 +217,7 @@ export default function PublicLayout() {
                   .filter(m => (m.parent_group === 'school' || !m.parent_group) && m.is_active !== false)
                   .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
-                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
                     </Link>
                   ))}
@@ -218,7 +237,7 @@ export default function PublicLayout() {
                   .filter(m => m.parent_group === 'media' && m.is_active !== false)
                   .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
-                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
                     </Link>
                   ))}
@@ -238,16 +257,34 @@ export default function PublicLayout() {
                   .filter(m => m.parent_group === 'anniversary' && m.is_active !== false)
                   .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
                   .map(m => (
-                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item">
+                    <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
                     </Link>
                   ))}
               </div>
             </div>
+
+            {/* In mobile drawer: show large login cards */}
+            <div className="mobile-drawer-portals">
+              <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#86efac', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
+                Cổng Không Gian Số Chuyên Biệt
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
+                  <GraduationCap size={15} /> Học Sinh
+                </Link>
+                <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
+                  <Briefcase size={15} /> Giáo Viên
+                </Link>
+                <Link to="/admin" className="premium-nav-btn admin" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
+                  <ShieldCheck size={15} /> BTC
+                </Link>
+              </div>
+            </div>
           </div>
 
-          {/* Quick Access Portals */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'nowrap' }}>
+          {/* Desktop Quick Access Portals */}
+          <div className="desktop-portal-btns" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'nowrap' }}>
             <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
               <GraduationCap size={15} /> Học Sinh
             </Link>
@@ -261,10 +298,10 @@ export default function PublicLayout() {
         </div>
       </nav>
 
-      {/* 3. High-Tech Cyber Ticker & Status Bar */}
-      <div style={styles.topBar}>
-        <div style={styles.dateInfo}>
-          <Radio size={14} color="#10b981" style={{ animation: 'beacon-pulse 2s infinite' }} />
+      {/* 3. Bright High-Contrast Ticker & Status Bar */}
+      <div style={styles.topBar} className="cbq-topbar">
+        <div style={styles.dateInfo} className="cbq-date-info">
+          <Radio size={14} color="#15803d" style={{ animation: 'beacon-pulse 2s infinite' }} />
           <span>{currentDate}</span>
         </div>
         <div style={styles.marqueeWrapper}>
@@ -275,9 +312,9 @@ export default function PublicLayout() {
       </div>
 
       {/* Main Content Rendered Here */}
-      <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 12px 60px 12px' }}>
+      <main style={{ maxWidth: '1240px', margin: '0 auto', padding: '20px 12px 60px 12px' }}>
         <Outlet />
-      </div>
+      </main>
       
       {/* Smart School AI Chatbot */}
       <ChatbotWidget />
@@ -288,27 +325,27 @@ export default function PublicLayout() {
 const styles = {
   portalContainer: {
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    background: 'radial-gradient(ellipse at 50% 0%, #0d172a 0%, #080d1a 50%, #030712 100%)',
+    background: '#f8fafc',
     minHeight: '100vh',
     paddingBottom: '40px',
     color: '#0f172a'
   },
   banner: {
     position: 'relative',
-    background: 'radial-gradient(ellipse at 80% 0%, rgba(14, 165, 233, 0.22) 0%, transparent 60%), radial-gradient(ellipse at 20% 100%, rgba(16, 185, 129, 0.2) 0%, transparent 50%), linear-gradient(135deg, #030712 0%, #0f172a 50%, #064e3b 100%)',
-    borderBottom: '1px solid rgba(56, 189, 248, 0.25)',
-    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+    background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #0f766e 100%)',
+    borderBottom: '2px solid #34d399',
+    boxShadow: '0 8px 24px rgba(6, 78, 59, 0.25)',
     overflow: 'hidden'
   },
   bannerOverlay: {
-    backgroundImage: 'radial-gradient(rgba(56, 189, 248, 0.12) 1px, transparent 1px)',
+    backgroundImage: 'radial-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px)',
     backgroundSize: '24px 24px',
-    padding: '20px 0'
+    padding: '18px 0'
   },
   bannerInner: {
     maxWidth: '1240px',
     margin: '0 auto',
-    padding: '0 20px',
+    padding: '0 16px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -318,11 +355,16 @@ const styles = {
   bannerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '20px',
-    flex: '1 1 500px'
+    gap: '18px',
+    flex: '1 1 auto'
+  },
+  bannerTextCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '2px'
   },
   mainLogo: {
-    height: '84px',
+    height: '76px',
     width: 'auto',
     objectFit: 'contain',
     borderRadius: '10px',
@@ -332,7 +374,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '8px',
-    marginBottom: '6px',
+    marginBottom: '4px',
     flexWrap: 'wrap'
   },
   superBadge: {
@@ -342,10 +384,10 @@ const styles = {
     fontSize: '11px',
     fontWeight: '800',
     color: '#38bdf8',
-    backgroundColor: 'rgba(14, 165, 233, 0.12)',
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
     padding: '2px 8px',
     borderRadius: '6px',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
+    border: '1px solid rgba(56, 189, 248, 0.4)',
     letterSpacing: '0.5px'
   },
   superBadgeGold: {
@@ -354,64 +396,62 @@ const styles = {
     gap: '4px',
     fontSize: '11px',
     fontWeight: '800',
-    color: '#fde047',
-    backgroundColor: 'rgba(250, 204, 21, 0.12)',
+    color: '#fef08a',
+    backgroundColor: 'rgba(180, 83, 9, 0.45)',
     padding: '2px 8px',
     borderRadius: '6px',
-    border: '1px solid rgba(250, 204, 21, 0.3)',
+    border: '1px solid rgba(250, 204, 21, 0.5)',
     letterSpacing: '0.5px'
   },
   bannerTitle: {
-    background: 'linear-gradient(135deg, #ffffff 0%, #fef08a 60%, #facc15 100%)',
+    background: 'linear-gradient(135deg, #ffffff 0%, #fef9c3 60%, #fde047 100%)',
     WebkitBackgroundClip: 'text',
     WebkitTextFillColor: 'transparent',
-    margin: '0 0 4px 0',
-    fontSize: '25px',
+    margin: '0 0 2px 0',
+    fontSize: '24px',
     fontWeight: '900',
-    letterSpacing: '0.8px',
+    letterSpacing: '0.6px',
     textTransform: 'uppercase',
-    textShadow: '0 0 30px rgba(250, 204, 21, 0.25)'
+    textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
   },
   bannerSubtitle: {
-    background: 'linear-gradient(90deg, #38bdf8 0%, #34d399 100%)',
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    margin: '0 0 8px 0',
-    fontSize: '14.5px',
+    color: '#a7f3d0',
+    margin: '0 0 6px 0',
+    fontSize: '13.5px',
     fontWeight: '800',
-    letterSpacing: '0.5px',
+    letterSpacing: '0.4px',
     textTransform: 'uppercase'
   },
   taglinePill: {
     display: 'inline-flex',
     alignItems: 'center',
     gap: '6px',
-    fontSize: '12px',
-    color: '#e2e8f0',
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    padding: '4px 12px',
+    fontSize: '11.5px',
+    color: '#f1f5f9',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    padding: '3px 10px',
     borderRadius: '20px',
-    border: '1px solid rgba(255, 255, 255, 0.12)'
+    border: '1px solid rgba(255, 255, 255, 0.2)'
   },
   bannerRight: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: '10px'
+    gap: '8px'
   },
   hudBadgeGroup: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-end',
-    gap: '8px'
+    gap: '6px'
   },
   hudMiniStats: {
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    backgroundColor: 'rgba(15, 23, 42, 0.65)',
-    border: '1px solid rgba(56, 189, 248, 0.2)',
-    padding: '6px 14px',
+    backgroundColor: 'rgba(6, 78, 59, 0.65)',
+    border: '1px solid rgba(52, 211, 153, 0.35)',
+    padding: '5px 12px',
     borderRadius: '10px',
     backdropFilter: 'blur(8px)'
   },
@@ -421,28 +461,27 @@ const styles = {
     alignItems: 'center'
   },
   hudStatNum: {
-    fontSize: '14px',
+    fontSize: '13.5px',
     fontWeight: '900',
-    color: '#38bdf8',
+    color: '#67e8f9',
     lineHeight: 1.1
   },
   hudStatLabel: {
-    fontSize: '10px',
-    color: '#94a3b8',
+    fontSize: '9.5px',
+    color: '#d1fae5',
     textTransform: 'uppercase',
     fontWeight: '700'
   },
   hudStatDivider: {
     width: '1px',
-    height: '20px',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)'
+    height: '18px',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)'
   },
   navbar: {
-    background: 'linear-gradient(90deg, #022c22 0%, #064e3b 40%, #0f172a 100%)',
-    borderTop: '1px solid rgba(56, 189, 248, 0.2)',
-    borderBottom: '2px solid rgba(56, 189, 248, 0.35)',
-    boxShadow: '0 8px 25px rgba(0, 0, 0, 0.5)',
-    backdropFilter: 'blur(16px)',
+    background: 'linear-gradient(90deg, #14532d 0%, #166534 50%, #15803d 100%)',
+    borderTop: '1px solid rgba(255, 255, 255, 0.15)',
+    borderBottom: '2px solid #22c55e',
+    boxShadow: '0 4px 15px rgba(20, 83, 45, 0.2)',
     position: 'sticky',
     top: 0,
     zIndex: 900
@@ -457,13 +496,13 @@ const styles = {
     flexWrap: 'nowrap'
   },
   navItem: {
-    color: '#f8fafc',
+    color: '#ffffff',
     textDecoration: 'none',
-    padding: '13px 14px',
+    padding: '12px 14px',
     fontSize: '13.5px',
     fontWeight: '700',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
     transition: 'all 0.2s ease',
     display: 'inline-flex',
     alignItems: 'center',
@@ -471,15 +510,15 @@ const styles = {
     userSelect: 'none'
   },
   navItemActive: {
-    color: '#34d399',
+    color: '#ffffff',
     textDecoration: 'none',
-    padding: '13px 14px',
+    padding: '12px 14px',
     fontSize: '13.5px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(6, 78, 59, 0.75)',
-    boxShadow: 'inset 0 -2px 0 #34d399',
+    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+    backgroundColor: '#047857',
+    boxShadow: 'inset 0 -3px 0 #fde047',
     display: 'inline-flex',
     alignItems: 'center',
     cursor: 'pointer',
@@ -488,12 +527,12 @@ const styles = {
   navItemHighlight: {
     color: '#fef08a',
     textDecoration: 'none',
-    padding: '13px 14px',
+    padding: '12px 14px',
     fontSize: '13.5px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-    backgroundColor: 'rgba(234, 179, 8, 0.1)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
+    backgroundColor: 'rgba(234, 179, 8, 0.15)',
     transition: 'all 0.2s ease',
     display: 'inline-flex',
     alignItems: 'center',
@@ -502,56 +541,57 @@ const styles = {
   navItemHighlightActive: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '13px 14px',
+    padding: '12px 14px',
     fontSize: '13.5px',
     fontWeight: '900',
     whiteSpace: 'nowrap',
-    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.12)',
     background: 'linear-gradient(135deg, #b45309, #d97706)',
-    boxShadow: '0 0 15px rgba(217, 119, 6, 0.5), inset 0 -2px 0 #fde047',
+    boxShadow: '0 0 12px rgba(217, 119, 6, 0.4), inset 0 -3px 0 #fde047',
     display: 'inline-flex',
     alignItems: 'center',
     cursor: 'pointer'
   },
   dropdownContent: {
-    backgroundColor: '#091e17',
-    border: '1px solid rgba(56, 189, 248, 0.3)',
-    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.6)',
+    backgroundColor: '#064e3b',
+    border: '1.5px solid #34d399',
+    boxShadow: '0 15px 35px rgba(0, 0, 0, 0.25)',
     borderRadius: '0 0 10px 10px'
   },
   topBar: {
     maxWidth: '1240px',
     margin: '0 auto',
-    backgroundColor: '#050a14',
-    border: '1px solid rgba(56, 189, 248, 0.2)',
+    backgroundColor: '#ffffff',
+    border: '1px solid #bbf7d0',
     borderTop: 'none',
     display: 'flex',
     alignItems: 'center',
     fontSize: '13px',
-    boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)'
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
   },
   dateInfo: {
-    padding: '8px 16px',
-    color: '#94a3b8',
-    borderRight: '1px solid rgba(56, 189, 248, 0.2)',
-    backgroundColor: 'rgba(15, 23, 42, 0.95)',
+    padding: '7px 14px',
+    color: '#166534',
+    borderRight: '1px solid #bbf7d0',
+    backgroundColor: '#f0fdf4',
     whiteSpace: 'nowrap',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
     fontSize: '12.5px',
     fontWeight: '700'
   },
   marqueeWrapper: {
     flex: 1,
-    padding: '0 15px',
+    padding: '0 12px',
     overflow: 'hidden'
   },
   marqueeText: {
-    color: '#38bdf8',
+    color: '#15803d',
     fontWeight: '700',
     fontSize: '12.5px',
-    letterSpacing: '0.4px'
+    letterSpacing: '0.3px'
   }
 };
+
 
