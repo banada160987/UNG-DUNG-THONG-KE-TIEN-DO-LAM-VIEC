@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import SignaturePadModal from './SignaturePadModal';
+import { exportDepartmentSummaryToWordDecree30 } from '../utils/decree30KpiWord';
 
 export default function MonthlyDepartmentSummaryDakLakModal({
   isOpen,
@@ -150,6 +151,19 @@ export default function MonthlyDepartmentSummaryDakLakModal({
     XLSX.writeFile(wb, `Tong_Hop_Danh_Gia_KPI_${departmentName.replace(/\s+/g, '_')}_${evaluationMonth}_${evalYearNum}.xlsx`);
   };
 
+  const handleExportWord = () => {
+    exportDepartmentSummaryToWordDecree30({
+      departmentName,
+      evaluationMonth,
+      evalYear: evalYearNum,
+      reportDate,
+      managerName,
+      managerSignature,
+      rows: mergedRows,
+      stats: summaryStats
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -169,9 +183,9 @@ export default function MonthlyDepartmentSummaryDakLakModal({
       <div style={{
         backgroundColor: '#ffffff',
         borderRadius: '20px',
-        maxWidth: '950px',
+        maxWidth: '1000px',
         width: '100%',
-        maxHeight: '92vh',
+        maxHeight: '94vh',
         display: 'flex',
         flexDirection: 'column',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
@@ -181,28 +195,51 @@ export default function MonthlyDepartmentSummaryDakLakModal({
         
         {/* MODAL HEADER (Hidden on Print) */}
         <div className="no-print" style={{
-          padding: '16px 24px',
+          padding: '14px 20px',
           background: 'linear-gradient(135deg, #0f172a 0%, #0369a1 100%)',
           color: 'white',
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center'
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ padding: '8px', background: 'rgba(255,255,255,0.15)', borderRadius: '10px' }}>
-              <FileText size={22} color="#38bdf8" />
+              <FileText size={20} color="#38bdf8" />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold' }}>
-                Bảng Tổng Hợp Đánh Giá, Xếp Loại Hàng Tháng Của Tổ (Chuẩn Sở GD&ĐT Đắk Lắk)
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold' }}>
+                Bảng Tổng Hợp Đánh Giá, Xếp Loại Hàng Tháng (Chuẩn Nghị Định 30)
               </h3>
-              <p style={{ margin: 0, fontSize: '12.5px', color: '#bae6fd' }}>
+              <p style={{ margin: 0, fontSize: '12px', color: '#bae6fd' }}>
                 Đơn vị: <strong>{departmentName}</strong> • {evaluationMonth}/{evalYearNum} (Năm học {schoolYear})
               </p>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              onClick={handleExportWord}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '7px 12px',
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '12.5px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(37,99,235,0.3)'
+              }}
+              title="Xuất văn bản Word (.doc) căn lề và định dạng chuẩn Nghị định 30/2020/NĐ-CP"
+            >
+              <Download size={15} /> Xuất Word (NĐ 30)
+            </button>
             <button
               type="button"
               onClick={handleExportExcel}
@@ -210,17 +247,17 @@ export default function MonthlyDepartmentSummaryDakLakModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '8px 14px',
+                padding: '7px 12px',
                 background: '#16a34a',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 fontWeight: 'bold',
                 cursor: 'pointer'
               }}
             >
-              <FileSpreadsheet size={16} /> Xuất Excel
+              <FileSpreadsheet size={15} /> Excel
             </button>
             <button
               type="button"
@@ -229,17 +266,17 @@ export default function MonthlyDepartmentSummaryDakLakModal({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
-                padding: '8px 14px',
+                padding: '7px 12px',
                 background: '#0284c7',
                 color: 'white',
                 border: 'none',
                 borderRadius: '8px',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 fontWeight: 'bold',
                 cursor: 'pointer'
               }}
             >
-              <Printer size={16} /> In Bảng Tổng Hợp A4
+              <Printer size={15} /> In A4
             </button>
             <button
               type="button"
@@ -249,96 +286,98 @@ export default function MonthlyDepartmentSummaryDakLakModal({
                 border: 'none',
                 color: 'white',
                 cursor: 'pointer',
-                padding: '8px',
+                padding: '7px',
                 borderRadius: '50%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
         </div>
 
-        {/* MODAL BODY (Print Paper) */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '24px', background: '#f8fafc' }}>
+        {/* MODAL BODY (Print Paper A4 Standard) */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '20px', background: '#e2e8f0', display: 'flex', justifyContent: 'center' }}>
           
           <div ref={printRef} className="daklak-summary-print-paper" style={{
             background: 'white',
-            maxWidth: '850px',
-            margin: '0 auto',
-            padding: '36px 40px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
-            borderRadius: '8px',
+            width: '100%',
+            maxWidth: '794px', // 210mm at 96dpi
+            minHeight: '1123px', // 297mm at 96dpi
+            padding: '40px 48px', // Standard margins (Top 20mm, Left 30mm, Right 15mm, Bottom 20mm)
+            boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            borderRadius: '4px',
             fontFamily: '"Times New Roman", Times, serif',
             color: '#000000',
-            lineHeight: 1.45
+            lineHeight: 1.35,
+            boxSizing: 'border-box'
           }}>
 
-            {/* Header Quốc hiệu & Đơn vị */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+            {/* Header Quốc hiệu & Đơn vị (Chuẩn NĐ 30) */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '14px', tableLayout: 'fixed' }}>
               <tbody>
                 <tr>
-                  <td style={{ width: '45%', textAlign: 'center', verticalAlign: 'top', fontSize: '13pt', fontWeight: 'bold' }}>
+                  <td style={{ width: '45%', textAlign: 'center', verticalAlign: 'top', fontSize: '12pt', fontWeight: 'bold' }}>
                     SỞ GD&ĐT TỈNH ĐẮK LẮK<br />
                     <span style={{ textDecoration: 'underline' }}>TRƯỜNG THPT CAO BÁ QUÁT</span>
                   </td>
-                  <td style={{ width: '55%', textAlign: 'center', verticalAlign: 'top', fontSize: '12pt', fontWeight: 'bold' }}>
+                  <td style={{ width: '55%', textAlign: 'center', verticalAlign: 'top', fontSize: '11pt', fontWeight: 'bold' }}>
                     CỘNG HOÀ XÃ HỘI CHỦ NGHĨA VIỆT NAM<br />
-                    <span style={{ fontSize: '13pt', textDecoration: 'underline' }}>Độc lập - Tự do - Hạnh phúc</span>
+                    <span style={{ fontSize: '12pt', textDecoration: 'underline' }}>Độc lập - Tự do - Hạnh phúc</span>
                   </td>
                 </tr>
               </tbody>
             </table>
 
             {/* Document Title */}
-            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '15pt', fontWeight: 'bold', margin: '0 0 6px 0', textTransform: 'uppercase' }}>
+            <div style={{ textAlign: 'center', marginBottom: '18px' }}>
+              <h2 style={{ fontSize: '14pt', fontWeight: 'bold', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
                 TỔNG HỢP ĐÁNH GIÁ, XẾP LOẠI HÀNG THÁNG
               </h2>
-              <div style={{ fontSize: '13pt', fontWeight: 'bold', marginBottom: '6px' }}>
+              <div style={{ fontSize: '12.5pt', fontWeight: 'bold', marginBottom: '4px' }}>
                 Tháng {monthNum}/{evalYearNum}
               </div>
-              <div style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase' }}>
+              <div style={{ fontSize: '12.5pt', fontWeight: 'bold', textTransform: 'uppercase' }}>
                 TỔ: {departmentName.replace('Tổ ', '')}
               </div>
             </div>
 
-            {/* Main Summary Table */}
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12pt', border: '1px solid black', marginBottom: '20px' }}>
+            {/* Main Summary Table (Fixed Layout No Overflow) */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11.5pt', border: '1px solid black', marginBottom: '16px', tableLayout: 'fixed' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', fontWeight: 'bold', textAlign: 'center' }}>
-                  <th style={{ border: '1px solid black', padding: '8px 4px', width: '40px' }}>TT</th>
-                  <th style={{ border: '1px solid black', padding: '8px 10px', minWidth: '180px' }}>Họ và tên</th>
-                  <th style={{ border: '1px solid black', padding: '8px 6px', width: '70px' }}>Chức vụ</th>
-                  <th style={{ border: '1px solid black', padding: '8px 8px', width: '130px' }}>
+                  <th style={{ border: '1px solid black', padding: '6px 2px', width: '6%' }}>TT</th>
+                  <th style={{ border: '1px solid black', padding: '6px 4px', width: '28%' }}>Họ và tên</th>
+                  <th style={{ border: '1px solid black', padding: '6px 2px', width: '12%' }}>Chức vụ</th>
+                  <th style={{ border: '1px solid black', padding: '6px 4px', width: '18%' }}>
                     Đối tượng<br />
-                    <span style={{ fontSize: '10.5pt', fontWeight: 'normal' }}>(viên chức, HĐ 68, hợp đồng)</span>
+                    <span style={{ fontSize: '9.5pt', fontWeight: 'normal' }}>(viên chức, HĐ 68)</span>
                   </th>
-                  <th style={{ border: '1px solid black', padding: '8px 10px', minWidth: '170px' }}>
+                  <th style={{ border: '1px solid black', padding: '6px 4px', width: '24%' }}>
                     Mức đánh giá, xếp loại<br />
                     tháng {monthNum}/{evalYearNum}
                   </th>
-                  <th style={{ border: '1px solid black', padding: '8px 6px', width: '80px' }}>Ghi chú</th>
+                  <th style={{ border: '1px solid black', padding: '6px 2px', width: '12%' }}>Ghi chú</th>
                 </tr>
               </thead>
               <tbody>
                 {mergedRows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ border: '1px solid black', padding: '20px', textAlign: 'center', color: '#64748b' }}>
+                    <td colSpan={6} style={{ border: '1px solid black', padding: '16px', textAlign: 'center', color: '#64748b' }}>
                       Chưa có danh sách giáo viên trong tổ này.
                     </td>
                   </tr>
                 ) : (
                   mergedRows.map(row => (
                     <tr key={row.stt}>
-                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '6px' }}>{row.stt}</td>
-                      <td style={{ border: '1px solid black', padding: '6px 10px', fontWeight: 'bold' }}>{row.name}</td>
-                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '6px' }}>{row.title}</td>
-                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '6px' }}>{row.targetType}</td>
-                      <td style={{ border: '1px solid black', padding: '6px 10px', textAlign: 'center' }}>{row.rank}</td>
-                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '6px' }}>{row.notes}</td>
+                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '5px 2px' }}>{row.stt}</td>
+                      <td style={{ border: '1px solid black', padding: '5px 6px', fontWeight: 'bold', wordBreak: 'break-word' }}>{row.name}</td>
+                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '5px 2px' }}>{row.title}</td>
+                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '5px 2px' }}>{row.targetType}</td>
+                      <td style={{ border: '1px solid black', padding: '5px 4px', textAlign: 'center', wordBreak: 'break-word' }}>{row.rank}</td>
+                      <td style={{ border: '1px solid black', textAlign: 'center', padding: '5px 2px', wordBreak: 'break-word' }}>{row.notes}</td>
                     </tr>
                   ))
                 )}
@@ -346,14 +385,14 @@ export default function MonthlyDepartmentSummaryDakLakModal({
             </table>
 
             {/* Statistics & Signature Layout */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginTop: '20px', fontSize: '12pt' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginTop: '16px', fontSize: '11.5pt' }}>
               
               {/* Left Column: Breakdown Statistics */}
               <div>
-                <div style={{ fontStyle: 'italic', fontWeight: 'bold', marginBottom: '8px' }}>
+                <div style={{ fontStyle: 'italic', fontWeight: 'bold', marginBottom: '6px' }}>
                   Tổng số: {String(summaryStats.total).padStart(2, '0')} trong đó:
                 </div>
-                <div style={{ paddingLeft: '8px', lineHeight: 1.6 }}>
+                <div style={{ paddingLeft: '4px', lineHeight: 1.5 }}>
                   <div>1. Hoàn thành xuất sắc nhiệm vụ: <strong>{String(summaryStats.excellent).padStart(2, '0')}</strong></div>
                   <div>2. Hoàn thành tốt nhiệm vụ: <strong>{String(summaryStats.good).padStart(2, '0')}</strong></div>
                   <div>3. Hoàn thành nhiệm vụ: <strong>{String(summaryStats.accomplished).padStart(2, '0')}</strong></div>
@@ -364,22 +403,22 @@ export default function MonthlyDepartmentSummaryDakLakModal({
 
               {/* Right Column: TTCM Signature */}
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontStyle: 'italic', marginBottom: '6px' }}>
+                <div style={{ fontStyle: 'italic', marginBottom: '4px' }}>
                   {reportDate}
                 </div>
-                <div style={{ fontWeight: 'bold', fontSize: '13pt' }}>Tổ trưởng</div>
-                <div style={{ fontSize: '11pt', fontStyle: 'italic', marginBottom: '8px' }}>(Ký và ghi rõ họ tên)</div>
+                <div style={{ fontWeight: 'bold', fontSize: '12pt' }}>Tổ trưởng</div>
+                <div style={{ fontSize: '10.5pt', fontStyle: 'italic', marginBottom: '6px' }}>(Ký và ghi rõ họ tên)</div>
 
                 {/* Digital Signature Container */}
-                <div style={{ minHeight: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ minHeight: '70px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   {managerSignature ? (
                     <div>
                       <img 
                         src={managerSignature} 
                         alt="Chữ ký tổ trưởng" 
-                        style={{ maxHeight: '75px', maxWidth: '200px', objectFit: 'contain' }} 
+                        style={{ maxHeight: '65px', maxWidth: '180px', objectFit: 'contain' }} 
                       />
-                      <div className="no-print" style={{ marginTop: '4px' }}>
+                      <div className="no-print" style={{ marginTop: '2px' }}>
                         <button
                           type="button"
                           onClick={() => setSigModalOpen(true)}
@@ -398,7 +437,7 @@ export default function MonthlyDepartmentSummaryDakLakModal({
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          padding: '6px 14px',
+                          padding: '6px 12px',
                           background: '#e0f2fe',
                           color: '#0284c7',
                           border: '1px dashed #0284c7',
@@ -414,7 +453,7 @@ export default function MonthlyDepartmentSummaryDakLakModal({
                   )}
                 </div>
 
-                <div style={{ fontWeight: 'bold', fontSize: '13pt', color: '#002277', marginTop: '6px' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '12pt', color: '#002277', marginTop: '4px' }}>
                   {managerName}
                 </div>
               </div>
@@ -439,9 +478,13 @@ export default function MonthlyDepartmentSummaryDakLakModal({
         />
       )}
 
-      {/* CSS Print Styles */}
+      {/* CSS Print Styles for A4 Full Page */}
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 20mm 15mm 20mm 30mm;
+          }
           body * {
             visibility: hidden;
           }
@@ -464,9 +507,10 @@ export default function MonthlyDepartmentSummaryDakLakModal({
           }
           .daklak-summary-print-paper {
             box-shadow: none !important;
-            padding: 20mm 15mm !important;
+            padding: 0 !important;
             width: 100% !important;
             max-width: 100% !important;
+            border-radius: 0 !important;
           }
         }
       `}} />

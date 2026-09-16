@@ -1129,10 +1129,42 @@ export default function TeacherKPIEvaluation() {
           </button>
         </div>
 
-        {/* TAB 1: SCORING TABLE */}
+        {/* ACTIVE TAB 1: MAIN SCORING MATRIX */}
         {activeTab === 'scoring' && (
-          <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+          <div style={{ background: 'white', borderRadius: '16px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             
+            {/* LOGGED-IN TEACHER QUICK BANNER */}
+            {currentTeacher?.full_name && (
+              <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', borderBottom: '1px solid #bfdbfe', padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#3b82f6', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Award size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '14.5px' }}>
+                      Phiếu Đánh Giá Cá Nhân: {currentTeacher.full_name} ({selectedMonth}/{schoolYear})
+                    </div>
+                    <div style={{ fontSize: '12.5px', color: '#2563eb' }}>
+                      Tự đánh giá, vẽ chữ ký trên màn hình, in 2 trang A4 & xuất file Word chuẩn Nghị định 30/2020/NĐ-CP
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    const myItem = evaluations.find(e => e.teacher_name === currentTeacher.full_name) || {
+                      teacher_name: currentTeacher.full_name,
+                      teacher_title: currentTeacher.title || 'Giáo viên',
+                      department_name: selectedDept
+                    };
+                    setSelectedTeacherForDakLakModal(myItem);
+                  }}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(29,78,216,0.3)' }}
+                >
+                  <PenTool size={14} /> Mở Phiếu Đánh Giá Của Bạn (Ký Tên & Xuất Word)
+                </button>
+              </div>
+            )}
+
             {/* Search & Sub Filters */}
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div style={{ position: 'relative', width: '300px' }}>
