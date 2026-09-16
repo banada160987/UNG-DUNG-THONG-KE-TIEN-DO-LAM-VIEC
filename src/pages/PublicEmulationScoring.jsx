@@ -1,6 +1,10 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { Award, ShieldAlert, CheckCircle2, AlertTriangle, Calendar, Plus, Clock, Filter, Send } from 'lucide-react';
+import { 
+  Award, ShieldAlert, CheckCircle2, AlertTriangle, Calendar, Plus, 
+  Clock, Filter, Send, Trash2, Home, Sparkles, User, BookOpen, Layers, Check, Search
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const DEFAULT_CLASSES = [
   '10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12',
@@ -9,15 +13,42 @@ const DEFAULT_CLASSES = [
 ];
 
 const DEFAULT_CRITERIA = [
-  { id: '1', category: 'Nếp sống & Đồng phục', title: 'Không đeo thẻ / Không mặc đồng phục', score_change: -5 },
+  // Nếp sống & Đồng phục
+  { id: '1', category: 'Nếp sống & Đồng phục', title: 'Không đeo thẻ học sinh / Không mặc đồng phục', score_change: -5 },
   { id: '2', category: 'Nếp sống & Đồng phục', title: 'Đi học muộn / Nắm tóc, trang phục sai quy định', score_change: -5 },
-  { id: '3', category: 'Vệ sinh & Cảnh quan', title: 'Vệ sinh lớp / sân trường muộn hoặc bẩn', score_change: -5 },
-  { id: '4', category: 'Vệ sinh & Cảnh quan', title: 'Quên tắt điện, quạt khi ra khỏi lớp', score_change: -5 },
-  { id: '5', category: 'Học tập & Truy bài', title: 'Truy bài đầu giờ mất trật tự', score_change: -5 },
-  { id: '6', category: 'Sĩ số & Kỷ luật', title: 'Học sinh bỏ tiết / trốn học', score_change: -10 },
-  { id: '7', category: 'Sĩ số & Kỷ luật', title: 'Học sinh vắng không lý do', score_change: -5 },
-  { id: '8', category: 'Khen thưởng & Xung kích', title: 'Tuyên dương tập thể / Chi đoàn xuất sắc', score_change: 10 },
-  { id: '9', category: 'Khen thưởng & Xung kích', title: 'Đạt nhiều điểm 9 - 10 trong tuần', score_change: 5 }
+  { id: '3', category: 'Nếp sống & Đồng phục', title: 'Sử dụng điện thoại trong giờ học không được phép', score_change: -5 },
+  
+  // Vệ sinh & Cảnh quan
+  { id: '4', category: 'Vệ sinh & Cảnh quan', title: 'Vệ sinh lớp / sân trường muộn hoặc bẩn', score_change: -5 },
+  { id: '5', category: 'Vệ sinh & Cảnh quan', title: 'Quên tắt điện, quạt, máy chiếu khi ra khỏi lớp', score_change: -5 },
+  { id: '6', category: 'Vệ sinh & Cảnh quan', title: 'Làm hư hỏng bàn ghế, cơ sở vật chất phòng học', score_change: -10 },
+  
+  // Học tập & Truy bài
+  { id: '7', category: 'Học tập & Truy bài', title: 'Truy bài đầu giờ mất trật tự', score_change: -5 },
+  { id: '8', category: 'Học tập & Truy bài', title: 'Học sinh không chuẩn bị bài / vi phạm giờ học', score_change: -5 },
+  
+  // Sĩ số & Kỷ luật
+  { id: '9', category: 'Sĩ số & Kỷ luật', title: 'Học sinh bỏ tiết / trốn học / ra ngoài không phép', score_change: -10 },
+  { id: '10', category: 'Sĩ số & Kỷ luật', title: 'Học sinh vắng học không có đơn xin phép', score_change: -5 },
+  
+  // Hoạt động Câu Lạc Bộ
+  { id: '11', category: 'Hoạt động Câu Lạc Bộ', title: 'Học sinh tham gia sinh hoạt CLB tích cực & xuất sắc', score_change: 2 },
+  { id: '12', category: 'Hoạt động Câu Lạc Bộ', title: 'Học sinh vắng sinh hoạt CLB không phép', score_change: -2 },
+  
+  // Khen thưởng & Xung kích
+  { id: '13', category: 'Khen thưởng & Xung kích', title: 'Tuyên dương tập thể Chi đoàn xuất sắc tuần', score_change: 10 },
+  { id: '14', category: 'Khen thưởng & Xung kích', title: 'Đạt nhiều hoa điểm tốt (Điểm 9 - 10) trong tuần', score_change: 5 },
+  { id: '15', category: 'Khen thưởng & Xung kích', title: 'Tham gia xung kích tình nguyện / Đội Cờ đỏ tốt', score_change: 5 }
+];
+
+const CATEGORIES = [
+  'Tất Cả',
+  'Nếp sống & Đồng phục',
+  'Học tập & Truy bài',
+  'Vệ sinh & Cảnh quan',
+  'Sĩ số & Kỷ luật',
+  'Hoạt động Câu Lạc Bộ',
+  'Khen thưởng & Xung kích'
 ];
 
 export default function PublicEmulationScoring() {
@@ -25,12 +56,18 @@ export default function PublicEmulationScoring() {
   const [criteriaList, setCriteriaList] = useState(DEFAULT_CRITERIA);
   const [todayLogs, setTodayLogs] = useState([]);
   
+  // Filter category state
+  const [selectedCategory, setSelectedCategory] = useState('Tất Cả');
+  const [selectedGrade, setSelectedGrade] = useState('ALL');
+
   // Form State
   const [weekNumber, setWeekNumber] = useState(1);
   const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedCriteria, setSelectedCriteria] = useState(DEFAULT_CRITERIA[0]);
   const [scoreChange, setScoreChange] = useState(-5);
+  const [studentName, setStudentName] = useState('');
+  const [studentCode, setStudentCode] = useState('');
   const [reasonNote, setReasonNote] = useState('');
   const [reporterName, setReporterName] = useState('Đội Cờ Đỏ Trực Tuần');
 
@@ -43,7 +80,7 @@ export default function PublicEmulationScoring() {
 
   async function fetchInitialData() {
     try {
-      // 1. Fetch criteria list
+      // 1. Fetch criteria list from DB
       const criteriaRes = await supabase.from('cbq_emulation_criteria').select('*').eq('is_active', true);
       if (!criteriaRes.error && criteriaRes.data && criteriaRes.data.length > 0) {
         setCriteriaList(criteriaRes.data);
@@ -51,15 +88,7 @@ export default function PublicEmulationScoring() {
         setScoreChange(criteriaRes.data[0].score_change);
       }
 
-      // 2. Tải danh sách các Lớp (Cách 02 - siêu nhẹ 0.5KB)
-      const defaultClasses = [];
-      ['10', '11', '12'].forEach(g => {
-        for (let i = 1; i <= 15; i++) defaultClasses.push(`${g}A${i}`);
-      });
-      setClassList(defaultClasses);
-      if (defaultClasses.length > 0) setSelectedClass(defaultClasses[0]);
-
-      // 3. Fetch today's logs
+      // 2. Fetch today's logs
       fetchTodayLogs();
     } catch (err) {
       console.warn("Dùng dữ liệu tiêu chí mặc định:", err);
@@ -89,10 +118,21 @@ export default function PublicEmulationScoring() {
 
   const getGradeLevel = (clsName) => {
     if (!clsName) return 'Khối 10';
-    if (clsName.includes('11')) return 'Khối 11';
-    if (clsName.includes('12')) return 'Khối 12';
+    const clean = String(clsName).trim().toUpperCase();
+    if (/^12|12[A-Z]/i.test(clean)) return 'Khối 12';
+    if (/^11|11[A-Z]/i.test(clean)) return 'Khối 11';
     return 'Khối 10';
   };
+
+  const filteredCriteria = useMemo(() => {
+    if (selectedCategory === 'Tất Cả') return criteriaList;
+    return criteriaList.filter(c => c.category === selectedCategory);
+  }, [criteriaList, selectedCategory]);
+
+  const filteredClasses = useMemo(() => {
+    if (selectedGrade === 'ALL') return classList;
+    return classList.filter(c => getGradeLevel(c) === selectedGrade);
+  }, [classList, selectedGrade]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,11 +144,15 @@ export default function PublicEmulationScoring() {
       log_date: logDate,
       student_class: selectedClass,
       grade_level: getGradeLevel(selectedClass),
-      criteria_title: selectedCriteria?.title || 'Vi phạm nếp sống',
+      criteria_title: selectedCriteria?.title || 'Ghi nhận nề nếp',
       category: selectedCriteria?.category || 'Chung',
       score_change: Number(scoreChange) || -5,
-      reason: reasonNote.trim(),
-      reporter_name: reporterName.trim() || 'Đội Cờ Đỏ'
+      student_name: studentName.trim() || null,
+      student_code: studentCode.trim() || null,
+      reason: reasonNote.trim() || null,
+      reason_note: reasonNote.trim() || null,
+      reporter_name: reporterName.trim() || 'Đội Cờ Đỏ Trực Tuần',
+      status: 'approved'
     };
 
     try {
@@ -126,6 +170,8 @@ export default function PublicEmulationScoring() {
 
       setSuccessMsg(`🎉 Đã ghi nhận ${scoreChange > 0 ? 'điểm cộng' : 'điểm trừ'} (${scoreChange > 0 ? '+' : ''}${scoreChange}đ) cho lớp ${selectedClass}!`);
       setReasonNote('');
+      setStudentName('');
+      setStudentCode('');
     } catch (err) {
       alert("Lỗi khi ghi nhận: " + err.message);
     } finally {
@@ -133,189 +179,418 @@ export default function PublicEmulationScoring() {
     }
   };
 
+  const handleDeleteLog = async (id) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa bản ghi nề nếp này?")) return;
+    try {
+      await supabase.from('cbq_emulation_logs').delete().eq('id', id);
+      setTodayLogs(todayLogs.filter(l => l.id !== id));
+    } catch (err) {
+      alert("Lỗi: " + err.message);
+    }
+  };
+
   return (
-    <div style={styles.container}>
-      {/* HEADER BANNER */}
-      <div style={styles.headerCard}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={styles.iconCircle}>
-            <Award size={32} color="#ffffff" />
-          </div>
-          <div>
-            <h2 style={styles.pageTitle}>SỔ CHẤM ĐIỂM THI ĐUA TRỰC TUẦN</h2>
-            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Cổng ghi nhận vi phạm & khen thưởng dành cho Đội Cờ đỏ / GV Trực tuần</p>
-          </div>
-        </div>
-      </div>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '24px 16px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1e293b' }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
 
-      <div style={styles.layoutGrid}>
-        {/* LEFT COLUMN: SCORING FORM */}
-        <form onSubmit={handleSubmit} style={styles.formCard}>
-          <h3 style={styles.formTitle}>📝 Nhập Điểm Trừ / Điểm Thưởng</h3>
-
-          {successMsg && (
-            <div style={styles.successBanner}>
-              <CheckCircle2 size={18} color="#166534" />
-              <span>{successMsg}</span>
+        {/* 1. HEADER BANNER */}
+        <div style={{
+          background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)',
+          borderRadius: '20px',
+          padding: '24px 28px',
+          color: '#ffffff',
+          boxShadow: '0 10px 25px -5px rgba(30,27,75,0.3)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          marginBottom: '24px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '14px',
+              backgroundColor: '#4338ca',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 4px 14px rgba(67,56,202,0.4)',
+              border: '2px solid rgba(255,255,255,0.2)'
+            }}>
+              <Award size={28} />
             </div>
-          )}
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '15px' }}>
             <div>
-              <label style={styles.label}>Tuần học thứ (*)</label>
-              <select value={weekNumber} onChange={e => setWeekNumber(e.target.value)} style={styles.input}>
-                {Array.from({ length: 36 }, (_, i) => i + 1).map(w => (
-                  <option key={w} value={w}>Tuần {w}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={styles.label}>Ngày chấm (*)</label>
-              <input type="date" value={logDate} onChange={e => setLogDate(e.target.value)} style={styles.input} />
+              <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#ffffff' }}>
+                CỔNG CHẤM ĐIỂM THI ĐUA & NỀ NẾP TRỰC TUẦN
+              </h1>
+              <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#c7d2fe' }}>
+                Trường THPT Cao Bá Quát • Dành cho Đội Cờ Đỏ, Đoàn Trường, Giám Thị & BCN Câu Lạc Bộ
+              </p>
             </div>
           </div>
 
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ ...styles.label, color: '#be123c', fontSize: '14px' }}>Lớp học chấm (*):</label>
-            <select 
-              value={selectedClass} 
-              onChange={e => setSelectedClass(e.target.value)} 
-              style={{ ...styles.input, fontWeight: 'bold', fontSize: '15px', color: '#be123c', backgroundColor: '#fff1f2', borderColor: '#fca5a5' }}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <Link
+              to="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                backgroundColor: 'rgba(255,255,255,0.15)',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: '700',
+                fontSize: '13px',
+                border: '1px solid rgba(255,255,255,0.25)'
+              }}
             >
-              {classList.map(cls => (
-                <option key={cls} value={cls}>Lớp {cls} ({getGradeLevel(cls)})</option>
-              ))}
-            </select>
+              <Home size={16} /> Trang Chủ
+            </Link>
           </div>
-
-          {/* QUICK CRITERIA SELECTION BUTTONS */}
-          <div style={{ marginBottom: '18px' }}>
-            <label style={styles.label}>Chọn Tiêu chí vi phạm / khen thưởng (*):</label>
-            <div style={styles.criteriaGrid}>
-              {criteriaList.map(c => (
-                <div 
-                  key={c.id}
-                  onClick={() => handleSelectCriteria(c)}
-                  style={{
-                    ...styles.criteriaItem,
-                    borderColor: selectedCriteria?.id === c.id ? '#be123c' : '#e2e8f0',
-                    backgroundColor: selectedCriteria?.id === c.id ? '#fff1f2' : '#f8fafc'
-                  }}
-                >
-                  <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: c.score_change < 0 ? '#dc2626' : '#166534' }}>
-                    {c.score_change < 0 ? '🔴' : '🟢'} {c.title}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{c.category}</span>
-                    <strong style={{ color: c.score_change < 0 ? '#dc2626' : '#166534' }}>
-                      {c.score_change > 0 ? '+' : ''}{c.score_change}đ
-                    </strong>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px', marginBottom: '15px' }}>
-            <div>
-              <label style={styles.label}>Số điểm (+ / -)</label>
-              <input 
-                type="number" 
-                value={scoreChange} 
-                onChange={e => setScoreChange(e.target.value)} 
-                style={{ ...styles.input, fontWeight: 'bold', color: scoreChange < 0 ? '#dc2626' : '#166534', fontSize: '15px' }} 
-              />
-            </div>
-            <div>
-              <label style={styles.label}>Người chấm / Đội trực</label>
-              <input 
-                type="text" 
-                value={reporterName} 
-                onChange={e => setReporterName(e.target.value)} 
-                style={styles.input} 
-                placeholder="VD: Đội Cờ đỏ Khối 11"
-              />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <label style={styles.label}>Ghi chú lý do / Tên học sinh (nếu có)</label>
-            <input 
-              type="text" 
-              value={reasonNote} 
-              onChange={e => setReasonNote(e.target.value)} 
-              style={styles.input} 
-              placeholder="VD: Nguyễn Văn A (không đeo thẻ), vệ sinh dãy A muộn..."
-            />
-          </div>
-
-          <button type="submit" disabled={loading} style={styles.submitBtn}>
-            <Send size={18} /> {loading ? 'Đang lưu...' : `🚀 GHI NHẬN CHO LỚP ${selectedClass}`}
-          </button>
-        </form>
-
-        {/* RIGHT COLUMN: TODAY'S LOGGED ENTRIES */}
-        <div style={styles.logsCard}>
-          <h3 style={styles.formTitle}>
-            📋 Vi phạm / Khen thưởng Ngày {logDate} ({todayLogs.length})
-          </h3>
-
-          {todayLogs.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px 10px', color: '#94a3b8' }}>
-              <ShieldAlert size={40} color="#cbd5e1" />
-              <p style={{ margin: '10px 0 0 0', fontSize: '14px' }}>Chưa có lỗi vi phạm nào ghi nhận trong ngày hôm nay.</p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', maxHeight: '520px', overflowY: 'auto' }}>
-              {todayLogs.map((log, idx) => (
-                <div key={log.id || idx} style={styles.logItem}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 'bold', fontSize: '15px', color: '#be123c' }}>Lớp {log.student_class}</span>
-                    <span style={{
-                      fontWeight: '800',
-                      fontSize: '14px',
-                      color: log.score_change < 0 ? '#dc2626' : '#166534',
-                      backgroundColor: log.score_change < 0 ? '#fef2f2' : '#f0fdf4',
-                      padding: '2px 8px',
-                      borderRadius: '6px'
-                    }}>
-                      {log.score_change > 0 ? '+' : ''}{log.score_change} điểm
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginTop: '4px' }}>
-                    {log.criteria_title}
-                  </div>
-                  {log.reason && <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>Ghi chú: {log.reason}</div>}
-                  <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Chấm bởi: {log.reporter_name || 'Đội Cờ đỏ'}</span>
-                    <span>Tuần {log.week_number}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
+
+        {/* 2. BỐ CỤC CHÍNH (2 CỘT: FORM CHẤM ĐIỂM & NHẬT KÝ HÔM NAY) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+          
+          {/* CỘT TRÁI: FORM GHI NHẬN */}
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '18px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <ShieldAlert size={20} color="#e11d48" />
+              <h2 style={{ fontSize: '16.5px', fontWeight: '800', margin: 0, color: '#0f172a' }}>
+                Lập Biên Bản Ghi Nhận Nề Nếp / Tuyên Dương
+              </h2>
+            </div>
+
+            {successMsg && (
+              <div style={{ backgroundColor: '#ecfdf5', color: '#065f46', padding: '12px 16px', borderRadius: '12px', border: '1px solid #a7f3d0', fontSize: '13.5px', fontWeight: '700', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle2 size={18} color="#059669" /> {successMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* TUẦN & NGÀY */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569' }}>Tuần thi đua:</label>
+                  <select
+                    value={weekNumber}
+                    onChange={(e) => setWeekNumber(Number(e.target.value))}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', marginTop: '4px', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}
+                  >
+                    {Array.from({ length: 35 }, (_, i) => i + 1).map(w => (
+                      <option key={w} value={w}>Tuần {w}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569' }}>Ngày ghi nhận:</label>
+                  <input
+                    type="date"
+                    value={logDate}
+                    onChange={(e) => setLogDate(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', marginTop: '4px', fontSize: '13px', color: '#0f172a', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* CHỌN LỚP */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569' }}>Lớp vi phạm / tuyên dương:</label>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {['ALL', 'Khối 10', 'Khối 11', 'Khối 12'].map(g => (
+                      <button
+                        key={g}
+                        type="button"
+                        onClick={() => setSelectedGrade(g)}
+                        style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: '700',
+                          border: 'none',
+                          cursor: 'pointer',
+                          backgroundColor: selectedGrade === g ? '#0284c7' : '#f1f5f9',
+                          color: selectedGrade === g ? '#ffffff' : '#475569'
+                        }}
+                      >
+                        {g}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <select
+                  value={selectedClass}
+                  onChange={(e) => setSelectedClass(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1.5px solid #0284c7', marginTop: '4px', fontSize: '14px', fontWeight: '800', color: '#0369a1', backgroundColor: '#f0f9ff' }}
+                >
+                  {filteredClasses.map(cls => (
+                    <option key={cls} value={cls}>Lớp {cls} ({getGradeLevel(cls)})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* DANH MỤC TIÊU CHÍ */}
+              <div>
+                <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569' }}>Phân loại lỗi / Tiêu chí:</label>
+                <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '6px 0', flexWrap: 'wrap' }}>
+                  {CATEGORIES.map(cat => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '8px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        border: 'none',
+                        cursor: 'pointer',
+                        backgroundColor: selectedCategory === cat ? '#0f172a' : '#f1f5f9',
+                        color: selectedCategory === cat ? '#ffffff' : '#64748b'
+                      }}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ maxHeight: '180px', overflowY: 'auto', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
+                  {filteredCriteria.map(c => {
+                    const isSelected = selectedCriteria?.id === c.id;
+                    const isBonus = Number(c.score_change) > 0;
+                    return (
+                      <div
+                        key={c.id}
+                        onClick={() => handleSelectCriteria(c)}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: `1.5px solid ${isSelected ? (isBonus ? '#16a34a' : '#dc2626') : '#f1f5f9'}`,
+                          backgroundColor: isSelected ? (isBonus ? '#f0fdf4' : '#fff1f2') : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <div style={{ fontSize: '12.5px', fontWeight: isSelected ? '700' : '500', color: '#1e293b' }}>
+                          {c.title}
+                        </div>
+                        <div style={{
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          backgroundColor: isBonus ? '#dcfce7' : '#fee2e2',
+                          color: isBonus ? '#15803d' : '#b91c1c'
+                        }}>
+                          {isBonus ? `+${c.score_change}đ` : `${c.score_change}đ`}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* TÙY CHỈNH ĐIỂM SỐ */}
+              <div>
+                <label style={{ fontSize: '12.5px', fontWeight: '700', color: '#475569' }}>Điểm số áp dụng (+ hoặc -):</label>
+                <input
+                  type="number"
+                  value={scoreChange}
+                  onChange={(e) => setScoreChange(Number(e.target.value))}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', marginTop: '4px', fontSize: '14px', fontWeight: '800', color: scoreChange > 0 ? '#16a34a' : '#dc2626', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* ĐÍCH DANH HỌC SINH (NẾU CÓ) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>Họ tên học sinh (nếu có):</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Nguyễn Văn A..."
+                    value={studentName}
+                    onChange={(e) => setStudentName(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>Mã học sinh (nếu có):</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: HS1201..."
+                    value={studentCode}
+                    onChange={(e) => setStudentCode(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* GHI CHÚ CHI TIẾT */}
+              <div>
+                <label style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>Ghi chú chi tiết vi phạm / khen thưởng:</label>
+                <textarea
+                  rows={2}
+                  placeholder="Ghi rõ tiết mấy, địa điểm, nội dung cụ thể..."
+                  value={reasonNote}
+                  onChange={(e) => setReasonNote(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* NGƯỜI CHẤM */}
+              <div>
+                <label style={{ fontSize: '12.5px', fontWeight: '600', color: '#475569' }}>Người ghi nhận:</label>
+                <input
+                  type="text"
+                  value={reporterName}
+                  onChange={(e) => setReporterName(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: '12px 20px',
+                  borderRadius: '12px',
+                  backgroundColor: scoreChange > 0 ? '#16a34a' : '#e11d48',
+                  color: '#ffffff',
+                  fontWeight: '800',
+                  fontSize: '14px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  boxShadow: `0 4px 14px ${scoreChange > 0 ? 'rgba(22,163,74,0.3)' : 'rgba(225,29,72,0.3)'}`,
+                  marginTop: '4px'
+                }}
+              >
+                <Check size={18} /> {loading ? 'Đang ghi nhận...' : 'Lưu Biên Bản Thi Đua'}
+              </button>
+            </form>
+          </div>
+
+          {/* CỘT PHẢI: NHẬT KÝ HÔM NAY */}
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={20} color="#0284c7" />
+                <h2 style={{ fontSize: '16.5px', fontWeight: '800', margin: 0, color: '#0f172a' }}>
+                  Nhật Ký Đã Chấm Hôm Nay ({todayLogs.length} mục)
+                </h2>
+              </div>
+
+              <span style={{ fontSize: '12px', fontWeight: '700', color: '#64748b' }}>
+                📅 {logDate}
+              </span>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', maxHeight: '600px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {todayLogs.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#94a3b8' }}>
+                  <CheckCircle2 size={40} color="#cbd5e1" style={{ margin: '0 auto 10px auto' }} />
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>Hôm nay chưa có biên bản nào được ghi nhận.</p>
+                </div>
+              ) : (
+                todayLogs.map((log) => {
+                  const isBonus = Number(log.score_change) > 0;
+                  return (
+                    <div
+                      key={log.id}
+                      style={{
+                        padding: '12px 16px',
+                        borderRadius: '12px',
+                        border: `1.5px solid ${isBonus ? '#bbf7d0' : '#fecdd3'}`,
+                        backgroundColor: isBonus ? '#f0fdf4' : '#fff1f2',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'flex-start',
+                        gap: '12px'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            fontWeight: '800',
+                            backgroundColor: '#0f172a',
+                            color: '#ffffff'
+                          }}>
+                            {log.student_class}
+                          </span>
+                          <span style={{ fontSize: '12px', fontWeight: '700', color: isBonus ? '#166534' : '#991b1b' }}>
+                            {log.criteria_title}
+                          </span>
+                        </div>
+
+                        {log.student_name && (
+                          <div style={{ fontSize: '12.5px', color: '#334155' }}>
+                            👤 HS: <strong>{log.student_name}</strong> {log.student_code ? `(${log.student_code})` : ''}
+                          </div>
+                        )}
+
+                        {(log.reason_note || log.reason) && (
+                          <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', marginTop: '2px' }}>
+                            {log.reason_note || log.reason}
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px' }}>
+                          Người ghi: {log.reporter_name || 'Đội Cờ Đỏ'} • Tuần {log.week_number}
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                        <div style={{
+                          fontSize: '16px',
+                          fontWeight: '900',
+                          color: isBonus ? '#16a34a' : '#dc2626'
+                        }}>
+                          {isBonus ? `+${log.score_change}đ` : `${log.score_change}đ`}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteLog(log.id)}
+                          style={{
+                            border: 'none',
+                            background: 'none',
+                            color: '#94a3b8',
+                            cursor: 'pointer',
+                            padding: '4px',
+                            borderRadius: '6px'
+                          }}
+                          title="Xóa biên bản này"
+                        >
+                          <Trash2 size={14} color="#dc2626" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: { padding: '20px 10px', maxWidth: '1050px', margin: '0 auto', boxSizing: 'border-box' },
-  headerCard: { backgroundColor: '#ffffff', borderRadius: '16px', padding: '22px', boxShadow: '0 4px 20px rgba(0,0,0,0.06)', marginBottom: '20px' },
-  iconCircle: { width: '54px', height: '54px', borderRadius: '14px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(190, 18, 60, 0.3)' },
-  pageTitle: { margin: 0, fontSize: '18px', fontWeight: '800', color: '#be123c' },
-  pageSubtitle: { margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' },
-  layoutGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' },
-  formCard: { backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 25px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' },
-  logsCard: { backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', boxShadow: '0 8px 25px rgba(0,0,0,0.05)', border: '1px solid #e2e8f0' },
-  formTitle: { margin: '0 0 16px 0', fontSize: '16px', color: '#1e293b', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' },
-  label: { display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' },
-  input: { width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' },
-  criteriaGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '8px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' },
-  criteriaItem: { padding: '9px 12px', borderRadius: '8px', border: '1.5px solid', cursor: 'pointer', transition: '0.15s' },
-  submitBtn: { width: '100%', padding: '12px', backgroundColor: '#be123c', color: '#ffffff', border: 'none', borderRadius: '10px', fontSize: '14.5px', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.3)' },
-  successBanner: { padding: '10px 14px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' },
-  logItem: { padding: '12px', borderRadius: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0' }
-};

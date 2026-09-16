@@ -65,6 +65,16 @@ export default function ClubAttendanceManager({
   const [customZaloPhone, setCustomZaloPhone] = useState('');
   const [copiedZalo, setCopiedZalo] = useState(false);
 
+  // Emulation Sync State (Đồng bộ Thi đua & Nề nếp Lớp)
+  const [showEmulationSyncModal, setShowEmulationSyncModal] = useState(false);
+  const [syncWeekNumber, setSyncWeekNumber] = useState(1);
+  const [syncBonusPerPresent, setSyncBonusPerPresent] = useState(2);
+  const [syncPenaltyPerAbsent, setSyncPenaltyPerAbsent] = useState(2);
+  const [syncingEmulation, setSyncingEmulation] = useState(false);
+  const [syncSuccessMsg, setSyncSuccessMsg] = useState('');
+  const [previewClassZalo, setPreviewClassZalo] = useState(null);
+  const [copiedClassZalo, setCopiedClassZalo] = useState(false);
+
   // Khởi tạo và nạp đợt đăng ký CLB
   useEffect(() => {
     if (campaigns && campaigns.length > 0) {
@@ -533,6 +543,152 @@ export default function ClubAttendanceManager({
     });
   }, [clubMembers, classFilter, searchQuery]);
 
+  // 3. Tính toán tổng hợp Thi đua & Nề nếp theo từng Lớp cho buổi sinh hoạt hiện tại
+  const getGradeLevel = (clsName) => {
+    if (!clsName) return 'Khối 10';
+    const clean = String(clsName).trim().toUpperCase();
+    if (/^12|12[A-Z]/i.test(clean)) return 'Khối 12';
+    if (/^11|11[A-Z]/i.test(clean)) return 'Khối 11';
+    return 'Khối 10';
+  };
+
+  const classEmulationSummary = useMemo(() => {
+    const map = {};
+    clubMembers.forEach(m => {
+      const cls = m.student_class || 'Khác';
+      if (!map[cls]) {
+        map[cls] = {
+          className: cls,
+          gradeLevel: getGradeLevel(cls),
+          totalMembers: 0,
+          presentStudents: [],
+          absentKStudents: [],
+          absentPStudents: [],
+          lateStudents: []
+        };
+      }
+      map[cls].totalMembers++;
+      const st = attendanceRecords[m.student_code]?.status || 'K';
+      if (st === '1') {
+        map[cls].presentStudents.push(m);
+      } else if (st === 'P') {
+        map[cls].absentPStudents.push(m);
+      } else if (st === 'L') {
+        map[cls].lateStudents.push(m);
+      } else {
+        map[cls].absentKStudents.push(m);
+      }
+    });
+
+    return Object.values(map).map(c => {
+      const bonusScore = c.presentStudents.length * Number(syncBonusPerPresent || 0);
+      const penaltyScore = c.absentKStudents.length * (-Math.abs(Number(syncPenaltyPerAbsent || 0)));
+      const netScore = bonusScore + penaltyScore;
+      return {
+        ...c,
+        bonusScore,
+        penaltyScore,
+        netScore
+      };
+    }).sort((a, b) => a.className.localeCompare(b.className));
+  }, [clubMembers, attendanceRecords, syncBonusPerPresent, syncPenaltyPerAbsent]);
+
+  const handleSyncEmulationToDatabase = async () => {
+    if (!activeSession) {
+      alert("Vui lòng chọn hoặc tạo một buổi sinh hoạt trước khi đồng bộ!");
+      return;
+    }
+    setSyncingEmulation(true);
+    setSyncSuccessMsg('');
+    try {
+      const logsToInsert = [];
+      const sessionDate = activeSession.session_date || new Date().toISOString().slice(0, 10);
+      const clubTitle = selectedClub === 'ALL' ? 'Các Câu Lạc Bộ' : selectedClub;
+
+      classEmulationSummary.forEach(c => {
+        // Ghi điểm cộng tham gia tích cực (nếu có học sinh tham gia)
+        if (c.bonusScore > 0) {
+          logsToInsert.push({
+            week_number: Number(syncWeekNumber),
+            log_date: sessionDate,
+            student_class: c.className,
+            grade_level: c.gradeLevel,
+            criteria_title: `[CLB] Tham gia sinh hoạt CLB tích cực (+${c.bonusScore}đ)`,
+            category: 'Hoạt động Câu Lạc Bộ',
+            score_change: c.bonusScore,
+            reason: `${c.presentStudents.length} học sinh tham gia sinh hoạt ${clubTitle} (Buổi ${activeSession.session_number})`,
+            reason_note: `${c.presentStudents.length} học sinh tham gia sinh hoạt ${clubTitle} (Buổi ${activeSession.session_number})`,
+            reporter_name: `BCN CLB - Buổi ${activeSession.session_number}`,
+            status: 'approved'
+          });
+        }
+
+        // Ghi điểm trừ vắng không phép (nếu có học sinh vắng K)
+        if (c.penaltyScore < 0) {
+          const absentNames = c.absentKStudents.map(s => `${s.student_name} (${s.student_code})`).join(', ');
+          logsToInsert.push({
+            week_number: Number(syncWeekNumber),
+            log_date: sessionDate,
+            student_class: c.className,
+            grade_level: c.gradeLevel,
+            criteria_title: `[CLB] Vắng sinh hoạt CLB không phép (${c.penaltyScore}đ)`,
+            category: 'Hoạt động Câu Lạc Bộ',
+            score_change: c.penaltyScore,
+            reason: `Vắng không phép ${c.absentKStudents.length} em: ${absentNames}`,
+            reason_note: `Vắng không phép ${c.absentKStudents.length} em: ${absentNames}`,
+            reporter_name: `BCN CLB - Buổi ${activeSession.session_number}`,
+            status: 'approved'
+          });
+        }
+      });
+
+      if (logsToInsert.length === 0) {
+        alert("Không có dữ liệu điểm thưởng hoặc trừ để ghi nhận.");
+        setSyncingEmulation(false);
+        return;
+      }
+
+      // Xóa các log cũ của buổi này cùng tuần & category CLB nếu có để tránh trùng lặp
+      const client = adminClient || supabase;
+      await client.from('cbq_emulation_logs')
+        .delete()
+        .eq('week_number', Number(syncWeekNumber))
+        .eq('category', 'Hoạt động Câu Lạc Bộ')
+        .eq('log_date', sessionDate);
+
+      const { error } = await client.from('cbq_emulation_logs').insert(logsToInsert);
+      if (error) throw error;
+
+      setSyncSuccessMsg(`🎉 Đồng bộ thành công ${logsToInsert.length} bản ghi thi đua cho ${classEmulationSummary.length} lớp học (Tuần ${syncWeekNumber})!`);
+    } catch (err) {
+      console.error('Error syncing emulation logs:', err);
+      alert("Lỗi khi đồng bộ thi đua: " + err.message);
+    } finally {
+      setSyncingEmulation(false);
+    }
+  };
+
+  const generateClassZaloMessage = (classData) => {
+    const clubTitle = selectedClub === 'ALL' ? 'Câu Lạc Bộ' : selectedClub;
+    const sessionNum = activeSession?.session_number || 1;
+    const sessionDate = activeSession?.session_date || new Date().toISOString().slice(0, 10);
+    const absentList = classData.absentKStudents.map((s, i) => `${i + 1}. ${s.student_name} (Mã HS: ${s.student_code})`).join('\n');
+
+    return `📢 [TRƯỜNG THPT CAO BÁ QUÁT - BÁO CÁO ĐIỂM DANH CLB]\n` +
+      `Kính gửi Thầy/Cô GVCN Lớp ${classData.className},\n` +
+      `Ban Chủ nhiệm ${clubTitle} trân trọng gửi kết quả sinh hoạt Buổi ${sessionNum} (${sessionDate}):\n\n` +
+      `📊 TỔNG KẾT NỀ NẾP & THI ĐUA:\n` +
+      `- Tổng thành viên đăng ký: ${classData.totalMembers} học sinh\n` +
+      `- Có mặt tham gia tích cực: ${classData.presentStudents.length} học sinh (Cộng +${classData.bonusScore}đ thi đua)\n` +
+      `- Vắng không phép: ${classData.absentKStudents.length} học sinh (Trừ ${classData.penaltyScore}đ thi đua)\n` +
+      `- Điểm thi đua CLB đóng góp: ${classData.netScore >= 0 ? `+${classData.netScore}đ` : `${classData.netScore}đ`}\n\n` +
+      (classData.absentKStudents.length > 0 
+        ? `⚠️ DANH SÁCH HỌC SINH VẮNG KHÔNG PHÉP:\n${absentList}\n\nKính đề nghị Thầy/Cô phối hợp cùng gia đình nhắc nhở các em đảm bảo chuyên cần rèn luyện theo quy chế trường.`
+        : `🎉 TUYỆT VỜI: 100% học sinh lớp ${classData.className} tham gia sinh hoạt đầy đủ và tích cực!`
+      ) +
+      `\n\nTrân trọng cảm ơn Thầy/Cô!`;
+  };
+
   return (
     <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 4px 20px rgba(0,0,0,0.04)' }}>
       
@@ -590,6 +746,26 @@ export default function ClubAttendanceManager({
             }}
           >
             <Sparkles size={16} /> 🤖 AI Đánh Giá
+          </button>
+
+          <button
+            onClick={() => setShowEmulationSyncModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '9px 16px',
+              borderRadius: '10px',
+              backgroundColor: '#059669',
+              color: '#ffffff',
+              fontWeight: '700',
+              fontSize: '13px',
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(5,150,105,0.3)'
+            }}
+          >
+            <Award size={16} /> ⚡ Đồng Bộ Thi Đua Lớp
           </button>
 
           <button
@@ -827,6 +1003,25 @@ export default function ClubAttendanceManager({
             }}
           >
             <CheckCircle size={15} /> Tất cả Có mặt
+          </button>
+
+          <button
+            onClick={() => setShowEmulationSyncModal(true)}
+            style={{
+              padding: '9px 14px',
+              borderRadius: '10px',
+              backgroundColor: '#ecfdf5',
+              color: '#059669',
+              border: '1.5px solid #059669',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Award size={15} /> ⚡ Đồng Bộ Thi Đua
           </button>
 
           <button
@@ -1380,6 +1575,265 @@ export default function ClubAttendanceManager({
                 }}
               >
                 <Send size={15} /> Mở Zalo Gửi Ngay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 10. MODAL ĐỒNG BỘ ĐIỂM THI ĐUA & NỀ NẾP LỚP CHỦ NHIỆM */}
+      {showEmulationSyncModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            padding: '24px',
+            maxWidth: '850px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '24px' }}>⚡</span>
+                <div>
+                  <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#0f172a' }}>
+                    Đồng Bộ Điểm Thi Đua & Nề Nếp Về Lớp Chủ Nhiệm
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Ghi nhận điểm cộng chuyên cần & trừ điểm vắng không phép từ buổi sinh hoạt {selectedClub === 'ALL' ? 'CLB' : selectedClub} (Buổi {activeSession?.session_number || 1})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => { setShowEmulationSyncModal(false); setSyncSuccessMsg(''); }}
+                style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Cấu hình Tham số Đồng bộ */}
+            <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#475569' }}>Tuần Thi Đua:</label>
+                <select
+                  value={syncWeekNumber}
+                  onChange={(e) => setSyncWeekNumber(Number(e.target.value))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '13px', fontWeight: '700', color: '#0f172a' }}
+                >
+                  {Array.from({ length: 35 }, (_, i) => i + 1).map(w => (
+                    <option key={w} value={w}>Tuần {w}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#16a34a' }}>Điểm cộng / 1 HS có mặt:</label>
+                <input
+                  type="number"
+                  value={syncBonusPerPresent}
+                  onChange={(e) => setSyncBonusPerPresent(Number(e.target.value))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #86efac', marginTop: '4px', fontSize: '13px', fontWeight: '700', color: '#16a34a', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: '700', color: '#dc2626' }}>Điểm trừ / 1 HS vắng không phép:</label>
+                <input
+                  type="number"
+                  value={syncPenaltyPerAbsent}
+                  onChange={(e) => setSyncPenaltyPerAbsent(Number(e.target.value))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #fca5a5', marginTop: '4px', fontSize: '13px', fontWeight: '700', color: '#dc2626', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+
+            {/* Thông báo thành công */}
+            {syncSuccessMsg && (
+              <div style={{ backgroundColor: '#ecfdf5', color: '#065f46', padding: '12px 16px', borderRadius: '10px', border: '1px solid #a7f3d0', fontSize: '13.5px', fontWeight: '600', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <CheckCircle size={18} color="#059669" /> {syncSuccessMsg}
+              </div>
+            )}
+
+            {/* Bảng Xem Trước Phân Bổ Điểm Theo Từng Lớp */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <h4 style={{ fontSize: '14px', fontWeight: '700', margin: 0, color: '#334155' }}>
+                  📊 Bảng Phân Bổ Điểm Thi Đua & Nề Nếp Theo Từng Lớp ({classEmulationSummary.length} Lớp):
+                </h4>
+              </div>
+
+              <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#f1f5f9', color: '#334155' }}>
+                      <th style={{ padding: '10px 12px' }}>Tên Lớp</th>
+                      <th style={{ padding: '10px 12px' }}>Sĩ số CLB</th>
+                      <th style={{ padding: '10px 12px', color: '#16a34a' }}>Có mặt (+)</th>
+                      <th style={{ padding: '10px 12px', color: '#dc2626' }}>Vắng KP (-)</th>
+                      <th style={{ padding: '10px 12px', fontWeight: '800' }}>Điểm Thi Đua CLB</th>
+                      <th style={{ padding: '10px 12px', textAlign: 'center' }}>Báo Cáo GVCN</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classEmulationSummary.map(c => (
+                      <tr key={c.className} style={{ borderTop: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '10px 12px', fontWeight: '700', color: '#0f172a' }}>{c.className}</td>
+                        <td style={{ padding: '10px 12px', color: '#64748b' }}>{c.totalMembers} HS</td>
+                        <td style={{ padding: '10px 12px', color: '#16a34a', fontWeight: '700' }}>
+                          {c.presentStudents.length} (+{c.bonusScore}đ)
+                        </td>
+                        <td style={{ padding: '10px 12px', color: c.absentKStudents.length > 0 ? '#dc2626' : '#94a3b8', fontWeight: '700' }}>
+                          {c.absentKStudents.length} ({c.penaltyScore}đ)
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            padding: '3px 10px',
+                            borderRadius: '12px',
+                            fontSize: '12px',
+                            fontWeight: '800',
+                            backgroundColor: c.netScore > 0 ? '#dcfce7' : (c.netScore < 0 ? '#fee2e2' : '#f1f5f9'),
+                            color: c.netScore > 0 ? '#15803d' : (c.netScore < 0 ? '#b91c1c' : '#64748b')
+                          }}>
+                            {c.netScore > 0 ? `+${c.netScore}đ` : `${c.netScore}đ`}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                          <button
+                            onClick={() => setPreviewClassZalo(c)}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              backgroundColor: '#f0f9ff',
+                              color: '#0284c7',
+                              border: '1px solid #bae6fd',
+                              fontSize: '11.5px',
+                              fontWeight: '700',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}
+                          >
+                            <Send size={12} /> Zalo GVCN
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Nút hành động chính */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '16px' }}>
+              <button
+                onClick={() => { setShowEmulationSyncModal(false); setSyncSuccessMsg(''); }}
+                style={{ padding: '10px 18px', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: '600', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+
+              <button
+                onClick={handleSyncEmulationToDatabase}
+                disabled={syncingEmulation}
+                style={{
+                  padding: '10px 22px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  backgroundColor: '#059669',
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(5,150,105,0.3)'
+                }}
+              >
+                <Award size={16} /> {syncingEmulation ? 'Đang ghi nhận...' : '⚡ Xác Nhận Ghi Vào Sổ Thi Đua Toàn Trường'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 11. MODAL XEM TRƯỚC TIN NHẮN ZALO BÁO CÁO GVCN LỚP */}
+      {previewClassZalo && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1100,
+          padding: '20px'
+        }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', maxWidth: '540px', width: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Send size={16} color="#0068ff" /> Báo Cáo Chuyên Cần CLB Tới GVCN Lớp {previewClassZalo.className}
+              </h3>
+              <button onClick={() => setPreviewClassZalo(null)} style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ fontSize: '12px', fontWeight: '600', color: '#475569' }}>Nội dung tin nhắn tự động:</label>
+              <textarea
+                rows={9}
+                value={generateClassZaloMessage(previewClassZalo)}
+                readOnly
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', marginTop: '4px', fontSize: '12.5px', backgroundColor: '#f8fafc', color: '#1e293b', boxSizing: 'border-box' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(generateClassZaloMessage(previewClassZalo));
+                  setCopiedClassZalo(true);
+                  setTimeout(() => setCopiedClassZalo(false), 3000);
+                }}
+                style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: '600', cursor: 'pointer' }}
+              >
+                {copiedClassZalo ? 'Đã sao chép!' : 'Sao chép nội dung'}
+              </button>
+
+              <button
+                onClick={() => {
+                  const msg = encodeURIComponent(generateClassZaloMessage(previewClassZalo));
+                  navigator.clipboard.writeText(generateClassZaloMessage(previewClassZalo));
+                  window.open(`https://chat.zalo.me/`, '_blank');
+                }}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#0068ff',
+                  color: '#ffffff',
+                  fontWeight: '700',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Send size={14} /> Mở Zalo Web Gửi
               </button>
             </div>
           </div>
