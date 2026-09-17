@@ -6111,13 +6111,33 @@ window.addEventListener('message', function(event) {
             if (r["Công nghệ"] === 'X') subjectStats['Công nghệ']++;
         });
 
+        // Phân quyền trong giao diện Tool theo vai trò nhận được từ React Host
+        const userRole = event.data.role || 'admin';
+        const scopedClass = event.data.scopedClass || '';
+        if (userRole === 'teacher') {
+            currentUser = { 
+                username: "gv", 
+                fullName: `GVCN ${scopedClass || 'LỚP CHỦ NHIỆM'}`, 
+                role: "proctor", 
+                councilCode: "THPT_CBQ" 
+            };
+        } else {
+            currentUser = { 
+                username: "admin", 
+                fullName: "CHỦ TỊCH HỘI ĐỒNG (ADMIN)", 
+                role: "admin", 
+                councilCode: "THPT_CBQ" 
+            };
+        }
+        if (typeof applyUserRole === 'function') applyUserRole(currentUser);
+
         // Cập nhật giao diện
         if (typeof renderFileList === 'function') renderFileList();
         if (typeof renderTable === 'function') renderTable();
         if (typeof renderStatistics === 'function') renderStatistics();
         if (typeof switchTab === 'function') switchTab('datatable');
 
-        showAlert(`🎉 Đã nạp thành công ${students.length} học sinh Khối 12 từ CSDL Supabase!`, 'success');
+        showAlert(`🎉 Đã nạp thành công ${students.length} học sinh (${userRole === 'teacher' ? `Lớp ${scopedClass}` : 'Toàn Khối 12'}) từ CSDL!`, 'success');
 
         // Bắn kết quả thẩm định ngược lại cho React app
         try {
