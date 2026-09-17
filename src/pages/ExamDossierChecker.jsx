@@ -15,8 +15,24 @@ export default function ExamDossierChecker() {
   const iframeRef = useRef(null);
   const { user, role } = useAuth();
 
-  const [currentTeacher, setCurrentTeacher] = useState(null);
-  const [selectedClass, setSelectedClass] = useState('12A01');
+  const [currentTeacher, setCurrentTeacher] = useState(() => {
+    try {
+      const teacherStr = localStorage.getItem('cbq_current_teacher');
+      return teacherStr ? JSON.parse(teacherStr) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+  const [selectedClass, setSelectedClass] = useState(() => {
+    try {
+      const teacherStr = localStorage.getItem('cbq_current_teacher');
+      if (teacherStr) {
+        const parsed = JSON.parse(teacherStr);
+        if (parsed.homeroom_class) return parsed.homeroom_class;
+      }
+    } catch (e) {}
+    return '12A01';
+  });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [iframeKey, setIframeKey] = useState(Date.now());
   const [showGuideModal, setShowGuideModal] = useState(false);
@@ -30,10 +46,19 @@ export default function ExamDossierChecker() {
   // Data state
   const [loadingSync, setLoadingSync] = useState(false);
   const [loadingProctors, setLoadingProctors] = useState(false);
-  const [selectedClassZalo, setSelectedClassZalo] = useState('ALL');
+  const [selectedClassZalo, setSelectedClassZalo] = useState(() => {
+    try {
+      const teacherStr = localStorage.getItem('cbq_current_teacher');
+      if (teacherStr) {
+        const parsed = JSON.parse(teacherStr);
+        if (parsed.homeroom_class) return parsed.homeroom_class;
+      }
+    } catch (e) {}
+    return '12A01';
+  });
   const [copiedZalo, setCopiedZalo] = useState(false);
 
-  // Determine User Role: Admin vs Teacher
+  // Re-sync if localStorage updates
   useEffect(() => {
     const teacherStr = localStorage.getItem('cbq_current_teacher');
     if (teacherStr) {

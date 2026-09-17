@@ -28,6 +28,90 @@
     <link rel="stylesheet" href="style.css">
     <script src="excel_transfer.js?v=99"></script>
 
+    <!-- IMMEDIATE RBAC PRE-LOAD SCRIPT & STYLES -->
+    <script>
+        (function() {
+            try {
+                var params = new URLSearchParams(window.location.search);
+                var role = params.get('role');
+                var className = params.get('class') || '';
+                var teacherName = params.get('name') || '';
+
+                if (role === 'teacher' || role === 'proctor') {
+                    document.documentElement.classList.add('role-teacher', 'role-proctor');
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.classList.add('role-teacher', 'role-proctor');
+                        document.body.classList.remove('role-admin');
+                        var dispName = document.getElementById('display-user-name');
+                        var dispRole = document.getElementById('display-user-role');
+                        if (dispName) dispName.innerText = (teacherName || (className ? 'GVCN ' + className : 'GIÁO VIÊN')).toUpperCase();
+                        if (dispRole) {
+                            dispRole.innerText = className ? 'GVCN ' + className : 'GIÁO VIÊN';
+                            dispRole.className = "bg-sky-500/20 text-sky-400 border border-sky-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md";
+                        }
+                    });
+                }
+            } catch(e) {}
+        })();
+    </script>
+    <style>
+        /* Immediate Strict RBAC Rules for Teacher/Proctor */
+        html.role-teacher .nav-group-admin-only,
+        html.role-teacher .nav-group-admin-only + .nav-sub-items,
+        html.role-teacher .admin-only,
+        html.role-teacher #btn-tab-examrooms,
+        html.role-teacher #btn-tab-proctor-config,
+        html.role-teacher #btn-tab-proctor-board,
+        html.role-teacher #btn-tab-config,
+        html.role-teacher #btn-tab-exam-shuffler,
+        html.role-teacher #btn-tab-decree30,
+        html.role-teacher #btn-tab-exam-config,
+        html.role-teacher #btn-cloud-save,
+        html.role-teacher #btn-cloud-load,
+        html.role-teacher .top-admin-tool,
+        html.role-proctor .nav-group-admin-only,
+        html.role-proctor .nav-group-admin-only + .nav-sub-items,
+        html.role-proctor .admin-only,
+        html.role-proctor #btn-tab-examrooms,
+        html.role-proctor #btn-tab-proctor-config,
+        html.role-proctor #btn-tab-proctor-board,
+        html.role-proctor #btn-tab-config,
+        html.role-proctor #btn-tab-exam-shuffler,
+        html.role-proctor #btn-tab-decree30,
+        html.role-proctor #btn-tab-exam-config,
+        html.role-proctor #btn-cloud-save,
+        html.role-proctor #btn-cloud-load,
+        html.role-proctor .top-admin-tool,
+        body.role-teacher .nav-group-admin-only,
+        body.role-teacher .nav-group-admin-only + .nav-sub-items,
+        body.role-teacher .admin-only,
+        body.role-teacher #btn-tab-examrooms,
+        body.role-teacher #btn-tab-proctor-config,
+        body.role-teacher #btn-tab-proctor-board,
+        body.role-teacher #btn-tab-config,
+        body.role-teacher #btn-tab-exam-shuffler,
+        body.role-teacher #btn-tab-decree30,
+        body.role-teacher #btn-tab-exam-config,
+        body.role-teacher #btn-cloud-save,
+        body.role-teacher #btn-cloud-load,
+        body.role-teacher .top-admin-tool,
+        body.role-proctor .nav-group-admin-only,
+        body.role-proctor .nav-group-admin-only + .nav-sub-items,
+        body.role-proctor .admin-only,
+        body.role-proctor #btn-tab-examrooms,
+        body.role-proctor #btn-tab-proctor-config,
+        body.role-proctor #btn-tab-proctor-board,
+        body.role-proctor #btn-tab-config,
+        body.role-proctor #btn-tab-exam-shuffler,
+        body.role-proctor #btn-tab-decree30,
+        body.role-proctor #btn-tab-exam-config,
+        body.role-proctor #btn-cloud-save,
+        body.role-proctor #btn-cloud-load,
+        body.role-proctor .top-admin-tool {
+            display: none !important;
+        }
+    </style>
+
     <!-- GLOSSY PRO BUTTONS OVERRIDE -->
     <style>
         .btn {
