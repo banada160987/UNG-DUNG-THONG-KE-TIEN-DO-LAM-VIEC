@@ -2362,35 +2362,52 @@ body.dark-theme .sub-value { color: white; }
 }
 
 /* ============================================================================
-   ROLE & PERMISSIONS SYSTEM (ADMIN / PROCTOR)
+   ROLE & PERMISSIONS SYSTEM (ADMIN / PROCTOR / TEACHER)
    ============================================================================ */
 
-body.role-proctor .admin-only {
-    opacity: 0.3 !important;
-    pointer-events: none !important;
-    filter: grayscale(1) !important;
-}
-body.role-proctor #btn-cloud-save,
-body.role-proctor .btn-cloud-save,
-body.role-proctor [onclick*="mergeAllFiles"],
-body.role-proctor [onclick*="runAutoAssignment"],
-body.role-proctor [onclick*="processExcelFile"],
-body.role-proctor [onclick*="triggerFileInput"] {
+/* Hide entire admin-only navigation groups for teacher/proctor */
+body.role-proctor .nav-group-admin-only,
+body.role-proctor .nav-group-admin-only + .nav-sub-items,
+body.role-teacher .nav-group-admin-only,
+body.role-teacher .nav-group-admin-only + .nav-sub-items {
     display: none !important;
 }
-body.role-proctor .proctor-banner {
-    display: flex !important;
+
+/* Hide specific admin-only buttons & tools */
+body.role-proctor .admin-only,
+body.role-teacher .admin-only,
+body.role-proctor #btn-tab-examrooms,
+body.role-proctor #btn-tab-proctor-config,
+body.role-proctor #btn-tab-proctor-board,
+body.role-proctor #btn-tab-config,
+body.role-proctor #btn-tab-exam-shuffler,
+body.role-proctor #btn-tab-decree30,
+body.role-proctor #btn-tab-exam-config,
+body.role-proctor #btn-cloud-save,
+body.role-proctor #btn-cloud-load,
+body.role-proctor .btn-cloud-save,
+body.role-proctor .top-admin-tool,
+body.role-teacher #btn-tab-examrooms,
+body.role-teacher #btn-tab-proctor-config,
+body.role-teacher #btn-tab-proctor-board,
+body.role-teacher #btn-tab-config,
+body.role-teacher #btn-tab-exam-shuffler,
+body.role-teacher #btn-tab-decree30,
+body.role-teacher #btn-tab-exam-config,
+body.role-teacher #btn-cloud-save,
+body.role-teacher #btn-cloud-load,
+body.role-teacher .btn-cloud-save,
+body.role-teacher .top-admin-tool {
+    display: none !important;
+}
+
+/* Hide proctor warning banner for clean UI */
+body.role-proctor .proctor-banner,
+body.role-teacher .proctor-banner {
+    display: none !important;
 }
 .proctor-banner {
     display: none;
-    background: linear-gradient(90deg, #1e293b, #0f172a);
-    color: #38bdf8;
-    padding: 10px 24px;
-    align-items: center;
-    justify-content: space-between;
-    font-weight: 700;
-    font-size: 13px;
-    border-bottom: 1px solid #334155;
 }
 
 /* ===== Nested Sidebar Menu ===== */

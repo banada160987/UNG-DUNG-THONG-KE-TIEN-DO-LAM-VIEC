@@ -50,7 +50,8 @@ export default function ExamDossierChecker() {
     }
   }, []);
 
-  const isAdmin = role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin'));
+  const isTeacher = Boolean(currentTeacher) || role === 'teacher' || role === 'proctor';
+  const isAdmin = !isTeacher && (role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin')));
   const teacherHomeroom = currentTeacher?.homeroom_class || selectedClass || '12A01';
   const teacherName = currentTeacher?.full_name || 'Thầy/Cô Giáo Viên';
 
@@ -615,7 +616,7 @@ export default function ExamDossierChecker() {
         <iframe
           ref={iframeRef}
           key={iframeKey}
-          src="/tools/kiem-tra-ho-so-tn/index.html"
+          src={`/tools/kiem-tra-ho-so-tn/index.html?role=${isAdmin ? 'admin' : 'teacher'}&class=${encodeURIComponent(teacherHomeroom)}&name=${encodeURIComponent(teacherName)}`}
           title="Tool Kiểm Tra Hồ Sơ Đăng Ký Thi TN THPT"
           style={{
             position: 'absolute',
@@ -627,6 +628,18 @@ export default function ExamDossierChecker() {
             display: 'block'
           }}
           allow="camera; clipboard-read; clipboard-write"
+          onLoad={() => {
+            if (iframeRef.current && iframeRef.current.contentWindow) {
+              iframeRef.current.contentWindow.postMessage({
+                type: 'SET_USER_ROLE',
+                payload: {
+                  role: isAdmin ? 'admin' : 'teacher',
+                  scopedClass: teacherHomeroom,
+                  teacherName: teacherName
+                }
+              }, '*');
+            }
+          }}
         />
       </div>
 

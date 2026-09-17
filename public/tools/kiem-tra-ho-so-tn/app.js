@@ -39,6 +39,19 @@ function autoMapColumns(cols) {
 }
 
 function switchTab(tabId) {
+    const adminOnlyTabs = [
+        'config', 'examrooms', 'proctor-config', 'proctor-board', 
+        'analytics', 'qr-pass', 'kiosk-map', 'live-attendance', 
+        'exam-sealing', 'command-center', 'exam-incidents', 
+        'graduation-predictor', 'seating-chart', 'exam-shuffler', 
+        'decree30-editor', 'exam-config'
+    ];
+
+    if (currentUser && currentUser.role !== 'admin' && adminOnlyTabs.includes(tabId)) {
+        showAlert("🔒 Chức năng này chỉ dành cho Tài khoản Quản trị / Ban Giám Hiệu.", "warning");
+        tabId = 'upload';
+    }
+
     document.querySelectorAll('.section-view').forEach(v => v.classList.remove('active'));
     document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
 
@@ -5551,12 +5564,32 @@ async function loadFromCloud() {
 // AUTHENTICATION & USER PERMISSIONS SYSTEM
 // ============================================================================
 
-let currentUser = {
-    username: "admin",
-    fullName: "CHỦ TỊCH HỘI ĐỒNG",
-    role: "admin",
-    councilCode: "THPT_CBQ"
-};
+let currentUser = (function() {
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const roleParam = urlParams.get('role');
+        const classParam = urlParams.get('class');
+        const nameParam = urlParams.get('name');
+
+        if (roleParam === 'teacher' || roleParam === 'proctor') {
+            return {
+                username: "gv",
+                fullName: nameParam ? decodeURIComponent(nameParam) : (classParam ? `GVCN ${decodeURIComponent(classParam)}` : 'GIÁO VIÊN'),
+                role: "proctor",
+                homeroomClass: classParam ? decodeURIComponent(classParam) : '',
+                councilCode: "THPT_CBQ"
+            };
+        }
+    } catch(e) {
+        console.warn("Init user parse err:", e);
+    }
+    return {
+        username: "admin",
+        fullName: "CHỦ TỊCH HỘI ĐỒNG",
+        role: "admin",
+        councilCode: "THPT_CBQ"
+    };
+})();
 
 function openAuthModal() {
     const modal = document.getElementById('auth-modal');
@@ -5633,20 +5666,25 @@ async function executeLogin() {
 }
 
 function applyUserRole(userObj) {
+    if (!userObj) return;
     const dispName = document.getElementById('display-user-name');
     const dispRole = document.getElementById('display-user-role');
 
-    if (dispName) dispName.innerText = userObj.fullName.toUpperCase();
+    if (dispName) dispName.innerText = (userObj.fullName || 'NGƯỜI DÙNG').toUpperCase();
     if (dispRole) {
-        dispRole.innerText = userObj.role.toUpperCase();
         if (userObj.role === 'admin') {
+            dispRole.innerText = 'ADMIN';
             dispRole.className = "bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md";
-            document.body.classList.remove('role-proctor');
+            document.body.classList.remove('role-proctor', 'role-teacher');
+            document.body.classList.add('role-admin');
         } else {
-            dispRole.className = "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md";
-            document.body.classList.add('role-proctor');
+            dispRole.innerText = userObj.homeroomClass ? `GVCN ${userObj.homeroomClass}` : 'GIÁO VIÊN';
+            dispRole.className = "bg-sky-500/20 text-sky-400 border border-sky-500/40 text-[10px] font-extrabold px-1.5 py-0.5 rounded-md";
+            document.body.classList.remove('role-admin');
+            document.body.classList.add('role-proctor', 'role-teacher');
         }
     }
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 // ==========================================
@@ -6165,6 +6203,28 @@ window.addEventListener('message', function(event) {
                 renderProctorBoard();
             }
         }
+    }
+
+    // 3. THIẾT LẬP VAI TRÒ NGƯỜI DÙNG TỪ REACT APP (ADMIN vs TEACHER)
+    if (type === 'SET_USER_ROLE') {
+        const { role: newRole, scopedClass, teacherName } = payload || {};
+        if (newRole === 'teacher' || newRole === 'proctor') {
+            currentUser = { 
+                username: "gv", 
+                fullName: teacherName || (scopedClass ? `GVCN ${scopedClass}` : 'GIÁO VIÊN'), 
+                role: "proctor", 
+                homeroomClass: scopedClass || '',
+                councilCode: "THPT_CBQ" 
+            };
+        } else {
+            currentUser = { 
+                username: "admin", 
+                fullName: "CHỦ TỊCH HỘI ĐỒNG (ADMIN)", 
+                role: "admin", 
+                councilCode: "THPT_CBQ" 
+            };
+        }
+        applyUserRole(currentUser);
     }
 });
 

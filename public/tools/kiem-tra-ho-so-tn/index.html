@@ -169,7 +169,7 @@
             <button id="btn-tab-datamanager" class="nav-item" onclick="switchTab('datamanager')">
                 <i data-lucide="database" style="width:18px; color: #8b5cf6;"></i> <span>Kho dữ liệu</span>
             </button>
-            <button id="btn-tab-config" class="nav-item" onclick="switchTab('config')">
+            <button id="btn-tab-config" class="nav-item admin-only" onclick="switchTab('config')">
                 <i data-lucide="settings" style="width:18px; color: #06b6d4;"></i> <span>Cấu hình & Bộ lọc</span>
             </button>
             <button id="btn-tab-analysis" class="nav-item" onclick="switchTab('analysis')">
@@ -181,13 +181,13 @@
             <button id="btn-tab-stats" class="nav-item" onclick="switchTab('stats')">
                 <i data-lucide="pie-chart" style="width:18px; color: #10b981;"></i> <span>Thống kê tổng quan</span>
             </button>
-            <button id="btn-tab-examrooms" class="nav-item" onclick="switchTab('examrooms')">
+            <button id="btn-tab-examrooms" class="nav-item admin-only" onclick="switchTab('examrooms')">
                 <i data-lucide="layout-grid" style="width:18px; color: #f59e0b;"></i> <span>Xếp phòng thi</span>
             </button>
-            <button id="btn-tab-proctor-config" class="nav-item" onclick="switchTab('proctor-config')">
+            <button id="btn-tab-proctor-config" class="nav-item admin-only" onclick="switchTab('proctor-config')">
                 <i data-lucide="settings-2" style="width:18px; color: #14b8a6;"></i> <span>Cấu hình Giám thị</span>
             </button>
-            <button id="btn-tab-proctor-board" class="nav-item" onclick="switchTab('proctor-board')">
+            <button id="btn-tab-proctor-board" class="nav-item admin-only" onclick="switchTab('proctor-board')">
                 <i data-lucide="calendar-check" style="width:18px; color: #f97316;"></i> <span>Bảng phân công GT</span>
             </button>
             <button id="btn-tab-behavior-incident" class="nav-item" onclick="switchTab('behavior-incident')">
@@ -195,9 +195,9 @@
             </button>
 
             </div>
-<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #8b5cf6;"><i data-lucide="sparkles" style="width:16px"></i> Phân
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #8b5cf6;"><i data-lucide="sparkles" style="width:16px"></i> Phân
                 tích & Báo cáo Pro<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
-<div class="nav-sub-items" style="display: none; overflow: hidden;">
+<div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-pro-report" class="nav-item"
                 onclick="window.open('in bang diem_KTT_pro - V2.html', '_blank')">
                 <i data-lucide="layout-dashboard" style="width:18px; color: #0284c7;"></i> <span>Báo cáo & In ấn
@@ -215,9 +215,9 @@
                 <i data-lucide="globe" style="width:18px; color: #10b981;"></i> <span style="font-weight: 700;">Cổng Tra cứu & Xuất Web</span>
             </button>
             </div>
-<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #f59e0b;"><i data-lucide="rocket" style="width:16px"></i> Vận
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #f59e0b;"><i data-lucide="rocket" style="width:16px"></i> Vận
                 hành Điểm thi (Ultimate)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
-<div class="nav-sub-items" style="display: none; overflow: hidden;">
+<div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-kiosk-map" class="nav-item" onclick="switchTab('kiosk-map')">
                 <i data-lucide="map-pin" style="width:18px; color: #f59e0b;"></i> <span style="font-weight: 700;">Sơ đồ
                     Điểm thi & Kiosk</span>
@@ -232,8 +232,8 @@
             </button>
 
             </div>
-<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #ec4899;"><i data-lucide="crown" style="width:16px"></i> Vận hành Live (Premium)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
-<div class="nav-sub-items" style="display: none; overflow: hidden;">
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #ec4899;"><i data-lucide="crown" style="width:16px"></i> Vận hành Live (Premium)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-command-center" class="nav-item" onclick="switchTab('command-center')">
                 <i data-lucide="activity" style="width:18px; color: #ec4899;"></i> <span style="font-weight: 700;">Trung tâm Chỉ huy Live</span>
             </button>
@@ -262,15 +262,15 @@
                 <i data-lucide="image" style="width:18px; color: #f43f5e;"></i> <span
                     style="font-weight: 700;">Đổi tên Ảnh hàng loạt</span>
             </button>
-            <button id="btn-tab-exam-shuffler" class="nav-item" onclick="switchTab('exam-shuffler')">
+            <button id="btn-tab-exam-shuffler" class="nav-item admin-only" onclick="switchTab('exam-shuffler')">
                 <i data-lucide="shuffle" style="width:18px; color: #ef4444;"></i> <span
                     style="font-weight: 700;">Trộn Đề Thi (Word)</span>
             </button>
-            <button id="btn-tab-decree30" class="nav-item" onclick="switchTab('decree30-editor')">
+            <button id="btn-tab-decree30" class="nav-item admin-only" onclick="switchTab('decree30-editor')">
                 <i data-lucide="file-text" style="width:18px; color: #f59e0b;"></i> <span
                     style="font-weight: 700;">Soạn thảo Nghị định 30</span>
             </button>
-            <button id="btn-tab-exam-config" class="nav-item" onclick="switchTab('exam-config')">
+            <button id="btn-tab-exam-config" class="nav-item admin-only" onclick="switchTab('exam-config')">
                 <i data-lucide="settings" style="width:18px; color: #1e293b;"></i> <span
                     style="font-weight: 700;">Cấu hình Kỳ thi</span>
             </button>
@@ -322,25 +322,25 @@
                 <input type="file" id="workspace-backup-file" accept=".json" onchange="restoreWorkspaceBackup(event)"
                     style="display:none">
                 <button
-                    class="btn btn-sm bg-slate-800 text-amber-400 border border-amber-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-slate-700 transition-all"
+                    class="btn btn-sm bg-slate-800 text-amber-400 border border-amber-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-slate-700 transition-all top-admin-tool admin-only"
                     onclick="backupWorkspace()" title="Xuất toàn bộ cấu hình và dữ liệu sang file sao lưu">
                     <i data-lucide="download-cloud" style="width:16px"></i> <span class="hidden sm:inline"
                         style="font-size:12px">SAO LƯU (.JSON)</span>
                 </button>
                 <button
-                    class="btn btn-sm bg-slate-800 text-emerald-400 border border-emerald-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-slate-700 transition-all"
+                    class="btn btn-sm bg-slate-800 text-emerald-400 border border-emerald-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-slate-700 transition-all top-admin-tool admin-only"
                     onclick="triggerRestoreWorkspace()" title="Phục hồi toàn bộ hệ thống từ file sao lưu">
                     <i data-lucide="upload-cloud" style="width:16px"></i> <span class="hidden sm:inline"
                         style="font-size:12px">PHỤC HỒI (.JSON)</span>
                 </button>
                 <button id="btn-cloud-save"
-                    class="btn btn-sm bg-cyan-950 text-cyan-400 border border-cyan-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-cyan-900 transition-all"
+                    class="btn btn-sm bg-cyan-950 text-cyan-400 border border-cyan-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-cyan-900 transition-all top-admin-tool admin-only"
                     onclick="syncToCloud()" title="Đồng bộ toàn bộ dữ liệu lên Cloud MySQL">
                     <i data-lucide="cloud-upload" style="width:16px"></i> <span class="hidden sm:inline"
                         style="font-size:12px">LƯU CLOUD</span>
                 </button>
                 <button id="btn-cloud-load"
-                    class="btn btn-sm bg-purple-950 text-purple-400 border border-purple-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-purple-900 transition-all"
+                    class="btn btn-sm bg-purple-950 text-purple-400 border border-purple-500/30 font-bold py-1.5 px-3 rounded-xl shadow-md flex items-center gap-1.5 hover:bg-purple-900 transition-all top-admin-tool admin-only"
                     onclick="loadFromCloud()" title="Tải toàn bộ dữ liệu từ Cloud MySQL về máy">
                     <i data-lucide="cloud-download" style="width:16px"></i> <span class="hidden sm:inline"
                         style="font-size:12px">TẢI CLOUD</span>
