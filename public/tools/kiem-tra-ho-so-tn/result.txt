@@ -1,0 +1,37 @@
+            </button>
+            </div>
+<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #0ea5e9;"><i data-lucide="wrench" style="width:16px"></i> Tiện ích hỗ trợ<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-sub-items" style="display: none; overflow: hidden;">
+            <button id="btn-tab-smas-excel" class="nav-item" onclick="switchTab('smas-excel')">
+                <i data-lucide="file-spreadsheet" style="width:18px; color: #10b981;"></i> <span
+                    style="font-weight: 700;">Lọc dữ liệu SMAS</span>
+            </button>
+            <button id="btn-tab-splitname" class="nav-item" onclick="switchTab('splitname')">
+                <i data-lucide="scissors" style="width:18px; color: #8b5cf6;"></i> <span
+                    style="font-weight: 700;">Tách Họ Tên</span>
+            </button>
+            <button id="btn-tab-photorename" class="nav-item" onclick="switchTab('photorename')">
+                <i data-lucide="image" style="width:18px; color: #f43f5e;"></i> <span
+                    style="font-weight: 700;">Đổi tên Ảnh hàng loạt</span>
+            </button>
+            <button id="btn-tab-exam-shuffler" class="nav-item" onclick="switchTab('exam-shuffler')">
+                <i data-lucide="shuffle" style="width:18px; color: #ef4444;"></i> <span
+                    style="font-weight: 700;">Trộn Đề Thi (Word)</span>
+            </button>
+            <button id="btn-tab-decree30" class="nav-item" onclick="switchTab('decree30-editor')">
+                <i data-lucide="file-text" style="width:18px; color: #f59e0b;"></i> <span
+                    style="font-weight: 700;">Soạn thảo Nghị định 30</span>
+            </button>
+            </div>
+        </nav>
+        <div class="sidebar-footer">
+            <button class="btn btn-sm btn-outline w-full flex items-center justify-center gap-2 mb-3"
+                style="font-size:11px" onclick="toggleDarkMode()">
+                <i data-lucide="moon" id="theme-icon" style="width:14px"></i> <span id="theme-text">CHẾ ĐỘ TỐI</span>
+            </button>
+            <div class="flex items-center justify-center gap-2 mb-1">
+                <span id="app-version-display">VERSION 28.04.26.01</span>
+                <button onclick="checkForUpdate(true)" class="btn-refresh-mini" title="Làm mới ứng dụng">
+                    <i data-lucide="refresh-cw" style="width:12px; height:12px"></i>
+                </button>
+            </div>

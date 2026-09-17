@@ -84,6 +84,7 @@ const TeacherExamMaker = lazy(() => import('./pages/teacher_features/TeacherExam
 const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/TeacherAssessmentTT22'));
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
 const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
+const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -164,11 +165,15 @@ function App() {
             <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherKPIEvaluation />} />
             <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
             <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
+            <Route path="/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
+            <Route path="/giao-vien/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
+            <Route path="/admin/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
 
             {/* Teacher Route Aliases (Ensures all URLs work smoothly without redirecting to /) */}
             <Route path="/teacher/lesson-plans" element={<TeacherLessonPlanBuilder />} />
             <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
             <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
+            <Route path="/teacher/exam-dossier" element={<ExamDossierChecker />} />
             <Route path="/teacher/academics" element={<TeacherAcademics />} />
             <Route path="/teacher/homeroom" element={<AdminStudents />} />
             <Route path="/teacher/funds" element={<TeacherFundsManager />} />

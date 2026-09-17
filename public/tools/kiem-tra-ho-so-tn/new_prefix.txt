@@ -1,0 +1,759 @@
+/**
+ * EXAM CONFIGURATION WIZARD (v6.0 - Clean Architecture)
+ * Role: Orchestrator / Controller for Proctor Assignment Workflow
+ */
+
+const ExamStore = (() => {
+    const STORAGE_KEY = 'ExamConfig_v2';
+    const _events = new EventTarget();
+    
+    const _rawState = {
+        currentStep: 1,
+        info: { name: '', semester: 'Học kỳ II', year: '2025-2026' },
+        schedules: [],
+        rooms: [],
+        constraints: {
+            noBackToBack: true,
+            genderDiversity: true,
+            subjectConflict: true,
+            homeroomConflict: true,
+            departmentDiversity: false,
+            roomRotation: false,
+            noRepeatPairing: false,
+            strictDailyLimit: false,
+            limitPerDay: 2
+        }
+    };
+
+    const _state = new Proxy(_rawState, {
+        set(target, prop, value) {
+            target[prop] = value;
+            _events.dispatchEvent(new CustomEvent('stateChanged', { detail: { prop, value } }));
+            return true;
+        }
+    });
+
+    return {
+        get state() { return _state; },
+        get rawState() { return _rawState; },
+        get events() { return _events; },
+        
+        load() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.keys(parsed).forEach(k => {
+                        if (_rawState.hasOwnProperty(k)) _state[k] = parsed[k];
+                    });
+                }
+            } catch (e) {
+                console.error("Load state failed", e);
+            }
+        },
+        save() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(_state));
+                if (typeof ProctorStore !== 'undefined') {
+                    ProctorStore.setConfig(_state);
+                }
+            } catch (e) {
+                console.error("Save state failed", e);
+            }
+        }
+    };
+})();
+
+const UIUtils = {
+    escape: (str) => {
+        if (str == null) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+    showAlert: (msg, type = 'info') => {
+        if (typeof window.showAlert === 'function') {
+            window.showAlert(msg, type);
+        } else {
+            alert(msg);
+        }
+    },
+    syncWithGlobals: () => {
+        if (typeof window.proctorList === 'undefined' && typeof proctorList !== 'undefined') {
+            window.proctorList = proctorList;
+        }
+        if (typeof window.generatedRooms === 'undefined' && typeof generatedRooms !== 'undefined') {
+            window.generatedRooms = generatedRooms;
+        }
+    }
+};
+
+const ExamValidator = {
+    validateSchema: (json) => {
+        if (!json || typeof json !== 'object' || Array.isArray(json)) return false;
+        if (!json.info || typeof json.info !== 'object') return false;
+        if (!json.schedules || !Array.isArray(json.schedules)) return false;
+        return true;
+    }
+};
+
+const ExamConfig = (() => {
+    "use strict";
+
+    const _state = ExamStore.state;
+    const _rawState = ExamStore.rawState;
+    const Utils = UIUtils;
+    Utils.validateSchema = ExamValidator.validateSchema;
+
+    const STEPS = [
+        { id: 1, label: "Thông tin", icon: "info" },
+        { id: 2, label: "Lịch thi", icon: "calendar" },
+        { id: 3, label: "Phòng thi", icon: "door-open" },
+        { id: 4, label: "Giám thị", icon: "users" },
+        { id: 5, label: "Thiết lập", icon: "settings" }
+    ];
+
+    const injectUI = () => {
+        const sidebarNav = document.querySelector('.sidebar-nav') || document.querySelector('.sidebar ul');
+        if (sidebarNav && !document.getElementById('btn-tab-exam-config')) {
+            const li = document.createElement('li');
+            li.innerHTML = `
+                <a href="javascript:void(0)" class="nav-item" id="btn-tab-exam-config" onclick="switchTab('exam-config')">
+                    <i data-lucide="shield-check"></i>
+                    <span>Cấu hình Kỳ thi</span>
+                </a>
+            `;
+            sidebarNav.appendChild(li);
+        }
+
+        const mainContent = document.querySelector('main') || document.querySelector('.main-container');
+        if (mainContent && !document.getElementById('view-exam-config')) {
+            const section = document.createElement('section');
+            section.id = 'view-exam-config';
+            section.className = 'section-view';
+            section.innerHTML = `
+                <div class="page-header flex justify-between items-center">
+                    <div>
+                        <h1 class="page-title">Cấu hình & Phân công Giám thị</h1>
+                        <p class="page-subtitle">Trình điều hướng thiết lập kỳ thi thông minh v6.0 (Clean Architecture)</p>
+                    </div>
+                    <div id="wizard-header-actions">
+                        <div class="flex gap-2">
+                            <button class="btn btn-outline btn-sm" onclick="document.getElementById('wiz-import-file').click()">
+                                <i data-lucide="file-input" style="width:14px"></i> NHẬP CẤU HÌNH
+                            </button>
+                            <button class="btn btn-outline btn-sm" onclick="ExamConfig.exportConfig()">
+                                <i data-lucide="file-output" style="width:14px"></i> XUẤT CẤU HÌNH
+                            </button>
+                            <button class="btn btn-primary btn-sm bg-gradient-to-r from-blue-600 to-indigo-600 border-none px-6" onclick="ExamConfig.runAssignment()">
+                                <i data-lucide="sparkles" style="width:14px"></i> XẾP GIÁM THỊ
+                            </button>
+                            <input type="file" id="wiz-import-file" hidden accept=".json" onchange="ExamConfig.handleImport(event)">
+                        </div>
+                    </div>
+                </div>
+                <div class="pro-card shadow-2xl border-none overflow-hidden" style="border-radius: 24px; background: #fff;">
+                    <div id="wizard-progress-bar" class="p-8 bg-gray-50 border-b"></div>
+                    <div id="wizard-content" class="p-8 min-h-[450px]"></div>
+                    <div class="p-6 bg-gray-50 border-t flex justify-between items-center">
+                        <button id="wiz-prev-btn" class="btn btn-outline px-8" onclick="ExamConfig.prevStep()">
+                            <i data-lucide="chevron-left"></i> QUAY LẠI
+                        </button>
+                        <button id="wiz-next-btn" class="btn btn-primary px-10 bg-blue-600 hover:bg-blue-700 shadow-lg" onclick="ExamConfig.nextStep()">
+                            TIẾP TỤC <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            mainContent.appendChild(section);
+        }
+    };
+
+    const Renderers = {
+        step1: () => `
+            <div class="pro-section-title text-xl mb-4">1. Thông tin chung Kỳ thi</div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-600 mb-1">Tên Kỳ thi</label>
+                    <input type="text" class="w-full border rounded p-2 focus:ring-2 focus:ring-blue-500" value="${UIUtils.escape(_state.info.name)}" 
+                           placeholder="VD: Kiểm tra cuối kỳ II" onchange="ExamConfig.updateInfo('name', this.value)">
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-600 mb-1">Học kỳ</label>
+                    <select class="w-full border rounded p-2" onchange="ExamConfig.updateInfo('semester', this.value)">
+                        <option ${_state.info.semester === 'Học kỳ I' ? 'selected' : ''}>Học kỳ I</option>
+                        <option ${_state.info.semester === 'Học kỳ II' ? 'selected' : ''}>Học kỳ II</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="block text-sm font-bold text-gray-600 mb-1">Năm học</label>
+                    <input type="text" class="w-full border rounded p-2" value="${UIUtils.escape(_state.info.year)}" onchange="ExamConfig.updateInfo('year', this.value)">
+                </div>
+            </div>
+        `,
+        step2: () => `
+            <div class="flex justify-between items-center mb-4">
+                <div class="pro-section-title text-xl mb-0">2. Lịch thi & Phân ca</div>
+                <button class="btn btn-primary btn-sm" onclick="ExamConfig.addScheduleRow()">
+                    <i data-lucide="plus" style="width:14px"></i> THÊM BUỔI THI
+                </button>
+            </div>
+            <div class="overflow-x-auto border rounded bg-white">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b">
+                        <tr>
+                            <th class="p-2 text-left">Ngày thi</th>
+                            <th class="p-2 text-left">Buổi</th>
+                            <th class="p-2 text-left">Khối</th>
+                            <th class="p-2 text-left">Môn thi (Cách nhau dấu phẩy)</th>
+                            <th class="p-2 text-center">Số phòng</th>
+                            <th class="p-2 text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${_state.schedules.length === 0 ? 
+                            '<tr><td colspan="6" class="p-8 text-center text-gray-400 italic">Chưa có lịch thi. Bấm nút để thêm.</td></tr>' :
+                            _state.schedules.map((s, i) => `
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="p-1"><input type="date" class="w-full border-none bg-transparent" value="${s.date}" onchange="ExamConfig.updateSchedule(${i}, 'date', this.value)"></td>
+                                <td class="p-1">
+                                    <select class="w-full border-none bg-transparent" onchange="ExamConfig.updateSchedule(${i}, 'session', this.value)">
+                                        <option ${s.session === 'Sáng' ? 'selected' : ''}>Sáng</option>
+                                        <option ${s.session === 'Chiều' ? 'selected' : ''}>Chiều</option>
+                                    </select>
+                                </td>
+                                <td class="p-1"><input type="text" class="w-full border-none bg-transparent p-1" value="${UIUtils.escape(s.grade)}" onchange="ExamConfig.updateSchedule(${i}, 'grade', this.value)" placeholder="K12"></td>
+                                <td class="p-1"><input type="text" class="w-full border-none bg-transparent p-1 font-semibold" value="${UIUtils.escape(s.subjects)}" onchange="ExamConfig.updateSchedule(${i}, 'subjects', this.value)" placeholder="Toán, Lý..."></td>
+                                <td class="p-1 text-center"><input type="number" class="w-16 border-none bg-transparent p-1 text-center" value="${s.roomCount}" onchange="ExamConfig.updateSchedule(${i}, 'roomCount', this.value)"></td>
+                                <td class="p-1 text-center"><button class="text-red-500 p-2" onclick="ExamConfig.removeScheduleRow(${i})"><i data-lucide="trash-2" style="width:16px"></i></button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `,
+        step3: () => `
+            <div class="flex justify-between items-center mb-4">
+                <div class="pro-section-title text-xl mb-0">3. Danh sách Phòng thi</div>
+                <div class="flex gap-2">
+                    <button class="btn btn-outline btn-sm" onclick="ExamConfig.generateRooms()">
+                        <i data-lucide="refresh-cw" style="width:14px"></i> SINH TỰ ĐỘNG
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="ExamConfig.addRoomRow()">
+                        <i data-lucide="plus" style="width:14px"></i> THÊM PHÒNG
+                    </button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 max-h-[400px] overflow-y-auto p-2 border rounded bg-gray-50">
+                ${_state.rooms.length === 0 ? 
+                    '<div class="col-span-full py-12 text-center text-gray-400">Bấm "Sinh tự động" để tạo danh sách phòng thi dựa trên lịch thi.</div>' :
+                    _state.rooms.map((r, i) => `
+                    <div class="bg-white p-2 border rounded shadow-sm flex justify-between items-center group">
+                        <input type="text" class="w-full border-none text-sm font-bold focus:ring-0" value="${UIUtils.escape(r.name)}" onchange="ExamConfig.updateRoom(${i}, this.value)">
+                        <button class="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-opacity" onclick="ExamConfig.removeRoomRow(${i})">
+                            <i data-lucide="x" style="width:14px"></i>
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `,
+        step4: () => {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            return `
+            <div class="flex justify-between items-center mb-4">
+                <div class="pro-section-title text-xl mb-0">4. Quản lý Giám thị</div>
+                <div class="flex gap-2">
+                    <button class="btn btn-outline btn-sm bg-emerald-50 text-emerald-700 border-emerald-300 font-bold hover:bg-emerald-100" onclick="ExamConfig.addNewProctor()">
+                        <i data-lucide="user-plus" style="width:14px"></i> THÊM GIÁM THỊ
+                    </button>
+                    <button class="btn btn-outline btn-sm bg-red-50 text-red-600 border-red-300 font-bold hover:bg-red-100" onclick="ExamConfig.removeAllProctors()">
+                        <i data-lucide="trash-2" style="width:14px"></i> XÓA TẤT CẢ
+                    </button>
+                    <button class="btn btn-outline btn-sm" onclick="ExamConfig.downloadProctorSample()">
+                        <i data-lucide="download" style="width:14px"></i> FILE MẪU
+                    </button>
+                    <button class="btn btn-primary btn-sm shadow-md" onclick="document.getElementById('indep-proctor-import').click()">
+                        <i data-lucide="upload" style="width:14px"></i> IMPORT EXCEL
+                    </button>
+                    <input type="file" id="indep-proctor-import" hidden accept=".xlsx, .xls" onchange="ExamConfig.handleExcelImport(event)">
+                </div>
+            </div>
+            <div class="overflow-x-auto border rounded max-h-[400px]">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b sticky top-0 z-10">
+                        <tr>
+                            <th class="p-2 text-center w-12">STT</th>
+                            <th class="p-2 text-left">Họ và Tên</th>
+                            <th class="p-2 text-center w-32">SĐT Zalo</th>
+                            <th class="p-2 text-left">Đơn vị / Chuyên môn</th>
+                            <th class="p-2 text-center w-20">Giới tính</th>
+                            <th class="p-2 text-center w-24">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.length === 0 ? 
+                            '<tr><td colspan="6" class="p-12 text-center text-gray-400 italic">Vui lòng Import danh sách giám thị.</td></tr>' :
+                            list.map((p, i) => `
+                            <tr class="border-b hover:bg-blue-50 transition-colors">
+                                <td class="text-center p-2 text-gray-400">${i+1}</td>
+                                <td class="p-2 font-bold text-blue-900">${UIUtils.escape(p.name)}</td>
+                                <td class="text-center p-2 font-mono text-xs ${p.phone ? 'text-slate-800 font-semibold' : 'text-amber-500'}">${UIUtils.escape(p.phone || 'Chưa nhập')}</td>
+                                <td class="p-2 text-gray-600">${UIUtils.escape(p.unit)}</td>
+                                <td class="text-center p-2">${UIUtils.escape(p.gender || 'Nam')}</td>
+                                <td class="text-center p-2">
+                                    <div class="flex items-center justify-center gap-2">
+                                        <button class="btn-refresh-mini p-1 text-blue-500 hover:text-blue-700 bg-white shadow-sm border border-slate-200 rounded-lg" onclick="ExamConfig.editProctorModal(${i})" title="Sửa thông tin">
+                                            <i data-lucide="edit" style="width:14px"></i>
+                                        </button>
+                                        <button class="btn-refresh-mini p-1 text-red-500 hover:text-red-700 bg-white shadow-sm border border-slate-200 rounded-lg" onclick="ExamConfig.removeProctor(${i})" title="Xóa">
+                                            <i data-lucide="trash-2" style="width:14px"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            `;
+        },
+        step5: () => {
+            const c = _state.constraints;
+            const proctorsCount = (typeof window.proctorList !== 'undefined' ? window.proctorList : []).length;
+            const maxRoomsPerSession = Math.max(0, ...(_state.schedules.map(s => parseInt(s.roomCount) || 0)));
+            const isInsufficient = proctorsCount < (maxRoomsPerSession * 2);
+
+            return `
+            <div class="pro-section-title text-xl mb-4">5. Thiết lập & Kiểm tra</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="space-y-4">
+                    <h3 class="font-bold text-gray-700 uppercase text-xs tracking-wider">Ràng buộc hệ thống</h3>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.noBackToBack ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('noBackToBack')">
+                        <div>
+                            <div class="font-semibold">Tránh gác ca liên tiếp</div>
+                            <div class="text-xs text-gray-400">Giảm thiểu việc giám thị phải gác Sáng - Chiều cùng ngày.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.genderDiversity ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('genderDiversity')">
+                        <div>
+                            <div class="font-semibold">Đa dạng giới tính</div>
+                            <div class="text-xs text-gray-400">Ưu tiên mỗi phòng có 1 Nam - 1 Nữ.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.subjectConflict ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('subjectConflict')">
+                        <div>
+                            <div class="font-semibold">Chặn trùng chuyên môn</div>
+                            <div class="text-xs text-gray-400">Giám thị không gác môn mình đang giảng dạy.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.homeroomConflict ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('homeroomConflict')">
+                        <div>
+                            <div class="font-semibold">Tránh gác lớp chủ nhiệm</div>
+                            <div class="text-xs text-gray-400">Không phân công giám thị gác chính lớp mình chủ nhiệm.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.departmentDiversity ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('departmentDiversity')">
+                        <div>
+                            <div class="font-semibold">Cân bằng tổ chuyên môn</div>
+                            <div class="text-xs text-gray-400">Ưu tiên 2 giám thị trong 1 phòng không cùng tổ chuyên môn.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.roomRotation ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('roomRotation')">
+                        <div>
+                            <div class="font-semibold">Xoay vòng phòng thi</div>
+                            <div class="text-xs text-gray-400">Đảm bảo giám thị không gác lại phòng cũ đã từng gác.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.noRepeatPairing ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('noRepeatPairing')">
+                        <div>
+                            <div class="font-semibold">Chặn cặp đôi lặp lại</div>
+                            <div class="text-xs text-gray-400">Tránh việc 2 người cùng gác chung với nhau quá 1 lần.</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 border rounded hover:bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="w-5 h-5 rounded" ${c.strictDailyLimit ? 'checked' : ''} onchange="ExamConfig.toggleConstraint('strictDailyLimit')">
+                        <div>
+                            <div class="font-semibold">Giới hạn 1 ca/ngày</div>
+                            <div class="text-xs text-gray-400">Ép buộc mỗi giám thị chỉ được trực tối đa 1 buổi mỗi ngày.</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-xl border-2 border-dashed">
+                    <h3 class="font-bold text-gray-700 mb-4">Thống kê sẵn sàng</h3>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center text-sm">
+                            <span>Số phòng tối đa/ca:</span>
+                            <span class="font-bold">${maxRoomsPerSession}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span>Giám thị hiện có:</span>
+                            <span class="font-bold ${isInsufficient ? 'text-red-500' : 'text-green-600'}">${proctorsCount}</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span>Cần tối thiểu/ca (x2):</span>
+                            <span class="font-bold text-blue-600">${maxRoomsPerSession * 2}</span>
+                        </div>
+                    </div>
+
+                    ${isInsufficient ? `
+                        <div class="mt-4 p-3 bg-red-100 text-red-700 rounded text-xs leading-relaxed">
+                            ⚠️ <strong>Cảnh báo:</strong> Số lượng giám thị hiện tại không đủ để bao phủ ca thi có nhiều phòng nhất (${maxRoomsPerSession} phòng). Vui lòng thêm ít nhất ${ (maxRoomsPerSession * 2) - proctorsCount } giám thị nữa.
+                        </div>
+                    ` : `
+                        <div class="mt-4 p-3 bg-green-100 text-green-700 rounded text-xs flex items-center gap-2">
+                            <i data-lucide="check-circle" style="width:16px"></i> Hệ thống đã sẵn sàng phân công cho mọi ca thi!
+                        </div>
+                    `}
+                </div>
+            </div>
+            `;
+        }
+    };
+
+    return {
+        init() {
+            injectUI();
+            Utils.syncWithGlobals();
+            ExamStore.load();
+            
+            ExamStore.events.addEventListener('stateChanged', () => {
+                ExamStore.save();
+            });
+            
+            this.renderStep();
+        },
+
+        saveState() { ExamStore.save(); },
+        loadState() { ExamStore.load(); },
+
+        renderStep() {
+            const step = _state.currentStep;
+            const content = document.getElementById('wizard-content');
+            const progress = document.getElementById('wizard-progress-bar');
+            if (!content || !progress) return;
+
+            progress.innerHTML = `
+                <div class="flex justify-between relative">
+                    <div class="absolute top-5 left-0 w-full h-0.5 bg-gray-100 -z-10"></div>
+                    <div class="absolute top-5 left-0 h-0.5 bg-blue-500 -z-10 transition-all duration-500" style="width: ${ (step-1)/(STEPS.length-1)*100 }%"></div>
+                    ${STEPS.map((s, i) => `
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 
+                                ${i+1 < step ? 'bg-green-500 text-white' : (i+1 === step ? 'bg-blue-600 text-white scale-110 shadow-lg' : 'bg-white border-2 text-gray-300')}">
+                                ${i+1 < step ? '<i data-lucide="check" style="width:18px"></i>' : i+1}
+                            </div>
+                            <span class="text-[10px] mt-2 font-semibold uppercase tracking-tighter ${i+1 === step ? 'text-blue-600' : 'text-gray-400'}">${s.label}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            const renderFn = Renderers[`step${step}`];
+            if (renderFn) content.innerHTML = renderFn();
+
+            const prevBtn = document.getElementById('wiz-prev-btn');
+            const nextBtn = document.getElementById('wiz-next-btn');
+            if (prevBtn) prevBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+            if (nextBtn) nextBtn.textContent = step === STEPS.length ? 'HOÀN TẤT & LƯU' : 'TIẾP TỤC';
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        },
+
+        nextStep() {
+            if (_state.currentStep < STEPS.length) {
+                _state.currentStep++;
+                this.renderStep();
+            } else {
+                ExamStore.save();
+                UIUtils.showAlert("✅ Cấu hình đã được lưu thành công!", "success");
+            }
+        },
+
+        prevStep() {
+            if (_state.currentStep > 1) {
+                _state.currentStep--;
+                this.renderStep();
+            }
+        },
+
+        updateInfo(key, val) {
+            _state.info[key] = val;
+            ExamStore.save();
+        },
+
+        updateSchedule(idx, key, val) {
+            _state.schedules[idx][key] = val;
+            ExamStore.save();
+        },
+
+        addScheduleRow() {
+            _state.schedules.push({ date: new Date().toISOString().split('T')[0], session: 'Sáng', grade: '12', subjects: '', roomCount: 24 });
+            ExamStore.save();
+            this.renderStep();
+        },
+
+        removeScheduleRow(idx) {
+            _state.schedules.splice(idx, 1);
+            ExamStore.save();
+            this.renderStep();
+        },
+
+        generateRooms() {
+            if (_state.schedules.length === 0) {
+                UIUtils.showAlert("⚠️ Chưa có lịch thi. Vui lòng thiết lập tại Bước 1!", "warning");
+                return;
+            }
+            const gradeMaxRooms = {};
+            _state.schedules.forEach(s => {
+                const grade = s.grade || 'K';
+                const count = parseInt(s.roomCount) || 0;
+                if (count > (gradeMaxRooms[grade] || 0)) {
+                    gradeMaxRooms[grade] = count;
+                }
+            });
+
+            const newRooms = [];
+            let globalIdx = 1;
+            const sortedGrades = Object.keys(gradeMaxRooms).sort();
+            
+            sortedGrades.forEach(grade => {
+                const rawPrefix = grade.replace(/\s+/g, '');
+                const gradeNum = rawPrefix.match(/^(\d+)$/);
+                const prefix = gradeNum ? `K${rawPrefix}` : rawPrefix;
+                const count = gradeMaxRooms[grade];
+                for (let i = 1; i <= count; i++) {
+                    newRooms.push({
+                        id: `R${globalIdx++}`,
+                        name: `${prefix}-P${i.toString().padStart(2, '0')}`,
+                        grade: grade
+                    });
+                }
+            });
+            
+            _state.rooms = newRooms;
+            ExamStore.save();
+            this.renderStep();
+            UIUtils.showAlert(`✅ Đã sinh ${newRooms.length} phòng thi mẫu.`, 'success');
+        },
+
+        updateRoom(idx, val) {
+            _state.rooms[idx].name = val;
+            ExamStore.save();
+        },
+
+        addRoomRow() {
+            const next = _state.rooms.length + 1;
+            _state.rooms.push({ id: `R${next}`, name: `P-${next.toString().padStart(2, '0')}` });
+            ExamStore.save();
+            this.renderStep();
+        },
+
+        removeRoomRow(idx) {
+            _state.rooms.splice(idx, 1);
+            ExamStore.save();
+            this.renderStep();
+        },
+
+        removeProctor(idx) {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            if (confirm(`Bạn có chắc chắn muốn xóa giám thị ${list[idx].name}?`)) {
+                list.splice(idx, 1);
+                ExamStore.save();
+                this.renderStep();
+            }
+        },
+
+        removeAllProctors() {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            if (list.length === 0) {
+                UIUtils.showAlert("⚠️ Danh sách giám thị đang trống!", "warning");
+                return;
+            }
+            if (confirm("⚠️ CẢNH BÁO: Bạn có chắc chắn muốn xóa TOÀN BỘ danh sách giám thị hiện tại?")) {
+                list.length = 0;
+                window.proctorList = list;
+                if (typeof proctorList !== 'undefined') proctorList = list;
+                ExamStore.save();
+                this.renderStep();
+                UIUtils.showAlert("🗑️ Đã xóa toàn bộ danh sách giám thị!", "success");
+            }
+        },
+
+        addNewProctor() {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            const name = prompt("Nhập Họ và Tên giám thị mới:");
+            if (!name) return;
+            const phone = prompt("Nhập Số điện thoại Zalo (tùy chọn):", "") || "";
+            const unit = prompt("Nhập Đơn vị / Tổ bộ môn (tùy chọn):", "Toán") || "Chung";
+            const gender = confirm(`Giám thị ${name} là Nữ? (Bấm OK = Nữ, Hủy = Nam)`) ? "Nữ" : "Nam";
+            const classesStr = prompt("Nhập Lớp chủ nhiệm (cách nhau dấu phẩy, nếu có):", "") || "";
+            const classes = classesStr ? classesStr.split(/[,;]/).map(s => s.trim()) : [];
+            
+            const newP = {
+                id: `P-${Date.now()}-${list.length}`,
+                name: name.trim(),
+                phone: phone.replace(/[^0-9]/g, ''),
+                unit: unit.trim(),
+                gender: gender,
+                classes: classes
+            };
+            list.push(newP);
+            window.proctorList = list;
+            if (typeof proctorList !== 'undefined') proctorList = list;
+            ExamStore.save();
+            this.renderStep();
+            UIUtils.showAlert(`✅ Đã thêm giám thị mới: ${newP.name}`, "success");
+        },
+
+        editProctorModal(idx) {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            const p = list[idx];
+            if (!p) return;
+
+            const modalId = 'modal-edit-proctor';
+            let overlay = document.getElementById(modalId);
+            if (overlay) overlay.remove();
+
+            overlay = document.createElement('div');
+            overlay.id = modalId;
+            overlay.className = 'custom-alert-overlay';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.background = 'rgba(15, 23, 42, 0.75)';
+            overlay.style.backdropFilter = 'blur(12px)';
+            overlay.style.zIndex = '999999';
+
+            overlay.innerHTML = `
+                <div class="bg-white rounded-3xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden border border-slate-200 p-8" onclick="event.stopPropagation()">
+                    <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xl shadow-inner">
+                            <i data-lucide="user-check" style="width:24px; height:24px;"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800" style="margin:0">Chỉnh Sửa Thông Tin Giám Thị</h3>
+                            <p class="text-xs text-slate-400" style="margin:0">Cập nhật hồ sơ và phương thức liên lạc Zalo</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Họ và Tên</label>
+                            <input type="text" id="edit-p-name" class="form-control text-sm w-full font-semibold text-slate-800" value="${UIUtils.escape(p.name || '')}" style="border-radius:12px">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Số Điện Thoại Zalo</label>
+                                <input type="text" id="edit-p-phone" class="form-control text-sm w-full font-mono text-blue-600 font-bold" placeholder="VD: 0912..." value="${UIUtils.escape(p.phone || '')}" style="border-radius:12px">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Giới Tính</label>
+                                <select id="edit-p-gender" class="form-control text-sm w-full font-semibold text-slate-800" style="border-radius:12px">
+                                    <option value="Nam" ${p.gender === 'Nam' ? 'selected' : ''}>Nam</option>
+                                    <option value="Nữ" ${p.gender === 'Nữ' ? 'selected' : ''}>Nữ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Đơn vị / Tổ Bộ Môn</label>
+                            <input type="text" id="edit-p-unit" class="form-control text-sm w-full font-semibold text-slate-800" value="${UIUtils.escape(p.unit || '')}" style="border-radius:12px">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Lớp Chủ Nhiệm (Cách nhau dấu phẩy)</label>
+                            <input type="text" id="edit-p-classes" class="form-control text-sm w-full font-semibold text-slate-800" placeholder="VD: 12A1, 12A2" value="${UIUtils.escape((p.classes || []).join(', '))}" style="border-radius:12px">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-4">
+                        <button class="btn btn-outline flex-1 py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-50 border-slate-300 cursor-pointer" onclick="this.closest('.custom-alert-overlay').remove()">HỦY BỎ</button>
+                        <button class="btn bg-blue-600 hover:bg-blue-700 text-white flex-1 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 cursor-pointer" onclick="ExamConfig.saveProctorEdit(${idx})" style="border:none">LƯU THAY ĐỔI</button>
+                    </div>
+                </div>
+            `;
+
+            overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+            document.body.appendChild(overlay);
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        },
+
+        saveProctorEdit(idx) {
+            const list = (typeof window.proctorList !== 'undefined') ? window.proctorList : (typeof proctorList !== 'undefined' ? proctorList : []);
+            const p = list[idx];
+            if (!p) return;
+
+            const name = document.getElementById('edit-p-name')?.value || '';
+            if (!name.trim()) {
+                UIUtils.showAlert("⚠️ Họ và Tên không được để trống!", "warning");
+                return;
+            }
+            const phone = document.getElementById('edit-p-phone')?.value || '';
+            const gender = document.getElementById('edit-p-gender')?.value || 'Nam';
+            const unit = document.getElementById('edit-p-unit')?.value || '';
+            const classesStr = document.getElementById('edit-p-classes')?.value || '';
+
+            p.name = name.trim();
+            p.phone = phone.replace(/[^0-9]/g, '');
+            p.gender = gender;
+            p.unit = unit.trim();
+            p.classes = classesStr ? classesStr.split(/[,;]/).map(s => s.trim()).filter(Boolean) : [];
+
+            document.getElementById('modal-edit-proctor')?.remove();
+            ExamStore.save();
+            this.renderStep();
+            if (typeof ProctorStore !== 'undefined' && typeof ProctorStore.saveToLocal === 'function') ProctorStore.saveToLocal();
+            UIUtils.showAlert(`✅ Đã cập nhật thông tin giám thị: ${p.name}`, "success");
+        },
+
+        downloadProctorSample() {
+            try {
+                const data = [
+                    ["STT", "Họ và Tên", "Số điện thoại Zalo", "Đơn vị / Chuyên môn", "Giới tính", "Ghi chú (Lớp CN)"],
+                    [1, "Nguyễn Văn A", "0912345678", "Toán", "Nam", "12A1, 12A5"],
+                    [2, "Trần Thị B", "0987654321", "Văn", "Nữ", "12A2"],
+                    [3, "Lê Văn C", "0901112233", "Anh", "Nam", ""]
+                ];
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 20 }];
+                XLSX.utils.book_append_sheet(wb, ws, "DS_GIAM_THI");
+                XLSX.writeFile(wb, "Mau_Danh_Sach_Giam_Thi.xlsx");
+            } catch (err) {
+                console.error(err);
+                UIUtils.showAlert("❌ Lỗi xuất file mẫu!", "danger");
+            }
+        },
+
+        downloadRoomSample() {
+            try {
+                const data = [
+                    ["STT", "Tên Phòng", "Danh sách lớp (cách nhau dấu phẩy)", "Ghi chú"],
+                    [1, "Phòng 01", "12A1, 12A2", "Dãy A tầng 1"],
+                    [2, "Phòng 02", "12A3, 12A4", "Dãy A tầng 1"]
+                ];
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 30 }, { wch: 20 }];
+                XLSX.utils.book_append_sheet(wb, ws, "Mau_Phong_Thi");
+                XLSX.writeFile(wb, "Mau_Danh_Sach_Phong_Thi.xlsx");
+            } catch (err) {
+                UIUtils.showAlert("❌ Lỗi xuất file mẫu!", "danger");
+            }
+        },
+
+        toggleConstraint(key) {
+            _state.constraints[key] = !_state.constraints[key];
+            ExamStore.save();
+            this.renderStep();
+        },
+

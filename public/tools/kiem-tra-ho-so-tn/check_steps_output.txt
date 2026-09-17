@@ -1,0 +1,8 @@
+--- STEP 88 ---
+u:* Tên văn bản, Thông tin Bên A, Thông tin Bên B, Các điều khoản thỏa thuận.\n\n4. **Các nhóm đặc thù giữ nguyên:**\n   - Quyết định (Cá biệt)\n   - Biên bản\n   - Giấy mời\n   - Giấy giới thiệu\n   - Giấy ủy quyền\n   - Giấy nghỉ phép\n\n### Cập nhật `decree30_editor.js`\n\n#### [MODIFY] [decree30
+--- STEP 125 ---
+ịnh, Hướng dẫn, Chương trình, Phương án, Đề án, Dự án.\n- **Văn bản hành chính chung:** Báo cáo, Kế hoạch, Thông báo, Thông cáo, Công điện, Thư công, Biên bản, Quyết định.\n- **Các loại Giấy - Phiếu:** Giấy giới thiệu, Giấy mời, Giấy ủy quyền, Giấy nghỉ phép, Phiếu gửi, Phiếu chuyển, Phiếu báo.\n- *
+--- STEP 950 ---
+"powershell -Command \"Get-ChildItem -Filter *.html -Recurse | Select-String -Pattern 'Biên bản' -Encoding UTF8\""
+"Searching for Biên bản in backups"
+"Search for Biên bản"

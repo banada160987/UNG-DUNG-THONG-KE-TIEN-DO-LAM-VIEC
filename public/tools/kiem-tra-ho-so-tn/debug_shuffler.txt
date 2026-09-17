@@ -1,0 +1,40 @@
+                </div>
+
+                <div class="card">
+                    <div class="upload-zone" onclick="document.getElementById('excel-file').click()">
+                        <i data-lucide="upload-cloud"></i>
+                        <h3 style="font-size: 1.25rem; margin-bottom: 8px;">Tải lên một hoặc nhiều tệp Excel</h3>
+                        <p style="color: var(--text-muted);">Hệ thống sẽ lưu tất cả các tệp vào <b>Kho dữ liệu</b> để
+                            đối chiếu và gộp.</p>
+                        <button class="btn btn-primary mt-4">CHỌN TỆP TỪ MÁY TÍNH</button>
+                    </div>
+                    <input type="file" id="excel-file" accept=".xlsx, .xls" multiple hidden>
+                </div>
+            </section>
+
+            <!-- SECTION: DECREE 30 EDITOR -->
+            <section id="view-decree30-editor" class="section-view">
+                <!-- Injected dynamically by decree30_editor.js -->
+            </section>
+
+            <!-- SECTION: SMART EXAM SHUFFLER -->
+            <section id="view-exam-shuffler" class="section-view hidden">
+                <!-- Injected by exam_shuffler.js -->
+            </section>
+
+            <!-- SECTION: CONFIG -->
+            <section id="view-config" class="section-view hidden">
+                <div class="page-header">
+                    <h1 class="page-title">Thiết lập hệ thống</h1>
+                    <p class="page-subtitle">Cấu hình cách hệ thống đọc file Excel và lựa chọn các cột thông tin cần
+                        hiển thị.</p>
+                </div>
+
+                <div class="card">
+                    <div id="data-preview-area">
+                        <div class="preview-placeholder"
+                            style="text-align:center; padding: 40px; color: var(--text-muted); border: 1px dashed var(--border); border-radius: var(--radius);">
+                            Dữ liệu xem trước sẽ hiển thị ở đây sau khi tải tệp thành công.
+                        </div>
+                    </div>
+                </div>

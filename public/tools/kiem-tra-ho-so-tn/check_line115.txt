@@ -1,0 +1,30 @@
+            </button>
+
+            </div>
+<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #ec4899;"><i data-lucide="crown" style="width:16px"></i> Vận hành Live (Premium)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-sub-items" style="display: none; overflow: hidden;">
+            <button id="btn-tab-command-center" class="nav-item" onclick="switchTab('command-center')">
+                <i data-lucide="activity" style="width:18px; color: #ec4899;"></i> <span style="font-weight: 700;">Trung tâm Chỉ huy Live</span>
+            </button>
+            <button id="btn-tab-exam-incidents" class="nav-item" onclick="switchTab('exam-incidents')">
+                <i data-lucide="alert-triangle" style="width:18px; color: #f59e0b;"></i> <span style="font-weight: 700;">Biên bản Sự cố (Ký số)</span>
+            </button>
+            <button id="btn-tab-graduation-predictor" class="nav-item" onclick="switchTab('graduation-predictor')">
+                <i data-lucide="trending-up" style="width:18px; color: #10b981;"></i> <span style="font-weight: 700;">Dự phóng Tốt nghiệp</span>
+            </button>
+
+            <button id="btn-tab-seating-chart" class="nav-item" onclick="switchTab('seating-chart')">
+                <i data-lucide="grid" style="width:18px; color: #3b82f6;"></i> <span style="font-weight: 700;">Sơ đồ Chỗ ngồi kéo thả</span>
+            </button>
+            </div>
+<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #0ea5e9;"><i data-lucide="wrench" style="width:16px"></i> Tiện ích hỗ trợ<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-sub-items" style="display: none; overflow: hidden;">
+            <button id="btn-tab-smas-excel" class="nav-item" onclick="switchTab('smas-excel')">
+                <i data-lucide="file-spreadsheet" style="width:18px; color: #10b981;"></i> <span
+                    style="font-weight: 700;">Lọc dữ liệu SMAS</span>
+            </button>
+            <button id="btn-tab-splitname" class="nav-item" onclick="switchTab('splitname')">
+                <i data-lucide="scissors" style="width:18px; color: #8b5cf6;"></i> <span
+                    style="font-weight: 700;">Tách Họ Tên</span>
+            </button>
+            <button id="btn-tab-photorename" class="nav-item" onclick="switchTab('photorename')">

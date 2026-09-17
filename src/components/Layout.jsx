@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -64,6 +64,7 @@ export default function Layout({ children, title }) {
   const menuItems = [
     // 1. 📚 QUẢN LÝ TỔ CHUYÊN MÔN & SỔ SÁCH GIẢNG DẠY
     { path: '/admin', icon: Home, label: '📊 Tổng Quan Điều Hành Sổ Sách', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
+    { path: '/kiem-tra-ho-so-tn', icon: FileSpreadsheet, label: '🎓 Kiểm Tra Hồ Sơ Thi TN THPT', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
     { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác & Thời Khóa Biểu', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ Cán Bộ & Phân Công Dạy', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },

@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
-  Home, FolderArchive, Layers, Sparkles, CalendarCheck
+  Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
@@ -613,6 +613,75 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <Search size={16} /> Xem Tình Hình Học Tập
+                  </button>
+                </div>
+
+                {/* CARD 5: KIỂM TRA HỒ SƠ THI TN THPT */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #bae6fd',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#e0f2fe',
+                        color: '#0284c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileSpreadsheet size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #bbf7d0'
+                      }}>
+                        GDPT 2018 (2+2)
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Kiểm Tra Hồ Sơ ĐK Thi TN THPT
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Đối chiếu CCCD 12 số, mã tỉnh, giới tính, 54 dân tộc, quy tắc 2+2 môn thi tự chọn, phân công giám thị CSP và đối chiếu SMAS.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/kiem-tra-ho-so-tn')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(2,132,199,0.3)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <FileSpreadsheet size={16} /> Mở Tool Kiểm Tra Hồ Sơ
                   </button>
                 </div>
 

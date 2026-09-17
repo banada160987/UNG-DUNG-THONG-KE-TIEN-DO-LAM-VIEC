@@ -1,0 +1,6 @@
+nclick="switchTab('proctor-config')">
+                <i data-lucide="settings-2" style="width:18px; color: #14b8a6;"></i> <span>Cấu hình Giám thị</span>
+            </button>
+            <button id="btn-tab-proctor-board" class="nav-item" onclick="switchTab('proctor-board')">
+                <i data-lucide="calendar-check" style="width:18px; color: #f97316;"></i> <span>Bảng phân công GT</span>
+  

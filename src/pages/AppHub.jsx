@@ -70,16 +70,31 @@ export default function AppHub() {
     let query = supabase.from('cbq_external_links').select('*').in('type', ['hub_global', 'hub_personal']).order('order_index', { ascending: true });
     
     const { data, error } = await query;
-    if (data) {
-      // Lọc dữ liệu: Nếu là giáo viên, lấy hub_global và hub_personal của riêng giáo viên đó
-      // Nếu là Admin, chỉ lấy hub_global
-      let filtered = data.filter(app => app.type === 'hub_global');
+    let filtered = [];
+    if (data && data.length > 0) {
+      filtered = data.filter(app => app.type === 'hub_global');
       if (isTeacherPortal && currentTeacher) {
         const personalApps = data.filter(app => app.type === 'hub_personal' && app.owner_id === currentTeacher.username);
         filtered = [...filtered, ...personalApps];
       }
-      setApps(filtered);
     }
+
+    // Luôn đảm bảo có ứng dụng Kiểm tra hồ sơ thi TN THPT
+    if (!filtered.some(a => (a.url || '').includes('kiem-tra-ho-so-tn'))) {
+      filtered.unshift({
+        id: 'exam_dossier_checker',
+        title: 'Kiểm Tra Hồ Sơ ĐK Thi TN THPT',
+        url: '/kiem-tra-ho-so-tn',
+        category: 'Khảo Thí & Dữ Liệu Thi',
+        description: 'Đối chiếu CCCD, giới tính, 54 dân tộc, quy tắc 2+2 môn thi tự chọn GDPT 2018 & phân công giám thị.',
+        icon: 'FileSpreadsheet',
+        bg_color: '#e0f2fe',
+        border_color: '#7dd3fc',
+        type: 'hub_global'
+      });
+    }
+
+    setApps(filtered);
     setLoading(false);
   };
 
