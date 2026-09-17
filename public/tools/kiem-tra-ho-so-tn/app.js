@@ -5980,6 +5980,174 @@ window.handleTemplateUpload = handleTemplateUpload;
 window.exportDataToTemplate = exportDataToTemplate;
 window.updateSmasMappingPreview = updateSmasMappingPreview;
 
+// ====================================================================
+// ECOSYSTEM INTEGRATION: 2-WAY SYNC WITH PARENT REACT SYSTEM (SUPABASE)
+// ====================================================================
+window.addEventListener('message', function(event) {
+    if (!event.data || typeof event.data !== 'object') return;
+    const { type, payload } = event.data;
+
+    // 1. NHẬN DỮ LIỆU HỌC SINH KHỐI 12 TỪ CSDL SUPABASE
+    if (type === 'LOAD_CBQ_STUDENTS') {
+        const students = Array.isArray(payload) ? payload : [];
+        if (students.length === 0) {
+            showAlert("⚠️ Không có dữ liệu học sinh được gửi từ CSDL trường.", "warning");
+            return;
+        }
+
+        const fileName = "CSDL_KHOI_12_TRUONG.xlsx";
+        const standardColumns = [
+            "STT", "Mã HS", "Họ và tên", "Lớp", "Số CCCD", "Ngày sinh", 
+            "Giới tính", "Dân tộc", "Số điện thoại", "Địa chỉ", 
+            "Toán", "Ngữ văn", "Tiếng Anh", "Vật lí", "Hóa học", 
+            "Sinh học", "Lịch sử", "Địa lí", "GDKT&PL", "Tin học", 
+            "Công nghệ", "Diện xét TN"
+        ];
+
+        const mappedRows = students.map((s, idx) => {
+            const electives = Array.isArray(s.exam_electives) ? s.exam_electives.map(e => String(e).toLowerCase()) : [];
+            const hasElective = (kw) => electives.some(e => e.includes(kw.toLowerCase()));
+
+            const row = {
+                _sourceFile: fileName,
+                "STT": idx + 1,
+                "Mã HS": s.student_code || `HS12-${String(idx + 1).padStart(3, '0')}`,
+                "Họ và tên": s.student_name || s.full_name || "",
+                "Lớp": s.student_class || "12A01",
+                "Số CCCD": s.identity_card || "",
+                "Ngày sinh": s.birth_date || "",
+                "Giới tính": s.gender === 'Nữ' || s.gender === '1' ? '1' : '0',
+                "Dân tộc": s.ethnicity || "Kinh",
+                "Số điện thoại": s.phone || "",
+                "Địa chỉ": s.address || s.current_address || "",
+                "Toán": "X",
+                "Ngữ văn": "X",
+                "Tiếng Anh": hasElective('anh') ? 'X' : '',
+                "Vật lí": hasElective('vật lý') || hasElective('vật lí') || hasElective('lý') ? 'X' : '',
+                "Hóa học": hasElective('hóa') ? 'X' : '',
+                "Sinh học": hasElective('sinh') ? 'X' : '',
+                "Lịch sử": hasElective('sử') ? 'X' : '',
+                "Địa lí": hasElective('địa') ? 'X' : '',
+                "GDKT&PL": hasElective('gdkt') || hasElective('gdcd') || hasElective('pháp luật') ? 'X' : '',
+                "Tin học": hasElective('tin') ? 'X' : '',
+                "Công nghệ": hasElective('công nghệ') || hasElective('cnn') || hasElective('cnc') ? 'X' : '',
+                "Diện xét TN": s.exam_graduation_area || "Diện 1"
+            };
+            return row;
+        });
+
+        const customMapping = {
+            cccd: "Số CCCD",
+            hoten: "Họ và tên",
+            lop: "Lớp",
+            ngaysinh: "Ngày sinh",
+            gioi_tinh: "Giới tính",
+            dantoc: "Dân tộc",
+            dienthoai: "Số điện thoại",
+            thuong_tru: "Địa chỉ",
+            toan: "Toán",
+            van: "Ngữ văn",
+            anh: "Tiếng Anh",
+            ly: "Vật lí",
+            hoa: "Hóa học",
+            sinh: "Sinh học",
+            su: "Lịch sử",
+            dia: "Địa lí",
+            gdkt: "GDKT&PL",
+            tin: "Tin học",
+            cnn: "Công nghệ",
+            dien_tn: "Diện xét TN"
+        };
+
+        dataStore[fileName] = {
+            columns: standardColumns,
+            data: mappedRows,
+            mapping: customMapping,
+            validated: true
+        };
+
+        if (typeof activeFile !== 'undefined') activeFile = fileName;
+        if (typeof dataTable !== 'undefined') dataTable = mappedRows;
+        if (typeof columns !== 'undefined') columns = standardColumns;
+        if (typeof mapping !== 'undefined') mapping = customMapping;
+
+        // Tiến hành thẩm định và thu thập thống kê
+        let validCount = 0;
+        let errorCount = 0;
+        const errorList = [];
+        const subjectStats = {
+            'Tiếng Anh': 0, 'Vật lí': 0, 'Hóa học': 0, 'Sinh học': 0,
+            'Lịch sử': 0, 'Địa lí': 0, 'GDKT&PL': 0, 'Tin học': 0, 'Công nghệ': 0
+        };
+
+        mappedRows.forEach((r, idx) => {
+            let res = { hasError: false, errorCols: {} };
+            if (typeof ValidationEngine !== 'undefined' && ValidationEngine.validateRow) {
+                res = ValidationEngine.validateRow(r, customMapping, []);
+            }
+            if (res.hasError) {
+                errorCount++;
+                errorList.push({
+                    stt: idx + 1,
+                    student_code: r["Mã HS"],
+                    student_name: r["Họ và tên"],
+                    student_class: r["Lớp"],
+                    identity_card: r["Số CCCD"],
+                    errors: Object.values(res.errorCols).join(" | ")
+                });
+            } else {
+                validCount++;
+            }
+
+            // Đếm môn tự chọn
+            if (r["Tiếng Anh"] === 'X') subjectStats['Tiếng Anh']++;
+            if (r["Vật lí"] === 'X') subjectStats['Vật lí']++;
+            if (r["Hóa học"] === 'X') subjectStats['Hóa học']++;
+            if (r["Sinh học"] === 'X') subjectStats['Sinh học']++;
+            if (r["Lịch sử"] === 'X') subjectStats['Lịch sử']++;
+            if (r["Địa lí"] === 'X') subjectStats['Địa lí']++;
+            if (r["GDKT&PL"] === 'X') subjectStats['GDKT&PL']++;
+            if (r["Tin học"] === 'X') subjectStats['Tin học']++;
+            if (r["Công nghệ"] === 'X') subjectStats['Công nghệ']++;
+        });
+
+        // Cập nhật giao diện
+        if (typeof renderFileList === 'function') renderFileList();
+        if (typeof renderTable === 'function') renderTable();
+        if (typeof renderStatistics === 'function') renderStatistics();
+        if (typeof switchTab === 'function') switchTab('datatable');
+
+        showAlert(`🎉 Đã nạp thành công ${students.length} học sinh Khối 12 từ CSDL Supabase!`, 'success');
+
+        // Bắn kết quả thẩm định ngược lại cho React app
+        try {
+            window.parent.postMessage({
+                type: 'CBQ_STUDENTS_VALIDATED',
+                payload: {
+                    total: students.length,
+                    validCount,
+                    errorCount,
+                    errorList,
+                    subjectStats
+                }
+            }, '*');
+        } catch (e) {
+            console.warn("Lỗi gửi postMessage về parent:", e);
+        }
+    }
+
+    // 2. NHẬN DỮ LIỆU CÁN BỘ GIÁO VIÊN COI THI TỪ SUPABASE
+    if (type === 'LOAD_CBQ_PROCTORS') {
+        const teachers = Array.isArray(payload) ? payload : [];
+        if (teachers.length > 0) {
+            showAlert(`🧑‍🏫 Đã tiếp nhận ${teachers.length} Giáo viên từ CSDL cho thuật toán Phân công Giám thị!`, 'success');
+            if (typeof renderProctorBoard === 'function') {
+                renderProctorBoard();
+            }
+        }
+    }
+});
+
 // Tự động kiểm tra trạng thái khởi tạo
 document.addEventListener('DOMContentLoaded', () => {
     applyUserRole(currentUser);

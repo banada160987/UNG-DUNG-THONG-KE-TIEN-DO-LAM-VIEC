@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar } from 'lucide-react';
+import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function StudentDashboard() {
@@ -12,6 +12,12 @@ export default function StudentDashboard() {
   const [myClubs, setMyClubs] = useState([]);
   const [selectedClubForQR, setSelectedClubForQR] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Exam Dossier State (GDPT 2018 - 2+2)
+  const [showExamModal, setShowExamModal] = useState(false);
+  const [examElectives, setExamElectives] = useState(['Tiếng Anh', 'Vật Lý']);
+  const [examArea, setExamArea] = useState('Diện 1');
+  const [savingExamDossier, setSavingExamDossier] = useState(false);
 
   // Profile Modal State (Chuẩn Dân cư, SMAS & CSDL Ngành)
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -459,6 +465,132 @@ export default function StudentDashboard() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* 🎓 HỒ SƠ ĐĂNG KÝ THI TỐT NGHIỆP THPT 2026 (GDPT 2018 - 2+2) */}
+      <div style={{
+        marginTop: '28px',
+        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+        borderRadius: '16px',
+        border: '1px solid #334155',
+        padding: '24px',
+        color: '#ffffff',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.12)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '14px', marginBottom: '18px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
+              <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: 'rgba(56,189,248,0.15)', color: '#38bdf8' }}>
+                <GraduationCap size={24} />
+              </div>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#ffffff' }}>
+                  Hồ Sơ Đăng Ký Thi Tốt Nghiệp THPT 2026 (Chương trình GDPT 2018)
+                </h2>
+                <p style={{ margin: 0, fontSize: '12.5px', color: '#94a3b8' }}>
+                  Tự động đối chiếu CCCD 12 số, kiểm tra tổ hợp 2+2 (Toán, Văn + 2 môn tự chọn) và diện xét TN
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              onClick={() => setShowExamModal(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: '700',
+                fontSize: '13px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(2,132,199,0.3)'
+              }}
+            >
+              <Edit3 size={15} /> Điều Chỉnh Tổ Hợp Môn 2+2
+            </button>
+            <Link
+              to="/kiem-tra-ho-so-tn"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                color: '#cbd5e1',
+                border: '1px solid #334155',
+                textDecoration: 'none',
+                fontWeight: '700',
+                fontSize: '13px'
+              }}
+            >
+              <ExternalLink size={15} /> Mở Tool Khảo Thí
+            </Link>
+          </div>
+        </div>
+
+        {/* 4 Checklist Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          
+          {/* Card 1: CCCD */}
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>1. CCCD 12 SỐ & DÂN CƯ</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: student.identity_card && student.identity_card.length === 12 ? '#34d399' : '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {student.identity_card && student.identity_card.length === 12 ? (
+                <>✅ {student.identity_card}</>
+              ) : (
+                <>⚠️ {student.identity_card || 'Chưa cập nhật'}</>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
+              {student.identity_card && student.identity_card.length === 12 ? 'Khớp mã tỉnh & năm sinh' : 'Cần nhập đủ 12 chữ số'}
+            </div>
+          </div>
+
+          {/* Card 2: Môn bắt buộc */}
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>2. MÔN THI BẮT BUỘC (2 MÔN)</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ✅ Toán & Ngữ Văn
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
+              Hình thức: Trắc nghiệm + Tự luận
+            </div>
+          </div>
+
+          {/* Card 3: Môn tự chọn 2+2 */}
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>3. MÔN TỰ CHỌN (CHỌN 02 MÔN)</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: examElectives.length === 2 ? '#34d399' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {examElectives.length === 2 ? (
+                <>✅ {examElectives.join(' + ')}</>
+              ) : (
+                <>⚠️ Sai số lượng ({examElectives.length} môn)</>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
+              Quy tắc 2+2 chuẩn GDPT 2018
+            </div>
+          </div>
+
+          {/* Card 4: Diện xét & Ảnh thẻ */}
+          <div style={{ backgroundColor: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '14px', border: '1px solid #334155' }}>
+            <div style={{ fontSize: '12px', color: '#94a3b8', fontWeight: '700', marginBottom: '4px' }}>4. DIỆN XÉT TN & ẢNH THẺ</div>
+            <div style={{ fontSize: '14px', fontWeight: '800', color: '#a78bfa', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              ⭐ {examArea} • ẢNH 4x6 CHUẨN
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
+              Đã số hóa định danh CCCD
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1149,6 +1281,190 @@ export default function StudentDashboard() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL ĐIỀU CHỈNH TỔ HỢP MÔN THI TỐT NGHIỆP THPT (2+2) */}
+      {showExamModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(0,0,0,0.65)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000,
+          padding: '16px',
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            padding: '28px',
+            maxWidth: '620px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '14px', marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '8px', borderRadius: '10px', backgroundColor: '#e0f2fe', color: '#0284c7' }}>
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: '#0f172a', fontSize: '18px', fontWeight: '800' }}>
+                    Đăng Ký Môn Thi Tốt Nghiệp THPT 2026
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Quy chế GDPT 2018: 02 Môn Bắt buộc + Chọn đúng 02 Môn Tự chọn
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowExamModal(false)} style={{ background: '#f1f5f9', border: 'none', color: '#64748b', cursor: 'pointer', padding: '8px', borderRadius: '50%' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Compulsory info */}
+            <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <CheckCircle2 size={20} color="#16a34a" />
+              <div style={{ fontSize: '13px', color: '#166534' }}>
+                <strong>2 Môn Thi Bắt Buộc:</strong> Toán học & Ngữ văn (Mặc định bắt buộc 100% thí sinh).
+              </div>
+            </div>
+
+            {/* Elective Selection */}
+            <div style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <label style={{ fontSize: '13.5px', fontWeight: '800', color: '#1e293b' }}>
+                  Lựa chọn 02 Môn Tự Chọn (*):
+                </label>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '800',
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  backgroundColor: examElectives.length === 2 ? '#dcfce7' : '#fee2e2',
+                  color: examElectives.length === 2 ? '#166534' : '#991b1b'
+                }}>
+                  Đã chọn: {examElectives.length}/2 môn {examElectives.length === 2 ? '✅ Đạt chuẩn' : '⚠️ Cần đúng 2 môn'}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {[
+                  'Tiếng Anh', 'Vật Lý', 'Hóa Học', 'Sinh Học', 
+                  'Lịch Sử', 'Địa Lý', 'GDKT&PL', 'Tin Học', 'Công Nghệ'
+                ].map(subj => {
+                  const isSelected = examElectives.includes(subj);
+                  return (
+                    <button
+                      key={subj}
+                      type="button"
+                      onClick={() => {
+                        if (isSelected) {
+                          setExamElectives(examElectives.filter(s => s !== subj));
+                        } else {
+                          if (examElectives.length >= 2) {
+                            alert("⚠️ Quy tắc 2+2: Chỉ được chọn tối đa đúng 02 môn tự chọn. Vui lòng bỏ bớt 1 môn trước khi chọn môn mới.");
+                            return;
+                          }
+                          setExamElectives([...examElectives, subj]);
+                        }
+                      }}
+                      style={{
+                        padding: '12px 14px',
+                        borderRadius: '10px',
+                        border: isSelected ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                        backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                        color: isSelected ? '#0369a1' : '#334155',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <span>{subj}</span>
+                      {isSelected ? <CheckCircle2 size={16} color="#0284c7" /> : <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '1px solid #cbd5e1' }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Graduation Area */}
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '6px' }}>
+                Diện Xét Tốt Nghiệp:
+              </label>
+              <select
+                value={examArea}
+                onChange={e => setExamArea(e.target.value)}
+                style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', backgroundColor: '#ffffff' }}
+              >
+                <option value="Diện 1">Diện 1 (Thí sinh không thuộc diện ưu tiên/khuyến khích)</option>
+                <option value="Diện 2">Diện 2 (Cộng 0.25đ - Con TB/BB, dân tộc thiểu số vùng thuận lợi...)</option>
+                <option value="Diện 3">Diện 3 (Cộng 0.50đ - Dân tộc thiểu số vùng ĐB khó khăn, con Liệt sĩ...)</option>
+              </select>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #f1f5f9', paddingTop: '16px' }}>
+              <button
+                type="button"
+                onClick={() => setShowExamModal(false)}
+                style={{ padding: '9px 18px', borderRadius: '8px', backgroundColor: '#f1f5f9', color: '#475569', border: 'none', fontWeight: '700', cursor: 'pointer', fontSize: '13px' }}
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                disabled={examElectives.length !== 2 || savingExamDossier}
+                onClick={async () => {
+                  setSavingExamDossier(true);
+                  try {
+                    const studentCode = student.student_code || student.username;
+                    await supabase
+                      .from('cbq_students')
+                      .update({
+                        exam_electives: examElectives,
+                        exam_graduation_area: examArea,
+                        exam_status: 'valid'
+                      })
+                      .eq('student_code', studentCode);
+
+                    alert(`🎉 ĐÃ LƯU TỔ HỢP MÔN THI THÀNH CÔNG!\n\nToán + Ngữ Văn + ${examElectives.join(' + ')} (${examArea}).`);
+                    setShowExamModal(false);
+                  } catch (err) {
+                    console.error(err);
+                    alert("Lỗi lưu hồ sơ: " + err.message);
+                  } finally {
+                    setSavingExamDossier(false);
+                  }
+                }}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  backgroundColor: examElectives.length === 2 ? '#0284c7' : '#94a3b8',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontWeight: '700',
+                  cursor: examElectives.length === 2 ? 'pointer' : 'not-allowed',
+                  fontSize: '13px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <Save size={16} /> {savingExamDossier ? 'Đang lưu...' : 'Lưu Tổ Hợp Môn'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
