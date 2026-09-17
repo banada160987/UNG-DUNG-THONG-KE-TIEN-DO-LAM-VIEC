@@ -654,36 +654,44 @@ export default function AdminSchedule() {
 
   // --- PRO SCHEDULER INITIALIZATION & EFFECTS ---
   useEffect(() => {
-    if (timetableData.length > 0 && teachingAssignments.length === 0) {
+    if (timetableData && timetableData.length > 0 && teachingAssignments.length === 0) {
       const extracted = extractAssignmentsFromTimetable(timetableData);
-      setTeachingAssignments(extracted);
+      if (Array.isArray(extracted)) {
+        setTeachingAssignments(extracted);
+      }
     }
   }, [timetableData]);
 
   useEffect(() => {
     try {
       const savedSchoolLocks = localStorage.getItem('cbq_school_locks');
-      if (savedSchoolLocks) setSchoolLocks(JSON.parse(savedSchoolLocks));
+      if (savedSchoolLocks) {
+        const parsed = JSON.parse(savedSchoolLocks);
+        if (Array.isArray(parsed)) setSchoolLocks(parsed);
+      }
       
       const savedTeacherLocks = localStorage.getItem('cbq_teacher_locks');
-      if (savedTeacherLocks) setTeacherLocks(JSON.parse(savedTeacherLocks));
+      if (savedTeacherLocks) {
+        const parsed = JSON.parse(savedTeacherLocks);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) setTeacherLocks(parsed);
+      }
 
       const savedDraft = localStorage.getItem('cbq_draft_timetable');
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setDraftSchedule(parsed);
-          const diag = generateAiDiagnostics(parsed, teachingAssignments, teacherLocks);
+          const diag = generateAiDiagnostics(parsed, teachingAssignments || [], teacherLocks || {});
           setSolverResult({
             success: true,
-            qualityScore: diag.qualityScore,
-            clashCount: diag.clashCount,
-            totalGaps: diag.totalGaps,
+            qualityScore: diag?.qualityScore || 100,
+            clashCount: diag?.clashCount || 0,
+            totalGaps: diag?.totalGaps || 0,
             stats: { totalPlaced: parsed.length, totalRequired: parsed.length, durationMs: 0 },
             unplacedCount: 0,
             unplacedList: [],
-            teacherClashList: diag.teacherClashList,
-            teachersWithGaps: diag.teachersWithGaps
+            teacherClashList: diag?.teacherClashList || [],
+            teachersWithGaps: diag?.teachersWithGaps || []
           });
         }
       }
@@ -707,15 +715,27 @@ export default function AdminSchedule() {
   useEffect(() => {
     try {
       const savedGroupA = localStorage.getItem('cbq_rotation_group_a');
-      if (savedGroupA) setRotationGroupA(JSON.parse(savedGroupA));
+      if (savedGroupA) {
+        const parsedA = JSON.parse(savedGroupA);
+        if (Array.isArray(parsedA)) setRotationGroupA(parsedA);
+      }
       const savedGroupB = localStorage.getItem('cbq_rotation_group_b');
-      if (savedGroupB) setRotationGroupB(JSON.parse(savedGroupB));
+      if (savedGroupB) {
+        const parsedB = JSON.parse(savedGroupB);
+        if (Array.isArray(parsedB)) setRotationGroupB(parsedB);
+      }
       const savedCycle = localStorage.getItem('cbq_active_rotation_cycle');
       if (savedCycle) setActiveRotationCycle(savedCycle);
       const savedC1 = localStorage.getItem('cbq_cycle_1_timetable');
-      if (savedC1) setCycle1Draft(JSON.parse(savedC1));
+      if (savedC1) {
+        const parsedC1 = JSON.parse(savedC1);
+        if (Array.isArray(parsedC1)) setCycle1Draft(parsedC1);
+      }
       const savedC2 = localStorage.getItem('cbq_cycle_2_timetable');
-      if (savedC2) setCycle2Draft(JSON.parse(savedC2));
+      if (savedC2) {
+        const parsedC2 = JSON.parse(savedC2);
+        if (Array.isArray(parsedC2)) setCycle2Draft(parsedC2);
+      }
     } catch (e) {
       console.warn("Lỗi load rotation data:", e);
     }
@@ -2084,7 +2104,7 @@ export default function AdminSchedule() {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
                   <div>
                     <h3 style={{ margin: 0, color: '#1e1b4b', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Lock size={20} color="#dc2626" /> 2. KHÓA TIẾT CỐ ĐỊNH TOÀN TRƯỜNG ({schoolLocks.length} TIẾT ĐANG KHÓA)
+                      <Lock size={20} color="#dc2626" /> 2. KHÓA TIẾT CỐ ĐỊNH TOÀN TRƯỜNG ({(schoolLocks || []).length} TIẾT ĐANG KHÓA)
                     </h3>
                     <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13.5px' }}>
                       Nhấp vào từng ô tiết để Khóa hoặc Mở khóa không cho AI xếp môn học vào thời điểm đó (VD: Chào cờ, Sinh hoạt lớp, Họp HĐSP).
@@ -2506,7 +2526,7 @@ export default function AdminSchedule() {
                 <div style={{ backgroundColor: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
                     <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '14px' }}>
-                      👥 Danh sách Phân chia 2 Nhóm Giáo viên ({rotationGroupA.length + rotationGroupB.length} GV):
+                      👥 Danh sách Phân chia 2 Nhóm Giáo viên ({((rotationGroupA || []).length + (rotationGroupB || []).length)} GV):
                     </span>
                     <button
                       type="button"
@@ -2523,14 +2543,14 @@ export default function AdminSchedule() {
                     <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '10px', border: activeRotationCycle === 'cycle_1' ? '2px solid #3b82f6' : '1px solid #cbd5e1' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
                         <span style={{ fontWeight: 'bold', color: '#1d4ed8', fontSize: '13.5px' }}>
-                          🔵 NHÓM A ({rotationGroupA.length} Giáo viên)
+                          🔵 NHÓM A ({(rotationGroupA || []).length} Giáo viên)
                         </span>
                         <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: activeRotationCycle === 'cycle_1' ? '#16a34a' : '#dc2626' }}>
                           {activeRotationCycle === 'cycle_1' ? '⚡ Đang dạy chiều' : '🔒 Đang nghỉ chiều'}
                         </span>
                       </div>
                       <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {rotationGroupA.map(t => (
+                        {(rotationGroupA || []).map(t => (
                           <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', fontSize: '12.5px' }}>
                             <span>{t}</span>
                             <button
@@ -2550,14 +2570,14 @@ export default function AdminSchedule() {
                     <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '10px', border: activeRotationCycle === 'cycle_2' ? '2px solid #7c3aed' : '1px solid #cbd5e1' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
                         <span style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '13.5px' }}>
-                          🟣 NHÓM B ({rotationGroupB.length} Giáo viên)
+                          🟣 NHÓM B ({(rotationGroupB || []).length} Giáo viên)
                         </span>
                         <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: activeRotationCycle === 'cycle_2' ? '#16a34a' : '#dc2626' }}>
                           {activeRotationCycle === 'cycle_2' ? '⚡ Đang dạy chiều' : '🔒 Đang nghỉ chiều'}
                         </span>
                       </div>
                       <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {rotationGroupB.map(t => (
+                        {(rotationGroupB || []).map(t => (
                           <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', fontSize: '12.5px' }}>
                             <span>{t}</span>
                             <button
@@ -2595,7 +2615,7 @@ export default function AdminSchedule() {
                       HỆ THỐNG XẾP THỜI KHÓA BIỂU TỰ ĐỘNG PRO
                     </h2>
                     <p style={{ margin: 0, fontSize: '14px', color: '#c7d2fe', lineHeight: '1.6' }}>
-                      Thuật toán AI tự động sắp xếp {teachingAssignments.length} phân công bộ môn, tối ưu hóa 0% xung đột, ghép tiết đôi liên tiếp, và triệt tiêu tiết lủng (tiết trống giữa buổi) cho từng giáo viên.
+                      Thuật toán AI tự động sắp xếp {(teachingAssignments || []).length} phân công bộ môn, tối ưu hóa 0% xung đột, ghép tiết đôi liên tiếp, và triệt tiêu tiết lủng (tiết trống giữa buổi) cho từng giáo viên.
                     </p>
                   </div>
 
@@ -2649,7 +2669,7 @@ export default function AdminSchedule() {
                       Chu kỳ Xoay Vòng Ca Chiều: <span style={{ color: '#7c3aed' }}>{activeRotationCycle === 'cycle_1' ? 'ĐỢT 1 (Nhóm A dạy chiều • Nhóm B nghỉ chiều)' : 'ĐỢT 2 (Nhóm B dạy chiều • Nhóm A nghỉ chiều)'}</span>
                     </div>
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
-                      Khống chế tối đa: <strong>{maxAfternoonDays} buổi chiều / tuần</strong> cho mỗi GV • Nhóm A: {rotationGroupA.length} GV • Nhóm B: {rotationGroupB.length} GV
+                      Khống chế tối đa: <strong>{maxAfternoonDays} buổi chiều / tuần</strong> cho mỗi GV • Nhóm A: {(rotationGroupA || []).length} GV • Nhóm B: {(rotationGroupB || []).length} GV
                     </div>
                   </div>
                 </div>
