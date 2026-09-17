@@ -36,7 +36,8 @@ import {
   runAiTimetableSolver,
   validateSlotSwap,
   generateAiDiagnostics,
-  exportDraftTimetableToExcel
+  exportDraftTimetableToExcel,
+  generateRotationGroups
 } from '../utils/proTimetableSolver';
 
 export default function AdminSchedule() {
@@ -103,6 +104,14 @@ export default function AdminSchedule() {
   const [solverProgress, setSolverProgress] = useState(0);
   const [solverPhase, setSolverPhase] = useState('');
   const [solverResult, setSolverResult] = useState(null);
+
+  // --- AFTERNOON ROTATION (XOAY VÒNG CA CHIỀU) STATE ---
+  const [maxAfternoonDays, setMaxAfternoonDays] = useState(2); // Tối đa 2 buổi chiều / tuần cho mỗi GV
+  const [rotationGroupA, setRotationGroupA] = useState([]); // Nhóm GV A
+  const [rotationGroupB, setRotationGroupB] = useState([]); // Nhóm GV B
+  const [activeRotationCycle, setActiveRotationCycle] = useState('cycle_1'); // 'cycle_1' (A dạy chiều, B nghỉ) | 'cycle_2' (B dạy chiều, A nghỉ)
+  const [cycle1Draft, setCycle1Draft] = useState(null); // Bản lưu TKB Đợt 1
+  const [cycle2Draft, setCycle2Draft] = useState(null); // Bản lưu TKB Đợt 2
 
   // Studio Interactive State
   const [studioView, setStudioView] = useState('class'); // 'class' | 'teacher'
@@ -695,6 +704,23 @@ export default function AdminSchedule() {
     }
   }, [availableClasses, availableTeachers]);
 
+  useEffect(() => {
+    try {
+      const savedGroupA = localStorage.getItem('cbq_rotation_group_a');
+      if (savedGroupA) setRotationGroupA(JSON.parse(savedGroupA));
+      const savedGroupB = localStorage.getItem('cbq_rotation_group_b');
+      if (savedGroupB) setRotationGroupB(JSON.parse(savedGroupB));
+      const savedCycle = localStorage.getItem('cbq_active_rotation_cycle');
+      if (savedCycle) setActiveRotationCycle(savedCycle);
+      const savedC1 = localStorage.getItem('cbq_cycle_1_timetable');
+      if (savedC1) setCycle1Draft(JSON.parse(savedC1));
+      const savedC2 = localStorage.getItem('cbq_cycle_2_timetable');
+      if (savedC2) setCycle2Draft(JSON.parse(savedC2));
+    } catch (e) {
+      console.warn("Lỗi load rotation data:", e);
+    }
+  }, []);
+
   // --- PRO SCHEDULER ACTIONS ---
   const handleRunAiSolver = () => {
     if (teachingAssignments.length === 0) {
@@ -704,11 +730,11 @@ export default function AdminSchedule() {
 
     setIsSolving(true);
     setSolverProgress(15);
-    setSolverPhase('Phân tích phân công bộ môn & khởi tạo ma trận không gian...');
+    setSolverPhase('Phân tích phân công bộ môn & áp dụng nhóm xoay vòng ca chiều...');
 
     setTimeout(() => {
       setSolverProgress(40);
-      setSolverPhase('Khóa các tiết cố định toàn trường & xếp các cặp tiết đôi...');
+      setSolverPhase(`Khóa các tiết cố định & khống chế tối đa ${maxAfternoonDays} buổi chiều/tuần cho GV...`);
 
       setTimeout(() => {
         setSolverProgress(70);
@@ -727,11 +753,22 @@ export default function AdminSchedule() {
                 teacherLocks: teacherLocks,
                 pinnedSlots: pinnedSlots,
                 doublePeriodSubjects: doublePeriodSubjects,
-                maxDailyPeriodsPerTeacher: maxDailyPeriods
+                maxDailyPeriodsPerTeacher: maxDailyPeriods,
+                maxAfternoonDaysPerTeacher: maxAfternoonDays
               });
 
               setDraftSchedule(res.schedule);
               localStorage.setItem('cbq_draft_timetable', JSON.stringify(res.schedule));
+
+              // Lưu snapshot theo Đợt
+              if (activeRotationCycle === 'cycle_1') {
+                setCycle1Draft(res.schedule);
+                localStorage.setItem('cbq_cycle_1_timetable', JSON.stringify(res.schedule));
+              } else {
+                setCycle2Draft(res.schedule);
+                localStorage.setItem('cbq_cycle_2_timetable', JSON.stringify(res.schedule));
+              }
+
               setSolverResult(res);
               setSolverProgress(100);
               setSolverPhase('🎉 Hoàn tất 100%! Đã tạo Thời khóa biểu Pro với 0% xung đột.');
@@ -748,6 +785,98 @@ export default function AdminSchedule() {
         }, 350);
       }, 350);
     }, 300);
+  };
+
+  // --- AFTERNOON ROTATION ACTIONS (XOAY VÒNG CA CHIỀU) ---
+  const handleAutoSplitRotationGroups = () => {
+    const validTeachers = availableTeachers.filter(t => t && t !== 'Chưa gán GV' && t !== 'GVCN');
+    const { groupA, groupB } = generateRotationGroups(validTeachers, teachingAssignments);
+    setRotationGroupA(groupA);
+    setRotationGroupB(groupB);
+    localStorage.setItem('cbq_rotation_group_a', JSON.stringify(groupA));
+    localStorage.setItem('cbq_rotation_group_b', JSON.stringify(groupB));
+    alert(`🎉 Đã tự động phân chia ${validTeachers.length} giáo viên thành:\n- Nhóm A (${groupA.length} GV)\n- Nhóm B (${groupB.length} GV)\ncân đối theo từng tổ chuyên môn!`);
+  };
+
+  const handleMoveTeacherRotation = (teacherName, targetGroup) => {
+    if (targetGroup === 'A') {
+      const newB = rotationGroupB.filter(t => t !== teacherName);
+      const newA = Array.from(new Set([...rotationGroupA, teacherName]));
+      setRotationGroupA(newA);
+      setRotationGroupB(newB);
+      localStorage.setItem('cbq_rotation_group_a', JSON.stringify(newA));
+      localStorage.setItem('cbq_rotation_group_b', JSON.stringify(newB));
+    } else {
+      const newA = rotationGroupA.filter(t => t !== teacherName);
+      const newB = Array.from(new Set([...rotationGroupB, teacherName]));
+      setRotationGroupA(newA);
+      setRotationGroupB(newB);
+      localStorage.setItem('cbq_rotation_group_a', JSON.stringify(newA));
+      localStorage.setItem('cbq_rotation_group_b', JSON.stringify(newB));
+    }
+  };
+
+  const handleApplyRotationCycle = (targetCycle, autoReSolve = false) => {
+    let groupToLockAfternoon = [];
+    let groupToTeachAfternoon = [];
+
+    let currentGroupA = rotationGroupA;
+    let currentGroupB = rotationGroupB;
+
+    if (currentGroupA.length === 0 && currentGroupB.length === 0) {
+      const validTeachers = availableTeachers.filter(t => t && t !== 'Chưa gán GV' && t !== 'GVCN');
+      const res = generateRotationGroups(validTeachers, teachingAssignments);
+      currentGroupA = res.groupA;
+      currentGroupB = res.groupB;
+      setRotationGroupA(currentGroupA);
+      setRotationGroupB(currentGroupB);
+      localStorage.setItem('cbq_rotation_group_a', JSON.stringify(currentGroupA));
+      localStorage.setItem('cbq_rotation_group_b', JSON.stringify(currentGroupB));
+    }
+
+    if (targetCycle === 'cycle_1') {
+      groupToTeachAfternoon = currentGroupA;
+      groupToLockAfternoon = currentGroupB;
+    } else {
+      groupToTeachAfternoon = currentGroupB;
+      groupToLockAfternoon = currentGroupA;
+    }
+
+    // Xây dựng teacherLocks: Khóa tất cả các tiết chiều (P6 - P10) cho nhóm được nghỉ
+    const updatedLocks = { ...teacherLocks };
+    const afternoonSlotKeys = [];
+    DAYS.forEach(day => {
+      PERIODS_AFTERNOON.forEach(p => afternoonSlotKeys.push(`${day}_${p}`));
+    });
+
+    groupToLockAfternoon.forEach(t => {
+      const existing = updatedLocks[t] || [];
+      const set = new Set([...existing, ...afternoonSlotKeys]);
+      updatedLocks[t] = Array.from(set);
+    });
+
+    groupToTeachAfternoon.forEach(t => {
+      const existing = updatedLocks[t] || [];
+      updatedLocks[t] = existing.filter(k => !afternoonSlotKeys.includes(k));
+    });
+
+    setActiveRotationCycle(targetCycle);
+    setTeacherLocks(updatedLocks);
+    localStorage.setItem('cbq_active_rotation_cycle', targetCycle);
+    localStorage.setItem('cbq_teacher_locks', JSON.stringify(updatedLocks));
+
+    if (autoReSolve) {
+      setTimeout(() => {
+        handleRunAiSolver();
+      }, 300);
+    } else {
+      alert(`✅ ĐÃ KÍCH HOẠT: ${targetCycle === 'cycle_1' ? 'ĐỢT 1' : 'ĐỢT 2'}!\n- Nhóm ${targetCycle === 'cycle_1' ? 'A' : 'B'} (${groupToTeachAfternoon.length} GV): DẠY CA CHIỀU (Tối đa ${maxAfternoonDays} buổi/tuần)\n- Nhóm ${targetCycle === 'cycle_1' ? 'B' : 'A'} (${groupToLockAfternoon.length} GV): MIỄN DẠY CHIỀU (Chỉ dạy ca sáng)`);
+    }
+  };
+
+  const handle1ClickSwapRotation = () => {
+    const nextCycle = activeRotationCycle === 'cycle_1' ? 'cycle_2' : 'cycle_1';
+    handleApplyRotationCycle(nextCycle, true);
   };
 
   const handleExtractAssignmentsFromLive = () => {
@@ -2255,6 +2384,199 @@ export default function AdminSchedule() {
                   </div>
                 </div>
               </div>
+
+              {/* CARD E: AFTERNOON ROTATION MANAGER (XOAY VÒNG CA CHIỀU THEO ĐỢT) */}
+              <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '16px', border: '2px solid #8b5cf6', boxShadow: '0 4px 18px rgba(139, 92, 246, 0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#f3e8ff', color: '#7c3aed', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                      <RefreshCw size={14} /> QUẢN LÝ XOAY VÒNG CA CHIỀU CÔNG BẰNG
+                    </div>
+                    <h3 style={{ margin: 0, color: '#4c1d95', fontSize: '17px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🔄 5. MODULE XOAY VÒNG GIÁO VIÊN DẠY CA CHIỀU THEO ĐỢT (1-CLICK ROTATION)
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13.5px' }}>
+                      Phân chia giáo viên thành 2 nhóm xoay vòng (Đợt này dạy chiều ➔ Đợt sau miễn dạy chiều) và khống chế số buổi chiều tối đa.
+                    </p>
+                  </div>
+
+                  {/* 1-CLICK SWAP BUTTON */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={handle1ClickSwapRotation}
+                      disabled={isSolving}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)',
+                        color: '#ffffff',
+                        fontWeight: '900',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 14px rgba(124, 58, 237, 0.35)'
+                      }}
+                    >
+                      <RefreshCw size={16} /> 🔄 1-CHẠM ĐẢO NHÓM DẠY CHIỀU & XẾP TKB AI
+                    </button>
+                  </div>
+                </div>
+
+                {/* ACTIVE CYCLE SELECTOR & MAX AFTERNOON DAYS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '18px' }}>
+                  
+                  {/* ACTIVE CYCLE TOGGLE */}
+                  <div style={{ backgroundColor: '#faf5ff', padding: '16px', borderRadius: '12px', border: '1px solid #e9d5ff' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#6b21a8', display: 'block', marginBottom: '8px' }}>
+                      📅 Chọn Đợt Đang Áp Dụng:
+                    </span>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleApplyRotationCycle('cycle_1')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: activeRotationCycle === 'cycle_1' ? '2px solid #7c3aed' : '1px solid #d8b4fe',
+                          backgroundColor: activeRotationCycle === 'cycle_1' ? '#7c3aed' : '#ffffff',
+                          color: activeRotationCycle === 'cycle_1' ? '#ffffff' : '#6b21a8',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          textAlign: 'center'
+                        }}
+                      >
+                        📌 ĐỢT 1 (Học Kỳ 1A)<br />
+                        <small style={{ fontSize: '11px', fontWeight: 'normal', opacity: 0.9 }}>Nhóm A dạy chiều • Nhóm B nghỉ</small>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleApplyRotationCycle('cycle_2')}
+                        style={{
+                          flex: 1,
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: activeRotationCycle === 'cycle_2' ? '2px solid #7c3aed' : '1px solid #d8b4fe',
+                          backgroundColor: activeRotationCycle === 'cycle_2' ? '#7c3aed' : '#ffffff',
+                          color: activeRotationCycle === 'cycle_2' ? '#ffffff' : '#6b21a8',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          textAlign: 'center'
+                        }}
+                      >
+                        📌 ĐỢT 2 (Học Kỳ 1B)<br />
+                        <small style={{ fontSize: '11px', fontWeight: 'normal', opacity: 0.9 }}>Nhóm B dạy chiều • Nhóm A nghỉ</small>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* MAX AFTERNOON DAYS CONSTRAINT */}
+                  <div style={{ backgroundColor: '#faf5ff', padding: '16px', borderRadius: '12px', border: '1px solid #e9d5ff' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#6b21a8', display: 'block', marginBottom: '8px' }}>
+                      ⏱️ Giới hạn số buổi chiều / tuần của mỗi Giáo viên:
+                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '6px' }}>
+                      <input
+                        type="range"
+                        min="1"
+                        max="5"
+                        value={maxAfternoonDays}
+                        onChange={e => setMaxAfternoonDays(Number(e.target.value))}
+                        style={{ flex: 1, accentColor: '#7c3aed' }}
+                      />
+                      <span style={{ fontWeight: '900', color: '#6b21a8', fontSize: '15px', minWidth: '80px', backgroundColor: '#f3e8ff', padding: '5px 10px', borderRadius: '8px', textAlign: 'center' }}>
+                        {maxAfternoonDays} buổi/tuần
+                      </span>
+                    </div>
+                    <span style={{ fontSize: '12px', color: '#7e22ce', marginTop: '6px', display: 'block' }}>
+                      (AI sẽ chỉ xếp tối đa {maxAfternoonDays} buổi chiều/tuần cho mỗi giáo viên tham gia)
+                    </span>
+                  </div>
+
+                </div>
+
+                {/* ROTATION GROUPS INSPECTOR */}
+                <div style={{ backgroundColor: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                    <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '14px' }}>
+                      👥 Danh sách Phân chia 2 Nhóm Giáo viên ({rotationGroupA.length + rotationGroupB.length} GV):
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleAutoSplitRotationGroups}
+                      style={{ padding: '6px 14px', borderRadius: '6px', border: '1px solid #7c3aed', backgroundColor: '#ffffff', color: '#7c3aed', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Sparkles size={14} /> Tự Động Chia 50/50 Theo Tổ Bộ Môn
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
+                    
+                    {/* GROUP A */}
+                    <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '10px', border: activeRotationCycle === 'cycle_1' ? '2px solid #3b82f6' : '1px solid #cbd5e1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontWeight: 'bold', color: '#1d4ed8', fontSize: '13.5px' }}>
+                          🔵 NHÓM A ({rotationGroupA.length} Giáo viên)
+                        </span>
+                        <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: activeRotationCycle === 'cycle_1' ? '#16a34a' : '#dc2626' }}>
+                          {activeRotationCycle === 'cycle_1' ? '⚡ Đang dạy chiều' : '🔒 Đang nghỉ chiều'}
+                        </span>
+                      </div>
+                      <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {rotationGroupA.map(t => (
+                          <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', fontSize: '12.5px' }}>
+                            <span>{t}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveTeacherRotation(t, 'B')}
+                              style={{ border: 'none', background: '#eff6ff', color: '#1d4ed8', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                              title="Chuyển sang Nhóm B"
+                            >
+                              Sang B ➔
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* GROUP B */}
+                    <div style={{ backgroundColor: '#ffffff', padding: '14px', borderRadius: '10px', border: activeRotationCycle === 'cycle_2' ? '2px solid #7c3aed' : '1px solid #cbd5e1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid #f1f5f9' }}>
+                        <span style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '13.5px' }}>
+                          🟣 NHÓM B ({rotationGroupB.length} Giáo viên)
+                        </span>
+                        <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: activeRotationCycle === 'cycle_2' ? '#16a34a' : '#dc2626' }}>
+                          {activeRotationCycle === 'cycle_2' ? '⚡ Đang dạy chiều' : '🔒 Đang nghỉ chiều'}
+                        </span>
+                      </div>
+                      <div style={{ maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {rotationGroupB.map(t => (
+                          <div key={t} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f8fafc', fontSize: '12.5px' }}>
+                            <span>{t}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveTeacherRotation(t, 'A')}
+                              style={{ border: 'none', background: '#faf5ff', color: '#7c3aed', padding: '2px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                              title="Chuyển sang Nhóm A"
+                            >
+                              ⬅ Sang A
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
 
@@ -2314,6 +2636,62 @@ export default function AdminSchedule() {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* AFTERNOON ROTATION STATUS BAR */}
+              <div style={{ backgroundColor: '#ffffff', padding: '16px 20px', borderRadius: '14px', border: '1.5px solid #e9d5ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ backgroundColor: '#f3e8ff', color: '#7c3aed', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <RefreshCw size={20} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#4c1d95' }}>
+                      Chu kỳ Xoay Vòng Ca Chiều: <span style={{ color: '#7c3aed' }}>{activeRotationCycle === 'cycle_1' ? 'ĐỢT 1 (Nhóm A dạy chiều • Nhóm B nghỉ chiều)' : 'ĐỢT 2 (Nhóm B dạy chiều • Nhóm A nghỉ chiều)'}</span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      Khống chế tối đa: <strong>{maxAfternoonDays} buổi chiều / tuần</strong> cho mỗi GV • Nhóm A: {rotationGroupA.length} GV • Nhóm B: {rotationGroupB.length} GV
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {cycle1Draft && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftSchedule(cycle1Draft);
+                        setActiveRotationCycle('cycle_1');
+                        alert("Đã chuyển sang xem Bản nháp TKB ĐỢT 1!");
+                      }}
+                      style={{ padding: '6px 12px', borderRadius: '6px', border: activeRotationCycle === 'cycle_1' ? '2px solid #3b82f6' : '1px solid #cbd5e1', backgroundColor: activeRotationCycle === 'cycle_1' ? '#eff6ff' : '#ffffff', color: '#1d4ed8', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      👁️ Xem TKB Đợt 1
+                    </button>
+                  )}
+
+                  {cycle2Draft && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftSchedule(cycle2Draft);
+                        setActiveRotationCycle('cycle_2');
+                        alert("Đã chuyển sang xem Bản nháp TKB ĐỢT 2!");
+                      }}
+                      style={{ padding: '6px 12px', borderRadius: '6px', border: activeRotationCycle === 'cycle_2' ? '2px solid #7c3aed' : '1px solid #cbd5e1', backgroundColor: activeRotationCycle === 'cycle_2' ? '#faf5ff' : '#ffffff', color: '#7c3aed', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      👁️ Xem TKB Đợt 2
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handle1ClickSwapRotation}
+                    disabled={isSolving}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)', color: '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <RefreshCw size={14} /> 🔄 1-Chạm Đảo Sang {activeRotationCycle === 'cycle_1' ? 'Đợt 2' : 'Đợt 1'} & Xếp Ngay
+                  </button>
+                </div>
               </div>
 
               {/* SOLVER RESULT QUALITY DASHBOARD */}

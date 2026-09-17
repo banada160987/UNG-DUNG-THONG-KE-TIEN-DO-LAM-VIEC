@@ -112,6 +112,7 @@ export function runAiTimetableSolver({
   pinnedSlots = [],     // Mảng các tiết đã pin cứng { student_class, day_of_week, period, subject, teacher_name }
   doublePeriodSubjects = ['Ngữ văn', 'GDTC', 'Tin học', 'Mĩ thuật'],
   maxDailyPeriodsPerTeacher = 5,
+  maxAfternoonDaysPerTeacher = 5, // Tối đa số buổi chiều / tuần của 1 GV (VD: 2 buổi/tuần)
   seed = Date.now()
 }) {
   const startTime = performance.now();
@@ -265,6 +266,31 @@ export function runAiTimetableSolver({
     return count;
   };
 
+  // Helper đếm số buổi chiều GV đã dạy trong tuần
+  const getTeacherAfternoonDaysCount = (tName) => {
+    if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return 0;
+    const tGrid = teacherGrid.get(tName);
+    if (!tGrid) return 0;
+    const daysSet = new Set();
+    for (const key of tGrid.keys()) {
+      const [d, pStr] = key.split('_');
+      if (Number(pStr) >= 6) {
+        daysSet.add(d);
+      }
+    }
+    return daysSet.size;
+  };
+
+  const isTeacherAfternoonDay = (tName, day) => {
+    if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return false;
+    const tGrid = teacherGrid.get(tName);
+    if (!tGrid) return false;
+    for (let p of PERIODS_AFTERNOON) {
+      if (tGrid.has(`${day}_${p}`)) return true;
+    }
+    return false;
+  };
+
   // Helper kiểm tra xem lớp đã học môn này trong ngày chưa (để trải đều môn)
   const isClassSubjectOnDay = (cls, day, subject) => {
     const cGrid = classGrid.get(cls);
@@ -321,6 +347,10 @@ export function runAiTimetableSolver({
           if (tGrid && (tGrid.has(k1) || tGrid.has(k2))) continue;
           // Kiểm tra quá tải ngày của GV
           if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 2 > maxDailyPeriodsPerTeacher) continue;
+          // Kiểm tra giới hạn số buổi chiều tối đa của GV (VD: tối đa 2 buổi chiều/tuần)
+          if (p1 >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
+            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoonDaysPerTeacher) continue;
+          }
 
           // Tính điểm phạt (Penalty)
           let penalty = 0;
@@ -352,6 +382,10 @@ export function runAiTimetableSolver({
           if (tGrid && tGrid.has(k)) continue;
           // Kiểm tra quá tải ngày
           if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 1 > maxDailyPeriodsPerTeacher) continue;
+          // Kiểm tra giới hạn số buổi chiều tối đa của GV
+          if (p >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
+            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoonDaysPerTeacher) continue;
+          }
 
           let penalty = 0;
           if (isClassSubjectOnDay(cls, day, subject)) penalty += 25; // Tránh trùng môn
@@ -612,3 +646,43 @@ export function exportDraftTimetableToExcel(draftSchedule = [], title = 'ThoiKho
   XLSX.utils.book_append_sheet(wb, ws, "TKB_BanNhap_ToanTruong");
   XLSX.writeFile(wb, `${title}_${new Date().getTime()}.xlsx`);
 }
+
+/**
+ * Tự động phân chia giáo viên thành 2 nhóm xoay vòng 50/50 cân đối theo bộ môn
+ */
+export function generateRotationGroups(teachers = [], assignments = []) {
+  if (!Array.isArray(teachers) || teachers.length === 0) {
+    return { groupA: [], groupB: [] };
+  }
+
+  // Phân loại GV theo môn học chính
+  const teacherSubjectMap = new Map();
+  assignments.forEach(asg => {
+    if (asg.teacher_name && asg.teacher_name !== 'Chưa gán GV' && asg.teacher_name !== 'GVCN') {
+      if (!teacherSubjectMap.has(asg.teacher_name)) {
+        teacherSubjectMap.set(asg.teacher_name, asg.subject);
+      }
+    }
+  });
+
+  const subjectGroups = new Map();
+  teachers.forEach(t => {
+    if (t === 'Chưa gán GV' || t === 'GVCN') return;
+    const sub = teacherSubjectMap.get(t) || 'Khác';
+    if (!subjectGroups.has(sub)) subjectGroups.set(sub, []);
+    subjectGroups.get(sub).push(t);
+  });
+
+  const groupA = [];
+  const groupB = [];
+
+  subjectGroups.forEach((tList) => {
+    tList.forEach((t, idx) => {
+      if (idx % 2 === 0) groupA.push(t);
+      else groupB.push(t);
+    });
+  });
+
+  return { groupA, groupB };
+}
+
