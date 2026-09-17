@@ -3,7 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import {
   Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText,
-  Sparkles, BookOpen, User, Users, Search, Filter, Flame, Info, CheckCircle2, X, Star, Bell
+  Sparkles, BookOpen, User, Users, Search, Filter, Flame, Info, CheckCircle2, X, Star, Bell,
+  Coffee, Sun, Moon, ArrowRight, Copy, Grid
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -240,8 +241,14 @@ export default function PublicSchedule() {
   const [teacherSearchInput, setTeacherSearchInput] = useState('');
   const [todayViewFocus, setTodayViewFocus] = useState(false);
 
+  // State for Free Teachers Finder
   const todayInfo = useMemo(() => getTodayVN(), []);
-
+  const [freeDay, setFreeDay] = useState(todayInfo.isSchoolDay ? todayInfo.dayName : 'Thứ 2'); // 'Thứ 2'..'Thứ 7'
+  const [freeSessionFilter, setFreeSessionFilter] = useState('all_day'); // 'all_day' | 'morning' | 'afternoon' | 'specific_period' | 'all'
+  const [freeSpecificPeriod, setFreeSpecificPeriod] = useState(1); // 1..10
+  const [freeSubjectFilter, setFreeSubjectFilter] = useState('all'); // 'all' | subject name
+  const [freeSearchQuery, setFreeSearchQuery] = useState('');
+  const [freeViewMode, setFreeViewMode] = useState('cards'); // 'cards' | 'matrix'
 
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [copiedPublicLink, setCopiedPublicLink] = useState(false);
@@ -254,8 +261,9 @@ export default function PublicSchedule() {
     const teacherParam = searchParams.get('teacher');
     const weekParam = searchParams.get('week');
     const gradeParam = searchParams.get('grade');
+    const dayParam = searchParams.get('day');
 
-    if (tabParam && ['bgh_schedule', 'class_tkb', 'teacher_tkb', 'grade_tkb'].includes(tabParam)) {
+    if (tabParam && ['bgh_schedule', 'class_tkb', 'teacher_tkb', 'grade_tkb', 'free_teachers'].includes(tabParam)) {
       setActiveMainTab(tabParam);
     }
     if (classParam) {
@@ -270,15 +278,19 @@ export default function PublicSchedule() {
     if (gradeParam && ['10', '11', '12', 'all'].includes(gradeParam)) {
       setSelectedGrade(gradeParam);
     }
+    if (dayParam && DAYS.includes(dayParam)) {
+      setFreeDay(dayParam);
+    }
   }, [searchParams]);
 
   // Sync state to URL search params
-  const updateUrlParams = (tab, cls, teacher, week, grade) => {
+  const updateUrlParams = (tab, cls, teacher, week, grade, fDay) => {
     const params = new URLSearchParams();
     params.set('tab', tab);
     if (tab === 'class_tkb' && cls) params.set('class', cls);
     if (tab === 'teacher_tkb' && teacher) params.set('teacher', teacher);
     if (tab === 'grade_tkb' && grade) params.set('grade', grade);
+    if (tab === 'free_teachers' && fDay) params.set('day', fDay);
     if (week) params.set('week', week);
     setSearchParams(params, { replace: true });
   };
@@ -622,24 +634,206 @@ export default function PublicSchedule() {
     XLSX.writeFile(wb, `ThoiKhoaBieu_${sheetName}_2026_2027.xlsx`);
   };
 
+  // Comprehensive list of all teachers with lessons and subjects
+  const allTeachersDetailedList = useMemo(() => {
+    if (!timetableData || timetableData.length === 0) return [];
+
+    const teacherMap = new Map();
+
+    // Initialize with all teachers from TEACHER_FULL_MAP
+    Object.values(TEACHER_FULL_MAP).forEach(fullTeacher => {
+      if (!teacherMap.has(fullTeacher)) {
+        teacherMap.set(fullTeacher, {
+          name: fullTeacher,
+          lessons: [],
+          subjects: new Set(),
+          classes: new Set()
+        });
+      }
+    });
+
+    timetableData.forEach(item => {
+      const tName = getFullTeacherName(item.teacher_name);
+      if (!tName) return;
+      if (!teacherMap.has(tName)) {
+        teacherMap.set(tName, {
+          name: tName,
+          lessons: [],
+          subjects: new Set(),
+          classes: new Set()
+        });
+      }
+      const tObj = teacherMap.get(tName);
+      tObj.lessons.push(item);
+      if (item.subject) tObj.subjects.add(item.subject);
+      if (item.student_class) tObj.classes.add(item.student_class);
+    });
+
+    return Array.from(teacherMap.values()).map(t => {
+      const subjectList = Array.from(t.subjects);
+      const primarySubject = subjectList.length > 0 ? subjectList[0] : 'Khác';
+      return {
+        name: t.name,
+        lessons: t.lessons,
+        subjects: subjectList,
+        primarySubject,
+        classes: Array.from(t.classes).sort()
+      };
+    }).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [timetableData]);
+
+  const availableSubjects = useMemo(() => {
+    const subjects = new Set();
+    allTeachersDetailedList.forEach(t => {
+      t.subjects.forEach(s => subjects.add(s));
+    });
+    return Array.from(subjects).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [allTeachersDetailedList]);
+
+  // Day KPI Stats
+  const freeDayStats = useMemo(() => {
+    let offAllDayCount = 0;
+    let offMorningCount = 0;
+    let offAfternoonCount = 0;
+    let teachingCount = 0;
+
+    allTeachersDetailedList.forEach(t => {
+      const dayLessons = t.lessons.filter(l => l.day_of_week === freeDay);
+      const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
+      const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
+
+      if (dayLessons.length === 0) {
+        offAllDayCount++;
+      } else {
+        teachingCount++;
+      }
+      if (morningLessons.length === 0) offMorningCount++;
+      if (afternoonLessons.length === 0) offAfternoonCount++;
+    });
+
+    return {
+      total: allTeachersDetailedList.length,
+      offAllDay: offAllDayCount,
+      offMorning: offMorningCount,
+      offAfternoon: offAfternoonCount,
+      teaching: teachingCount
+    };
+  }, [allTeachersDetailedList, freeDay]);
+
+  // Filtered teachers list based on active filters
+  const filteredFreeTeachers = useMemo(() => {
+    return allTeachersDetailedList.filter(t => {
+      // 1. Subject filter
+      if (freeSubjectFilter !== 'all' && !t.subjects.includes(freeSubjectFilter)) {
+        return false;
+      }
+
+      // 2. Search query filter
+      if (freeSearchQuery.trim()) {
+        const q = freeSearchQuery.toLowerCase().trim();
+        const matchName = t.name.toLowerCase().includes(q);
+        const matchSub = t.subjects.some(s => s.toLowerCase().includes(q));
+        if (!matchName && !matchSub) return false;
+      }
+
+      // 3. Day / Session / Period filter
+      const dayLessons = t.lessons.filter(l => l.day_of_week === freeDay);
+      const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
+      const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
+
+      if (freeSessionFilter === 'all_day') {
+        return dayLessons.length === 0;
+      }
+      if (freeSessionFilter === 'morning') {
+        return morningLessons.length === 0;
+      }
+      if (freeSessionFilter === 'afternoon') {
+        return afternoonLessons.length === 0;
+      }
+      if (freeSessionFilter === 'specific_period') {
+        return !dayLessons.some(l => Number(l.period) === Number(freeSpecificPeriod));
+      }
+      // 'all'
+      return true;
+    });
+  }, [allTeachersDetailedList, freeDay, freeSessionFilter, freeSpecificPeriod, freeSubjectFilter, freeSearchQuery]);
+
+  const handleExportFreeTeachersExcel = () => {
+    const title = `DANH SÁCH GIÁO VIÊN NGHỈ DẠY / TRỐNG TIẾT - ${freeDay.toUpperCase()}`;
+    const conditionText = freeSessionFilter === 'all_day' 
+      ? 'Nghỉ CẢ NGÀY (Tiết 1 - 10)' 
+      : freeSessionFilter === 'morning' 
+        ? 'Nghỉ CA SÁNG (Tiết 1 - 5)' 
+        : freeSessionFilter === 'afternoon' 
+          ? 'Nghỉ CA CHIỀU (Tiết 6 - 10)' 
+          : freeSessionFilter === 'specific_period' 
+            ? `Trống Tiết ${freeSpecificPeriod}` 
+            : 'Tất cả giáo viên';
+
+    const matrixData = [
+      { "STT": "SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK", "Họ và Tên Giáo Viên": "", "Bộ Môn": "", "Trạng Thái Lịch Dạy": "", "Tổng Tiết Trong Ngày": "", "Chi Tiết Tiết & Lớp Dạy": "" },
+      { "STT": "TRƯỜNG THPT CAO BÁ QUÁT - PHƯỜNG TÂN AN - TỈNH ĐẮK LẮK", "Họ và Tên Giáo Viên": "", "Bộ Môn": "", "Trạng Thái Lịch Dạy": "", "Tổng Tiết Trong Ngày": "", "Chi Tiết Tiết & Lớp Dạy": "" },
+      { "STT": title, "Họ và Tên Giáo Viên": "", "Bộ Môn": "", "Trạng Thái Lịch Dạy": "", "Tổng Tiết Trong Ngày": "", "Chi Tiết Tiết & Lớp Dạy": "" },
+      { "STT": `Điều kiện: ${conditionText} • Bộ môn: ${freeSubjectFilter === 'all' ? 'Tất cả bộ môn' : freeSubjectFilter} • Tổng số: ${filteredFreeTeachers.length} thầy/cô • Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, "Họ và Tên Giáo Viên": "", "Bộ Môn": "", "Trạng Thái Lịch Dạy": "", "Tổng Tiết Trong Ngày": "", "Chi Tiết Tiết & Lớp Dạy": "" },
+      { "STT": "", "Họ và Tên Giáo Viên": "", "Bộ Môn": "", "Trạng Thái Lịch Dạy": "", "Tổng Tiết Trong Ngày": "", "Chi Tiết Tiết & Lớp Dạy": "" }
+    ];
+
+    filteredFreeTeachers.forEach((t, idx) => {
+      const dayLessons = t.lessons.filter(l => l.day_of_week === freeDay);
+      const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
+      const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
+
+      let statusStr = '';
+      if (dayLessons.length === 0) {
+        statusStr = '🏖️ NGHỈ CẢ NGÀY';
+      } else if (morningLessons.length === 0) {
+        statusStr = `☀️ Nghỉ sáng (Dạy chiều ${afternoonLessons.length} tiết)`;
+      } else if (afternoonLessons.length === 0) {
+        statusStr = `🌙 Nghỉ chiều (Dạy sáng ${morningLessons.length} tiết)`;
+      } else {
+        statusStr = `🎒 Dạy cả ngày (${dayLessons.length} tiết)`;
+      }
+
+      const lessonDetails = dayLessons.map(l => `Tiết ${l.period}: ${l.subject} (Lớp ${l.student_class})`).join('; ') || 'Không có tiết dạy';
+
+      matrixData.push({
+        "STT": idx + 1,
+        "Họ và Tên Giáo Viên": t.name,
+        "Bộ Môn": t.subjects.join(', ') || 'Khác',
+        "Trạng Thái Lịch Dạy": statusStr,
+        "Tổng Tiết Trong Ngày": dayLessons.length,
+        "Chi Tiết Tiết & Lớp Dạy": lessonDetails
+      });
+    });
+
+    const ws = XLSX.utils.json_to_sheet(matrixData);
+    ws['!cols'] = [
+      { wch: 8 }, { wch: 28 }, { wch: 22 }, { wch: 32 }, { wch: 20 }, { wch: 50 }
+    ];
+    const wb = XLSX.utils.book_new();
+    const sheetName = `GV_Nghi_${freeDay.replace(/\s+/g, '_')}`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `Danh_Sach_GV_Nghi_Day_${freeDay.replace(/\s+/g, '_')}_2026_2027.xlsx`);
+  };
+
   const handleTabChange = (tab) => {
     setActiveMainTab(tab);
-    updateUrlParams(tab, selectedClass, selectedTeacher, selectedWeekNo, selectedGrade);
+    updateUrlParams(tab, selectedClass, selectedTeacher, selectedWeekNo, selectedGrade, freeDay);
   };
 
   const handleGradeChange = (newGrade) => {
     setSelectedGrade(newGrade);
-    updateUrlParams(activeMainTab, selectedClass, selectedTeacher, selectedWeekNo, newGrade);
+    updateUrlParams(activeMainTab, selectedClass, selectedTeacher, selectedWeekNo, newGrade, freeDay);
   };
 
   const handleClassChange = (newClass) => {
     setSelectedClass(newClass);
-    updateUrlParams(activeMainTab, newClass, selectedTeacher, selectedWeekNo, selectedGrade);
+    updateUrlParams(activeMainTab, newClass, selectedTeacher, selectedWeekNo, selectedGrade, freeDay);
   };
 
   const handleTeacherChange = (newTeacher) => {
     setSelectedTeacher(newTeacher);
-    updateUrlParams(activeMainTab, selectedClass, newTeacher, selectedWeekNo, selectedGrade);
+    updateUrlParams(activeMainTab, selectedClass, newTeacher, selectedWeekNo, selectedGrade, freeDay);
   };
 
   const currentSched = getCurrentScheduleObj();
@@ -674,7 +868,8 @@ export default function PublicSchedule() {
             { id: 'bgh_schedule', label: '📅 Lịch Công Tác BGH' },
             { id: 'class_tkb', label: '🎓 TKB Lớp' },
             { id: 'teacher_tkb', label: '👨‍🏫 TKB Giáo viên' },
-            { id: 'grade_tkb', label: '🏫 TKB Toàn Trường (Theo Khối)' }
+            { id: 'grade_tkb', label: '🏫 TKB Toàn Trường (Theo Khối)' },
+            { id: 'free_teachers', label: '🔍 Tra Cứu GV Nghỉ Dạy' }
           ].map(tab => (
             <button key={tab.id} onClick={() => handleTabChange(tab.id)} style={{ ...styles.tabBtn, backgroundColor: activeMainTab === tab.id ? '#be123c' : '#f1f5f9', color: activeMainTab === tab.id ? '#fff' : '#334' }}>
               {tab.label}
@@ -1732,6 +1927,17 @@ export default function PublicSchedule() {
                 {/* ACTION BUTTONS */}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
+                    onClick={() => {
+                      const targetDay = selectedGradeDay === 'all' ? (todayInfo.isSchoolDay ? todayInfo.dayName : 'Thứ 2') : selectedGradeDay;
+                      setFreeDay(targetDay);
+                      handleTabChange('free_teachers');
+                    }}
+                    style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}
+                    title="Tìm danh sách giáo viên không có tiết trong ngày"
+                  >
+                    <Search size={16} /> 🔍 Tìm GV Nghỉ Dạy {selectedGradeDay !== 'all' ? `(${selectedGradeDay})` : ''}
+                  </button>
+                  <button
                     onClick={handleExportGradeTkbExcel}
                     style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
                   >
@@ -2163,6 +2369,791 @@ export default function PublicSchedule() {
               </div>
 
             </div>
+          </div>
+        );
+      })()}
+
+      {/* TAB 5: 🔍 TRA CỨU GIÁO VIÊN NGHỈ DẠY / TRỐNG TIẾT */}
+      {activeMainTab === 'free_teachers' && (() => {
+        return (
+          <div style={styles.sheetCard} className="print-full">
+            
+            {/* OFFICIAL PRINT HEADER (ND 30) */}
+            <div className="print-only" style={{ marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
+                  <div style={{ fontSize: '12px', fontWeight: '900', color: '#0f172a' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0f172a' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', fontStyle: 'italic', color: '#334155' }}>Độc lập - Tự do - Hạnh phúc</div>
+                  <div style={{ fontSize: '10px', color: '#64748b' }}>--------------------</div>
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                <h2 style={{ margin: '4px 0', fontSize: '18px', fontWeight: '900', color: '#0284c7', textTransform: 'uppercase' }}>
+                  DANH SÁCH GIÁO VIÊN NGHỈ DẠY / TRỐNG TIẾT - {freeDay.toUpperCase()}
+                </h2>
+                <div style={{ fontSize: '12px', fontWeight: '600', color: '#0f172a', marginBottom: '4px' }}>
+                  Điều kiện: {freeSessionFilter === 'all_day' ? 'Nghỉ trọn vẹn cả ngày (Tiết 1 - 10)' : freeSessionFilter === 'morning' ? 'Nghỉ ca sáng (Tiết 1 - 5)' : freeSessionFilter === 'afternoon' ? 'Nghỉ ca chiều (Tiết 6 - 10)' : freeSessionFilter === 'specific_period' ? `Trống Tiết ${freeSpecificPeriod}` : 'Toàn thể giáo viên'} • Lọc môn: {freeSubjectFilter === 'all' ? 'Tất cả môn' : freeSubjectFilter}
+                </div>
+                <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
+                  Năm học 2026 - 2027 • Dữ liệu Thời khóa biểu chính thức
+                </div>
+              </div>
+            </div>
+
+            {/* KPI BANNER (NO-PRINT) */}
+            <div className="no-print" style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', textTransform: 'uppercase' }}>👥 Tổng số GV trường</div>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', marginTop: '4px' }}>
+                  {freeDayStats.total} <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b' }}>thầy/cô</span>
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#15803d', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🏖️ Nghỉ CẢ NGÀY ({freeDay})</span>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
+                  {freeDayStats.offAllDay} <span style={{ fontSize: '12px', fontWeight: '600', color: '#15803d' }}>thầy/cô ({Math.round(freeDayStats.offAllDay / (freeDayStats.total || 1) * 100)}%)</span>
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: '#fffbeb',
+                border: '1px solid #fde68a',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#b45309', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>☀️ Nghỉ CA SÁNG</span>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#d97706', marginTop: '4px' }}>
+                  {freeDayStats.offMorning} <span style={{ fontSize: '12px', fontWeight: '600', color: '#b45309' }}>thầy/cô</span>
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: '#faf5ff',
+                border: '1px solid #d8b4fe',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#7e22ce', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🌙 Nghỉ CA CHIỀU</span>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#9333ea', marginTop: '4px' }}>
+                  {freeDayStats.offAfternoon} <span style={{ fontSize: '12px', fontWeight: '600', color: '#7e22ce' }}>thầy/cô</span>
+                </div>
+              </div>
+
+              <div style={{
+                backgroundColor: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '12px',
+                padding: '14px 16px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#1d4ed8', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🎒 Có tiết giảng dạy</span>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#2563eb', marginTop: '4px' }}>
+                  {freeDayStats.teaching} <span style={{ fontSize: '12px', fontWeight: '600', color: '#1d4ed8' }}>thầy/cô</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CONTROL TOOLBAR (NO-PRINT) */}
+            <div className="no-print" style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px',
+              marginBottom: '20px',
+              backgroundColor: '#f8fafc',
+              padding: '16px',
+              borderRadius: '14px',
+              border: '1px solid #e2e8f0'
+            }}>
+              
+              {/* ROW 1: DAY SELECTOR & VIEW MODE & ACTIONS */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                
+                {/* DAY BUTTONS */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '13.5px', marginRight: '4px' }}>Tra Cứu Ngày:</span>
+                  {DAYS.map(dayName => {
+                    const isSelected = freeDay === dayName;
+                    const isToday = todayInfo.dayName === dayName;
+                    return (
+                      <button
+                        key={dayName}
+                        onClick={() => {
+                          setFreeDay(dayName);
+                          updateUrlParams(activeMainTab, selectedClass, selectedTeacher, selectedWeekNo, selectedGrade, dayName);
+                        }}
+                        style={{
+                          padding: '7px 13px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          backgroundColor: isSelected ? '#0284c7' : '#ffffff',
+                          color: isSelected ? '#ffffff' : '#334155',
+                          border: isSelected ? 'none' : '1px solid #cbd5e1',
+                          boxShadow: isSelected ? '0 3px 8px rgba(2,132,199,0.3)' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <span>{dayName}</span>
+                        {isToday && (
+                          <span style={{
+                            fontSize: '9.5px',
+                            backgroundColor: isSelected ? '#ffffff' : '#f59e0b',
+                            color: isSelected ? '#0284c7' : '#ffffff',
+                            padding: '1px 5px',
+                            borderRadius: '6px',
+                            fontWeight: '800'
+                          }}>
+                            Hôm nay
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* VIEW MODE TOGGLE & ACTIONS */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', backgroundColor: '#e2e8f0', borderRadius: '8px', padding: '2px' }}>
+                    <button
+                      onClick={() => setFreeViewMode('cards')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        backgroundColor: freeViewMode === 'cards' ? '#ffffff' : 'transparent',
+                        color: freeViewMode === 'cards' ? '#0f172a' : '#64748b',
+                        boxShadow: freeViewMode === 'cards' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      📇 Thẻ Danh Thiếp
+                    </button>
+                    <button
+                      onClick={() => setFreeViewMode('matrix')}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        backgroundColor: freeViewMode === 'matrix' ? '#ffffff' : 'transparent',
+                        color: freeViewMode === 'matrix' ? '#0f172a' : '#64748b',
+                        boxShadow: freeViewMode === 'matrix' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                      }}
+                    >
+                      📊 Ma Trận Toàn Tuần
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={handleExportFreeTeachersExcel}
+                    style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
+                    title="Tải bảng danh sách giáo viên ra file Excel"
+                  >
+                    <FileSpreadsheet size={16} /> Xuất Excel Danh Sách
+                  </button>
+
+                  <button onClick={handlePrint} style={styles.printBtn}>
+                    <Printer size={16} /> In Bảng
+                  </button>
+                </div>
+              </div>
+
+              {/* ROW 2: FILTERS (SESSION / PERIOD / SUBJECT / SEARCH) */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                borderTop: '1px solid #e2e8f0',
+                paddingTop: '12px'
+              }}>
+                {/* SESSION / PERIOD FILTER PILLS */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '13px', marginRight: '4px' }}>
+                    <Filter size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '2px' }} />
+                    Lọc theo Ca:
+                  </span>
+                  {[
+                    { id: 'all_day', label: '🏖️ Nghỉ CẢ NGÀY', badge: `${freeDayStats.offAllDay} GV` },
+                    { id: 'morning', label: '☀️ Nghỉ Ca Sáng (T1-5)', badge: `${freeDayStats.offMorning} GV` },
+                    { id: 'afternoon', label: '🌙 Nghỉ Ca Chiều (T6-10)', badge: `${freeDayStats.offAfternoon} GV` },
+                    { id: 'specific_period', label: '⏱️ Trống Tiết Cụ Thể...', badge: null },
+                    { id: 'all', label: '📋 Tất cả GV', badge: `${freeDayStats.total} GV` }
+                  ].map(s => (
+                    <button
+                      key={s.id}
+                      onClick={() => setFreeSessionFilter(s.id)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '20px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        backgroundColor: freeSessionFilter === s.id ? '#0f172a' : '#ffffff',
+                        color: freeSessionFilter === s.id ? '#ffffff' : '#475569',
+                        border: freeSessionFilter === s.id ? 'none' : '1px solid #cbd5e1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span>{s.label}</span>
+                      {s.badge && (
+                        <span style={{
+                          fontSize: '10.5px',
+                          padding: '1px 5px',
+                          borderRadius: '8px',
+                          backgroundColor: freeSessionFilter === s.id ? 'rgba(255,255,255,0.2)' : '#f1f5f9',
+                          color: freeSessionFilter === s.id ? '#ffffff' : '#64748b'
+                        }}>
+                          {s.badge}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+
+                  {/* SPECIFIC PERIOD DROPDOWN WHEN SELECTED */}
+                  {freeSessionFilter === 'specific_period' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '4px', backgroundColor: '#e0f2fe', padding: '3px 8px', borderRadius: '8px', border: '1px solid #7dd3fc' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1' }}>Chọn tiết trống:</span>
+                      <select
+                        value={freeSpecificPeriod}
+                        onChange={e => setFreeSpecificPeriod(Number(e.target.value))}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '6px',
+                          border: '1px solid #0284c7',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          color: '#0f172a',
+                          backgroundColor: '#ffffff'
+                        }}
+                      >
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => (
+                          <option key={p} value={p}>
+                            {p <= 5 ? `Sáng - Tiết ${p}` : `Chiều - Tiết ${p}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+
+                {/* SUBJECT FILTER & SEARCH */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  {/* SUBJECT DROPDOWN */}
+                  <select
+                    value={freeSubjectFilter}
+                    onChange={e => setFreeSubjectFilter(e.target.value)}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      backgroundColor: '#ffffff',
+                      color: '#0f172a',
+                      outline: 'none'
+                    }}
+                  >
+                    <option value="all">📚 Tất cả Bộ môn ({availableSubjects.length} môn)</option>
+                    {availableSubjects.map(sub => (
+                      <option key={sub} value={sub}>Môn: {sub}</option>
+                    ))}
+                  </select>
+
+                  {/* SEARCH INPUT */}
+                  <div style={{ position: 'relative', width: '220px' }}>
+                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                    <input
+                      type="text"
+                      placeholder="Tìm tên GV hoặc môn..."
+                      value={freeSearchQuery}
+                      onChange={e => setFreeSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '7px 12px 7px 32px',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '12.5px',
+                        outline: 'none',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                    {freeSearchQuery && (
+                      <button
+                        onClick={() => setFreeSearchQuery('')}
+                        style={{
+                          position: 'absolute',
+                          right: '8px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          border: 'none',
+                          background: 'none',
+                          cursor: 'pointer',
+                          color: '#94a3b8',
+                          fontSize: '12px'
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+
+            {/* RESULTS HEADER INFO */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '16px',
+              padding: '0 4px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '18px' }}>📋</span>
+                <span>Kết quả tra cứu cho <strong>{freeDay}</strong>:</span>
+                <span style={{
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  fontWeight: '800'
+                }}>
+                  {filteredFreeTeachers.length} thầy/cô phù hợp
+                </span>
+              </div>
+            </div>
+
+            {/* VIEW MODE 1: CARDS GRID */}
+            {freeViewMode === 'cards' && (
+              <div>
+                {filteredFreeTeachers.length === 0 ? (
+                  <div style={{
+                    textAlign: 'center',
+                    padding: '50px 20px',
+                    backgroundColor: '#f8fafc',
+                    borderRadius: '12px',
+                    border: '1px dashed #cbd5e1',
+                    color: '#64748b'
+                  }}>
+                    <div style={{ fontSize: '36px', marginBottom: '10px' }}>🔍</div>
+                    <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#1e293b' }}>Không tìm thấy giáo viên nào phù hợp với bộ lọc</div>
+                    <div style={{ fontSize: '13px', marginTop: '4px' }}>Vui lòng thay đổi thứ ngày, bộ môn hoặc điều kiện lọc ca dạy.</div>
+                  </div>
+                ) : (
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                    gap: '16px'
+                  }}>
+                    {filteredFreeTeachers.map(t => {
+                      const dayLessons = t.lessons.filter(l => l.day_of_week === freeDay);
+                      const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
+                      const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
+                      const isOffAllDay = dayLessons.length === 0;
+                      const isOffMorning = morningLessons.length === 0;
+                      const isOffAfternoon = afternoonLessons.length === 0;
+
+                      const primaryTheme = getSubjectTheme(t.primarySubject);
+
+                      // Free periods list
+                      const freePeriodsMorning = [1, 2, 3, 4, 5].filter(p => !morningLessons.some(l => Number(l.period) === p));
+                      const freePeriodsAfternoon = [6, 7, 8, 9, 10].filter(p => !afternoonLessons.some(l => Number(l.period) === p));
+
+                      return (
+                        <div
+                          key={t.name}
+                          style={{
+                            backgroundColor: '#ffffff',
+                            borderRadius: '14px',
+                            border: isOffAllDay ? '2px solid #86efac' : isOffMorning ? '1px solid #fde68a' : isOffAfternoon ? '1px solid #d8b4fe' : '1px solid #e2e8f0',
+                            padding: '16px',
+                            boxShadow: isOffAllDay ? '0 4px 12px rgba(34,197,94,0.08)' : '0 2px 6px rgba(0,0,0,0.03)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            position: 'relative',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {/* TOP: AVATAR & NAME & SUBJECT */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px', marginBottom: '12px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <div style={{
+                                  width: '42px',
+                                  height: '42px',
+                                  borderRadius: '12px',
+                                  backgroundColor: primaryTheme.badgeBg,
+                                  color: primaryTheme.text,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '20px',
+                                  border: `1px solid ${primaryTheme.border}`,
+                                  flexShrink: 0
+                                }}>
+                                  {primaryTheme.icon}
+                                </div>
+                                <div>
+                                  <div style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
+                                    {t.name}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                    {t.subjects.map(s => {
+                                      const st = getSubjectTheme(s);
+                                      return (
+                                        <span
+                                          key={s}
+                                          style={{
+                                            fontSize: '11px',
+                                            fontWeight: '700',
+                                            backgroundColor: st.bg,
+                                            color: st.text,
+                                            border: `1px solid ${st.border}`,
+                                            padding: '1px 6px',
+                                            borderRadius: '4px'
+                                          }}
+                                        >
+                                          {s}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* STATUS BADGE */}
+                              <div>
+                                {isOffAllDay ? (
+                                  <span style={{
+                                    backgroundColor: '#dcfce7',
+                                    color: '#15803d',
+                                    border: '1px solid #86efac',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '11.5px',
+                                    fontWeight: '800',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}>
+                                    🏖️ Nghỉ cả ngày
+                                  </span>
+                                ) : isOffMorning ? (
+                                  <span style={{
+                                    backgroundColor: '#fef3c7',
+                                    color: '#b45309',
+                                    border: '1px solid #fde68a',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '11.5px',
+                                    fontWeight: '800',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}>
+                                    ☀️ Nghỉ sáng
+                                  </span>
+                                ) : isOffAfternoon ? (
+                                  <span style={{
+                                    backgroundColor: '#f3e8ff',
+                                    color: '#7e22ce',
+                                    border: '1px solid #d8b4fe',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '11.5px',
+                                    fontWeight: '800',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '3px'
+                                  }}>
+                                    🌙 Nghỉ chiều
+                                  </span>
+                                ) : (
+                                  <span style={{
+                                    backgroundColor: '#f1f5f9',
+                                    color: '#475569',
+                                    border: '1px solid #cbd5e1',
+                                    padding: '4px 8px',
+                                    borderRadius: '8px',
+                                    fontSize: '11px',
+                                    fontWeight: '700'
+                                  }}>
+                                    🎒 Dạy 2 ca
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* TEACHING LESSONS OR FREE PERIODS DETAIL */}
+                            <div style={{
+                              backgroundColor: '#f8fafc',
+                              borderRadius: '10px',
+                              padding: '10px 12px',
+                              fontSize: '12px',
+                              marginBottom: '12px',
+                              border: '1px solid #f1f5f9'
+                            }}>
+                              {isOffAllDay ? (
+                                <div style={{ color: '#16a34a', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span>✨</span>
+                                  <span>Thầy/cô không có tiết dạy nào vào <strong>{freeDay}</strong> (Trống trọn vẹn cả 10 tiết).</span>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div style={{ color: '#334155', fontWeight: '700', marginBottom: '4px' }}>
+                                    Tiết dạy trong ngày ({dayLessons.length} tiết):
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                    {dayLessons.map(l => (
+                                      <span
+                                        key={`${l.day_of_week}-${l.period}`}
+                                        style={{
+                                          backgroundColor: '#e0f2fe',
+                                          color: '#0369a1',
+                                          border: '1px solid #bae6fd',
+                                          padding: '2px 7px',
+                                          borderRadius: '6px',
+                                          fontSize: '11px',
+                                          fontWeight: '700'
+                                        }}
+                                      >
+                                        T{l.period}: {l.student_class} ({l.subject})
+                                      </span>
+                                    ))}
+                                  </div>
+
+                                  {/* FREE PERIODS HIGHLIGHT */}
+                                  <div style={{ marginTop: '8px', color: '#64748b', fontSize: '11.5px' }}>
+                                    <strong>Tiết trống: </strong>
+                                    {freePeriodsMorning.length > 0 && <span>Sáng: T{freePeriodsMorning.join(', ')} • </span>}
+                                    {freePeriodsAfternoon.length > 0 && <span>Chiều: T{freePeriodsAfternoon.join(', ')}</span>}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* CARD FOOTER: ACTIONS */}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            borderTop: '1px solid #f1f5f9',
+                            paddingTop: '10px'
+                          }}>
+                            <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '600' }}>
+                              Tổng tuần: {t.lessons.length} tiết
+                            </span>
+
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                onClick={() => {
+                                  setSelectedTeacher(t.name);
+                                  handleTabChange('teacher_tkb');
+                                }}
+                                style={{
+                                  padding: '5px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #0284c7',
+                                  backgroundColor: '#f0f9ff',
+                                  color: '#0284c7',
+                                  fontSize: '11.5px',
+                                  fontWeight: '700',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '4px'
+                                }}
+                                title="Xem thời khóa biểu chi tiết của giáo viên"
+                              >
+                                <span>Xem TKB</span>
+                                <ArrowRight size={12} />
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* VIEW MODE 2: FULL WEEK MATRIX HEATMAP */}
+            {freeViewMode === 'matrix' && (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ ...styles.table, borderCollapse: 'separate', borderSpacing: '3px' }}>
+                  <thead>
+                    <tr style={styles.tableHeadRow}>
+                      <th style={{ ...styles.th, width: '45px', textAlign: 'center', borderRadius: '6px 0 0 6px' }}>STT</th>
+                      <th style={{ ...styles.th, width: '180px' }}>Họ và Tên Giáo Viên</th>
+                      <th style={{ ...styles.th, width: '110px' }}>Bộ Môn</th>
+                      {DAYS.map(d => (
+                        <th
+                          key={d}
+                          style={{
+                            ...styles.th,
+                            textAlign: 'center',
+                            backgroundColor: d === freeDay ? '#0284c7' : '#1e293b'
+                          }}
+                        >
+                          <div>{d}</div>
+                          {d === todayInfo.dayName && (
+                            <div style={{ fontSize: '9.5px', color: '#fde047', fontWeight: 'normal' }}>Hôm nay</div>
+                          )}
+                        </th>
+                      ))}
+                      <th style={{ ...styles.th, width: '90px', textAlign: 'center', borderRadius: '0 6px 6px 0' }}>Tổng Tiết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFreeTeachers.map((t, idx) => {
+                      const primaryTheme = getSubjectTheme(t.primarySubject);
+                      return (
+                        <tr key={t.name} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
+                          <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>
+                            {idx + 1}
+                          </td>
+                          <td style={{ ...styles.td, fontWeight: '800', color: '#0f172a' }}>
+                            <div
+                              onClick={() => {
+                                setSelectedTeacher(t.name);
+                                handleTabChange('teacher_tkb');
+                              }}
+                              style={{ cursor: 'pointer', color: '#0284c7' }}
+                              title="Click để xem TKB của giáo viên"
+                            >
+                              {t.name}
+                            </div>
+                          </td>
+                          <td style={styles.td}>
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: '700',
+                              backgroundColor: primaryTheme.bg,
+                              color: primaryTheme.text,
+                              border: `1px solid ${primaryTheme.border}`,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              display: 'inline-block'
+                            }}>
+                              {t.primarySubject}
+                            </span>
+                          </td>
+                          {DAYS.map(d => {
+                            const dayLessons = t.lessons.filter(l => l.day_of_week === d);
+                            const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
+                            const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
+                            const isOffAllDay = dayLessons.length === 0;
+                            const isOffMorning = morningLessons.length === 0;
+                            const isOffAfternoon = afternoonLessons.length === 0;
+
+                            return (
+                              <td
+                                key={d}
+                                style={{
+                                  ...styles.td,
+                                  textAlign: 'center',
+                                  backgroundColor: isOffAllDay
+                                    ? '#dcfce7'
+                                    : isOffMorning
+                                      ? '#fef3c7'
+                                      : isOffAfternoon
+                                        ? '#f3e8ff'
+                                        : '#ffffff',
+                                  border: d === freeDay ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                                  borderRadius: '6px',
+                                  padding: '8px 4px'
+                                }}
+                              >
+                                {isOffAllDay ? (
+                                  <div style={{ color: '#15803d', fontWeight: '800', fontSize: '11px' }}>
+                                    🏖️ Nghỉ cả ngày
+                                  </div>
+                                ) : isOffMorning ? (
+                                  <div>
+                                    <div style={{ color: '#b45309', fontWeight: '700', fontSize: '10.5px' }}>☀️ Nghỉ sáng</div>
+                                    <div style={{ color: '#64748b', fontSize: '10px' }}>({afternoonLessons.length} tiết chiều)</div>
+                                  </div>
+                                ) : isOffAfternoon ? (
+                                  <div>
+                                    <div style={{ color: '#7e22ce', fontWeight: '700', fontSize: '10.5px' }}>🌙 Nghỉ chiều</div>
+                                    <div style={{ color: '#64748b', fontSize: '10px' }}>({morningLessons.length} tiết sáng)</div>
+                                  </div>
+                                ) : (
+                                  <div style={{ color: '#334155', fontWeight: '700', fontSize: '11px' }}>
+                                    🎒 {dayLessons.length} tiết
+                                  </div>
+                                )}
+                              </td>
+                            );
+                          })}
+                          <td style={{ ...styles.td, textAlign: 'center', fontWeight: '900', color: '#0f172a' }}>
+                            {t.lessons.length}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* SUMMARY NOTE */}
+            <div style={styles.noteBox}>
+              💡 <strong>Ghi chú điều hành BGH:</strong> Danh sách giáo viên nghỉ dạy và trống tiết được tự động trích xuất trực tiếp từ Thời khóa biểu chính thức của nhà trường. Quý thầy/cô có thể dùng danh sách này để phân công dạy thay, điều động coi thi, trực ban hoặc cử đi công tác bên ngoài mà không ảnh hưởng đến lịch học của học sinh.
+            </div>
+
           </div>
         );
       })()}
