@@ -27,7 +27,11 @@
         },
         {
           "key": "X-Frame-Options",
-          "value": "DENY"
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Content-Security-Policy",
+          "value": "frame-ancestors 'self' https://thptcaobaquat.vercel.app"
         },
         {
           "key": "X-XSS-Protection",
@@ -40,6 +44,10 @@
     {
       "source": "/assets/:path*",
       "destination": "/assets/:path*"
+    },
+    {
+      "source": "/tools/:path*",
+      "destination": "/tools/:path*"
     },
     {
       "source": "/:path*",
