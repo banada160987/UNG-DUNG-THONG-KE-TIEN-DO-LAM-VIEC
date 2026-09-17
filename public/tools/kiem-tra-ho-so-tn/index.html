@@ -244,7 +244,7 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #6366f1;"><i data-lucide="cpu" style="width:16px"></i> Hệ thống
+            <div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #6366f1;"><i data-lucide="cpu" style="width:16px"></i> Hệ thống
                 xử lý<i data-lucide="chevron-down" class="nav-chevron rotate-180 transition-transform duration-300" style="width:16px;"></i></div>
 <div class="nav-sub-items" style="display: block; overflow: hidden;">
             <button id="btn-tab-upload" class="nav-item active" onclick="switchTab('upload')">
@@ -279,7 +279,7 @@
             </button>
 
             </div>
-<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #8b5cf6;"><i data-lucide="sparkles" style="width:16px"></i> Phân
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #8b5cf6;"><i data-lucide="sparkles" style="width:16px"></i> Phân
                 tích & Báo cáo Pro<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
 <div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-pro-report" class="nav-item"
@@ -299,7 +299,7 @@
                 <i data-lucide="globe" style="width:18px; color: #10b981;"></i> <span style="font-weight: 700;">Cổng Tra cứu & Xuất Web</span>
             </button>
             </div>
-<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #f59e0b;"><i data-lucide="rocket" style="width:16px"></i> Vận
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #f59e0b;"><i data-lucide="rocket" style="width:16px"></i> Vận
                 hành Điểm thi (Ultimate)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
 <div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-kiosk-map" class="nav-item" onclick="switchTab('kiosk-map')">
@@ -316,7 +316,7 @@
             </button>
 
             </div>
-<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #ec4899;"><i data-lucide="crown" style="width:16px"></i> Vận hành Live (Premium)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-group-label nav-group-header nav-group-admin-only" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #ec4899;"><i data-lucide="crown" style="width:16px"></i> Vận hành Live (Premium)<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
 <div class="nav-sub-items nav-group-admin-only" style="display: none; overflow: hidden;">
             <button id="btn-tab-command-center" class="nav-item" onclick="switchTab('command-center')">
                 <i data-lucide="activity" style="width:18px; color: #ec4899;"></i> <span style="font-weight: 700;">Trung tâm Chỉ huy Live</span>
@@ -332,7 +332,7 @@
                 <i data-lucide="grid" style="width:18px; color: #3b82f6;"></i> <span style="font-weight: 700;">Sơ đồ Chỗ ngồi kéo thả</span>
             </button>
             </div>
-<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" style="color: #0ea5e9;"><i data-lucide="wrench" style="width:16px"></i> Tiện ích hỗ trợ<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
+<div class="nav-group-label nav-group-header" onclick="toggleNavGroup(this)" style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: #0ea5e9;"><i data-lucide="wrench" style="width:16px"></i> Tiện ích hỗ trợ<i data-lucide="chevron-down" class="nav-chevron transition-transform duration-300" style="width:16px;"></i></div>
 <div class="nav-sub-items" style="display: none; overflow: hidden;">
                         <button id="btn-tab-smas-excel" class="nav-item" onclick="switchTab('smas-excel')">
                 <i data-lucide="file-spreadsheet" style="width:18px; color: #10b981;"></i> <span
@@ -542,12 +542,12 @@
             </section>
 
             <!-- SECTION: SMART EXAM SHUFFLER -->
-            <section id="view-exam-shuffler" class="section-view hidden">
+            <section id="view-exam-shuffler" class="section-view">
                 <!-- Injected by exam_shuffler.js -->
             </section>
 
             <!-- SECTION: CONFIG -->
-            <section id="view-config" class="section-view hidden">
+            <section id="view-config" class="section-view">
                 <div class="page-header">
                     <h1 class="page-title">Thiết lập hệ thống</h1>
                     <p class="page-subtitle">Cấu hình cách hệ thống đọc file Excel và lựa chọn các cột thông tin cần
@@ -2654,14 +2654,14 @@
                     </div>
                 </div>
             </section>
-        </div>
-            <!-- BEHAVIOR INCIDENT VIEW -->
-        <div id="view-behavior-incident" class="section-view">
-            <!-- Rendered by behavior_incident.js -->
-        </div>
 
-        
-        <section id="view-excel-transfer" class="section-view hidden" style="padding-bottom: 100px;">
+            <!-- BEHAVIOR INCIDENT VIEW -->
+            <section id="view-behavior-incident" class="section-view">
+                <!-- Rendered by behavior_incident.js -->
+            </section>
+
+            <!-- SECTION: EXCEL TRANSFER -->
+            <section id="view-excel-transfer" class="section-view" style="padding-bottom: 100px;">
             <div class="page-header">
                 <h1 class="page-title">Gán Dữ Liệu trên File Excel</h1>
                 <p class="page-subtitle">Nhập dữ liệu từ File Nguồn sang File Đích dựa trên Cột ID (Khóa chính) hỗ trợ đa điều kiện.</p>
@@ -2920,6 +2920,7 @@
                 </div>
             </div>
         </section>
+    </main>
 
         <!-- MODAL: CẤU HÌNH BIẾN ĐỔI & KIỂM TRA DỮ LIỆU -->
         <div id="et-transform-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
@@ -3348,16 +3349,17 @@
 
     <script>
     function toggleNavGroup(headerEl) {
+        if (!headerEl) return;
         const subItems = headerEl.nextElementSibling;
         const chevron = headerEl.querySelector('.nav-chevron');
         if (subItems && subItems.classList.contains('nav-sub-items')) {
-            const isVisible = subItems.style.display === 'block';
+            const isVisible = window.getComputedStyle(subItems).display !== 'none';
             if (isVisible) {
                 subItems.style.display = 'none';
-                chevron.style.transform = 'rotate(0deg)';
+                if (chevron) chevron.style.transform = 'rotate(0deg)';
             } else {
                 subItems.style.display = 'block';
-                chevron.style.transform = 'rotate(180deg)';
+                if (chevron) chevron.style.transform = 'rotate(180deg)';
             }
         }
     }

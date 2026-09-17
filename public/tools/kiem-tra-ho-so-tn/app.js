@@ -52,37 +52,114 @@ function switchTab(tabId) {
         tabId = 'upload';
     }
 
-    document.querySelectorAll('.section-view').forEach(v => v.classList.remove('active'));
+    // 1. Hide all section views
+    document.querySelectorAll('.section-view').forEach(v => {
+        v.classList.remove('active');
+        v.style.display = 'none';
+    });
+    // 2. Deactivate all nav buttons
     document.querySelectorAll('.nav-item').forEach(v => v.classList.remove('active'));
 
+    // 3. Activate target view
     const target = document.getElementById(`view-${tabId}`);
-    if (target) target.classList.add('active');
+    if (target) {
+        target.classList.add('active');
+        target.classList.remove('hidden');
+        target.style.display = 'block';
+    }
 
+    // 4. Activate corresponding nav button
     const btn = document.getElementById(`btn-tab-${tabId}`);
     if (btn) btn.classList.add('active');
 
-    // Tab-specific initializations
-    if (tabId === 'stats') renderStatistics();
-    if (tabId === 'aianalysis') runAIAnalysis();
-    if (tabId === 'splitname') updateSplitFileSelector();
-    if (tabId === 'photorename') updatePhotoFileSelector();
-    if (tabId === 'smas-excel') initSmasExcelTab();
-    if (tabId === 'datamanager') { renderFileList(); updateCompareDropdowns(); }
-    if (tabId === 'proctor-board') renderProctorBoard();
-    if (tabId === 'analytics') renderExecutiveAnalytics();
-    if (tabId === 'qr-pass') renderQRPasses();
-    if (tabId === 'kiosk-map' && typeof ExamUltimate !== 'undefined') ExamUltimate.renderKioskMap();
-    if (tabId === 'live-attendance' && typeof ExamUltimate !== 'undefined') ExamUltimate.renderLiveAttendance();
-    if (tabId === 'exam-sealing' && typeof ExamUltimate !== 'undefined') ExamUltimate.renderExamSealing();
-    if (tabId === 'command-center' && typeof initCommandCenter === 'function') initCommandCenter();
-    if (tabId === 'exam-incidents' && typeof initExamIncidents === 'function') initExamIncidents();
-    if (tabId === 'graduation-predictor' && typeof initGraduationPredictor === 'function') initGraduationPredictor();
-    if (tabId === 'seating-chart' && typeof initSeatingChart === 'function') initSeatingChart();
-    if (tabId === 'behavior-incident' && typeof BehaviorIncident !== 'undefined') BehaviorIncident.init();
-    if (tabId === 'decree30-editor' && typeof Decree30Editor !== 'undefined') Decree30Editor.init();
+    // 5. Safe Tab-specific initializations
+    try {
+        if (tabId === 'stats' && typeof renderStatistics === 'function') renderStatistics();
+    } catch(e) { console.warn("stats init warning:", e); }
 
-    saveAppState();
-    if (typeof lucide !== 'undefined') lucide.createIcons();
+    try {
+        if (tabId === 'aianalysis' && typeof runAIAnalysis === 'function') runAIAnalysis();
+    } catch(e) { console.warn("aianalysis init warning:", e); }
+
+    try {
+        if (tabId === 'splitname' && typeof updateSplitFileSelector === 'function') updateSplitFileSelector();
+    } catch(e) { console.warn("splitname init warning:", e); }
+
+    try {
+        if (tabId === 'photorename' && typeof updatePhotoFileSelector === 'function') updatePhotoFileSelector();
+    } catch(e) { console.warn("photorename init warning:", e); }
+
+    try {
+        if (tabId === 'smas-excel' && typeof initSmasExcelTab === 'function') initSmasExcelTab();
+    } catch(e) { console.warn("smas-excel init warning:", e); }
+
+    try {
+        if (tabId === 'datamanager') { 
+            if (typeof renderFileList === 'function') renderFileList(); 
+            if (typeof updateCompareDropdowns === 'function') updateCompareDropdowns(); 
+        }
+    } catch(e) { console.warn("datamanager init warning:", e); }
+
+    try {
+        if (tabId === 'proctor-board' && typeof renderProctorBoard === 'function') renderProctorBoard();
+    } catch(e) { console.warn("proctor-board init warning:", e); }
+
+    try {
+        if (tabId === 'analytics' && typeof renderExecutiveAnalytics === 'function') renderExecutiveAnalytics();
+    } catch(e) { console.warn("analytics init warning:", e); }
+
+    try {
+        if (tabId === 'qr-pass' && typeof renderQRPasses === 'function') renderQRPasses();
+    } catch(e) { console.warn("qr-pass init warning:", e); }
+
+    try {
+        if (tabId === 'kiosk-map' && typeof ExamUltimate !== 'undefined' && typeof ExamUltimate.renderKioskMap === 'function') ExamUltimate.renderKioskMap();
+    } catch(e) { console.warn("kiosk-map init warning:", e); }
+
+    try {
+        if (tabId === 'live-attendance' && typeof ExamUltimate !== 'undefined' && typeof ExamUltimate.renderLiveAttendance === 'function') ExamUltimate.renderLiveAttendance();
+    } catch(e) { console.warn("live-attendance init warning:", e); }
+
+    try {
+        if (tabId === 'exam-sealing' && typeof ExamUltimate !== 'undefined' && typeof ExamUltimate.renderExamSealing === 'function') ExamUltimate.renderExamSealing();
+    } catch(e) { console.warn("exam-sealing init warning:", e); }
+
+    try {
+        if (tabId === 'command-center' && typeof initCommandCenter === 'function') initCommandCenter();
+    } catch(e) { console.warn("command-center init warning:", e); }
+
+    try {
+        if (tabId === 'exam-incidents' && typeof initExamIncidents === 'function') initExamIncidents();
+    } catch(e) { console.warn("exam-incidents init warning:", e); }
+
+    try {
+        if (tabId === 'graduation-predictor' && typeof initGraduationPredictor === 'function') initGraduationPredictor();
+    } catch(e) { console.warn("graduation-predictor init warning:", e); }
+
+    try {
+        if (tabId === 'seating-chart' && typeof initSeatingChart === 'function') initSeatingChart();
+    } catch(e) { console.warn("seating-chart init warning:", e); }
+
+    try {
+        if (tabId === 'behavior-incident' && typeof BehaviorIncident !== 'undefined' && typeof BehaviorIncident.init === 'function') BehaviorIncident.init();
+    } catch(e) { console.warn("behavior-incident init warning:", e); }
+
+    try {
+        if (tabId === 'decree30-editor' && typeof Decree30Editor !== 'undefined' && typeof Decree30Editor.init === 'function') Decree30Editor.init();
+    } catch(e) { console.warn("decree30-editor init warning:", e); }
+
+    try {
+        if (tabId === 'excel-transfer' && typeof ExcelTransfer !== 'undefined' && typeof ExcelTransfer.init === 'function') ExcelTransfer.init();
+    } catch(e) { console.warn("excel-transfer init warning:", e); }
+
+    try {
+        if (tabId === 'exam-shuffler' && typeof ExamShuffler !== 'undefined' && typeof ExamShuffler.init === 'function') ExamShuffler.init();
+    } catch(e) { console.warn("exam-shuffler init warning:", e); }
+
+    try {
+        if (typeof saveAppState === 'function') saveAppState();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    } catch(e) {}
 }
 
 async function processExcelFile(file) {
