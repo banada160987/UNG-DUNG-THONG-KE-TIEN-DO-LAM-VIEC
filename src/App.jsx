@@ -108,10 +108,12 @@ function App() {
           <Route path="/thiep/:code" element={<OnlineInvitation />} />
           <Route path="/invite/:code" element={<OnlineInvitation />} />
 
-          {/* Direct BGH Schedule Editor Routes (No Admin Login Required) */}
-          <Route path="/nhap-lich-bgh" element={<AdminSchedule />} />
-          <Route path="/bgh/schedule" element={<AdminSchedule />} />
-          
+          {/* Standalone Full-Screen Workstations */}
+          <Route path="/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
+          <Route path="/giao-vien/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
+          <Route path="/admin/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
+          <Route path="/teacher/exam-dossier" element={<ExamDossierChecker />} />
+
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<PublicHome />} />
@@ -165,15 +167,11 @@ function App() {
             <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherKPIEvaluation />} />
             <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
             <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
-            <Route path="/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
-            <Route path="/giao-vien/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
-            <Route path="/admin/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
 
             {/* Teacher Route Aliases (Ensures all URLs work smoothly without redirecting to /) */}
             <Route path="/teacher/lesson-plans" element={<TeacherLessonPlanBuilder />} />
             <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
             <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
-            <Route path="/teacher/exam-dossier" element={<ExamDossierChecker />} />
             <Route path="/teacher/academics" element={<TeacherAcademics />} />
             <Route path="/teacher/homeroom" element={<AdminStudents />} />
             <Route path="/teacher/funds" element={<TeacherFundsManager />} />

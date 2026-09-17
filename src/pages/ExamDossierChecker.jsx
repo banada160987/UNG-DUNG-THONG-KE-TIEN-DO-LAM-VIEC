@@ -183,11 +183,19 @@ export default function ExamDossierChecker() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      width: '100vw',
+      height: '100vh',
       backgroundColor: '#0f172a',
       color: '#f8fafc',
       display: 'flex',
       flexDirection: 'column',
+      overflow: 'hidden',
+      zIndex: 9999,
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       {/* 1. TOP TOOLBAR */}
@@ -195,13 +203,15 @@ export default function ExamDossierChecker() {
         <header style={{
           backgroundColor: '#1e293b',
           borderBottom: '1px solid #334155',
-          padding: '10px 18px',
+          padding: '8px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           flexWrap: 'wrap',
-          gap: '10px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+          gap: '8px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          flexShrink: 0,
+          zIndex: 10
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <button
@@ -472,13 +482,23 @@ export default function ExamDossierChecker() {
       )}
 
       {/* 2. EMBEDDED WEB APP CONTAINER */}
-      <div style={{ flex: 1, position: 'relative', width: '100%', height: isFullscreen ? '100vh' : 'calc(100vh - 58px)' }}>
+      <div style={{
+        flex: 1,
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        backgroundColor: '#ffffff'
+      }}>
         <iframe
           ref={iframeRef}
           key={iframeKey}
           src="/tools/kiem-tra-ho-so-tn/index.html"
           title="Tool Kiểm Tra Hồ Sơ Đăng Ký Thi TN THPT"
           style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
             width: '100%',
             height: '100%',
             border: 'none',
