@@ -1605,7 +1605,7 @@ export default function AdminSchedule() {
                 <BookOpen size={22} color="#166534" />
               </div>
               <div style={{ fontSize: '26px', fontWeight: '900', color: '#14532d', marginTop: '4px' }}>
-                {timetableData.length} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#16a34a' }}>tiết/tuần</small>
+                {(timetableData || []).length} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#16a34a' }}>tiết/tuần</small>
               </div>
             </div>
 
@@ -1634,7 +1634,7 @@ export default function AdminSchedule() {
           <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '800' }}>
-                📋 Danh Sách Thời Khóa Biểu Toàn Trường ({filteredTimetable.length} tiết)
+                📋 Danh Sách Thời Khóa Biểu Toàn Trường ({(filteredTimetable || []).length} tiết)
               </h3>
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
@@ -2768,7 +2768,7 @@ export default function AdminSchedule() {
                         <CheckCircle2 size={24} color="#4f46e5" />
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '900', color: '#3730a3', marginTop: '6px' }}>
-                        {draftSchedule.length} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#6366f1' }}>tiết đã xếp</small>
+                        {(draftSchedule || []).length} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#6366f1' }}>tiết đã xếp</small>
                       </div>
                       <span style={{ fontSize: '12.5px', color: '#4f46e5', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
                         100% Phân công hoàn tất
@@ -3130,7 +3130,7 @@ export default function AdminSchedule() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13.5px', color: '#334155' }}>
-                    <div>• Tổng số tiết học: <strong>{timetableData.length} tiết</strong></div>
+                    <div>• Tổng số tiết học: <strong>{(timetableData || []).length} tiết</strong></div>
                     <div>• Số lớp học: <strong>{uniqueClassesCount} lớp</strong></div>
                     <div>• Số giáo viên giảng dạy: <strong>{uniqueTeachersCount} giáo viên</strong></div>
                   </div>
@@ -3145,7 +3145,7 @@ export default function AdminSchedule() {
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13.5px', color: '#334155' }}>
-                    <div>• Tổng số tiết đã xếp: <strong>{draftSchedule.length} tiết</strong></div>
+                    <div>• Tổng số tiết đã xếp: <strong>{(draftSchedule || []).length} tiết</strong></div>
                     <div>• Trùng lịch giáo viên: <strong style={{ color: '#16a34a' }}>0 tiết (100% không trùng)</strong></div>
                     <div>• Điểm chất lượng: <strong style={{ color: '#4f46e5' }}>{solverResult?.qualityScore || 100} / 100 điểm</strong></div>
                   </div>
@@ -3289,7 +3289,7 @@ export default function AdminSchedule() {
             {publishStep === 1 ? (
               <div>
                 <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.6', margin: '0 0 16px 0' }}>
-                  Bạn đang chuẩn bị xuất bản <strong>{draftSchedule.length} tiết học</strong> từ Bản nháp AI làm Thời khóa biểu chính thức của toàn trường.
+                  Bạn đang chuẩn bị xuất bản <strong>{(draftSchedule || []).length} tiết học</strong> từ Bản nháp AI làm Thời khóa biểu chính thức của toàn trường.
                 </p>
 
                 <div style={{ backgroundColor: '#f0fdf4', padding: '14px', borderRadius: '10px', border: '1px solid #bbf7d0', marginBottom: '16px', fontSize: '13px', color: '#166534' }}>
