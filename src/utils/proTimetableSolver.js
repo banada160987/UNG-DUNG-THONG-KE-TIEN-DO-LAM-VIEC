@@ -168,7 +168,7 @@ export function runAiTimetableSolver({
     const cls = normalizeClassCode(pin.student_class);
     const day = pin.day_of_week;
     const period = Number(pin.period);
-    const teacher = getFullTeacherName(pin.teacher_name);
+    const teacher = getFullTeacherName(pin.teacher_name, pin.subject);
     const key = `${day}_${period}`;
 
     if (classGrid.has(cls)) {
@@ -247,8 +247,8 @@ export function runAiTimetableSolver({
   filteredAssignments.forEach(asg => {
     let remaining = Number(asg.periods_per_week) || 0;
     const cls = asg.student_class;
-    const teacher = getFullTeacherName(asg.teacher_name);
     const subject = asg.subject;
+    const teacher = getFullTeacherName(asg.teacher_name, subject);
     const isDoubleEligible = (doublePeriodSubjects || []).some(s => subject.toLowerCase().includes(s.toLowerCase()));
     const shift = asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning');
 
@@ -498,12 +498,12 @@ export function runAiTimetableSolver({
     stillUnplaced.push(...finalUnplaced);
   }
 
-  // 7. SIMULATED ANNEALING & LOCAL SEARCH
+  // 7. SIMULATED ANNEALING & LOCAL SEARCH (Tối ưu hóa giảm tiết lủng & nén thời khóa biểu)
   targetClasses.forEach(cls => {
     const cGrid = classGrid.get(cls);
     const classSlots = Array.from(cGrid.entries()).filter(([_, item]) => !item.isPinned && !item.isFixed);
 
-    for (let round = 0; round < 60; round++) {
+    for (let round = 0; round < 120; round++) {
       if (classSlots.length < 2) break;
       const idxA = Math.floor(Math.random() * classSlots.length);
       const idxB = Math.floor(Math.random() * classSlots.length);
@@ -545,7 +545,7 @@ export function runAiTimetableSolver({
   });
 
   // 8. Chuyển đổi toàn bộ Lưới thành mảng kết quả
-  const allScheduledItems = [];
+  let allScheduledItems = [];
   targetClasses.forEach(cls => {
     const cGrid = classGrid.get(cls);
     cGrid.forEach(item => {
@@ -553,8 +553,66 @@ export function runAiTimetableSolver({
     });
   });
 
+  // 9. VÒNG LẶP TỰ ĐỘNG SỬA CHỮA TRIỆT ĐỂ (AUTOMATED ZERO-CLASH CONVERGENCE)
+  let diagnostics = generateAiDiagnostics(allScheduledItems, filteredAssignments, teacherLocks);
+  let repairRounds = 0;
+
+  while (diagnostics.clashCount > 0 && repairRounds < 10) {
+    repairRounds++;
+    diagnostics.teacherClashList.forEach(clash => {
+      // Tìm vị trí của tiết xung đột thứ 2
+      const cls2 = clash.class2;
+      const cGrid2 = classGrid.get(cls2);
+      if (!cGrid2) return;
+
+      const currentKey = `${clash.day}_${clash.period}`;
+      const itemToMove = cGrid2.get(currentKey);
+      if (!itemToMove || itemToMove.isPinned || itemToMove.isFixed) return;
+
+      // Tìm một ô trống hoặc một ô đổi an toàn trong cùng ca của lớp cls2
+      const isMorning = Number(clash.period) <= 5;
+      const periodsToCheck = isMorning ? PERIODS_MORNING : PERIODS_AFTERNOON;
+
+      for (const day of DAYS) {
+        for (const p of periodsToCheck) {
+          const targetKey = `${day}_${p}`;
+          if (targetKey === currentKey) continue;
+          if (schoolLockSet.has(targetKey)) continue;
+
+          const existingTarget = cGrid2.get(targetKey);
+          const val = validateSlotSwap(
+            allScheduledItems,
+            itemToMove,
+            existingTarget || { student_class: cls2, day_of_week: day, period: p, subject: '', teacher_name: '' },
+            teacherLocks,
+            schoolLocks
+          );
+
+          if (val.valid) {
+            // Thực hiện đổi sang vị trí an toàn
+            cGrid2.delete(currentKey);
+            if (existingTarget) {
+              cGrid2.set(currentKey, { ...existingTarget, day_of_week: clash.day, period: clash.period });
+            }
+            cGrid2.set(targetKey, { ...itemToMove, day_of_week: day, period: p });
+            return;
+          }
+        }
+      }
+    });
+
+    // Cập nhật lại mảng và chẩn đoán
+    allScheduledItems = [];
+    targetClasses.forEach(cls => {
+      const cGrid = classGrid.get(cls);
+      cGrid.forEach(item => {
+        allScheduledItems.push(item);
+      });
+    });
+    diagnostics = generateAiDiagnostics(allScheduledItems, filteredAssignments, teacherLocks);
+  }
+
   const durationMs = Math.round(performance.now() - startTime);
-  const diagnostics = generateAiDiagnostics(allScheduledItems, filteredAssignments, teacherLocks);
 
   return {
     success: stillUnplaced.length === 0,
@@ -846,11 +904,9 @@ export function generateAiDiagnostics(scheduleItems = [], assignments = [], teac
   // 1. Quét trùng lịch giáo viên
   const slotTeacherMap = new Map();
   scheduleItems.forEach(item => {
-    let tName = item.teacher_name;
+    let tName = getFullTeacherName(item.teacher_name, item.subject);
     if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN' || tName.includes('GVCN') || tName.includes('BGH')) return;
-    if (tName === 'Nguyễn Thị Hà' && item.subject) {
-      tName = getFullTeacherName(tName, item.subject);
-    }
+    
     const key = `${item.day_of_week}_${item.period}__${tName}`;
     if (slotTeacherMap.has(key)) {
       clashCount++;
@@ -870,13 +926,14 @@ export function generateAiDiagnostics(scheduleItems = [], assignments = [], teac
   });
 
   // 2. Quét tiết lủng (Window gaps) của từng giáo viên
-  const teachers = Array.from(new Set(scheduleItems.map(s => s.teacher_name))).filter(t => t && t !== 'Chưa gán GV' && t !== 'GVCN');
+  const teachers = Array.from(new Set(scheduleItems.map(s => getFullTeacherName(s.teacher_name, s.subject))))
+    .filter(t => t && t !== 'Chưa gán GV' && t !== 'GVCN' && !t.includes('GVCN') && !t.includes('BGH'));
 
   teachers.forEach(tName => {
     let tGaps = 0;
     DAYS.forEach(day => {
       const dayLessons = scheduleItems
-        .filter(s => s.teacher_name === tName && s.day_of_week === day)
+        .filter(s => getFullTeacherName(s.teacher_name, s.subject) === tName && s.day_of_week === day)
         .map(s => Number(s.period))
         .sort((a, b) => a - b);
 
