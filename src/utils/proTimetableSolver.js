@@ -35,10 +35,20 @@ export const TEACHER_FULL_MAP = {
   "Đại (CD)": "Võ Ngọc Đại", "Hòa": "Phan Thị Hòa", "Đạt": "Ngô Văn Tiến Đạt"
 };
 
-export const getFullTeacherName = (name) => {
+export const getFullTeacherName = (name, subject = '') => {
   if (!name) return '';
   const trimmed = String(name).trim();
-  return TEACHER_FULL_MAP[trimmed] || trimmed;
+  let full = TEACHER_FULL_MAP[trimmed] || trimmed;
+  if (full === 'Nguyễn Thị Hà' && subject) {
+    const s = String(subject).toLowerCase();
+    if (s.includes('anh') || s.includes('nn') || s.includes('tiếng anh')) {
+      return 'Nguyễn Thị Hà (AV)';
+    }
+    if (s.includes('văn') || s.includes('ngữ văn') || s.includes('địa phương') || s.includes('gdđp')) {
+      return 'Nguyễn Thị Hà (V)';
+    }
+  }
+  return full;
 };
 
 export const normalizeClassCode = (cls) => {
@@ -63,8 +73,8 @@ export function extractAssignmentsFromTimetable(timetableItems) {
 
   timetableItems.forEach(item => {
     const cls = normalizeClassCode(item.student_class);
-    const teacher = getFullTeacherName(item.teacher_name);
     const subject = String(item.subject || '').trim();
+    const teacher = getFullTeacherName(item.teacher_name, subject);
     if (!cls || !subject) return;
 
     // Loại trừ các tiết cố định toàn trường khỏi phân công bộ môn
@@ -632,8 +642,11 @@ export function generateAiDiagnostics(scheduleItems = [], assignments = [], teac
   // 1. Quét trùng lịch giáo viên
   const slotTeacherMap = new Map();
   scheduleItems.forEach(item => {
-    const tName = item.teacher_name;
-    if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return;
+    let tName = item.teacher_name;
+    if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN' || tName.includes('GVCN') || tName.includes('BGH')) return;
+    if (tName === 'Nguyễn Thị Hà' && item.subject) {
+      tName = getFullTeacherName(tName, item.subject);
+    }
     const key = `${item.day_of_week}_${item.period}__${tName}`;
     if (slotTeacherMap.has(key)) {
       clashCount++;
@@ -643,10 +656,12 @@ export function generateAiDiagnostics(scheduleItems = [], assignments = [], teac
         day: item.day_of_week,
         period: item.period,
         class1: existing.student_class,
-        class2: item.student_class
+        subject1: existing.subject,
+        class2: item.student_class,
+        subject2: item.subject
       });
     } else {
-      slotTeacherMap.set(key, item);
+      slotTeacherMap.set(key, { ...item, teacher_name: tName });
     }
   });
 

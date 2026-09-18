@@ -168,7 +168,7 @@ export default function AdminSchedule() {
     return items.map(item => ({
       ...item,
       student_class: normalizeClassCode(item.student_class),
-      teacher_name: getFullTeacherName(item.teacher_name)
+      teacher_name: getFullTeacherName(item.teacher_name, item.subject)
     }));
   };
 
@@ -2776,16 +2776,30 @@ export default function AdminSchedule() {
                     </div>
 
                     {/* CLASH COUNT */}
-                    <div style={{ backgroundColor: '#ffffff', padding: '20px', borderRadius: '16px', border: '1.5px solid #bbf7d0', boxShadow: '0 4px 15px rgba(0,0,0,0.02)' }}>
+                    <div 
+                      onClick={() => {
+                        const el = document.getElementById('clash-inspection-section');
+                        if (el) el.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      style={{ 
+                        backgroundColor: '#ffffff', 
+                        padding: '20px', 
+                        borderRadius: '16px', 
+                        border: (solverResult?.clashCount ?? 0) === 0 ? '1.5px solid #bbf7d0' : '1.5px solid #fca5a5', 
+                        boxShadow: (solverResult?.clashCount ?? 0) === 0 ? '0 4px 15px rgba(0,0,0,0.02)' : '0 4px 15px rgba(220, 38, 38, 0.08)',
+                        cursor: (solverResult?.clashCount ?? 0) > 0 ? 'pointer' : 'default'
+                      }}
+                    >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534' }}>Trùng Lịch Giáo Viên</span>
-                        <ShieldCheck size={24} color="#16a34a" />
+                        <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: (solverResult?.clashCount ?? 0) === 0 ? '#166534' : '#991b1b' }}>Trùng Lịch Giáo Viên</span>
+                        <ShieldCheck size={24} color={(solverResult?.clashCount ?? 0) === 0 ? "#16a34a" : "#dc2626"} />
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '900', color: (solverResult?.clashCount ?? 0) === 0 ? '#15803d' : '#dc2626', marginTop: '6px' }}>
                         {solverResult?.clashCount ?? 0} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#64748b' }}>tiết trùng</small>
                       </div>
-                      <span style={{ fontSize: '12.5px', color: (solverResult?.clashCount ?? 0) === 0 ? '#16a34a' : '#dc2626', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
-                        {(solverResult?.clashCount ?? 0) === 0 ? '✨ 0% Xung đột hoàn hảo' : '⚠️ Cần kiểm tra lại'}
+                      <span style={{ fontSize: '12.5px', color: (solverResult?.clashCount ?? 0) === 0 ? '#16a34a' : '#dc2626', fontWeight: 'bold', marginTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span>{(solverResult?.clashCount ?? 0) === 0 ? '✨ 0% Xung đột hoàn hảo' : '⚠️ Cần kiểm tra lại'}</span>
+                        {(solverResult?.clashCount ?? 0) > 0 && <span style={{ fontSize: '11px', textDecoration: 'underline', color: '#b91c1c' }}>🔍 Bấm xem chi tiết</span>}
                       </span>
                     </div>
 
@@ -2817,6 +2831,86 @@ export default function AdminSchedule() {
                       </span>
                     </div>
                   </div>
+
+                  {/* CLASH DETAILS INSPECTION TABLE (IF CLASHES OCCUR) */}
+                  {solverResult?.teacherClashList && (solverResult.teacherClashList || []).length > 0 && (
+                    <div id="clash-inspection-section" style={{ backgroundColor: '#fef2f2', padding: '20px', borderRadius: '16px', border: '1.5px solid #fca5a5' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <AlertTriangle size={20} color="#dc2626" />
+                          <h4 style={{ margin: 0, color: '#991b1b', fontSize: '15px', fontWeight: 'bold' }}>
+                            Bảng Tra Cứu Chi Tiết {(solverResult.teacherClashList || []).length} Tiết Trùng Lịch Giáo Viên:
+                          </h4>
+                        </div>
+                        <span style={{ fontSize: '12.5px', color: '#7f1d1d', backgroundColor: '#fee2e2', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold' }}>
+                          Bấm nút "Sửa Trong Studio" để tráo đổi tiết nhanh
+                        </span>
+                      </div>
+
+                      <div style={{ overflowX: 'auto', backgroundColor: '#ffffff', borderRadius: '10px', border: '1px solid #fecaca' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
+                          <thead>
+                            <tr style={{ backgroundColor: '#fee2e2', color: '#991b1b', borderBottom: '1px solid #fca5a5' }}>
+                              <th style={{ padding: '10px 14px' }}>#</th>
+                              <th style={{ padding: '10px 14px' }}>Giáo Viên</th>
+                              <th style={{ padding: '10px 14px' }}>Thời Gian</th>
+                              <th style={{ padding: '10px 14px' }}>Lớp Thứ Nhất (Môn)</th>
+                              <th style={{ padding: '10px 14px' }}>Lớp Thứ Hai (Môn)</th>
+                              <th style={{ padding: '10px 14px', textAlign: 'center' }}>Thao Tác Xử Lý</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(solverResult.teacherClashList || []).map((c, idx) => (
+                              <tr key={idx} style={{ borderBottom: '1px solid #fee2e2' }}>
+                                <td style={{ padding: '10px 14px', fontWeight: 'bold', color: '#991b1b' }}>{idx + 1}</td>
+                                <td style={{ padding: '10px 14px', fontWeight: 'bold', color: '#1e293b' }}>
+                                  👨‍🏫 {c.teacher}
+                                </td>
+                                <td style={{ padding: '10px 14px', color: '#b91c1c', fontWeight: 'bold' }}>
+                                  📅 {c.day} • Tiết {c.period}
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                                    Lớp {c.class1} {c.subject1 ? `(${c.subject1})` : ''}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 14px' }}>
+                                  <span style={{ backgroundColor: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                                    Lớp {c.class2} {c.subject2 ? `(${c.subject2})` : ''}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px 14px', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSchedulerSubTab('studio');
+                                      setStudioView('teacher');
+                                      setStudioSelectedTeacher(c.teacher);
+                                    }}
+                                    style={{
+                                      padding: '5px 12px',
+                                      backgroundColor: '#dc2626',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Grid size={13} /> Sửa Trong Studio
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
 
                   {/* QUICK ACTION BANNER */}
                   <div style={{ backgroundColor: '#f0fdf4', padding: '16px 20px', borderRadius: '14px', border: '1.5px solid #bbf7d0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
