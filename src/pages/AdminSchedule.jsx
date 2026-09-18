@@ -7,7 +7,8 @@ import {
   RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck,
   Share2, Check, Link as LinkIcon, Zap, Sparkles, Lock, Unlock, Play, Sliders, Layers, 
   Grid, AlertTriangle, CheckCircle, Info, ArrowRightLeft, Cpu, Award, ShieldAlert,
-  FileText, CheckCheck, Undo2, ChevronRight, Filter, Settings, Sun, Moon, Sparkle, Pin
+  FileText, CheckCheck, Undo2, ChevronRight, Filter, Settings, Sun, Moon, Sparkle, Pin,
+  Bot, MessageSquare, Send, Copy, FileCheck
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -45,6 +46,13 @@ import {
   exportWorkloadReportToExcel,
   TIMETABLE_TUNE_ALGORITHMS
 } from '../utils/proTimetableSolver';
+import {
+  getAiApiKey,
+  setAiApiKey,
+  runAiTimetableAudit,
+  generateAiDecree30Memo,
+  askAiTimetableAssistant
+} from '../utils/aiTimetableAdvisor';
 
 export default function AdminSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -178,6 +186,21 @@ export default function AdminSchedule() {
   const [workloadSearch, setWorkloadSearch] = useState('');
   const [workloadSort, setWorkloadSort] = useState('periods'); // 'periods' | 'gaps' | 'daysOff' | 'name'
   const [workloadDeptFilter, setWorkloadDeptFilter] = useState('ALL');
+
+  // AI TIMETABLE ADVISOR & AUDITOR STATE (GEMINI LLM)
+  const [showAiAdvisorModal, setShowAiAdvisorModal] = useState(false);
+  const [aiAdvisorTab, setAiAdvisorTab] = useState('audit'); // 'audit' | 'memo' | 'chat' | 'settings'
+  const [aiAuditResult, setAiAuditResult] = useState('');
+  const [aiAuditLoading, setAiAuditLoading] = useState(false);
+  const [aiMemoResult, setAiMemoResult] = useState('');
+  const [aiMemoLoading, setAiMemoLoading] = useState(false);
+  const [aiChatHistory, setAiChatHistory] = useState([
+    { role: 'assistant', content: 'Xin chào Thầy/Cô Ban Giám Hiệu! Tôi là Trợ lý AI Thời khóa biểu Sư phạm. Tôi có thể giúp Thầy/Cô phân tích ma trận lịch dạy, đánh giá tải học sinh, kiểm tra công bằng giáo viên hoặc trả lời bất kỳ thắc mắc nào về phương án TKB hiện tại.' }
+  ]);
+  const [aiChatInput, setAiChatInput] = useState('');
+  const [aiChatLoading, setAiChatLoading] = useState(false);
+  const [customAiApiKey, setCustomAiApiKey] = useState(getAiApiKey());
+  const [copiedAiText, setCopiedAiText] = useState(false);
 
   useEffect(() => {
     fetchSchedules();
@@ -1499,6 +1522,72 @@ export default function AdminSchedule() {
 
   const handleDeleteStudioSlot = (studentClass, day, period) => {
     handleDeleteManualSlot(studentClass, day, period);
+  };
+
+  // --- AI TIMETABLE ADVISOR HANDLERS ---
+  const handleOpenAiAdvisor = async (tab = 'audit') => {
+    setAiAdvisorTab(tab);
+    setShowAiAdvisorModal(true);
+
+    if (tab === 'audit' && !aiAuditResult) {
+      await handleTriggerAiAudit();
+    } else if (tab === 'memo' && !aiMemoResult) {
+      await handleTriggerAiMemo();
+    }
+  };
+
+  const handleTriggerAiAudit = async () => {
+    setAiAuditLoading(true);
+    try {
+      const result = await runAiTimetableAudit(draftSchedule, teachingAssignments, teacherLocks);
+      setAiAuditResult(result);
+    } catch (err) {
+      console.error("Lỗi AI Audit:", err);
+    } finally {
+      setAiAuditLoading(false);
+    }
+  };
+
+  const handleTriggerAiMemo = async () => {
+    setAiMemoLoading(true);
+    try {
+      const result = await generateAiDecree30Memo(draftSchedule, teachingAssignments);
+      setAiMemoResult(result);
+    } catch (err) {
+      console.error("Lỗi AI Memo:", err);
+    } finally {
+      setAiMemoLoading(false);
+    }
+  };
+
+  const handleSendAiChatMessage = async () => {
+    if (!aiChatInput.trim() || aiChatLoading) return;
+    const userMsg = aiChatInput.trim();
+    setAiChatInput('');
+    const newHistory = [...aiChatHistory, { role: 'user', content: userMsg }];
+    setAiChatHistory(newHistory);
+    setAiChatLoading(true);
+
+    try {
+      const reply = await askAiTimetableAssistant(userMsg, draftSchedule, teachingAssignments, newHistory);
+      setAiChatHistory(prev => [...prev, { role: 'assistant', content: reply }]);
+    } catch (err) {
+      setAiChatHistory(prev => [...prev, { role: 'assistant', content: 'Đã xảy ra lỗi khi kết nối AI. Vui lòng kiểm tra lại API Key hoặc đường truyền mạng.' }]);
+    } finally {
+      setAiChatLoading(false);
+    }
+  };
+
+  const handleSaveApiKey = () => {
+    setAiApiKey(customAiApiKey);
+    alert("Đã lưu API Key AI thành công!");
+  };
+
+  const handleCopyAiText = (text) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedAiText(true);
+    setTimeout(() => setCopiedAiText(false), 2000);
   };
 
   const handleAddOrUpdateAssignment = () => {
@@ -3796,7 +3885,15 @@ export default function AdminSchedule() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAiAdvisor('audit')}
+                        style={{ padding: '9px 16px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(124, 58, 237, 0.3)' }}
+                      >
+                        <Bot size={16} /> ✨ AI Thẩm Định Sư Phạm
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => setSchedulerSubTab('studio')}
@@ -4025,6 +4122,27 @@ export default function AdminSchedule() {
                     style={{ padding: '8px 14px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
                     <FileSpreadsheet size={15} /> Xuất Excel
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleOpenAiAdvisor('audit')}
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)'
+                    }}
+                  >
+                    <Bot size={15} /> ✨ AI Cố Vấn BGH
                   </button>
 
                   <button
@@ -5643,6 +5761,356 @@ export default function AdminSchedule() {
                 💾 Lưu Phương Án Ngay
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI TIMETABLE ADVISOR & AUDITOR MODAL */}
+      {showAiAdvisorModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '880px', width: '100%', height: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1.5px solid #ddd6fe', overflow: 'hidden' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ backgroundColor: '#f5f3ff', padding: '16px 24px', borderBottom: '1.5px solid #ddd6fe', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ padding: '8px', backgroundColor: '#7c3aed', borderRadius: '10px', color: '#ffffff', display: 'flex' }}>
+                  <Bot size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, color: '#4c1d95', fontSize: '17px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ✨ TRỢ LÝ AI SƯ PHẠM & CỐ VẤN THỜI KHÓA BIỂU
+                  </h3>
+                  <p style={{ margin: 0, color: '#6d28d9', fontSize: '12px' }}>
+                    Phân tích tâm lý học sinh, công bằng giáo viên & cố vấn Ban Giám Hiệu (Powered by Google Gemini)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAiAdvisorModal(false)}
+                style={{ border: 'none', background: '#ede9fe', color: '#5b21b6', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* TAB SELECTOR */}
+            <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', backgroundColor: '#faf5ff', padding: '0 16px', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => handleOpenAiAdvisor('audit')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderBottom: aiAdvisorTab === 'audit' ? '3px solid #7c3aed' : '3px solid transparent',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  color: aiAdvisorTab === 'audit' ? '#6d28d9' : '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <FileCheck size={16} /> 📑 1. Thẩm Định Sư Phạm
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenAiAdvisor('memo')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderBottom: aiAdvisorTab === 'memo' ? '3px solid #7c3aed' : '3px solid transparent',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  color: aiAdvisorTab === 'memo' ? '#6d28d9' : '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <FileText size={16} /> 📜 2. Tờ Trình / Thuyết Minh (NĐ 30)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAiAdvisorTab('chat')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderBottom: aiAdvisorTab === 'chat' ? '3px solid #7c3aed' : '3px solid transparent',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  color: aiAdvisorTab === 'chat' ? '#6d28d9' : '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <MessageSquare size={16} /> 💬 3. Chat Với Thời Khóa Biểu
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAiAdvisorTab('settings')}
+                style={{
+                  padding: '12px 16px',
+                  border: 'none',
+                  borderBottom: aiAdvisorTab === 'settings' ? '3px solid #7c3aed' : '3px solid transparent',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  color: aiAdvisorTab === 'settings' ? '#6d28d9' : '#64748b',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  marginLeft: 'auto'
+                }}
+              >
+                <Settings size={16} /> ⚙️ Cấu Hình API
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', backgroundColor: '#ffffff' }}>
+              
+              {/* TAB 1: AUDIT REPORT */}
+              {aiAdvisorTab === 'audit' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>
+                      Bản phân tích chuyên sâu được AI tự động lập dựa trên ma trận TKB hiện tại:
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleTriggerAiAudit}
+                        disabled={aiAuditLoading}
+                        style={{ padding: '6px 12px', backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <RefreshCw size={13} className={aiAuditLoading ? 'spin' : ''} /> {aiAuditLoading ? 'Đang phân tích...' : 'Phân Tích Lại'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAiText(aiAuditResult)}
+                        style={{ padding: '6px 14px', backgroundColor: copiedAiText ? '#16a34a' : '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {copiedAiText ? <Check size={13} /> : <Copy size={13} />} {copiedAiText ? 'Đã Sao Chép!' : 'Sao Chép Báo Cáo'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {aiAuditLoading ? (
+                    <div style={{ padding: '60px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '45px', height: '45px', border: '4px solid #ede9fe', borderTop: '4px solid #7c3aed', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                      <span style={{ color: '#6d28d9', fontWeight: 'bold', fontSize: '15px' }}>Trợ lý AI đang thẩm định toàn diện ma trận thời khóa biểu...</span>
+                      <span style={{ color: '#94a3b8', fontSize: '13px' }}>Đang đối chiếu tâm lý học sinh, tiết 5 ca sáng, tiết đôi và tính công bằng giáo viên</span>
+                    </div>
+                  ) : (
+                    <div style={{ backgroundColor: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '13.5px', lineHeight: '1.65', color: '#1e293b', whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
+                      {aiAuditResult}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: DECREE 30 MEMO GENERATOR */}
+              {aiAdvisorTab === 'memo' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', paddingBottom: '10px', borderBottom: '1px solid #f1f5f9' }}>
+                    <span style={{ fontSize: '13px', color: '#475569', fontWeight: '500' }}>
+                      Tự động tạo Tờ trình & Bản thuyết minh nộp Ban Giám Hiệu / Hội đồng Sư phạm (Chuẩn NĐ 30/2020/NĐ-CP):
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={handleTriggerAiMemo}
+                        disabled={aiMemoLoading}
+                        style={{ padding: '6px 12px', backgroundColor: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <RefreshCw size={13} className={aiMemoLoading ? 'spin' : ''} /> {aiMemoLoading ? 'Đang soạn...' : 'Soạn Lại Văn Bản'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAiText(aiMemoResult)}
+                        style={{ padding: '6px 14px', backgroundColor: copiedAiText ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        {copiedAiText ? <Check size={13} /> : <Copy size={13} />} {copiedAiText ? 'Đã Sao Chép!' : 'Sao Chép Văn Bản'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {aiMemoLoading ? (
+                    <div style={{ padding: '60px 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '45px', height: '45px', border: '4px solid #e0f2fe', borderTop: '4px solid #0284c7', borderRadius: '50%', animation: 'spin 1s linear infinite' }}></div>
+                      <span style={{ color: '#0369a1', fontWeight: 'bold', fontSize: '15px' }}>AI đang soạn thảo Tờ trình Thuyết minh theo thể thức Nghị định 30/CP...</span>
+                    </div>
+                  ) : (
+                    <div style={{ backgroundColor: '#ffffff', padding: '24px 30px', borderRadius: '12px', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 15px rgba(0,0,0,0.03)', fontSize: '14px', lineHeight: '1.7', color: '#0f172a', whiteSpace: 'pre-wrap', fontFamily: '"Times New Roman", Times, serif' }}>
+                      {aiMemoResult}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: CHAT WITH TIMETABLE */}
+              {aiAdvisorTab === 'chat' && (
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '14px' }}>
+                  {/* QUICK SUGGESTIONS */}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold', display: 'flex', alignItems: 'center' }}>Gợi ý hỏi nhanh:</span>
+                    {[
+                      'Tổ Toán tuần này dạy thế nào, có bị dồn ca không?',
+                      'Có giáo viên nào bị dạy 2 buổi chiều liên tiếp không?',
+                      'Lớp 10A01 có bị dồn nhiều môn nặng cùng ngày không?',
+                      'Đánh giá tính công bằng ngày nghỉ giữa các tổ bộ môn'
+                    ].map((q, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => { setAiChatInput(q); }}
+                        style={{ padding: '4px 10px', backgroundColor: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '16px', fontSize: '12px', color: '#334155', cursor: 'pointer', transition: 'all 0.15s' }}
+                      >
+                        💡 {q}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* CHAT MESSAGES */}
+                  <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', padding: '14px', backgroundColor: '#f8fafc', borderRadius: '14px', border: '1px solid #e2e8f0', minHeight: '280px' }}>
+                    {aiChatHistory.map((msg, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          display: 'flex',
+                          justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                          gap: '8px'
+                        }}
+                      >
+                        {msg.role === 'assistant' && (
+                          <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#7c3aed', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '13px' }}>
+                            <Bot size={16} />
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            maxWidth: '75%',
+                            padding: '10px 16px',
+                            borderRadius: '14px',
+                            fontSize: '13px',
+                            lineHeight: '1.5',
+                            backgroundColor: msg.role === 'user' ? '#4f46e5' : '#ffffff',
+                            color: msg.role === 'user' ? '#ffffff' : '#1e293b',
+                            border: msg.role === 'user' ? 'none' : '1px solid #e2e8f0',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                            whiteSpace: 'pre-wrap'
+                          }}
+                        >
+                          {msg.content}
+                        </div>
+                      </div>
+                    ))}
+                    {aiChatLoading && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontSize: '12.5px', fontWeight: 'bold' }}>
+                        <RefreshCw size={14} className="spin" /> AI đang đọc ma trận TKB và suy nghĩ câu trả lời...
+                      </div>
+                    )}
+                  </div>
+
+                  {/* CHAT INPUT FORM */}
+                  <form
+                    onSubmit={(e) => { e.preventDefault(); handleSendAiChatMessage(); }}
+                    style={{ display: 'flex', gap: '10px' }}
+                  >
+                    <input
+                      type="text"
+                      value={aiChatInput}
+                      onChange={e => setAiChatInput(e.target.value)}
+                      placeholder="Nhập câu hỏi về lịch dạy của giáo viên, lịch học của lớp, so sánh phương án..."
+                      style={{ flex: 1, padding: '10px 16px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', outline: 'none' }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!aiChatInput.trim() || aiChatLoading}
+                      style={{
+                        padding: '10px 20px',
+                        backgroundColor: '#7c3aed',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        opacity: (!aiChatInput.trim() || aiChatLoading) ? 0.6 : 1
+                      }}
+                    >
+                      <Send size={15} /> Gửi
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* TAB 4: API SETTINGS */}
+              {aiAdvisorTab === 'settings' && (
+                <div style={{ maxWidth: '600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px', padding: '10px 0' }}>
+                  <div style={{ backgroundColor: '#f5f3ff', padding: '16px 20px', borderRadius: '12px', border: '1px solid #ddd6fe' }}>
+                    <h4 style={{ margin: '0 0 6px 0', color: '#4c1d95', fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Zap size={18} color="#7c3aed" /> Cấu Hình API Key AI (Google Gemini)
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '12.5px', color: '#6d28d9', lineHeight: '1.5' }}>
+                      API Key được lưu bảo mật trong trình duyệt của bạn (Local Storage) và dùng để gọi các mô hình AI Gemini (Flash / Pro) phục vụ phân tích sư phạm.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Google Gemini API Key:</label>
+                    <input
+                      type="text"
+                      value={customAiApiKey}
+                      onChange={e => setCustomAiApiKey(e.target.value)}
+                      placeholder="Nhập API Key của bạn (bắt đầu bằng AIza... hoặc AQ...)"
+                      style={{ ...styles.input, fontFamily: 'monospace', padding: '10px 14px' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>
+                      ✓ Đã tích hợp sẵn key mặc định của bạn
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleSaveApiKey}
+                      style={{ padding: '8px 18px', backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Save size={15} /> Lưu Cấu Hình Key
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div style={{ padding: '12px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowAiAdvisorModal(false)}
+                style={{ padding: '8px 20px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
+
           </div>
         </div>
       )}
