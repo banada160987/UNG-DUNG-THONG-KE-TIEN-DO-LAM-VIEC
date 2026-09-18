@@ -7,7 +7,7 @@ import {
   RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck,
   Share2, Check, Link as LinkIcon, Zap, Sparkles, Lock, Unlock, Play, Sliders, Layers, 
   Grid, AlertTriangle, CheckCircle, Info, ArrowRightLeft, Cpu, Award, ShieldAlert,
-  FileText, CheckCheck, Undo2, ChevronRight, Filter, Settings, Sun, Moon, Sparkle
+  FileText, CheckCheck, Undo2, ChevronRight, Filter, Settings, Sun, Moon, Sparkle, Pin
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -124,6 +124,20 @@ export default function AdminSchedule() {
   const [draggingSlot, setDraggingSlot] = useState(null);
   const [conflictModalData, setConflictModalData] = useState(null);
   const [pinnedSlots, setPinnedSlots] = useState([]);
+
+  // Manual Slot Assignment & Pinning State
+  const [showManualAssignModal, setShowManualAssignModal] = useState(false);
+  const [manualAssignData, setManualAssignData] = useState({
+    student_class: '10A01',
+    day_of_week: 'Thứ 2',
+    period: 1,
+    subject: '',
+    teacher_name: '',
+    isPinned: true
+  });
+  const [pinnedFilterGrade, setPinnedFilterGrade] = useState('ALL');
+  const [pinnedFilterClass, setPinnedFilterClass] = useState('ALL');
+  const [pinnedFilterTeacher, setPinnedFilterTeacher] = useState('ALL');
 
   // Assignment Management State
   const [showAddAssignmentModal, setShowAddAssignmentModal] = useState(false);
@@ -703,6 +717,12 @@ export default function AdminSchedule() {
         if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) setTeacherLocks(parsed);
       }
 
+      const savedPins = localStorage.getItem('cbq_pinned_slots');
+      if (savedPins) {
+        const parsedPins = JSON.parse(savedPins);
+        if (Array.isArray(parsedPins)) setPinnedSlots(parsedPins);
+      }
+
       const savedDraft = localStorage.getItem('cbq_draft_timetable');
       if (savedDraft) {
         const parsed = JSON.parse(savedDraft);
@@ -712,6 +732,21 @@ export default function AdminSchedule() {
             teacher_name: getFullTeacherName(item.teacher_name, item.subject)
           }));
           setDraftSchedule(cleanedDraft);
+
+          // Đồng bộ các tiết có cờ isPinned
+          const draftPins = cleanedDraft.filter(item => item.isPinned);
+          if (draftPins.length > 0) {
+            setPinnedSlots(prev => {
+              const combined = [...prev];
+              draftPins.forEach(dp => {
+                if (!combined.some(cp => cp.student_class === dp.student_class && cp.day_of_week === dp.day_of_week && Number(cp.period) === Number(dp.period))) {
+                  combined.push(dp);
+                }
+              });
+              return combined;
+            });
+          }
+
           const diag = generateAiDiagnostics(cleanedDraft, teachingAssignments || [], teacherLocks || {});
           setSolverResult({
             success: true,
@@ -1143,12 +1178,134 @@ export default function AdminSchedule() {
     return true;
   };
 
+  const handleOpenManualAssignModal = (student_class, day, period, existingItem = null) => {
+    const cls = normalizeClassCode(student_class || studioSelectedClass || (availableClasses[0] || '10A01'));
+    const d = day || 'Thứ 2';
+    const p = Number(period) || 1;
+
+    // Tìm nếu đã có tiết trong draftSchedule
+    const existing = existingItem || draftSchedule.find(s => s.student_class === cls && s.day_of_week === d && Number(s.period) === p);
+
+    setManualAssignData({
+      student_class: cls,
+      day_of_week: d,
+      period: p,
+      subject: existing?.subject || '',
+      teacher_name: existing?.teacher_name || '',
+      isPinned: existing ? (existing.isPinned ?? true) : true
+    });
+    setShowManualAssignModal(true);
+  };
+
+  const handleSaveManualAssignment = () => {
+    if (!manualAssignData.student_class || !manualAssignData.subject || !manualAssignData.teacher_name) {
+      alert("Vui lòng chọn Môn học và Giáo viên để xếp vào ô này!");
+      return;
+    }
+
+    const cls = normalizeClassCode(manualAssignData.student_class);
+    const day = manualAssignData.day_of_week;
+    const period = Number(manualAssignData.period);
+    const subject = manualAssignData.subject;
+    const teacher = getFullTeacherName(manualAssignData.teacher_name, subject);
+    const isPinned = manualAssignData.isPinned ?? true;
+
+    // Kiểm tra xung đột nếu GV đang dạy lớp khác vào cùng thời điểm
+    const clashWithClass = draftSchedule.find(s => 
+      s.day_of_week === day && 
+      Number(s.period) === period && 
+      s.student_class !== cls && 
+      getFullTeacherName(s.teacher_name, s.subject) === teacher && 
+      teacher !== 'Chưa gán GV' && 
+      teacher !== 'GVCN'
+    );
+
+    if (clashWithClass) {
+      const confirmOverride = window.confirm(`⚠️ CẢNH BÁO XUNG ĐỘT TRÙNG LỊCH!\nGiáo viên "${teacher}" hiện đang có tiết dạy môn ${clashWithClass.subject} tại lớp "${clashWithClass.student_class}" vào ${day} Tiết ${period}.\n\nBạn có muốn tiếp tục lưu không? (Khuyên nên đổi sang tiết khác để bảo đảm 0% xung đột)`);
+      if (!confirmOverride) return;
+    }
+
+    const newItem = {
+      student_class: cls,
+      day_of_week: day,
+      period: period,
+      subject: subject,
+      teacher_name: teacher,
+      isPinned: isPinned
+    };
+
+    // Cập nhật draft schedule
+    const updatedDraft = draftSchedule.filter(s => !(s.student_class === cls && s.day_of_week === day && Number(s.period) === period));
+    updatedDraft.push(newItem);
+
+    setDraftSchedule(updatedDraft);
+    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updatedDraft));
+
+    // Cập nhật pinned slots
+    let updatedPins = pinnedSlots.filter(p => !(p.student_class === cls && p.day_of_week === day && Number(p.period) === period));
+    if (isPinned) {
+      updatedPins.push(newItem);
+    }
+    setPinnedSlots(updatedPins);
+    localStorage.setItem('cbq_pinned_slots', JSON.stringify(updatedPins));
+
+    // Cập nhật lại chẩn đoán chất lượng
+    const diag = generateAiDiagnostics(updatedDraft, teachingAssignments, teacherLocks);
+    setSolverResult(prev => ({
+      ...prev,
+      qualityScore: diag.qualityScore,
+      clashCount: diag.clashCount,
+      totalGaps: diag.totalGaps,
+      teacherClashList: diag.teacherClashList,
+      teachersWithGaps: diag.teachersWithGaps
+    }));
+
+    setShowManualAssignModal(false);
+  };
+
+  const handleDeleteManualSlot = (studentClass, day, period) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa tiết này khỏi lớp ${studentClass}?`)) return;
+    const updatedDraft = draftSchedule.filter(s => !(s.student_class === studentClass && s.day_of_week === day && Number(s.period) === Number(period)));
+    setDraftSchedule(updatedDraft);
+    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updatedDraft));
+
+    const updatedPins = pinnedSlots.filter(p => !(p.student_class === studentClass && p.day_of_week === day && Number(p.period) === Number(period)));
+    setPinnedSlots(updatedPins);
+    localStorage.setItem('cbq_pinned_slots', JSON.stringify(updatedPins));
+
+    const diag = generateAiDiagnostics(updatedDraft, teachingAssignments, teacherLocks);
+    setSolverResult(prev => ({
+      ...prev,
+      qualityScore: diag.qualityScore,
+      clashCount: diag.clashCount,
+      totalGaps: diag.totalGaps,
+      teacherClashList: diag.teacherClashList,
+      teachersWithGaps: diag.teachersWithGaps
+    }));
+
+    setShowManualAssignModal(false);
+  };
+
+  const handleClearAllPins = () => {
+    if (!window.confirm("Bạn có chắc chắn muốn BỎ GHIM TẤT CẢ các tiết đã ghim trên toàn trường?")) return;
+    const updatedDraft = draftSchedule.map(s => ({ ...s, isPinned: false }));
+    setDraftSchedule(updatedDraft);
+    setPinnedSlots([]);
+    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updatedDraft));
+    localStorage.setItem('cbq_pinned_slots', JSON.stringify([]));
+  };
+
   const handleStudioCellClick = (day, period, currentItem) => {
     const activeTarget = studioView === 'class' ? studioSelectedClass : studioSelectedTeacher;
     if (!activeTarget) return;
 
     if (!swapSourceSlot) {
-      if (!currentItem) return;
+      if (!currentItem) {
+        // Nhấp vào ô trống: Mở ngay Modal Xếp Tiết Thủ Công & Ghim Cố Định!
+        const targetClass = studioView === 'class' ? studioSelectedClass : (availableClasses[0] || '10A01');
+        handleOpenManualAssignModal(targetClass, day, period, null);
+        return;
+      }
       setSwapSourceSlot({
         student_class: currentItem.student_class || studioSelectedClass,
         teacher_name: currentItem.teacher_name || studioSelectedTeacher,
@@ -1229,13 +1386,11 @@ export default function AdminSchedule() {
       updatedPins = [...pinnedSlots, { ...slotItem, isPinned: true }];
     }
     setPinnedSlots(updatedPins);
+    localStorage.setItem('cbq_pinned_slots', JSON.stringify(updatedPins));
   };
 
   const handleDeleteStudioSlot = (studentClass, day, period) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa tiết này khỏi lớp ${studentClass}?`)) return;
-    const updated = draftSchedule.filter(s => !(s.student_class === studentClass && s.day_of_week === day && Number(s.period) === Number(period)));
-    setDraftSchedule(updated);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updated));
+    handleDeleteManualSlot(studentClass, day, period);
   };
 
   const handleAddOrUpdateAssignment = () => {
@@ -2772,6 +2927,193 @@ export default function AdminSchedule() {
                 </div>
 
               </div>
+
+              {/* CARD 6: PINNED & MANUAL PRE-ASSIGNED SLOTS MANAGER */}
+              <div style={{ backgroundColor: '#ffffff', padding: '24px', borderRadius: '16px', border: '2px solid #f59e0b', boxShadow: '0 4px 18px rgba(245, 158, 11, 0.08)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '16px' }}>
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                      <Pin size={14} /> XẾP THỦ CÔNG & GHIM CỐ ĐỊNH
+                    </div>
+                    <h3 style={{ margin: 0, color: '#78350f', fontSize: '17px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      📌 6. QUẢN LÝ TIẾT XẾP THỦ CÔNG & GHIM CỐ ĐỊNH ({(pinnedSlots || []).length} TIẾT)
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13.5px' }}>
+                      Các tiết do Admin gán thủ công trước khi chạy AI. Thuật toán AI Solver sẽ giữ nguyên 100% các tiết này và tự động trừ định mức phân công của môn học/giáo viên.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenManualAssignModal(availableClasses[0] || '10A01', 'Thứ 2', 1)}
+                      style={{
+                        padding: '9px 16px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: '#f59e0b',
+                        color: '#ffffff',
+                        fontWeight: 'bold',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                      }}
+                    >
+                      <Plus size={16} /> ➕ Thêm Tiết Ghim Thủ Công
+                    </button>
+
+                    {(pinnedSlots || []).length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearAllPins}
+                        style={{
+                          padding: '9px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          backgroundColor: '#ffffff',
+                          color: '#dc2626',
+                          fontWeight: 'bold',
+                          fontSize: '12.5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🔓 Bỏ Ghim Tất Cả ({(pinnedSlots || []).length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* FILTER BAR */}
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px', backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '10px' }}>
+                  <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#475569' }}>🔍 Lọc tiết ghim:</span>
+                  
+                  {/* GRADE FILTER */}
+                  <select
+                    value={pinnedFilterGrade}
+                    onChange={e => setPinnedFilterGrade(e.target.value)}
+                    style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold' }}
+                  >
+                    <option value="ALL">Tất cả Khối</option>
+                    <option value="10">Khối 10</option>
+                    <option value="11">Khối 11</option>
+                    <option value="12">Khối 12</option>
+                  </select>
+
+                  {/* CLASS FILTER */}
+                  <select
+                    value={pinnedFilterClass}
+                    onChange={e => setPinnedFilterClass(e.target.value)}
+                    style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px' }}
+                  >
+                    <option value="ALL">Tất cả Lớp</option>
+                    {availableClasses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+
+                  {/* TEACHER FILTER */}
+                  <select
+                    value={pinnedFilterTeacher}
+                    onChange={e => setPinnedFilterTeacher(e.target.value)}
+                    style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px' }}
+                  >
+                    <option value="ALL">Tất cả Giáo Viên</option>
+                    {availableTeachers.map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* PINNED SLOTS TABLE */}
+                {(pinnedSlots || []).length > 0 ? (
+                  <div style={{ overflowX: 'auto', maxHeight: '360px', overflowY: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                      <thead style={{ position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 1 }}>
+                        <tr style={{ borderBottom: '2px solid #e2e8f0', color: '#475569', textAlign: 'left' }}>
+                          <th style={{ padding: '8px 12px', width: '50px' }}>STT</th>
+                          <th style={{ padding: '8px 12px' }}>Lớp</th>
+                          <th style={{ padding: '8px 12px' }}>Thời Gian</th>
+                          <th style={{ padding: '8px 12px' }}>Ca Học</th>
+                          <th style={{ padding: '8px 12px' }}>Môn Học</th>
+                          <th style={{ padding: '8px 12px' }}>Giáo Viên Giảng Dạy</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'center' }}>Thao Tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(pinnedSlots || [])
+                          .filter(pin => {
+                            if (pinnedFilterGrade !== 'ALL') {
+                              const grade = pin.student_class?.startsWith('10') ? '10' : pin.student_class?.startsWith('11') ? '11' : '12';
+                              if (grade !== pinnedFilterGrade) return false;
+                            }
+                            if (pinnedFilterClass !== 'ALL' && pin.student_class !== pinnedFilterClass) return false;
+                            if (pinnedFilterTeacher !== 'ALL' && pin.teacher_name !== pinnedFilterTeacher) return false;
+                            return true;
+                          })
+                          .map((pin, idx) => (
+                            <tr key={`${pin.student_class}_${pin.day_of_week}_${pin.period}_${idx}`} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '8px 12px', color: '#94a3b8' }}>{idx + 1}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#0f172a' }}>
+                                <span style={{ backgroundColor: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '6px', fontSize: '12px' }}>
+                                  {pin.student_class}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#475569' }}>
+                                {pin.day_of_week} • Tiết {pin.period}
+                              </td>
+                              <td style={{ padding: '8px 12px' }}>
+                                <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: Number(pin.period) <= 5 ? '#047857' : '#c2410c' }}>
+                                  {Number(pin.period) <= 5 ? '☀️ Ca Sáng' : '⛅ Ca Chiều'}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#4f46e5' }}>{pin.subject}</td>
+                              <td style={{ padding: '8px 12px', fontWeight: 'bold', color: '#334155' }}>{pin.teacher_name}</td>
+                              <td style={{ padding: '8px 12px', textAlign: 'center' }}>
+                                <div style={{ display: 'inline-flex', gap: '6px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenManualAssignModal(pin.student_class, pin.day_of_week, pin.period, pin)}
+                                    style={{ border: 'none', background: '#eff6ff', color: '#1d4ed8', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                                    title="Sửa tiết"
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleTogglePinSlot(pin)}
+                                    style={{ border: 'none', background: '#fef3c7', color: '#b45309', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                                    title="Bỏ ghim"
+                                  >
+                                    <Unlock size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteManualSlot(pin.student_class, pin.day_of_week, pin.period)}
+                                    style={{ border: 'none', background: '#fef2f2', color: '#dc2626', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                                    title="Xóa tiết khỏi TKB"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '24px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', color: '#64748b' }}>
+                    <Pin size={28} color="#94a3b8" style={{ marginBottom: '6px' }} />
+                    <div style={{ fontWeight: 'bold', fontSize: '13.5px', color: '#475569' }}>Chưa có tiết nào được xếp thủ công hoặc ghim cố định</div>
+                    <div style={{ fontSize: '12.5px', marginTop: '4px' }}>
+                      Bạn có thể nhấp trực tiếp vào ô trống trong <strong>Studio Ma Trận</strong> hoặc bấm nút <strong>"➕ Thêm Tiết Ghim Thủ Công"</strong> ở trên.
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -3196,6 +3538,27 @@ export default function AdminSchedule() {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
+                    onClick={() => handleOpenManualAssignModal(studioView === 'class' ? studioSelectedClass : (availableClasses[0] || '10A01'), 'Thứ 2', 1)}
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#f59e0b',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)'
+                    }}
+                  >
+                    <Plus size={15} /> ➕ Xếp Tiết Thủ Công
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={handleExportDraftExcel}
                     style={{ padding: '8px 14px', backgroundColor: '#166534', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
@@ -3319,7 +3682,8 @@ export default function AdminSchedule() {
                       cellBorder = '1.5px solid #fca5a5';
                     }
                   } else if (item) {
-                    cellBg = '#f8fafc';
+                    cellBg = item.isPinned ? '#fffbeb' : '#f8fafc';
+                    if (item.isPinned) cellBorder = '1.5px solid #fcd34d';
                   }
 
                   return (
@@ -3328,7 +3692,7 @@ export default function AdminSchedule() {
                       onClick={() => handleStudioCellClick(day, p, item)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, day, p, item)}
-                      title={cand ? cand.label : (item ? `${item.subject} (${item.teacher_name})` : 'Ô trống')}
+                      title={cand ? cand.label : (item ? `${item.subject} (${item.teacher_name})` : 'Ô trống - Nhấp để xếp môn')}
                       style={{
                         padding: '6px',
                         backgroundColor: cellBg,
@@ -3358,45 +3722,58 @@ export default function AdminSchedule() {
                           style={{
                             padding: '8px',
                             borderRadius: '8px',
-                            backgroundColor: '#ffffff',
-                            border: '1px solid #e2e8f0',
+                            backgroundColor: item.isPinned ? '#fefce8' : '#ffffff',
+                            border: item.isPinned ? '1px solid #fde047' : '1px solid #e2e8f0',
                             boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
                             position: 'relative',
                             cursor: (!item.isPinned && !item.isFixed) ? 'grab' : 'default'
                           }}
                         >
-                          <div style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '13px' }}>
-                            {item.subject}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 'bold', color: item.isPinned ? '#b45309' : '#1e40af', fontSize: '13px' }}>
+                              {item.subject}
+                            </span>
+                            {item.isPinned && (
+                              <span style={{ fontSize: '10px', color: '#d97706', backgroundColor: '#fef3c7', padding: '1px 4px', borderRadius: '4px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>
+                                <Pin size={10} /> Ghim
+                              </span>
+                            )}
                           </div>
                           <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
                             {studioView === 'class' ? item.teacher_name : item.student_class}
                           </div>
 
-                          {/* PIN ICON */}
-                          {studioView === 'class' && (
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleTogglePinSlot(item); }}
-                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: item.isPinned ? '#b45309' : '#94a3b8' }}
-                                title={item.isPinned ? 'Đã pin cứng' : 'Nhấp để pin cứng'}
-                              >
-                                <Lock size={12} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleDeleteStudioSlot(studioSelectedClass, day, p); }}
-                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
-                                title="Xóa tiết"
-                              >
-                                <Trash2 size={12} />
-                              </button>
-                            </div>
-                          )}
+                          {/* ACTION BUTTONS (EDIT, PIN, DELETE) */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed #e2e8f0' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleOpenManualAssignModal(item.student_class, day, p, item); }}
+                              style={{ border: 'none', background: '#eff6ff', color: '#2563eb', cursor: 'pointer', padding: '2px 5px', borderRadius: '4px' }}
+                              title="Sửa / Xếp lại tiết này"
+                            >
+                              <Edit3 size={11} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleTogglePinSlot(item); }}
+                              style={{ border: 'none', background: item.isPinned ? '#fef3c7' : '#f1f5f9', cursor: 'pointer', padding: '2px 5px', borderRadius: '4px', color: item.isPinned ? '#b45309' : '#94a3b8' }}
+                              title={item.isPinned ? 'Bỏ ghim (Cho phép AI đổi)' : 'Ghim cố định (Khóa không cho AI đổi)'}
+                            >
+                              {item.isPinned ? <Pin size={11} /> : <Unlock size={11} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleDeleteStudioSlot(item.student_class, day, p); }}
+                              style={{ border: 'none', background: '#fef2f2', cursor: 'pointer', padding: '2px 5px', borderRadius: '4px', color: '#ef4444' }}
+                              title="Xóa tiết"
+                            >
+                              <Trash2 size={11} />
+                            </button>
+                          </div>
                         </div>
                       ) : (
-                        <div style={{ padding: '12px 0', color: cand?.valid ? '#16a34a' : '#cbd5e1', fontSize: '12px', fontWeight: cand?.valid ? 'bold' : 'normal' }}>
-                          {cand?.valid ? '➕ Thả/Nhấp vào đây' : '-'}
+                        <div style={{ padding: '12px 0', color: cand?.valid ? '#16a34a' : '#94a3b8', fontSize: '12px', fontWeight: cand?.valid ? 'bold' : 'normal', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                          {cand?.valid ? '➕ Thả/Nhấp đổi' : '+ Xếp môn'}
                         </div>
                       )}
                     </td>
@@ -3909,6 +4286,290 @@ export default function AdminSchedule() {
               <button type="button" onClick={handleExecuteExport} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                 📥 Tải File Word (.doc)
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MANUAL ASSIGN & PIN SLOT MODAL */}
+      {showManualAssignModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 9999,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '620px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)',
+            border: '1.5px solid #fde047',
+            overflow: 'hidden'
+          }}>
+            {/* HEADER */}
+            <div style={{ backgroundColor: '#fffbeb', padding: '18px 24px', borderBottom: '1px solid #fef3c7', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#b45309', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                  <Pin size={14} /> Xếp Tiết Thủ Công & Ghim Cố Định
+                </div>
+                <h3 style={{ margin: '2px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#78350f' }}>
+                  Lớp {manualAssignData.student_class} • {manualAssignData.day_of_week} • Tiết {manualAssignData.period} ({Number(manualAssignData.period) <= 5 ? 'Ca Sáng' : 'Ca Chiều'})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowManualAssignModal(false)}
+                style={{ border: 'none', background: 'none', fontSize: '22px', cursor: 'pointer', color: '#92400e', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* BODY WITH SCROLL */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* SECTION A: QUICK SELECT FROM CLASS ASSIGNMENTS */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
+                  ⚡ 1. CHỌN NHANH TỪ DANH SÁCH PHÂN CÔNG CỦA LỚP {manualAssignData.student_class}:
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '8px', maxHeight: '180px', overflowY: 'auto', padding: '2px' }}>
+                  {teachingAssignments
+                    .filter(a => a.student_class === manualAssignData.student_class)
+                    .map((asg, idx) => {
+                      const placedCount = draftSchedule.filter(s => s.student_class === manualAssignData.student_class && s.subject === asg.subject).length;
+                      const isSelected = manualAssignData.subject === asg.subject && manualAssignData.teacher_name === asg.teacher_name;
+                      const isFull = placedCount >= asg.periods_per_week;
+
+                      return (
+                        <div
+                          key={asg.id || idx}
+                          onClick={() => {
+                            setManualAssignData(prev => ({
+                              ...prev,
+                              subject: asg.subject,
+                              teacher_name: asg.teacher_name
+                            }));
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            border: isSelected ? '2px solid #4f46e5' : '1px solid #e2e8f0',
+                            backgroundColor: isSelected ? '#eef2ff' : '#f8fafc',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 'bold', color: isSelected ? '#4338ca' : '#0f172a', fontSize: '13px' }}>
+                              {asg.subject}
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+                              👨‍🏫 {asg.teacher_name}
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right' }}>
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 'bold',
+                              padding: '2px 7px',
+                              borderRadius: '6px',
+                              backgroundColor: isFull ? '#dcfce7' : '#e0f2fe',
+                              color: isFull ? '#15803d' : '#0369a1'
+                            }}>
+                              Đã xếp: {placedCount}/{asg.periods_per_week} tiết
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
+              {/* SECTION B: CUSTOM EDIT FORM */}
+              <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#1e293b', marginBottom: '10px' }}>
+                  ⚙️ 2. HOẶC NHẬP TÙY BIẾN THỜI GIAN, MÔN VÀ GIÁO VIÊN:
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', marginBottom: '10px' }}>
+                  <div>
+                    <label style={styles.label}>Lớp Học:</label>
+                    <select
+                      value={manualAssignData.student_class}
+                      onChange={e => setManualAssignData({ ...manualAssignData, student_class: e.target.value })}
+                      style={styles.input}
+                    >
+                      {availableClasses.map(c => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Thứ Trong Tuần:</label>
+                    <select
+                      value={manualAssignData.day_of_week}
+                      onChange={e => setManualAssignData({ ...manualAssignData, day_of_week: e.target.value })}
+                      style={styles.input}
+                    >
+                      {DAYS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Tiết Học:</label>
+                    <select
+                      value={manualAssignData.period}
+                      onChange={e => setManualAssignData({ ...manualAssignData, period: Number(e.target.value) })}
+                      style={styles.input}
+                    >
+                      {PERIODS_ALL.map(p => (
+                        <option key={p} value={p}>Tiết {p} ({p <= 5 ? 'Sáng' : 'Chiều'})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={styles.label}>Môn Học:</label>
+                    <input
+                      type="text"
+                      value={manualAssignData.subject}
+                      onChange={e => setManualAssignData({ ...manualAssignData, subject: e.target.value })}
+                      placeholder="VD: Toán, Ngữ văn..."
+                      style={styles.input}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Giáo Viên Giảng Dạy:</label>
+                    <input
+                      type="text"
+                      value={manualAssignData.teacher_name}
+                      onChange={e => setManualAssignData({ ...manualAssignData, teacher_name: e.target.value })}
+                      placeholder="VD: Nguyễn Văn A..."
+                      style={styles.input}
+                    />
+                  </div>
+                </div>
+
+                {/* PIN CHECKBOX */}
+                <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <input
+                    type="checkbox"
+                    id="isManualPinned"
+                    checked={manualAssignData.isPinned ?? true}
+                    onChange={e => setManualAssignData({ ...manualAssignData, isPinned: e.target.checked })}
+                    style={{ width: '16px', height: '16px', accentColor: '#f59e0b', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="isManualPinned" style={{ fontSize: '13px', fontWeight: 'bold', color: '#78350f', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Pin size={14} color="#d97706" /> Ghim Cố Định Tiết Này (Bảo vệ tuyệt đối khi AI tự động chạy)
+                  </label>
+                </div>
+              </div>
+
+              {/* SECTION C: REALTIME CONFLICT CHECK */}
+              {(() => {
+                if (!manualAssignData.teacher_name || !manualAssignData.day_of_week || !manualAssignData.period) return null;
+                const normalizedT = getFullTeacherName(manualAssignData.teacher_name, manualAssignData.subject);
+                const isSchoolLocked = (schoolLocks || []).includes(`${manualAssignData.day_of_week}_${manualAssignData.period}`);
+                const isTeacherLock = (teacherLocks[normalizedT] || []).includes(manualAssignData.day_of_week) || (teacherLocks[normalizedT] || []).includes(`${manualAssignData.day_of_week}_${manualAssignData.period}`);
+                const busyInOtherClass = draftSchedule.find(s =>
+                  s.day_of_week === manualAssignData.day_of_week &&
+                  Number(s.period) === Number(manualAssignData.period) &&
+                  s.student_class !== manualAssignData.student_class &&
+                  getFullTeacherName(s.teacher_name, s.subject) === normalizedT &&
+                  normalizedT !== 'Chưa gán GV' &&
+                  normalizedT !== 'GVCN'
+                );
+
+                if (isSchoolLocked || isTeacherLock || busyInOtherClass) {
+                  return (
+                    <div style={{ backgroundColor: '#fef2f2', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid #fca5a5', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                      <AlertTriangle size={20} color="#dc2626" style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <div>
+                        <strong style={{ color: '#991b1b', fontSize: '13px' }}>Cảnh Báo Xung Đột Xếp Tiết:</strong>
+                        <div style={{ fontSize: '12px', color: '#b91c1c', marginTop: '3px', lineHeight: '1.4' }}>
+                          {isSchoolLocked && <div>• Tiết {manualAssignData.period} ({manualAssignData.day_of_week}) đang bị Khóa Toàn Trường.</div>}
+                          {isTeacherLock && <div>• Giáo viên {normalizedT} đã đăng ký nghỉ vào {manualAssignData.day_of_week} Tiết {manualAssignData.period}.</div>}
+                          {busyInOtherClass && <div>• Giáo viên {normalizedT} đang có tiết dạy môn {busyInOtherClass.subject} tại lớp {busyInOtherClass.student_class}!</div>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ backgroundColor: '#f0fdf4', padding: '8px 14px', borderRadius: '8px', border: '1px solid #bbf7d0', color: '#166534', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <CheckCircle2 size={16} color="#16a34a" /> Vị trí này hoàn toàn khả dụng (0% Xung đột lịch giáo viên).
+                  </div>
+                );
+              })()}
+
+            </div>
+
+            {/* FOOTER ACTIONS */}
+            <div style={{ padding: '14px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                {draftSchedule.some(s => s.student_class === manualAssignData.student_class && s.day_of_week === manualAssignData.day_of_week && Number(s.period) === Number(manualAssignData.period)) && (
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteManualSlot(manualAssignData.student_class, manualAssignData.day_of_week, manualAssignData.period)}
+                    style={{ padding: '8px 14px', backgroundColor: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', borderRadius: '8px', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Trash2 size={14} /> Xóa Tiết Này
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowManualAssignModal(false)}
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Hủy Bỏ
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveManualAssignment}
+                  style={{
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#f59e0b',
+                    color: '#ffffff',
+                    fontWeight: 'bold',
+                    fontSize: '13.5px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)'
+                  }}
+                >
+                  <Save size={15} /> 💾 Lưu & Ghim Vào TKB
+                </button>
+              </div>
             </div>
 
           </div>

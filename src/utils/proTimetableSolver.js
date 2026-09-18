@@ -244,11 +244,26 @@ export function runAiTimetableSolver({
   // 4. Chia nhỏ phân công thành các Khối tiết (Blocks)
   const schedulingBlocks = [];
 
+  // Đếm các tiết đã được gán thủ công / ghim trước đó theo (Lớp + Môn + Giáo viên)
+  const pinnedCountsMap = new Map();
+  (pinnedSlots || []).forEach(pin => {
+    const cls = normalizeClassCode(pin.student_class);
+    const sub = pin.subject;
+    const t = getFullTeacherName(pin.teacher_name, sub);
+    const key = `${cls}___${sub}___${t}`;
+    pinnedCountsMap.set(key, (pinnedCountsMap.get(key) || 0) + 1);
+  });
+
   filteredAssignments.forEach(asg => {
-    let remaining = Number(asg.periods_per_week) || 0;
     const cls = asg.student_class;
     const subject = asg.subject;
     const teacher = getFullTeacherName(asg.teacher_name, subject);
+    const totalPeriods = Number(asg.periods_per_week) || 0;
+
+    const pinKey = `${cls}___${subject}___${teacher}`;
+    const alreadyPinned = pinnedCountsMap.get(pinKey) || 0;
+    let remaining = Math.max(0, totalPeriods - alreadyPinned);
+
     const isDoubleEligible = (doublePeriodSubjects || []).some(s => subject.toLowerCase().includes(s.toLowerCase()));
     const shift = asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning');
 
@@ -1073,5 +1088,153 @@ export function generateRotationGroups(teachers = [], assignments = []) {
   });
 
   return { groupA, groupB };
+}
+
+/**
+ * Tính toán báo cáo thống kê tải dạy và đánh giá chỉ số sư phạm toàn diện của từng giáo viên
+ */
+export function calculateTeacherWorkloadStatistics(scheduleItems = [], assignments = []) {
+  if (!Array.isArray(scheduleItems)) return [];
+
+  // Gom nhóm danh sách giáo viên duy nhất
+  const teachersSet = new Set();
+  (assignments || []).forEach(a => {
+    if (a.teacher_name && a.teacher_name !== 'Chưa gán GV' && a.teacher_name !== 'GVCN') {
+      teachersSet.add(getFullTeacherName(a.teacher_name, a.subject));
+    }
+  });
+  scheduleItems.forEach(s => {
+    if (s.teacher_name && s.teacher_name !== 'Chưa gán GV' && s.teacher_name !== 'GVCN') {
+      teachersSet.add(getFullTeacherName(s.teacher_name, s.subject));
+    }
+  });
+
+  const stats = [];
+
+  teachersSet.forEach(tName => {
+    const tItems = scheduleItems.filter(s => getFullTeacherName(s.teacher_name, s.subject) === tName);
+    const tAssignments = (assignments || []).filter(a => getFullTeacherName(a.teacher_name, a.subject) === tName);
+
+    const subjects = Array.from(new Set(tItems.map(s => s.subject).concat(tAssignments.map(a => a.subject)))).filter(Boolean);
+    const classes = Array.from(new Set(tItems.map(s => s.student_class).concat(tAssignments.map(a => a.student_class)))).filter(Boolean).sort();
+
+    let morningPeriods = 0;
+    let afternoonPeriods = 0;
+    let morningSessions = 0;
+    let afternoonSessions = 0;
+    let daysWithLessons = 0;
+    let totalGaps = 0;
+    let clashCount = 0;
+
+    // Kiểm tra từng ngày trong tuần
+    DAYS.forEach(day => {
+      const dayLessons = tItems.filter(s => s.day_of_week === day);
+      if (dayLessons.length > 0) daysWithLessons++;
+
+      // Ca sáng
+      const mornLessons = dayLessons.filter(s => Number(s.period) <= 5).map(s => Number(s.period)).sort((a, b) => a - b);
+      if (mornLessons.length > 0) {
+        morningSessions++;
+        morningPeriods += mornLessons.length;
+        // Đếm lủng sáng
+        const minP = Math.min(...mornLessons);
+        const maxP = Math.max(...mornLessons);
+        const span = maxP - minP + 1;
+        const gaps = span - mornLessons.length;
+        if (gaps > 0) totalGaps += gaps;
+      }
+
+      // Ca chiều
+      const aftLessons = dayLessons.filter(s => Number(s.period) >= 6).map(s => Number(s.period)).sort((a, b) => a - b);
+      if (aftLessons.length > 0) {
+        afternoonSessions++;
+        afternoonPeriods += aftLessons.length;
+        // Đếm lủng chiều
+        const minP = Math.min(...aftLessons);
+        const maxP = Math.max(...aftLessons);
+        const span = maxP - minP + 1;
+        const gaps = span - aftLessons.length;
+        if (gaps > 0) totalGaps += gaps;
+      }
+
+      // Kiểm tra trùng tiết trong ngày
+      const periodMap = new Map();
+      dayLessons.forEach(s => {
+        periodMap.set(Number(s.period), (periodMap.get(Number(s.period)) || 0) + 1);
+      });
+      periodMap.forEach(count => {
+        if (count > 1) clashCount += (count - 1);
+      });
+    });
+
+    const totalDaysOff = Math.max(0, 6 - daysWithLessons);
+    const totalPeriods = tItems.length;
+    const requiredPeriods = tAssignments.reduce((acc, a) => acc + (Number(a.periods_per_week) || 0), 0);
+
+    let qualityRating = 'Xuất Sắc';
+    let qualityColor = '#15803d';
+    if (clashCount > 0) {
+      qualityRating = 'Trùng Lịch';
+      qualityColor = '#dc2626';
+    } else if (totalGaps > 3) {
+      qualityRating = 'Nhiều Tiết Lủng';
+      qualityColor = '#ea580c';
+    } else if (totalGaps > 0) {
+      qualityRating = 'Khá Tốt';
+      qualityColor = '#0284c7';
+    }
+
+    stats.push({
+      teacher: tName,
+      subjects: subjects.join(', '),
+      classes: classes.join(', '),
+      classCount: classes.length,
+      totalPeriods: totalPeriods,
+      requiredPeriods: requiredPeriods || totalPeriods,
+      isBalanced: totalPeriods === (requiredPeriods || totalPeriods),
+      morningPeriods: morningPeriods,
+      afternoonPeriods: afternoonPeriods,
+      morningSessions: morningSessions,
+      afternoonSessions: afternoonSessions,
+      daysTeaching: daysWithLessons,
+      daysOff: totalDaysOff,
+      totalGaps: totalGaps,
+      clashCount: clashCount,
+      qualityRating: qualityRating,
+      qualityColor: qualityColor
+    });
+  });
+
+  return stats.sort((a, b) => b.totalPeriods - a.totalPeriods || a.teacher.localeCompare(b.teacher));
+}
+
+/**
+ * Xuất Báo Cáo Thống Kê Tải Dạy & Đánh Giá TKB Toàn Trường ra Excel
+ */
+export function exportWorkloadReportToExcel(workloadStats = [], title = 'BaoCao_TaiDay_GiaoVien') {
+  if (!Array.isArray(workloadStats) || workloadStats.length === 0) return;
+
+  const data = workloadStats.map((s, idx) => ({
+    "STT": idx + 1,
+    "Họ và Tên Giáo Viên": s.teacher,
+    "Môn Học Phụ Trách": s.subjects,
+    "Các Lớp Giảng Dạy": s.classes,
+    "Số Lớp Dạy": s.classCount,
+    "Tổng Số Tiết / Tuần": s.totalPeriods,
+    "Số Tiết Ca Sáng": s.morningPeriods,
+    "Số Tiết Ca Chiều": s.afternoonPeriods,
+    "Số Buổi Dạy Sáng": s.morningSessions,
+    "Số Buổi Dạy Chiều": s.afternoonSessions,
+    "Số Ngày Dạy Trong Tuần": s.daysTeaching,
+    "Số Ngày Nghỉ Trọn Vẹn": s.daysOff,
+    "Số Tiết Lủng (Tiết Trống Giữa Buổi)": s.totalGaps,
+    "Số Tiết Trùng Lịch": s.clashCount,
+    "Đánh Giá Chất Lượng Sư Phạm": s.qualityRating
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "ThongKeTaiDay");
+  XLSX.writeFile(wb, `${title}_${Date.now()}.xlsx`);
 }
 
