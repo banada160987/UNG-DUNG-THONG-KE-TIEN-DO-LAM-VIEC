@@ -36,6 +36,8 @@ import {
   getDefaultTeachingAssignments,
   runAiTimetableSolver,
   validateSlotSwap,
+  findSmartSwapCandidates,
+  getAiAlternativeOptions,
   generateAiDiagnostics,
   exportDraftTimetableToExcel,
   generateRotationGroups
@@ -119,6 +121,8 @@ export default function AdminSchedule() {
   const [studioSelectedClass, setStudioSelectedClass] = useState('10A01');
   const [studioSelectedTeacher, setStudioSelectedTeacher] = useState('');
   const [swapSourceSlot, setSwapSourceSlot] = useState(null);
+  const [draggingSlot, setDraggingSlot] = useState(null);
+  const [conflictModalData, setConflictModalData] = useState(null);
   const [pinnedSlots, setPinnedSlots] = useState([]);
 
   // Assignment Management State
@@ -993,21 +997,121 @@ export default function AdminSchedule() {
     localStorage.setItem('cbq_teacher_locks', JSON.stringify(updatedMap));
   };
 
-  // Studio Smart Swap & Cell Interaction
-  const handleStudioCellClick = (day, period, currentItem) => {
-    if (studioView !== 'class') {
-      return;
+  // Studio Smart Swap & Cell Interaction with Drag & Drop & Alternative Suggestions
+  const executeStudioSwap = (sourceSlot, targetDay, targetPeriod, currentTargetItem) => {
+    if (!sourceSlot || !sourceSlot.item) return false;
+
+    const cls = studioView === 'class' ? studioSelectedClass : (sourceSlot.item.student_class || currentTargetItem?.student_class || '');
+    const teacher = studioView === 'teacher' ? studioSelectedTeacher : (sourceSlot.item.teacher_name || currentTargetItem?.teacher_name || '');
+
+    const targetItem = currentTargetItem || {
+      student_class: cls,
+      teacher_name: teacher,
+      day_of_week: targetDay,
+      period: targetPeriod,
+      subject: ''
+    };
+
+    const validation = validateSlotSwap(
+      draftSchedule,
+      sourceSlot.item,
+      targetItem,
+      teacherLocks,
+      schoolLocks
+    );
+
+    if (!validation.valid) {
+      // Tự động sinh các phương án thay thế thông minh (AI Alternative Options)
+      const alternatives = getAiAlternativeOptions(
+        draftSchedule,
+        sourceSlot.item,
+        studioView,
+        studioView === 'class' ? studioSelectedClass : studioSelectedTeacher,
+        teacherLocks,
+        schoolLocks
+      );
+
+      setConflictModalData({
+        isOpen: true,
+        sourceItem: sourceSlot.item,
+        targetDay,
+        targetPeriod,
+        reason: validation.reason,
+        conflictType: validation.conflictType,
+        conflictDetails: validation.conflictDetails,
+        alternatives
+      });
+      return false;
     }
 
-    const cls = studioSelectedClass;
-    if (!cls) return;
+    // Thực thi tráo đổi trong ma trận
+    let newSchedule = draftSchedule.map(s => {
+      // Tiết nguồn di chuyển sang vị trí đích
+      const isSourceMatch = (studioView === 'class' ? s.student_class === cls : s.teacher_name === teacher) &&
+        s.day_of_week === sourceSlot.day_of_week &&
+        Number(s.period) === Number(sourceSlot.period);
+
+      if (isSourceMatch) {
+        return currentTargetItem && currentTargetItem.subject
+          ? { ...currentTargetItem, day_of_week: sourceSlot.day_of_week, period: sourceSlot.period }
+          : null;
+      }
+
+      // Tiết đích di chuyển về vị trí nguồn
+      const isTargetMatch = (studioView === 'class' ? s.student_class === cls : s.teacher_name === teacher) &&
+        s.day_of_week === targetDay &&
+        Number(s.period) === Number(targetPeriod);
+
+      if (isTargetMatch) {
+        return { ...sourceSlot.item, day_of_week: targetDay, period: targetPeriod };
+      }
+
+      return s;
+    }).filter(Boolean);
+
+    // Nếu ô đích trước đó là ô trống
+    const existsInTarget = newSchedule.some(s =>
+      (studioView === 'class' ? s.student_class === cls : s.teacher_name === teacher) &&
+      s.day_of_week === targetDay &&
+      Number(s.period) === Number(targetPeriod)
+    );
+
+    if (!existsInTarget) {
+      newSchedule.push({
+        ...sourceSlot.item,
+        day_of_week: targetDay,
+        period: targetPeriod
+      });
+    }
+
+    setDraftSchedule(newSchedule);
+    localStorage.setItem('cbq_draft_timetable', JSON.stringify(newSchedule));
+    setSwapSourceSlot(null);
+    setDraggingSlot(null);
+    setConflictModalData(null);
+
+    const diag = generateAiDiagnostics(newSchedule, teachingAssignments, teacherLocks);
+    setSolverResult(prev => ({
+      ...prev,
+      qualityScore: diag.qualityScore,
+      clashCount: diag.clashCount,
+      totalGaps: diag.totalGaps,
+      teacherClashList: diag.teacherClashList,
+      teachersWithGaps: diag.teachersWithGaps
+    }));
+
+    return true;
+  };
+
+  const handleStudioCellClick = (day, period, currentItem) => {
+    const activeTarget = studioView === 'class' ? studioSelectedClass : studioSelectedTeacher;
+    if (!activeTarget) return;
 
     if (!swapSourceSlot) {
-      if (!currentItem) {
-        return;
-      }
+      if (!currentItem) return;
       setSwapSourceSlot({
-        student_class: cls,
+        student_class: currentItem.student_class || studioSelectedClass,
+        teacher_name: currentItem.teacher_name || studioSelectedTeacher,
         day_of_week: day,
         period: period,
         item: currentItem
@@ -1017,63 +1121,52 @@ export default function AdminSchedule() {
         setSwapSourceSlot(null);
         return;
       }
-
-      const itemA = swapSourceSlot.item;
-      const itemB = currentItem || {
-        student_class: cls,
-        day_of_week: day,
-        period: period,
-        subject: '',
-        teacher_name: ''
-      };
-
-      const validation = validateSlotSwap(draftSchedule, itemA, {
-        student_class: cls,
-        day_of_week: day,
-        period: period,
-        subject: itemB.subject,
-        teacher_name: itemB.teacher_name
-      });
-
-      if (!validation.valid) {
-        alert(`❌ KHÔNG THỂ ĐỔI TIẾT:\n${validation.reason}`);
-        setSwapSourceSlot(null);
-        return;
-      }
-
-      const newSchedule = draftSchedule.map(s => {
-        if (s.student_class === cls && s.day_of_week === swapSourceSlot.day_of_week && Number(s.period) === Number(swapSourceSlot.period)) {
-          return currentItem ? { ...currentItem, day_of_week: swapSourceSlot.day_of_week, period: swapSourceSlot.period } : null;
-        }
-        if (s.student_class === cls && s.day_of_week === day && Number(s.period) === Number(period)) {
-          return { ...itemA, day_of_week: day, period: period };
-        }
-        return s;
-      }).filter(Boolean);
-
-      const existsInTarget = newSchedule.some(s => s.student_class === cls && s.day_of_week === day && Number(s.period) === Number(period));
-      if (!existsInTarget) {
-        newSchedule.push({
-          ...itemA,
-          day_of_week: day,
-          period: period
-        });
-      }
-
-      setDraftSchedule(newSchedule);
-      localStorage.setItem('cbq_draft_timetable', JSON.stringify(newSchedule));
-      setSwapSourceSlot(null);
-
-      const diag = generateAiDiagnostics(newSchedule, teachingAssignments, teacherLocks);
-      setSolverResult(prev => ({
-        ...prev,
-        qualityScore: diag.qualityScore,
-        clashCount: diag.clashCount,
-        totalGaps: diag.totalGaps,
-        teacherClashList: diag.teacherClashList,
-        teachersWithGaps: diag.teachersWithGaps
-      }));
+      executeStudioSwap(swapSourceSlot, day, period, currentItem);
     }
+  };
+
+  const handleDragStart = (e, item, day, period) => {
+    const slotInfo = {
+      student_class: item.student_class || studioSelectedClass,
+      teacher_name: item.teacher_name || studioSelectedTeacher,
+      day_of_week: day,
+      period: period,
+      item: item
+    };
+    setDraggingSlot(slotInfo);
+    setSwapSourceSlot(slotInfo);
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify(slotInfo));
+    }
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    if (e.dataTransfer) {
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDrop = (e, day, period, currentItem) => {
+    e.preventDefault();
+    const source = draggingSlot || swapSourceSlot;
+    if (!source) return;
+    if (source.day_of_week === day && Number(source.period) === Number(period)) {
+      setDraggingSlot(null);
+      return;
+    }
+    executeStudioSwap(source, day, period, currentItem);
+  };
+
+  const handleApplyAlternativeOption = (opt) => {
+    if (!opt || !conflictModalData?.sourceItem) return;
+    const sourceSlot = {
+      item: conflictModalData.sourceItem,
+      day_of_week: conflictModalData.sourceItem.day_of_week,
+      period: conflictModalData.sourceItem.period
+    };
+    executeStudioSwap(sourceSlot, opt.day, opt.period, opt.targetItem);
   };
 
   const handleTogglePinSlot = (slotItem) => {
@@ -3060,180 +3153,373 @@ export default function AdminSchedule() {
                 </div>
               </div>
 
-              {/* SMART SWAP BANNER IF ACTIVE */}
-              {swapSourceSlot && (
-                <div style={{ backgroundColor: '#fefce8', padding: '12px 18px', borderRadius: '12px', border: '1.5px solid #fde047', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <ArrowRightLeft size={18} color="#b45309" />
-                    <span style={{ fontSize: '13.5px', color: '#78350f', fontWeight: 'bold' }}>
-                      👉 Đang chọn tiết: <strong>{swapSourceSlot.item.subject} ({swapSourceSlot.item.teacher_name})</strong> - {swapSourceSlot.day_of_week} Tiết {swapSourceSlot.period}.
-                      <span style={{ fontWeight: 'normal', marginLeft: '6px' }}>Nhấp vào ô đích muốn đổi, hệ thống sẽ tự động kiểm tra trùng lịch!</span>
-                    </span>
+              {/* SMART SWAP / DRAG-DROP CANDIDATE GUIDE BANNER IF ACTIVE */}
+              {swapSourceSlot && (() => {
+                const activeStudioTarget = studioView === 'class' ? studioSelectedClass : studioSelectedTeacher;
+                const candidateMap = findSmartSwapCandidates(
+                  draftSchedule,
+                  swapSourceSlot.item,
+                  studioView,
+                  activeStudioTarget,
+                  teacherLocks,
+                  schoolLocks
+                );
+                const optimalCount = Array.from(candidateMap.values()).filter(c => c.status === 'optimal').length;
+                const validCount = Array.from(candidateMap.values()).filter(c => c.valid && c.status !== 'source').length;
+
+                return (
+                  <div style={{ backgroundColor: '#fefce8', padding: '14px 20px', borderRadius: '14px', border: '1.5px solid #fde047', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 15px rgba(234, 179, 8, 0.1)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '6px', backgroundColor: '#fef08a', borderRadius: '8px', color: '#b45309' }}>
+                          <ArrowRightLeft size={18} />
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '13.5px', color: '#78350f', fontWeight: 'bold' }}>
+                            👉 Đang kéo/chọn tiết: <strong>{swapSourceSlot.item.subject} ({swapSourceSlot.item.teacher_name})</strong> - {swapSourceSlot.day_of_week} Tiết {swapSourceSlot.period} ({swapSourceSlot.student_class}).
+                          </span>
+                          <span style={{ fontSize: '12.5px', color: '#92400e', display: 'block', marginTop: '2px' }}>
+                            💡 Thả hoặc Nhấp vào các ô màu <strong>Xanh</strong> hoặc <strong>Vàng sao</strong> để đổi an toàn không bị trùng lịch.
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setSwapSourceSlot(null); setDraggingSlot(null); }}
+                        style={{ border: 'none', background: '#fde047', color: '#854d0e', padding: '6px 14px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12.5px' }}
+                      >
+                        Hủy Đổi
+                      </button>
+                    </div>
+
+                    {/* LEGEND INDICATOR */}
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '12px', paddingTop: '6px', borderTop: '1px dashed #fde68a' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#065f46', fontWeight: 'bold' }}>
+                        <span style={{ width: '12px', height: '12px', backgroundColor: '#d1fae5', border: '1.5px solid #10b981', borderRadius: '3px' }}></span>
+                        🌟 Vị trí Vàng ({optimalCount} ô tối ưu sư phạm)
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#166534', fontWeight: 'bold' }}>
+                        <span style={{ width: '12px', height: '12px', backgroundColor: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '3px' }}></span>
+                        ✅ Hợp lệ ({validCount} ô khả dụng)
+                      </span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#991b1b', fontWeight: 'bold' }}>
+                        <span style={{ width: '12px', height: '12px', backgroundColor: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: '3px' }}></span>
+                        ⛔ Trùng lịch (Tự động chặn & gợi ý)
+                      </span>
+                    </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setSwapSourceSlot(null)}
-                    style={{ border: 'none', background: '#fef08a', color: '#854d0e', padding: '4px 10px', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}
-                  >
-                    Hủy Đổi
-                  </button>
-                </div>
-              )}
+                );
+              })()}
 
               {/* STUDIO MATRIX VIEW */}
-              <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
-                    <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                        <th style={{ padding: '10px', width: '90px', textAlign: 'left' }}>Tiết</th>
-                        {DAYS.map(d => (
-                          <th key={d} style={{ padding: '10px' }}>{d}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {/* CA SANG */}
-                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold', color: '#475569', fontSize: '12px' }}>
-                        <td colSpan={7} style={{ padding: '6px 12px', textAlign: 'left' }}>--- CA SÁNG ---</td>
-                      </tr>
-                      {PERIODS_MORNING.map(p => (
-                        <tr key={p} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#475569' }}>Tiết {p}</td>
-                          {DAYS.map(day => {
-                            let item = null;
-                            if (studioView === 'class') {
-                              item = draftSchedule.find(s => s.student_class === studioSelectedClass && s.day_of_week === day && Number(s.period) === Number(p));
-                            } else {
-                              item = draftSchedule.find(s => s.teacher_name === studioSelectedTeacher && s.day_of_week === day && Number(s.period) === Number(p));
-                            }
+              {(() => {
+                const activeStudioTarget = studioView === 'class' ? studioSelectedClass : studioSelectedTeacher;
+                const activeCandidateMap = (swapSourceSlot || draggingSlot)
+                  ? findSmartSwapCandidates(
+                      draftSchedule,
+                      (swapSourceSlot || draggingSlot).item,
+                      studioView,
+                      activeStudioTarget,
+                      teacherLocks,
+                      schoolLocks
+                    )
+                  : new Map();
 
-                            const isSource = swapSourceSlot && swapSourceSlot.day_of_week === day && Number(swapSourceSlot.period) === Number(p);
+                const renderCell = (day, p) => {
+                  let item = null;
+                  if (studioView === 'class') {
+                    item = draftSchedule.find(s => s.student_class === studioSelectedClass && s.day_of_week === day && Number(s.period) === Number(p));
+                  } else {
+                    item = draftSchedule.find(s => s.teacher_name === studioSelectedTeacher && s.day_of_week === day && Number(s.period) === Number(p));
+                  }
 
-                            return (
-                              <td
-                                key={`${day}_${p}`}
-                                onClick={() => handleStudioCellClick(day, p, item)}
+                  const cellKey = `${day}_${p}`;
+                  const cand = activeCandidateMap.get(cellKey);
+                  const isSource = (swapSourceSlot || draggingSlot) && (swapSourceSlot || draggingSlot).day_of_week === day && Number((swapSourceSlot || draggingSlot).period) === Number(p);
+
+                  let cellBg = '#ffffff';
+                  let cellBorder = '1px solid #f1f5f9';
+                  let cellShadow = 'none';
+
+                  if (isSource) {
+                    cellBg = '#fef08a';
+                    cellBorder = '2.5px dashed #b45309';
+                  } else if (cand) {
+                    if (cand.status === 'optimal') {
+                      cellBg = '#ecfdf5';
+                      cellBorder = '2px solid #10b981';
+                      cellShadow = '0 0 10px rgba(16, 185, 129, 0.25)';
+                    } else if (cand.status === 'valid') {
+                      cellBg = '#f0fdf4';
+                      cellBorder = '1.5px solid #86efac';
+                    } else if (cand.status === 'clash') {
+                      cellBg = '#fef2f2';
+                      cellBorder = '1.5px solid #fca5a5';
+                    }
+                  } else if (item) {
+                    cellBg = '#f8fafc';
+                  }
+
+                  return (
+                    <td
+                      key={cellKey}
+                      onClick={() => handleStudioCellClick(day, p, item)}
+                      onDragOver={handleDragOver}
+                      onDrop={(e) => handleDrop(e, day, p, item)}
+                      title={cand ? cand.label : (item ? `${item.subject} (${item.teacher_name})` : 'Ô trống')}
+                      style={{
+                        padding: '6px',
+                        backgroundColor: cellBg,
+                        border: cellBorder,
+                        boxShadow: cellShadow,
+                        cursor: 'pointer',
+                        position: 'relative',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {/* CANDIDATE BADGE */}
+                      {cand && cand.status === 'optimal' && (
+                        <div style={{ position: 'absolute', top: 3, right: 4, fontSize: '10px', color: '#047857', fontWeight: 'bold', zIndex: 2 }}>
+                          🌟 Tối ưu
+                        </div>
+                      )}
+                      {cand && cand.status === 'clash' && (
+                        <div style={{ position: 'absolute', top: 3, right: 4, fontSize: '10px', color: '#dc2626', fontWeight: 'bold', zIndex: 2 }}>
+                          ⛔
+                        </div>
+                      )}
+
+                      {item ? (
+                        <div
+                          draggable={!item.isPinned && !item.isFixed}
+                          onDragStart={(e) => handleDragStart(e, item, day, p)}
+                          style={{
+                            padding: '8px',
+                            borderRadius: '8px',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                            position: 'relative',
+                            cursor: (!item.isPinned && !item.isFixed) ? 'grab' : 'default'
+                          }}
+                        >
+                          <div style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '13px' }}>
+                            {item.subject}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
+                            {studioView === 'class' ? item.teacher_name : item.student_class}
+                          </div>
+
+                          {/* PIN ICON */}
+                          {studioView === 'class' && (
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleTogglePinSlot(item); }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: item.isPinned ? '#b45309' : '#94a3b8' }}
+                                title={item.isPinned ? 'Đã pin cứng' : 'Nhấp để pin cứng'}
+                              >
+                                <Lock size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); handleDeleteStudioSlot(studioSelectedClass, day, p); }}
+                                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
+                                title="Xóa tiết"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ padding: '12px 0', color: cand?.valid ? '#16a34a' : '#cbd5e1', fontSize: '12px', fontWeight: cand?.valid ? 'bold' : 'normal' }}>
+                          {cand?.valid ? '➕ Thả/Nhấp vào đây' : '-'}
+                        </div>
+                      )}
+                    </td>
+                  );
+                };
+
+                return (
+                  <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                            <th style={{ padding: '10px', width: '90px', textAlign: 'left' }}>Tiết</th>
+                            {DAYS.map(d => (
+                              <th key={d} style={{ padding: '10px' }}>{d}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* CA SANG */}
+                          <tr style={{ background: '#f1f5f9', fontWeight: 'bold', color: '#475569', fontSize: '12px' }}>
+                            <td colSpan={7} style={{ padding: '6px 12px', textAlign: 'left' }}>--- CA SÁNG ---</td>
+                          </tr>
+                          {PERIODS_MORNING.map(p => (
+                            <tr key={p} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#475569' }}>Tiết {p}</td>
+                              {DAYS.map(day => renderCell(day, p))}
+                            </tr>
+                          ))}
+
+                          {/* CA CHIEU */}
+                          <tr style={{ background: '#f1f5f9', fontWeight: 'bold', color: '#475569', fontSize: '12px' }}>
+                            <td colSpan={7} style={{ padding: '6px 12px', textAlign: 'left' }}>--- CA CHIỀU ---</td>
+                          </tr>
+                          {PERIODS_AFTERNOON.map(p => (
+                            <tr key={p} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                              <td style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#475569' }}>Tiết {p}</td>
+                              {DAYS.map(day => renderCell(day, p))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* CONFLICT & AI ALTERNATIVE OPTIONS MODAL */}
+              {conflictModalData && conflictModalData.isOpen && (
+                <div style={{
+                  position: 'fixed',
+                  inset: 0,
+                  backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 9999,
+                  padding: '20px'
+                }}>
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '20px',
+                    maxWidth: '580px',
+                    width: '100%',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    overflow: 'hidden',
+                    border: '1px solid #fee2e2'
+                  }}>
+                    {/* MODAL HEADER */}
+                    <div style={{ backgroundColor: '#fef2f2', padding: '18px 24px', borderBottom: '1px solid #fecaca', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ padding: '8px', backgroundColor: '#fee2e2', borderRadius: '10px', color: '#dc2626' }}>
+                          <ShieldAlert size={24} />
+                        </div>
+                        <div>
+                          <h3 style={{ margin: 0, color: '#991b1b', fontSize: '16px', fontWeight: 'bold' }}>
+                            Cảnh Báo Xung Đột & Đề Xuất Phương Án AI
+                          </h3>
+                          <p style={{ margin: 0, color: '#b91c1c', fontSize: '12.5px' }}>
+                            Không thể tráo đổi trực tiếp vào {conflictModalData.targetDay} Tiết {conflictModalData.targetPeriod}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setConflictModalData(null)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '18px', color: '#991b1b', fontWeight: 'bold' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* MODAL BODY */}
+                    <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      {/* REASON BOX */}
+                      <div style={{ backgroundColor: '#fff1f2', padding: '14px 18px', borderRadius: '12px', border: '1px solid #fecdd3' }}>
+                        <span style={{ fontSize: '13px', color: '#9f1239', fontWeight: 'bold', display: 'block' }}>
+                          ⚠️ Lý do không thể xếp:
+                        </span>
+                        <span style={{ fontSize: '13.5px', color: '#881337', marginTop: '4px', display: 'block', fontWeight: '500' }}>
+                          {conflictModalData.reason}
+                        </span>
+                      </div>
+
+                      {/* ALTERNATIVES LIST */}
+                      <div>
+                        <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', display: 'block', marginBottom: '8px' }}>
+                          💡 Các phương án thay thế linh hoạt (AI tự động tính toán):
+                        </span>
+
+                        {conflictModalData.alternatives && conflictModalData.alternatives.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {conflictModalData.alternatives.map((opt, idx) => (
+                              <div
+                                key={opt.id || idx}
                                 style={{
-                                  padding: '6px',
-                                  backgroundColor: isSource ? '#fef08a' : item ? '#f8fafc' : '#ffffff',
-                                  border: isSource ? '2px dashed #b45309' : '1px solid #f1f5f9',
-                                  cursor: studioView === 'class' ? 'pointer' : 'default',
+                                  padding: '12px 16px',
+                                  borderRadius: '12px',
+                                  backgroundColor: '#f8fafc',
+                                  border: '1.5px solid #e2e8f0',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
                                   transition: 'all 0.15s ease'
                                 }}
                               >
-                                {item ? (
-                                  <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'relative' }}>
-                                    <div style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '13px' }}>
-                                      {item.subject}
-                                    </div>
-                                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
-                                      {studioView === 'class' ? item.teacher_name : item.student_class}
-                                    </div>
-
-                                    {/* PIN ICON */}
-                                    {studioView === 'class' && (
-                                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); handleTogglePinSlot(item); }}
-                                          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: item.isPinned ? '#b45309' : '#94a3b8' }}
-                                          title={item.isPinned ? 'Đã pin cứng' : 'Nhấp để pin cứng'}
-                                        >
-                                          <Lock size={12} />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteStudioSlot(studioSelectedClass, day, p); }}
-                                          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
-                                          title="Xóa tiết"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      </div>
-                                    )}
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 'bold', backgroundColor: opt.type === 'swap' ? '#ede9fe' : '#dcfce7', color: opt.type === 'swap' ? '#6d28d9' : '#15803d', padding: '2px 8px', borderRadius: '6px' }}>
+                                      {opt.badge}
+                                    </span>
+                                    <strong style={{ fontSize: '13px', color: '#0f172a' }}>
+                                      {opt.day} • Tiết {opt.period}
+                                    </strong>
                                   </div>
-                                ) : (
-                                  <span style={{ color: '#cbd5e1', fontSize: '12px' }}>-</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
+                                  <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#475569' }}>
+                                    {opt.description}
+                                  </p>
+                                </div>
 
-                      {/* CA CHIEU */}
-                      <tr style={{ background: '#f1f5f9', fontWeight: 'bold', color: '#475569', fontSize: '12px' }}>
-                        <td colSpan={7} style={{ padding: '6px 12px', textAlign: 'left' }}>--- CA CHIỀU ---</td>
-                      </tr>
-                      {PERIODS_AFTERNOON.map(p => (
-                        <tr key={p} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '10px', textAlign: 'left', fontWeight: 'bold', color: '#475569' }}>Tiết {p}</td>
-                          {DAYS.map(day => {
-                            let item = null;
-                            if (studioView === 'class') {
-                              item = draftSchedule.find(s => s.student_class === studioSelectedClass && s.day_of_week === day && Number(s.period) === Number(p));
-                            } else {
-                              item = draftSchedule.find(s => s.teacher_name === studioSelectedTeacher && s.day_of_week === day && Number(s.period) === Number(p));
-                            }
+                                <button
+                                  type="button"
+                                  onClick={() => handleApplyAlternativeOption(opt)}
+                                  style={{
+                                    padding: '7px 14px',
+                                    backgroundColor: '#4f46e5',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '12.5px',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  <Check size={14} /> Áp Dụng
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ padding: '14px', backgroundColor: '#f1f5f9', borderRadius: '10px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+                            Không tìm thấy phương án thay thế trong ca hiện tại. Bạn có thể mở khóa tiết hoặc đổi thủ công tiết khác.
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                            const isSource = swapSourceSlot && swapSourceSlot.day_of_week === day && Number(swapSourceSlot.period) === Number(p);
-
-                            return (
-                              <td
-                                key={`${day}_${p}`}
-                                onClick={() => handleStudioCellClick(day, p, item)}
-                                style={{
-                                  padding: '6px',
-                                  backgroundColor: isSource ? '#fef08a' : item ? '#f8fafc' : '#ffffff',
-                                  border: isSource ? '2px dashed #b45309' : '1px solid #f1f5f9',
-                                  cursor: studioView === 'class' ? 'pointer' : 'default',
-                                  transition: 'all 0.15s ease'
-                                }}
-                              >
-                                {item ? (
-                                  <div style={{ padding: '8px', borderRadius: '8px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', position: 'relative' }}>
-                                    <div style={{ fontWeight: 'bold', color: '#1e40af', fontSize: '13px' }}>
-                                      {item.subject}
-                                    </div>
-                                    <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', fontWeight: '500' }}>
-                                      {studioView === 'class' ? item.teacher_name : item.student_class}
-                                    </div>
-
-                                    {/* PIN ICON */}
-                                    {studioView === 'class' && (
-                                      <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px' }}>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); handleTogglePinSlot(item); }}
-                                          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: item.isPinned ? '#b45309' : '#94a3b8' }}
-                                          title={item.isPinned ? 'Đã pin cứng' : 'Nhấp để pin cứng'}
-                                        >
-                                          <Lock size={12} />
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => { e.stopPropagation(); handleDeleteStudioSlot(studioSelectedClass, day, p); }}
-                                          style={{ border: 'none', background: 'none', cursor: 'pointer', padding: '2px', color: '#ef4444' }}
-                                          title="Xóa tiết"
-                                        >
-                                          <Trash2 size={12} />
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <span style={{ color: '#cbd5e1', fontSize: '12px' }}>-</span>
-                                )}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                    {/* MODAL FOOTER */}
+                    <div style={{ padding: '14px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setConflictModalData(null)}
+                        style={{ padding: '8px 18px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                      >
+                        Đóng
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

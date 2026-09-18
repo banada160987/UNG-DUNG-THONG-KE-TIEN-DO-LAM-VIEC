@@ -583,51 +583,255 @@ export function runAiTimetableSolver({
 }
 
 /**
- * Kiểm tra tính hợp lệ khi đổi chéo 2 tiết thủ công (Smart Swap Validator)
+ * Kiểm tra tính hợp lệ khi đổi chéo hoặc di chuyển tiết (Smart Swap Validator)
  */
-export function validateSlotSwap(scheduleItems, itemA, itemB) {
-  if (!itemA || !itemB) return { valid: false, reason: 'Chưa chọn đủ 2 vị trí để đổi tiết.' };
+export function validateSlotSwap(scheduleItems = [], itemA, itemB, teacherLocks = {}, schoolLocks = []) {
+  if (!itemA || !itemB) return { valid: false, reason: 'Chưa chọn đủ 2 vị trí để đổi tiết.', conflictType: 'INVALID' };
 
   if (itemA.isPinned || itemB.isPinned) {
-    return { valid: false, reason: 'Không thể đổi vị trí các tiết đã được Khóa cố định (Pinned).' };
+    return { valid: false, reason: 'Không thể di chuyển tiết đã được Khóa cố định (Pinned).', conflictType: 'SLOT_PINNED' };
   }
 
-  // Nếu cùng 1 lớp
-  if (itemA.student_class === itemB.student_class) {
-    // Kiểm tra GV của itemA có bận ở slotB (ở lớp khác) không
-    const clashA = scheduleItems.find(t => 
-      t.student_class !== itemA.student_class &&
-      t.teacher_name === itemA.teacher_name &&
-      t.day_of_week === itemB.day_of_week &&
-      Number(t.period) === Number(itemB.period) &&
-      t.teacher_name !== 'Chưa gán GV'
-    );
-    if (clashA) {
-      return { 
-        valid: false, 
-        reason: `Giáo viên ${itemA.teacher_name} đã có tiết dạy ở lớp ${clashA.student_class} vào ${itemB.day_of_week} Tiết ${itemB.period}!` 
+  if (itemA.isFixed || itemB.isFixed) {
+    return { valid: false, reason: 'Không thể di chuyển tiết cố định toàn trường (Chào cờ, SHL).', conflictType: 'SLOT_LOCKED' };
+  }
+
+  const schoolLockSet = new Set(schoolLocks || []);
+  const keyA = `${itemA.day_of_week}_${itemA.period}`;
+  const keyB = `${itemB.day_of_week}_${itemB.period}`;
+
+  if (schoolLockSet.has(keyB)) {
+    return { valid: false, reason: `Vị trí ${itemB.day_of_week} Tiết ${itemB.period} đã bị Khóa toàn trường.`, conflictType: 'SLOT_LOCKED' };
+  }
+
+  // Helper check GV bận
+  const isTeacherLocked = (tName, day, period) => {
+    if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return false;
+    const tLocks = teacherLocks[tName];
+    if (!tLocks || !Array.isArray(tLocks)) return false;
+    return tLocks.includes(day) || tLocks.includes(`${day}_${period}`);
+  };
+
+  const teacherA = getFullTeacherName(itemA.teacher_name, itemA.subject);
+  const teacherB = itemB.teacher_name ? getFullTeacherName(itemB.teacher_name, itemB.subject) : '';
+
+  // 1. Trường hợp đổi cùng 1 lớp (Class View)
+  if (itemA.student_class && itemB.student_class && itemA.student_class === itemB.student_class) {
+    const cls = itemA.student_class;
+
+    // Check teacherA locks at slotB
+    if (teacherA && isTeacherLocked(teacherA, itemB.day_of_week, itemB.period)) {
+      return {
+        valid: false,
+        reason: `Giáo viên ${teacherA} đã đăng ký nghỉ vào ${itemB.day_of_week} Tiết ${itemB.period}.`,
+        conflictType: 'TEACHER_LOCKED',
+        conflictDetails: { teacher: teacherA, day: itemB.day_of_week, period: itemB.period }
       };
     }
 
-    // Kiểm tra GV của itemB có bận ở slotA (ở lớp khác) không
-    const clashB = scheduleItems.find(t => 
-      t.student_class !== itemB.student_class &&
-      t.teacher_name === itemB.teacher_name &&
-      t.day_of_week === itemA.day_of_week &&
-      Number(t.period) === Number(itemA.period) &&
-      t.teacher_name !== 'Chưa gán GV'
-    );
-    if (clashB) {
-      return { 
-        valid: false, 
-        reason: `Giáo viên ${itemB.teacher_name} đã có tiết dạy ở lớp ${clashB.student_class} vào ${itemA.day_of_week} Tiết ${itemA.period}!` 
+    // Check teacherB locks at slotA
+    if (teacherB && isTeacherLocked(teacherB, itemA.day_of_week, itemA.period)) {
+      return {
+        valid: false,
+        reason: `Giáo viên ${teacherB} đã đăng ký nghỉ vào ${itemA.day_of_week} Tiết ${itemA.period}.`,
+        conflictType: 'TEACHER_LOCKED',
+        conflictDetails: { teacher: teacherB, day: itemA.day_of_week, period: itemA.period }
       };
+    }
+
+    // Check clash teacherA in other classes at slotB
+    if (teacherA && teacherA !== 'Chưa gán GV' && teacherA !== 'GVCN') {
+      const clashA = scheduleItems.find(t =>
+        t.student_class !== cls &&
+        getFullTeacherName(t.teacher_name, t.subject) === teacherA &&
+        t.day_of_week === itemB.day_of_week &&
+        Number(t.period) === Number(itemB.period)
+      );
+      if (clashA) {
+        return {
+          valid: false,
+          reason: `Giáo viên ${teacherA} đã có tiết dạy môn ${clashA.subject} ở lớp ${clashA.student_class} vào ${itemB.day_of_week} Tiết ${itemB.period}!`,
+          conflictType: 'TEACHER_BUSY',
+          conflictDetails: {
+            teacher: teacherA,
+            conflictingClass: clashA.student_class,
+            subject: clashA.subject,
+            day: itemB.day_of_week,
+            period: itemB.period
+          }
+        };
+      }
+    }
+
+    // Check clash teacherB in other classes at slotA
+    if (teacherB && teacherB !== 'Chưa gán GV' && teacherB !== 'GVCN') {
+      const clashB = scheduleItems.find(t =>
+        t.student_class !== cls &&
+        getFullTeacherName(t.teacher_name, t.subject) === teacherB &&
+        t.day_of_week === itemA.day_of_week &&
+        Number(t.period) === Number(itemA.period)
+      );
+      if (clashB) {
+        return {
+          valid: false,
+          reason: `Giáo viên ${teacherB} đã có tiết dạy môn ${clashB.subject} ở lớp ${clashB.student_class} vào ${itemA.day_of_week} Tiết ${itemA.period}!`,
+          conflictType: 'TEACHER_BUSY',
+          conflictDetails: {
+            teacher: teacherB,
+            conflictingClass: clashB.student_class,
+            subject: clashB.subject,
+            day: itemA.day_of_week,
+            period: itemA.period
+          }
+        };
+      }
     }
 
     return { valid: true, reason: 'Hợp lệ! Có thể tráo đổi 2 tiết an toàn không bị trùng lịch.' };
   }
 
-  return { valid: false, reason: 'Hiện tại chỉ hỗ trợ đổi chéo 2 tiết trong cùng một lớp.' };
+  // 2. Trường hợp đổi theo Giáo Viên (Teacher View)
+  if (teacherA && teacherB && teacherA === teacherB) {
+    const tName = teacherA;
+    const classA = itemA.student_class;
+    const classB = itemB.student_class;
+
+    // Check if classA has another lesson at slotB
+    if (classA) {
+      const clashClassA = scheduleItems.find(t =>
+        t.student_class === classA &&
+        t.day_of_week === itemB.day_of_week &&
+        Number(t.period) === Number(itemB.period) &&
+        !(t.day_of_week === itemA.day_of_week && Number(t.period) === Number(itemA.period))
+      );
+      if (clashClassA && (!classB || clashClassA.teacher_name !== tName)) {
+        return {
+          valid: false,
+          reason: `Lớp ${classA} đã có tiết ${clashClassA.subject} (${clashClassA.teacher_name}) vào ${itemB.day_of_week} Tiết ${itemB.period}!`,
+          conflictType: 'CLASS_BUSY',
+          conflictDetails: { teacher: clashClassA.teacher_name, conflictingClass: classA, subject: clashClassA.subject, day: itemB.day_of_week, period: itemB.period }
+        };
+      }
+    }
+
+    // Check if classB has another lesson at slotA
+    if (classB) {
+      const clashClassB = scheduleItems.find(t =>
+        t.student_class === classB &&
+        t.day_of_week === itemA.day_of_week &&
+        Number(t.period) === Number(itemA.period) &&
+        !(t.day_of_week === itemB.day_of_week && Number(t.period) === Number(itemB.period))
+      );
+      if (clashClassB && (!classA || clashClassB.teacher_name !== tName)) {
+        return {
+          valid: false,
+          reason: `Lớp ${classB} đã có tiết ${clashClassB.subject} (${clashClassB.teacher_name}) vào ${itemA.day_of_week} Tiết ${itemA.period}!`,
+          conflictType: 'CLASS_BUSY',
+          conflictDetails: { teacher: clashClassB.teacher_name, conflictingClass: classB, subject: clashClassB.subject, day: itemA.day_of_week, period: itemA.period }
+        };
+      }
+    }
+
+    return { valid: true, reason: 'Hợp lệ! Có thể tráo đổi 2 tiết dạy của giáo viên an toàn.' };
+  }
+
+  return { valid: false, reason: 'Chỉ hỗ trợ đổi 2 tiết trong cùng một Lớp học hoặc của cùng một Giáo viên.', conflictType: 'INVALID' };
+}
+
+/**
+ * Tính toán toàn bộ các ô đích khả dụng (Candidate Slots) cho 1 tiết học được chọn
+ */
+export function findSmartSwapCandidates(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = []) {
+  if (!sourceItem) return new Map();
+
+  const candidateMap = new Map();
+  const periods = (Number(sourceItem.period) <= 5) ? PERIODS_MORNING : PERIODS_AFTERNOON;
+
+  DAYS.forEach(day => {
+    periods.forEach(p => {
+      const key = `${day}_${p}`;
+      if (sourceItem.day_of_week === day && Number(sourceItem.period) === p) {
+        candidateMap.set(key, { status: 'source', label: 'Vị trí hiện tại', valid: true });
+        return;
+      }
+
+      let targetItem = null;
+      if (studioView === 'class') {
+        targetItem = scheduleItems.find(s => s.student_class === selectedTarget && s.day_of_week === day && Number(s.period) === p) || {
+          student_class: selectedTarget,
+          day_of_week: day,
+          period: p,
+          subject: '',
+          teacher_name: ''
+        };
+      } else {
+        targetItem = scheduleItems.find(s => s.teacher_name === selectedTarget && s.day_of_week === day && Number(s.period) === p) || {
+          student_class: '',
+          day_of_week: day,
+          period: p,
+          subject: '',
+          teacher_name: selectedTarget
+        };
+      }
+
+      const val = validateSlotSwap(scheduleItems, sourceItem, targetItem, teacherLocks, schoolLocks);
+      if (val.valid) {
+        // Kiểm tra xem vị trí này có giúp giảm tiết lủng (optimal) hay không
+        const isOptimal = (p === 1 || p === 5 || p === 6 || p === 10);
+        candidateMap.set(key, {
+          status: isOptimal ? 'optimal' : 'valid',
+          label: isOptimal ? '🌟 Vị trí Vàng (Tối ưu sư phạm)' : '✅ Có thể đổi an toàn',
+          valid: true,
+          targetItem: targetItem
+        });
+      } else {
+        candidateMap.set(key, {
+          status: 'clash',
+          label: `⛔ ${val.reason}`,
+          valid: false,
+          conflictType: val.conflictType,
+          conflictDetails: val.conflictDetails,
+          targetItem: targetItem
+        });
+      }
+    });
+  });
+
+  return candidateMap;
+}
+
+/**
+ * Tạo danh sách các phương án thay thế thông minh (AI Alternative Options) khi gặp xung đột
+ */
+export function getAiAlternativeOptions(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = []) {
+  if (!sourceItem) return [];
+
+  const options = [];
+  const candidates = findSmartSwapCandidates(scheduleItems, sourceItem, studioView, selectedTarget, teacherLocks, schoolLocks);
+
+  // 1. Tìm các ô tối ưu & hợp lệ
+  candidates.forEach((cand, key) => {
+    if (cand.valid && cand.status !== 'source') {
+      const [day, pStr] = key.split('_');
+      const p = Number(pStr);
+      const isTargetOccupied = cand.targetItem && cand.targetItem.subject;
+      
+      options.push({
+        id: `opt_${options.length + 1}`,
+        day: day,
+        period: p,
+        type: isTargetOccupied ? 'swap' : 'move',
+        badge: cand.status === 'optimal' ? '🌟 Tối Ưu Sư Phạm' : '✅ An Toàn Tuyệt Đối',
+        targetItem: cand.targetItem,
+        description: isTargetOccupied 
+          ? `Đổi vị trí với môn ${cand.targetItem.subject} (${cand.targetItem.teacher_name || 'GV'}) vào ${day} Tiết ${p}`
+          : `Di chuyển sang ô trống vào ${day} Tiết ${p}`,
+        scoreGain: cand.status === 'optimal' ? '+5 Điểm' : '+0 Điểm'
+      });
+    }
+  });
+
+  return options.slice(0, 4); // Lấy top 4 phương án khả thi nhất
 }
 
 /**
