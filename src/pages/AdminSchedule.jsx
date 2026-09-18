@@ -33,6 +33,7 @@ import {
   TEACHER_FULL_MAP,
   getFullTeacherName,
   normalizeClassCode,
+  isValidStudentClass,
   extractAssignmentsFromTimetable,
   getDefaultTeachingAssignments,
   runAiTimetableSolver,
@@ -274,11 +275,13 @@ export default function AdminSchedule() {
 
   const processRawTimetableItems = (items) => {
     if (!Array.isArray(items)) return [];
-    return items.map(item => ({
-      ...item,
-      student_class: normalizeClassCode(item.student_class),
-      teacher_name: getFullTeacherName(item.teacher_name, item.subject)
-    }));
+    return items
+      .filter(item => isValidStudentClass(item.student_class))
+      .map(item => ({
+        ...item,
+        student_class: normalizeClassCode(item.student_class),
+        teacher_name: getFullTeacherName(item.teacher_name, item.subject)
+      }));
   };
 
   async function fetchTimetableData() {
@@ -769,7 +772,8 @@ export default function AdminSchedule() {
       if (savedAssignments) {
         const parsed = JSON.parse(savedAssignments);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          setTeachingAssignments(parsed);
+          const validOnly = parsed.filter(a => isValidStudentClass(a.student_class));
+          setTeachingAssignments(validOnly);
           return;
         }
       }

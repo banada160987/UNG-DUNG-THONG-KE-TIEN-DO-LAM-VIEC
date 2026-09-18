@@ -198,13 +198,22 @@ const normalizeClassCode = (cls) => {
   return clean;
 };
 
+const isValidStudentClass = (cls) => {
+  if (!cls) return false;
+  const clean = String(cls).trim().toUpperCase();
+  if (clean === 'HOP' || clean === 'BGH' || clean === 'TO' || clean === 'CHUNG') return false;
+  return /^(10|11|12)[A-Z0-9]+$/.test(clean);
+};
+
 const processRawTimetableItems = (items) => {
   if (!Array.isArray(items)) return [];
-  return items.map(item => ({
-    ...item,
-    student_class: normalizeClassCode(item.student_class),
-    teacher_name: getFullTeacherName(item.teacher_name)
-  }));
+  return items
+    .filter(item => isValidStudentClass(item.student_class))
+    .map(item => ({
+      ...item,
+      student_class: normalizeClassCode(item.student_class),
+      teacher_name: getFullTeacherName(item.teacher_name)
+    }));
 };
 
 export default function PublicSchedule() {

@@ -63,6 +63,13 @@ export const normalizeClassCode = (cls) => {
   return clean;
 };
 
+export const isValidStudentClass = (cls) => {
+  if (!cls) return false;
+  const clean = String(cls).trim().toUpperCase();
+  if (clean === 'HOP' || clean === 'BGH' || clean === 'TO' || clean === 'CHUNG') return false;
+  return /^(10|11|12)[A-Z0-9]+$/.test(clean);
+};
+
 /**
  * Trích xuất phân công giảng dạy từ dữ liệu thời khóa biểu hiện có
  */
@@ -73,6 +80,8 @@ export function extractAssignmentsFromTimetable(timetableItems) {
 
   timetableItems.forEach(item => {
     const cls = normalizeClassCode(item.student_class);
+    if (!isValidStudentClass(cls)) return;
+
     const subject = String(item.subject || '').trim();
     const teacher = getFullTeacherName(item.teacher_name, subject);
     if (!cls || !subject) return;

@@ -9240,16 +9240,6 @@
     "room": "Phòng 10A01"
   },
   {
-    "id": "tkb-HOP-Lê Ngọc Oanh-Thứ 2-7",
-    "student_class": "HOP",
-    "day_of_week": "Thứ 2",
-    "period": 7,
-    "subject": "Giảng dạy",
-    "teacher_name": "Lê Ngọc Oanh",
-    "teacher_short": "Lê Ngọc Oanh",
-    "room": "Phòng HOP"
-  },
-  {
     "id": "tkb-12A04-Lê Ngọc Oanh-Thứ 2-8",
     "student_class": "12A04",
     "day_of_week": "Thứ 2",
