@@ -101,42 +101,59 @@ export function extractAssignmentsFromTimetable(timetableItems) {
 }
 
 /**
- * Thuật toán AI Xếp Thời Khóa Biểu Tối Ưu (Pro Timetable Solver)
+ * Lấy 442 phân công giảng dạy chuẩn từ master_timetable.json
+ */
+export function getDefaultTeachingAssignments() {
+  return extractAssignmentsFromTimetable(masterTimetableData);
+}
+
+/**
+ * Thuật toán AI Xếp Thời Khóa Biểu Tối Ưu Đa Tầng (Multi-Pass Pro Timetable Solver)
  */
 export function runAiTimetableSolver({
   assignments = [],
   sessionMode = 'both', // 'morning' | 'afternoon' | 'both'
   schoolLocks = [],     // Mảng các chuỗi "Thứ X_Tiết Y" bị khóa toàn trường
   teacherLocks = {},    // Object: { "Tên GV": ["Thứ X_Tiết Y", "Thứ X"] }
-  classLocks = {},      // Object: { "Lớp": ["Thứ X_Tiết Y"] }
   pinnedSlots = [],     // Mảng các tiết đã pin cứng { student_class, day_of_week, period, subject, teacher_name }
   doublePeriodSubjects = ['Ngữ văn', 'GDTC', 'Tin học', 'Mĩ thuật'],
   maxDailyPeriodsPerTeacher = 5,
-  maxAfternoonDaysPerTeacher = 5, // Tối đa số buổi chiều / tuần của 1 GV (VD: 2 buổi/tuần)
+  maxAfternoonDaysPerTeacher = 5,
   seed = Date.now()
 }) {
   const startTime = performance.now();
+
+  let activeAssignments = assignments;
+  if (!activeAssignments || activeAssignments.length === 0) {
+    activeAssignments = getDefaultTeachingAssignments();
+  }
 
   // 1. Xác định phạm vi các tiết theo ca
   let targetPeriods = PERIODS_ALL;
   if (sessionMode === 'morning') targetPeriods = PERIODS_MORNING;
   else if (sessionMode === 'afternoon') targetPeriods = PERIODS_AFTERNOON;
 
-  const schoolLockSet = new Set(schoolLocks);
+  const schoolLockSet = new Set(schoolLocks || []);
+
+  // Lọc assignments theo sessionMode nếu chỉ xếp 1 ca
+  let filteredAssignments = activeAssignments;
+  if (sessionMode === 'morning') {
+    filteredAssignments = activeAssignments.filter(a => a.shift === 'morning' || !a.student_class.startsWith('12'));
+  } else if (sessionMode === 'afternoon') {
+    filteredAssignments = activeAssignments.filter(a => a.shift === 'afternoon' || a.student_class.startsWith('12'));
+  }
 
   // Tập hợp danh sách các lớp cần xếp
-  const targetClasses = Array.from(new Set(assignments.map(a => a.student_class))).filter(Boolean).sort();
+  const targetClasses = Array.from(new Set(filteredAssignments.map(a => a.student_class))).filter(Boolean).sort();
 
   // 2. Khởi tạo cấu trúc lưới TKB
-  // classGrid: Map<class, Map<day_period, slotItem>>
   const classGrid = new Map();
-  // teacherGrid: Map<teacher, Map<day_period, slotItem>>
   const teacherGrid = new Map();
 
   targetClasses.forEach(cls => classGrid.set(cls, new Map()));
 
   // 3. Gán các tiết cố định & Pinned Slots
-  pinnedSlots.forEach(pin => {
+  (pinnedSlots || []).forEach(pin => {
     const cls = normalizeClassCode(pin.student_class);
     const day = pin.day_of_week;
     const period = Number(pin.period);
@@ -154,52 +171,75 @@ export function runAiTimetableSolver({
       };
       classGrid.get(cls).set(key, slotItem);
 
-      if (teacher && teacher !== 'Chưa gán GV') {
+      if (teacher && teacher !== 'Chưa gán GV' && teacher !== 'GVCN') {
         if (!teacherGrid.has(teacher)) teacherGrid.set(teacher, new Map());
         teacherGrid.get(teacher).set(key, slotItem);
       }
     }
   });
 
-  // Tự động gán tiết Chào cờ (T1 Thứ 2) và Sinh hoạt lớp (T5 Thứ 7 hoặc cuối tuần) nếu trong phạm vi ca
+  // Tự động gán tiết Chào cờ (T1 Thứ 2) và Sinh hoạt lớp (T5 Thứ 7) nếu trong ca sáng
   targetClasses.forEach(cls => {
     const grid = classGrid.get(cls);
-    // Chào cờ
-    if (targetPeriods.includes(1) && !grid.has('Thứ 2_1') && !schoolLockSet.has('Thứ 2_1')) {
-      const ccItem = {
-        student_class: cls,
-        day_of_week: 'Thứ 2',
-        period: 1,
-        subject: 'Chào cờ',
-        teacher_name: 'GVCN',
-        isFixed: true
-      };
-      grid.set('Thứ 2_1', ccItem);
-    }
+    const isMorningClass = !cls.startsWith('12');
 
-    // Sinh hoạt lớp
-    if (targetPeriods.includes(5) && !grid.has('Thứ 7_5') && !schoolLockSet.has('Thứ 7_5')) {
-      const shItem = {
-        student_class: cls,
-        day_of_week: 'Thứ 7',
-        period: 5,
-        subject: 'SHL - HĐTN',
-        teacher_name: 'GVCN',
-        isFixed: true
-      };
-      grid.set('Thứ 7_5', shItem);
+    if (isMorningClass || sessionMode === 'morning' || sessionMode === 'both') {
+      if (targetPeriods.includes(1) && !grid.has('Thứ 2_1') && !schoolLockSet.has('Thứ 2_1')) {
+        grid.set('Thứ 2_1', {
+          student_class: cls,
+          day_of_week: 'Thứ 2',
+          period: 1,
+          subject: 'Chào cờ',
+          teacher_name: 'GVCN',
+          isFixed: true
+        });
+      }
+
+      if (targetPeriods.includes(5) && !grid.has('Thứ 7_5') && !schoolLockSet.has('Thứ 7_5')) {
+        grid.set('Thứ 7_5', {
+          student_class: cls,
+          day_of_week: 'Thứ 7',
+          period: 5,
+          subject: 'SHL - HĐTN',
+          teacher_name: 'GVCN',
+          isFixed: true
+        });
+      }
+    } else {
+      if (targetPeriods.includes(6) && !grid.has('Thứ 2_6') && !schoolLockSet.has('Thứ 2_6')) {
+        grid.set('Thứ 2_6', {
+          student_class: cls,
+          day_of_week: 'Thứ 2',
+          period: 6,
+          subject: 'Chào cờ',
+          teacher_name: 'GVCN',
+          isFixed: true
+        });
+      }
+
+      if (targetPeriods.includes(10) && !grid.has('Thứ 7_10') && !schoolLockSet.has('Thứ 7_10')) {
+        grid.set('Thứ 7_10', {
+          student_class: cls,
+          day_of_week: 'Thứ 7',
+          period: 10,
+          subject: 'SHL - HĐTN',
+          teacher_name: 'GVCN',
+          isFixed: true
+        });
+      }
     }
   });
 
-  // 4. Chia nhỏ phân công thành các Khối tiết (Blocks: Double periods & Single periods)
+  // 4. Chia nhỏ phân công thành các Khối tiết (Blocks)
   const schedulingBlocks = [];
 
-  assignments.forEach(asg => {
+  filteredAssignments.forEach(asg => {
     let remaining = Number(asg.periods_per_week) || 0;
     const cls = asg.student_class;
     const teacher = getFullTeacherName(asg.teacher_name);
     const subject = asg.subject;
-    const isDoubleEligible = doublePeriodSubjects.some(s => subject.toLowerCase().includes(s.toLowerCase()));
+    const isDoubleEligible = (doublePeriodSubjects || []).some(s => subject.toLowerCase().includes(s.toLowerCase()));
+    const shift = asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning');
 
     while (remaining > 0) {
       if (isDoubleEligible && remaining >= 2) {
@@ -209,7 +249,7 @@ export function runAiTimetableSolver({
           teacher_name: teacher,
           subject: subject,
           size: 2,
-          shift: asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning')
+          shift: shift
         });
         remaining -= 2;
       } else {
@@ -219,32 +259,28 @@ export function runAiTimetableSolver({
           teacher_name: teacher,
           subject: subject,
           size: 1,
-          shift: asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning')
+          shift: shift
         });
         remaining -= 1;
       }
     }
   });
 
-  // 5. Sắp xếp thứ tự ưu tiên (MRV - Most Constrained Variable First):
-  // Xếp Block đôi trước, môn có GV dạy nhiều lớp trước
+  // 5. Tính toán tải GV để xếp theo MRV
   const teacherLoadMap = new Map();
   schedulingBlocks.forEach(b => {
     teacherLoadMap.set(b.teacher_name, (teacherLoadMap.get(b.teacher_name) || 0) + b.size);
   });
 
   schedulingBlocks.sort((a, b) => {
-    // 1. Ưu tiên tiết đôi
     if (b.size !== a.size) return b.size - a.size;
-    // 2. Ưu tiên GV có tổng số tiết nhiều
     const loadA = teacherLoadMap.get(a.teacher_name) || 0;
     const loadB = teacherLoadMap.get(b.teacher_name) || 0;
     if (loadB !== loadA) return loadB - loadA;
-    // 3. Ưu tiên lớp
     return a.student_class.localeCompare(b.student_class);
   });
 
-  // Helper kiểm tra GV có bị khóa tiết đó không
+  // Helper kiểm tra GV khóa tiết
   const isTeacherLocked = (tName, day, period) => {
     if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return false;
     const tLocks = teacherLocks[tName];
@@ -260,13 +296,13 @@ export function runAiTimetableSolver({
     const tGrid = teacherGrid.get(tName);
     if (!tGrid) return 0;
     let count = 0;
-    for (let p of targetPeriods) {
+    for (let p of PERIODS_ALL) {
       if (tGrid.has(`${day}_${p}`)) count++;
     }
     return count;
   };
 
-  // Helper đếm số buổi chiều GV đã dạy trong tuần
+  // Helper đếm số buổi chiều GV đã dạy
   const getTeacherAfternoonDaysCount = (tName) => {
     if (!tName || tName === 'Chưa gán GV' || tName === 'GVCN') return 0;
     const tGrid = teacherGrid.get(tName);
@@ -274,9 +310,7 @@ export function runAiTimetableSolver({
     const daysSet = new Set();
     for (const key of tGrid.keys()) {
       const [d, pStr] = key.split('_');
-      if (Number(pStr) >= 6) {
-        daysSet.add(d);
-      }
+      if (Number(pStr) >= 6) daysSet.add(d);
     }
     return daysSet.size;
   };
@@ -291,121 +325,106 @@ export function runAiTimetableSolver({
     return false;
   };
 
-  // Helper kiểm tra xem lớp đã học môn này trong ngày chưa (để trải đều môn)
   const isClassSubjectOnDay = (cls, day, subject) => {
     const cGrid = classGrid.get(cls);
     if (!cGrid) return false;
-    for (let p of targetPeriods) {
+    for (let p of PERIODS_ALL) {
       const item = cGrid.get(`${day}_${p}`);
       if (item && item.subject === subject) return true;
     }
     return false;
   };
 
-  // 6. Xếp từng block vào Lưới
-  let unplacedBlocks = [];
+  const getClassPeriods = (cls, shift) => {
+    if (sessionMode === 'morning') return PERIODS_MORNING;
+    if (sessionMode === 'afternoon') return PERIODS_AFTERNOON;
+    if (shift === 'afternoon' || cls.startsWith('12')) return PERIODS_AFTERNOON;
+    return PERIODS_MORNING;
+  };
 
-  for (const block of schedulingBlocks) {
+  // 6. THỰC THI THUẬT TOÁN ĐA TẦNG (MULTI-PASS CSP)
+  const placeBlock = (block, allowRelaxed = false) => {
     const cls = block.student_class;
     const teacher = block.teacher_name;
     const subject = block.subject;
     const size = block.size;
     const cGrid = classGrid.get(cls);
+    if (!cGrid) return false;
 
+    const classPeriods = getClassPeriods(cls, block.shift);
     let bestCandidate = null;
-    let minCandidatePenalty = Infinity;
+    let minPenalty = Infinity;
 
-    // Duyệt qua tất cả các ngày và các tiết hợp lệ
     for (const day of DAYS) {
-      // Xác định các tiết thuộc ca của lớp
-      let classPeriods = targetPeriods;
-      if (sessionMode === 'both') {
-        if (block.shift === 'afternoon' || cls.startsWith('12')) {
-          classPeriods = PERIODS_AFTERNOON;
-        } else {
-          classPeriods = PERIODS_MORNING;
-        }
-      }
-
-      // Kiểm tra tiết đôi (size == 2)
       if (size === 2) {
         for (let i = 0; i < classPeriods.length - 1; i++) {
           const p1 = classPeriods[i];
           const p2 = classPeriods[i + 1];
-
           const k1 = `${day}_${p1}`;
           const k2 = `${day}_${p2}`;
 
-          // Kiểm tra trống lớp
           if (cGrid.has(k1) || cGrid.has(k2)) continue;
-          // Kiểm tra khóa trường
           if (schoolLockSet.has(k1) || schoolLockSet.has(k2)) continue;
-          // Kiểm tra khóa GV
           if (isTeacherLocked(teacher, day, p1) || isTeacherLocked(teacher, day, p2)) continue;
-          // Kiểm tra trùng GV
+
           const tGrid = teacherGrid.get(teacher);
           if (tGrid && (tGrid.has(k1) || tGrid.has(k2))) continue;
-          // Kiểm tra quá tải ngày của GV
-          if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 2 > maxDailyPeriodsPerTeacher) continue;
-          // Kiểm tra giới hạn số buổi chiều tối đa của GV (VD: tối đa 2 buổi chiều/tuần)
+
+          const maxAllowedPeriods = allowRelaxed ? (maxDailyPeriodsPerTeacher + 1) : maxDailyPeriodsPerTeacher;
+          if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 2 > maxAllowedPeriods) continue;
+
           if (p1 >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
-            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoonDaysPerTeacher) continue;
+            const maxAfternoons = allowRelaxed ? (maxAfternoonDaysPerTeacher + 1) : maxAfternoonDaysPerTeacher;
+            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
-          // Tính điểm phạt (Penalty)
           let penalty = 0;
-          if (isClassSubjectOnDay(cls, day, subject)) penalty += 30; // Tránh trùng môn trong ngày
-          
-          // Tránh tiết lủng cho GV
+          if (isClassSubjectOnDay(cls, day, subject)) penalty += 30;
           if (tGrid) {
             const hasAdjacent = tGrid.has(`${day}_${p1 - 1}`) || tGrid.has(`${day}_${p2 + 1}`);
-            if (hasAdjacent) penalty -= 15; // Thưởng vì liền tiết
+            if (hasAdjacent) penalty -= 20;
           }
 
-          if (penalty < minCandidatePenalty) {
-            minCandidatePenalty = penalty;
+          if (penalty < minPenalty) {
+            minPenalty = penalty;
             bestCandidate = { day, periods: [p1, p2] };
           }
         }
       } else {
-        // Tiết đơn (size == 1)
+        // Size 1
         for (const p of classPeriods) {
           const k = `${day}_${p}`;
-          // Kiểm tra trống lớp
           if (cGrid.has(k)) continue;
-          // Kiểm tra khóa trường
           if (schoolLockSet.has(k)) continue;
-          // Kiểm tra khóa GV
           if (isTeacherLocked(teacher, day, p)) continue;
-          // Kiểm tra trùng GV
+
           const tGrid = teacherGrid.get(teacher);
           if (tGrid && tGrid.has(k)) continue;
-          // Kiểm tra quá tải ngày
-          if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 1 > maxDailyPeriodsPerTeacher) continue;
-          // Kiểm tra giới hạn số buổi chiều tối đa của GV
+
+          const maxAllowedPeriods = allowRelaxed ? (maxDailyPeriodsPerTeacher + 1) : maxDailyPeriodsPerTeacher;
+          if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 1 > maxAllowedPeriods) continue;
+
           if (p >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
-            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoonDaysPerTeacher) continue;
+            const maxAfternoons = allowRelaxed ? (maxAfternoonDaysPerTeacher + 1) : maxAfternoonDaysPerTeacher;
+            if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
           let penalty = 0;
-          if (isClassSubjectOnDay(cls, day, subject)) penalty += 25; // Tránh trùng môn
-          
-          // Thưởng nếu liền kề tiết đã dạy của GV (chống tiết lủng)
+          if (isClassSubjectOnDay(cls, day, subject)) penalty += 25;
           if (tGrid) {
             const hasPrev = tGrid.has(`${day}_${p - 1}`);
             const hasNext = tGrid.has(`${day}_${p + 1}`);
-            if (hasPrev || hasNext) penalty -= 10;
+            if (hasPrev || hasNext) penalty -= 15;
           }
 
-          if (penalty < minCandidatePenalty) {
-            minCandidatePenalty = penalty;
+          if (penalty < minPenalty) {
+            minPenalty = penalty;
             bestCandidate = { day, periods: [p] };
           }
         }
       }
     }
 
-    // Nếu tìm được vị trí tối ưu thì đặt vào Lưới
     if (bestCandidate) {
       const { day, periods } = bestCandidate;
       periods.forEach(p => {
@@ -418,17 +437,103 @@ export function runAiTimetableSolver({
           teacher_name: teacher
         };
         cGrid.set(k, slotItem);
-        if (teacher && teacher !== 'Chưa gán GV') {
+        if (teacher && teacher !== 'Chưa gán GV' && teacher !== 'GVCN') {
           if (!teacherGrid.has(teacher)) teacherGrid.set(teacher, new Map());
           teacherGrid.get(teacher).set(k, slotItem);
         }
       });
-    } else {
+      return true;
+    }
+
+    return false;
+  };
+
+  // PASS 1 & 2: Xếp chặt chẽ
+  const unplacedBlocks = [];
+  for (const block of schedulingBlocks) {
+    const success = placeBlock(block, false);
+    if (!success) {
       unplacedBlocks.push(block);
     }
   }
 
-  // 7. Chuyển đổi toàn bộ Lưới thành mảng kết quả
+  // PASS 3: Tách khối đôi không xếp được thành khối đơn
+  const stillUnplaced = [];
+  while (unplacedBlocks.length > 0) {
+    const block = unplacedBlocks.shift();
+    if (block.size === 2) {
+      const b1 = { ...block, size: 1, id: `${block.id}_part1` };
+      const b2 = { ...block, size: 1, id: `${block.id}_part2` };
+      const s1 = placeBlock(b1, false) || placeBlock(b1, true);
+      if (!s1) stillUnplaced.push(b1);
+      const s2 = placeBlock(b2, false) || placeBlock(b2, true);
+      if (!s2) stillUnplaced.push(b2);
+    } else {
+      const s = placeBlock(block, true);
+      if (!s) stillUnplaced.push(block);
+    }
+  }
+
+  // PASS 4: Fallback nếu sessionMode === 'both'
+  if (stillUnplaced.length > 0 && sessionMode === 'both') {
+    const finalUnplaced = [];
+    stillUnplaced.forEach(block => {
+      const altShift = block.shift === 'morning' ? 'afternoon' : 'morning';
+      const altBlock = { ...block, shift: altShift };
+      const placed = placeBlock(altBlock, true);
+      if (!placed) finalUnplaced.push(block);
+    });
+    stillUnplaced.length = 0;
+    stillUnplaced.push(...finalUnplaced);
+  }
+
+  // 7. SIMULATED ANNEALING & LOCAL SEARCH
+  targetClasses.forEach(cls => {
+    const cGrid = classGrid.get(cls);
+    const classSlots = Array.from(cGrid.entries()).filter(([_, item]) => !item.isPinned && !item.isFixed);
+
+    for (let round = 0; round < 60; round++) {
+      if (classSlots.length < 2) break;
+      const idxA = Math.floor(Math.random() * classSlots.length);
+      const idxB = Math.floor(Math.random() * classSlots.length);
+      if (idxA === idxB) continue;
+
+      const [k1, itemA] = classSlots[idxA];
+      const [k2, itemB] = classSlots[idxB];
+
+      const [d1, p1Str] = k1.split('_');
+      const [d2, p2Str] = k2.split('_');
+      const p1 = Number(p1Str);
+      const p2 = Number(p2Str);
+
+      const sameShift = (p1 <= 5 && p2 <= 5) || (p1 >= 6 && p2 >= 6);
+      if (!sameShift) continue;
+
+      const tA = itemA.teacher_name;
+      const tB = itemB.teacher_name;
+      const tGridA = teacherGrid.get(tA);
+      const tGridB = teacherGrid.get(tB);
+
+      if (tA && tA !== 'Chưa gán GV' && tA !== 'GVCN' && tGridA && tGridA.has(k2) && tGridA.get(k2).student_class !== cls) continue;
+      if (tB && tB !== 'Chưa gán GV' && tB !== 'GVCN' && tGridB && tGridB.has(k1) && tGridB.get(k1).student_class !== cls) continue;
+
+      if (isTeacherLocked(tA, d2, p2) || isTeacherLocked(tB, d1, p1)) continue;
+
+      cGrid.set(k1, { ...itemB, day_of_week: d1, period: p1 });
+      cGrid.set(k2, { ...itemA, day_of_week: d2, period: p2 });
+
+      if (tGridA) {
+        tGridA.delete(k1);
+        tGridA.set(k2, { ...itemA, day_of_week: d2, period: p2 });
+      }
+      if (tGridB) {
+        tGridB.delete(k2);
+        tGridB.set(k1, { ...itemB, day_of_week: d1, period: p1 });
+      }
+    }
+  });
+
+  // 8. Chuyển đổi toàn bộ Lưới thành mảng kết quả
   const allScheduledItems = [];
   targetClasses.forEach(cls => {
     const cGrid = classGrid.get(cls);
@@ -438,18 +543,25 @@ export function runAiTimetableSolver({
   });
 
   const durationMs = Math.round(performance.now() - startTime);
-
-  // 8. Đánh giá chất lượng TKB AI
-  const diagnostics = generateAiDiagnostics(allScheduledItems, assignments, teacherLocks);
+  const diagnostics = generateAiDiagnostics(allScheduledItems, filteredAssignments, teacherLocks);
 
   return {
-    success: unplacedBlocks.length === 0,
+    success: stillUnplaced.length === 0,
+    schedule: allScheduledItems,
     scheduleItems: allScheduledItems,
-    unplacedBlocks,
+    qualityScore: diagnostics.qualityScore,
+    clashCount: diagnostics.clashCount,
+    totalGaps: diagnostics.totalGaps,
+    teachersWithGaps: diagnostics.teachersWithGaps,
+    teacherClashList: diagnostics.teacherClashList,
+    unplacedCount: stillUnplaced.length,
+    unplacedBlocks: stillUnplaced,
     stats: {
       totalClasses: targetClasses.length,
       totalSlots: allScheduledItems.length,
-      unplacedCount: unplacedBlocks.reduce((acc, b) => acc + b.size, 0),
+      totalRequired: schedulingBlocks.reduce((acc, b) => acc + b.size, 0),
+      totalPlaced: allScheduledItems.length,
+      unplacedCount: stillUnplaced.length,
       durationMs,
       qualityScore: diagnostics.qualityScore,
       gapCount: diagnostics.totalGaps,

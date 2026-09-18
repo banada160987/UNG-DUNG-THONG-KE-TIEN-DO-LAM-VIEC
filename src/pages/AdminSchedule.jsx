@@ -33,6 +33,7 @@ import {
   getFullTeacherName,
   normalizeClassCode,
   extractAssignmentsFromTimetable,
+  getDefaultTeachingAssignments,
   runAiTimetableSolver,
   validateSlotSwap,
   generateAiDiagnostics,
@@ -654,11 +655,33 @@ export default function AdminSchedule() {
 
   // --- PRO SCHEDULER INITIALIZATION & EFFECTS ---
   useEffect(() => {
-    if (timetableData && timetableData.length > 0 && teachingAssignments.length === 0) {
-      const extracted = extractAssignmentsFromTimetable(timetableData);
-      if (Array.isArray(extracted)) {
-        setTeachingAssignments(extracted);
+    try {
+      const savedAssignments = localStorage.getItem('cbq_teaching_assignments');
+      if (savedAssignments) {
+        const parsed = JSON.parse(savedAssignments);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setTeachingAssignments(parsed);
+          return;
+        }
       }
+    } catch (e) {
+      console.warn("Lỗi load cached assignments:", e);
+    }
+
+    if (timetableData && timetableData.length > 0) {
+      const extracted = extractAssignmentsFromTimetable(timetableData);
+      if (Array.isArray(extracted) && extracted.length > 0) {
+        setTeachingAssignments(extracted);
+        localStorage.setItem('cbq_teaching_assignments', JSON.stringify(extracted));
+        return;
+      }
+    }
+
+    // Default fallback: 442 chuẩn phân công THPT Cao Bá Quát
+    const defaults = getDefaultTeachingAssignments();
+    if (defaults && defaults.length > 0) {
+      setTeachingAssignments(defaults);
+      localStorage.setItem('cbq_teaching_assignments', JSON.stringify(defaults));
     }
   }, [timetableData]);
 
@@ -684,9 +707,9 @@ export default function AdminSchedule() {
           const diag = generateAiDiagnostics(parsed, teachingAssignments || [], teacherLocks || {});
           setSolverResult({
             success: true,
-            qualityScore: diag?.qualityScore || 100,
-            clashCount: diag?.clashCount || 0,
-            totalGaps: diag?.totalGaps || 0,
+            qualityScore: diag?.qualityScore ?? 100,
+            clashCount: diag?.clashCount ?? 0,
+            totalGaps: diag?.totalGaps ?? 0,
             stats: { totalPlaced: parsed.length, totalRequired: parsed.length, durationMs: 0 },
             unplacedCount: 0,
             unplacedList: [],
@@ -742,10 +765,19 @@ export default function AdminSchedule() {
   }, []);
 
   // --- PRO SCHEDULER ACTIONS ---
+  const handleLoadDefaultAssignments = () => {
+    const defaults = getDefaultTeachingAssignments();
+    setTeachingAssignments(defaults);
+    localStorage.setItem('cbq_teaching_assignments', JSON.stringify(defaults));
+    alert(`🎉 Đã nạp thành công bộ 442 phân công chuyên môn chuẩn của Trường THPT Cao Bá Quát (${defaults.reduce((s, a) => s + a.periods_per_week, 0)} tiết/tuần)!`);
+  };
+
   const handleRunAiSolver = () => {
-    if (teachingAssignments.length === 0) {
-      alert("⚠️ Chưa có dữ liệu phân công giảng dạy! Vui lòng trích xuất từ TKB hiện có hoặc thêm phân công.");
-      return;
+    let currentAssignments = teachingAssignments;
+    if (!currentAssignments || currentAssignments.length === 0) {
+      currentAssignments = getDefaultTeachingAssignments();
+      setTeachingAssignments(currentAssignments);
+      localStorage.setItem('cbq_teaching_assignments', JSON.stringify(currentAssignments));
     }
 
     setIsSolving(true);
@@ -767,7 +799,7 @@ export default function AdminSchedule() {
           setTimeout(() => {
             try {
               const res = runAiTimetableSolver({
-                assignments: teachingAssignments,
+                assignments: currentAssignments,
                 sessionMode: sessionMode,
                 schoolLocks: schoolLocks,
                 teacherLocks: teacherLocks,
@@ -777,16 +809,17 @@ export default function AdminSchedule() {
                 maxAfternoonDaysPerTeacher: maxAfternoonDays
               });
 
-              setDraftSchedule(res.schedule);
-              localStorage.setItem('cbq_draft_timetable', JSON.stringify(res.schedule));
+              const placedSchedule = res.schedule || res.scheduleItems || [];
+              setDraftSchedule(placedSchedule);
+              localStorage.setItem('cbq_draft_timetable', JSON.stringify(placedSchedule));
 
               // Lưu snapshot theo Đợt
               if (activeRotationCycle === 'cycle_1') {
-                setCycle1Draft(res.schedule);
-                localStorage.setItem('cbq_cycle_1_timetable', JSON.stringify(res.schedule));
+                setCycle1Draft(placedSchedule);
+                localStorage.setItem('cbq_cycle_1_timetable', JSON.stringify(placedSchedule));
               } else {
-                setCycle2Draft(res.schedule);
-                localStorage.setItem('cbq_cycle_2_timetable', JSON.stringify(res.schedule));
+                setCycle2Draft(placedSchedule);
+                localStorage.setItem('cbq_cycle_2_timetable', JSON.stringify(placedSchedule));
               }
 
               setSolverResult(res);
@@ -796,7 +829,7 @@ export default function AdminSchedule() {
               setTimeout(() => {
                 setIsSolving(false);
                 setSchedulerSubTab('ai_solver');
-              }, 500);
+              }, 400);
             } catch (err) {
               alert("Lỗi xếp TKB: " + err.message);
               setIsSolving(false);
@@ -1910,6 +1943,15 @@ export default function AdminSchedule() {
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     type="button"
+                    onClick={handleLoadDefaultAssignments}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1.5px solid #bfdbfe', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                    title="Nạp bộ 442 phân công chuyên môn mẫu chuẩn của THPT Cao Bá Quát"
+                  >
+                    <BookOpen size={15} /> 📥 Nạp 442 Phân Công Chuẩn
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => {
                       setEditingAssignmentId(null);
                       setNewAssignment({
@@ -2726,10 +2768,10 @@ export default function AdminSchedule() {
                         <Award size={24} color="#16a34a" />
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '900', color: '#15803d', marginTop: '6px' }}>
-                        {solverResult.qualityScore} <small style={{ fontSize: '16px', fontWeight: 'normal', color: '#22c55e' }}>/ 100 điểm</small>
+                        {solverResult?.qualityScore ?? 100} <small style={{ fontSize: '16px', fontWeight: 'normal', color: '#22c55e' }}>/ 100 điểm</small>
                       </div>
                       <span style={{ fontSize: '12.5px', color: '#16a34a', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
-                        {solverResult.qualityScore >= 95 ? '🏆 XUẤT SẮC - ĐẠT CHUẨN TUYỆT ĐỐI' : '✅ ĐẠT YÊU CẦU SƯ PHẠM'}
+                        {(solverResult?.qualityScore ?? 100) >= 95 ? '🏆 XUẤT SẮC - ĐẠT CHUẨN TUYỆT ĐỐI' : '✅ ĐẠT YÊU CẦU SƯ PHẠM'}
                       </span>
                     </div>
 
@@ -2739,11 +2781,11 @@ export default function AdminSchedule() {
                         <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534' }}>Trùng Lịch Giáo Viên</span>
                         <ShieldCheck size={24} color="#16a34a" />
                       </div>
-                      <div style={{ fontSize: '32px', fontWeight: '900', color: solverResult.clashCount === 0 ? '#15803d' : '#dc2626', marginTop: '6px' }}>
-                        {solverResult.clashCount} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#64748b' }}>tiết trùng</small>
+                      <div style={{ fontSize: '32px', fontWeight: '900', color: (solverResult?.clashCount ?? 0) === 0 ? '#15803d' : '#dc2626', marginTop: '6px' }}>
+                        {solverResult?.clashCount ?? 0} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#64748b' }}>tiết trùng</small>
                       </div>
-                      <span style={{ fontSize: '12.5px', color: solverResult.clashCount === 0 ? '#16a34a' : '#dc2626', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
-                        {solverResult.clashCount === 0 ? '✨ 0% Xung đột hoàn hảo' : '⚠️ Cần kiểm tra lại'}
+                      <span style={{ fontSize: '12.5px', color: (solverResult?.clashCount ?? 0) === 0 ? '#16a34a' : '#dc2626', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
+                        {(solverResult?.clashCount ?? 0) === 0 ? '✨ 0% Xung đột hoàn hảo' : '⚠️ Cần kiểm tra lại'}
                       </span>
                     </div>
 
@@ -2754,7 +2796,7 @@ export default function AdminSchedule() {
                         <Clock size={24} color="#ea580c" />
                       </div>
                       <div style={{ fontSize: '32px', fontWeight: '900', color: '#c2410c', marginTop: '6px' }}>
-                        {solverResult.totalGaps} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#ea580c' }}>tiết</small>
+                        {solverResult?.totalGaps ?? 0} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#ea580c' }}>tiết</small>
                       </div>
                       <span style={{ fontSize: '12.5px', color: '#ea580c', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
                         Đã tối ưu hóa giảm tối đa cho GV
@@ -2771,7 +2813,7 @@ export default function AdminSchedule() {
                         {(draftSchedule || []).length} <small style={{ fontSize: '14px', fontWeight: 'normal', color: '#6366f1' }}>tiết đã xếp</small>
                       </div>
                       <span style={{ fontSize: '12.5px', color: '#4f46e5', fontWeight: 'bold', marginTop: '4px', display: 'block' }}>
-                        100% Phân công hoàn tất
+                        {(draftSchedule || []).length > 0 ? '100% Phân công hoàn tất' : 'Chưa chạy thuật toán AI'}
                       </span>
                     </div>
                   </div>
