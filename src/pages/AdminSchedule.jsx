@@ -1166,8 +1166,8 @@ export default function AdminSchedule() {
     }
   };
 
-  const uniqueClassesCount = new Set(timetableData.map(t => t.student_class)).size;
-  const uniqueTeachersCount = new Set(timetableData.map(t => t.teacher_name)).size;
+  const uniqueClassesCount = new Set((timetableData || []).map(t => t?.student_class)).size;
+  const uniqueTeachersCount = new Set((timetableData || []).map(t => t?.teacher_name)).size;
 
   return (
     <Layout title="Quản lý Lịch công tác & Thời Khóa Biểu Điện Tử">
@@ -1723,7 +1723,7 @@ export default function AdminSchedule() {
                   boxShadow: schedulerSubTab === 'assignments' ? '0 3px 10px rgba(79, 70, 229, 0.3)' : 'none'
                 }}
               >
-                <Layers size={16} /> 1. Phân Công Giảng Dạy ({teachingAssignments.length})
+                <Layers size={16} /> 1. Phân Công Giảng Dạy ({(teachingAssignments || []).length})
               </button>
 
               <button
@@ -1786,7 +1786,7 @@ export default function AdminSchedule() {
                   boxShadow: schedulerSubTab === 'studio' ? '0 3px 10px rgba(79, 70, 229, 0.3)' : 'none'
                 }}
               >
-                <Grid size={16} /> 4. Studio Ma Trận ({draftSchedule.length} tiết)
+                <Grid size={16} /> 4. Studio Ma Trận ({(draftSchedule || []).length} tiết)
               </button>
 
               <button
@@ -1845,28 +1845,28 @@ export default function AdminSchedule() {
                 <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                   <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>Tổng Số Phân Công</span>
                   <div style={{ fontSize: '24px', fontWeight: '900', color: '#4f46e5', marginTop: '4px' }}>
-                    {teachingAssignments.length} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>phân công</small>
+                    {(teachingAssignments || []).length} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>phân công</small>
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                   <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>Tổng Số Tiết Dạy / Tuần</span>
                   <div style={{ fontSize: '24px', fontWeight: '900', color: '#166534', marginTop: '4px' }}>
-                    {teachingAssignments.reduce((sum, a) => sum + (Number(a.periods_per_week) || 0), 0)} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>tiết/tuần</small>
+                    {(teachingAssignments || []).reduce((sum, a) => sum + (Number(a.periods_per_week) || 0), 0)} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>tiết/tuần</small>
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                   <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>Số Lớp Được Phân Công</span>
                   <div style={{ fontSize: '24px', fontWeight: '900', color: '#0369a1', marginTop: '4px' }}>
-                    {new Set(teachingAssignments.map(a => a.student_class)).size} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>lớp</small>
+                    {new Set((teachingAssignments || []).map(a => a.student_class)).size} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>lớp</small>
                   </div>
                 </div>
 
                 <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                   <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>Số Giáo Viên Tham Gia</span>
                   <div style={{ fontSize: '24px', fontWeight: '900', color: '#b45309', marginTop: '4px' }}>
-                    {new Set(teachingAssignments.map(a => a.teacher_name).filter(t => t && t !== 'Chưa gán GV')).size} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>giáo viên</small>
+                    {new Set((teachingAssignments || []).map(a => a.teacher_name).filter(t => t && t !== 'Chưa gán GV')).size} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#64748b' }}>giáo viên</small>
                   </div>
                 </div>
               </div>
