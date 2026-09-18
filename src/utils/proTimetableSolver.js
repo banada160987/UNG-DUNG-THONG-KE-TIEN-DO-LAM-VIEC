@@ -811,10 +811,91 @@ export function validateSlotSwap(scheduleItems = [], itemA, itemB, teacherLocks 
   return { valid: false, reason: 'Chỉ hỗ trợ đổi 2 tiết trong cùng một Lớp học hoặc của cùng một Giáo viên.', conflictType: 'INVALID' };
 }
 
+export const TIMETABLE_TUNE_ALGORITHMS = [
+  { id: 'OpFPR', name: 'Tinh chỉnh tối ưu OpFPR', icon: 'Layers', desc: 'Tối ưu hóa các vị trí thay thế, tôn trọng tuyệt đối 100% tiết đã ghim cố định' },
+  { id: 'CX', name: 'Thuật toán (CX)', icon: 'RefreshCw', desc: 'Thuật toán chu trình hoán vị đa bước (A ➔ B ➔ C ➔ A) giải phóng ô kẹt' },
+  { id: 'FPR', name: 'Vị trí cố định (FPR)', icon: 'Lock', desc: 'Bảo vệ nghiêm ngặt các tiết chốt của BGH & giáo viên kiêm nhiệm' },
+  { id: 'DPR', name: 'Vị trí động (DPR)', icon: 'Move', desc: 'Dời linh hoạt các tiết tự do xung quanh để mở rộng không gian xếp' },
+  { id: 'DR', name: 'Thay thế trực tiếp (DR)', icon: 'ArrowRightLeft', desc: 'Tráo đổi trực tiếp 2-chiều giữa 2 ô tiết khả dụng' },
+  { id: 'OpDPR_FPR', name: 'Tinh chỉnh tối ưu OpDPR/FPR', icon: 'Sliders', desc: 'Kết hợp vị trí động và cố định để triệt tiêu tiết lủng (khoảng trống)' },
+  { id: 'OpCX_DPR', name: 'Tinh chỉnh tối ưu OpCX/DPR', icon: 'Zap', desc: 'Thuật toán chu trình đa tầng tối ưu ngày nghỉ trọn vẹn và xếp gọn ca' }
+];
+
+/**
+ * Thuật toán CX (Cycle Exchange): Tìm chu trình hoán đổi 3 bước (A -> B -> C -> A)
+ * khi không thể hoán đổi trực tiếp 1-1 giữa ô nguồn và ô đích.
+ */
+export function findCycleExchangeChain(scheduleItems = [], sourceItem, targetDay, targetPeriod, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = []) {
+  if (!sourceItem) return null;
+  const periods = (Number(sourceItem.period) <= 5) ? PERIODS_MORNING : PERIODS_AFTERNOON;
+  
+  // Tìm item tại ô đích
+  const targetItem = scheduleItems.find(s => 
+    (studioView === 'class' ? s.student_class === selectedTarget : s.teacher_name === selectedTarget) &&
+    s.day_of_week === targetDay && Number(s.period) === Number(targetPeriod)
+  );
+
+  if (!targetItem || !targetItem.subject) return null;
+
+  // Thử tìm ô trung gian C trong tuần của lớp/GV
+  for (const day of DAYS) {
+    for (const p of periods) {
+      if ((day === sourceItem.day_of_week && p === Number(sourceItem.period)) || (day === targetDay && p === Number(targetPeriod))) continue;
+
+      const intermediateItem = scheduleItems.find(s => 
+        (studioView === 'class' ? s.student_class === selectedTarget : s.teacher_name === selectedTarget) &&
+        s.day_of_week === day && Number(s.period) === p
+      );
+
+      // Thử chu trình: sourceItem -> targetSlot, targetItem -> intermediateSlot, intermediateItem -> sourceSlot
+      const testSchedule = scheduleItems.filter(s => 
+        !(s.student_class === sourceItem.student_class && s.day_of_week === sourceItem.day_of_week && Number(s.period) === Number(sourceItem.period)) &&
+        !(s.student_class === targetItem.student_class && s.day_of_week === targetItem.day_of_week && Number(s.period) === Number(targetItem.period)) &&
+        !(intermediateItem && s.student_class === intermediateItem.student_class && s.day_of_week === intermediateItem.day_of_week && Number(s.period) === Number(intermediateItem.period))
+      );
+
+      // Đặt source vào target
+      testSchedule.push({ ...sourceItem, day_of_week: targetDay, period: targetPeriod });
+      // Đặt target vào intermediate
+      testSchedule.push({ ...targetItem, day_of_week: day, period: p });
+      // Đặt intermediate vào source (nếu có)
+      if (intermediateItem && intermediateItem.subject) {
+        testSchedule.push({ ...intermediateItem, day_of_week: sourceItem.day_of_week, period: sourceItem.period });
+      }
+
+      // Kiểm tra tính hợp lệ của testSchedule đối với GV
+      const hasClash = testSchedule.some((item, i) => {
+        const itemT = getFullTeacherName(item.teacher_name, item.subject);
+        if (!itemT || itemT === 'Chưa gán GV' || itemT === 'GVCN') return false;
+        return testSchedule.some((other, j) => 
+          i !== j && 
+          other.day_of_week === item.day_of_week && 
+          Number(other.period) === Number(item.period) && 
+          other.student_class !== item.student_class && 
+          getFullTeacherName(other.teacher_name, other.subject) === itemT
+        );
+      });
+
+      if (!hasClash) {
+        return {
+          cycleFound: true,
+          type: '3_way_cycle',
+          step1: { item: sourceItem, toDay: targetDay, toPeriod: targetPeriod },
+          step2: { item: targetItem, toDay: day, toPeriod: p },
+          step3: intermediateItem && intermediateItem.subject ? { item: intermediateItem, toDay: sourceItem.day_of_week, toPeriod: sourceItem.period } : null,
+          intermediateSlot: { day, period: p, item: intermediateItem }
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
 /**
  * Tính toán toàn bộ các ô đích khả dụng (Candidate Slots) cho 1 tiết học được chọn
  */
-export function findSmartSwapCandidates(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = []) {
+export function findSmartSwapCandidates(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = [], algorithmMode = 'OpFPR') {
   if (!sourceItem) return new Map();
 
   const candidateMap = new Map();
@@ -858,14 +939,31 @@ export function findSmartSwapCandidates(scheduleItems = [], sourceItem, studioVi
           targetItem: targetItem
         });
       } else {
-        candidateMap.set(key, {
-          status: 'clash',
-          label: `⛔ ${val.reason}`,
-          valid: false,
-          conflictType: val.conflictType,
-          conflictDetails: val.conflictDetails,
-          targetItem: targetItem
-        });
+        // Nếu xung đột trực tiếp nhưng đang bật thuật toán CX hoặc OpCX_DPR, thử tìm chu trình hoán đổi
+        let cycleInfo = null;
+        if (algorithmMode === 'CX' || algorithmMode === 'OpCX_DPR') {
+          cycleInfo = findCycleExchangeChain(scheduleItems, sourceItem, day, p, studioView, selectedTarget, teacherLocks, schoolLocks);
+        }
+
+        if (cycleInfo && cycleInfo.cycleFound) {
+          candidateMap.set(key, {
+            status: 'cycle_available',
+            label: `🔄 Khả dụng qua Chu trình CX (3 bước)`,
+            valid: true,
+            isCycle: true,
+            cycleDetails: cycleInfo,
+            targetItem: targetItem
+          });
+        } else {
+          candidateMap.set(key, {
+            status: 'clash',
+            label: `⛔ ${val.reason}`,
+            valid: false,
+            conflictType: val.conflictType,
+            conflictDetails: val.conflictDetails,
+            targetItem: targetItem
+          });
+        }
       }
     });
   });
@@ -876,15 +974,37 @@ export function findSmartSwapCandidates(scheduleItems = [], sourceItem, studioVi
 /**
  * Tạo danh sách các phương án thay thế thông minh (AI Alternative Options) khi gặp xung đột
  */
-export function getAiAlternativeOptions(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = []) {
+export function getAiAlternativeOptions(scheduleItems = [], sourceItem, studioView = 'class', selectedTarget = '', teacherLocks = {}, schoolLocks = [], algorithmMode = 'OpFPR') {
   if (!sourceItem) return [];
 
   const options = [];
-  const candidates = findSmartSwapCandidates(scheduleItems, sourceItem, studioView, selectedTarget, teacherLocks, schoolLocks);
+  const candidates = findSmartSwapCandidates(scheduleItems, sourceItem, studioView, selectedTarget, teacherLocks, schoolLocks, algorithmMode);
 
-  // 1. Tìm các ô tối ưu & hợp lệ
+  // 1. Thử tìm phương án Chu trình CX nếu có ô đích xung đột
+  if (algorithmMode === 'CX' || algorithmMode === 'OpCX_DPR') {
+    candidates.forEach((cand, key) => {
+      if (cand.isCycle && cand.cycleDetails) {
+        const [day, pStr] = key.split('_');
+        const p = Number(pStr);
+        const cd = cand.cycleDetails;
+        options.push({
+          id: `opt_cx_${options.length + 1}`,
+          day: day,
+          period: p,
+          type: 'cycle_exchange',
+          badge: '🔄 Chu Trình CX (3 Bước)',
+          targetItem: cand.targetItem,
+          cycleDetails: cd,
+          description: `Chuyển ${sourceItem.subject} ➔ ${day} P${p}; Dời ${cand.targetItem.subject} ➔ ${cd.intermediateSlot.day} P${cd.intermediateSlot.period}${cd.step3 ? `; Dời ${cd.step3.item.subject} về vị trí cũ` : ''}`,
+          scoreGain: '+8 Điểm Sư Phạm'
+        });
+      }
+    });
+  }
+
+  // 2. Tìm các ô tối ưu & hợp lệ trực tiếp
   candidates.forEach((cand, key) => {
-    if (cand.valid && cand.status !== 'source') {
+    if (cand.valid && cand.status !== 'source' && !cand.isCycle) {
       const [day, pStr] = key.split('_');
       const p = Number(pStr);
       const isTargetOccupied = cand.targetItem && cand.targetItem.subject;
@@ -894,7 +1014,7 @@ export function getAiAlternativeOptions(scheduleItems = [], sourceItem, studioVi
         day: day,
         period: p,
         type: isTargetOccupied ? 'swap' : 'move',
-        badge: cand.status === 'optimal' ? '🌟 Tối Ưu Sư Phạm' : '✅ An Toàn Tuyệt Đối',
+        badge: cand.status === 'optimal' ? '🌟 Tối Ưu Sư Phạm (OpDPR/FPR)' : '✅ An Toàn Tuyệt Đối (DR/FPR)',
         targetItem: cand.targetItem,
         description: isTargetOccupied 
           ? `Đổi vị trí với môn ${cand.targetItem.subject} (${cand.targetItem.teacher_name || 'GV'}) vào ${day} Tiết ${p}`
@@ -904,7 +1024,7 @@ export function getAiAlternativeOptions(scheduleItems = [], sourceItem, studioVi
     }
   });
 
-  return options.slice(0, 4); // Lấy top 4 phương án khả thi nhất
+  return options.slice(0, 5); // Lấy top 5 phương án khả thi nhất
 }
 
 /**

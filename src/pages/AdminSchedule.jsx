@@ -42,7 +42,8 @@ import {
   exportDraftTimetableToExcel,
   generateRotationGroups,
   calculateTeacherWorkloadStatistics,
-  exportWorkloadReportToExcel
+  exportWorkloadReportToExcel,
+  TIMETABLE_TUNE_ALGORITHMS
 } from '../utils/proTimetableSolver';
 
 export default function AdminSchedule() {
@@ -126,6 +127,7 @@ export default function AdminSchedule() {
   const [draggingSlot, setDraggingSlot] = useState(null);
   const [conflictModalData, setConflictModalData] = useState(null);
   const [pinnedSlots, setPinnedSlots] = useState([]);
+  const [tuningAlgorithm, setTuningAlgorithm] = useState('OpFPR');
 
   // Manual Slot Assignment & Pinning State
   const [showManualAssignModal, setShowManualAssignModal] = useState(false);
@@ -1129,14 +1131,15 @@ export default function AdminSchedule() {
     );
 
     if (!validation.valid) {
-      // Tự động sinh các phương án thay thế thông minh (AI Alternative Options)
+      // Tự động sinh các phương án thay thế thông minh (AI Alternative Options) theo thuật toán đã chọn
       const alternatives = getAiAlternativeOptions(
         draftSchedule,
         sourceSlot.item,
         studioView,
         studioView === 'class' ? studioSelectedClass : studioSelectedTeacher,
         teacherLocks,
-        schoolLocks
+        schoolLocks,
+        tuningAlgorithm
       );
 
       setConflictModalData({
@@ -1354,6 +1357,12 @@ export default function AdminSchedule() {
         setSwapSourceSlot(null);
         return;
       }
+      const candMap = findSmartSwapCandidates(draftSchedule, swapSourceSlot.item, studioView, activeTarget, teacherLocks, schoolLocks, tuningAlgorithm);
+      const cand = candMap.get(`${day}_${period}`);
+      if (cand && cand.isCycle && cand.cycleDetails) {
+        handleApplyCycleExchange(cand.cycleDetails);
+        return;
+      }
       executeStudioSwap(swapSourceSlot, day, period, currentItem);
     }
   };
@@ -1389,11 +1398,74 @@ export default function AdminSchedule() {
       setDraggingSlot(null);
       return;
     }
+    const activeTarget = studioView === 'class' ? studioSelectedClass : studioSelectedTeacher;
+    const candMap = findSmartSwapCandidates(draftSchedule, source.item, studioView, activeTarget, teacherLocks, schoolLocks, tuningAlgorithm);
+    const cand = candMap.get(`${day}_${period}`);
+    if (cand && cand.isCycle && cand.cycleDetails) {
+      handleApplyCycleExchange(cand.cycleDetails);
+      return;
+    }
     executeStudioSwap(source, day, period, currentItem);
   };
 
+  const handleApplyCycleExchange = (cycleDetails) => {
+    if (!cycleDetails) return;
+    const { step1, step2, step3 } = cycleDetails;
+
+    let newSchedule = draftSchedule.filter(s => {
+      const isStep1Src = s.student_class === step1.item.student_class && s.day_of_week === step1.item.day_of_week && Number(s.period) === Number(step1.item.period);
+      const isStep2Src = s.student_class === step2.item.student_class && s.day_of_week === step2.item.day_of_week && Number(s.period) === Number(step2.item.period);
+      const isStep3Src = step3 && step3.item && s.student_class === step3.item.student_class && s.day_of_week === step3.item.day_of_week && Number(s.period) === Number(step3.item.period);
+      return !isStep1Src && !isStep2Src && !isStep3Src;
+    });
+
+    // Bước 1: Tiết nguồn -> Ô đích
+    newSchedule.push({
+      ...step1.item,
+      day_of_week: step1.toDay,
+      period: step1.toPeriod
+    });
+
+    // Bước 2: Tiết đích -> Ô trung gian
+    newSchedule.push({
+      ...step2.item,
+      day_of_week: step2.toDay,
+      period: step2.toPeriod
+    });
+
+    // Bước 3: Tiết trung gian -> Ô nguồn (nếu có)
+    if (step3 && step3.item && step3.item.subject) {
+      newSchedule.push({
+        ...step3.item,
+        day_of_week: step3.toDay,
+        period: step3.toPeriod
+      });
+    }
+
+    setDraftSchedule(newSchedule);
+    localStorage.setItem('cbq_draft_timetable', JSON.stringify(newSchedule));
+    setSwapSourceSlot(null);
+    setDraggingSlot(null);
+    setConflictModalData(null);
+
+    const diag = generateAiDiagnostics(newSchedule, teachingAssignments, teacherLocks);
+    setSolverResult(prev => ({
+      ...prev,
+      qualityScore: diag.qualityScore,
+      clashCount: diag.clashCount,
+      totalGaps: diag.totalGaps,
+      teacherClashList: diag.teacherClashList,
+      teachersWithGaps: diag.teachersWithGaps
+    }));
+  };
+
   const handleApplyAlternativeOption = (opt) => {
-    if (!opt || !conflictModalData?.sourceItem) return;
+    if (!opt) return;
+    if (opt.type === 'cycle_exchange' && opt.cycleDetails) {
+      handleApplyCycleExchange(opt.cycleDetails);
+      return;
+    }
+    if (!conflictModalData?.sourceItem) return;
     const sourceSlot = {
       item: conflictModalData.sourceItem,
       day_of_week: conflictModalData.sourceItem.day_of_week,
@@ -3871,6 +3943,36 @@ export default function AdminSchedule() {
                       </select>
                     </div>
                   )}
+
+                  {/* TUNING ALGORITHM SELECTOR (CX, FPR, DPR, DR, OpFPR, OpDPR/FPR, OpCX/DPR) */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#f0fdf4', padding: '4px 10px', borderRadius: '10px', border: '1.5px solid #86efac' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#166534', fontWeight: 'bold', fontSize: '12.5px' }}>
+                      <Zap size={14} color="#16a34a" />
+                      <span>Thuật toán:</span>
+                    </div>
+                    <select
+                      value={tuningAlgorithm}
+                      onChange={e => setTuningAlgorithm(e.target.value)}
+                      title={TIMETABLE_TUNE_ALGORITHMS.find(a => a.id === tuningAlgorithm)?.desc}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '8px',
+                        border: '1.5px solid #16a34a',
+                        fontWeight: 'bold',
+                        fontSize: '12.5px',
+                        outline: 'none',
+                        color: '#14532d',
+                        backgroundColor: '#ffffff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {TIMETABLE_TUNE_ALGORITHMS.map(algo => (
+                        <option key={algo.id} value={algo.id}>
+                          {algo.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* STUDIO ACTIONS */}
@@ -3947,10 +4049,12 @@ export default function AdminSchedule() {
                   studioView,
                   activeStudioTarget,
                   teacherLocks,
-                  schoolLocks
+                  schoolLocks,
+                  tuningAlgorithm
                 );
                 const optimalCount = Array.from(candidateMap.values()).filter(c => c.status === 'optimal').length;
-                const validCount = Array.from(candidateMap.values()).filter(c => c.valid && c.status !== 'source').length;
+                const cycleCount = Array.from(candidateMap.values()).filter(c => c.status === 'cycle_available').length;
+                const validCount = Array.from(candidateMap.values()).filter(c => c.valid && c.status !== 'source' && c.status !== 'cycle_available').length;
 
                 return (
                   <div style={{ backgroundColor: '#fefce8', padding: '14px 20px', borderRadius: '14px', border: '1.5px solid #fde047', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 4px 15px rgba(234, 179, 8, 0.1)' }}>
@@ -3964,7 +4068,7 @@ export default function AdminSchedule() {
                             👉 Đang kéo/chọn tiết: <strong>{swapSourceSlot.item.subject} ({swapSourceSlot.item.teacher_name})</strong> - {swapSourceSlot.day_of_week} Tiết {swapSourceSlot.period} ({swapSourceSlot.student_class}).
                           </span>
                           <span style={{ fontSize: '12.5px', color: '#92400e', display: 'block', marginTop: '2px' }}>
-                            💡 Thả hoặc Nhấp vào các ô màu <strong>Xanh</strong> hoặc <strong>Vàng sao</strong> để đổi an toàn không bị trùng lịch.
+                            💡 Thả hoặc Nhấp vào các ô màu <strong>Xanh</strong>, <strong>Vàng sao</strong> hoặc <strong>Tím CX</strong> để đổi an toàn không bị trùng lịch. (Đang dùng: <strong>{TIMETABLE_TUNE_ALGORITHMS.find(a => a.id === tuningAlgorithm)?.name}</strong>)
                           </span>
                         </div>
                       </div>
@@ -3983,6 +4087,12 @@ export default function AdminSchedule() {
                         <span style={{ width: '12px', height: '12px', backgroundColor: '#d1fae5', border: '1.5px solid #10b981', borderRadius: '3px' }}></span>
                         🌟 Vị trí Vàng ({optimalCount} ô tối ưu sư phạm)
                       </span>
+                      {cycleCount > 0 && (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#6b21a8', fontWeight: 'bold' }}>
+                          <span style={{ width: '12px', height: '12px', backgroundColor: '#f3e8ff', border: '1.5px solid #a855f7', borderRadius: '3px' }}></span>
+                          🔄 Chu trình CX ({cycleCount} ô mở khóa đa bước)
+                        </span>
+                      )}
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#166534', fontWeight: 'bold' }}>
                         <span style={{ width: '12px', height: '12px', backgroundColor: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '3px' }}></span>
                         ✅ Hợp lệ ({validCount} ô khả dụng)
@@ -4006,7 +4116,8 @@ export default function AdminSchedule() {
                       studioView,
                       activeStudioTarget,
                       teacherLocks,
-                      schoolLocks
+                      schoolLocks,
+                      tuningAlgorithm
                     )
                   : new Map();
 
@@ -4034,6 +4145,10 @@ export default function AdminSchedule() {
                       cellBg = '#ecfdf5';
                       cellBorder = '2px solid #10b981';
                       cellShadow = '0 0 10px rgba(16, 185, 129, 0.25)';
+                    } else if (cand.status === 'cycle_available') {
+                      cellBg = '#faf5ff';
+                      cellBorder = '2px dashed #a855f7';
+                      cellShadow = '0 0 10px rgba(168, 85, 247, 0.25)';
                     } else if (cand.status === 'valid') {
                       cellBg = '#f0fdf4';
                       cellBorder = '1.5px solid #86efac';
@@ -4067,6 +4182,11 @@ export default function AdminSchedule() {
                       {cand && cand.status === 'optimal' && (
                         <div style={{ position: 'absolute', top: 3, right: 4, fontSize: '10px', color: '#047857', fontWeight: 'bold', zIndex: 2 }}>
                           🌟 Tối ưu
+                        </div>
+                      )}
+                      {cand && cand.status === 'cycle_available' && (
+                        <div style={{ position: 'absolute', top: 3, right: 4, fontSize: '10px', color: '#7e22ce', fontWeight: 'bold', zIndex: 2 }}>
+                          🔄 CX 3 Bước
                         </div>
                       )}
                       {cand && cand.status === 'clash' && (
