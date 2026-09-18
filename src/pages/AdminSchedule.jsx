@@ -2808,13 +2808,13 @@ export default function AdminSchedule() {
                   </div>
 
                   {/* TEACHER GAPS DETAILS IF ANY */}
-                  {solverResult.teachersWithGaps && solverResult.teachersWithGaps.length > 0 && (
+                  {solverResult?.teachersWithGaps && (solverResult.teachersWithGaps || []).length > 0 && (
                     <div style={{ backgroundColor: '#ffffff', padding: '18px 22px', borderRadius: '14px', border: '1px solid #fed7aa' }}>
                       <h4 style={{ margin: '0 0 10px 0', color: '#9a3412', fontSize: '14.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Info size={18} color="#ea580c" /> Danh sách Giáo viên có tiết lủng ({solverResult.teachersWithGaps.length} GV):
+                        <Info size={18} color="#ea580c" /> Danh sách Giáo viên có tiết lủng ({(solverResult.teachersWithGaps || []).length} GV):
                       </h4>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {solverResult.teachersWithGaps.map(g => (
+                        {(solverResult.teachersWithGaps || []).map(g => (
                           <span key={g.name} style={{ backgroundColor: '#fff7ed', color: '#c2410c', border: '1px solid #ffedd5', padding: '4px 10px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold' }}>
                             {g.name}: {g.gaps} tiết lủng
                           </span>

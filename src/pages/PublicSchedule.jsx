@@ -837,8 +837,8 @@ export default function PublicSchedule() {
   };
 
   const currentSched = getCurrentScheduleObj();
-  const currentMonthData = aggregateMonthlyPlanFromWeeks(selectedMonthIdx + 1, schoolWeeks, schedules);
-  const currentYearData = aggregateYearlyPlanFromMonths(schoolWeeks, schedules);
+  const currentMonthData = aggregateMonthlyPlanFromWeeks(selectedMonthIdx + 1, null, schedules);
+  const currentYearData = aggregateYearlyPlanFromMonths(schedules);
 
   return (
     <div style={styles.container}>
@@ -1158,13 +1158,13 @@ export default function PublicSchedule() {
                   </tr>
                 </thead>
                 <tbody>
-                  {currentYearData.allMonths.map((m, idx) => {
-                    const weekCount = m.weeks.length;
+                  {(currentYearData?.allMonths || []).map((m, idx) => {
+                    const weekCount = (m?.weeks || []).length;
                     const weekRangeStr = weekCount > 0 ? `Tuần ${m.weeks[0].week_number} đến Tuần ${m.weeks[weekCount - 1].week_number}` : '';
 
-                    const monthSummary = m.weeks.map(w => {
-                      const activeCount = (w.day_items || []).filter(i => i.content && !i.content.includes('Nghỉ')).length;
-                      return `• Tuần ${String(w.week_number).padStart(2, '0')}: ${activeCount} mục công việc chính`;
+                    const monthSummary = (m?.weeks || []).map(w => {
+                      const activeCount = (w?.day_items || []).filter(i => i.content && !i.content.includes('Nghỉ')).length;
+                      return `• Tuần ${String(w?.week_number || '').padStart(2, '0')}: ${activeCount} mục công việc chính`;
                     }).join('\n');
 
                     return (
@@ -2991,7 +2991,7 @@ export default function PublicSchedule() {
                             paddingTop: '10px'
                           }}>
                             <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: '600' }}>
-                              Tổng tuần: {t.lessons.length} tiết
+                              Tổng tuần: {(t?.lessons || []).length} tiết
                             </span>
 
                             <div style={{ display: 'flex', gap: '6px' }}>
@@ -3057,7 +3057,7 @@ export default function PublicSchedule() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredFreeTeachers.map((t, idx) => {
+                    {(filteredFreeTeachers || []).map((t, idx) => {
                       const primaryTheme = getSubjectTheme(t.primarySubject);
                       return (
                         <tr key={t.name} style={{ backgroundColor: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
@@ -3091,7 +3091,7 @@ export default function PublicSchedule() {
                             </span>
                           </td>
                           {DAYS.map(d => {
-                            const dayLessons = t.lessons.filter(l => l.day_of_week === d);
+                            const dayLessons = (t?.lessons || []).filter(l => l.day_of_week === d);
                             const morningLessons = dayLessons.filter(l => Number(l.period) >= 1 && Number(l.period) <= 5);
                             const afternoonLessons = dayLessons.filter(l => Number(l.period) >= 6 && Number(l.period) <= 10);
                             const isOffAllDay = dayLessons.length === 0;
@@ -3139,7 +3139,7 @@ export default function PublicSchedule() {
                             );
                           })}
                           <td style={{ ...styles.td, textAlign: 'center', fontWeight: '900', color: '#0f172a' }}>
-                            {t.lessons.length}
+                            {(t?.lessons || []).length}
                           </td>
                         </tr>
                       );

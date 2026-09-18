@@ -230,29 +230,49 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
 /**
  * Aggregates Monthly Plan from 35 Weeks Schedule Data
  */
-export function aggregateMonthlyPlanFromWeeks(monthNo, year, dbSchedules = []) {
+export function aggregateMonthlyPlanFromWeeks(monthParam, yearParam, dbSchedules = []) {
+  const schoolMonths = getSchoolMonths2026();
+  let targetMonthObj = null;
+
+  if (typeof monthParam === 'object' && monthParam !== null) {
+    targetMonthObj = monthParam;
+  } else if (typeof monthParam === 'number') {
+    if (monthParam >= 1 && monthParam <= schoolMonths.length && (yearParam === undefined || !Number.isInteger(yearParam))) {
+      targetMonthObj = schoolMonths[monthParam - 1];
+    } else {
+      targetMonthObj = schoolMonths.find(m => m.month === monthParam && (!yearParam || typeof yearParam !== 'number' || m.year === yearParam)) || schoolMonths[0];
+    }
+  } else {
+    targetMonthObj = schoolMonths[0];
+  }
+
+  const mNo = targetMonthObj?.month || 9;
+  const yNo = targetMonthObj?.year || 2026;
   const allWeeks = getSchoolWeeks2026();
   const pad = (n) => String(n).padStart(2, '0');
 
-  // Filter weeks that fall in this month
+  const actualSchedules = Array.isArray(dbSchedules) 
+    ? dbSchedules 
+    : (Array.isArray(yearParam) ? yearParam : []);
+
   const weeksInMonth = allWeeks.filter(w => {
-    const m = w.monday.getMonth() + 1;
-    const s = w.sunday.getMonth() + 1;
-    const y1 = w.monday.getFullYear();
-    const y2 = w.sunday.getFullYear();
-    return (m === monthNo && y1 === year) || (s === monthNo && y2 === year);
+    const m = new Date(w.monday).getMonth() + 1;
+    const s = new Date(w.sunday).getMonth() + 1;
+    const y1 = new Date(w.monday).getFullYear();
+    const y2 = new Date(w.sunday).getFullYear();
+    return (m === mNo && y1 === yNo) || (s === mNo && y2 === yNo);
   });
 
-  const weekPlans = weeksInMonth.map(w => getScheduleDataForWeek(w.week_number, dbSchedules));
+  const weekPlans = weeksInMonth.map(w => getScheduleDataForWeek(w.week_number, actualSchedules));
 
   return {
-    month: monthNo,
-    year: year,
-    monthLabel: `Tháng ${pad(monthNo)}/${year}`,
-    title: `KẾ HOẠCH CÔNG TÁC THÁNG ${pad(monthNo)} - NĂM HỌC 2026-2027`,
+    month: mNo,
+    year: yNo,
+    monthLabel: `Tháng ${pad(mNo)}/${yNo}`,
+    title: `KẾ HOẠCH CÔNG TÁC THÁNG ${pad(mNo)} - NĂM HỌC 2026-2027`,
     subtitle: `TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK`,
-    release_date_str: `Tân An, ngày 01 tháng ${pad(monthNo)} năm ${year}`,
-    weeks: weekPlans,
+    release_date_str: `Tân An, ngày 01 tháng ${pad(mNo)} năm ${yNo}`,
+    weeks: weekPlans || [],
     note: '*Lưu ý: Các tổ chuyên môn, đoàn thể và bộ phận chủ động căn cứ Kế hoạch tháng để triển khai Lịch công tác tuần cụ thể./.',
     recipients: 'Nơi nhận:\n- BGH (để chỉ đạo);\n- Các Tổ chuyên môn & Đoàn thể;\n- Đăng Web, Zalo trường;\n- Lưu: VT.',
     signer_name: 'Lê Thị Thảo',
@@ -264,8 +284,13 @@ export function aggregateMonthlyPlanFromWeeks(monthNo, year, dbSchedules = []) {
  * Aggregates Yearly Plan for SY 2026-2027 from Monthly Plans
  */
 export function aggregateYearlyPlanFromMonths(dbSchedules = []) {
+  let actualSchedules = Array.isArray(dbSchedules) ? dbSchedules : [];
+  if (arguments.length >= 2 && Array.isArray(arguments[1])) {
+    actualSchedules = arguments[1];
+  }
+
   const months = getSchoolMonths2026();
-  const monthlyPlans = months.map(m => aggregateMonthlyPlanFromWeeks(m.month, m.year, dbSchedules));
+  const monthlyPlans = months.map(m => aggregateMonthlyPlanFromWeeks(m.month, m.year, actualSchedules));
 
   const term1 = monthlyPlans.filter(m => m.month >= 9 || m.month === 1);
   const term2 = monthlyPlans.filter(m => m.month >= 2 && m.month <= 5);
@@ -275,9 +300,9 @@ export function aggregateYearlyPlanFromMonths(dbSchedules = []) {
     title: 'KẾ HOẠCH CÔNG TÁC TỔNG THỂ NĂM HỌC 2026 - 2027',
     subtitle: 'TRƯỜNG THPT CAO BÁ QUÁT - PHƯỜNG TÂN AN - TỈNH ĐẮK LẮK',
     release_date_str: 'Tân An, tháng 09 năm 2026',
-    term1Months: term1,
-    term2Months: term2,
-    allMonths: monthlyPlans,
+    term1Months: term1 || [],
+    term2Months: term2 || [],
+    allMonths: monthlyPlans || [],
     note: '*Lưu ý: Kế hoạch công tác năm học được cụ thể hóa chi tiết theo từng Kế hoạch Tháng và Lịch làm việc Tuần./.',
     recipients: 'Nơi nhận:\n- Sở GD&ĐT Đắk Lắk (để b/c);\n- BGH, Hội đồng Trường;\n- Các Tổ chuyên môn & Các đoàn thể;\n- Lưu: VT, TK.',
     signer_name: 'Lê Thị Thảo',

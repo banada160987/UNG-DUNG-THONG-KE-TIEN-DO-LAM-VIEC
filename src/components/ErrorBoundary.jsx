@@ -1,10 +1,10 @@
 import React from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Trash2 } from 'lucide-react';
 
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, error: null, errorInfo: null, showDetails: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -13,6 +13,7 @@ export default class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
+    this.setState({ errorInfo });
     
     // Detect Vercel chunk hash update / dynamic import failure
     const isChunkError = 
@@ -38,6 +39,28 @@ export default class ErrorBoundary extends React.Component {
     window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
   };
 
+  handleClearCacheAndReload = () => {
+    try {
+      // Clear relevant local storage items that might be corrupted
+      const keysToClear = [
+        'cbq_master_timetable',
+        'cbq_draft_timetable',
+        'cbq_rotation_group_a',
+        'cbq_rotation_group_b',
+        'cbq_school_locks',
+        'cbq_teacher_locks',
+        'cbq_active_rotation_cycle',
+        'cbq_cycle_1_timetable',
+        'cbq_cycle_2_timetable'
+      ];
+      keysToClear.forEach(k => localStorage.removeItem(k));
+      sessionStorage.clear();
+    } catch (e) {
+      console.warn("Lỗi xóa cache:", e);
+    }
+    this.handleReload();
+  };
+
   render() {
     if (this.state.hasError) {
       const isChunkError = 
@@ -57,7 +80,7 @@ export default class ErrorBoundary extends React.Component {
         }}>
           <div style={{
             background: 'white',
-            maxWidth: '500px',
+            maxWidth: '560px',
             width: '100%',
             padding: '32px',
             borderRadius: '16px',
@@ -75,25 +98,75 @@ export default class ErrorBoundary extends React.Component {
                 : (this.state.error?.message || 'Trình duyệt gặp lỗi khi xử lý dữ liệu.')
               }
             </p>
-            <button
-              onClick={this.handleReload}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '11px 24px',
-                background: '#2563eb',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-              }}
-            >
-              <RefreshCw size={18} /> Cập nhật phiên bản mới & Tải lại
-            </button>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={this.handleReload}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '11px 20px',
+                  background: '#2563eb',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                }}
+              >
+                <RefreshCw size={17} /> Tải lại trang
+              </button>
+
+              <button
+                onClick={this.handleClearCacheAndReload}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '11px 20px',
+                  background: '#f1f5f9',
+                  color: '#dc2626',
+                  border: '1px solid #fecaca',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '13.5px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Trash2 size={16} /> Xóa Cache & Tải Lại
+              </button>
+            </div>
+
+            {/* ERROR STACK DETAILS TOGGLE */}
+            {this.state.error && (
+              <div style={{ marginTop: '20px', textAlign: 'left' }}>
+                <button
+                  type="button"
+                  onClick={() => this.setState(prev => ({ showDetails: !prev.showDetails }))}
+                  style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '12px', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                >
+                  {this.state.showDetails ? 'Ẩn chi tiết kỹ thuật' : 'Xem chi tiết kỹ thuật'}
+                </button>
+                {this.state.showDetails && (
+                  <pre style={{
+                    marginTop: '8px',
+                    padding: '12px',
+                    borderRadius: '8px',
+                    background: '#f1f5f9',
+                    color: '#0f172a',
+                    fontSize: '11px',
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-all'
+                  }}>
+                    {String(this.state.error?.stack || this.state.error?.message || this.state.error)}
+                  </pre>
+                )}
+              </div>
+            )}
           </div>
         </div>
       );
