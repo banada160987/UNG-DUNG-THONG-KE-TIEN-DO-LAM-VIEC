@@ -1567,11 +1567,13 @@ export function exportWorkloadReportToExcel(workloadStats = [], title = 'BaoCao_
   XLSX.writeFile(wb, `${title}_${Date.now()}.xlsx`);
 }
 
+export const generateTeacherWorkloadStats = calculateTeacherWorkloadStatistics;
+
 /**
  * Tính toán Chỉ số Hạnh phúc Thời khóa biểu (Teacher Schedule Happiness Index - SHI 0-100)
  */
 export function calculateTeacherHappinessMetrics(scheduleItems = [], teacherAssignments = [], teacherPreferences = {}) {
-  const workloadStats = generateTeacherWorkloadStats(scheduleItems, teacherAssignments);
+  const workloadStats = calculateTeacherWorkloadStatistics(scheduleItems, teacherAssignments);
   
   return workloadStats.map(stat => {
     const tName = stat.teacher;
