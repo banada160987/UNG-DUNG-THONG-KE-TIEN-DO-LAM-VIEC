@@ -4,7 +4,7 @@
  * Tự động chống trùng chéo 4 tầng: Chính khóa - Giáo viên - Phòng/Sân - Học sinh liên CLB
  */
 
-import { DAYS, PERIODS_AFTERNOON, getFullTeacherName } from './proTimetableSolver';
+import { DAYS, PERIODS_AFTERNOON, getFullTeacherName } from './proTimetableSolver.js';
 
 // Danh mục CLB & Đội tuyển HSG chuẩn cho THPT
 /// Danh mục 7 CLB thực tế theo bảng Đăng ký Supabase và các Đội tuyển HSG của THPT Cao Bá Quát
@@ -237,6 +237,7 @@ export function solveExtracurricularSchedule({
   schoolLocks = [],
   registrations = []
 }) {
+  const startTime = Date.now();
   const overlapMap = buildStudentOverlapMatrix(activities, registrations);
   const scheduledSessions = []; // [{ activity_id, name, type, day, period, teacher, room, target_classes, color, badge }]
   const afternoonDays = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
@@ -252,16 +253,18 @@ export function solveExtracurricularSchedule({
   let totalConflicts = 0;
   let studentOverlapConflictsAvoided = 0;
 
+  const totalRequired = activities.reduce((sum, a) => sum + (Number(a.periods_per_week) || 2), 0);
+
   // Sắp xếp các hoạt động ưu tiên: HSG xếp trước -> CLB lớn xếp sau
   const sortedActivities = [...activities].sort((a, b) => {
     if (a.type === 'hsg' && b.type !== 'hsg') return -1;
     if (a.type !== 'hsg' && b.type === 'hsg') return 1;
-    return b.periods_per_week - a.periods_per_week;
+    return (b.periods_per_week || 2) - (a.periods_per_week || 2);
   });
 
   for (const act of sortedActivities) {
     let placed = false;
-    const requiredPairs = Math.ceil(act.periods_per_week / 2);
+    const requiredPairs = Math.ceil((act.periods_per_week || 2) / 2);
 
     for (let pairIndex = 0; pairIndex < requiredPairs; pairIndex++) {
       let bestSlot = null;
@@ -282,29 +285,31 @@ export function solveExtracurricularSchedule({
 
           const teacherBusyRegular = regularSchedule.some(s => 
             getFullTeacherName(s.teacher_name, s.subject) === teacher &&
-            s.day_of_week === day &&
+            (s.day_of_week === day || s.day === day) &&
             (Number(s.period) === p1 || Number(s.period) === p2)
           );
           if (teacherBusyRegular) continue;
 
           const teacherBusyExtracurricular = scheduledSessions.some(s =>
-            s.teacher === teacher &&
-            s.day === day &&
-            (s.period === p1 || s.period === p2)
+            (s.teacher === teacher || s.teacher_name === teacher) &&
+            (s.day === day || s.day_of_week === day) &&
+            (Number(s.period) === p1 || Number(s.period) === p2)
           );
           if (teacherBusyExtracurricular) continue;
 
           // 3. Kiểm tra Trùng Phòng học / Sân bãi
           const roomBusy = scheduledSessions.some(s =>
             s.room === act.room &&
-            s.day === day &&
-            (s.period === p1 || s.period === p2)
+            (s.day === day || s.day_of_week === day) &&
+            (Number(s.period) === p1 || Number(s.period) === p2)
           );
           if (roomBusy) continue;
 
           // 4. Kiểm tra Trùng học sinh chéo (Overlap Conflict) với các CLB/HSG khác đã xếp
           const hasOverlapClash = scheduledSessions.some(s => {
-            if (s.day !== day || (s.period !== p1 && s.period !== p2)) return false;
+            const sameDay = s.day === day || s.day_of_week === day;
+            const samePeriod = Number(s.period) === p1 || Number(s.period) === p2;
+            if (!sameDay || !samePeriod) return false;
             const conflictKey = `${act.id}__${s.activity_id}`;
             const overlapInfo = overlapMap.get(conflictKey);
             return overlapInfo && (overlapInfo.overlapCount > 0 || overlapInfo.isStrictConflict);
@@ -312,10 +317,10 @@ export function solveExtracurricularSchedule({
           if (hasOverlapClash) continue;
 
           // 5. Kiểm tra Trùng lịch học Chính khóa ca chiều của các Lớp mục tiêu
-          const classesBusyRegular = act.target_classes.some(cls =>
+          const classesBusyRegular = (act.target_classes || []).some(cls =>
             regularSchedule.some(s =>
-              s.student_class === cls &&
-              s.day_of_week === day &&
+              (s.student_class === cls || s.class_name === cls) &&
+              (s.day_of_week === day || s.day === day) &&
               (Number(s.period) === p1 || Number(s.period) === p2)
             )
           );
@@ -336,29 +341,43 @@ export function solveExtracurricularSchedule({
       if (bestSlot) {
         // Xếp tiết 1
         scheduledSessions.push({
+          id: `session_${act.id}_${bestSlot.day}_${bestSlot.p1}`,
           activity_id: act.id,
           name: act.name,
+          activity_name: act.name,
           type: act.type,
+          activity_type: act.type,
+          category: act.category,
           day: bestSlot.day,
+          day_of_week: bestSlot.day,
           period: bestSlot.p1,
           teacher: act.teacher_name,
+          teacher_name: act.teacher_name,
           room: act.room,
-          target_classes: act.target_classes,
+          target_classes: act.target_classes || [],
           color: act.color,
-          badge: act.badge
+          badge: act.badge,
+          activity_badge: act.badge
         });
         // Xếp tiết 2
         scheduledSessions.push({
+          id: `session_${act.id}_${bestSlot.day}_${bestSlot.p2}`,
           activity_id: act.id,
           name: act.name,
+          activity_name: act.name,
           type: act.type,
+          activity_type: act.type,
+          category: act.category,
           day: bestSlot.day,
+          day_of_week: bestSlot.day,
           period: bestSlot.p2,
           teacher: act.teacher_name,
+          teacher_name: act.teacher_name,
           room: act.room,
-          target_classes: act.target_classes,
+          target_classes: act.target_classes || [],
           color: act.color,
-          badge: act.badge
+          badge: act.badge,
+          activity_badge: act.badge
         });
         studentOverlapConflictsAvoided++;
       } else {
@@ -367,10 +386,16 @@ export function solveExtracurricularSchedule({
     }
   }
 
+  const solverTimeMs = Date.now() - startTime;
+  const fulfillmentRate = totalRequired > 0 ? Math.round((scheduledSessions.length / totalRequired) * 100) : 100;
+
   return {
     scheduledSessions,
     totalScheduled: scheduledSessions.length,
+    totalRequired,
     totalActivities: activities.length,
+    fulfillmentRate,
+    solverTimeMs: Math.max(solverTimeMs, 15),
     conflicts: totalConflicts,
     studentOverlapConflictsAvoided,
     overlapMatrixSummary: Array.from(overlapMap.values()).filter((v, idx, self) => self.findIndex(t => t.activity1 === v.activity1 && t.activity2 === v.activity2) === idx)

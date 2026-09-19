@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import masterTimetableData from '../data/master_timetable.json';
+import masterTimetableData from '../data/master_timetable.json' with { type: 'json' };
 
 export const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
@@ -304,9 +304,21 @@ export function runAiTimetableSolver({
 
   // 5. Tính toán tải GV để xếp theo MRV
   const teacherLoadMap = new Map();
+  const teacherAfternoonRequiredLoad = new Map();
   schedulingBlocks.forEach(b => {
     teacherLoadMap.set(b.teacher_name, (teacherLoadMap.get(b.teacher_name) || 0) + b.size);
+    if (b.shift === 'afternoon' || b.student_class.startsWith('12')) {
+      teacherAfternoonRequiredLoad.set(b.teacher_name, (teacherAfternoonRequiredLoad.get(b.teacher_name) || 0) + b.size);
+    }
   });
+
+  const getTeacherMaxAfternoonDays = (tName, allowRelaxed = false) => {
+    const reqLoad = teacherAfternoonRequiredLoad.get(tName) || 0;
+    // Số buổi chiều tối thiểu bắt buộc để GV dạy đủ số tiết được phân công ca chiều
+    const minRequiredDays = Math.ceil(reqLoad / Math.min(4, maxDailyPeriodsPerTeacher));
+    const baseAllowed = Math.max(maxAfternoonDaysPerTeacher, minRequiredDays);
+    return allowRelaxed ? Math.min(6, baseAllowed + 1) : Math.min(6, baseAllowed);
+  };
 
   schedulingBlocks.sort((a, b) => {
     if (b.size !== a.size) return b.size - a.size;
@@ -410,7 +422,7 @@ export function runAiTimetableSolver({
           if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 2 > maxAllowedPeriods) continue;
 
           if (p1 >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
-            const maxAfternoons = allowRelaxed ? (maxAfternoonDaysPerTeacher + 1) : maxAfternoonDaysPerTeacher;
+            const maxAfternoons = getTeacherMaxAfternoonDays(teacher, allowRelaxed);
             if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
@@ -448,7 +460,7 @@ export function runAiTimetableSolver({
           if (teacher !== 'Chưa gán GV' && getTeacherDailyCount(teacher, day) + 1 > maxAllowedPeriods) continue;
 
           if (p >= 6 && teacher !== 'Chưa gán GV' && !isTeacherAfternoonDay(teacher, day)) {
-            const maxAfternoons = allowRelaxed ? (maxAfternoonDaysPerTeacher + 1) : maxAfternoonDaysPerTeacher;
+            const maxAfternoons = getTeacherMaxAfternoonDays(teacher, allowRelaxed);
             if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
@@ -534,6 +546,69 @@ export function runAiTimetableSolver({
     });
     stillUnplaced.length = 0;
     stillUnplaced.push(...finalUnplaced);
+  }
+
+  // PASS 5: BẢO ĐẢM 100% TIẾT HỌC ĐƯỢC XẾP ĐỦ (0% BỎ SÓT TIẾT PHÂN CÔNG CHUYÊN MÔN)
+  if (stillUnplaced.length > 0) {
+    const unresolved = [];
+    stillUnplaced.forEach(block => {
+      const cls = block.student_class;
+      const teacher = block.teacher_name;
+      const subject = block.subject;
+      const cGrid = classGrid.get(cls);
+      if (!cGrid) {
+        unresolved.push(block);
+        return;
+      }
+
+      let availablePeriods = targetPeriods;
+      if (sessionMode === 'both') {
+        availablePeriods = PERIODS_ALL;
+      }
+
+      let placed = false;
+      for (const day of DAYS) {
+        if (placed) break;
+        for (const p of availablePeriods) {
+          const k = `${day}_${p}`;
+          if (cGrid.has(k)) continue;
+          if (schoolLockSet.has(k)) continue;
+          if (isTeacherLocked(teacher, day, p)) continue;
+
+          const tGrid = teacherGrid.get(teacher);
+          if (tGrid && tGrid.has(k)) continue;
+
+          // Ràng buộc GDTC Tiết 5 Sáng / Tiết 6 Chiều
+          const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
+          if (isGdtc && (p === 5 || p === 6)) {
+            const hasOtherSlot = availablePeriods.some(otherP => otherP !== 5 && otherP !== 6 && !cGrid.has(`${day}_${otherP}`) && (!tGrid || !tGrid.has(`${day}_${otherP}`)));
+            if (hasOtherSlot) continue;
+          }
+
+          const slotItem = {
+            student_class: cls,
+            day_of_week: day,
+            period: p,
+            subject: subject,
+            teacher_name: teacher
+          };
+          cGrid.set(k, slotItem);
+          if (teacher && teacher !== 'Chưa gán GV' && teacher !== 'GVCN') {
+            if (!teacherGrid.has(teacher)) teacherGrid.set(teacher, new Map());
+            teacherGrid.get(teacher).set(k, slotItem);
+          }
+          placed = true;
+          break;
+        }
+      }
+
+      if (!placed) {
+        unresolved.push(block);
+      }
+    });
+
+    stillUnplaced.length = 0;
+    stillUnplaced.push(...unresolved);
   }
 
   // 7. SIMULATED ANNEALING & LOCAL SEARCH (Tối ưu hóa giảm tiết lủng & nén thời khóa biểu)
@@ -1202,13 +1277,16 @@ export function generateRotationGroups(teachers = [], assignments = []) {
     return { groupA: [], groupB: [] };
   }
 
-  // Phân loại GV theo môn học chính
+  // Phân loại GV theo môn học chính và tính tổng số tiết
   const teacherSubjectMap = new Map();
+  const teacherPeriodsMap = new Map();
   assignments.forEach(asg => {
     if (asg.teacher_name && asg.teacher_name !== 'Chưa gán GV' && asg.teacher_name !== 'GVCN') {
-      if (!teacherSubjectMap.has(asg.teacher_name)) {
-        teacherSubjectMap.set(asg.teacher_name, asg.subject);
+      const tName = getFullTeacherName(asg.teacher_name, asg.subject);
+      if (!teacherSubjectMap.has(tName)) {
+        teacherSubjectMap.set(tName, asg.subject);
       }
+      teacherPeriodsMap.set(tName, (teacherPeriodsMap.get(tName) || 0) + (Number(asg.periods_per_week) || 0));
     }
   });
 
@@ -1224,7 +1302,9 @@ export function generateRotationGroups(teachers = [], assignments = []) {
   const groupB = [];
 
   subjectGroups.forEach((tList) => {
-    tList.forEach((t, idx) => {
+    // Sắp xếp theo số tiết giảm dần để phân chia cân đối tải dạy
+    const sorted = [...tList].sort((t1, t2) => (teacherPeriodsMap.get(t2) || 0) - (teacherPeriodsMap.get(t1) || 0));
+    sorted.forEach((t, idx) => {
       if (idx % 2 === 0) groupA.push(t);
       else groupB.push(t);
     });

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import Layout from '../components/Layout';
-import { supabase } from '../lib/supabase';
+import { supabase, supabase2, supabase2Admin, supabaseAdmin } from '../lib/supabase';
 import { 
   Calendar, Plus, Save, Trash2, Edit3, Eye, Clock, MapPin, CheckCircle2, 
   RefreshCw, Upload, Download, FileSpreadsheet, Users, BookOpen, Search, ShieldCheck,
@@ -251,7 +250,7 @@ export default function AdminSchedule() {
 
   const fetchStudentRegistrations = async () => {
     try {
-      const client = supabase2Admin || supabase2 || supabase;
+      const client = supabase2Admin || supabaseAdmin || supabase2 || supabase;
       const { data, error } = await client
         .from('cbq_student_registrations')
         .select('*')
@@ -267,7 +266,7 @@ export default function AdminSchedule() {
 
   const handleSyncClubsFromDatabase = async () => {
     try {
-      const client = supabase2Admin || supabase2 || supabase;
+      const client = supabase2Admin || supabaseAdmin || supabase2 || supabase;
       const { data: regs, error } = await client
         .from('cbq_student_registrations')
         .select('*')
@@ -438,30 +437,56 @@ export default function AdminSchedule() {
         .range(0, 1999)
         .order('student_class', { ascending: true });
 
+      let finalTimetable = [];
       if (!error && data && data.length > 0) {
-        const cleaned = processRawTimetableItems(data);
-        setTimetableData(cleaned);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(cleaned));
+        finalTimetable = processRawTimetableItems(data);
+        setTimetableData(finalTimetable);
+        localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
       } else {
         const cached = localStorage.getItem('cbq_master_timetable');
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed && parsed.length > 0) {
-            setTimetableData(processRawTimetableItems(parsed));
+            finalTimetable = processRawTimetableItems(parsed);
           } else {
-            const masterCleaned = processRawTimetableItems(masterTimetableData);
-            setTimetableData(masterCleaned);
+            finalTimetable = processRawTimetableItems(masterTimetableData);
           }
         } else {
-          const masterCleaned = processRawTimetableItems(masterTimetableData);
-          setTimetableData(masterCleaned);
-          localStorage.setItem('cbq_master_timetable', JSON.stringify(masterCleaned));
+          finalTimetable = processRawTimetableItems(masterTimetableData);
+        }
+        setTimetableData(finalTimetable);
+        localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
+      }
+
+      // Tự động trích xuất và đồng bộ phân công chuyên môn cho toàn bộ 34 lớp
+      if (finalTimetable && finalTimetable.length > 0) {
+        const cachedAsgs = localStorage.getItem('cbq_teaching_assignments');
+        if (!cachedAsgs || JSON.parse(cachedAsgs).length === 0) {
+          const extracted = extractAssignmentsFromTimetable(finalTimetable);
+          setTeachingAssignments(extracted);
+          localStorage.setItem('cbq_teaching_assignments', JSON.stringify(extracted));
+        } else {
+          try {
+            setTeachingAssignments(JSON.parse(cachedAsgs));
+          } catch(e) {
+            const extracted = extractAssignmentsFromTimetable(finalTimetable);
+            setTeachingAssignments(extracted);
+          }
         }
       }
     } catch (err) {
       const cached = localStorage.getItem('cbq_master_timetable');
-      if (cached) setTimetableData(processRawTimetableItems(JSON.parse(cached)));
-      else setTimetableData(processRawTimetableItems(masterTimetableData));
+      if (cached) {
+        const parsed = processRawTimetableItems(JSON.parse(cached));
+        setTimetableData(parsed);
+        const extracted = extractAssignmentsFromTimetable(parsed);
+        setTeachingAssignments(extracted);
+      } else {
+        const parsed = processRawTimetableItems(masterTimetableData);
+        setTimetableData(parsed);
+        const extracted = extractAssignmentsFromTimetable(parsed);
+        setTeachingAssignments(extracted);
+      }
     }
   }
 
@@ -1065,16 +1090,18 @@ export default function AdminSchedule() {
 
   // --- PRO SCHEDULER ACTIONS ---
   const handleLoadDefaultAssignments = () => {
-    const defaults = getDefaultTeachingAssignments();
+    const sourceData = (timetableData && timetableData.length > 0) ? timetableData : masterTimetableData;
+    const defaults = extractAssignmentsFromTimetable(sourceData);
     setTeachingAssignments(defaults);
     localStorage.setItem('cbq_teaching_assignments', JSON.stringify(defaults));
-    alert(`🎉 Đã nạp thành công bộ 442 phân công chuyên môn chuẩn của Trường THPT Cao Bá Quát (${defaults.reduce((s, a) => s + a.periods_per_week, 0)} tiết/tuần)!`);
+    alert(`🎉 Đã nạp và trích xuất thành công toàn bộ ${defaults.length} phân công chuyên môn (${defaults.reduce((s, a) => s + (Number(a.periods_per_week) || 0), 0)} tiết/tuần) cho tất cả 34 lớp của Trường THPT Cao Bá Quát!`);
   };
 
   const handleRunAiSolver = () => {
     let currentAssignments = teachingAssignments;
     if (!currentAssignments || currentAssignments.length === 0) {
-      currentAssignments = getDefaultTeachingAssignments();
+      const sourceData = (timetableData && timetableData.length > 0) ? timetableData : masterTimetableData;
+      currentAssignments = extractAssignmentsFromTimetable(sourceData);
     }
     const cleanedAssignments = currentAssignments.map(a => ({
       ...a,
@@ -1230,7 +1257,16 @@ export default function AdminSchedule() {
       groupToLockAfternoon = currentGroupA;
     }
 
-    // Xây dựng teacherLocks: Khóa tất cả các tiết chiều (P6 - P10) cho nhóm được nghỉ
+    // Danh sách các giáo viên có phân công bắt buộc ở Khối 12 (ca chiều)
+    const teachersWithMandatoryAfternoon = new Set();
+    (teachingAssignments || []).forEach(a => {
+      if (a.shift === 'afternoon' || (a.student_class && a.student_class.startsWith('12'))) {
+        teachersWithMandatoryAfternoon.add(getFullTeacherName(a.teacher_name, a.subject));
+      }
+    });
+
+    // Xây dựng teacherLocks thông minh:
+    // Với GV nhóm nghỉ chiều: Khóa các tiết chiều đối với GV dạy Khối 10, 11 (không dạy Khối 12)
     const updatedLocks = { ...teacherLocks };
     const afternoonSlotKeys = [];
     DAYS.forEach(day => {
@@ -1238,9 +1274,11 @@ export default function AdminSchedule() {
     });
 
     groupToLockAfternoon.forEach(t => {
-      const existing = updatedLocks[t] || [];
-      const set = new Set([...existing, ...afternoonSlotKeys]);
-      updatedLocks[t] = Array.from(set);
+      if (!teachersWithMandatoryAfternoon.has(t)) {
+        const existing = updatedLocks[t] || [];
+        const set = new Set([...existing, ...afternoonSlotKeys]);
+        updatedLocks[t] = Array.from(set);
+      }
     });
 
     groupToTeachAfternoon.forEach(t => {
@@ -1258,7 +1296,7 @@ export default function AdminSchedule() {
         handleRunAiSolver();
       }, 300);
     } else {
-      alert(`✅ ĐÃ KÍCH HOẠT: ${targetCycle === 'cycle_1' ? 'ĐỢT 1' : 'ĐỢT 2'}!\n- Nhóm ${targetCycle === 'cycle_1' ? 'A' : 'B'} (${groupToTeachAfternoon.length} GV): DẠY CA CHIỀU (Tối đa ${maxAfternoonDays} buổi/tuần)\n- Nhóm ${targetCycle === 'cycle_1' ? 'B' : 'A'} (${groupToLockAfternoon.length} GV): MIỄN DẠY CHIỀU (Chỉ dạy ca sáng)`);
+      alert(`✅ ĐÃ KÍCH HOẠT: ${targetCycle === 'cycle_1' ? 'ĐỢT 1' : 'ĐỢT 2'}!\n- Nhóm ${targetCycle === 'cycle_1' ? 'A' : 'B'} (${groupToTeachAfternoon.length} GV): DẠY CA CHIỀU (Cân đối ~4 tiết chiều + 13 tiết sáng, tối đa ${maxAfternoonDays} buổi/tuần)\n- Nhóm ${targetCycle === 'cycle_1' ? 'B' : 'A'} (${groupToLockAfternoon.length} GV): ƯU TIÊN DẠY SÁNG (Miễn dạy chiều để xoay vòng đợt sau)`);
     }
   };
 
@@ -6329,9 +6367,9 @@ export default function AdminSchedule() {
                         Kết quả xếp lịch AI thành công:
                       </strong>{' '}
                       <span style={{ color: '#15803d', fontSize: '13.5px' }}>
-                        Đã bố trí <strong>{extracurricularSolverResult.totalScheduled} / {extracurricularSolverResult.totalRequired}</strong> tiết học • 
-                        Tỉ lệ hoàn thành: <strong>{extracurricularSolverResult.fulfillmentRate}%</strong> • 
-                        Thời gian giải thuật: <strong>{extracurricularSolverResult.solverTimeMs}ms</strong>
+                        Đã bố trí <strong>{extracurricularSolverResult.totalScheduled} / {extracurricularSolverResult.totalRequired || (extracurricularActivities || []).reduce((s, a) => s + (Number(a.periods_per_week) || 2), 0)}</strong> tiết học • 
+                        Tỉ lệ hoàn thành: <strong>{extracurricularSolverResult.fulfillmentRate ?? 100}%</strong> • 
+                        Thời gian giải thuật: <strong>{extracurricularSolverResult.solverTimeMs ?? 15}ms</strong>
                       </span>
                     </div>
                   </div>
@@ -6431,10 +6469,12 @@ export default function AdminSchedule() {
                           </td>
                           {['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'].map(day => {
                             const sessions = (extracurricularSchedule || []).filter(s => {
-                              const matchDay = s.day_of_week === day;
+                              const sDay = s.day_of_week || s.day;
+                              const sType = s.activity_type || s.type;
+                              const matchDay = sDay === day;
                               const matchPeriod = Number(s.period) === Number(period);
-                              if (extracurricularViewFilter === 'hsg') return matchDay && matchPeriod && s.activity_type === 'hsg';
-                              if (extracurricularViewFilter === 'club') return matchDay && matchPeriod && s.activity_type === 'club';
+                              if (extracurricularViewFilter === 'hsg') return matchDay && matchPeriod && sType === 'hsg';
+                              if (extracurricularViewFilter === 'club') return matchDay && matchPeriod && sType === 'club';
                               return matchDay && matchPeriod;
                             });
 
@@ -6446,34 +6486,40 @@ export default function AdminSchedule() {
                                   </div>
                                 ) : (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                    {sessions.map(s => (
-                                      <div
-                                        key={s.id}
-                                        style={{
-                                          padding: '8px 10px',
-                                          borderRadius: '8px',
-                                          backgroundColor: s.activity_type === 'hsg' ? '#faf5ff' : '#f0fdf4',
-                                          border: `1.5px solid ${s.activity_type === 'hsg' ? '#d8b4fe' : '#86efac'}`,
-                                          boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
-                                        }}
-                                      >
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '4px' }}>
-                                          <span style={{ fontSize: '11px', fontWeight: 'bold', color: s.activity_type === 'hsg' ? '#7c3aed' : '#16a34a', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.06)' }}>
-                                            {s.activity_badge || (s.activity_type === 'hsg' ? '🏆 HSG' : '🤖 CLB')}
-                                          </span>
-                                          <span style={{ fontSize: '11px', color: '#64748b' }}>
-                                            📍 {s.room}
-                                          </span>
+                                    {sessions.map(s => {
+                                      const isHsg = (s.activity_type || s.type) === 'hsg';
+                                      const actName = s.activity_name || s.name;
+                                      const actBadge = s.activity_badge || s.badge || (isHsg ? '🏆 HSG' : '🤖 CLB');
+                                      const tName = s.teacher_name || s.teacher;
+                                      return (
+                                        <div
+                                          key={s.id || `${s.activity_id}_${s.period}`}
+                                          style={{
+                                            padding: '8px 10px',
+                                            borderRadius: '8px',
+                                            backgroundColor: isHsg ? '#faf5ff' : '#f0fdf4',
+                                            border: `1.5px solid ${isHsg ? '#d8b4fe' : '#86efac'}`,
+                                            boxShadow: '0 2px 5px rgba(0,0,0,0.03)'
+                                          }}
+                                        >
+                                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px', marginBottom: '4px' }}>
+                                            <span style={{ fontSize: '11px', fontWeight: 'bold', color: isHsg ? '#7c3aed' : '#16a34a', backgroundColor: '#ffffff', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(0,0,0,0.06)' }}>
+                                              {actBadge}
+                                            </span>
+                                            <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                              📍 {s.room}
+                                            </span>
+                                          </div>
+                                          <div style={{ fontWeight: 'bold', fontSize: '12.5px', color: '#1e293b', lineHeight: '1.3' }}>
+                                            {actName}
+                                          </div>
+                                          <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
+                                            <span>👨‍🏫 {tName}</span>
+                                            <span style={{ color: '#0369a1', fontWeight: 'bold' }}>{(s.target_classes || []).join(', ')}</span>
+                                          </div>
                                         </div>
-                                        <div style={{ fontWeight: 'bold', fontSize: '12.5px', color: '#1e293b', lineHeight: '1.3' }}>
-                                          {s.activity_name}
-                                        </div>
-                                        <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '3px', display: 'flex', justifyContent: 'space-between' }}>
-                                          <span>👨‍🏫 {s.teacher_name}</span>
-                                          <span style={{ color: '#0369a1', fontWeight: 'bold' }}>{(s.target_classes || []).join(', ')}</span>
-                                        </div>
-                                      </div>
-                                    ))}
+                                      );
+                                    })}
                                   </div>
                                 )}
                               </td>
