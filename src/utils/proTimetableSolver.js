@@ -373,14 +373,29 @@ export function runAiTimetableSolver({
     return false;
   };
 
-  const isClassSubjectOnDay = (cls, day, subject) => {
+  const getClassSubjectDailyCount = (cls, day, subject) => {
     const cGrid = classGrid.get(cls);
-    if (!cGrid) return false;
+    if (!cGrid) return 0;
+    let count = 0;
     for (let p of PERIODS_ALL) {
       const item = cGrid.get(`${day}_${p}`);
-      if (item && item.subject === subject) return true;
+      if (item && item.subject === subject) count++;
     }
-    return false;
+    return count;
+  };
+
+  const getClassDailyTotalPeriods = (cls, day) => {
+    const cGrid = classGrid.get(cls);
+    if (!cGrid) return 0;
+    let count = 0;
+    for (let p of PERIODS_ALL) {
+      if (cGrid.has(`${day}_${p}`)) count++;
+    }
+    return count;
+  };
+
+  const isClassSubjectOnDay = (cls, day, subject) => {
+    return getClassSubjectDailyCount(cls, day, subject) > 0;
   };
 
   const getClassPeriods = (cls, shift) => {
@@ -400,11 +415,26 @@ export function runAiTimetableSolver({
     if (!cGrid) return false;
 
     const classPeriods = getClassPeriods(cls, block.shift);
+    const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
+
     let bestCandidate = null;
     let minPenalty = Infinity;
 
     for (const day of DAYS) {
+      const currentSubjectCount = getClassSubjectDailyCount(cls, day, subject);
+
+      // ❌ RÀNG BUỘC SƯ PHẠM 1: Môn GDTC tuyệt đối chỉ tối đa 1 tiết/ngày cho 1 lớp
+      if (isGdtc && currentSubjectCount >= 1) continue;
+
+      // ❌ RÀNG BUỘC SƯ PHẠM 2: Môn văn hóa tuyệt đối tối đa 2 tiết/ngày cho 1 lớp (Tuyệt đối không xếp 3 tiết Lý/Toán dồn 1 ngày)
+      if (!isGdtc && currentSubjectCount + size > 2) continue;
+
+      const currentDayTotal = getClassDailyTotalPeriods(cls, day);
+
       if (size === 2) {
+        // GDTC không xếp khối đôi
+        if (isGdtc) continue;
+
         for (let i = 0; i < classPeriods.length - 1; i++) {
           const p1 = classPeriods[i];
           const p2 = classPeriods[i + 1];
@@ -426,11 +456,12 @@ export function runAiTimetableSolver({
             if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
-          let penalty = 0;
-          if (isClassSubjectOnDay(cls, day, subject)) penalty += 30;
+          // Phạt nếu ngày đã quá tải tiết, thưởng nếu ngày còn trống để rải đều Thứ 2 -> Thứ 7
+          let penalty = currentDayTotal * 20;
+          if (currentSubjectCount > 0) penalty += 50;
           if (tGrid) {
             const hasAdjacent = tGrid.has(`${day}_${p1 - 1}`) || tGrid.has(`${day}_${p2 + 1}`);
-            if (hasAdjacent) penalty -= 20;
+            if (hasAdjacent) penalty -= 15;
           }
 
           if (penalty < minPenalty) {
@@ -446,12 +477,9 @@ export function runAiTimetableSolver({
           if (schoolLockSet.has(k)) continue;
           if (isTeacherLocked(teacher, day, p)) continue;
 
-          // ❌ RÀNG BUỘC SƯ PHẠM GDTC (THỂ DỤC):
-          // Cấm Tiết 5 Sáng (nắng gắt / đói bụng) & Tiết 6 Chiều (vừa ăn trưa xong / nắng gắt đầu giờ chiều)
-          const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
-          if (isGdtc && (p === 5 || p === 6)) {
-            if (!allowRelaxed) continue; // Cấm tuyệt đối ở các pass chính
-          }
+          // ❌ RÀNG BUỘC Y HỌC & SƯ PHẠM GDTC:
+          // Tuyệt đối CẤM Tiết 5 Sáng (nắng gắt / đói bụng) & Tiết 6 Chiều (vừa ăn trưa xong)
+          if (isGdtc && (p === 5 || p === 6)) continue;
 
           const tGrid = teacherGrid.get(teacher);
           if (tGrid && tGrid.has(k)) continue;
@@ -464,18 +492,20 @@ export function runAiTimetableSolver({
             if (getTeacherAfternoonDaysCount(teacher) >= maxAfternoons) continue;
           }
 
-          let penalty = 0;
-          if (isGdtc && (p === 5 || p === 6)) penalty += 300;
-          if (isGdtc && isClassSubjectOnDay(cls, day, subject)) {
-            penalty += 150; // Phân bổ GDTC rải đều các ngày khác nhau trong tuần
-          } else if (isClassSubjectOnDay(cls, day, subject)) {
-            penalty += 25;
+          // Cân bằng tải ngày & rải đều các môn trong tuần
+          let penalty = currentDayTotal * 20;
+          if (isGdtc) {
+            // GDTC ưu tiên tiết 1, 2, 3 Sáng (mát mẻ) hoặc tiết 8, 9, 10 Chiều
+            if (p === 1 || p === 2 || p === 3 || p === 8 || p === 9) penalty -= 25;
+          }
+          if (currentSubjectCount > 0) {
+            penalty += isGdtc ? 300 : 40;
           }
 
           if (tGrid) {
             const hasPrev = tGrid.has(`${day}_${p - 1}`);
             const hasNext = tGrid.has(`${day}_${p + 1}`);
-            if (hasPrev || hasNext) penalty -= 15;
+            if (hasPrev || hasNext) penalty -= 12;
           }
 
           if (penalty < minPenalty) {
@@ -578,11 +608,14 @@ export function runAiTimetableSolver({
           const tGrid = teacherGrid.get(teacher);
           if (tGrid && tGrid.has(k)) continue;
 
-          // Ràng buộc GDTC Tiết 5 Sáng / Tiết 6 Chiều
+          // Ràng buộc nghiêm ngặt GDTC: Tuyệt đối CẤM Tiết 5 Sáng / Tiết 6 Chiều và tối đa 1 tiết/ngày
           const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
-          if (isGdtc && (p === 5 || p === 6)) {
-            const hasOtherSlot = availablePeriods.some(otherP => otherP !== 5 && otherP !== 6 && !cGrid.has(`${day}_${otherP}`) && (!tGrid || !tGrid.has(`${day}_${otherP}`)));
-            if (hasOtherSlot) continue;
+          if (isGdtc) {
+            if (p === 5 || p === 6) continue;
+            if (getClassSubjectDailyCount(cls, day, subject) >= 1) continue;
+          } else {
+            // Môn văn hóa: Tối đa 2 tiết/ngày cho 1 lớp
+            if (getClassSubjectDailyCount(cls, day, subject) >= 2) continue;
           }
 
           const slotItem = {
@@ -643,7 +676,21 @@ export function runAiTimetableSolver({
 
       if (isTeacherLocked(tA, d2, p2) || isTeacherLocked(tB, d1, p1)) continue;
 
-      cGrid.set(k1, { ...itemB, day_of_week: d1, period: p1 });
+      // ❌ KIỂM TRA RÀNG BUỘC SƯ PHẠM KHI SWAP:
+      const isGdtcA = itemA.subject.toLowerCase().includes('gdtc') || itemA.subject.toLowerCase().includes('thể dục') || itemA.subject.toLowerCase().includes('thể chất');
+      const isGdtcB = itemB.subject.toLowerCase().includes('gdtc') || itemB.subject.toLowerCase().includes('thể dục') || itemB.subject.toLowerCase().includes('thể chất');
+
+      // 1. Tuyệt đối CẤM chuyển GDTC vào Tiết 5 Sáng hoặc Tiết 6 Chiều
+      if (isGdtcA && (p2 === 5 || p2 === 6)) continue;
+      if (isGdtcB && (p1 === 5 || p1 === 6)) continue;
+
+      // 2. Không chuyển sang ngày đã có môn đó (GDTC max 1 tiết/ngày, môn khác max 2 tiết/ngày)
+      if (d1 !== d2) {
+        if (isGdtcA && getClassSubjectDailyCount(cls, d2, itemA.subject) >= 1) continue;
+        if (isGdtcB && getClassSubjectDailyCount(cls, d1, itemB.subject) >= 1) continue;
+        if (!isGdtcA && getClassSubjectDailyCount(cls, d2, itemA.subject) >= 2) continue;
+        if (!isGdtcB && getClassSubjectDailyCount(cls, d1, itemB.subject) >= 2) continue;
+      }
       cGrid.set(k2, { ...itemA, day_of_week: d2, period: p2 });
 
       if (tGridA) {
