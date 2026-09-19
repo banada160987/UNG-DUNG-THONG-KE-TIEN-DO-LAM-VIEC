@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import Layout from '../components/Layout';
 import { supabase, supabase2, supabase2Admin, supabaseAdmin } from '../lib/supabase';
 import { 
   Calendar, Plus, Save, Trash2, Edit3, Eye, Clock, MapPin, CheckCircle2, 
