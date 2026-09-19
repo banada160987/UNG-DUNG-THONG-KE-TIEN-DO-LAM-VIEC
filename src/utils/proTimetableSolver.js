@@ -136,7 +136,7 @@ export function runAiTimetableSolver({
   schoolLocks = [],     // Mảng các chuỗi "Thứ X_Tiết Y" bị khóa toàn trường
   teacherLocks = {},    // Object: { "Tên GV": ["Thứ X_Tiết Y", "Thứ X"] }
   pinnedSlots = [],     // Mảng các tiết đã pin cứng { student_class, day_of_week, period, subject, teacher_name }
-  doublePeriodSubjects = ['Ngữ văn', 'GDTC', 'Tin học', 'Mĩ thuật'],
+  doublePeriodSubjects = ['Ngữ văn', 'Tin học', 'Mĩ thuật'], // Không xếp tiết đôi cho môn GDTC
   maxDailyPeriodsPerTeacher = 5,
   maxAfternoonDaysPerTeacher = 5,
   seed = Date.now()
@@ -273,7 +273,8 @@ export function runAiTimetableSolver({
     const alreadyPinned = pinnedCountsMap.get(pinKey) || 0;
     let remaining = Math.max(0, totalPeriods - alreadyPinned);
 
-    const isDoubleEligible = (doublePeriodSubjects || []).some(s => subject.toLowerCase().includes(s.toLowerCase()));
+    const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
+    const isDoubleEligible = !isGdtc && (doublePeriodSubjects || []).some(s => subject.toLowerCase().includes(s.toLowerCase()));
     const shift = asg.shift || (cls.startsWith('12') ? 'afternoon' : 'morning');
 
     while (remaining > 0) {
@@ -433,6 +434,13 @@ export function runAiTimetableSolver({
           if (schoolLockSet.has(k)) continue;
           if (isTeacherLocked(teacher, day, p)) continue;
 
+          // ❌ RÀNG BUỘC SƯ PHẠM GDTC (THỂ DỤC):
+          // Cấm Tiết 5 Sáng (nắng gắt / đói bụng) & Tiết 6 Chiều (vừa ăn trưa xong / nắng gắt đầu giờ chiều)
+          const isGdtc = subject.toLowerCase().includes('gdtc') || subject.toLowerCase().includes('thể chất') || subject.toLowerCase().includes('thể dục');
+          if (isGdtc && (p === 5 || p === 6)) {
+            if (!allowRelaxed) continue; // Cấm tuyệt đối ở các pass chính
+          }
+
           const tGrid = teacherGrid.get(teacher);
           if (tGrid && tGrid.has(k)) continue;
 
@@ -445,7 +453,13 @@ export function runAiTimetableSolver({
           }
 
           let penalty = 0;
-          if (isClassSubjectOnDay(cls, day, subject)) penalty += 25;
+          if (isGdtc && (p === 5 || p === 6)) penalty += 300;
+          if (isGdtc && isClassSubjectOnDay(cls, day, subject)) {
+            penalty += 150; // Phân bổ GDTC rải đều các ngày khác nhau trong tuần
+          } else if (isClassSubjectOnDay(cls, day, subject)) {
+            penalty += 25;
+          }
+
           if (tGrid) {
             const hasPrev = tGrid.has(`${day}_${p - 1}`);
             const hasNext = tGrid.has(`${day}_${p + 1}`);

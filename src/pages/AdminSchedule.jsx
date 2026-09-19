@@ -118,7 +118,7 @@ export default function AdminSchedule() {
   const [sessionMode, setSessionMode] = useState('both'); // 'morning' | 'afternoon' | 'both'
   const [schoolLocks, setSchoolLocks] = useState(['Thứ 2_1', 'Thứ 7_5']); // 'Thứ X_Tiết Y'
   const [teacherLocks, setTeacherLocks] = useState({}); // { [teacherName]: string[] }
-  const [doublePeriodSubjects, setDoublePeriodSubjects] = useState(['Ngữ văn', 'GDTC', 'Tin học', 'Mĩ thuật']);
+  const [doublePeriodSubjects, setDoublePeriodSubjects] = useState(['Ngữ văn', 'Tin học', 'Mĩ thuật']); // GDTC mặc định không xếp tiết đôi
   const [maxDailyPeriods, setMaxDailyPeriods] = useState(5);
   const [isSolving, setIsSolving] = useState(false);
   const [solverProgress, setSolverProgress] = useState(0);
@@ -3902,13 +3902,61 @@ export default function AdminSchedule() {
                   Thiết lập các môn học ưu tiên xếp 2 tiết liên tiếp (tiết đôi) và khống chế tải dạy hàng ngày của mỗi giáo viên:
                 </p>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px', display: 'block', marginBottom: '10px' }}>
-                      📚 Các môn ưu tiên xếp Tiết Đôi (2 tiết liền):
-                    </span>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+                  {/* Cấu hình Tiết Đôi Linh Hoạt */}
+                  <div style={{ backgroundColor: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                      <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px' }}>
+                        📚 Chọn Môn Ưu Tiên Xếp Tiết Đôi (2 tiết liền):
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold', backgroundColor: '#e0f2fe', padding: '2px 8px', borderRadius: '12px' }}>
+                        Đã chọn: {doublePeriodSubjects.length} môn
+                      </span>
+                    </div>
+
+                    {/* Quick Presets */}
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setDoublePeriodSubjects(['Ngữ văn', 'Tin học', 'Mĩ thuật'])}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        title="Văn viết bài dài, Tin thực hành máy tính, Mĩ thuật vẽ"
+                      >
+                        ⚡ Chuẩn GDPT (Văn, Tin, MT)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDoublePeriodSubjects(['Toán', 'Tiếng Anh', 'Ngữ văn'])}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        title="Toán, Anh, Văn"
+                      >
+                        🎯 Toán + Anh + Văn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDoublePeriodSubjects(['Toán', 'Vật lí', 'Hóa học', 'Sinh học', 'Tin học'])}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        title="Khoa học tự nhiên"
+                      >
+                        🧪 Khối Tự Nhiên
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDoublePeriodSubjects([])}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #fecaca', backgroundColor: '#fef2f2', color: '#dc2626', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                        title="Không xếp tiết đôi bất kỳ môn nào"
+                      >
+                        ✕ Không tiết đôi
+                      </button>
+                    </div>
+
+                    {/* All Subject Badges */}
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {['Ngữ văn', 'GDTC', 'Tin học', 'Mĩ thuật', 'Vật lý', 'Hóa học', 'Sinh học'].map(sub => {
+                      {[
+                        'Toán', 'Ngữ văn', 'Tiếng Anh', 'Vật lí', 'Hóa học', 'Sinh học',
+                        'Lịch sử', 'Địa lí', 'Tin học', 'Công nghệ', 'Giáo dục kinh tế và pháp luật',
+                        'Mĩ thuật', 'Âm nhạc', 'GDQP-AN'
+                      ].map(sub => {
                         const isSelected = doublePeriodSubjects.includes(sub);
                         return (
                           <button
@@ -3925,37 +3973,54 @@ export default function AdminSchedule() {
                               backgroundColor: isSelected ? '#e0f2fe' : '#ffffff',
                               color: isSelected ? '#0369a1' : '#64748b',
                               fontWeight: 'bold',
-                              fontSize: '12.5px',
-                              cursor: 'pointer'
+                              fontSize: '12px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
                             }}
                           >
-                            {isSelected ? '✓ ' : '+ '} {sub}
+                            <span>{isSelected ? '✓' : '+'}</span>
+                            <span>{sub}</span>
                           </button>
                         );
                       })}
                     </div>
+
+                    {/* GDTC Special Note */}
+                    <div style={{ marginTop: '12px', padding: '8px 12px', backgroundColor: '#ecfdf5', borderRadius: '8px', border: '1px solid #a7f3d0', fontSize: '12px', color: '#047857', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>🏃</span>
+                      <span><strong>Môn GDTC (Thể dục):</strong> Được khóa cố định là <strong>Tiết Đơn</strong> và tự động <strong>CẤM xếp vào Tiết 5 Sáng & Tiết 6 Chiều</strong> (tránh nắng gắt và đói/no gây đau dạ dày).</span>
+                    </div>
                   </div>
 
-                  <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px', display: 'block', marginBottom: '8px' }}>
-                      ⚖️ Số tiết dạy tối đa / ngày của 1 Giáo viên:
-                    </span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '10px' }}>
-                      <input
-                        type="range"
-                        min="3"
-                        max="8"
-                        value={maxDailyPeriods}
-                        onChange={e => setMaxDailyPeriods(Number(e.target.value))}
-                        style={{ flex: 1, accentColor: '#4f46e5' }}
-                      />
-                      <span style={{ fontWeight: '900', color: '#4f46e5', fontSize: '16px', minWidth: '70px', backgroundColor: '#eef2ff', padding: '4px 10px', borderRadius: '8px', textAlign: 'center' }}>
-                        {maxDailyPeriods} tiết/ngày
+                  {/* Cấu hình Tải Dạy Tối Đa */}
+                  <div style={{ backgroundColor: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <span style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px', display: 'block', marginBottom: '8px' }}>
+                        ⚖️ Số tiết dạy tối đa / ngày của 1 Giáo viên:
+                      </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '12px' }}>
+                        <input
+                          type="range"
+                          min="3"
+                          max="8"
+                          value={maxDailyPeriods}
+                          onChange={e => setMaxDailyPeriods(Number(e.target.value))}
+                          style={{ flex: 1, accentColor: '#4f46e5' }}
+                        />
+                        <span style={{ fontWeight: '900', color: '#4f46e5', fontSize: '16px', minWidth: '85px', backgroundColor: '#eef2ff', padding: '6px 12px', borderRadius: '8px', textAlign: 'center' }}>
+                          {maxDailyPeriods} tiết/ngày
+                        </span>
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#64748b', marginTop: '8px', display: 'block', lineHeight: 1.5 }}>
+                        Khuyên dùng: <strong>5 tiết/ngày</strong> để giáo viên không bị quá tải giờ dạy.
                       </span>
                     </div>
-                    <span style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', display: 'block' }}>
-                      Khuyên dùng: 5 tiết/ngày để giáo viên không bị quá tải.
-                    </span>
+
+                    <div style={{ padding: '10px 12px', backgroundColor: '#eff6ff', borderRadius: '8px', border: '1px solid #bfdbfe', fontSize: '12px', color: '#1e40af' }}>
+                      💡 <em>Khi chạy AI Solver, hệ thống sẽ tự động ghép tiết đôi cho các môn được chọn ở trên và xếp các môn còn lại thành tiết đơn rải đều các ngày trong tuần.</em>
+                    </div>
                   </div>
                 </div>
               </div>
