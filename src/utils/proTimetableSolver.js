@@ -139,6 +139,10 @@ export function runAiTimetableSolver({
   doublePeriodSubjects = ['Ngữ văn', 'Tin học', 'Mĩ thuật'], // Không xếp tiết đôi cho môn GDTC
   maxDailyPeriodsPerTeacher = 5,
   maxAfternoonDaysPerTeacher = 5,
+  teacherPreferences = {}, // Hồ sơ Nhân văn { [tName]: { avoidPeriod1: bool, avoidPeriod10: bool, longCommute: bool, customOffDays: [] } }
+  enableZeroGapOptimization = true,
+  enableAntiFatigueGuard = true,
+  enableGoldenDaysOff = true,
   seed = Date.now()
 }) {
   const startTime = performance.now();
@@ -459,9 +463,37 @@ export function runAiTimetableSolver({
           // Phạt nếu ngày đã quá tải tiết, thưởng nếu ngày còn trống để rải đều Thứ 2 -> Thứ 7
           let penalty = currentDayTotal * 20;
           if (currentSubjectCount > 0) penalty += 50;
+
+          // 1. Hồ sơ Nhân văn Cá nhân hóa (Teacher Preferences)
+          const pref = (teacherPreferences && teacherPreferences[teacher]) || {};
+          if (pref.avoidPeriod1 && p1 === 1) penalty += 150;
+          if (pref.avoidPeriod10 && p2 === 10) penalty += 150;
+          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 500;
+
+          // 2. Chống mệt mỏi chuyển ca Sáng - Chiều (Anti-Fatigue Guard)
+          if (enableAntiFatigueGuard && tGrid) {
+            if ((p1 === 6 || p2 === 6) && tGrid.has(`${day}_5`)) penalty += 300;
+            if ((p1 === 5 || p2 === 5) && tGrid.has(`${day}_6`)) penalty += 300;
+          }
+
+          // 3. Gom cụm tiết liền mạch (Zero-Gap Clustering)
           if (tGrid) {
             const hasAdjacent = tGrid.has(`${day}_${p1 - 1}`) || tGrid.has(`${day}_${p2 + 1}`);
-            if (hasAdjacent) penalty -= 15;
+            if (hasAdjacent) {
+              penalty -= enableZeroGapOptimization ? 35 : 15;
+            } else if (enableZeroGapOptimization) {
+              const dailyCount = getTeacherDailyCount(teacher, day);
+              if (dailyCount > 0) penalty += 40; // Phạt tạo khoảng trống lủng
+            }
+          }
+
+          // 4. Gom Ngày nghỉ vàng (Golden Days Off) cho GV định mức <= 18 tiết
+          if (enableGoldenDaysOff && teacher !== 'Chưa gán GV' && teacher !== 'GVCN') {
+            const tLoad = teacherLoadMap.get(teacher) || 0;
+            if (tLoad <= 18) {
+              const dCount = getTeacherDailyCount(teacher, day);
+              if (dCount > 0 && dCount < 4) penalty -= 25; // Thưởng dồn vào ngày đang mở
+            }
           }
 
           if (penalty < minPenalty) {
@@ -502,10 +534,37 @@ export function runAiTimetableSolver({
             penalty += isGdtc ? 300 : 40;
           }
 
+          // 1. Hồ sơ Nhân văn Cá nhân hóa (Teacher Preferences)
+          const pref = (teacherPreferences && teacherPreferences[teacher]) || {};
+          if (pref.avoidPeriod1 && p === 1) penalty += 150;
+          if (pref.avoidPeriod10 && p === 10) penalty += 150;
+          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 500;
+
+          // 2. Chống mệt mỏi chuyển ca Sáng - Chiều (Anti-Fatigue Guard)
+          if (enableAntiFatigueGuard && tGrid) {
+            if (p === 6 && tGrid.has(`${day}_5`)) penalty += 300;
+            if (p === 5 && tGrid.has(`${day}_6`)) penalty += 300;
+          }
+
+          // 3. Gom cụm tiết liền mạch (Zero-Gap Clustering)
           if (tGrid) {
             const hasPrev = tGrid.has(`${day}_${p - 1}`);
             const hasNext = tGrid.has(`${day}_${p + 1}`);
-            if (hasPrev || hasNext) penalty -= 12;
+            if (hasPrev || hasNext) {
+              penalty -= enableZeroGapOptimization ? 35 : 12;
+            } else if (enableZeroGapOptimization) {
+              const dailyCount = getTeacherDailyCount(teacher, day);
+              if (dailyCount > 0) penalty += 40; // Phạt tạo khoảng trống lủng
+            }
+          }
+
+          // 4. Gom Ngày nghỉ vàng (Golden Days Off) cho GV định mức <= 18 tiết
+          if (enableGoldenDaysOff && teacher !== 'Chưa gán GV' && teacher !== 'GVCN') {
+            const tLoad = teacherLoadMap.get(teacher) || 0;
+            if (tLoad <= 18) {
+              const dCount = getTeacherDailyCount(teacher, day);
+              if (dCount > 0 && dCount < 4) penalty -= 25; // Thưởng dồn vào ngày đang mở
+            }
           }
 
           if (penalty < minPenalty) {
@@ -1507,4 +1566,232 @@ export function exportWorkloadReportToExcel(workloadStats = [], title = 'BaoCao_
   XLSX.utils.book_append_sheet(wb, ws, "ThongKeTaiDay");
   XLSX.writeFile(wb, `${title}_${Date.now()}.xlsx`);
 }
+
+/**
+ * Tính toán Chỉ số Hạnh phúc Thời khóa biểu (Teacher Schedule Happiness Index - SHI 0-100)
+ */
+export function calculateTeacherHappinessMetrics(scheduleItems = [], teacherAssignments = [], teacherPreferences = {}) {
+  const workloadStats = generateTeacherWorkloadStats(scheduleItems, teacherAssignments);
+  
+  return workloadStats.map(stat => {
+    const tName = stat.teacher;
+    const pref = teacherPreferences[tName] || {};
+    const tItems = scheduleItems.filter(s => getFullTeacherName(s.teacher_name, s.subject) === tName);
+
+    // 1. Điểm khởi đầu: 100 điểm
+    let score = 100;
+    const penalties = [];
+    const bonuses = [];
+
+    // Phạt tiết lủng (-8đ mỗi tiết lủng)
+    if (stat.totalGaps > 0) {
+      const p = stat.totalGaps * 8;
+      score -= p;
+      penalties.push(`Có ${stat.totalGaps} tiết lủng (-${p}đ)`);
+    }
+
+    // Phạt trùng tiết (-35đ mỗi tiết trùng)
+    if (stat.clashCount > 0) {
+      const p = stat.clashCount * 35;
+      score -= p;
+      penalties.push(`Trùng lịch ${stat.clashCount} tiết (-${p}đ)`);
+    }
+
+    // Kiểm tra Chuyển ca gấp (Sáng Tiết 5 -> Chiều Tiết 6 trong cùng 1 ngày)
+    let shiftFatigueCount = 0;
+    DAYS.forEach(day => {
+      const daySlots = tItems.filter(s => s.day_of_week === day);
+      const hasP5 = daySlots.some(s => Number(s.period) === 5);
+      const hasP6 = daySlots.some(s => Number(s.period) === 6);
+      if (hasP5 && hasP6) shiftFatigueCount++;
+    });
+
+    if (shiftFatigueCount > 0) {
+      const p = shiftFatigueCount * 15;
+      score -= p;
+      penalties.push(`Chuyển ca gấp Tiết 5 Sáng -> Tiết 6 Chiều (${shiftFatigueCount} ngày) (-${p}đ)`);
+    }
+
+    // Kiểm tra hồ sơ nhân văn
+    let prefViolations = 0;
+    if (pref.avoidPeriod1) {
+      const p1Count = tItems.filter(s => Number(s.period) === 1).length;
+      if (p1Count > 0) {
+        prefViolations += p1Count;
+        score -= p1Count * 10;
+        penalties.push(`Dính ${p1Count} tiết 1 sáng (Ưu tiên con nhỏ) (-${p1Count * 10}đ)`);
+      }
+    }
+    if (pref.avoidPeriod10) {
+      const p10Count = tItems.filter(s => Number(s.period) === 10).length;
+      if (p10Count > 0) {
+        prefViolations += p10Count;
+        score -= p10Count * 10;
+        penalties.push(`Dính ${p10Count} tiết 10 chiều (-${p10Count * 10}đ)`);
+      }
+    }
+    if (pref.customOffDays && Array.isArray(pref.customOffDays)) {
+      pref.customOffDays.forEach(offDay => {
+        const offLessons = tItems.filter(s => s.day_of_week === offDay).length;
+        if (offLessons > 0) {
+          score -= 25;
+          penalties.push(`Dạy vào ngày bận đăng ký (${offDay}) (-25đ)`);
+        }
+      });
+    }
+
+    // Thưởng Ngày nghỉ trọn vẹn (Golden Days Off)
+    if (stat.daysOff >= 2) {
+      score += 10;
+      bonuses.push(`Có ${stat.daysOff} ngày nghỉ vàng trọn vẹn (+10đ)`);
+    } else if (stat.daysOff === 1) {
+      score += 5;
+      bonuses.push(`Có 1 ngày nghỉ vàng trọn vẹn (+5đ)`);
+    }
+
+    // Thưởng 0 tiết lủng tuyệt đối
+    if (stat.totalGaps === 0 && stat.totalPeriods > 0) {
+      score += 5;
+      bonuses.push(`Liền mạch 100% không tiết lủng (+5đ)`);
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    let starRating = '⭐⭐⭐⭐⭐';
+    let label = 'Tuyệt vời';
+    let badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+    if (score < 60) {
+      starRating = '⭐⭐';
+      label = 'Cần tối ưu';
+      badgeColor = 'bg-red-100 text-red-800 border-red-300';
+    } else if (score < 75) {
+      starRating = '⭐⭐⭐';
+      label = 'Trung bình';
+      badgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
+    } else if (score < 90) {
+      starRating = '⭐⭐⭐⭐';
+      label = 'Rất tốt';
+      badgeColor = 'bg-blue-100 text-blue-800 border-blue-300';
+    }
+
+    return {
+      ...stat,
+      happinessScore: score,
+      starRating,
+      happinessLabel: label,
+      badgeColor,
+      penalties,
+      bonuses,
+      shiftFatigueCount,
+      goldenDaysOff: stat.daysOff,
+      preferenceProfile: pref
+    };
+  }).sort((a, b) => b.happinessScore - a.happinessScore);
+}
+
+/**
+ * Trợ lý AI Gợi ý Đổi tiết Thông minh 1-Chạm (AI 1-Click Smart Swap)
+ */
+export function findAi1ClickSmartSwaps(scheduleItems = [], sourceItem, teacherLocks = {}, schoolLocks = [], teacherPreferences = {}) {
+  if (!sourceItem || !sourceItem.subject) return [];
+
+  const candidates = [];
+  const sourceTeacher = getFullTeacherName(sourceItem.teacher_name, sourceItem.subject);
+  const isMorning = Number(sourceItem.period) <= 5;
+  const periodsToCheck = isMorning ? PERIODS_MORNING : PERIODS_AFTERNOON;
+
+  // 1. Quét trong cùng Lớp học (Class Swaps)
+  DAYS.forEach(day => {
+    periodsToCheck.forEach(p => {
+      if (day === sourceItem.day_of_week && p === Number(sourceItem.period)) return;
+
+      const targetItem = scheduleItems.find(s => 
+        s.student_class === sourceItem.student_class && 
+        s.day_of_week === day && 
+        Number(s.period) === p
+      );
+
+      // Cho phép đổi vào ô trống hoặc đổi với môn khác
+      const itemToCompare = targetItem || {
+        student_class: sourceItem.student_class,
+        day_of_week: day,
+        period: p,
+        subject: '',
+        teacher_name: ''
+      };
+
+      const val = validateSlotSwap(scheduleItems, sourceItem, itemToCompare, teacherLocks, schoolLocks);
+      if (val.valid) {
+        // Tính toán lợi ích của việc đổi
+        let benefits = [];
+        let score = 80;
+
+        const targetTeacher = targetItem ? getFullTeacherName(targetItem.teacher_name, targetItem.subject) : '';
+
+        // Kiểm tra xem đổi có giúp giải phóng nguyên 1 ngày không
+        const sourceTeacherDayLessons = scheduleItems.filter(s => 
+          getFullTeacherName(s.teacher_name, s.subject) === sourceTeacher && 
+          s.day_of_week === sourceItem.day_of_week
+        ).length;
+
+        if (sourceTeacherDayLessons === 1) {
+          benefits.push(`Tạo thêm 1 ngày nghỉ trọn vẹn (${sourceItem.day_of_week}) cho GV ${sourceTeacher}`);
+          score += 15;
+        }
+
+        // Kiểm tra giảm tiết lủng
+        if (p === 1 || p === 5 || p === 6 || p === 10) {
+          benefits.push(`Đầu/cuối ca gọn gàng (${day} Tiết ${p})`);
+          score += 10;
+        }
+
+        if (targetItem && targetItem.subject) {
+          benefits.push(`Tráo đổi an toàn với môn ${targetItem.subject} (${targetItem.teacher_name})`);
+        } else {
+          benefits.push(`Dời sang ô trống khả dụng (${day} Tiết ${p})`);
+          score += 5;
+        }
+
+        candidates.push({
+          type: 'DIRECT_SWAP',
+          sourceItem,
+          targetItem: itemToCompare,
+          toDay: day,
+          toPeriod: p,
+          targetSubject: targetItem ? targetItem.subject : '(Ô trống)',
+          targetTeacher: targetItem ? targetItem.teacher_name : '',
+          benefits,
+          score,
+          recommendation: `Đổi sang ${day} Tiết ${p} ${targetItem && targetItem.subject ? `(Môn ${targetItem.subject} - ${targetItem.teacher_name})` : '(Ô trống)'}`
+        });
+      }
+    });
+  });
+
+  // 2. Thử tìm chu trình hoán đổi 3 bên (Cycle Swap) nếu ít ứng viên trực tiếp
+  if (candidates.length < 3) {
+    DAYS.forEach(day => {
+      periodsToCheck.forEach(p => {
+        if (day === sourceItem.day_of_week && p === Number(sourceItem.period)) return;
+        const cycle = findCycleExchangeChain(scheduleItems, sourceItem, day, p, 'class', sourceItem.student_class, teacherLocks, schoolLocks);
+        if (cycle && cycle.cycleFound) {
+          candidates.push({
+            type: 'CYCLE_SWAP',
+            sourceItem,
+            targetItem: cycle.step1,
+            toDay: day,
+            toPeriod: p,
+            cycleDetails: cycle,
+            benefits: ['Giải phóng ô kẹt thông qua chu trình 3 bước hoàn hảo', 'Không gây trùng bất kỳ giáo viên nào'],
+            score: 75,
+            recommendation: `Chu trình 3 bước: ${sourceItem.subject} ➔ ${day} Tiết ${p} (Tối ưu CX)`
+          });
+        }
+      });
+    });
+  }
+
+  return candidates.sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
 

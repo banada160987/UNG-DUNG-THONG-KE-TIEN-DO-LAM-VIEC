@@ -44,6 +44,8 @@ import {
   exportDraftTimetableToExcel,
   generateRotationGroups,
   calculateTeacherWorkloadStatistics,
+  calculateTeacherHappinessMetrics,
+  findAi1ClickSmartSwaps,
   exportWorkloadReportToExcel,
   TIMETABLE_TUNE_ALGORITHMS
 } from '../utils/proTimetableSolver';
@@ -124,6 +126,33 @@ export default function AdminSchedule() {
   const [solverProgress, setSolverProgress] = useState(0);
   const [solverPhase, setSolverPhase] = useState('');
   const [solverResult, setSolverResult] = useState(null);
+
+  // --- TEACHER HAPPINESS & HUMAN-CENTERED PREFERENCES ---
+  const [teacherPreferences, setTeacherPreferences] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cbq_teacher_preferences');
+      return cached ? JSON.parse(cached) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+  const [enableZeroGapOptimization, setEnableZeroGapOptimization] = useState(true);
+  const [enableAntiFatigueGuard, setEnableAntiFatigueGuard] = useState(true);
+  const [enableGoldenDaysOff, setEnableGoldenDaysOff] = useState(true);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
+  const [prefSelectedTeacher, setPrefSelectedTeacher] = useState('');
+  const [prefForm, setPrefForm] = useState({
+    avoidPeriod1: false,
+    avoidPeriod10: false,
+    longCommute: false,
+    customOffDays: [],
+    note: ''
+  });
+
+  // --- 1-CLICK AI SMART SWAP STATE ---
+  const [showSmartSwapModal, setShowSmartSwapModal] = useState(false);
+  const [smartSwapSourceSlot, setSmartSwapSourceSlot] = useState(null);
+  const [smartSwapRecommendations, setSmartSwapRecommendations] = useState([]);
 
   // --- AFTERNOON ROTATION (XOAY VÒNG CA CHIỀU) STATE ---
   const [maxAfternoonDays, setMaxAfternoonDays] = useState(2); // Tối đa 2 buổi chiều / tuần cho mỗi GV
@@ -1138,7 +1167,11 @@ export default function AdminSchedule() {
                 pinnedSlots: pinnedSlots,
                 doublePeriodSubjects: doublePeriodSubjects,
                 maxDailyPeriodsPerTeacher: maxDailyPeriods,
-                maxAfternoonDaysPerTeacher: maxAfternoonDays
+                maxAfternoonDaysPerTeacher: maxAfternoonDays,
+                teacherPreferences: teacherPreferences,
+                enableZeroGapOptimization: enableZeroGapOptimization,
+                enableAntiFatigueGuard: enableAntiFatigueGuard,
+                enableGoldenDaysOff: enableGoldenDaysOff
               });
 
               const placedSchedule = res.schedule || res.scheduleItems || [];
@@ -1156,7 +1189,7 @@ export default function AdminSchedule() {
 
               setSolverResult(res);
               setSolverProgress(100);
-              setSolverPhase('🎉 Hoàn tất 100%! Đã tạo Thời khóa biểu Pro với 0% xung đột.');
+              setSolverPhase('🎉 Hoàn tất 100%! Đã tạo Thời khóa biểu Pro Đẹp & Nhân văn cho Giáo viên.');
 
               setTimeout(() => {
                 setIsSolving(false);
@@ -1193,7 +1226,11 @@ export default function AdminSchedule() {
       pinnedSlots: pinnedSlots,
       doublePeriodSubjects: doublePeriodSubjects,
       maxDailyPeriodsPerTeacher: maxDailyPeriods,
-      maxAfternoonDaysPerTeacher: maxAfternoonDays
+      maxAfternoonDaysPerTeacher: maxAfternoonDays,
+      teacherPreferences: teacherPreferences,
+      enableZeroGapOptimization: enableZeroGapOptimization,
+      enableAntiFatigueGuard: enableAntiFatigueGuard,
+      enableGoldenDaysOff: enableGoldenDaysOff
     });
 
     const placedSchedule = res.schedule || res.scheduleItems || [];
@@ -1362,9 +1399,82 @@ export default function AdminSchedule() {
 
   const handleClearTeacherLocks = (teacherName) => {
     if (!teacherName) return;
-    const updatedMap = { ...teacherLocks, [teacherName]: [] };
+    const updatedMap = { ...teacherLocks };
+    delete updatedMap[teacherName];
     setTeacherLocks(updatedMap);
     localStorage.setItem('cbq_teacher_locks', JSON.stringify(updatedMap));
+  };
+
+  // --- TEACHER PREFERENCES (HỒ SƠ NHÂN VĂN) ACTIONS ---
+  const handleOpenPreferencesModal = (tName = '') => {
+    const target = tName || prefSelectedTeacher || availableTeachers[0] || '';
+    setPrefSelectedTeacher(target);
+    const existing = teacherPreferences[target] || {
+      avoidPeriod1: false,
+      avoidPeriod10: false,
+      longCommute: false,
+      customOffDays: [],
+      note: ''
+    };
+    setPrefForm(existing);
+    setShowPreferencesModal(true);
+  };
+
+  const handleSaveTeacherPreference = () => {
+    if (!prefSelectedTeacher) return;
+    const updated = {
+      ...teacherPreferences,
+      [prefSelectedTeacher]: prefForm
+    };
+    setTeacherPreferences(updated);
+    localStorage.setItem('cbq_teacher_preferences', JSON.stringify(updated));
+    setShowPreferencesModal(false);
+    alert(`🎉 Đã lưu Hồ sơ Nhân văn cho Giáo viên ${prefSelectedTeacher}!`);
+  };
+
+  const handleApplyPresetPreference = (presetType) => {
+    if (presetType === 'young_child') {
+      setPrefForm(prev => ({ ...prev, avoidPeriod1: true, avoidPeriod10: true, note: 'Nuôi con nhỏ (< 36 tháng): Ưu tiên không xếp Tiết 1 Sáng & Tiết 10 Chiều' }));
+    } else if (presetType === 'long_distance') {
+      setPrefForm(prev => ({ ...prev, longCommute: true, avoidPeriod1: true, note: 'Nhà xa (> 15km): Gom tiết liền mạch, tránh tiết 1 sáng' }));
+    } else if (presetType === 'management') {
+      setPrefForm(prev => ({ ...prev, customOffDays: ['Thứ 5'], note: 'Kiêm nhiệm Tổ trưởng / Đoàn trường: Khóa ngày Thứ 5 để họp chuyên môn' }));
+    }
+  };
+
+  // --- 1-CLICK AI SMART SWAP ACTIONS ---
+  const handleOpenSmartSwap = (slotItem) => {
+    if (!slotItem || !slotItem.subject) return;
+    setSmartSwapSourceSlot(slotItem);
+    const recommendations = findAi1ClickSmartSwaps(
+      draftSchedule,
+      slotItem,
+      teacherLocks,
+      schoolLocks,
+      teacherPreferences
+    );
+    setSmartSwapRecommendations(recommendations);
+    setShowSmartSwapModal(true);
+  };
+
+  const handleExecuteSmartSwap = (rec) => {
+    if (!rec || !smartSwapSourceSlot) return;
+
+    if (rec.type === 'CYCLE_SWAP' && rec.cycleDetails) {
+      handleApplyCycleExchange(rec.cycleDetails);
+      setShowSmartSwapModal(false);
+      return;
+    }
+
+    const sourceSlot = {
+      item: smartSwapSourceSlot,
+      day_of_week: smartSwapSourceSlot.day_of_week,
+      period: smartSwapSourceSlot.period
+    };
+
+    executeStudioSwap(sourceSlot, rec.toDay, rec.toPeriod, rec.targetItem);
+    setShowSmartSwapModal(false);
+    alert(`🎉 ĐÃ ĐỔI TIẾT THÀNH CÔNG!\n${rec.recommendation}\n- Lợi ích: ${rec.benefits.join(', ')}`);
   };
 
   // Studio Smart Swap & Cell Interaction with Drag & Drop & Alternative Suggestions
@@ -2808,6 +2918,27 @@ export default function AdminSchedule() {
 
               <button
                 type="button"
+                onClick={() => setSchedulerSubTab('teacher_happiness')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '9px 16px',
+                  borderRadius: '9px',
+                  border: 'none',
+                  fontWeight: 'bold',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  backgroundColor: schedulerSubTab === 'teacher_happiness' ? '#e11d48' : '#fff1f2',
+                  color: schedulerSubTab === 'teacher_happiness' ? '#ffffff' : '#be123c',
+                  boxShadow: schedulerSubTab === 'teacher_happiness' ? '0 3px 10px rgba(225, 29, 72, 0.3)' : 'none'
+                }}
+              >
+                <Sparkles size={16} color={schedulerSubTab === 'teacher_happiness' ? '#fde047' : '#e11d48'} /> 7. ⭐ Chỉ Số Hạnh Phúc GV (SHI)
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setSchedulerSubTab('sandbox')}
                 style={{
                   display: 'inline-flex',
@@ -2824,7 +2955,7 @@ export default function AdminSchedule() {
                   boxShadow: schedulerSubTab === 'sandbox' ? '0 3px 10px rgba(22, 101, 52, 0.3)' : 'none'
                 }}
               >
-                <ShieldCheck size={16} /> 7. So Sánh & Xuất Bản
+                <ShieldCheck size={16} /> 8. So Sánh & Xuất Bản
               </button>
 
               <button
@@ -5345,8 +5476,16 @@ export default function AdminSchedule() {
                             {studioView === 'class' ? item.teacher_name : item.student_class}
                           </div>
 
-                          {/* ACTION BUTTONS (EDIT, PIN, DELETE) */}
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed #e2e8f0' }}>
+                          {/* ACTION BUTTONS (SMART SWAP, EDIT, PIN, DELETE) */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '5px', marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed #e2e8f0' }}>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); handleOpenSmartSwap(item); }}
+                              style={{ border: 'none', background: '#f5f3ff', color: '#7c3aed', cursor: 'pointer', padding: '2px 5px', borderRadius: '4px' }}
+                              title="✨ AI Gợi ý đổi tiết thông minh 1-chạm"
+                            >
+                              <Zap size={11} />
+                            </button>
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleOpenManualAssignModal(item.student_class, day, p, item); }}
@@ -6098,7 +6237,312 @@ export default function AdminSchedule() {
             </div>
           )}
 
-          {/* SUB-TAB 7: SANDBOX DIFF & SAFE PUBLISH */}
+          {/* SUB-TAB 7: CHỈ SỐ HẠNH PHÚC GIÁO VIÊN (TEACHER SCHEDULE HAPPINESS INDEX - SHI) */}
+          {schedulerSubTab === 'teacher_happiness' && (() => {
+            const happinessList = calculateTeacherHappinessMetrics(draftSchedule, teachingAssignments, teacherPreferences);
+            const totalT = happinessList.length || 1;
+            const avgScore = totalT > 0 ? (happinessList.reduce((acc, h) => acc + h.happinessScore, 0) / totalT).toFixed(1) : 100;
+            const teachersWithDaysOff = happinessList.filter(h => h.goldenDaysOff >= 1).length;
+            const teachersZeroGap = happinessList.filter(h => h.totalGaps === 0).length;
+            const shiftFatigueCount = happinessList.filter(h => h.shiftFatigueCount > 0).length;
+
+            const filteredList = happinessList.filter(h => {
+              if (!workloadSearch.trim()) return true;
+              return h.teacher.toLowerCase().includes(workloadSearch.toLowerCase()) ||
+                     (h.subjects && h.subjects.toLowerCase().includes(workloadSearch.toLowerCase()));
+            });
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* TOP BANNER: SCHEDULE HAPPINESS INDEX (SHI) */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #881337 0%, #be123c 50%, #e11d48 100%)',
+                  padding: '24px 28px',
+                  borderRadius: '20px',
+                  color: '#ffffff',
+                  boxShadow: '0 10px 25px -5px rgba(225, 29, 72, 0.35)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '16px'
+                }}>
+                  <div style={{ maxWidth: '650px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '4px 12px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginBottom: '8px' }}>
+                      <Sparkles size={14} color="#fde047" /> AI HUMAN-CENTERED TIMETABLE 2026 - 2027
+                    </div>
+                    <h3 style={{ margin: '0 0 6px 0', fontSize: '22px', fontWeight: '900', letterSpacing: '-0.5px' }}>
+                      BẢN ĐỒ CHỈ SỐ HẠNH PHÚC THỜI KHÓA BIỂU (SHI)
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '13.5px', opacity: 0.95, lineHeight: '1.5' }}>
+                      Hệ thống tự động đánh giá độ thuận tiện sư phạm: Triệt tiêu tiết lủng, gom Ngày nghỉ vàng trọn vẹn, chống mệt mỏi chuyển ca Sáng - Chiều và đáp ứng hồ sơ nhân văn cho từng Thầy/Cô.
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleOpenPreferencesModal()}
+                      style={{
+                        padding: '11px 20px',
+                        backgroundColor: '#ffffff',
+                        color: '#be123c',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                      }}
+                    >
+                      <Settings size={17} /> ⚙️ Thiết Lập Hồ Sơ Nhân Văn
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRunAiSolver}
+                      disabled={isSolving}
+                      style={{
+                        padding: '11px 22px',
+                        backgroundColor: '#fde047',
+                        color: '#881337',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: '900',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: '0 4px 14px rgba(253, 224, 71, 0.4)'
+                      }}
+                    >
+                      <Sparkles size={17} color="#881337" /> {isSolving ? 'Đang Tối Ưu...' : '🚀 AI Tối Ưu Hóa Toàn Trường'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4 CORE HAPPINESS KPI STATS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                  
+                  {/* KPI 1: AVERAGE SCORE */}
+                  <div style={{ backgroundColor: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #fecdd3', boxShadow: '0 4px 12px rgba(225, 29, 72, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#9f1239' }}>Điểm Hạnh Phúc Trung Bình</span>
+                      <Award size={22} color="#e11d48" />
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#881337', marginTop: '6px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                      {avgScore} <small style={{ fontSize: '14px', fontWeight: 'bold', color: '#e11d48' }}>/ 100 điểm</small>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold', marginTop: '4px' }}>
+                      ⭐⭐⭐⭐⭐ Đánh giá: Rất xuất sắc
+                    </div>
+                  </div>
+
+                  {/* KPI 2: GOLDEN DAYS OFF */}
+                  <div style={{ backgroundColor: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #bbf7d0', boxShadow: '0 4px 12px rgba(22, 163, 74, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#166534' }}>Giáo Viên Có Ngày Nghỉ Vàng</span>
+                      <Calendar size={22} color="#16a34a" />
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#14532d', marginTop: '6px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                      {teachersWithDaysOff} / {totalT} <small style={{ fontSize: '13px', fontWeight: 'bold', color: '#16a34a' }}>({Math.round((teachersWithDaysOff / totalT) * 100)}%)</small>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#15803d', fontWeight: '500', marginTop: '4px' }}>
+                      ✓ Trọn vẹn 1-2 ngày nghỉ soạn bài / việc riêng
+                    </div>
+                  </div>
+
+                  {/* KPI 3: ZERO-GAP RATE */}
+                  <div style={{ backgroundColor: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #bfdbfe', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1e40af' }}>Tỷ Lệ 100% Không Tiết Lủng</span>
+                      <Layers size={22} color="#2563eb" />
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: '#1e3a8a', marginTop: '6px', display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+                      {teachersZeroGap} / {totalT} <small style={{ fontSize: '13px', fontWeight: 'bold', color: '#2563eb' }}>({Math.round((teachersZeroGap / totalT) * 100)}%)</small>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#2563eb', fontWeight: '500', marginTop: '4px' }}>
+                      ✓ Tiết dạy liền mạch khối 1-2-3 hoặc 3-4-5
+                    </div>
+                  </div>
+
+                  {/* KPI 4: ANTI-FATIGUE SAFETY */}
+                  <div style={{ backgroundColor: '#ffffff', padding: '18px 20px', borderRadius: '16px', border: '1.5px solid #fed7aa', boxShadow: '0 4px 12px rgba(234, 88, 12, 0.05)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#9a3412' }}>Bảo Vệ Chuyển Ca Sáng - Chiều</span>
+                      <ShieldCheck size={22} color="#ea580c" />
+                    </div>
+                    <div style={{ fontSize: '32px', fontWeight: '900', color: shiftFatigueCount === 0 ? '#16a34a' : '#c2410c', marginTop: '6px' }}>
+                      {shiftFatigueCount === 0 ? '✓ 0 Vi Phạm' : `${shiftFatigueCount} Cần Điều Chỉnh`}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#65a30d', fontWeight: '500', marginTop: '4px' }}>
+                      ✓ Cách ly Tiết 5 Sáng & Tiết 6 Chiều an toàn
+                    </div>
+                  </div>
+                </div>
+
+                {/* AI HEURISTIC TOGGLES BAR */}
+                <div style={{ backgroundColor: '#ffffff', padding: '16px 22px', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={enableZeroGapOptimization}
+                        onChange={e => setEnableZeroGapOptimization(e.target.checked)}
+                        style={{ width: '17px', height: '17px', accentColor: '#e11d48' }}
+                      />
+                      ✨ Tối ưu Gom tiết liền mạch (Zero-Gap)
+                    </label>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={enableGoldenDaysOff}
+                        onChange={e => setEnableGoldenDaysOff(e.target.checked)}
+                        style={{ width: '17px', height: '17px', accentColor: '#16a34a' }}
+                      />
+                      🏖️ Gom Ngày nghỉ vàng (1-2 ngày trống)
+                    </label>
+
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={enableAntiFatigueGuard}
+                        onChange={e => setEnableAntiFatigueGuard(e.target.checked)}
+                        style={{ width: '17px', height: '17px', accentColor: '#2563eb' }}
+                      />
+                      🛡️ Chống mệt mỏi chuyển ca (P5 Sáng ➔ P6 Chiều)
+                    </label>
+                  </div>
+
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="Tìm kiếm giáo viên, môn học..."
+                      value={workloadSearch}
+                      onChange={e => setWorkloadSearch(e.target.value)}
+                      style={{ padding: '8px 14px 8px 34px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', width: '250px', outline: 'none' }}
+                    />
+                    <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                  </div>
+                </div>
+
+                {/* TEACHER HAPPINESS CARDS LIST & RANKING */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '16px' }}>
+                  {filteredList.map((item, idx) => {
+                    const isPerfect = item.happinessScore >= 95;
+                    return (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '16px',
+                          border: isPerfect ? '2px solid #fda4af' : '1px solid #e2e8f0',
+                          padding: '18px',
+                          boxShadow: isPerfect ? '0 6px 18px rgba(225, 29, 72, 0.08)' : '0 2px 8px rgba(0,0,0,0.02)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '12px'
+                        }}
+                      >
+                        {/* Card Header */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div>
+                            <div style={{ fontSize: '15.5px', fontWeight: '900', color: '#0f172a' }}>
+                              {item.teacher}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                              Môn: <strong style={{ color: '#0369a1' }}>{item.subjects}</strong> • {item.totalPeriods} tiết/tuần
+                            </div>
+                          </div>
+
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '20px', fontWeight: '900', color: item.happinessScore >= 90 ? '#16a34a' : item.happinessScore >= 75 ? '#d97706' : '#dc2626' }}>
+                              {item.happinessScore} <small style={{ fontSize: '12px', color: '#64748b' }}>/100</small>
+                            </div>
+                            <div style={{ fontSize: '11px', marginTop: '1px' }}>
+                              {item.starRating}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Badges / Metrics Pills */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', backgroundColor: item.goldenDaysOff >= 1 ? '#ecfdf5' : '#f8fafc', color: item.goldenDaysOff >= 1 ? '#047857' : '#64748b', border: `1px solid ${item.goldenDaysOff >= 1 ? '#a7f3d0' : '#e2e8f0'}` }}>
+                            🏖️ {item.goldenDaysOff} ngày nghỉ vàng
+                          </span>
+
+                          <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', backgroundColor: item.totalGaps === 0 ? '#eff6ff' : '#fff7ed', color: item.totalGaps === 0 ? '#1d4ed8' : '#c2410c', border: `1px solid ${item.totalGaps === 0 ? '#bfdbfe' : '#fed7aa'}` }}>
+                            {item.totalGaps === 0 ? '✨ 0 tiết lủng' : `⚠️ ${item.totalGaps} tiết lủng`}
+                          </span>
+
+                          {item.shiftFatigueCount === 0 && (
+                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', backgroundColor: '#fdf4ff', color: '#7e22ce', border: '1px solid #f5d0fe' }}>
+                              🛡️ Chuyển ca êm
+                            </span>
+                          )}
+
+                          {item.preferenceProfile?.avoidPeriod1 && (
+                            <span style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', backgroundColor: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}>
+                              👶 Con nhỏ (Tránh T1)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Detailed Bonus/Penalty List */}
+                        <div style={{ backgroundColor: '#f8fafc', padding: '10px 12px', borderRadius: '10px', fontSize: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          {item.bonuses.map((b, bIdx) => (
+                            <div key={bIdx} style={{ color: '#15803d', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span>✓</span> {b}
+                            </div>
+                          ))}
+                          {item.penalties.map((p, pIdx) => (
+                            <div key={pIdx} style={{ color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                              <span>⚠️</span> {p}
+                            </div>
+                          ))}
+                          {item.bonuses.length === 0 && item.penalties.length === 0 && (
+                            <div style={{ color: '#64748b' }}>Lịch dạy chuẩn, không phát sinh xung đột.</div>
+                          )}
+                        </div>
+
+                        {/* Card Action Buttons */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', borderTop: '1px solid #f1f5f9', paddingTop: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPreferencesModal(item.teacher)}
+                            style={{ padding: '6px 12px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Settings size={13} /> Hồ sơ nhân văn
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStudioView('teacher');
+                              setStudioSelectedTeacher(item.teacher);
+                              setSchedulerSubTab('studio');
+                            }}
+                            style={{ padding: '6px 14px', backgroundColor: '#e11d48', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                          >
+                            <Eye size={13} /> Xem Lưới TKB
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* SUB-TAB 8: SANDBOX DIFF & SAFE PUBLISH */}
           {schedulerSubTab === 'sandbox' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
@@ -8170,6 +8614,324 @@ export default function AdminSchedule() {
           </div>
         );
       })()}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: HỒ SƠ NHÂN VĂN CÁ NHÂN HÓA GIÁO VIÊN (TEACHER PREFERENCES)       */}
+      {/* ========================================================================= */}
+      {showPreferencesModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)', padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '680px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(225, 29, 72, 0.25)', border: '1.5px solid #fecdd3', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '18px 24px', backgroundColor: '#be123c', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                  ❤️
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold' }}>Hồ Sơ Nhân Văn & Nguyện Vọng Giảng Dạy</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '12px', opacity: 0.9 }}>Cấu hình ưu tiên cá nhân cho Thầy/Cô khi AI chạy thuật toán xếp TKB</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPreferencesModal(false)}
+                style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: '#ffffff', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '22px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* Teacher Selector */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  👨‍🏫 Chọn Giáo Viên Cần Cấu Hình:
+                </label>
+                <select
+                  value={prefSelectedTeacher}
+                  onChange={e => handleOpenPreferencesModal(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', fontWeight: 'bold', outline: 'none' }}
+                >
+                  {availableTeachers.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Quick Presets */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>
+                  ⚡ Áp Dụng Nhanh Mẫu Hồ Sơ Nhân Văn:
+                </label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('young_child')}
+                    style={{ padding: '8px 14px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    👶 Nuôi con nhỏ (&lt; 36 tháng)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('long_distance')}
+                    style={{ padding: '8px 14px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🚗 Nhà ở xa (&gt; 15km)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('management')}
+                    style={{ padding: '8px 14px', backgroundColor: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    💼 Kiêm nhiệm (Khóa Thứ 5)
+                  </button>
+                </div>
+              </div>
+
+              {/* Preferences Checkboxes */}
+              <div style={{ backgroundColor: '#fff1f2', padding: '16px', borderRadius: '14px', border: '1px solid #fecdd3', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={prefForm.avoidPeriod1}
+                    onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod1: e.target.checked }))}
+                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
+                  />
+                  <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 1 ca Sáng</strong> (Kịp đưa con đi học / đường xa)</span>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={prefForm.avoidPeriod10}
+                    onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod10: e.target.checked }))}
+                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
+                  />
+                  <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 10 ca Chiều</strong> (Đón con / việc gia đình buổi chiều)</span>
+                </label>
+
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={prefForm.longCommute}
+                    onChange={e => setPrefForm(prev => ({ ...prev, longCommute: e.target.checked }))}
+                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
+                  />
+                  <span>📦 <strong>Gom cụm tiết dạy</strong> (Không xếp 1 tiết đơn lẻ / ngày)</span>
+                </label>
+              </div>
+
+              {/* Custom Off Days */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>
+                  📅 Ngày Bận Cố Định (Sinh Hoạt Chuyên Môn / Công Tác):
+                </label>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {DAYS.map(day => {
+                    const isSelected = prefForm.customOffDays && prefForm.customOffDays.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const current = prefForm.customOffDays || [];
+                          const updated = isSelected ? current.filter(d => d !== day) : [...current, day];
+                          setPrefForm(prev => ({ ...prev, customOffDays: updated }));
+                        }}
+                        style={{
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          backgroundColor: isSelected ? '#be123c' : '#f8fafc',
+                          color: isSelected ? '#ffffff' : '#475569',
+                          border: `1px solid ${isSelected ? '#be123c' : '#cbd5e1'}`
+                        }}
+                      >
+                        {isSelected ? `✓ ${day}` : day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Note */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                  📝 Ghi Chú Nguyện Vọng Cụ Thể:
+                </label>
+                <textarea
+                  rows={2}
+                  value={prefForm.note || ''}
+                  onChange={e => setPrefForm(prev => ({ ...prev, note: e.target.value }))}
+                  placeholder="Ví dụ: Con nhỏ dưới 1 tuổi, xin nghỉ sáng Thứ 4..."
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '14px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                onClick={() => setShowPreferencesModal(false)}
+                style={{ padding: '9px 18px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTeacherPreference}
+                style={{ padding: '9px 24px', backgroundColor: '#be123c', color: '#ffffff', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(190, 18, 60, 0.3)' }}
+              >
+                💾 Lưu Hồ Sơ Nhân Văn
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 5: TRỢ LÝ AI GỢI Ý ĐỔI TIẾT THÔNG MINH 1-CHẠM (AI 1-CLICK SMART SWAP)*/}
+      {/* ========================================================================= */}
+      {showSmartSwapModal && smartSwapSourceSlot && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(4px)', padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '720px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(79, 70, 229, 0.25)', border: '1.5px solid #c7d2fe', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '18px 24px', backgroundColor: '#4f46e5', color: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                  ✨
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold' }}>Trợ Lý AI Gợi Ý Đổi Tiết 1-Chạm</h3>
+                  <p style={{ margin: '2px 0 0', fontSize: '12px', opacity: 0.9 }}>Tìm kiếm và xếp hạng các phương án đổi chéo an toàn, tối ưu sư phạm</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSmartSwapModal(false)}
+                style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: '#ffffff', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Body */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* Selected Slot Context Card */}
+              <div style={{ backgroundColor: '#f5f3ff', padding: '14px 18px', borderRadius: '12px', border: '1px solid #ddd6fe', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <span style={{ fontSize: '12px', color: '#6d28d9', fontWeight: 'bold', textTransform: 'uppercase' }}>Tiết Dạy Cần Đổi Vị Trí:</span>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#4c1d95', marginTop: '2px' }}>
+                    {smartSwapSourceSlot.subject} • {smartSwapSourceSlot.teacher_name} ({smartSwapSourceSlot.student_class})
+                  </div>
+                </div>
+                <div style={{ backgroundColor: '#4f46e5', color: '#ffffff', padding: '6px 14px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                  {smartSwapSourceSlot.day_of_week} • Tiết {smartSwapSourceSlot.period}
+                </div>
+              </div>
+
+              {/* Recommendations List */}
+              <div>
+                <h4 style={{ margin: '0 0 10px', fontSize: '14px', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🎯</span> Danh Sách Phương Án Tối Ưu Nhất (Đã Được AI Xác Thực 0% Trùng):
+                </h4>
+
+                {smartSwapRecommendations.length === 0 ? (
+                  <div style={{ padding: '24px', backgroundColor: '#f8fafc', borderRadius: '12px', textAlign: 'center', color: '#64748b' }}>
+                    Không tìm thấy phương án đổi tiết trực tiếp khả dụng. Vui lòng kiểm tra lại ràng buộc khóa tiết của giáo viên.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {smartSwapRecommendations.map((rec, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '14px',
+                          border: idx === 0 ? '2px solid #818cf8' : '1px solid #e2e8f0',
+                          padding: '14px 18px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          gap: '12px',
+                          boxShadow: idx === 0 ? '0 4px 14px rgba(79, 70, 229, 0.1)' : 'none'
+                        }}
+                      >
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <span style={{ backgroundColor: idx === 0 ? '#4f46e5' : '#e0e7ff', color: idx === 0 ? '#ffffff' : '#3730a3', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                              {idx === 0 ? '🌟 Gợi Ý Số 1 (Tối Ưu Nhất)' : `Phương Án #${idx + 1}`}
+                            </span>
+                            <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a' }}>
+                              ➔ Chuyển sang: {rec.toDay} Tiết {rec.toPeriod}
+                            </span>
+                          </div>
+
+                          <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '6px' }}>
+                            {rec.targetSubject !== '(Ô trống)' ? (
+                              <span>Đổi chéo với môn <strong style={{ color: '#0284c7' }}>{rec.targetSubject}</strong> (GV: {rec.targetTeacher})</span>
+                            ) : (
+                              <span>Chuyển vào <strong style={{ color: '#16a34a' }}>Ô trống hoàn toàn</strong> của lớp</span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+                            {rec.benefits.map((b, bIdx) => (
+                              <span key={bIdx} style={{ fontSize: '11px', fontWeight: 'bold', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                                ✓ {b}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div>
+                          <button
+                            type="button"
+                            onClick={() => handleExecuteSmartSwap(rec)}
+                            style={{
+                              padding: '9px 18px',
+                              backgroundColor: idx === 0 ? '#4f46e5' : '#1e293b',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '10px',
+                              fontWeight: 'bold',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              boxShadow: '0 3px 10px rgba(0,0,0,0.1)'
+                            }}
+                          >
+                            <Zap size={14} color="#fde047" /> Áp Dụng Ngay
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: '12px 24px', backgroundColor: '#f8fafc', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowSmartSwapModal(false)}
+                style={{ padding: '8px 20px', backgroundColor: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
