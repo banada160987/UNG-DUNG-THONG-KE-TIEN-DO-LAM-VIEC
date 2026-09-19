@@ -145,6 +145,10 @@ export default function AdminSchedule() {
     avoidPeriod1: false,
     avoidPeriod10: false,
     longCommute: false,
+    maxDailyCap3: false,
+    morningOnly: false,
+    afternoonOnly: false,
+    preferOffSaturday: false,
     customOffDays: [],
     note: ''
   });
@@ -1437,6 +1441,16 @@ export default function AdminSchedule() {
       setPrefForm(prev => ({ ...prev, avoidPeriod1: true, avoidPeriod10: true, note: 'Nuôi con nhỏ (< 36 tháng): Ưu tiên không xếp Tiết 1 Sáng & Tiết 10 Chiều' }));
     } else if (presetType === 'long_distance') {
       setPrefForm(prev => ({ ...prev, longCommute: true, avoidPeriod1: true, note: 'Nhà xa (> 15km): Gom tiết liền mạch, tránh tiết 1 sáng' }));
+    } else if (presetType === 'health_elderly') {
+      setPrefForm(prev => ({ ...prev, maxDailyCap3: true, avoidPeriod10: true, note: 'Sức khỏe / Lớn tuổi: Tối đa 3 tiết/ngày, tránh kiệt sức' }));
+    } else if (presetType === 'postgraduate') {
+      setPrefForm(prev => ({ ...prev, customOffDays: ['Thứ 6', 'Thứ 7'], note: 'Đi học nâng cao (Cao học, LLCT): Nghỉ cố định Thứ 6 & Thứ 7' }));
+    } else if (presetType === 'gifted_student') {
+      setPrefForm(prev => ({ ...prev, customOffDays: ['Thứ 3', 'Thứ 5'], morningOnly: true, note: 'Bồi dưỡng Đội tuyển HSG: Trống chiều Thứ 3 & Thứ 5 để dạy chuyên đề' }));
+    } else if (presetType === 'morning_only') {
+      setPrefForm(prev => ({ ...prev, morningOnly: true, afternoonOnly: false, note: 'Nguyện vọng chỉ dạy ca Sáng' }));
+    } else if (presetType === 'prefer_sat_off') {
+      setPrefForm(prev => ({ ...prev, preferOffSaturday: true, note: 'Nguyện vọng nghỉ trọn vẹn ngày Thứ 7 (Về quê / việc gia đình)' }));
     } else if (presetType === 'management') {
       setPrefForm(prev => ({ ...prev, customOffDays: ['Thứ 5'], note: 'Kiêm nhiệm Tổ trưởng / Đoàn trường: Khóa ngày Thứ 5 để họp chuyên môn' }));
     }
@@ -8669,58 +8683,144 @@ export default function AdminSchedule() {
                   <button
                     type="button"
                     onClick={() => handleApplyPresetPreference('young_child')}
-                    style={{ padding: '8px 14px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                    style={{ padding: '7px 12px', backgroundColor: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                   >
                     👶 Nuôi con nhỏ (&lt; 36 tháng)
                   </button>
                   <button
                     type="button"
                     onClick={() => handleApplyPresetPreference('long_distance')}
-                    style={{ padding: '8px 14px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                    style={{ padding: '7px 12px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                   >
                     🚗 Nhà ở xa (&gt; 15km)
                   </button>
                   <button
                     type="button"
+                    onClick={() => handleApplyPresetPreference('health_elderly')}
+                    style={{ padding: '7px 12px', backgroundColor: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🧘 Lớn tuổi / Sức khỏe (Max 3t/ngày)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('postgraduate')}
+                    style={{ padding: '7px 12px', backgroundColor: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🎓 Đi học nâng chuẩn (Nghỉ T6+T7)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('gifted_student')}
+                    style={{ padding: '7px 12px', backgroundColor: '#fefce8', color: '#a16207', border: '1px solid #fef08a', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🏆 Bồi dưỡng HSG (Trống chiều T3,T5)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyPresetPreference('prefer_sat_off')}
+                    style={{ padding: '7px 12px', backgroundColor: '#f0fdfa', color: '#0f766e', border: '1px solid #99f6e4', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                  >
+                    🏖️ Nghỉ trọn vẹn Thứ 7
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => handleApplyPresetPreference('management')}
-                    style={{ padding: '8px 14px', backgroundColor: '#faf5ff', color: '#7e22ce', border: '1px solid #e9d5ff', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                    style={{ padding: '7px 12px', backgroundColor: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                   >
                     💼 Kiêm nhiệm (Khóa Thứ 5)
                   </button>
                 </div>
               </div>
 
-              {/* Preferences Checkboxes */}
-              <div style={{ backgroundColor: '#fff1f2', padding: '16px', borderRadius: '14px', border: '1px solid #fecdd3', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={prefForm.avoidPeriod1}
-                    onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod1: e.target.checked }))}
-                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
-                  />
-                  <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 1 ca Sáng</strong> (Kịp đưa con đi học / đường xa)</span>
-                </label>
+              {/* Preferences Checkboxes Categorized */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>
+                  🎯 Các Tiêu Chuẩn Nhân Văn & Ràng Buộc Cá Nhân:
+                </div>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={prefForm.avoidPeriod10}
-                    onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod10: e.target.checked }))}
-                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
-                  />
-                  <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 10 ca Chiều</strong> (Đón con / việc gia đình buổi chiều)</span>
-                </label>
+                {/* Nhóm 1: Giờ vào lớp & tan trường */}
+                <div style={{ backgroundColor: '#fff1f2', padding: '14px', borderRadius: '12px', border: '1px solid #fecdd3', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#9f1239', textTransform: 'uppercase' }}>⏰ Giờ Vào Lớp & Tan Trường</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefForm.avoidPeriod1}
+                      onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod1: e.target.checked }))}
+                      style={{ width: '17px', height: '17px', accentColor: '#be123c' }}
+                    />
+                    <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 1 ca Sáng</strong> (Đưa con đi học / đường xa)</span>
+                  </label>
 
-                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13.5px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    checked={prefForm.longCommute}
-                    onChange={e => setPrefForm(prev => ({ ...prev, longCommute: e.target.checked }))}
-                    style={{ width: '18px', height: '18px', accentColor: '#be123c' }}
-                  />
-                  <span>📦 <strong>Gom cụm tiết dạy</strong> (Không xếp 1 tiết đơn lẻ / ngày)</span>
-                </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#881337', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefForm.avoidPeriod10}
+                      onChange={e => setPrefForm(prev => ({ ...prev, avoidPeriod10: e.target.checked }))}
+                      style={{ width: '17px', height: '17px', accentColor: '#be123c' }}
+                    />
+                    <span>🚫 Ưu tiên <strong>KHÔNG xếp Tiết 10 ca Chiều</strong> (Đón con / việc gia đình buổi chiều)</span>
+                  </label>
+                </div>
+
+                {/* Nhóm 2: Sức khỏe & Tải tiết */}
+                <div style={{ backgroundColor: '#f0fdf4', padding: '14px', borderRadius: '12px', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#166534', textTransform: 'uppercase' }}>🧘 Sức Khỏe & Tải Dạy Hàng Ngày</div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#14532d', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefForm.maxDailyCap3}
+                      onChange={e => setPrefForm(prev => ({ ...prev, maxDailyCap3: e.target.checked }))}
+                      style={{ width: '17px', height: '17px', accentColor: '#16a34a' }}
+                    />
+                    <span>🧘 <strong>Giới hạn tối đa 3 tiết/ngày</strong> (Dành cho GV lớn tuổi / vấn đề sức khỏe)</span>
+                  </label>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#14532d', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefForm.longCommute}
+                      onChange={e => setPrefForm(prev => ({ ...prev, longCommute: e.target.checked }))}
+                      style={{ width: '17px', height: '17px', accentColor: '#16a34a' }}
+                    />
+                    <span>📦 <strong>Gom cụm tiết dạy</strong> (Không xếp 1 tiết đơn lẻ / ngày)</span>
+                  </label>
+                </div>
+
+                {/* Nhóm 3: Ca dạy & Ngày nghỉ mong muốn */}
+                <div style={{ backgroundColor: '#eff6ff', padding: '14px', borderRadius: '12px', border: '1px solid #bfdbfe', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e40af', textTransform: 'uppercase' }}>☀️ Ca Dạy & Ngày Nghỉ Mong Muốn</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#1e3a8a', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={prefForm.morningOnly}
+                        onChange={e => setPrefForm(prev => ({ ...prev, morningOnly: e.target.checked, afternoonOnly: e.target.checked ? false : prev.afternoonOnly }))}
+                        style={{ width: '17px', height: '17px', accentColor: '#2563eb' }}
+                      />
+                      <span>☀️ Chỉ dạy <strong>ca Sáng</strong></span>
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#1e3a8a', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={prefForm.afternoonOnly}
+                        onChange={e => setPrefForm(prev => ({ ...prev, afternoonOnly: e.target.checked, morningOnly: e.target.checked ? false : prev.morningOnly }))}
+                        style={{ width: '17px', height: '17px', accentColor: '#2563eb' }}
+                      />
+                      <span>⛅ Chỉ dạy <strong>ca Chiều</strong></span>
+                    </label>
+                  </div>
+
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#1e3a8a', cursor: 'pointer', marginTop: '4px' }}>
+                    <input
+                      type="checkbox"
+                      checked={prefForm.preferOffSaturday}
+                      onChange={e => setPrefForm(prev => ({ ...prev, preferOffSaturday: e.target.checked }))}
+                      style={{ width: '17px', height: '17px', accentColor: '#2563eb' }}
+                    />
+                    <span>🏖️ <strong>Ưu tiên nghỉ trọn vẹn Thứ 7</strong> (Dành thời gian về quê / gia đình)</span>
+                  </label>
+                </div>
               </div>
 
               {/* Custom Off Days */}

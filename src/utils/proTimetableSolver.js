@@ -464,11 +464,18 @@ export function runAiTimetableSolver({
           let penalty = currentDayTotal * 20;
           if (currentSubjectCount > 0) penalty += 50;
 
-          // 1. Hồ sơ Nhân văn Cá nhân hóa (Teacher Preferences)
+          // 1. Hồ sơ Nhân văn Cá nhân hóa Mở Rộng (Extended Teacher Preferences)
           const pref = (teacherPreferences && teacherPreferences[teacher]) || {};
-          if (pref.avoidPeriod1 && p1 === 1) penalty += 150;
-          if (pref.avoidPeriod10 && p2 === 10) penalty += 150;
-          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 500;
+          if (pref.avoidPeriod1 && p1 === 1) penalty += 180;
+          if (pref.avoidPeriod10 && p2 === 10) penalty += 180;
+          if (pref.morningOnly && p1 >= 6) penalty += 800;
+          if (pref.afternoonOnly && p1 <= 5) penalty += 800;
+          if (pref.maxDailyCap3) {
+            const currentTCount = getTeacherDailyCount(teacher, day);
+            if (currentTCount + 2 > 3) penalty += 350;
+          }
+          if (pref.preferOffSaturday && day === 'Thứ 7') penalty += 300;
+          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 600;
 
           // 2. Chống mệt mỏi chuyển ca Sáng - Chiều (Anti-Fatigue Guard)
           if (enableAntiFatigueGuard && tGrid) {
@@ -534,11 +541,18 @@ export function runAiTimetableSolver({
             penalty += isGdtc ? 300 : 40;
           }
 
-          // 1. Hồ sơ Nhân văn Cá nhân hóa (Teacher Preferences)
+          // 1. Hồ sơ Nhân văn Cá nhân hóa Mở Rộng (Extended Teacher Preferences)
           const pref = (teacherPreferences && teacherPreferences[teacher]) || {};
-          if (pref.avoidPeriod1 && p === 1) penalty += 150;
-          if (pref.avoidPeriod10 && p === 10) penalty += 150;
-          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 500;
+          if (pref.avoidPeriod1 && p === 1) penalty += 180;
+          if (pref.avoidPeriod10 && p === 10) penalty += 180;
+          if (pref.morningOnly && p >= 6) penalty += 800;
+          if (pref.afternoonOnly && p <= 5) penalty += 800;
+          if (pref.maxDailyCap3) {
+            const currentTCount = getTeacherDailyCount(teacher, day);
+            if (currentTCount + 1 > 3) penalty += 350;
+          }
+          if (pref.preferOffSaturday && day === 'Thứ 7') penalty += 300;
+          if (pref.customOffDays && Array.isArray(pref.customOffDays) && pref.customOffDays.includes(day)) penalty += 600;
 
           // 2. Chống mệt mỏi chuyển ca Sáng - Chiều (Anti-Fatigue Guard)
           if (enableAntiFatigueGuard && tGrid) {
@@ -1614,7 +1628,7 @@ export function calculateTeacherHappinessMetrics(scheduleItems = [], teacherAssi
       penalties.push(`Chuyển ca gấp Tiết 5 Sáng -> Tiết 6 Chiều (${shiftFatigueCount} ngày) (-${p}đ)`);
     }
 
-    // Kiểm tra hồ sơ nhân văn
+    // Kiểm tra hồ sơ nhân văn mở rộng
     let prefViolations = 0;
     if (pref.avoidPeriod1) {
       const p1Count = tItems.filter(s => Number(s.period) === 1).length;
@@ -1630,6 +1644,39 @@ export function calculateTeacherHappinessMetrics(scheduleItems = [], teacherAssi
         prefViolations += p10Count;
         score -= p10Count * 10;
         penalties.push(`Dính ${p10Count} tiết 10 chiều (-${p10Count * 10}đ)`);
+      }
+    }
+    if (pref.maxDailyCap3) {
+      DAYS.forEach(day => {
+        const dCount = tItems.filter(s => s.day_of_week === day).length;
+        if (dCount > 3) {
+          score -= 15;
+          penalties.push(`Vượt 3 tiết/ngày vào ${day} (${dCount} tiết - Sức khỏe/Lớn tuổi) (-15đ)`);
+        }
+      });
+    }
+    if (pref.morningOnly) {
+      const aftCount = tItems.filter(s => Number(s.period) >= 6).length;
+      if (aftCount > 0) {
+        score -= 25;
+        penalties.push(`Dính ${aftCount} tiết chiều (Nguyện vọng chỉ dạy Sáng) (-25đ)`);
+      }
+    }
+    if (pref.afternoonOnly) {
+      const mornCount = tItems.filter(s => Number(s.period) <= 5).length;
+      if (mornCount > 0) {
+        score -= 25;
+        penalties.push(`Dính ${mornCount} tiết sáng (Nguyện vọng chỉ dạy Chiều) (-25đ)`);
+      }
+    }
+    if (pref.preferOffSaturday) {
+      const satCount = tItems.filter(s => s.day_of_week === 'Thứ 7').length;
+      if (satCount === 0) {
+        score += 10;
+        bonuses.push(`Nghỉ trọn vẹn Thứ 7 đúng nguyện vọng (+10đ)`);
+      } else {
+        score -= 15;
+        penalties.push(`Dính ${satCount} tiết Thứ 7 (Nguyện vọng nghỉ Thứ 7) (-15đ)`);
       }
     }
     if (pref.customOffDays && Array.isArray(pref.customOffDays)) {
