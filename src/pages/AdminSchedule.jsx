@@ -431,9 +431,11 @@ export default function AdminSchedule() {
 
   async function fetchTimetableData() {
     try {
-      const { data, error } = await supabase
+      const client = supabase2 || supabase;
+      const { data, error } = await client
         .from('cbq_timetable_items')
         .select('*')
+        .range(0, 1999)
         .order('student_class', { ascending: true });
 
       if (!error && data && data.length > 0) {

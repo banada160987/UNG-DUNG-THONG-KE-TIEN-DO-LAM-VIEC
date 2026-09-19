@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, supabase2 } from '../lib/supabase';
 import {
   Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText,
   Sparkles, BookOpen, User, Users, Search, Filter, Flame, Info, CheckCircle2, X, Star, Bell,
@@ -435,7 +435,8 @@ export default function PublicSchedule() {
 
   async function fetchTimetableData() {
     try {
-      const { data, error } = await supabase.from('cbq_timetable_items').select('*');
+      const client = supabase2 || supabase;
+      const { data, error } = await client.from('cbq_timetable_items').select('*').range(0, 1999);
       if (!error && data && data.length > 0) {
         const cleaned = processRawTimetableItems(data);
         setTimetableData(cleaned);
