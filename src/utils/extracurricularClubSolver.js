@@ -7,61 +7,125 @@
 import { DAYS, PERIODS_AFTERNOON, getFullTeacherName } from './proTimetableSolver';
 
 // Danh mục CLB & Đội tuyển HSG chuẩn cho THPT
+/// Danh mục 7 CLB thực tế theo bảng Đăng ký Supabase và các Đội tuyển HSG của THPT Cao Bá Quát
 export const DEFAULT_EXTRACURRICULAR_ACTIVITIES = [
+  // --- 7 CÂU LẠC BỘ THỰC TẾ (927 HỌC SINH ĐĂNG KÝ TRÊN SUPABASE) ---
   {
-    id: 'act_hsg_math_10',
-    name: 'Đội tuyển HSG Toán 10',
-    type: 'hsg',
-    category: 'Bồi dưỡng HSG',
-    teacher_name: 'Nguyễn Văn Hùng',
+    id: 'act_clb_1_tieng_anh',
+    name: '1) Câu lạc bộ Tiếng Anh',
+    type: 'club',
+    category: 'Câu lạc bộ Học thuật',
+    teacher_name: 'Phạm Thị Thu Hiền (AV)',
+    room: 'Phòng Lab Ngoại ngữ',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A09', '10A10', '10A12', '10A14', '11A03', '11A06', '12A01', '12A04', '12A05', '12A06', '12A07', '12A09'],
+    color: '#6366f1',
+    badge: '🗣️ CLB Tiếng Anh'
+  },
+  {
+    id: 'act_clb_2_the_thao',
+    name: '2) Câu lạc bộ Thể dục - Thể thao',
+    type: 'club',
+    category: 'Câu lạc bộ Thể thao',
+    teacher_name: 'Hồ Anh Tuấn',
+    room: 'Nhà thi đấu Đa năng & Sân bóng',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12', '10A13', '10A14', '10A15', '11A01', '11A02', '11A03', '11A04', '11A05', '11A07', '11A08', '11A09', '12A01', '12A02', '12A03', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10'],
+    color: '#16a34a',
+    badge: '⚽ CLB Thể thao'
+  },
+  {
+    id: 'act_clb_3_van_nghe',
+    name: '3) Câu lạc bộ Văn nghệ - Mĩ thuật',
+    type: 'club',
+    category: 'Câu lạc bộ Nghệ thuật',
+    teacher_name: 'Phan Thị Hòa',
+    room: 'Hội trường & Phòng Mỹ thuật',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A11', '10A12', '10A13', '10A14', '10A15', '11A01', '11A02', '11A03', '11A06', '11A07', '11A08', '11A09', '12A01', '12A02', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10'],
+    color: '#ec4899',
+    badge: '🎨 CLB Văn nghệ - MT'
+  },
+  {
+    id: 'act_clb_4_stem',
+    name: '4) Câu lạc bộ STEM - STEAM - Khoa học kĩ thuật - Khởi nghiệp',
+    type: 'club',
+    category: 'Câu lạc bộ Kỹ năng',
+    teacher_name: 'Lương Thị Kim Thu',
+    room: 'Phòng Máy tính 1 (STEM)',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A02', '10A05', '10A06', '10A10', '10A11', '10A14', '11A03', '11A07', '11A08', '12A01', '12A02', '12A04'],
+    color: '#0284c7',
+    badge: '🚀 CLB STEM'
+  },
+  {
+    id: 'act_clb_5_truyen_thong',
+    name: '5) Câu lạc bộ Truyền thông và Cộng đồng',
+    type: 'club',
+    category: 'Câu lạc bộ Kỹ năng',
+    teacher_name: 'Lê Thị Hồng Nhung',
+    room: 'Phòng Studio Truyền thông',
+    periods_per_week: 2,
+    target_classes: ['10A02', '10A03', '10A06', '10A07', '10A09', '10A10', '10A12', '10A13', '10A14', '10A15', '11A01', '11A06', '11A08', '11A09', '12A04', '12A06', '12A07', '12A08', '12A09', '12A10'],
+    color: '#059669',
+    badge: '📢 CLB Truyền thông'
+  },
+  {
+    id: 'act_clb_6_ai',
+    name: '6) Câu lạc bộ Ứng dụng AI',
+    type: 'club',
+    category: 'Câu lạc bộ Kỹ năng',
+    teacher_name: 'Võ Xe',
+    room: 'Phòng Máy tính 2',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A06', '10A07', '10A13', '10A14', '11A03', '11A07', '11A09', '12A03', '12A04', '12A07', '12A08', '12A10'],
+    color: '#7c3aed',
+    badge: '🤖 CLB Ứng dụng AI'
+  },
+  {
+    id: 'act_clb_7_tu_duy',
+    name: '7) Câu lạc bộ Phát triển kĩ năng - Khai phá tư duy',
+    type: 'club',
+    category: 'Câu lạc bộ Kỹ năng',
+    teacher_name: 'Trương Thị Hoàng Lam',
     room: 'Phòng Chuyên đề 1',
     periods_per_week: 2,
-    target_classes: ['10A01', '10A02', '10A03', '10A04'],
-    color: '#7c3aed',
+    target_classes: ['10A01', '10A02', '10A05', '10A06', '10A08', '10A09', '10A10', '10A11', '10A12', '10A14', '10A15', '11A01', '11A06', '11A07', '11A08', '11A09', '12A01', '12A02', '12A03', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10'],
+    color: '#d97706',
+    badge: '💡 CLB Khai phá tư duy'
+  },
+
+  // --- CÁC ĐỘI TUYỂN BỒI DƯỠNG HỌC SINH GIỎI (HSG) ---
+  {
+    id: 'act_hsg_math',
+    name: 'Đội tuyển HSG Toán',
+    type: 'hsg',
+    category: 'Bồi dưỡng HSG',
+    teacher_name: 'Nguyễn Hữu Lam',
+    room: 'Phòng Chuyên đề 2',
+    periods_per_week: 2,
+    target_classes: ['10A01', '10A02', '10A03', '11A01', '11A02'],
+    color: '#9333ea',
     badge: '🏆 HSG Toán'
   },
   {
-    id: 'act_hsg_lit_11',
-    name: 'Đội tuyển HSG Ngữ văn 11',
+    id: 'act_hsg_lit',
+    name: 'Đội tuyển HSG Ngữ văn',
     type: 'hsg',
     category: 'Bồi dưỡng HSG',
-    teacher_name: 'Lê Thị Thu Thảo',
-    room: 'Phòng Chuyên đề 2',
+    teacher_name: 'Lê Thị Phương',
+    room: 'Phòng Chuyên đề 3',
     periods_per_week: 2,
-    target_classes: ['11A01', '11A02', '11A03'],
-    color: '#9333ea',
+    target_classes: ['10A01', '10A02', '11A01', '11A02'],
+    color: '#a855f7',
     badge: '🏆 HSG Văn'
   },
   {
-    id: 'act_hsg_eng_10_11',
-    name: 'Đội tuyển HSG Tiếng Anh',
-    type: 'hsg',
-    category: 'Bồi dưỡng HSG',
-    teacher_name: 'Hoàng Thu Trang',
-    room: 'Phòng Lab Ngoại ngữ',
-    periods_per_week: 2,
-    target_classes: ['10A01', '10A02', '11A01', '11A02'],
-    color: '#6366f1',
-    badge: '🏆 HSG Anh'
-  },
-  {
-    id: 'act_hsg_inf_10_12',
-    name: 'Đội tuyển HSG Tin học & Lập trình',
-    type: 'hsg',
-    category: 'Bồi dưỡng HSG',
-    teacher_name: 'Trần Quốc Tuấn',
-    room: 'Phòng Máy tính 1 (STEM)',
-    periods_per_week: 2,
-    target_classes: ['10A01', '11A01', '12A01'],
-    color: '#0284c7',
-    badge: '🏆 HSG Tin'
-  },
-  {
-    id: 'act_hsg_phy_10_11',
+    id: 'act_hsg_phy',
     name: 'Đội tuyển HSG Vật lí',
     type: 'hsg',
     category: 'Bồi dưỡng HSG',
-    teacher_name: 'Phạm Đức Long',
+    teacher_name: 'Nguyễn Hàm Thắng',
     room: 'Phòng Thực hành Vật lí',
     periods_per_week: 2,
     target_classes: ['10A01', '10A02', '11A01'],
@@ -69,76 +133,28 @@ export const DEFAULT_EXTRACURRICULAR_ACTIVITIES = [
     badge: '🏆 HSG Lý'
   },
   {
-    id: 'act_hsg_chem_10_11',
+    id: 'act_hsg_chem',
     name: 'Đội tuyển HSG Hóa học',
     type: 'hsg',
     category: 'Bồi dưỡng HSG',
-    teacher_name: 'Đặng Mai Lan',
+    teacher_name: 'Cao Thanh Tuấn',
     room: 'Phòng Thực hành Hóa học',
     periods_per_week: 2,
     target_classes: ['10A01', '10A03', '11A02'],
-    color: '#d97706',
+    color: '#e11d48',
     badge: '🏆 HSG Hóa'
   },
   {
-    id: 'act_clb_robotics',
-    name: 'CLB Robotics & AI STEM',
-    type: 'club',
-    category: 'Câu lạc bộ Kỹ năng',
-    teacher_name: 'Trần Quốc Tuấn',
-    room: 'Phòng Máy tính 1 (STEM)',
+    id: 'act_hsg_bio',
+    name: 'Đội tuyển HSG Sinh học',
+    type: 'hsg',
+    category: 'Bồi dưỡng HSG',
+    teacher_name: 'Lương Chấn Vinh',
+    room: 'Phòng Thực hành Sinh học',
     periods_per_week: 2,
-    target_classes: ['10A01', '10A02', '10A03', '11A01', '11A02'],
-    color: '#059669',
-    badge: '🤖 CLB Robotics'
-  },
-  {
-    id: 'act_clb_basketball',
-    name: 'CLB Bóng rổ & Thể thao',
-    type: 'club',
-    category: 'Câu lạc bộ Thể thao',
-    teacher_name: 'Lê Minh Tuấn',
-    room: 'Nhà thi đấu Đa năng',
-    periods_per_week: 2,
-    target_classes: ['10A01', '10A02', '10A04', '11A01', '11A03', '12A01'],
-    color: '#16a34a',
-    badge: '🏀 CLB Bóng rổ'
-  },
-  {
-    id: 'act_clb_music',
-    name: 'CLB Âm nhạc & Nghệ thuật',
-    type: 'club',
-    category: 'Câu lạc bộ Nghệ thuật',
-    teacher_name: 'Vũ Thị Minh Hạnh',
-    room: 'Hội trường Nhà trường',
-    periods_per_week: 2,
-    target_classes: ['10A01', '10A03', '11A02', '11A04'],
-    color: '#ec4899',
-    badge: '🎵 CLB Âm nhạc'
-  },
-  {
-    id: 'act_clb_debate',
-    name: 'CLB Tiếng Anh & Tranh biện (Debate)',
-    type: 'club',
-    category: 'Câu lạc bộ Học thuật',
-    teacher_name: 'Hoàng Thu Trang',
-    room: 'Phòng Chuyên đề 3',
-    periods_per_week: 2,
-    target_classes: ['10A01', '10A02', '11A01', '11A03'],
-    color: '#8b5cf6',
-    badge: '🗣️ CLB Tranh biện'
-  },
-  {
-    id: 'act_clb_media',
-    name: 'CLB Truyền thông & Nhiếp ảnh',
-    type: 'club',
-    category: 'Câu lạc bộ Kỹ năng',
-    teacher_name: 'Nguyễn Hải Đăng',
-    room: 'Phòng Studio Truyền thông',
-    periods_per_week: 2,
-    target_classes: ['10A01', '10A04', '11A01', '12A02'],
-    color: '#0284c7',
-    badge: '📸 CLB Truyền thông'
+    target_classes: ['10A01', '10A02', '11A07'],
+    color: '#10b981',
+    badge: '🏆 HSG Sinh'
   }
 ];
 

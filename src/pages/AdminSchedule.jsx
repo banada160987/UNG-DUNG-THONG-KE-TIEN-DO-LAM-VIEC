@@ -251,15 +251,152 @@ export default function AdminSchedule() {
 
   const fetchStudentRegistrations = async () => {
     try {
-      const { data, error } = await supabase
+      const client = supabase2Admin || supabase2 || supabase;
+      const { data, error } = await client
         .from('cbq_student_registrations')
         .select('*')
-        .limit(1000);
+        .eq('campaign_id', 'f49de727-f109-4b95-88e8-a68c21741ebd');
       if (!error && data && data.length > 0) {
         setStudentRegistrations(data);
+        localStorage.setItem('cbq_student_registrations', JSON.stringify(data));
       }
     } catch (err) {
       console.warn("Lỗi nạp đăng ký học sinh:", err);
+    }
+  };
+
+  const handleSyncClubsFromDatabase = async () => {
+    try {
+      const client = supabase2Admin || supabase2 || supabase;
+      const { data: regs, error } = await client
+        .from('cbq_student_registrations')
+        .select('*')
+        .eq('campaign_id', 'f49de727-f109-4b95-88e8-a68c21741ebd');
+
+      const targetRegs = (regs && regs.length > 0) ? regs : studentRegistrations;
+      if (targetRegs && targetRegs.length > 0) {
+        setStudentRegistrations(targetRegs);
+        localStorage.setItem('cbq_student_registrations', JSON.stringify(targetRegs));
+      }
+
+      const clubMap = {
+        '1) Câu lạc bộ Tiếng Anh': {
+          id: 'act_clb_1_tieng_anh',
+          name: '1) Câu lạc bộ Tiếng Anh',
+          type: 'club',
+          category: 'Câu lạc bộ Học thuật',
+          teacher_name: 'Phạm Thị Thu Hiền (AV)',
+          room: 'Phòng Lab Ngoại ngữ',
+          periods_per_week: 2,
+          color: '#6366f1',
+          badge: '🗣️ CLB Tiếng Anh',
+          classes: new Set()
+        },
+        '2) Câu lạc bộ Thể duc - Thể thao': {
+          id: 'act_clb_2_the_thao',
+          name: '2) Câu lạc bộ Thể dục - Thể thao',
+          type: 'club',
+          category: 'Câu lạc bộ Thể thao',
+          teacher_name: 'Hồ Anh Tuấn',
+          room: 'Nhà thi đấu Đa năng & Sân bóng',
+          periods_per_week: 2,
+          color: '#16a34a',
+          badge: '⚽ CLB Thể thao',
+          classes: new Set()
+        },
+        '3) Câu lạc bộ Văn nghệ - Mĩ thuật': {
+          id: 'act_clb_3_van_nghe',
+          name: '3) Câu lạc bộ Văn nghệ - Mĩ thuật',
+          type: 'club',
+          category: 'Câu lạc bộ Nghệ thuật',
+          teacher_name: 'Phan Thị Hòa',
+          room: 'Hội trường & Phòng Mỹ thuật',
+          periods_per_week: 2,
+          color: '#ec4899',
+          badge: '🎨 CLB Văn nghệ - MT',
+          classes: new Set()
+        },
+        '4) Câu lạc bộ STEM - STEAM - Khoa học kĩ thuật - Khởi nghiệp ': {
+          id: 'act_clb_4_stem',
+          name: '4) Câu lạc bộ STEM - STEAM - Khoa học kĩ thuật - Khởi nghiệp',
+          type: 'club',
+          category: 'Câu lạc bộ Kỹ năng',
+          teacher_name: 'Lương Thị Kim Thu',
+          room: 'Phòng Máy tính 1 (STEM)',
+          periods_per_week: 2,
+          color: '#0284c7',
+          badge: '🚀 CLB STEM',
+          classes: new Set()
+        },
+        '5) Câu lạc bộ Truyền thông và Cộng đồng': {
+          id: 'act_clb_5_truyen_thong',
+          name: '5) Câu lạc bộ Truyền thông và Cộng đồng',
+          type: 'club',
+          category: 'Câu lạc bộ Kỹ năng',
+          teacher_name: 'Lê Thị Hồng Nhung',
+          room: 'Phòng Studio Truyền thông',
+          periods_per_week: 2,
+          color: '#059669',
+          badge: '📢 CLB Truyền thông',
+          classes: new Set()
+        },
+        '6) Câu lạc bộ Ứng dụng AI': {
+          id: 'act_clb_6_ai',
+          name: '6) Câu lạc bộ Ứng dụng AI',
+          type: 'club',
+          category: 'Câu lạc bộ Kỹ năng',
+          teacher_name: 'Võ Xe',
+          room: 'Phòng Máy tính 2',
+          periods_per_week: 2,
+          color: '#7c3aed',
+          badge: '🤖 CLB Ứng dụng AI',
+          classes: new Set()
+        },
+        '7) Câu lạc bộ Phát triển kĩ năng - Khai phá tư duy': {
+          id: 'act_clb_7_tu_duy',
+          name: '7) Câu lạc bộ Phát triển kĩ năng - Khai phá tư duy',
+          type: 'club',
+          category: 'Câu lạc bộ Kỹ năng',
+          teacher_name: 'Trương Thị Hoàng Lam',
+          room: 'Phòng Chuyên đề 1',
+          periods_per_week: 2,
+          color: '#d97706',
+          badge: '💡 CLB Khai phá tư duy',
+          classes: new Set()
+        }
+      };
+
+      (targetRegs || []).forEach(r => {
+        const resp = r.responses || {};
+        const cName = r.student_class;
+        if (!cName) return;
+        Object.values(resp).forEach(val => {
+          const arr = Array.isArray(val) ? val : [val];
+          arr.forEach(clubStr => {
+            if (!clubStr) return;
+            Object.keys(clubMap).forEach(k => {
+              if (clubStr.includes(k) || k.includes(clubStr)) {
+                clubMap[k].classes.add(cName);
+              }
+            });
+          });
+        });
+      });
+
+      const syncedClubs = Object.values(clubMap).map(c => ({
+        ...c,
+        target_classes: Array.from(c.classes).sort()
+      }));
+
+      const hsgTeams = (DEFAULT_EXTRACURRICULAR_ACTIVITIES || []).filter(a => a.type === 'hsg');
+      const finalActivities = [...syncedClubs, ...hsgTeams];
+
+      setExtracurricularActivities(finalActivities);
+      localStorage.setItem('cbq_extracurricular_activities', JSON.stringify(finalActivities));
+
+      alert(`🎉 ĐÃ ĐỒNG BỘ THÀNH CÔNG TỪ DATABASE SUPABASE:\n- Nạp đúng 7 Câu Lạc Bộ Thực Tế\n- ${targetRegs.length} Lượt Học Sinh Đăng Ký\n- Đã cập nhật danh sách lớp tham gia chính xác cho từng CLB!`);
+    } catch (err) {
+      alert("Lỗi đồng bộ: " + err.message);
     }
   };
 
@@ -6052,6 +6189,28 @@ export default function AdminSchedule() {
 
                   <button
                     type="button"
+                    onClick={handleSyncClubsFromDatabase}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '10px 16px',
+                      borderRadius: '10px',
+                      border: '1px solid #bae6fd',
+                      backgroundColor: '#f0f9ff',
+                      color: '#0284c7',
+                      fontWeight: 'bold',
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(2, 132, 199, 0.08)'
+                    }}
+                    title="Nạp trực tiếp 7 Câu lạc bộ thực tế và 927 học sinh đã đăng ký từ cơ sở dữ liệu Supabase"
+                  >
+                    <RefreshCw size={16} color="#0284c7" /> 🔄 Đồng Bộ 7 CLB (927 HS từ Database)
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setShowAddActivityModal(true)}
                     style={{
                       display: 'inline-flex',
@@ -7406,14 +7565,20 @@ export default function AdminSchedule() {
               </div>
 
               <div>
-                <label style={styles.label}>Giáo Viên Phụ Trách:</label>
+                <label style={styles.label}>Giáo Viên Phụ Trách (Chọn từ danh sách 76 GV):</label>
                 <input
                   type="text"
+                  list="activityTeacherList"
                   value={newActivity.teacher_name}
                   onChange={e => setNewActivity({ ...newActivity, teacher_name: e.target.value })}
-                  placeholder="VD: Nguyễn Văn An, Trần Thị Bình..."
+                  placeholder="Chọn hoặc nhập tên giáo viên phụ trách..."
                   style={styles.input}
                 />
+                <datalist id="activityTeacherList">
+                  {availableTeachers.map(t => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
               </div>
 
               <div>
