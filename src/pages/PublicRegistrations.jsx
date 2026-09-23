@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase, supabase2, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
-import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle } from 'lucide-react';
+import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, Award, X } from 'lucide-react';
+import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 
 export default function PublicRegistrations() {
   const [campaigns, setCampaigns] = useState([]);
@@ -15,6 +16,14 @@ export default function PublicRegistrations() {
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   
+  // Prerequisite Club Verification States
+  const [checkingClubEligibility, setCheckingClubEligibility] = useState(false);
+  const [clubEligibility, setClubEligibility] = useState(null); 
+  // { eligible: boolean, requiredClub: string, registeredClubs: string[] }
+
+  // QR Modal State
+  const [qrModalItem, setQrModalItem] = useState(null);
+
   // Class Autocomplete States
   const [classSuggestions, setClassSuggestions] = useState([]);
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
@@ -23,6 +32,7 @@ export default function PublicRegistrations() {
   const [responses, setResponses] = useState({});
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [submittedData, setSubmittedData] = useState(null);
 
   const dropdownRef = useRef(null);
   const classDropdownRef = useRef(null);
@@ -65,6 +75,22 @@ export default function PublicRegistrations() {
     return '';
   };
 
+  const getPrerequisiteClub = (cam) => {
+    if (!cam) return null;
+    if (cam.prerequisite_club) return cam.prerequisite_club;
+    if (cam.form_schema && !Array.isArray(cam.form_schema) && cam.form_schema.prerequisite_club) {
+      return cam.form_schema.prerequisite_club;
+    }
+    // Fallback nhận diện theo tiêu đề
+    const title = (cam.title || '').toLowerCase();
+    if (title.includes('thể dục') || title.includes('thể thao') || title.includes('tdtt')) {
+      if (title.includes('môn phụ') || title.includes('phân môn') || title.includes('bộ môn')) {
+        return '2) Câu lạc bộ Thể duc - Thể thao';
+      }
+    }
+    return null;
+  };
+
   const getCampaignStatus = (cam) => {
     if (!cam) return { code: 'open', label: '🟢 Đang mở', isLocked: false, message: '' };
     const now = new Date();
@@ -98,10 +124,7 @@ export default function PublicRegistrations() {
     return { code: 'open', label: '🟢 Đang mở', isLocked: false, message: '' };
   };
 
-  async function fetchStudentRoster() {
-    // 🟢 CÁCH 02: Không nạp 3,000 học sinh khi vừa mở trang nữa!
-    // Hệ thống sẽ tự nạp ngầm ~35 học sinh theo Lớp khi người dùng chọn Lớp.
-  }
+  async function fetchStudentRoster() {}
 
   const getUniqueClassesList = () => {
     const defaults = [];
@@ -119,7 +142,6 @@ export default function PublicRegistrations() {
     const cleanClass = (classVal || '').trim();
 
     if (cleanClass) {
-      // Nạp danh sách ~35 học sinh của Lớp đó
       const studentsInClass = await fetchStudentsByClass(cleanClass);
       let matches = studentsInClass;
       if (cleanName) {
@@ -156,11 +178,13 @@ export default function PublicRegistrations() {
   const handleNameChange = (val) => {
     setStudentName(val);
     setIsVerified(false);
+    setClubEligibility(null);
     filterNameSuggestions(val);
   };
 
   const handleClassChange = (val) => {
     setStudentClass(val);
+    setClubEligibility(null);
     filterClassSuggestions(val);
     if (val) fetchStudentsByClass(val);
   };
@@ -168,11 +192,77 @@ export default function PublicRegistrations() {
   const handleSelectClassSuggestion = (clsName) => {
     setStudentClass(clsName);
     setShowClassSuggestions(false);
+    setClubEligibility(null);
     fetchStudentsByClass(clsName);
     filterNameSuggestions(studentName, clsName);
   };
 
-  const handleSelectSuggestion = (student) => {
+  // KIỂM TRA ĐIỀU KIỆN TIÊN QUYẾT: Học sinh đã đăng ký CLB mẹ hay chưa
+  const verifyClubPrerequisite = async (studentCodeVal, targetCampaign) => {
+    const requiredClub = getPrerequisiteClub(targetCampaign);
+    if (!requiredClub) {
+      setClubEligibility({ eligible: true, requiredClub: null, registeredClubs: [] });
+      return true;
+    }
+
+    setCheckingClubEligibility(true);
+    try {
+      // Tìm đợt đăng ký CLB mẹ
+      const client = targetCampaign._source === 'sb1' && supabase ? supabase : (supabase2 || supabase);
+      
+      // Truy vấn kết quả đăng ký của học sinh trong đợt CLB
+      const { data: regRecords, error } = await client
+        .from('cbq_student_registrations')
+        .select('*')
+        .eq('student_code', studentCodeVal);
+
+      if (error) throw error;
+
+      // Trích xuất toàn bộ CLB mà học sinh này đã từng đăng ký
+      const registeredClubs = [];
+      (regRecords || []).forEach(rec => {
+        if (!rec.responses) return;
+        Object.values(rec.responses).forEach(ans => {
+          if (Array.isArray(ans)) {
+            ans.forEach(item => {
+              if (typeof item === 'string' && (item.includes('Câu lạc bộ') || item.includes('CLB'))) {
+                registeredClubs.push(item);
+              }
+            });
+          } else if (typeof ans === 'string' && (ans.includes('Câu lạc bộ') || ans.includes('CLB'))) {
+            registeredClubs.push(ans);
+          }
+        });
+      });
+
+      // Kiểm tra xem có khớp requiredClub không (hỗ trợ so sánh chuẩn hóa)
+      const cleanReq = requiredClub.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const isEligible = registeredClubs.some(club => {
+        const cleanClub = club.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return cleanClub.includes(cleanReq) || cleanReq.includes(cleanClub) || 
+          (cleanReq.includes('theduc') && cleanClub.includes('theduc')) ||
+          (cleanReq.includes('thethao') && cleanClub.includes('thethao'));
+      });
+
+      const eligibilityResult = {
+        eligible: isEligible,
+        requiredClub: requiredClub,
+        registeredClubs: registeredClubs
+      };
+
+      setClubEligibility(eligibilityResult);
+      return isEligible;
+    } catch (err) {
+      console.error('Lỗi khi kiểm tra tư cách thành viên CLB:', err);
+      // Mặc định cho qua nếu mạng lỗi
+      setClubEligibility({ eligible: true, requiredClub, registeredClubs: [] });
+      return true;
+    } finally {
+      setCheckingClubEligibility(false);
+    }
+  };
+
+  const handleSelectSuggestion = async (student) => {
     setStudentName(student.student_name);
     setStudentClass(student.student_class);
     setStudentCode(student.student_code);
@@ -189,8 +279,12 @@ export default function PublicRegistrations() {
         setIsVerified(false);
         setStudentName('');
         setStudentCode('');
+        return;
       }
     }
+
+    // Kiểm tra điều kiện CLB
+    await verifyClubPrerequisite(student.student_code, selectedCampaign);
   };
 
   const selectCampaign = (cam) => {
@@ -200,10 +294,13 @@ export default function PublicRegistrations() {
     setStudentName('');
     setStudentClass('');
     setStudentCode('');
+    setClubEligibility(null);
+    setSubmittedData(null);
     
     // Init default responses
     const initialResponses = {};
-    (cam.form_schema || []).forEach(f => {
+    const schemaFields = Array.isArray(cam.form_schema) ? cam.form_schema : (cam.form_schema?.fields || []);
+    schemaFields.forEach(f => {
       if (f.type === 'checkbox') initialResponses[f.id] = [];
       else initialResponses[f.id] = '';
     });
@@ -224,6 +321,22 @@ export default function PublicRegistrations() {
     }
   };
 
+  const currentSchemaFields = useMemo(() => {
+    if (!selectedCampaign) return [];
+    return Array.isArray(selectedCampaign.form_schema) 
+      ? selectedCampaign.form_schema 
+      : (selectedCampaign.form_schema?.fields || []);
+  }, [selectedCampaign]);
+
+  const requiredClubName = useMemo(() => {
+    return getPrerequisiteClub(selectedCampaign);
+  }, [selectedCampaign]);
+
+  const subDisciplinesList = useMemo(() => {
+    if (!requiredClubName) return [];
+    return getSubDisciplinesForClub(requiredClubName);
+  }, [requiredClubName]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isVerified) {
@@ -233,12 +346,17 @@ export default function PublicRegistrations() {
       return alert("Lỗi: Không tìm thấy Mã học sinh.");
     }
 
+    // Kiểm tra điều kiện CLB
+    if (clubEligibility && clubEligibility.eligible === false) {
+      return alert(`⛔ Bạn không đủ điều kiện đăng ký đợt này vì chưa có tên trong danh sách đăng ký ${clubEligibility.requiredClub}.`);
+    }
+
     // Validate required fields
-    for (const field of (selectedCampaign.form_schema || [])) {
+    for (const field of currentSchemaFields) {
       if (field.required) {
         const val = responses[field.id];
         if (!val || (Array.isArray(val) && val.length === 0)) {
-          return alert(`Vui lòng trả lời câu hỏi: "${field.label}"`);
+          return alert(`Vui lòng chọn hoặc trả lời: "${field.label}"`);
         }
       }
     }
@@ -263,6 +381,13 @@ export default function PublicRegistrations() {
           throw error;
         }
       } else {
+        setSubmittedData({
+          studentName,
+          studentClass,
+          studentCode,
+          responses,
+          campaignTitle: selectedCampaign.title
+        });
         setSuccess(true);
       }
     } catch (err) {
@@ -272,21 +397,130 @@ export default function PublicRegistrations() {
     }
   };
 
+  // Trích xuất môn phụ đã chọn sau khi nộp thành công để hiện nút Zalo
+  const submittedSubDiscipline = useMemo(() => {
+    if (!submittedData || !subDisciplinesList || subDisciplinesList.length === 0) return null;
+    const ansValues = Object.values(submittedData.responses || {}).flat();
+    for (const sub of subDisciplinesList) {
+      if (ansValues.some(v => String(v).includes(sub.name) || String(v).includes(sub.code))) {
+        return sub;
+      }
+    }
+    return subDisciplinesList[0] || null;
+  }, [submittedData, subDisciplinesList]);
+
   if (success) {
     return (
-      <div style={{ maxWidth: '600px', margin: '40px auto', padding: '0 16px', textAlign: 'center' }}>
-        <CheckCircle2 size={64} color="#10b981" style={{ margin: '0 auto', marginBottom: '15px' }} />
-        <h2 style={{ color: '#1e293b' }}>Đăng Ký Thành Công!</h2>
-        <p style={{ color: '#64748b' }}>Cảm ơn bạn đã hoàn thành thông tin đăng ký cho "{selectedCampaign?.title}".</p>
-        <button onClick={() => setSelectedCampaign(null)} style={{ padding: '10px 20px', background: '#be123c', color: 'white', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', marginTop: '20px' }}>
-          Quay lại trang chủ
-        </button>
+      <div style={{ maxWidth: '650px', margin: '40px auto', padding: '0 16px', textAlign: 'center' }}>
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '36px 24px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
+          <CheckCircle2 size={68} color="#10b981" style={{ margin: '0 auto', marginBottom: '16px' }} />
+          <h2 style={{ color: '#0f172a', fontSize: '24px', fontWeight: '800', margin: '0 0 8px 0' }}>Đăng Ký Thành Công!</h2>
+          <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
+            Chúc mừng em <strong>{submittedData?.studentName}</strong> (Lớp <strong>{submittedData?.studentClass}</strong>) đã hoàn tất đăng ký <strong>"{selectedCampaign?.title}"</strong>.
+          </p>
+
+          {/* NẾU ĐĂNG KÝ MÔN PHỤ -> HIỆN THÔNG TIN NHÓM ZALO VÀ LỊCH TẬP NGAY */}
+          {submittedSubDiscipline && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)', 
+              border: '2px solid #86efac', 
+              borderRadius: '16px', 
+              padding: '20px', 
+              textAlign: 'left',
+              marginBottom: '25px',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                <span style={{ fontSize: '28px' }}>{submittedSubDiscipline.icon}</span>
+                <div>
+                  <h4 style={{ margin: 0, color: '#166534', fontSize: '17px', fontWeight: '800' }}>
+                    Phân môn: {submittedSubDiscipline.name}
+                  </h4>
+                  <span style={{ fontSize: '12.5px', color: '#15803d', fontWeight: '600' }}>
+                    Thuộc {requiredClubName || 'Câu lạc bộ'}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13.5px', color: '#334155', background: '#ffffff', padding: '14px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin size={15} color="#059669" /> <strong>Địa điểm:</strong> {submittedSubDiscipline.location}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Calendar size={15} color="#059669" /> <strong>Thời gian:</strong> {submittedSubDiscipline.schedule}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Users size={15} color="#059669" /> <strong>Phụ trách:</strong> {submittedSubDiscipline.coaches.join(', ')}
+                </div>
+              </div>
+
+              {submittedSubDiscipline.zaloUrl ? (
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: '13.5px', color: '#166534', fontWeight: 'bold', margin: '0 0 10px 0' }}>
+                    👉 BƯỚC TIẾP THEO: Em vui lòng bấm nút dưới đây để tham gia ngay nhóm Zalo môn {submittedSubDiscipline.name}:
+                  </p>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <a
+                      href={submittedSubDiscipline.zaloUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '11px 22px',
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        borderRadius: '10px',
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                      }}
+                    >
+                      <ExternalLink size={16} /> Vào Nhóm Zalo Môn {submittedSubDiscipline.name}
+                    </a>
+                    <button
+                      onClick={() => setQrModalItem(submittedSubDiscipline)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '11px 18px',
+                        background: '#ffffff',
+                        color: '#0369a1',
+                        border: '1.5px solid #0284c7',
+                        borderRadius: '10px',
+                        fontWeight: '700',
+                        fontSize: '14px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <QrCode size={16} /> Quét QR Zalo
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p style={{ margin: 0, fontSize: '13px', color: '#166534', textAlign: 'center', fontStyle: 'italic' }}>
+                  Giáo viên phụ trách sẽ liên hệ và thêm em vào nhóm Zalo sinh hoạt qua số điện thoại em đã cung cấp.
+                </p>
+              )}
+            </div>
+          )}
+
+          <button 
+            onClick={() => setSelectedCampaign(null)} 
+            style={{ padding: '12px 28px', background: '#be123c', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.25)' }}
+          >
+            Quay lại Cổng Đăng Ký
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: '700px', margin: '40px auto', padding: '0 16px' }}>
+    <div style={{ maxWidth: '750px', margin: '40px auto', padding: '0 16px' }}>
       
       {/* HEADER BANNER */}
       <div style={{
@@ -318,6 +552,7 @@ export default function PublicRegistrations() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                 {campaigns.map(cam => {
                   const status = getCampaignStatus(cam);
+                  const reqClub = getPrerequisiteClub(cam);
                   return (
                     <div 
                       key={cam.id} 
@@ -333,9 +568,16 @@ export default function PublicRegistrations() {
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
-                        <h4 style={{ margin: '0 0 8px 0', color: status.isLocked ? '#991b1b' : '#0284c7', fontSize: '16px' }}>
-                          {cam.title}
-                        </h4>
+                        <div>
+                          <h4 style={{ margin: '0 0 6px 0', color: status.isLocked ? '#991b1b' : '#0284c7', fontSize: '16px' }}>
+                            {cam.title}
+                          </h4>
+                          {reqClub && (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#b45309', background: '#fef3c7', padding: '2px 8px', borderRadius: '6px', fontWeight: '700', marginBottom: '8px' }}>
+                              <ShieldCheck size={13} /> Yêu cầu thành viên: {reqClub}
+                            </span>
+                          )}
+                        </div>
                         <span style={{ 
                           fontSize: '12px', 
                           fontWeight: 'bold', 
@@ -380,6 +622,27 @@ export default function PublicRegistrations() {
               <p style={{ fontSize: '14px', color: '#475569', background: '#f8fafc', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #0284c7' }}>
                 {selectedCampaign.description}
               </p>
+            )}
+
+            {/* CẢNH BÁO YÊU CẦU ĐÃ ĐĂNG KÝ CLB NẾU CÓ */}
+            {requiredClubName && (
+              <div style={{ 
+                background: '#fffbeb', 
+                border: '1.5px solid #fde68a', 
+                borderRadius: '10px', 
+                padding: '12px 16px', 
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                color: '#92400e',
+                fontSize: '13.5px'
+              }}>
+                <ShieldCheck size={20} color="#d97706" style={{ flexShrink: 0 }} />
+                <div>
+                  <strong>Lưu ý điều kiện tham gia:</strong> Đợt đăng ký này chỉ dành cho các học sinh <strong>đã đăng ký tham gia {requiredClubName}</strong> ở đợt 1.
+                </div>
+              </div>
             )}
 
             {/* HIỂN THỊ CẢNH BÁO NẾU ĐỢT ĐĂNG KÝ BỊ KHÓA / HẾT HẠN */}
@@ -471,98 +734,284 @@ export default function PublicRegistrations() {
                     )}
                   </div>
 
-                  {isVerified && (
-                    <div style={{ background: '#ecfdf5', padding: '12px', borderRadius: '8px', border: '1px solid #a7f3d0', display: 'flex', alignItems: 'center', gap: '8px', color: '#065f46', fontSize: '13.5px', fontWeight: 'bold' }}>
-                      <CheckCircle2 size={18} /> Đã xác thực thông tin hợp lệ
-                      <button type="button" onClick={() => setIsVerified(false)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }}>Làm lại</button>
+                  {checkingClubEligibility && (
+                    <div style={{ background: '#f0f9ff', padding: '12px', borderRadius: '8px', border: '1px solid #bae6fd', color: '#0369a1', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={16} className="animate-spin" /> Đang kiểm tra tư cách thành viên câu lạc bộ trên CSDL...
                     </div>
                   )}
+
+                  {/* THÔNG BÁO XÁC THỰC THÀNH CÔNG VÀ ĐỦ ĐIỀU KIỆN CLB */}
+                  {isVerified && clubEligibility?.eligible === true && (
+                    <div style={{ background: '#ecfdf5', padding: '14px', borderRadius: '10px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '13.5px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', marginBottom: '4px' }}>
+                        <CheckCircle2 size={18} color="#059669" /> Đã xác thực danh tính hợp lệ
+                        <button type="button" onClick={() => { setIsVerified(false); setClubEligibility(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }}>Đổi học sinh khác</button>
+                      </div>
+                      {clubEligibility.requiredClub && (
+                        <div style={{ fontSize: '12.5px', color: '#047857', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                          <ShieldCheck size={15} /> Xác nhận: Học sinh đã đăng ký <strong>{clubEligibility.requiredClub}</strong> ở đợt 1.
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* THÔNG BÁO KHÔNG ĐỦ ĐIỀU KIỆN (CHƯA ĐĂNG KÝ CLB MẸ) */}
+                  {isVerified && clubEligibility?.eligible === false && (
+                    <div style={{ 
+                      background: '#fef2f2', 
+                      border: '2px solid #fca5a5', 
+                      borderRadius: '12px', 
+                      padding: '16px', 
+                      color: '#991b1b' 
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '10px' }}>
+                        <ShieldAlert size={24} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+                        <div>
+                          <h5 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '800' }}>
+                            Không đủ điều kiện đăng ký môn phụ này
+                          </h5>
+                          <p style={{ margin: '0 0 8px 0', fontSize: '13.5px', lineHeight: '1.5' }}>
+                            Em <strong>{studentName}</strong> (Lớp <strong>{studentClass}</strong>) <strong>chưa đăng ký tham gia {clubEligibility.requiredClub}</strong> trong đợt đăng ký câu lạc bộ trước đó.
+                          </p>
+                          <div style={{ fontSize: '13px', background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #fecaca', marginBottom: '8px' }}>
+                            <strong>Các câu lạc bộ em đã đăng ký:</strong>
+                            {clubEligibility.registeredClubs.length > 0 ? (
+                              <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                                {clubEligibility.registeredClubs.map((c, i) => (
+                                  <li key={i} style={{ color: '#0284c7', fontWeight: '600' }}>{c}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <span style={{ color: '#64748b', fontStyle: 'italic', marginLeft: '6px' }}>Em chưa đăng ký tham gia câu lạc bộ nào trong năm học này.</span>
+                            )}
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12.5px', color: '#7f1d1d' }}>
+                            💡 Em chỉ có thể chọn môn phụ của những câu lạc bộ mà em đã đăng ký. Vui lòng liên hệ Thầy/Cô Ban Chủ nhiệm nếu cần đăng ký bổ sung.
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button" 
+                        onClick={() => { setIsVerified(false); setClubEligibility(null); setStudentName(''); setStudentCode(''); }} 
+                        style={{ padding: '6px 14px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer', display: 'block', margin: '10px auto 0 auto' }}
+                      >
+                        Chọn học sinh khác
+                      </button>
+                    </div>
+                  )}
+
                 </div>
               </div>
 
-              {/* DYNAMIC FORM FIELDS */}
-              {isVerified && (
+              {/* DYNAMIC FORM FIELDS (CHỈ HIỆN KHI ĐÃ XÁC THỰC VÀ ĐỦ ĐIỀU KIỆN) */}
+              {isVerified && clubEligibility?.eligible === true && (
                 <div style={{ borderTop: '2px dashed #e2e8f0', paddingTop: '20px' }}>
                   <h4 style={{ margin: '0 0 15px 0', color: '#334155', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <FileText size={18} color="#be123c" /> 2. Nhập thông tin đăng ký
                   </h4>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {(selectedCampaign.form_schema || []).map(field => (
-                      <div key={field.id}>
-                        <label style={styles.label}>
-                          {field.label} {field.required && <span style={{ color: '#ef4444' }}>(*)</span>}
-                        </label>
-                        
-                        {field.type === 'text' && (
-                          <input 
-                            type="text" 
-                            style={styles.input} 
-                            value={responses[field.id] || ''}
-                            onChange={(e) => handleResponseChange(field.id, e.target.value, 'text')}
-                            required={field.required}
-                          />
-                        )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {currentSchemaFields.map(field => {
+                      // Kiểm tra xem field này có phải là chọn môn phụ không
+                      const isSubDisciplineField = field.id === 'field_sub_discipline' || 
+                        (field.label && (field.label.toLowerCase().includes('môn phụ') || field.label.toLowerCase().includes('phân môn') || field.label.toLowerCase().includes('bộ môn')));
 
-                        {field.type === 'textarea' && (
-                          <textarea 
-                            rows={3}
-                            style={styles.input} 
-                            value={responses[field.id] || ''}
-                            onChange={(e) => handleResponseChange(field.id, e.target.value, 'textarea')}
-                            required={field.required}
-                          />
-                        )}
+                      return (
+                        <div key={field.id}>
+                          <label style={styles.label}>
+                            {field.label} {field.required && <span style={{ color: '#ef4444' }}>(*)</span>}
+                          </label>
+                          
+                          {/* NẾU LÀ MÔN PHỤ -> HIỂN THỊ THẺ MÔN TRỰC QUAN KÈM LỊCH TẬP & NHÓM ZALO */}
+                          {isSubDisciplineField && subDisciplinesList.length > 0 ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '8px' }}>
+                              {subDisciplinesList.map(sub => {
+                                const isSelected = (responses[field.id] || '').includes(sub.name) || responses[field.id] === sub.name;
+                                return (
+                                  <div
+                                    key={sub.id}
+                                    onClick={() => handleResponseChange(field.id, sub.name, 'select')}
+                                    style={{
+                                      border: isSelected ? '2px solid #0284c7' : '1.5px solid #e2e8f0',
+                                      backgroundColor: isSelected ? '#f0f9ff' : '#ffffff',
+                                      borderRadius: '14px',
+                                      padding: '16px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.2s',
+                                      boxShadow: isSelected ? '0 4px 15px rgba(2, 132, 199, 0.15)' : '0 2px 6px rgba(0,0,0,0.02)',
+                                      position: 'relative'
+                                    }}
+                                  >
+                                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <span style={{ fontSize: '26px' }}>{sub.icon}</span>
+                                        <div>
+                                          <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: isSelected ? '#0369a1' : '#0f172a' }}>
+                                            {sub.name}
+                                          </h4>
+                                          <span style={{ fontSize: '12px', color: '#64748b' }}>
+                                            {sub.description}
+                                          </span>
+                                        </div>
+                                      </div>
 
-                        {field.type === 'select' && (
-                          <select 
-                            style={styles.input}
-                            value={responses[field.id] || ''}
-                            onChange={(e) => handleResponseChange(field.id, e.target.value, 'select')}
-                            required={field.required}
-                          >
-                            <option value="">-- Lựa chọn --</option>
-                            {(field.options || []).map((opt, idx) => (
-                              <option key={idx} value={opt}>{opt}</option>
-                            ))}
-                          </select>
-                        )}
+                                      <input 
+                                        type="radio"
+                                        name={field.id}
+                                        checked={isSelected}
+                                        onChange={() => handleResponseChange(field.id, sub.name, 'select')}
+                                        style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#0284c7', marginTop: '4px' }}
+                                      />
+                                    </div>
 
-                        {field.type === 'radio' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                            {(field.options || []).map((opt, idx) => (
-                              <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
+                                    {/* THÔNG TIN LỊCH TẬP & ĐỊA ĐIỂM & GIÁO VIÊN */}
+                                    <div style={{ 
+                                      display: 'grid', 
+                                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                                      gap: '8px', 
+                                      marginTop: '12px', 
+                                      padding: '10px 12px', 
+                                      background: isSelected ? '#e0f2fe' : '#f8fafc', 
+                                      borderRadius: '10px',
+                                      fontSize: '12.5px',
+                                      color: '#334155'
+                                    }}>
+                                      <div>
+                                        <MapPin size={13} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px', color: '#0284c7' }} />
+                                        <strong>Địa điểm:</strong> {sub.location}
+                                      </div>
+                                      <div>
+                                        <Calendar size={13} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px', color: '#0284c7' }} />
+                                        <strong>Thời gian:</strong> {sub.schedule}
+                                      </div>
+                                      <div>
+                                        <Users size={13} style={{ display: 'inline', verticalAlign: 'text-bottom', marginRight: '4px', color: '#0284c7' }} />
+                                        <strong>Phụ trách:</strong> {sub.coaches.join(', ')}
+                                      </div>
+                                    </div>
+
+                                    {/* NÚT THAM GIA ZALO & MÃ QR */}
+                                    {sub.zaloUrl && (
+                                      <div style={{ display: 'flex', gap: '8px', marginTop: '10px', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+                                        <a 
+                                          href={sub.zaloUrl}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '5px',
+                                            padding: '6px 12px',
+                                            background: '#0284c7',
+                                            color: '#ffffff',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '700',
+                                            textDecoration: 'none'
+                                          }}
+                                        >
+                                          <ExternalLink size={13} /> Nhóm Zalo
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => setQrModalItem(sub)}
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: '4px',
+                                            padding: '6px 10px',
+                                            background: '#ffffff',
+                                            color: '#0369a1',
+                                            border: '1px solid #0284c7',
+                                            borderRadius: '6px',
+                                            fontSize: '12px',
+                                            fontWeight: '700',
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          <QrCode size={13} /> Xem QR
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <>
+                              {field.type === 'text' && (
                                 <input 
-                                  type="radio" 
-                                  name={field.id}
-                                  value={opt}
-                                  checked={responses[field.id] === opt}
-                                  onChange={(e) => handleResponseChange(field.id, e.target.value, 'radio')}
+                                  type="text" 
+                                  style={styles.input} 
+                                  value={responses[field.id] || ''}
+                                  onChange={(e) => handleResponseChange(field.id, e.target.value, 'text')}
+                                  required={field.required}
+                                  placeholder={field.label.includes('điện thoại') ? 'Nhập số điện thoại (VD: 0912345678)' : ''}
+                                />
+                              )}
+
+                              {field.type === 'textarea' && (
+                                <textarea 
+                                  rows={3}
+                                  style={styles.input} 
+                                  value={responses[field.id] || ''}
+                                  onChange={(e) => handleResponseChange(field.id, e.target.value, 'textarea')}
                                   required={field.required}
                                 />
-                                {opt}
-                              </label>
-                            ))}
-                          </div>
-                        )}
+                              )}
 
-                        {field.type === 'checkbox' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                            {(field.options || []).map((opt, idx) => (
-                              <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
-                                <input 
-                                  type="checkbox" 
-                                  value={opt}
-                                  checked={(responses[field.id] || []).includes(opt)}
-                                  onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
-                                />
-                                {opt}
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                              {field.type === 'select' && (
+                                <select 
+                                  style={styles.input}
+                                  value={responses[field.id] || ''}
+                                  onChange={(e) => handleResponseChange(field.id, e.target.value, 'select')}
+                                  required={field.required}
+                                >
+                                  <option value="">-- Lựa chọn --</option>
+                                  {(field.options || []).map((opt, idx) => (
+                                    <option key={idx} value={opt}>{opt}</option>
+                                  ))}
+                                </select>
+                              )}
+
+                              {field.type === 'radio' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                  {(field.options || []).map((opt, idx) => (
+                                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
+                                      <input 
+                                        type="radio" 
+                                        name={field.id}
+                                        value={opt}
+                                        checked={responses[field.id] === opt}
+                                        onChange={(e) => handleResponseChange(field.id, e.target.value, 'radio')}
+                                        required={field.required}
+                                      />
+                                      {opt}
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+
+                              {field.type === 'checkbox' && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                  {(field.options || []).map((opt, idx) => (
+                                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
+                                      <input 
+                                        type="checkbox" 
+                                        value={opt}
+                                        checked={(responses[field.id] || []).includes(opt)}
+                                        onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
+                                      />
+                                      {opt}
+                                    </label>
+                                  ))}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <button 
@@ -580,6 +1029,63 @@ export default function PublicRegistrations() {
           </div>
         )}
       </div>
+
+      {/* POPUP XEM MÃ QR ZALO CỦA TỪNG MÔN PHỤ */}
+      {qrModalItem && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', padding: '24px', maxWidth: '380px', width: '100%', textAlign: 'center', position: 'relative', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            <button 
+              onClick={() => setQrModalItem(null)}
+              style={{ position: 'absolute', right: '14px', top: '14px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+            >
+              <X size={20} />
+            </button>
+
+            <span style={{ fontSize: '36px' }}>{qrModalItem.icon}</span>
+            <h3 style={{ margin: '8px 0 4px 0', fontSize: '18px', color: '#0f172a', fontWeight: '800' }}>
+              Môn: {qrModalItem.name}
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b' }}>
+              Quét mã QR bằng ứng dụng Zalo để tham gia nhóm
+            </p>
+
+            <div style={{ padding: '16px', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', display: 'inline-block', marginBottom: '16px' }}>
+              <img 
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrModalItem.zaloUrl)}`}
+                alt={`QR Zalo ${qrModalItem.name}`}
+                style={{ width: '180px', height: '180px', display: 'block', margin: '0 auto' }}
+              />
+            </div>
+
+            <div style={{ fontSize: '12.5px', color: '#334155', marginBottom: '16px', textAlign: 'left', background: '#f0f9ff', padding: '10px 14px', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+              <div><strong>📍 Địa điểm:</strong> {qrModalItem.location}</div>
+              <div><strong>⏰ Thời gian:</strong> {qrModalItem.schedule}</div>
+              <div><strong>👨‍🏫 Phụ trách:</strong> {qrModalItem.coaches.join(', ')}</div>
+            </div>
+
+            <a
+              href={qrModalItem.zaloUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'block',
+                width: '100%',
+                padding: '11px 0',
+                background: '#0284c7',
+                color: '#ffffff',
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                textDecoration: 'none',
+                boxSizing: 'border-box'
+              }}
+            >
+              Mở Trực Tiếp Trên Zalo
+            </a>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

@@ -2,11 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Calendar, CheckCircle, XCircle, Clock, AlertTriangle, Sparkles, Send, 
   Search, Filter, Plus, Save, Download, QrCode, RefreshCw, ChevronRight,
-  UserCheck, Award, MessageSquare, Phone, Info, Check, Share2, Layers, BookOpen, User, X
+  UserCheck, Award, MessageSquare, Phone, Info, Check, Share2, Layers, BookOpen, User, X, ShieldCheck
 } from 'lucide-react';
 import { DualSupabaseService, supabase, supabase2Admin, supabase2 } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
 import * as XLSX from 'xlsx';
+import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 
 export default function ClubAttendanceManager({ 
   userRole = 'admin', // 'admin' | 'teacher' | 'bcn' | 'student'
@@ -24,13 +25,14 @@ export default function ClubAttendanceManager({
   const clubCampaigns = useMemo(() => {
     const list = allCampaigns.filter(c => {
       const title = (c.title || '').toLowerCase();
-      return title.includes('câu lạc bộ') || title.includes('clb');
+      return title.includes('câu lạc bộ') || title.includes('clb') || title.includes('môn phụ') || title.includes('phân môn');
     });
     return list.length > 0 ? list : allCampaigns;
   }, [allCampaigns]);
 
   // 2. Quản lý Câu Lạc Bộ được chọn (Đọc động từ Form Schema)
   const [selectedClub, setSelectedClub] = useState('ALL');
+  const [subDisciplineFilter, setSubDisciplineFilter] = useState('ALL'); // Lọc theo môn phụ
   const [sessions, setSessions] = useState([]);
   const [activeSessionId, setActiveSessionId] = useState(null);
   const [attendanceRecords, setAttendanceRecords] = useState({});
@@ -533,15 +535,31 @@ export default function ClubAttendanceManager({
     return { total, present, absentP, absentK, late, rate };
   }, [clubMembers, attendanceRecords]);
 
+  const currentClubSubDisciplines = useMemo(() => {
+    return getSubDisciplinesForClub(selectedClub);
+  }, [selectedClub]);
+
   const filteredMembers = useMemo(() => {
     return clubMembers.filter(m => {
       const matchClass = classFilter === 'ALL' || m.student_class === classFilter;
       const matchSearch = !searchQuery.trim() || 
         (m.student_name && m.student_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
         (m.student_code && m.student_code.toLowerCase().includes(searchQuery.toLowerCase()));
-      return matchClass && matchSearch;
+      
+      let matchSubDiscipline = true;
+      if (subDisciplineFilter !== 'ALL') {
+        const responses = m.responses || {};
+        matchSubDiscipline = Object.values(responses).some(val => {
+          if (Array.isArray(val)) {
+            return val.some(v => String(v).includes(subDisciplineFilter));
+          }
+          return String(val).includes(subDisciplineFilter);
+        });
+      }
+
+      return matchClass && matchSearch && matchSubDiscipline;
     });
-  }, [clubMembers, classFilter, searchQuery]);
+  }, [clubMembers, classFilter, searchQuery, subDisciplineFilter]);
 
   // 3. Tính toán tổng hợp Thi đua & Nề nếp theo từng Lớp cho buổi sinh hoạt hiện tại
   const getGradeLevel = (clsName) => {
@@ -983,6 +1001,31 @@ export default function ClubAttendanceManager({
               <option key={cls} value={cls}>Lớp {cls}</option>
             ))}
           </select>
+
+          {/* LỌC THEO MÔN PHỤ (NẾU CLB CÓ DANH SÁCH MÔN PHỤ) */}
+          {currentClubSubDisciplines.length > 0 && (
+            <select
+              value={subDisciplineFilter}
+              onChange={(e) => setSubDisciplineFilter(e.target.value)}
+              style={{
+                padding: '9px 12px',
+                borderRadius: '10px',
+                border: '1.5px solid #0284c7',
+                backgroundColor: '#f0f9ff',
+                color: '#0369a1',
+                fontSize: '13px',
+                fontWeight: '700',
+                outline: 'none'
+              }}
+            >
+              <option value="ALL">🎯 Tất cả môn phụ ({currentClubSubDisciplines.length} môn)</option>
+              {currentClubSubDisciplines.map(sub => (
+                <option key={sub.id} value={sub.name}>
+                  {sub.icon} {sub.name} ({sub.coaches[0]})
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>

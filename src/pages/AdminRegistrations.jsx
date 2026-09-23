@@ -2,9 +2,10 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
+import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 
 export default function AdminRegistrations() {
   const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'results'
@@ -17,6 +18,7 @@ export default function AdminRegistrations() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetGrades, setTargetGrades] = useState([]); // ['Khối 10', 'Khối 11', 'Khối 12']
+  const [prerequisiteClub, setPrerequisiteClub] = useState(''); // Ràng buộc CLB mẹ
   const [isActive, setIsActive] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -182,6 +184,7 @@ export default function AdminRegistrations() {
     setTitle(cam.title || '');
     setDescription(cam.description || '');
     setTargetGrades(cam.target_grades || []);
+    setPrerequisiteClub(cam.prerequisite_club || (cam.form_schema && !Array.isArray(cam.form_schema) ? cam.form_schema.prerequisite_club : '') || '');
     setIsActive(cam.is_active);
     setStartDate(cam.start_date ? new Date(new Date(cam.start_date).getTime() - (new Date(cam.start_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
     setEndDate(cam.end_date ? new Date(new Date(cam.end_date).getTime() - (new Date(cam.end_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
@@ -508,7 +511,8 @@ export default function AdminRegistrations() {
     try {
       const schemaWithNotice = {
         fields: formSchema,
-        closed_notice: closedNotice.trim()
+        closed_notice: closedNotice.trim(),
+        prerequisite_club: prerequisiteClub || null
       };
 
       const payload = {
@@ -530,6 +534,7 @@ export default function AdminRegistrations() {
       alert("Lưu đợt đăng ký thành công!");
       setShowForm(false);
       setEditingId(null);
+      setPrerequisiteClub('');
       fetchCampaigns();
     } catch (err) {
       alert("Lỗi khi lưu: " + err.message);
@@ -985,6 +990,28 @@ export default function AdminRegistrations() {
                       </div>
                     </div>
 
+                    {/* RÀNG BUỘC ĐIỀU KIỆN TIÊN QUYẾT: ĐÃ ĐĂNG KÝ CÂU LẠC BỘ MẸ */}
+                    <div style={{ gridColumn: '1 / -1', background: '#eff6ff', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid #bfdbfe' }}>
+                      <label style={{ ...styles.label, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <ShieldCheck size={16} color="#2563eb" /> Ràng buộc tư cách thành viên Câu lạc bộ (Chỉ cho HS đã đăng ký CLB chọn môn phụ):
+                      </label>
+                      <select
+                        value={prerequisiteClub}
+                        onChange={(e) => setPrerequisiteClub(e.target.value)}
+                        style={{ ...styles.input, marginTop: '4px', borderColor: '#93c5fd', backgroundColor: '#ffffff', fontWeight: '600' }}
+                      >
+                        <option value="">-- Không ràng buộc (Mọi học sinh thuộc khối đều đăng ký được) --</option>
+                        {Object.keys(CLUB_SUB_DISCIPLINES).map(clubKey => (
+                          <option key={clubKey} value={clubKey}>
+                            {clubKey} (Bắt buộc HS phải có tên trong danh sách đăng ký CLB này)
+                          </option>
+                        ))}
+                      </select>
+                      <small style={{ color: '#3b82f6', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
+                        * Nếu chọn CLB, hệ thống sẽ tự động đối soát CSDL Supabase 2 khi học sinh nhập tên. Chỉ học sinh đã đăng ký CLB này ở đợt 1 mới được nộp đơn!
+                      </small>
+                    </div>
+
                     <div>
                       <label style={styles.label}>Nơi lưu trữ máy chủ (Cân bằng tải)</label>
                       <select 
@@ -1188,6 +1215,11 @@ export default function AdminRegistrations() {
                               <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
                                 ({schemaFields.length} câu hỏi form)
                               </div>
+                              {(cam.prerequisite_club || (cam.form_schema && !Array.isArray(cam.form_schema) && cam.form_schema.prerequisite_club)) && (
+                                <div style={{ fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px', display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '3px', fontWeight: 'bold' }}>
+                                  <ShieldCheck size={12} /> Yêu cầu: {cam.prerequisite_club || cam.form_schema?.prerequisite_club}
+                                </div>
+                              )}
                             </td>
                             <td style={{ padding: '10px', color: '#64748b' }}>
                               {!cam.target_grades || cam.target_grades.length === 0 ? 'Toàn trường' : cam.target_grades.join(', ')}
