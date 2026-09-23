@@ -7,6 +7,13 @@ import * as XLSX from 'xlsx';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 
+export const getSchemaFields = (cam) => {
+  if (!cam || !cam.form_schema) return [];
+  if (Array.isArray(cam.form_schema)) return cam.form_schema;
+  if (Array.isArray(cam.form_schema.fields)) return cam.form_schema.fields;
+  return [];
+};
+
 export default function AdminRegistrations() {
   const [activeTab, setActiveTab] = useState('campaigns'); // 'campaigns' | 'results'
   const [campaigns, setCampaigns] = useState([]);
@@ -549,7 +556,7 @@ export default function AdminRegistrations() {
     }
     
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
-    const schema = campaign?.form_schema || [];
+    const schema = getSchemaFields(campaign);
     
     const currentClubName = (selectedOptionFilter && selectedOptionFilter !== 'all') 
       ? selectedOptionFilter 
@@ -841,10 +848,15 @@ export default function AdminRegistrations() {
       reportDocTitle = `${selectedOptionFilter}`;
     }
     const cleanDocName = reportDocTitle.replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_').trim();
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
     a.download = `Bao_cao_Nghi_dinh_30_${cleanDocName}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const handleDeleteResult = async (r) => {
@@ -1206,7 +1218,7 @@ export default function AdminRegistrations() {
                         const now = new Date();
                         const isExpired = cam.end_date && now > new Date(cam.end_date);
                         const isPending = cam.start_date && now < new Date(cam.start_date);
-                        const schemaFields = Array.isArray(cam.form_schema) ? cam.form_schema : (cam.form_schema?.fields || []);
+                        const schemaFields = getSchemaFields(cam);
 
                         return (
                           <tr key={cam.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -1436,7 +1448,7 @@ export default function AdminRegistrations() {
                       </div>
                       
                       {/* Thống kê từng lựa chọn */}
-                      {(currentCampaign?.form_schema || [])
+                      {getSchemaFields(currentCampaign)
                         .filter(f => ['select', 'radio', 'checkbox'].includes(f.type))
                         .map(field => {
                           const counts = {};
@@ -1543,7 +1555,7 @@ export default function AdminRegistrations() {
                           <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Họ và Tên</th>
                           <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '75px', textAlign: 'center' }}>Lớp</th>
                           {/* Render dynamic columns based on campaign schema */}
-                          {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => (
+                          {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => (
                             <th key={field.id} style={{ padding: '10px 12px', color: '#0284c7' }}>{field.label}</th>
                           ))}
                           <th style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', width: '80px' }}>Thao tác</th>
@@ -1560,8 +1572,8 @@ export default function AdminRegistrations() {
                             <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b', whiteSpace: 'nowrap' }}>{r.student_name}</td>
                             <td style={{ padding: '10px 14px', color: '#be123c', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{r.student_class}</td>
                             
-                            {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => {
-                              const ans = r.responses[field.id];
+                            {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => {
+                              const ans = r.responses ? r.responses[field.id] : undefined;
                               let displayAns = ans;
                               if (Array.isArray(ans)) displayAns = ans.join(', ');
                               return <td key={field.id} style={{ padding: '10px 12px', fontWeight: (selectedOptionFilter && displayAns?.includes(selectedOptionFilter)) || (searchQuery && displayAns?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bold' : 'normal', color: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? '#166534' : 'inherit' }}>{displayAns || '-'}</td>;
@@ -1704,13 +1716,13 @@ export default function AdminRegistrations() {
                   </thead>
                   <tbody>
                     {(() => {
-                      const schema = campaigns.find(c => c.id === selectedCampaignId)?.form_schema || [];
+                      const schema = getSchemaFields(campaigns.find(c => c.id === selectedCampaignId));
                       const selectField = schema.find(f => ['select', 'radio', 'checkbox'].includes(f.type));
                       if (!selectField) return <tr><td colSpan="4" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>Không có bảng thống kê phân loại</td></tr>;
 
                       const counts = {};
                       results.forEach(r => {
-                        const ans = r.responses[selectField.id];
+                        const ans = r.responses ? r.responses[selectField.id] : undefined;
                         if (Array.isArray(ans)) {
                           ans.forEach(a => counts[a] = (counts[a] || 0) + 1);
                         } else if (ans) {
@@ -1750,9 +1762,9 @@ export default function AdminRegistrations() {
                   </thead>
                   <tbody>
                     {filteredAndSortedResults.map((r, i) => {
-                      const schema = campaigns.find(c => c.id === selectedCampaignId)?.form_schema || [];
+                      const schema = getSchemaFields(campaigns.find(c => c.id === selectedCampaignId));
                       const ansStr = schema.map(f => {
-                        const a = r.responses[f.id];
+                        const a = r.responses ? r.responses[f.id] : undefined;
                         return Array.isArray(a) ? a.join(', ') : (a || '');
                       }).filter(Boolean).join('; ');
 
@@ -1810,7 +1822,7 @@ export default function AdminRegistrations() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-              {(campaigns.find(c => c.id === selectedCampaignId)?.form_schema || []).map(field => {
+              {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => {
                 const value = editFormData[field.id] || (field.type === 'checkbox' ? [] : '');
                 
                 return (
