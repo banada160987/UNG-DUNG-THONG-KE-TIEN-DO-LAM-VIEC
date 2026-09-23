@@ -33,16 +33,50 @@ export async function readWordFile(file) {
 }
 
 /**
+ * Định dạng Địa danh - Ngày tháng đúng chuẩn Nghị định 30/2020/NĐ-CP
+ * Quy tắc: Ngày < 10 và Tháng 1, Tháng 2 bắt buộc ghi thêm số 0 ở trước (ví dụ: ngày 05 tháng 02 năm 2026).
+ * Tháng 3 đến 12 không ghi số 0 ở trước (ví dụ: ngày 23 tháng 9 năm 2026).
+ */
+export function formatDecree30Date(dateStrOrObj = null, location = 'Tân An') {
+  if (!dateStrOrObj) {
+    const now = new Date();
+    const d = now.getDate();
+    const m = now.getMonth() + 1;
+    const y = now.getFullYear();
+    const dStr = d < 10 ? `0${d}` : `${d}`;
+    const mStr = (m === 1 || m === 2) ? `0${m}` : `${m}`;
+    return `${location}, ngày ${dStr} tháng ${mStr} năm ${y}`;
+  }
+
+  const str = String(dateStrOrObj).trim();
+  const match = str.match(/ngày\s+(\d+)\s+tháng\s+(\d+)\s+năm\s+(\d+)/i);
+  if (match) {
+    const d = parseInt(match[1], 10);
+    const m = parseInt(match[2], 10);
+    const y = parseInt(match[3], 10);
+    const dStr = d < 10 ? `0${d}` : `${d}`;
+    const mStr = (m === 1 || m === 2) ? `0${m}` : `${m}`;
+    const locMatch = str.match(/^([^,]+),/);
+    const loc = locMatch ? locMatch[1].replace(/Đắk Lắk/i, location).trim() : location;
+    return `${loc}, ngày ${dStr} tháng ${mStr} năm ${y}`;
+  }
+
+  return str.replace(/Đắk Lắk\s*,/i, `${location},`);
+}
+
+/**
  * Tự động phân tích và chuẩn hóa văn bản thô sang cấu trúc Nghị định 30
  */
 export function parseRawTextToDecree30(rawText = '') {
+  const defaultDate = formatDecree30Date(new Date(), 'Tân An');
+
   if (!rawText || !rawText.trim()) {
     return {
       department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
       issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
       sub_unit: '',
       doc_number: 'Số: .../KH-CBQ',
-      location_date: `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`,
+      location_date: defaultDate,
       type_name: 'KẾ HOẠCH',
       subject: 'Về việc triển khai nhiệm vụ công tác chuyên môn',
       content: '',
@@ -57,7 +91,7 @@ export function parseRawTextToDecree30(rawText = '') {
   let issuer = 'TRƯỜNG THPT CAO BÁ QUÁT';
   let sub_unit = '';
   let doc_number = 'Số: .../KH-CBQ';
-  let location_date = `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`;
+  let location_date = defaultDate;
   let type_name = 'VĂN BẢN';
   let subject = '';
   let signer_title = 'HIỆU TRƯỞNG';
@@ -92,7 +126,7 @@ export function parseRawTextToDecree30(rawText = '') {
 
     // 4. Nhận diện Địa danh ngày tháng (Tân An, ngày... / Đắk Lắk, ngày...)
     if (/,\s*ngày\s+\d+\s+tháng\s+\d+\s+năm\s+\d+/i.test(line)) {
-      location_date = line;
+      location_date = formatDecree30Date(line, 'Tân An');
       continue;
     }
 
@@ -241,7 +275,7 @@ export function auditDecree30Document(rawText = '', parsedData = {}) {
         id: 'location_scope',
         severity: 'warning',
         category: 'Địa danh & Ngày tháng',
-        title: 'Ghi tên địa danh cấp tỉnh thay vì cấp xã/huyện',
+        title: 'Ghi tên địa danh cấp tỉnh thay vì cấp xã/phường',
         description: `Trường THPT Cao Bá Quát đặt tại xã Tân An (hoặc địa danh nơi đóng trụ sở). Nên ghi "Tân An, ngày..." thay vì "Đắk Lắk, ngày...".`,
         solution: 'Chuyển địa danh về "Tân An, ngày ... tháng ... năm ...".'
       });
@@ -254,6 +288,17 @@ export function auditDecree30Document(rawText = '', parsedData = {}) {
         title: 'Viết hoa sai chữ "ngày", "tháng", "năm"',
         description: 'Chữ "ngày", "tháng", "năm" trong ngày tháng ban hành văn bản bắt buộc phải viết chữ thường và in nghiêng.',
         solution: 'Chuyển thành chữ thường: "... ngày ... tháng ... năm ...".'
+      });
+    }
+    // Kiểm tra quy định số 0 ở ngày < 10 và tháng 1, 2
+    if (/ngày\s+[1-9]\s+tháng/i.test(dateStr) || /tháng\s+[1-2]\s+năm/i.test(dateStr) || /tháng\s+0[3-9]\s+năm/i.test(dateStr)) {
+      issues.push({
+        id: 'date_zero_rule',
+        severity: 'warning',
+        category: 'Địa danh & Ngày tháng',
+        title: 'Quy tắc số 0 ở Ngày và Tháng chưa chuẩn NĐ 30',
+        description: 'NĐ 30 quy định: Ngày < 10 và Tháng 1, 2 phải có số 0 ở trước (ngày 05, tháng 02); Tháng 3-12 không ghi số 0 ở trước (tháng 3, tháng 9, tháng 10).',
+        solution: 'Tự động định dạng lại ngày tháng đúng chuẩn kỹ thuật NĐ 30.'
       });
     }
   }
@@ -390,12 +435,7 @@ export function autoFixDecree30Document(parsedData = {}) {
   }
 
   // 3. Sửa địa danh ngày tháng
-  location_date = location_date
-    .replace(/Đắk Lắk\s*,/i, 'Tân An,')
-    .replace(/,\s*Ngày/i, ', ngày')
-    .replace(/Tháng/g, 'tháng')
-    .replace(/Năm/g, 'năm')
-    .trim();
+  location_date = formatDecree30Date(location_date, 'Tân An');
 
   // 4. Sửa Tên loại văn bản
   type_name = (type_name || 'KẾ HOẠCH').toUpperCase().trim();

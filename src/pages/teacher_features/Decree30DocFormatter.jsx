@@ -300,6 +300,41 @@ Lê Thị Thảo`;
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f1f5f9', display: 'flex', flexDirection: 'column', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
       
+      {/* PRINT STYLESHEET */}
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 20mm 15mm 20mm 30mm; /* Chuẩn NĐ 30: Trên 2cm, Phải 1.5cm, Dưới 2cm, Trái 3cm */
+          }
+          body {
+            background-color: #ffffff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          header, .no-print, button, nav, .top-header-bar, .kho-mau-bar, .left-panel-col {
+            display: none !important;
+          }
+          .workspace-grid {
+            display: block !important;
+            grid-template-columns: 1fr !important;
+          }
+          .preview-outer-box {
+            background: none !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            border-radius: 0 !important;
+          }
+          #decree30-preview-container {
+            box-shadow: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+        }
+      `}</style>
+
       {/* GLOBAL TOP NAVIGATION BAR (STANDALONE WORKSTATION) */}
       <header style={{
         backgroundColor: '#064e3b',
@@ -430,7 +465,7 @@ Lê Thị Thảo`;
         )}
 
         {/* 1. TOP HEADER BAR */}
-        <div style={{
+        <div className="top-header-bar" style={{
           backgroundColor: '#ffffff',
           borderRadius: '16px',
           padding: '18px 24px',
@@ -538,7 +573,7 @@ Lê Thị Thảo`;
         </div>
 
         {/* 2. CHỌN MẪU VĂN BẢN SẴN CÓ */}
-        <div style={{
+        <div className="kho-mau-bar" style={{
           backgroundColor: '#ffffff',
           borderRadius: '14px',
           padding: '14px 18px',
@@ -580,10 +615,10 @@ Lê Thị Thảo`;
         </div>
 
         {/* 3. MAIN WORKSPACE (2 PANELS SPLIT) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(420px, 48%) 1fr', gap: '20px', alignItems: 'start' }}>
+        <div className="workspace-grid" style={{ display: 'grid', gridTemplateColumns: 'minmax(420px, 48%) 1fr', gap: '20px', alignItems: 'start' }}>
           
           {/* LEFT PANEL: SOẠN THẢO, IMPORT WORD & AI AUDITOR */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+          <div className="left-panel-col" style={{ backgroundColor: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
             
             {/* Mode Tabs */}
             <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', marginBottom: '18px', gap: '6px', overflowX: 'auto' }}>
@@ -1323,6 +1358,7 @@ Lê Thị Thảo`;
 
             {/* KHUNG A4 THỰC TẾ VỚI PADDING & SHADOW */}
             <div 
+              className="preview-outer-box"
               style={{ 
                 backgroundColor: '#94a3b8', 
                 padding: '24px', 
@@ -1398,6 +1434,8 @@ Lê Thị Thảo`;
                   <div style={{ fontSize: '13.5pt', fontWeight: 'bold', lineHeight: '1.3', maxWidth: '90%', margin: '0 auto' }}>
                     {docData.subject || 'Về việc triển khai nhiệm vụ công tác chuyên môn'}
                   </div>
+                  {/* Gạch ngang nét liền dưới trích yếu 1/3 đến 1/2 */}
+                  <div style={{ width: '30%', height: '1px', backgroundColor: '#000000', margin: '6px auto 0 auto' }}></div>
                 </div>
 
                 {/* 3. NỘI DUNG CHÍNH (ĐƯỢC ĐỊNH DẠNG ĐỀ MỤC & THỤT ĐẦU DÒNG 1.0CM) */}
