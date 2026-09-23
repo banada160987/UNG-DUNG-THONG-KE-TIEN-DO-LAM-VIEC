@@ -85,6 +85,7 @@ const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/Teache
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
 const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
+const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -178,6 +179,11 @@ function App() {
             <Route path="/teacher/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher/department" element={<TeacherDepartmentManagement />} />
             <Route path="/teacher/kpi" element={<TeacherKPIEvaluation />} />
+            <Route path="/teacher/decree30-formatter" element={<Decree30DocFormatter />} />
+            <Route path="/can-chinh-nghi-dinh-30" element={<Decree30DocFormatter />} />
+            <Route path="/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
+            <Route path="/giao-vien/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
+            <Route path="/admin/decree30-formatter" element={<Decree30DocFormatter />} />
             <Route path="/hub" element={<AppHub />} />
           </Route>
           

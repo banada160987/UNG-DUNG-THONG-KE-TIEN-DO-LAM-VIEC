@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
-  Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet
+  Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
@@ -409,6 +409,76 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <FileText size={16} /> Soạn Giáo Án 5512
+                  </button>
+                </div>
+
+                {/* CARD MỚI: CĂN CHỈNH VĂN BẢN CHUẨN NGHỊ ĐỊNH 30 */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1.5px solid #bfdbfe',
+                  boxShadow: '0 4px 14px rgba(37,99,235,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#dbeafe',
+                        color: '#1d4ed8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileCheck size={24} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af',
+                        border: '1px solid #93c5fd'
+                      }}>
+                        Nghị định 30/2020/NĐ-CP
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 6px 0', color: '#0f172a' }}>
+                      📄 Căn Chỉnh Văn Bản Chuẩn NĐ 30
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#475569', margin: 0, lineHeight: '1.5' }}>
+                      Tự động căn lề (30-20-20-15mm), giãn dòng 1.35, thụt đầu dòng 1cm. Kho mẫu Kế hoạch, Báo cáo, Tờ trình, Biên bản & xuất file Word (.doc).
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/can-chinh-nghi-dinh-30')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 10px rgba(37,99,235,0.3)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <FileCheck size={16} /> Mở Công Cụ Chuẩn NĐ 30
                   </button>
                 </div>
 

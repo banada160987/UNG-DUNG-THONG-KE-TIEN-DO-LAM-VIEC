@@ -79,6 +79,21 @@ export default function AppHub() {
       }
     }
 
+    // Luôn đảm bảo có ứng dụng Căn Chỉnh Văn Bản Chuẩn Nghị Định 30
+    if (!filtered.some(a => (a.url || '').includes('can-chinh-nghi-dinh-30'))) {
+      filtered.unshift({
+        id: 'decree30_doc_formatter',
+        title: 'Căn Chỉnh Văn Bản Chuẩn NĐ 30',
+        url: '/can-chinh-nghi-dinh-30',
+        category: 'Hành Chính & Chuyên Môn',
+        description: 'Tự động căn lề (30-20-20-15mm), giãn dòng, thụt lề 1cm. Kho mẫu Kế hoạch, Báo cáo, Tờ trình & xuất file Word chuẩn A4.',
+        icon: 'FileCheck',
+        bg_color: '#dbeafe',
+        border_color: '#93c5fd',
+        type: 'hub_global'
+      });
+    }
+
     // Luôn đảm bảo có ứng dụng Kiểm tra hồ sơ thi TN THPT
     if (!filtered.some(a => (a.url || '').includes('kiem-tra-ho-so-tn'))) {
       filtered.unshift({
