@@ -1,7 +1,36 @@
 /**
- * Tiện ích Căn chỉnh, Phân tích và Xuất File Chuẩn Nghị định 30/2020/NĐ-CP
+ * Tiện ích Căn chỉnh, Phân tích, Bắt lỗi Thể thức AI và Xuất File Chuẩn Nghị định 30/2020/NĐ-CP
  * THPT Cao Bá Quát - Đắk Lắk
  */
+import mammoth from 'mammoth';
+
+/**
+ * Đọc file Word (.docx) sang Text thuần và HTML có cấu trúc
+ */
+export async function readWordFile(file) {
+  if (!file) throw new Error("Chưa chọn file");
+
+  const arrayBuffer = await file.arrayBuffer();
+  
+  // Trích xuất text thuần
+  const textResult = await mammoth.extractRawText({ arrayBuffer });
+  const rawText = textResult.value || '';
+
+  // Trích xuất HTML để giữ định dạng in đậm, nghiêng, bảng
+  let htmlContent = '';
+  try {
+    const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
+    htmlContent = htmlResult.value || '';
+  } catch (e) {
+    console.warn("Lỗi khi convert Word sang HTML:", e);
+  }
+
+  return {
+    rawText,
+    htmlContent,
+    fileName: file.name
+  };
+}
 
 /**
  * Tự động phân tích và chuẩn hóa văn bản thô sang cấu trúc Nghị định 30
@@ -61,7 +90,7 @@ export function parseRawTextToDecree30(rawText = '') {
       continue;
     }
 
-    // 4. Nhận diện Địa danh ngày tháng (Tân An, ngày... / Hà Nội, ngày...)
+    // 4. Nhận diện Địa danh ngày tháng (Tân An, ngày... / Đắk Lắk, ngày...)
     if (/,\s*ngày\s+\d+\s+tháng\s+\d+\s+năm\s+\d+/i.test(line)) {
       location_date = line;
       continue;
@@ -157,6 +186,254 @@ export function parseRawTextToDecree30(rawText = '') {
       '- Các Tổ Chuyên môn (để t/h);',
       '- Lưu: VT.'
     ]
+  };
+}
+
+/**
+ * AI AUDITOR: Bộ quét bắt lỗi thể thức theo chuẩn Nghị định 30/2020/NĐ-CP
+ */
+export function auditDecree30Document(rawText = '', parsedData = {}) {
+  const issues = [];
+  const lowerRaw = (rawText || '').toLowerCase();
+
+  // 1. Kiểm tra Tiêu ngữ viết hoa sai
+  if (rawText.includes('ĐỘC LẬP - TỰ DO - HẠNH PHÚC') || rawText.includes('ĐỘC LẬP – TỰ DO – HẠNH PHÚC')) {
+    issues.push({
+      id: 'motto_case',
+      severity: 'critical', // 'critical' | 'warning' | 'info'
+      category: 'Quốc hiệu & Tiêu ngữ',
+      title: 'Tiêu ngữ viết in hoa toàn bộ',
+      description: 'Phát hiện "ĐỘC LẬP - TỰ DO - HẠNH PHÚC". Chuẩn NĐ 30 quy định chỉ viết hoa chữ cái đầu: "Độc lập - Tự do - Hạnh phúc".',
+      solution: 'Tự động chuyển về: "Độc lập - Tự do - Hạnh phúc" (13-14pt, đứng đậm, có đường kẻ liền bên dưới).'
+    });
+  }
+
+  // 2. Kiểm tra Số và Ký hiệu văn bản
+  if (parsedData.doc_number) {
+    const num = parsedData.doc_number;
+    if (!num.includes('/')) {
+      issues.push({
+        id: 'doc_num_format',
+        severity: 'critical',
+        category: 'Số & Ký hiệu',
+        title: 'Số văn bản thiếu ký hiệu loại và cơ quan',
+        description: `Phát hiện "${num}". Số văn bản hành chính bắt buộc phải có tên loại và tên cơ quan viết tắt.`,
+        solution: `Chuẩn hóa thành: "Số: .../${parsedData.type_name === 'KẾ HOẠCH' ? 'KH' : parsedData.type_name === 'BÁO CÁO' ? 'BC' : parsedData.type_name === 'TỜ TRÌNH' ? 'TTr' : 'CBQ'}-CBQ"`
+      });
+    }
+    if (/^số\s+:/i.test(num) || /số\s{2,}:/i.test(num)) {
+      issues.push({
+        id: 'doc_num_space',
+        severity: 'warning',
+        category: 'Số & Ký hiệu',
+        title: 'Lỗi khoảng trắng trước dấu hai chấm ở Số văn bản',
+        description: 'Phát hiện có dấu cách trước dấu hai chấm trong "Số :".',
+        solution: 'Sửa thành "Số: " (không có khoảng trắng trước dấu hai chấm).'
+      });
+    }
+  }
+
+  // 3. Kiểm tra Địa danh - Ngày tháng
+  if (parsedData.location_date) {
+    const dateStr = parsedData.location_date;
+    if (dateStr.includes('Đắk Lắk,') || dateStr.includes('Đắk Lắk ,')) {
+      issues.push({
+        id: 'location_scope',
+        severity: 'warning',
+        category: 'Địa danh & Ngày tháng',
+        title: 'Ghi tên địa danh cấp tỉnh thay vì cấp xã/huyện',
+        description: `Trường THPT Cao Bá Quát đặt tại xã Tân An (hoặc địa danh nơi đóng trụ sở). Nên ghi "Tân An, ngày..." thay vì "Đắk Lắk, ngày...".`,
+        solution: 'Chuyển địa danh về "Tân An, ngày ... tháng ... năm ...".'
+      });
+    }
+    if (/[A-ZÀ-Ỹ]\s*,\s*Ngày/i.test(dateStr) || dateStr.includes('Tháng') || dateStr.includes('Năm')) {
+      issues.push({
+        id: 'date_case',
+        severity: 'warning',
+        category: 'Địa danh & Ngày tháng',
+        title: 'Viết hoa sai chữ "ngày", "tháng", "năm"',
+        description: 'Chữ "ngày", "tháng", "năm" trong ngày tháng ban hành văn bản bắt buộc phải viết chữ thường và in nghiêng.',
+        solution: 'Chuyển thành chữ thường: "... ngày ... tháng ... năm ...".'
+      });
+    }
+  }
+
+  // 4. Kiểm tra Tên loại văn bản
+  if (parsedData.type_name) {
+    if (parsedData.type_name !== parsedData.type_name.toUpperCase()) {
+      issues.push({
+        id: 'type_name_case',
+        severity: 'critical',
+        category: 'Tên loại văn bản',
+        title: 'Tên loại văn bản chưa viết hoa toàn bộ',
+        description: `Tên loại văn bản "${parsedData.type_name}" phải được in hoa, in đậm và căn giữa trang.`,
+        solution: `Chuyển thành: "${parsedData.type_name.toUpperCase()}".`
+      });
+    }
+  }
+
+  // 5. Kiểm tra Trích yếu nội dung
+  if (parsedData.subject) {
+    const subj = parsedData.subject;
+    if (!subj.toLowerCase().startsWith('v/v') && !subj.toLowerCase().startsWith('về việc')) {
+      issues.push({
+        id: 'subject_prefix',
+        severity: 'warning',
+        category: 'Trích yếu nội dung',
+        title: 'Trích yếu nội dung chưa có tiền tố "Về việc"',
+        description: 'Trích yếu văn bản thường bắt đầu bằng cụm từ "Về việc..." để nêu rõ mục đích ban hành.',
+        solution: `Bổ sung tiền tố: "Về việc ${subj.replace(/^về\s+/i, '')}".`
+      });
+    }
+  }
+
+  // 6. Kiểm tra Căn lề & Thụt đầu dòng trong nội dung
+  if (parsedData.content) {
+    const paragraphs = parsedData.content.split('\n\n').filter(p => p.trim());
+    let hasSpaceBeforeComma = false;
+    let hasDoubleSpaces = false;
+    
+    paragraphs.forEach(p => {
+      if (/\s+[,.;:]/.test(p)) hasSpaceBeforeComma = true;
+      if (/  +/.test(p)) hasDoubleSpaces = true;
+    });
+
+    if (hasSpaceBeforeComma) {
+      issues.push({
+        id: 'spacing_punctuation',
+        severity: 'warning',
+        category: 'Chính tả & Dấu câu',
+        title: 'Lỗi khoảng trắng trước dấu câu (, . ; :)',
+        description: 'Phát hiện có khoảng cách thừa trước các dấu phẩy, dấu chấm trong văn bản.',
+        solution: 'Tự động dọn dẹp khoảng trắng trước dấu câu và cách 1 khoảng trắng sau dấu câu.'
+      });
+    }
+
+    if (hasDoubleSpaces) {
+      issues.push({
+        id: 'double_spaces',
+        severity: 'info',
+        category: 'Chính tả & Khoảng trắng',
+        title: 'Khoảng trắng kép thừa trong văn bản',
+        description: 'Có nhiều vị trí chứa 2 hoặc nhiều dấu cách liên tiếp.',
+        solution: 'Tự động rút gọn về 1 khoảng cách đơn duy nhất.'
+      });
+    }
+  }
+
+  // 7. Kiểm tra Chức vụ & Thẩm quyền ký
+  if (parsedData.signer_title) {
+    if (parsedData.signer_title !== parsedData.signer_title.toUpperCase()) {
+      issues.push({
+        id: 'signer_title_case',
+        severity: 'critical',
+        category: 'Thẩm quyền ký',
+        title: 'Chức vụ người ký chưa in hoa',
+        description: `Chức vụ "${parsedData.signer_title}" bắt buộc phải in hoa đậm (13-14pt) theo chuẩn NĐ 30.`,
+        solution: `Chuyển thành: "${parsedData.signer_title.toUpperCase()}".`
+      });
+    }
+  }
+
+  // 8. Kiểm tra Nơi nhận
+  if (!parsedData.recipients || parsedData.recipients.length === 0) {
+    issues.push({
+      id: 'recipients_missing',
+      severity: 'warning',
+      category: 'Nơi nhận',
+      title: 'Thiếu danh sách nơi nhận',
+      description: 'Văn bản hành chính cần có mục "Nơi nhận:" góc dưới bên trái để xác định đối tượng nhận và nơi lưu trữ.',
+      solution: 'Bổ sung: Ban Giám hiệu, Các tổ chuyên môn, Lưu: VT.'
+    });
+  }
+
+  const initialScore = Math.max(20, 100 - (issues.length * 12));
+
+  return {
+    issuesCount: issues.length,
+    initialScore,
+    issues,
+    summary: issues.length === 0 
+      ? '🎉 Văn bản hoàn toàn đạt chuẩn thể thức Nghị định 30/2020/NĐ-CP!' 
+      : `⚠️ Phát hiện ${issues.length} lỗi thể thức cần được AI căn chỉnh tự động.`
+  };
+}
+
+/**
+ * AI AUTO-FIX: Tự động sửa toàn bộ lỗi thể thức đã phát hiện
+ */
+export function autoFixDecree30Document(parsedData = {}) {
+  let {
+    department = 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+    issuer = 'TRƯỜNG THPT CAO BÁ QUÁT',
+    sub_unit = '',
+    doc_number = 'Số: .../KH-CBQ',
+    location_date = `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`,
+    type_name = 'KẾ HOẠCH',
+    subject = 'Về việc triển khai nhiệm vụ công tác chuyên môn',
+    content = '',
+    signer_title = 'TM. BAN GIÁM HIỆU\nHIỆU TRƯỞNG',
+    signer_name = '',
+    recipients = []
+  } = parsedData;
+
+  // 1. Sửa cơ quan
+  department = (department || 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK').toUpperCase().trim();
+  issuer = (issuer || 'TRƯỜNG THPT CAO BÁ QUÁT').toUpperCase().trim();
+
+  // 2. Sửa số ký hiệu
+  if (!doc_number || doc_number.trim() === 'Số:' || !doc_number.includes('/')) {
+    const typeCode = type_name === 'KẾ HOẠCH' ? 'KH' : type_name === 'BÁO CÁO' ? 'BC' : type_name === 'TỜ TRÌNH' ? 'TTr' : type_name === 'BIÊN BẢN' ? 'BB' : 'CBQ';
+    doc_number = `Số: .../${typeCode}-CBQ`;
+  } else {
+    doc_number = doc_number.replace(/^số\s*:\s*/i, 'Số: ').trim();
+  }
+
+  // 3. Sửa địa danh ngày tháng
+  location_date = location_date
+    .replace(/Đắk Lắk\s*,/i, 'Tân An,')
+    .replace(/,\s*Ngày/i, ', ngày')
+    .replace(/Tháng/g, 'tháng')
+    .replace(/Năm/g, 'năm')
+    .trim();
+
+  // 4. Sửa Tên loại văn bản
+  type_name = (type_name || 'KẾ HOẠCH').toUpperCase().trim();
+
+  // 5. Sửa Trích yếu
+  if (subject && !subject.toLowerCase().startsWith('về việc') && !subject.toLowerCase().startsWith('v/v')) {
+    subject = `Về việc ${subject.charAt(0).toLowerCase() + subject.slice(1)}`;
+  }
+
+  // 6. Sửa Chức vụ
+  signer_title = (signer_title || 'HIỆU TRƯỞNG').toUpperCase().trim();
+
+  // 7. Sửa Nơi nhận
+  if (!recipients || recipients.length === 0) {
+    recipients = ['- Ban Giám hiệu (để b/c);', '- Các Tổ Chuyên môn (để t/h);', '- Lưu: VT.'];
+  } else {
+    recipients = recipients.map(r => r.startsWith('-') ? r : `- ${r}`).map(r => r.endsWith(';') || r.endsWith('.') ? r : `${r};`);
+  }
+
+  // 8. Dọn dẹp nội dung: Khoảng trắng kép, dấu câu, căn lề
+  let cleanContent = content
+    .replace(/[ \t]+/g, ' ') // Xóa khoảng trắng thừa
+    .replace(/\s+([,.;:])/g, '$1') // Xóa cách trước dấu câu
+    .replace(/([,.;:])(?=[^\s\d])/g, '$1 ') // Đảm bảo có cách sau dấu câu
+    .trim();
+
+  return {
+    department,
+    issuer,
+    sub_unit,
+    doc_number,
+    location_date,
+    type_name,
+    subject,
+    content: cleanContent,
+    signer_title,
+    signer_name,
+    recipients
   };
 }
 
