@@ -1151,32 +1151,92 @@ Lê Thị Thảo`;
                 </div>
 
                 {/* 5. Chức vụ, Thẩm quyền ký & Họ tên */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
-                      Chức vụ người ký
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={docData.signer_title}
-                      onChange={e => setDocData({ ...docData, signer_title: e.target.value })}
-                      placeholder="VD: TM. BAN GIÁM HIỆU&#10;HIỆU TRƯỞNG"
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
-                    />
+                {docData.type_name === 'BIÊN BẢN' || docData.is_minutes ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', backgroundColor: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#166534' }}>
+                      📋 Cấu hình Chữ ký Biên bản họp (2 bên ký: Thư ký & Chủ trì)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                          Chức danh Thư ký
+                        </label>
+                        <input
+                          type="text"
+                          value={docData.secretary_title || 'THƯ KÝ'}
+                          onChange={e => setDocData({ ...docData, secretary_title: e.target.value.toUpperCase() })}
+                          placeholder="VD: THƯ KÝ"
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                          Họ và tên Thư ký
+                        </label>
+                        <input
+                          type="text"
+                          value={docData.secretary_name || ''}
+                          onChange={e => setDocData({ ...docData, secretary_name: e.target.value })}
+                          placeholder="VD: Trần Thị Thảo"
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                          Chức danh Chủ trì
+                        </label>
+                        <input
+                          type="text"
+                          value={docData.signer_title || 'CHỦ TRÌ'}
+                          onChange={e => setDocData({ ...docData, signer_title: e.target.value.toUpperCase() })}
+                          placeholder="VD: CHỦ TRÌ / GVCN"
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                          Họ và tên Chủ trì
+                        </label>
+                        <input
+                          type="text"
+                          value={docData.signer_name || ''}
+                          onChange={e => setDocData({ ...docData, signer_name: e.target.value })}
+                          placeholder="VD: Nguyễn Văn An"
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
-                      Họ và Tên người ký
-                    </label>
-                    <input
-                      type="text"
-                      value={docData.signer_name}
-                      onChange={e => setDocData({ ...docData, signer_name: e.target.value })}
-                      placeholder="VD: Lê Thị Thảo"
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
-                    />
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                        Chức vụ người ký
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={docData.signer_title}
+                        onChange={e => setDocData({ ...docData, signer_title: e.target.value })}
+                        placeholder="VD: TM. BAN GIÁM HIỆU&#10;HIỆU TRƯỞNG"
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '11.5px', fontWeight: '800', color: '#475569', textTransform: 'uppercase' }}>
+                        Họ và Tên người ký
+                      </label>
+                      <input
+                        type="text"
+                        value={docData.signer_name}
+                        onChange={e => setDocData({ ...docData, signer_name: e.target.value })}
+                        placeholder="VD: Lê Thị Thảo"
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', marginTop: '4px', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* 6. Nơi nhận */}
                 <div>
@@ -1484,7 +1544,7 @@ Lê Thị Thảo`;
                       if (block.type === 'table') {
                         return (
                           <div key={bIdx} style={{ margin: '14px 0', overflowX: 'auto' }}>
-                            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontFamily: '"Times New Roman", Times, serif', fontSize: '13pt' }}>
+                            <table className="data-table" border="1" cellPadding="6" cellSpacing="0" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontFamily: '"Times New Roman", Times, serif', fontSize: '12pt' }}>
                               <tbody>
                                 {block.rows.map((rowStr, rIdx) => {
                                   const cells = rowStr.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(c => c.trim());
@@ -1545,38 +1605,76 @@ Lê Thị Thảo`;
                 </div>
 
                 {/* 4. CHỮ KÝ & NƠI NHẬN CHUẨN NGHỊ ĐỊNH 30 */}
-                <table className="footer-table" style={{ width: '100%', border: 'none', marginTop: '35px', pageBreakInside: 'avoid' }}>
-                  <tbody>
-                    <tr>
-                      {/* Nơi nhận */}
-                      <td style={{ width: '50%', border: 'none', textAlign: 'left', verticalAlign: 'top', padding: 0 }}>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold', fontStyle: 'italic', marginBottom: '4px' }}>
-                          Nơi nhận:
-                        </div>
-                        <div style={{ fontSize: '11pt', lineHeight: '1.3' }}>
-                          {(docData.recipients || []).map((r, i) => (
-                            <div key={i}>{r}</div>
-                          ))}
-                        </div>
-                      </td>
+                {docData.type_name === 'BIÊN BẢN' || docData.is_minutes ? (
+                  /* Kiểu Biên bản: 2 cột Thư ký (trái) và Chủ trì (phải) */
+                  <table className="footer-table" style={{ width: '100%', border: 'none', marginTop: '35px', pageBreakInside: 'avoid' }}>
+                    <tbody>
+                      <tr>
+                        {/* Thư ký */}
+                        <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top', padding: 0 }}>
+                          <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.2' }}>
+                            {docData.secretary_title || 'THƯ KÝ'}
+                          </div>
+                          <div style={{ fontSize: '11pt', fontStyle: 'italic', marginTop: '2px', marginBottom: '65px' }}>
+                            (Ký và ghi rõ họ tên)
+                          </div>
+                          <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>
+                            {docData.secretary_name || ''}
+                          </div>
+                        </td>
 
-                      {/* Chức vụ & Chữ ký */}
-                      <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top', padding: 0 }}>
-                        <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.2' }}>
-                          {(docData.signer_title || 'HIỆU TRƯỞNG').split('\n').map((line, lIdx) => (
-                            <div key={lIdx}>{line}</div>
-                          ))}
-                        </div>
-                        <div style={{ fontSize: '11pt', fontStyle: 'italic', marginTop: '2px', marginBottom: '65px' }}>
-                          (Ký, ghi rõ họ tên và đóng dấu)
-                        </div>
-                        <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>
-                          {docData.signer_name || ''}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
+                        {/* Chủ trì */}
+                        <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top', padding: 0 }}>
+                          <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.2' }}>
+                            {(docData.signer_title || 'CHỦ TRÌ').split('\n').map((line, lIdx) => (
+                              <div key={lIdx}>{line}</div>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: '11pt', fontStyle: 'italic', marginTop: '2px', marginBottom: '65px' }}>
+                            (Ký và ghi rõ họ tên)
+                          </div>
+                          <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>
+                            {docData.signer_name || ''}
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                ) : (
+                  /* Kiểu Văn bản hành chính: Nơi nhận (trái) và Chức vụ/Chữ ký (phải) */
+                  <table className="footer-table" style={{ width: '100%', border: 'none', marginTop: '35px', pageBreakInside: 'avoid' }}>
+                    <tbody>
+                      <tr>
+                        {/* Nơi nhận */}
+                        <td style={{ width: '50%', border: 'none', textAlign: 'left', verticalAlign: 'top', padding: 0 }}>
+                          <div style={{ fontSize: '12pt', fontWeight: 'bold', fontStyle: 'italic', marginBottom: '4px' }}>
+                            Nơi nhận:
+                          </div>
+                          <div style={{ fontSize: '11pt', lineHeight: '1.3' }}>
+                            {(docData.recipients || []).map((r, i) => (
+                              <div key={i}>{r}</div>
+                            ))}
+                          </div>
+                        </td>
+
+                        {/* Chức vụ & Chữ ký */}
+                        <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top', padding: 0 }}>
+                          <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase', lineHeight: '1.2' }}>
+                            {(docData.signer_title || 'HIỆU TRƯỞNG').split('\n').map((line, lIdx) => (
+                              <div key={lIdx}>{line}</div>
+                            ))}
+                          </div>
+                          <div style={{ fontSize: '11pt', fontStyle: 'italic', marginTop: '2px', marginBottom: '65px' }}>
+                            (Ký, ghi rõ họ tên và đóng dấu)
+                          </div>
+                          <div style={{ fontSize: '13pt', fontWeight: 'bold' }}>
+                            {docData.signer_name || ''}
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                )}
 
               </div>
             </div>

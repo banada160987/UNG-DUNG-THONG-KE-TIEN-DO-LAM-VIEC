@@ -59,6 +59,63 @@ III. TỔ CHỨC THỰC HIỆN
 - Tham gia đầy đủ các buổi sinh hoạt chuyên môn và thực hiện nhiệm vụ được phân công.`
   },
   {
+    id: 'bien_ban_hop_phhs',
+    title: 'Biên bản họp Cha mẹ học sinh lớp',
+    type_code: 'BB',
+    type_name: 'BIÊN BẢN',
+    subject: 'Họp Ban đại diện Cha mẹ học sinh lớp năm học 2026 - 2027',
+    department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+    issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
+    sub_unit: 'LỚP 10A1',
+    doc_number: '.../BB-PHHS',
+    location_date: 'Tân An, ngày 23 tháng 09 năm 2026',
+    is_minutes: true,
+    signer_title: 'CHỦ TRÌ',
+    signer_name: 'Nguyễn Văn An',
+    secretary_title: 'THƯ KÝ',
+    secretary_name: 'Trần Thị Thảo',
+    recipients: [
+      '- Ban Giám hiệu (để b/c);',
+      '- Ban ĐD CMHS trường;',
+      '- Lưu: Hồ sơ lớp.'
+    ],
+    content: `Vào lúc 08 giờ 00 phút, ngày 23 tháng 09 năm 2026, tại Phòng học số 12 Trường THPT Cao Bá Quát;
+Tập thể cha mẹ học sinh lớp 10A1 tiến hành tổ chức phiên họp Ban đại diện Cha mẹ học sinh đầu năm học 2026 - 2027.
+
+I. THÀNH PHẦN THAM DỰ
+1. Về phía nhà trường và giáo viên:
+- Thầy/Cô: Hoàng Văn C - Giáo viên chủ nhiệm lớp 10A1.
+2. Về phía Ban đại diện Cha mẹ học sinh:
+- Ông/Bà: Nguyễn Văn An - Chủ trì phiên họp.
+- Bà: Trần Thị Thảo - Thư ký ghi biên bản.
+- Cùng toàn thể 42/45 phụ huynh học sinh của lớp tham dự (Vắng: 03 có lý do).
+
+II. DIỄN BIẾN CUỘC HỌP
+1. Báo cáo tình hình lớp và kế hoạch năm học 2026 - 2027
+- Giáo viên chủ nhiệm báo cáo kết quả rà soát sĩ số, nề nếp học tập của học sinh trong tháng đầu năm học.
+- Thông qua các quy chế, nội quy của nhà trường và phương hướng giáo dục toàn diện cho học sinh.
+
+2. Thảo luận và đóng góp ý kiến
+- 100% phụ huynh nhất trí cao với kế hoạch phối hợp giữa gia đình và nhà trường trong quản lý, giáo dục đạo đức và nâng cao kết quả học tập cho học sinh.
+
+3. Bầu Ban đại diện Cha mẹ học sinh lớp năm học 2026 - 2027
+Cuộc họp đã tiến hành biểu quyết công khai và thống nhất bầu ra Ban đại diện Cha mẹ học sinh lớp gồm các ông (bà) có tên sau:
+
+| STT | Họ và tên phụ huynh | Phụ huynh của học sinh | Địa chỉ - Đơn vị công tác | Chức vụ trong Ban ĐD | Số điện thoại liên hệ |
+| 1 | Nguyễn Văn An | Nguyễn Minh Tuấn | Thôn 3, xã Tân An | Trưởng ban | 0912 345 678 |
+| 2 | Trần Thị Bình | Trần Bảo Nam | TDP 2, xã Tân An | Phó Trưởng ban | 0987 654 321 |
+| 3 | Lê Văn Cường | Lê Thảo My | Thôn 1, xã Tân An | Ủy viên | 0905 123 456 |
+
+4. Bầu đại biểu dự Đại hội đại biểu Cha mẹ học sinh cấp trường
+Cuộc họp thống nhất cử 02 đại biểu đại diện cho cha mẹ học sinh lớp tham dự Đại hội cấp trường:
+- Ông: Nguyễn Văn An - Trưởng ban ĐD CMHS lớp.
+- Bà: Trần Thị Bình - Phó Trưởng ban ĐD CMHS lớp.
+
+III. KẾT THÚC CUỘC HỌP
+Biên bản đã được đọc lại cho toàn thể cuộc họp cùng nghe, 100% phụ huynh tham dự nhất trí thông qua và không có ý kiến thắc mắc nào khác.
+Cuộc họp kết thúc vào lúc 10 giờ 30 phút cùng ngày./.`
+  },
+  {
     id: 'bao_cao_thang',
     title: 'Báo cáo công tác tháng / Tổng kết',
     type_code: 'BC',

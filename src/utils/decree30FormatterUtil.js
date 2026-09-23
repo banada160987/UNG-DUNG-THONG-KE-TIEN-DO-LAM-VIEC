@@ -167,8 +167,10 @@ function parseWordTable(tblNode) {
                        combinedTableText.includes('độc lập – tự do') ||
                        (combinedTableText.includes('sở giáo dục') && combinedTableText.includes('ngày'));
 
-  const isFooterTable = combinedTableText.includes('nơi nhận') && 
-                       (combinedTableText.includes('hiệu trưởng') || combinedTableText.includes('trưởng ban') || combinedTableText.includes('chủ tịch') || combinedTableText.includes('người lập'));
+  const isFooterTable = (combinedTableText.includes('nơi nhận') && 
+                       (combinedTableText.includes('hiệu trưởng') || combinedTableText.includes('trưởng ban') || combinedTableText.includes('chủ tịch') || combinedTableText.includes('người lập'))) ||
+                       ((combinedTableText.includes('thư ký') || combinedTableText.includes('người lập') || combinedTableText.includes('người ghi')) &&
+                        (combinedTableText.includes('chủ trì') || combinedTableText.includes('chủ tọa') || combinedTableText.includes('giáo viên') || combinedTableText.includes('hiệu trưởng') || combinedTableText.includes('trưởng ban')));
 
   // Nếu là Bảng Đầu Trang hoặc Bảng Chân Trang trong Word, rã thành các dòng văn bản độc lập
   if (isHeaderTable || isFooterTable) {
@@ -275,6 +277,9 @@ export function parseRawTextToDecree30(rawText = '') {
       content: '',
       signer_title: 'TM. BAN GIÁM HIỆU\nHIỆU TRƯỞNG',
       signer_name: '',
+      secretary_title: '',
+      secretary_name: '',
+      is_minutes: false,
       recipients: ['- Ban Giám hiệu (để b/c);', '- Các tổ chuyên môn (để t/h);', '- Lưu: VT.']
     };
   }
@@ -283,21 +288,29 @@ export function parseRawTextToDecree30(rawText = '') {
   let department = 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK';
   let issuer = 'TRƯỜNG THPT CAO BÁ QUÁT';
   let sub_unit = '';
-  let doc_number = 'Số: .../KH-CBQ';
+  let doc_number = '';
   let location_date = defaultDate;
   let type_name = 'VĂN BẢN';
   let subject = '';
-  let signer_title = 'HIỆU TRƯỞNG';
+  let signer_title = '';
   let signer_name = '';
+  let secretary_title = '';
+  let secretary_name = '';
   const recipients = [];
   const contentLines = [];
 
   let inRecipientsSection = false;
   let inSignerSection = false;
+  let inSecretarySection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const lower = line.toLowerCase();
+
+    // 0. Bỏ qua các dòng chỉ dẫn chữ ký ngầm rác: "(Ký, ghi rõ họ tên)", "(Ký và ghi rõ họ tên)"
+    if (/^\(ký\b.*họ tên.*\)$/i.test(line) || /^\(ký\b.*đóng dấu.*\)$/i.test(line)) {
+      continue;
+    }
 
     // 1. Nhận diện Sở / Phòng giáo dục
     if (lower.includes('sở giáo dục') || lower.includes('bộ giáo dục') || lower.includes('phòng giáo dục')) {
@@ -339,7 +352,7 @@ export function parseRawTextToDecree30(rawText = '') {
         const nextLine = lines[i + 1].trim();
         // Nếu dòng tiếp theo là trích yếu (không phải mở đầu cuộc họp hay mục I)
         if (!/^(I|II|III|IV|V|1|2|3|\*|\-|\+)\./i.test(nextLine) && 
-            !/^(hôm nay|thời gian|địa điểm|thành phần|căn cứ)\b/i.test(nextLine) &&
+            !/^(hôm nay|vào lúc|thời gian|địa điểm|thành phần|căn cứ)\b/i.test(nextLine) &&
             !nextLine.startsWith('|') && nextLine.length < 150) {
           subject = nextLine;
           i++; // Bỏ qua dòng trích yếu vừa lấy
@@ -358,12 +371,23 @@ export function parseRawTextToDecree30(rawText = '') {
     if (/^nơi nhận\s*:/i.test(line) || /^noi nhan\s*:/i.test(line)) {
       inRecipientsSection = true;
       inSignerSection = false;
+      inSecretarySection = false;
       continue;
     }
 
-    // 9. Nhận diện Phần Chức vụ & Chữ ký
-    if (/^(tm\.|kt\.|hiệu trưởng|phó hiệu trưởng|tổ trưởng|trưởng ban|chủ tịch|bí thư|chủ trì|người lập|thư ký)/i.test(line)) {
+    // 9. Nhận diện Thư ký (cho Biên bản)
+    if (/^(thư ký|người ghi biên bản|người lập biên bản|người lập)\b/i.test(line)) {
+      inSecretarySection = true;
+      inSignerSection = false;
+      inRecipientsSection = false;
+      secretary_title = line.toUpperCase();
+      continue;
+    }
+
+    // 10. Nhận diện Người ký chính / Chủ trì
+    if (/^(tm\.|kt\.|hiệu trưởng|phó hiệu trưởng|tổ trưởng|trưởng ban|chủ tịch|bí thư|chủ trì|chủ tọa|giáo viên chủ nhiệm|gvcn)\b/i.test(line)) {
       inSignerSection = true;
+      inSecretarySection = false;
       inRecipientsSection = false;
       signer_title = line.toUpperCase();
       continue;
@@ -372,7 +396,7 @@ export function parseRawTextToDecree30(rawText = '') {
     if (inRecipientsSection) {
       if (line.startsWith('-') || line.startsWith('+') || line.startsWith('*')) {
         recipients.push(line);
-      } else if (line.length < 50) {
+      } else if (line.length < 50 && !line.includes('|')) {
         recipients.push(`- ${line};`);
       } else {
         inRecipientsSection = false;
@@ -381,8 +405,15 @@ export function parseRawTextToDecree30(rawText = '') {
       continue;
     }
 
+    if (inSecretarySection) {
+      if (!secretary_name && line.length < 40 && !line.includes(':') && !line.startsWith('-') && !line.startsWith('|')) {
+        secretary_name = line;
+      }
+      continue;
+    }
+
     if (inSignerSection) {
-      if (!signer_name && line.length < 40 && !line.includes(':')) {
+      if (!signer_name && line.length < 40 && !line.includes(':') && !line.startsWith('-') && !line.startsWith('|')) {
         signer_name = line;
       }
       continue;
@@ -408,22 +439,31 @@ export function parseRawTextToDecree30(rawText = '') {
     return line;
   }).join('\n\n');
 
+  const isMinutes = type_name === 'BIÊN BẢN';
+  const defaultTypeCode = isMinutes ? 'BB' : type_name === 'BÁO CÁO' ? 'BC' : type_name === 'TỜ TRÌNH' ? 'TTr' : 'KH';
+
   return {
     department: department || 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
     issuer: issuer || 'TRƯỜNG THPT CAO BÁ QUÁT',
     sub_unit: sub_unit || '',
-    doc_number: doc_number || 'Số: .../KH-CBQ',
-    location_date: location_date || `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`,
+    doc_number: doc_number || `Số: .../${defaultTypeCode}-CBQ`,
+    location_date: location_date || defaultDate,
     type_name: type_name || 'KẾ HOẠCH',
-    subject: subject || 'Về việc triển khai nhiệm vụ công tác chuyên môn',
+    subject: subject || (isMinutes ? 'Họp triển khai công tác' : 'Về việc triển khai nhiệm vụ công tác chuyên môn'),
     content: formattedContent,
-    signer_title: signer_title || 'HIỆU TRƯỞNG',
+    is_minutes: isMinutes,
+    signer_title: signer_title || (isMinutes ? 'CHỦ TRÌ' : 'HIỆU TRƯỞNG'),
     signer_name: signer_name || '',
-    recipients: recipients.length > 0 ? recipients : [
+    secretary_title: secretary_title || (isMinutes ? 'THƯ KÝ' : ''),
+    secretary_name: secretary_name || '',
+    recipients: recipients.length > 0 ? recipients : (isMinutes ? [
+      '- Ban Giám hiệu (để b/c);',
+      '- Lưu: Hồ sơ.'
+    ] : [
       '- Ban Giám hiệu (để b/c);',
       '- Các Tổ Chuyên môn (để t/h);',
       '- Lưu: VT.'
-    ]
+    ])
   };
 }
 
@@ -522,7 +562,8 @@ export function auditDecree30Document(rawText = '', parsedData = {}) {
   }
 
   // 5. Kiểm tra Trích yếu nội dung
-  if (parsedData.subject) {
+  const isMinutes = (parsedData.type_name || '').toUpperCase() === 'BIÊN BẢN';
+  if (parsedData.subject && !isMinutes) {
     const subj = parsedData.subject;
     if (!subj.toLowerCase().startsWith('v/v') && !subj.toLowerCase().startsWith('về việc')) {
       issues.push({
@@ -584,8 +625,8 @@ export function auditDecree30Document(rawText = '', parsedData = {}) {
     }
   }
 
-  // 8. Kiểm tra Nơi nhận
-  if (!parsedData.recipients || parsedData.recipients.length === 0) {
+  // 8. Kiểm tra Nơi nhận (Biên bản không bắt buộc danh sách Nơi nhận)
+  if (!isMinutes && (!parsedData.recipients || parsedData.recipients.length === 0)) {
     issues.push({
       id: 'recipients_missing',
       severity: 'warning',
@@ -616,15 +657,20 @@ export function autoFixDecree30Document(parsedData = {}) {
     department = 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
     issuer = 'TRƯỜNG THPT CAO BÁ QUÁT',
     sub_unit = '',
-    doc_number = 'Số: .../KH-CBQ',
+    doc_number = '',
     location_date = `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`,
     type_name = 'KẾ HOẠCH',
-    subject = 'Về việc triển khai nhiệm vụ công tác chuyên môn',
+    subject = '',
     content = '',
-    signer_title = 'TM. BAN GIÁM HIỆU\nHIỆU TRƯỞNG',
+    signer_title = '',
     signer_name = '',
+    secretary_title = '',
+    secretary_name = '',
+    is_minutes = false,
     recipients = []
   } = parsedData;
+
+  const isMinutes = type_name.toUpperCase() === 'BIÊN BẢN' || is_minutes;
 
   // 1. Sửa cơ quan
   department = (department || 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK').toUpperCase().trim();
@@ -642,19 +688,26 @@ export function autoFixDecree30Document(parsedData = {}) {
   location_date = formatDecree30Date(location_date, 'Tân An');
 
   // 4. Sửa Tên loại văn bản
-  type_name = (type_name || 'KẾ HOẠCH').toUpperCase().trim();
+  type_name = (type_name || (isMinutes ? 'BIÊN BẢN' : 'KẾ HOẠCH')).toUpperCase().trim();
 
   // 5. Sửa Trích yếu
-  if (subject && !subject.toLowerCase().startsWith('về việc') && !subject.toLowerCase().startsWith('v/v')) {
+  if (!isMinutes && subject && !subject.toLowerCase().startsWith('về việc') && !subject.toLowerCase().startsWith('v/v')) {
     subject = `Về việc ${subject.charAt(0).toLowerCase() + subject.slice(1)}`;
+  } else if (!subject) {
+    subject = isMinutes ? 'Họp triển khai công tác' : 'Về việc triển khai nhiệm vụ công tác chuyên môn';
   }
 
   // 6. Sửa Chức vụ
-  signer_title = (signer_title || 'HIỆU TRƯỞNG').toUpperCase().trim();
+  if (isMinutes) {
+    signer_title = (signer_title || 'CHỦ TRÌ').toUpperCase().trim();
+    secretary_title = (secretary_title || 'THƯ KÝ').toUpperCase().trim();
+  } else {
+    signer_title = (signer_title || 'HIỆU TRƯỞNG').toUpperCase().trim();
+  }
 
   // 7. Sửa Nơi nhận
   if (!recipients || recipients.length === 0) {
-    recipients = ['- Ban Giám hiệu (để b/c);', '- Các Tổ Chuyên môn (để t/h);', '- Lưu: VT.'];
+    recipients = isMinutes ? ['- Ban Giám hiệu (để b/c);', '- Lưu: Hồ sơ.'] : ['- Ban Giám hiệu (để b/c);', '- Các Tổ Chuyên môn (để t/h);', '- Lưu: VT.'];
   } else {
     recipients = recipients.map(r => r.startsWith('-') ? r : `- ${r}`).map(r => r.endsWith(';') || r.endsWith('.') ? r : `${r};`);
   }
@@ -675,8 +728,11 @@ export function autoFixDecree30Document(parsedData = {}) {
     type_name,
     subject,
     content: cleanContent,
+    is_minutes: isMinutes,
     signer_title,
     signer_name,
+    secretary_title,
+    secretary_name,
     recipients
   };
 }
