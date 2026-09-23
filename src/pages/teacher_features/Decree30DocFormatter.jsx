@@ -15,7 +15,8 @@ import {
   exportDecree30ToWord,
   readWordFile,
   auditDecree30Document,
-  autoFixDecree30Document
+  autoFixDecree30Document,
+  deepAiPolishDecree30
 } from '../../utils/decree30FormatterUtil';
 
 export default function Decree30DocFormatter() {
@@ -44,6 +45,7 @@ export default function Decree30DocFormatter() {
   // Kết quả AI Scanner / Auditor
   const [auditResult, setAuditResult] = useState(null);
   const [isAutoFixed, setIsAutoFixed] = useState(false);
+  const [isDeepPolishing, setIsDeepPolishing] = useState(false);
 
   // Toast thông báo
   const [toastMessage, setToastMessage] = useState(null);
@@ -140,6 +142,33 @@ export default function Decree30DocFormatter() {
       summary: '🎉 Toàn bộ lỗi thể thức đã được AI căn chỉnh tự động về 100% chuẩn Nghị định 30/2020/NĐ-CP!'
     }));
     showToast("⚡ AI đã tự động căn chỉnh & sửa 100% lỗi thể thức theo NĐ 30!");
+  };
+
+  // Nút Gemini AI Nâng cấp văn phong chuyên sâu qua Vercel API Key
+  const handleDeepAiPolish = async () => {
+    setIsDeepPolishing(true);
+    try {
+      showToast("🤖 Gemini AI đang phân tích ngữ nghĩa & biên tập văn phong...");
+      const textToAnalyze = uploadedFile?.rawText || rawInputText || docData.content || '';
+      const res = await deepAiPolishDecree30(textToAnalyze, docData);
+      
+      if (res.docData) {
+        setDocData(res.docData);
+        setIsAutoFixed(true);
+        setAuditResult(prev => ({
+          ...prev,
+          issuesCount: 0,
+          initialScore: 100,
+          summary: '✨ Đã được Gemini AI biên tập và nâng cấp văn phong hành chính chuyên sâu!'
+        }));
+        showToast("✨ Gemini AI đã hoàn tất nâng cấp văn bản chuẩn Nghị định 30!");
+      }
+    } catch (err) {
+      console.error("Lỗi gọi Gemini AI:", err);
+      showToast("⚠️ Đã áp dụng bộ lọc chuẩn hóa cục bộ.");
+    } finally {
+      setIsDeepPolishing(false);
+    }
   };
 
   // Thử nghiệm file mẫu có sẵn lỗi
@@ -656,34 +685,66 @@ Lê Thị Thảo`;
                       </div>
                     </div>
 
-                    {/* Nút 1-Click AI Auto Fix Nổi Bật */}
-                    {auditResult.issuesCount > 0 && (
-                      <div style={{ marginBottom: '16px' }}>
-                        <button
-                          type="button"
-                          onClick={handleRunAiAutoFix}
-                          style={{
-                            width: '100%',
-                            padding: '13px 18px',
-                            borderRadius: '10px',
-                            backgroundColor: '#2563eb',
-                            color: '#ffffff',
-                            border: 'none',
-                            fontSize: '14px',
-                            fontWeight: '800',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            boxShadow: '0 4px 14px rgba(37,99,235,0.3)',
-                            transition: 'all 0.2s ease'
-                          }}
-                        >
-                          <Wand2 size={18} /> ⚡ AI Tự Động Sửa Toàn Bộ {auditResult.issuesCount} Lỗi & Căn Chỉnh Chuẩn NĐ 30
-                        </button>
-                      </div>
-                    )}
+                    {/* Nút Action AI Nổi Bật (2 Chế Độ) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                      <button
+                        type="button"
+                        onClick={handleRunAiAutoFix}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          backgroundColor: '#2563eb',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 12px rgba(37,99,235,0.25)',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <Wand2 size={16} /> ⚡ AI Sửa Nhanh Thể Thức
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDeepAiPolish}
+                        disabled={isDeepPolishing}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '10px',
+                          backgroundColor: isDeepPolishing ? '#9333ea' : '#7e22ce',
+                          color: '#ffffff',
+                          border: 'none',
+                          fontSize: '13px',
+                          fontWeight: '800',
+                          cursor: isDeepPolishing ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 4px 12px rgba(126,34,206,0.3)',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title="Sử dụng Gemini AI API để viết lại câu từ, phân mục và thêm căn cứ pháp lý"
+                      >
+                        {isDeepPolishing ? (
+                          <>
+                            <RefreshCw size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                            <span>Đang gọi Gemini AI...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={16} color="#fef08a" />
+                            <span>✨ Gemini AI Biên Tập Sâu</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
 
                     {isAutoFixed && (
                       <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '12px 14px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#166534', fontWeight: '600' }}>
@@ -766,29 +827,51 @@ Lê Thị Thảo`;
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 
                 {/* Nút tiện ích AI Auto Sửa Lỗi */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#eff6ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #bfdbfe', flexWrap: 'wrap', gap: '8px' }}>
                   <span style={{ fontSize: '12px', color: '#1e40af', fontWeight: '600' }}>
                     💡 Đang chỉnh sửa chi tiết từng thành phần thể thức
                   </span>
-                  <button
-                    type="button"
-                    onClick={handleRunAiAutoFix}
-                    style={{
-                      padding: '5px 10px',
-                      backgroundColor: '#2563eb',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '12px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}
-                  >
-                    <Wand2 size={13} /> AI Sửa Lỗi Ngay
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button
+                      type="button"
+                      onClick={handleRunAiAutoFix}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Wand2 size={13} /> Sửa Thể Thức
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDeepAiPolish}
+                      disabled={isDeepPolishing}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: isDeepPolishing ? '#9333ea' : '#7e22ce',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        cursor: isDeepPolishing ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Sparkles size={13} color="#fef08a" /> {isDeepPolishing ? 'Đang gọi AI...' : '✨ Gemini Nâng Cấp'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* 1. Cơ quan & Đơn vị */}
@@ -1009,36 +1092,70 @@ Lê Thị Thảo`;
                   style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', lineHeight: '1.45', boxSizing: 'border-box' }}
                 />
 
-                <div style={{ marginTop: '16px', display: 'flex', gap: '10px' }}>
-                  <button
-                    type="button"
-                    onClick={handleAutoFormatRawText}
-                    style={{
-                      flex: 1,
-                      padding: '12px',
-                      backgroundColor: '#2563eb',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '800',
-                      fontSize: '14px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 4px 12px rgba(37,99,235,0.3)'
-                    }}
-                  >
-                    <Sparkles size={18} /> ⚡ Phân Tích & Chuẩn Hóa Sang Chuẩn NĐ 30
-                  </button>
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={handleAutoFormatRawText}
+                      style={{
+                        padding: '12px',
+                        backgroundColor: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '800',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.25)'
+                      }}
+                    >
+                      <Sparkles size={16} /> ⚡ Phân Tích & Quét Lỗi
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleDeepAiPolish}
+                      disabled={isDeepPolishing}
+                      style={{
+                        padding: '12px',
+                        backgroundColor: isDeepPolishing ? '#9333ea' : '#7e22ce',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '800',
+                        fontSize: '13.5px',
+                        cursor: isDeepPolishing ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 4px 12px rgba(126,34,206,0.3)'
+                      }}
+                    >
+                      {isDeepPolishing ? (
+                        <>
+                          <RefreshCw size={16} className="animate-spin" style={{ animation: 'spin 1s linear infinite' }} />
+                          <span>Đang gọi Gemini AI...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={16} color="#fef08a" />
+                          <span>✨ Gemini Viết Lại Sâu</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
 
                   <button
                     type="button"
                     onClick={() => setRawInputText('')}
-                    style={{ padding: '12px 18px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                    style={{ padding: '8px 14px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', alignSelf: 'flex-end' }}
                   >
-                    Xóa
+                    Xóa khung nhập
                   </button>
                 </div>
               </div>

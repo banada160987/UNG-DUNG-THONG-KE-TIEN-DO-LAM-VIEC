@@ -616,3 +616,112 @@ export function exportDecree30ToWord(docData, elementId = 'decree30-preview-cont
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * GỌI GEMINI AI QUA VERCEL API HOẶC DIRECT KEY ĐỂ BIÊN TẬP VĂN PHONG CHUYÊN SÂU
+ */
+export async function deepAiPolishDecree30(rawText = '', currentDocData = {}) {
+  const customApiKey = localStorage.getItem('cbq_ai_api_key') || (import.meta.env?.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY : '');
+  
+  const systemInstruction = `Bạn là Chuyên gia Cao cấp về Thể thức Văn bản Hành chính Nhà nước và Quản lý Giáo dục tại Việt Nam (theo Nghị định 30/2020/NĐ-CP của Chính phủ).
+Nhiệm vụ của bạn là tiếp nhận văn bản thô/bản nháp của giáo viên, phân tích ngữ nghĩa, tự động biên tập câu từ thành văn phong chuẩn mực công vụ, phân cấp rõ ràng các đề mục (I, II, 1, 2, a, b, -, +), bổ sung các căn cứ pháp lý cần thiết và trả về DUY NHẤT một chuỗi JSON hợp lệ (không kèm markdown code fence backticks).
+
+Cấu trúc JSON bắt buộc:
+{
+  "department": "SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK",
+  "issuer": "TRƯỜNG THPT CAO BÁ QUÁT",
+  "sub_unit": "",
+  "doc_number": "Số: .../KH-CBQ",
+  "location_date": "Tân An, ngày ... tháng ... năm ...",
+  "type_name": "KẾ HOẠCH",
+  "subject": "Về việc triển khai...",
+  "content": "Nội dung đã được biên tập trang trọng, phân mục I, II, 1, 2, giãn dòng...",
+  "signer_title": "TM. BAN GIÁM HIỆU\\nHIỆU TRƯỞNG",
+  "signer_name": "",
+  "recipients": ["- Ban Giám hiệu (để b/c);", "- Các Tổ Chuyên môn (để t/h);", "- Lưu: VT."],
+  "critique": ["Các điểm AI đã cải thiện và lời khuyên sư phạm..."]
+}`;
+
+  const promptText = `Hãy biên tập, nâng cấp văn phong hành chính và chuẩn hóa thể thức Nghị định 30/2020/NĐ-CP cho văn bản sau:
+
+${rawText || JSON.stringify(currentDocData, null, 2)}
+
+Yêu cầu:
+1. Đảm bảo ngôn từ trang trọng, chính xác, không dùng từ ngữ cảm tính hoặc văn nói.
+2. Cấu trúc các mục I, II, III (La Mã in hoa), 1, 2, 3 (số Ả Rập) chuẩn mực.
+3. Trả về đúng định dạng JSON như đã quy định.`;
+
+  // 1. Thử gọi qua Vercel Proxy Serverless (/api/ai-advisor)
+  try {
+    const proxyRes = await fetch('/api/ai-advisor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        promptText,
+        systemInstruction,
+        customApiKey: customApiKey || undefined,
+        temperature: 0.2
+      })
+    });
+
+    if (proxyRes.ok) {
+      const data = await proxyRes.json();
+      if (data.success && data.text) {
+        let cleanJsonStr = data.text.trim();
+        if (cleanJsonStr.startsWith('```json')) cleanJsonStr = cleanJsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+        else if (cleanJsonStr.startsWith('```')) cleanJsonStr = cleanJsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+        
+        try {
+          const parsedJson = JSON.parse(cleanJsonStr);
+          return { success: true, docData: parsedJson, source: 'gemini_ai_vercel' };
+        } catch (jsonErr) {
+          console.warn("JSON parse error:", jsonErr, cleanJsonStr);
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("Vercel proxy fetch failed, trying direct endpoint...", e);
+  }
+
+  // 2. Thử gọi trực tiếp bằng key nếu có
+  if (customApiKey) {
+    try {
+      const directRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${customApiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `${systemInstruction}\n\n${promptText}` }] }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 3000 }
+        })
+      });
+
+      if (directRes.ok) {
+        const directData = await directRes.json();
+        const candText = directData.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candText) {
+          let cleanJsonStr = candText.trim();
+          if (cleanJsonStr.startsWith('```json')) cleanJsonStr = cleanJsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          else if (cleanJsonStr.startsWith('```')) cleanJsonStr = cleanJsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          
+          try {
+            const parsedJson = JSON.parse(cleanJsonStr);
+            return { success: true, docData: parsedJson, source: 'gemini_ai_direct' };
+          } catch (jsonErr) {
+            console.warn("JSON parse error direct:", jsonErr);
+          }
+        }
+      }
+    } catch (directErr) {
+      console.warn("Direct Gemini fetch failed:", directErr);
+    }
+  }
+
+  // 3. Fallback về autoFix cục bộ
+  const localFixed = autoFixDecree30Document(currentDocData);
+  return {
+    success: false,
+    docData: localFixed,
+    source: 'local_rule_based',
+    notice: 'Đã áp dụng bộ lọc Rule-based cục bộ do chưa kết nối được API Gemini trực tiếp.'
+  };
+}
