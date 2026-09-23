@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import * as XLSX from 'xlsx';
 
 /**
  * Tiện ích Căn chỉnh, Phân tích, Bắt lỗi Thể thức AI và Xuất File Chuẩn Nghị định 30/2020/NĐ-CP
@@ -6,86 +7,240 @@ import JSZip from 'jszip';
  */
 
 /**
- * Đọc file Word (.docx) sang Text thuần và HTML có cấu trúc chuẩn 100% trong Browser
+ * Đọc file Word (.docx, .doc) sang Text thuần và HTML có cấu trúc chuẩn 100% trong Browser
  */
 export async function readWordFile(file) {
   if (!file) throw new Error("Chưa chọn file");
 
   const arrayBuffer = await file.arrayBuffer();
+  const uint8 = new Uint8Array(arrayBuffer);
   
-  try {
-    // 1. Thử giải nén file DOCX dạng OpenXML
-    const zip = await JSZip.loadAsync(arrayBuffer);
-    const docXmlFile = zip.file('word/document.xml');
-    
-    if (docXmlFile) {
-      const xmlStr = await docXmlFile.async('text');
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlStr, 'application/xml');
+  // 1. Kiểm tra nếu là file .DOCX (ZIP Container: 0x50 0x4B 0x03 0x04)
+  if (uint8.length >= 4 && uint8[0] === 0x50 && uint8[1] === 0x4B) {
+    try {
+      const zip = await JSZip.loadAsync(arrayBuffer);
+      const docXmlFile = zip.file('word/document.xml');
+      
+      if (docXmlFile) {
+        const xmlStr = await docXmlFile.async('text');
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlStr, 'application/xml');
 
-      const body = xmlDoc.getElementsByTagName('w:body')[0] || xmlDoc.documentElement;
-      const childNodes = body.childNodes || [];
+        const body = xmlDoc.getElementsByTagName('w:body')[0] || xmlDoc.documentElement;
+        const childNodes = body.childNodes || [];
 
-      const textParagraphs = [];
-      const htmlParts = [];
+        const textParagraphs = [];
+        const htmlParts = [];
 
-      for (let i = 0; i < childNodes.length; i++) {
-        const node = childNodes[i];
-        const nodeName = node.nodeName || node.tagName;
+        for (let i = 0; i < childNodes.length; i++) {
+          const node = childNodes[i];
+          const nodeName = node.nodeName || node.tagName;
 
-        if (nodeName === 'w:p') {
-          const { text, html } = parseWordParagraph(node);
-          if (text.trim() || html) {
-            textParagraphs.push(text);
-            htmlParts.push(html);
-          }
-        } else if (nodeName === 'w:tbl') {
-          const { text, html } = parseWordTable(node);
-          if (text.trim()) {
-            textParagraphs.push(text);
-            htmlParts.push(html);
+          if (nodeName === 'w:p') {
+            const { text, html } = parseWordParagraph(node);
+            if (text.trim() || html) {
+              textParagraphs.push(text);
+              htmlParts.push(html);
+            }
+          } else if (nodeName === 'w:tbl') {
+            const { text, html } = parseWordTable(node);
+            if (text.trim()) {
+              textParagraphs.push(text);
+              htmlParts.push(html);
+            }
           }
         }
-      }
 
-      const fullText = textParagraphs.join('\n');
-      if (fullText.trim()) {
+        const fullText = textParagraphs.join('\n');
+        if (fullText.trim()) {
+          return {
+            rawText: fullText,
+            htmlContent: htmlParts.join('\n'),
+            fileName: file.name
+          };
+        }
+      }
+    } catch (docxErr) {
+      console.warn("Không thể giải nén DOCX chuẩn, chuyển sang phương thức trích xuất khác:", docxErr);
+    }
+  }
+
+  // 2. Kiểm tra nếu là file .DOC nhị phân (Word 97-2003 OLE2 Compound File: 0xD0 0xCF 0x11 0xE0)
+  if (uint8.length >= 8 && uint8[0] === 0xD0 && uint8[1] === 0xCF && uint8[2] === 0x11 && uint8[3] === 0xE0) {
+    try {
+      const docText = extractTextFromDocBinary(arrayBuffer);
+      if (docText && docText.trim().length > 10) {
         return {
-          rawText: fullText,
-          htmlContent: htmlParts.join('\n'),
+          rawText: docText,
+          htmlContent: docText.split('\n').map(l => `<p>${l}</p>`).join(''),
+          fileName: file.name
+        };
+      }
+    } catch (docErr) {
+      console.warn("Lỗi trích xuất OLE2 .doc:", docErr);
+    }
+  }
+
+  // 3. Kiểm tra nếu là file HTML / XML lưu dưới đuôi .doc (phổ biến từ hệ thống vnEdu, SMAS...)
+  try {
+    const headerSample = new TextDecoder('utf-8', { fatal: false }).decode(uint8.subarray(0, 1000));
+    if (headerSample.includes('<html') || headerSample.includes('<!DOCTYPE') || headerSample.includes('<body') || headerSample.includes('<?xml')) {
+      const fullHtmlStr = new TextDecoder('utf-8', { fatal: false }).decode(uint8);
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(fullHtmlStr, 'text/html');
+      const bodyText = doc.body ? (doc.body.innerText || doc.body.textContent || '') : '';
+      if (bodyText.trim().length > 10) {
+        return {
+          rawText: bodyText.trim(),
+          htmlContent: doc.body ? doc.body.innerHTML : '',
           fileName: file.name
         };
       }
     }
-  } catch (docxErr) {
-    console.warn("Không thể giải nén DOCX chuẩn, chuyển sang phương thức trích xuất text nhị phân:", docxErr);
+  } catch (htmlErr) {
+    console.warn("Lỗi đọc định dạng HTML/XML masquerading:", htmlErr);
   }
 
-  // 2. Fallback: Thử trích xuất các chuỗi ký tự UTF-8 / Text có nghĩa từ ArrayBuffer (cho file .doc cũ hoặc text)
+  // 4. Fallback cuối cùng: Trích xuất UTF-16LE hoặc UTF-8 sạch (LOẠI BỎ TRIỆT ĐỂ DẤU HỎI KIM CƯƠNG \uFFFD)
   try {
-    const uint8 = new Uint8Array(arrayBuffer);
-    const decoder = new TextDecoder('utf-8', { fatal: false });
-    const rawDecoded = decoder.decode(uint8);
-    
-    // Lọc các đoạn văn bản tiếng Việt có nghĩa
-    const cleanLines = rawDecoded
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+    const dec16 = new TextDecoder('utf-16le', { fatal: false });
+    const text16 = dec16.decode(uint8);
+    const validLines16 = cleanWordText(text16)
       .split('\n')
-      .map(l => l.trim())
-      .filter(l => l.length > 3 && /[a-zA-Zà-ỹÀ-Ỹ0-9]/.test(l));
+      .filter(l => l.length > 5 && /[a-zA-Zà-ỹÀ-Ỹ0-9]/.test(l));
 
-    if (cleanLines.length > 2) {
+    if (validLines16.length >= 3) {
       return {
-        rawText: cleanLines.join('\n'),
-        htmlContent: cleanLines.map(l => `<p>${l}</p>`).join(''),
+        rawText: validLines16.join('\n'),
+        htmlContent: validLines16.map(l => `<p>${l}</p>`).join(''),
+        fileName: file.name
+      };
+    }
+
+    const dec8 = new TextDecoder('utf-8', { fatal: false });
+    const text8 = dec8.decode(uint8);
+    const validLines8 = cleanWordText(text8)
+      .split('\n')
+      .filter(l => l.length > 5 && /[a-zA-Zà-ỹÀ-Ỹ0-9]/.test(l));
+
+    if (validLines8.length >= 3) {
+      return {
+        rawText: validLines8.join('\n'),
+        htmlContent: validLines8.map(l => `<p>${l}</p>`).join(''),
         fileName: file.name
       };
     }
   } catch (binErr) {
-    console.warn("Lỗi trích xuất nhị phân:", binErr);
+    console.warn("Lỗi trích xuất nhị phân fallback:", binErr);
   }
 
   throw new Error("Không thể trích xuất nội dung từ file này. Vui lòng mở file bằng Word và lưu dưới dạng .docx hoặc copy dán vào tab 'Dán Text'!");
+}
+
+/**
+ * BỘ TRÍCH XUẤT CHUYÊN BIỆT CHO FILE WORD 97-2003 (.doc) NHỊ PHÂN OLE2
+ */
+function extractTextFromDocBinary(arrayBuffer) {
+  const u8 = new Uint8Array(arrayBuffer);
+  const cfb = XLSX.CFB.read(u8, { type: 'array' });
+  const wordEntry = XLSX.CFB.find(cfb, 'WordDocument');
+  if (!wordEntry || !wordEntry.content) {
+    throw new Error('Không tìm thấy luồng WordDocument trong file .doc');
+  }
+
+  const wordBytes = wordEntry.content instanceof Uint8Array ? wordEntry.content : new Uint8Array(wordEntry.content);
+  const wordView = new DataView(wordBytes.buffer, wordBytes.byteOffset, wordBytes.byteLength);
+
+  // 1. Thử bóc tách qua Piece Table (Clx) chuẩn MS-DOC
+  try {
+    const flags = wordView.getUint16(0x000a, true);
+    const tableStreamName = (flags & 0x0200) ? '1Table' : '0Table';
+    const tableEntry = XLSX.CFB.find(cfb, tableStreamName);
+
+    if (tableEntry && tableEntry.content) {
+      const tableBytes = tableEntry.content instanceof Uint8Array ? tableEntry.content : new Uint8Array(tableEntry.content);
+      const tableView = new DataView(tableBytes.buffer, tableBytes.byteOffset, tableBytes.byteLength);
+
+      let pos = wordView.getUint32(0x01a2, true);
+      while (pos < tableBytes.length) {
+        const flag = tableBytes[pos];
+        if (flag !== 1) break;
+        pos++;
+        const skip = tableView.getUint16(pos, true);
+        pos += 2 + skip;
+      }
+
+      if (pos < tableBytes.length && tableBytes[pos] === 2) {
+        pos++;
+        const pieceTableSize = tableView.getUint32(pos, true);
+        pos += 4;
+        const pieces = Math.floor((pieceTableSize - 4) / 12);
+        const fullTextParts = [];
+
+        for (let x = 0; x < pieces; x++) {
+          const lStart = tableView.getUint32(pos + (x * 4), true);
+          const lEnd = tableView.getUint32(pos + ((x + 1) * 4), true);
+          const offset = pos + ((pieces + 1) * 4) + (x * 8) + 2;
+          let startFilePos = tableView.getUint32(offset, true);
+          let unicode = false;
+          if ((startFilePos & 0x40000000) === 0) {
+            unicode = true;
+          } else {
+            startFilePos = (startFilePos & ~0x40000000) >> 1;
+          }
+          const bpc = unicode ? 2 : 1;
+          const size = bpc * (lEnd - lStart);
+          const textBytes = wordBytes.subarray(startFilePos, startFilePos + size);
+          if (unicode) {
+            fullTextParts.push(new TextDecoder('utf-16le').decode(textBytes));
+          } else {
+            fullTextParts.push(new TextDecoder('windows-1258').decode(textBytes));
+          }
+        }
+
+        const extracted = cleanWordText(fullTextParts.join(''));
+        if (extracted.trim().length > 10) {
+          return extracted;
+        }
+      }
+    }
+  } catch (errPiece) {
+    console.warn('Lỗi đọc Piece Table, chuyển sang quét chuỗi UTF-16LE luồng WordDocument:', errPiece);
+  }
+
+  // 2. Fallback: Trích xuất các đoạn văn bản UTF-16LE từ luồng WordDocument
+  return scanWordDocumentStreams(wordBytes);
+}
+
+function scanWordDocumentStreams(wordBytes) {
+  const wordView = new DataView(wordBytes.buffer, wordBytes.byteOffset, wordBytes.byteLength);
+  let startOffset = 512;
+  try {
+    const fcMin = wordView.getUint32(0x0018, true);
+    if (fcMin >= 512 && fcMin < wordBytes.length - 10) {
+      startOffset = fcMin;
+    }
+  } catch (e) {}
+
+  const textBytes = wordBytes.subarray(startOffset);
+  const dec16 = new TextDecoder('utf-16le', { fatal: false });
+  const rawText = dec16.decode(textBytes);
+  return cleanWordText(rawText);
+}
+
+function cleanWordText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\x0D\x0A/g, '\n')
+    .replace(/\x0D/g, '\n')
+    .replace(/\x07/g, ' | ') // Ô bảng
+    .replace(/\x0B/g, '\n') // Ngắt dòng
+    .replace(/\x0C/g, '\n') // Ngắt trang
+    .replace(/[\x00-\x06\x08\x0E-\x1F\x7F\uFFFD]/g, '') // Xóa triệt để các ký tự rác và dấu hỏi kim cương
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .join('\n');
 }
 
 function extractParagraphText(pNode) {
