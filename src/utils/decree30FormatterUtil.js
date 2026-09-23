@@ -88,7 +88,9 @@ export async function readWordFile(file) {
   throw new Error("Không thể trích xuất nội dung từ file này. Vui lòng mở file bằng Word và lưu dưới dạng .docx hoặc copy dán vào tab 'Dán Text'!");
 }
 
-function parseWordParagraph(pNode) {
+function extractParagraphText(pNode) {
+  if (!pNode) return { text: '', html: '' };
+  
   let pText = '';
   let pHtml = '';
 
@@ -110,6 +112,10 @@ function parseWordParagraph(pNode) {
         runText += '    ';
       }
 
+      if (r.getElementsByTagName('w:br').length > 0 || r.getElementsByTagName('w:cr').length > 0) {
+        runText += '\n';
+      }
+
       if (runText) {
         pText += runText;
         let formatted = runText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -118,41 +124,103 @@ function parseWordParagraph(pNode) {
         pHtml += formatted;
       }
     }
-  }
-
-  if (!pText) {
-    const textAll = pNode.textContent || '';
-    pText = textAll;
-    pHtml = textAll;
+  } else {
+    // Nếu không có w:r, tìm trực tiếp w:t (tránh lấy paraId / bookmark ID)
+    const tNodes = pNode.getElementsByTagName('w:t');
+    for (let k = 0; k < tNodes.length; k++) {
+      pText += tNodes[k].textContent || '';
+    }
+    pHtml = pText;
   }
 
   return {
-    text: pText,
+    text: pText.trim(),
     html: pHtml ? `<p>${pHtml}</p>` : ''
   };
 }
 
-function parseWordTable(tblNode) {
-  let tblText = '';
-  let tblHtml = '<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+function parseWordParagraph(pNode) {
+  return extractParagraphText(pNode);
+}
 
+function parseWordTable(tblNode) {
   const rows = tblNode.getElementsByTagName('w:tr');
+  if (!rows || rows.length === 0) return { text: '', html: '' };
+
+  // 1. Kiểm tra xem đây có phải BẢNG ĐẦU TRANG (Header 2 cột: Cơ quan + Quốc hiệu)
+  // hoặc BẢNG CHÂN TRANG (Footer 2 cột: Nơi nhận + Chữ ký)
+  const allCellParagraphs = [];
   for (let r = 0; r < rows.length; r++) {
-    tblHtml += '<tr>';
+    const cells = rows[r].getElementsByTagName('w:tc');
+    for (let c = 0; c < cells.length; c++) {
+      const pList = cells[c].getElementsByTagName('w:p');
+      for (let p = 0; p < pList.length; p++) {
+        const { text } = extractParagraphText(pList[p]);
+        if (text) allCellParagraphs.push(text);
+      }
+    }
+  }
+
+  const combinedTableText = allCellParagraphs.join(' ').toLowerCase();
+  const isHeaderTable = combinedTableText.includes('cộng hòa xã hội') || 
+                       combinedTableText.includes('độc lập - tự do') || 
+                       combinedTableText.includes('độc lập – tự do') ||
+                       (combinedTableText.includes('sở giáo dục') && combinedTableText.includes('ngày'));
+
+  const isFooterTable = combinedTableText.includes('nơi nhận') && 
+                       (combinedTableText.includes('hiệu trưởng') || combinedTableText.includes('trưởng ban') || combinedTableText.includes('chủ tịch') || combinedTableText.includes('người lập'));
+
+  // Nếu là Bảng Đầu Trang hoặc Bảng Chân Trang trong Word, rã thành các dòng văn bản độc lập
+  if (isHeaderTable || isFooterTable) {
+    const lines = [];
+    const htmlLines = [];
+    for (let r = 0; r < rows.length; r++) {
+      const cells = rows[r].getElementsByTagName('w:tc');
+      for (let c = 0; c < cells.length; c++) {
+        const pList = cells[c].getElementsByTagName('w:p');
+        for (let p = 0; p < pList.length; p++) {
+          const { text, html } = extractParagraphText(pList[p]);
+          if (text) {
+            lines.push(text);
+            htmlLines.push(html);
+          }
+        }
+      }
+    }
+    return {
+      text: lines.join('\n'),
+      html: htmlLines.join('\n')
+    };
+  }
+
+  // 2. Nếu là BẢNG NỘI DUNG THÔNG THƯỜNG (ví dụ Bảng Bầu ban đại diện cha mẹ học sinh)
+  let tblText = '';
+  let tblHtml = '<table border="1" style="border-collapse: collapse; width: 100%; margin: 12px 0;">\n';
+
+  for (let r = 0; r < rows.length; r++) {
+    tblHtml += '  <tr>\n';
     const cells = rows[r].getElementsByTagName('w:tc');
     const rowTexts = [];
+    
     for (let c = 0; c < cells.length; c++) {
-      const cellText = (cells[c].textContent || '').trim();
-      rowTexts.push(cellText);
-      tblHtml += `<td style="padding: 6px 10px; border: 1px solid #ccc;">${cellText}</td>`;
+      const pList = cells[c].getElementsByTagName('w:p');
+      const cellTextParts = [];
+      for (let p = 0; p < pList.length; p++) {
+        const { text } = extractParagraphText(pList[p]);
+        if (text) cellTextParts.push(text);
+      }
+      const cellCleanText = cellTextParts.join(' ');
+      rowTexts.push(cellCleanText);
+      tblHtml += `    <td style="padding: 6px 10px; border: 1px solid #000;">${cellCleanText}</td>\n`;
     }
+    
     tblText += '| ' + rowTexts.join(' | ') + ' |\n';
-    tblHtml += '</tr>';
+    tblHtml += '  </tr>\n';
   }
   tblHtml += '</table>';
 
   return {
-    text: tblText,
+    text: '\n' + tblText + '\n',
     html: tblHtml
   };
 }
@@ -264,8 +332,19 @@ export function parseRawTextToDecree30(rawText = '') {
     const docTypeMatch = line.match(/^(KẾ HOẠCH|BÁO CÁO|TỜ TRÌNH|BIÊN BẢN|QUYẾT ĐỊNH|THÔNG BÁO|CÔNG VĂN|HƯỚNG DẪN|QUY ĐỊNH|QUY CHẾ)\b/i);
     if (docTypeMatch && !subject) {
       type_name = docTypeMatch[1].toUpperCase();
-      const rest = line.substring(docTypeMatch[0].length).trim();
-      if (rest) subject = rest;
+      const rest = line.substring(docTypeMatch[0].length).replace(/^[\s\-–:]+/, '').trim();
+      if (rest) {
+        subject = rest;
+      } else if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        // Nếu dòng tiếp theo là trích yếu (không phải mở đầu cuộc họp hay mục I)
+        if (!/^(I|II|III|IV|V|1|2|3|\*|\-|\+)\./i.test(nextLine) && 
+            !/^(hôm nay|thời gian|địa điểm|thành phần|căn cứ)\b/i.test(nextLine) &&
+            !nextLine.startsWith('|') && nextLine.length < 150) {
+          subject = nextLine;
+          i++; // Bỏ qua dòng trích yếu vừa lấy
+        }
+      }
       continue;
     }
 

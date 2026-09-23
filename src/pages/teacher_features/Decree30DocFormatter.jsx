@@ -1441,65 +1441,107 @@ Lê Thị Thảo`;
 
                 {/* 3. NỘI DUNG CHÍNH (ĐƯỢC ĐỊNH DẠNG ĐỀ MỤC & THỤT ĐẦU DÒNG 1.0CM) */}
                 <div style={{ marginTop: '14px', marginBottom: '30px' }}>
-                  {(docData.content || '').split('\n\n').map((paragraph, pIdx) => {
-                    const cleanP = paragraph.trim();
-                    if (!cleanP) return null;
+                  {(() => {
+                    const rawContent = docData.content || '';
+                    // Tách các đoạn văn và khối bảng biểu
+                    const blocks = [];
+                    const rawBlocks = rawContent.split('\n');
+                    let currentTableRows = [];
+                    let currentTextLines = [];
 
-                    // Header La Mã (I., II., III...)
-                    if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/i.test(cleanP)) {
+                    const flushText = () => {
+                      if (currentTextLines.length > 0) {
+                        const textChunk = currentTextLines.join('\n').trim();
+                        if (textChunk) blocks.push({ type: 'text', content: textChunk });
+                        currentTextLines = [];
+                      }
+                    };
+
+                    const flushTable = () => {
+                      if (currentTableRows.length > 0) {
+                        blocks.push({ type: 'table', rows: currentTableRows });
+                        currentTableRows = [];
+                      }
+                    };
+
+                    for (let line of rawBlocks) {
+                      const trimmed = line.trim();
+                      if (trimmed.startsWith('|') && trimmed.endsWith('|')) {
+                        flushText();
+                        if (!trimmed.includes('---')) {
+                          currentTableRows.push(trimmed);
+                        }
+                      } else {
+                        flushTable();
+                        if (trimmed) currentTextLines.push(trimmed);
+                        else flushText(); // dòng trống ngăn cách đoạn
+                      }
+                    }
+                    flushText();
+                    flushTable();
+
+                    return blocks.map((block, bIdx) => {
+                      if (block.type === 'table') {
+                        return (
+                          <div key={bIdx} style={{ margin: '14px 0', overflowX: 'auto' }}>
+                            <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000', fontFamily: '"Times New Roman", Times, serif', fontSize: '13pt' }}>
+                              <tbody>
+                                {block.rows.map((rowStr, rIdx) => {
+                                  const cells = rowStr.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(c => c.trim());
+                                  const isHeader = rIdx === 0 || cells.some(c => /^(STT|Họ và tên|Chức vụ|Nội dung|Thời gian)/i.test(c));
+                                  return (
+                                    <tr key={rIdx} style={{ backgroundColor: isHeader ? '#f8fafc' : 'transparent' }}>
+                                      {cells.map((cell, cIdx) => (
+                                        <td
+                                          key={cIdx}
+                                          style={{
+                                            border: '1px solid #000',
+                                            padding: '6px 10px',
+                                            textAlign: cIdx === 0 && cells.length > 2 ? 'center' : 'left',
+                                            fontWeight: isHeader ? 'bold' : 'normal',
+                                            textIndent: 0,
+                                            lineHeight: '1.3'
+                                          }}
+                                        >
+                                          {cell}
+                                        </td>
+                                      ))}
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      }
+
+                      const cleanP = block.content;
+                      // Header La Mã (I., II., III...)
+                      if (/^(I|II|III|IV|V|VI|VII|VIII|IX|X)\.\s+/i.test(cleanP)) {
+                        return (
+                          <div key={bIdx} style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '14px', marginBottom: '6px' }}>
+                            {cleanP}
+                          </div>
+                        );
+                      }
+
+                      // Header số (1., 2., 3...)
+                      if (/^\d+\.\s+/.test(cleanP)) {
+                        return (
+                          <div key={bIdx} style={{ fontSize: '13pt', fontWeight: 'bold', textIndent: '1.0cm', marginTop: '10px', marginBottom: '4px' }}>
+                            {cleanP}
+                          </div>
+                        );
+                      }
+
+                      // Đoạn văn thông thường
                       return (
-                        <div key={pIdx} style={{ fontSize: '13pt', fontWeight: 'bold', textTransform: 'uppercase', marginTop: '14px', marginBottom: '6px' }}>
+                        <p key={bIdx} style={{ margin: '0 0 6pt 0', textIndent: '1.0cm', lineHeight: '1.35', textAlign: 'justify' }}>
                           {cleanP}
-                        </div>
+                        </p>
                       );
-                    }
-
-                    // Header số (1., 2., 3...)
-                    if (/^\d+\.\s+/.test(cleanP)) {
-                      return (
-                        <div key={pIdx} style={{ fontSize: '13pt', fontWeight: 'bold', textIndent: '1.0cm', marginTop: '10px', marginBottom: '4px' }}>
-                          {cleanP}
-                        </div>
-                      );
-                    }
-
-                    // Bảng dữ liệu Markdown
-                    if (cleanP.startsWith('|')) {
-                      const rows = cleanP.split('\n').filter(r => r.includes('|') && !r.includes('---'));
-                      return (
-                        <table key={pIdx} className="data-table" style={{ width: '100%', borderCollapse: 'collapse', margin: '12px 0' }}>
-                          <tbody>
-                            {rows.map((row, rIdx) => {
-                              const cells = row.split('|').filter((_, idx, arr) => idx > 0 && idx < arr.length - 1).map(c => c.trim());
-                              if (rIdx === 0) {
-                                return (
-                                  <tr key={rIdx}>
-                                    {cells.map((cell, cIdx) => (
-                                      <th key={cIdx} style={{ border: '1px solid black', padding: '6px', textAlign: 'center', backgroundColor: '#f2f2f2' }}>{cell}</th>
-                                    ))}
-                                  </tr>
-                                );
-                              }
-                              return (
-                                <tr key={rIdx}>
-                                  {cells.map((cell, cIdx) => (
-                                    <td key={cIdx} style={{ border: '1px solid black', padding: '6px', textAlign: cIdx === 0 ? 'center' : 'left' }}>{cell}</td>
-                                  ))}
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      );
-                    }
-
-                    // Đoạn văn thông thường
-                    return (
-                      <p key={pIdx} style={{ margin: '0 0 6pt 0', textIndent: '1.0cm', lineHeight: '1.35', textAlign: 'justify' }}>
-                        {cleanP}
-                      </p>
-                    );
-                  })}
+                    });
+                  })()}
                 </div>
 
                 {/* 4. CHỮ KÝ & NƠI NHẬN CHUẨN NGHỊ ĐỊNH 30 */}
