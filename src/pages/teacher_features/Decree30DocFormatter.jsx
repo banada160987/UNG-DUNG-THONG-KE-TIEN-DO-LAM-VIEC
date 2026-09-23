@@ -396,7 +396,7 @@ Lê Thị Thảo`;
               textDecoration: 'none'
             }}
           >
-            <Home size={14} /> Cổng Trường
+            <Home size={14} /> Trang Chủ Trường
           </Link>
 
           <Link
@@ -419,7 +419,7 @@ Lê Thị Thảo`;
           </Link>
 
           <Link
-            to="/hub"
+            to="/teacher-dashboard/app-hub"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -433,7 +433,7 @@ Lê Thị Thảo`;
               textDecoration: 'none'
             }}
           >
-            <Grid size={14} /> Kho Tiện Ích
+            <Grid size={14} /> Kho Tiện Ích GV
           </Link>
         </div>
       </header>

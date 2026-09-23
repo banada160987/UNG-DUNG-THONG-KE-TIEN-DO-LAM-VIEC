@@ -113,12 +113,12 @@ export default function PublicLayout() {
                 </h1>
 
                 <h2 style={styles.bannerSubtitle} className="cbq-banner-sub">
-                  TRUNG TÂM ĐIỀU HÀNH KHÔNG GIAN SỐ & CỔNG THÔNG TIN TOÀN TRƯỜNG
+                  CỔNG THÔNG TIN ĐIỆN TỬ & TRANG CHỦ NHÀ TRƯỜNG
                 </h2>
 
                 <div style={styles.taglinePill} className="cbq-tagline">
                   <Sparkles size={13} color="#fde047" />
-                  <span>Kỷ Nguyên Chuyển Đổi Số Giáo Dục Toàn Diện • Thời Gian Thực 24/7</span>
+                  <span>Kỷ Nguyên Chuyển Đổi Số Giáo Dục Toàn Diện • Thông Tin Chính Thức 24/7</span>
                 </div>
               </div>
             </div>
@@ -181,8 +181,8 @@ export default function PublicLayout() {
               <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher compact-btn" title="Cổng Giáo Viên">
                 <Briefcase size={13} /> GV
               </Link>
-              <Link to="/admin" className="premium-nav-btn admin compact-btn" title="Trung Tâm BTC">
-                <ShieldCheck size={13} /> BTC
+              <Link to="/admin" className="premium-nav-btn admin compact-btn" title="Trang Quản Lý (Admin)">
+                <ShieldCheck size={13} /> Quản Trị
               </Link>
             </div>
           </div>
@@ -190,7 +190,7 @@ export default function PublicLayout() {
           {/* Desktop & Mobile Menu Links */}
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem} onClick={() => setMobileMenuOpen(false)}>
-              🏠 Trang chủ
+              🏠 Trang Chủ Trường
             </Link>
             
             {/* MENU ĐỘC LẬP: THỜI KHÓA BIỂU & LỊCH TUẦN */}
@@ -267,7 +267,7 @@ export default function PublicLayout() {
             {/* In mobile drawer: show large login cards */}
             <div className="mobile-drawer-portals">
               <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#86efac', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
-                Cổng Không Gian Số Chuyên Biệt
+                Cổng Không Gian Số Chuyên Biệt (Yêu Cầu Đăng Nhập)
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                 <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
@@ -277,7 +277,7 @@ export default function PublicLayout() {
                   <Briefcase size={15} /> Giáo Viên
                 </Link>
                 <Link to="/admin" className="premium-nav-btn admin" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
-                  <ShieldCheck size={15} /> BTC
+                  <ShieldCheck size={15} /> Quản Trị
                 </Link>
               </div>
             </div>
@@ -286,13 +286,13 @@ export default function PublicLayout() {
           {/* Desktop Quick Access Portals */}
           <div className="desktop-portal-btns" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'nowrap' }}>
             <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
-              <GraduationCap size={15} /> Học Sinh
+              <GraduationCap size={15} /> Cổng Học Sinh
             </Link>
             <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
-              <Briefcase size={15} /> Giáo Viên
+              <Briefcase size={15} /> Cổng Giáo Viên
             </Link>
-            <Link to="/admin" className="premium-nav-btn admin" title="Trung Tâm Điều Hành & Ban Tổ Chức">
-              <ShieldCheck size={15} /> BTC
+            <Link to="/admin" className="premium-nav-btn admin" title="Trang Quản Lý & Bảng Điều Khiển Nhà Trường">
+              <ShieldCheck size={15} /> Trang Quản Lý
             </Link>
           </div>
         </div>

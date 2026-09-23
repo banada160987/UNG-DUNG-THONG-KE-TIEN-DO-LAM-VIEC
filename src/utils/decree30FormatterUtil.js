@@ -2,7 +2,6 @@
  * Tiện ích Căn chỉnh, Phân tích, Bắt lỗi Thể thức AI và Xuất File Chuẩn Nghị định 30/2020/NĐ-CP
  * THPT Cao Bá Quát - Đắk Lắk
  */
-import mammoth from 'mammoth';
 
 /**
  * Đọc file Word (.docx) sang Text thuần và HTML có cấu trúc
@@ -12,6 +11,10 @@ export async function readWordFile(file) {
 
   const arrayBuffer = await file.arrayBuffer();
   
+  // Dynamic import mammoth an toàn cho môi trường browser & Vercel bundler
+  const mammothModule = await import('mammoth');
+  const mammoth = mammothModule.default || mammothModule;
+
   // Trích xuất text thuần
   const textResult = await mammoth.extractRawText({ arrayBuffer });
   const rawText = textResult.value || '';

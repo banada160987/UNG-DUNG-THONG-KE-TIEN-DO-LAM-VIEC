@@ -38,8 +38,9 @@ export default function AppHub() {
   const navigate = useNavigate();
   const { role } = useAuth();
   
-  const isTeacherPortal = location.pathname.includes('/teacher-dashboard');
-  const isAdmin = role === 'admin' && !isTeacherPortal;
+  const isTeacherPortal = location.pathname.includes('/teacher-dashboard') || location.pathname === '/hub';
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAdmin = role === 'admin' && isAdminRoute;
   
   const [apps, setApps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,7 +52,7 @@ export default function AppHub() {
 
   useEffect(() => {
     let currentTeacher = null;
-    if (isTeacherPortal) {
+    if (location.pathname.includes('/teacher-dashboard')) {
       const teacherStr = localStorage.getItem('cbq_current_teacher');
       if (teacherStr) {
         currentTeacher = JSON.parse(teacherStr);
@@ -59,6 +60,14 @@ export default function AppHub() {
       } else {
         navigate('/dang-nhap-giao-vien');
         return;
+      }
+    } else {
+      const teacherStr = localStorage.getItem('cbq_current_teacher');
+      if (teacherStr) {
+        try {
+          currentTeacher = JSON.parse(teacherStr);
+          setTeacher(currentTeacher);
+        } catch(e) {}
       }
     }
     
@@ -259,18 +268,29 @@ export default function AppHub() {
 
   const content = (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      {isTeacherPortal && (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
+        {isTeacherPortal ? (
+          <button 
+            onClick={() => navigate('/teacher-dashboard')}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#475569', fontWeight: 'bold' }}
+          >
+            <ArrowLeft size={16} /> Bàn Làm Việc Giáo Viên
+          </button>
+        ) : (
+          <div></div>
+        )}
+
         <button 
-          onClick={() => navigate('/teacher-dashboard')}
-          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', marginBottom: '20px', color: '#475569', fontWeight: 'bold' }}
+          onClick={() => navigate('/')}
+          style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#166534', fontWeight: 'bold' }}
         >
-          <ArrowLeft size={16} /> Quay lại Bảng điều khiển
+          🏠 Về Trang Chủ Trường
         </button>
-      )}
+      </div>
 
       <div style={{ marginBottom: '30px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '28px', color: '#1e293b', marginBottom: '10px', fontWeight: 'bold' }}>Cổng Tiện Ích</h1>
-        <p style={{ color: '#64748b', fontSize: '16px' }}>Danh bạ tổng hợp các phần mềm và hệ thống ứng dụng dành cho Giáo viên</p>
+        <h1 style={{ fontSize: '28px', color: '#1e293b', marginBottom: '10px', fontWeight: 'bold' }}>Kho Tiện Ích Giáo Dục</h1>
+        <p style={{ color: '#64748b', fontSize: '16px' }}>Danh bạ tổng hợp các phần mềm và hệ thống ứng dụng chuyên môn dành cho Giáo viên</p>
       </div>
 
       {loading ? (
