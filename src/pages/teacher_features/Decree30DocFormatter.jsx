@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Layout from '../../components/Layout';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   FileText, Download, Printer, Copy, Check, Sparkles, RefreshCw, 
   HelpCircle, Eye, Sliders, CheckCircle2, AlertCircle, ArrowLeft,
   Layers, Plus, Trash2, BookOpen, ShieldCheck, FileCheck, Share2,
   Upload, FileUp, AlertTriangle, Info, Wand2, ArrowRight, CheckCircle,
-  FileCode, Cpu
+  FileCode, Cpu, Home, Grid, ExternalLink
 } from 'lucide-react';
 import { DECREE_30_TEMPLATES, DECREE_30_RULES } from '../../data/decree30Templates';
 import { 
@@ -299,8 +298,112 @@ Lê Thị Thảo`;
   };
 
   return (
-    <Layout>
-      <div style={{ minHeight: '100vh', backgroundColor: '#f1f5f9', padding: '20px 16px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: '#f1f5f9', display: 'flex', flexDirection: 'column', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      
+      {/* GLOBAL TOP NAVIGATION BAR (STANDALONE WORKSTATION) */}
+      <header style={{
+        backgroundColor: '#064e3b',
+        backgroundImage: 'linear-gradient(135deg, #064e3b 0%, #047857 100%)',
+        color: '#ffffff',
+        padding: '10px 20px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'rgba(255,255,255,0.15)',
+              border: '1px solid rgba(255,255,255,0.25)',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontSize: '13px',
+              fontWeight: '600'
+            }}
+          >
+            <ArrowLeft size={16} /> Quay Lại
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FileCheck size={20} color="#a7f3d0" />
+            <span style={{ fontWeight: '800', fontSize: '15px', letterSpacing: '-0.2px' }}>
+              XƯỞNG CĂN CHỈNH VĂN BẢN CHUẨN NGHỊ ĐỊNH 30/2020/NĐ-CP
+            </span>
+            <span style={{ backgroundColor: 'rgba(255,255,255,0.2)', padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>
+              THPT CAO BÁ QUÁT
+            </span>
+          </div>
+        </div>
+
+        {/* Quick links to Portals */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <Link
+            to="/"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              textDecoration: 'none'
+            }}
+          >
+            <Home size={14} /> Cổng Trường
+          </Link>
+
+          <Link
+            to="/teacher-dashboard"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              backgroundColor: '#10b981',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: '700',
+              textDecoration: 'none',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+            }}
+          >
+            <BookOpen size={14} /> Bàn Làm Việc GV
+          </Link>
+
+          <Link
+            to="/hub"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              backgroundColor: 'rgba(255,255,255,0.15)',
+              color: '#ffffff',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: '600',
+              textDecoration: 'none'
+            }}
+          >
+            <Grid size={14} /> Kho Tiện Ích
+          </Link>
+        </div>
+      </header>
+
+      <div style={{ flex: 1, padding: '20px 16px', maxWidth: '1600px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         
         {/* TOAST NOTIFICATION */}
         {toastMessage && (
@@ -1402,6 +1505,6 @@ Lê Thị Thảo`;
         </div>
 
       </div>
-    </Layout>
+    </div>
   );
 }

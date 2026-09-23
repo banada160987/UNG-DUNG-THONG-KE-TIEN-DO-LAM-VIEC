@@ -114,6 +114,11 @@ function App() {
           <Route path="/giao-vien/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
           <Route path="/admin/kiem-tra-ho-so-tn" element={<ExamDossierChecker />} />
           <Route path="/teacher/exam-dossier" element={<ExamDossierChecker />} />
+          <Route path="/can-chinh-nghi-dinh-30" element={<Decree30DocFormatter />} />
+          <Route path="/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
+          <Route path="/giao-vien/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
+          <Route path="/teacher/decree30-formatter" element={<Decree30DocFormatter />} />
+          <Route path="/admin/decree30-formatter" element={<Decree30DocFormatter />} />
 
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>
@@ -169,7 +174,7 @@ function App() {
             <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
             <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
 
-            {/* Teacher Route Aliases (Ensures all URLs work smoothly without redirecting to /) */}
+            {/* Teacher Route Aliases */}
             <Route path="/teacher/lesson-plans" element={<TeacherLessonPlanBuilder />} />
             <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
             <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
@@ -179,11 +184,6 @@ function App() {
             <Route path="/teacher/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher/department" element={<TeacherDepartmentManagement />} />
             <Route path="/teacher/kpi" element={<TeacherKPIEvaluation />} />
-            <Route path="/teacher/decree30-formatter" element={<Decree30DocFormatter />} />
-            <Route path="/can-chinh-nghi-dinh-30" element={<Decree30DocFormatter />} />
-            <Route path="/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
-            <Route path="/giao-vien/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
-            <Route path="/admin/decree30-formatter" element={<Decree30DocFormatter />} />
             <Route path="/hub" element={<AppHub />} />
           </Route>
           
