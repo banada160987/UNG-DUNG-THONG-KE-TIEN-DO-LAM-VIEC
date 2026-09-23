@@ -107,7 +107,8 @@ export default function Decree30DocFormatter() {
       showToast(`🎉 Đã nạp "${file.name}" & quét phát hiện ${audit.issuesCount} lỗi thể thức!`);
     } catch (err) {
       console.error("Lỗi đọc file:", err);
-      alert("Không thể đọc file Word này. Vui lòng đảm bảo file định dạng .docx hợp lệ hoặc sao chép nội dung dán vào tab 'Dán Text'!");
+      alert("⚠️ Lưu ý về định dạng file:\n• Nếu file của bạn là file Word (.docx), hệ thống sẽ tự động bóc tách cấu trúc.\n• Nếu file là định dạng cũ (.doc) hoặc chứa macro/mật khẩu, bạn chỉ cần mở file trong Word, nhấn Ctrl+A > Ctrl+C (Sao chép) rồi dán vào tab '3. Dán Text Trực Tiếp' để AI căn chỉnh tự động ngay!");
+      setActiveTab('paste');
     } finally {
       setIsAnalyzing(false);
     }

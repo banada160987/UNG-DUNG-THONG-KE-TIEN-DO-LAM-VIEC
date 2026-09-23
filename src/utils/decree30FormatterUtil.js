@@ -1,37 +1,159 @@
+import JSZip from 'jszip';
+
 /**
  * Tiện ích Căn chỉnh, Phân tích, Bắt lỗi Thể thức AI và Xuất File Chuẩn Nghị định 30/2020/NĐ-CP
  * THPT Cao Bá Quát - Đắk Lắk
  */
 
 /**
- * Đọc file Word (.docx) sang Text thuần và HTML có cấu trúc
+ * Đọc file Word (.docx) sang Text thuần và HTML có cấu trúc chuẩn 100% trong Browser
  */
 export async function readWordFile(file) {
   if (!file) throw new Error("Chưa chọn file");
 
   const arrayBuffer = await file.arrayBuffer();
   
-  // Dynamic import mammoth an toàn cho môi trường browser & Vercel bundler
-  const mammothModule = await import('mammoth');
-  const mammoth = mammothModule.default || mammothModule;
-
-  // Trích xuất text thuần
-  const textResult = await mammoth.extractRawText({ arrayBuffer });
-  const rawText = textResult.value || '';
-
-  // Trích xuất HTML để giữ định dạng in đậm, nghiêng, bảng
-  let htmlContent = '';
   try {
-    const htmlResult = await mammoth.convertToHtml({ arrayBuffer });
-    htmlContent = htmlResult.value || '';
-  } catch (e) {
-    console.warn("Lỗi khi convert Word sang HTML:", e);
+    // 1. Thử giải nén file DOCX dạng OpenXML
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const docXmlFile = zip.file('word/document.xml');
+    
+    if (docXmlFile) {
+      const xmlStr = await docXmlFile.async('text');
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(xmlStr, 'application/xml');
+
+      const body = xmlDoc.getElementsByTagName('w:body')[0] || xmlDoc.documentElement;
+      const childNodes = body.childNodes || [];
+
+      const textParagraphs = [];
+      const htmlParts = [];
+
+      for (let i = 0; i < childNodes.length; i++) {
+        const node = childNodes[i];
+        const nodeName = node.nodeName || node.tagName;
+
+        if (nodeName === 'w:p') {
+          const { text, html } = parseWordParagraph(node);
+          if (text.trim() || html) {
+            textParagraphs.push(text);
+            htmlParts.push(html);
+          }
+        } else if (nodeName === 'w:tbl') {
+          const { text, html } = parseWordTable(node);
+          if (text.trim()) {
+            textParagraphs.push(text);
+            htmlParts.push(html);
+          }
+        }
+      }
+
+      const fullText = textParagraphs.join('\n');
+      if (fullText.trim()) {
+        return {
+          rawText: fullText,
+          htmlContent: htmlParts.join('\n'),
+          fileName: file.name
+        };
+      }
+    }
+  } catch (docxErr) {
+    console.warn("Không thể giải nén DOCX chuẩn, chuyển sang phương thức trích xuất text nhị phân:", docxErr);
+  }
+
+  // 2. Fallback: Thử trích xuất các chuỗi ký tự UTF-8 / Text có nghĩa từ ArrayBuffer (cho file .doc cũ hoặc text)
+  try {
+    const uint8 = new Uint8Array(arrayBuffer);
+    const decoder = new TextDecoder('utf-8', { fatal: false });
+    const rawDecoded = decoder.decode(uint8);
+    
+    // Lọc các đoạn văn bản tiếng Việt có nghĩa
+    const cleanLines = rawDecoded
+      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l.length > 3 && /[a-zA-Zà-ỹÀ-Ỹ0-9]/.test(l));
+
+    if (cleanLines.length > 2) {
+      return {
+        rawText: cleanLines.join('\n'),
+        htmlContent: cleanLines.map(l => `<p>${l}</p>`).join(''),
+        fileName: file.name
+      };
+    }
+  } catch (binErr) {
+    console.warn("Lỗi trích xuất nhị phân:", binErr);
+  }
+
+  throw new Error("Không thể trích xuất nội dung từ file này. Vui lòng mở file bằng Word và lưu dưới dạng .docx hoặc copy dán vào tab 'Dán Text'!");
+}
+
+function parseWordParagraph(pNode) {
+  let pText = '';
+  let pHtml = '';
+
+  const rNodes = pNode.getElementsByTagName('w:r');
+  if (rNodes && rNodes.length > 0) {
+    for (let j = 0; j < rNodes.length; j++) {
+      const r = rNodes[j];
+      
+      const isBold = r.getElementsByTagName('w:b').length > 0;
+      const isItalic = r.getElementsByTagName('w:i').length > 0;
+
+      const tNodes = r.getElementsByTagName('w:t');
+      let runText = '';
+      for (let k = 0; k < tNodes.length; k++) {
+        runText += tNodes[k].textContent || '';
+      }
+
+      if (r.getElementsByTagName('w:tab').length > 0) {
+        runText += '    ';
+      }
+
+      if (runText) {
+        pText += runText;
+        let formatted = runText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        if (isBold) formatted = `<strong>${formatted}</strong>`;
+        if (isItalic) formatted = `<em>${formatted}</em>`;
+        pHtml += formatted;
+      }
+    }
+  }
+
+  if (!pText) {
+    const textAll = pNode.textContent || '';
+    pText = textAll;
+    pHtml = textAll;
   }
 
   return {
-    rawText,
-    htmlContent,
-    fileName: file.name
+    text: pText,
+    html: pHtml ? `<p>${pHtml}</p>` : ''
+  };
+}
+
+function parseWordTable(tblNode) {
+  let tblText = '';
+  let tblHtml = '<table border="1" style="border-collapse: collapse; width: 100%; margin: 10px 0;">';
+
+  const rows = tblNode.getElementsByTagName('w:tr');
+  for (let r = 0; r < rows.length; r++) {
+    tblHtml += '<tr>';
+    const cells = rows[r].getElementsByTagName('w:tc');
+    const rowTexts = [];
+    for (let c = 0; c < cells.length; c++) {
+      const cellText = (cells[c].textContent || '').trim();
+      rowTexts.push(cellText);
+      tblHtml += `<td style="padding: 6px 10px; border: 1px solid #ccc;">${cellText}</td>`;
+    }
+    tblText += '| ' + rowTexts.join(' | ') + ' |\n';
+    tblHtml += '</tr>';
+  }
+  tblHtml += '</table>';
+
+  return {
+    text: tblText,
+    html: tblHtml
   };
 }
 
