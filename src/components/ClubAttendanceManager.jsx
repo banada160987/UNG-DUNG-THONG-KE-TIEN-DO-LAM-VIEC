@@ -9,6 +9,31 @@ const adminClient = supabase2Admin || supabase2;
 import * as XLSX from 'xlsx';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 
+// Helper so khớp tên CLB hoặc môn phụ (Hỗ trợ cả tên ngắn gọn như "Cầu lông" và tên đầy đủ kèm HLV như "6. Cầu lông (Thầy...)")
+export const isOptionMatch = (optName, studentAns) => {
+  if (!optName || !studentAns) return false;
+  const s1 = String(optName).trim().toLowerCase();
+  const s2 = String(studentAns).trim().toLowerCase();
+  
+  if (s1 === s2) return true;
+  if (s1.includes(s2) || s2.includes(s1)) return true;
+  
+  const clean = str => str
+    .replace(/^[0-9]+[.)\s-]+/, '')
+    .replace(/\([^)]*\)/g, '')
+    .replace(/[-–—/\\].*$/, '')
+    .replace(/[^a-z0-9à-ỹ]/gi, '')
+    .toLowerCase();
+
+  const c1 = clean(s1);
+  const c2 = clean(s2);
+  
+  if (c1 && c2 && (c1.includes(c2) || c2.includes(c1))) {
+    return true;
+  }
+  return false;
+};
+
 export default function ClubAttendanceManager({ 
   userRole = 'admin', // 'admin' | 'teacher' | 'bcn' | 'student'
   teacherInfo = null,
@@ -157,28 +182,28 @@ export default function ClubAttendanceManager({
     if (!activeCampaign || !activeCampaign.form_schema) return [];
     const fields = Array.isArray(activeCampaign.form_schema) ? activeCampaign.form_schema : (activeCampaign.form_schema?.fields || []);
     
-    // Tìm các trường có options (VD: "Đăng ký câu lạc bộ")
+    // Tìm các trường có options (VD: "Đăng ký câu lạc bộ", "Môn phụ / Bộ môn")
     const clubField = fields.find(f => ['checkbox', 'select', 'radio'].includes(f.type) && f.options && f.options.length > 0) || fields[0];
     
     if (!clubField || !clubField.options) return [];
 
-    // Tính số lượng thành viên thực tế của từng CLB
-    const counts = {};
-    campaignRegistrations.forEach(r => {
-      if (!r.responses) return;
-      const ans = r.responses[clubField.id];
-      if (Array.isArray(ans)) {
-        ans.forEach(opt => counts[opt] = (counts[opt] || 0) + 1);
-      } else if (ans) {
-        counts[ans] = (counts[ans] || 0) + 1;
-      }
-    });
+    // Tính số lượng thành viên thực tế của từng CLB bằng so khớp thông minh
+    return clubField.options.map(opt => {
+      const count = campaignRegistrations.filter(r => {
+        if (!r.responses) return false;
+        const ans = r.responses[clubField.id];
+        if (Array.isArray(ans)) {
+          return ans.some(item => isOptionMatch(opt, item));
+        }
+        return isOptionMatch(opt, ans);
+      }).length;
 
-    return clubField.options.map(opt => ({
-      name: opt,
-      fieldId: clubField.id,
-      count: counts[opt] || 0
-    }));
+      return {
+        name: opt,
+        fieldId: clubField.id,
+        count
+      };
+    });
   }, [activeCampaign, campaignRegistrations]);
 
   // Tự động chọn CLB đầu tiên có thành viên khi nạp xong
@@ -195,12 +220,12 @@ export default function ClubAttendanceManager({
 
     return campaignRegistrations.filter(r => {
       if (!r.responses) return false;
-      // Tìm xem giá trị câu trả lời có chứa selectedClub không
+      // Tìm xem có bất kỳ câu trả lời nào khớp với selectedClub không
       return Object.values(r.responses).some(val => {
         if (Array.isArray(val)) {
-          return val.includes(selectedClub) || val.some(v => String(v).trim() === selectedClub.trim());
+          return val.some(item => isOptionMatch(selectedClub, item));
         }
-        return String(val).trim() === selectedClub.trim();
+        return isOptionMatch(selectedClub, val);
       });
     });
   }, [campaignRegistrations, selectedClub]);
@@ -551,9 +576,9 @@ export default function ClubAttendanceManager({
         const responses = m.responses || {};
         matchSubDiscipline = Object.values(responses).some(val => {
           if (Array.isArray(val)) {
-            return val.some(v => String(v).includes(subDisciplineFilter));
+            return val.some(v => isOptionMatch(subDisciplineFilter, v));
           }
-          return String(val).includes(subDisciplineFilter);
+          return isOptionMatch(subDisciplineFilter, val);
         });
       }
 
