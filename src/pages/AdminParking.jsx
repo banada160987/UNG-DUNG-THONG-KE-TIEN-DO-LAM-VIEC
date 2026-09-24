@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
-import { supabase, logActivity } from '../lib/supabase';
+import { supabase, supabaseAdmin, DualSupabaseService, logActivity } from '../lib/supabase';
 import { Bike, Search, Printer, Download, Plus, CheckCircle2, AlertCircle, Clock, Trash2, Edit3, Eye, QrCode, Settings, ShieldCheck, Lock, Unlock, AlertTriangle, RefreshCw, Save, BarChart, Archive } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { generateParkingWordReport } from '../lib/wordExportParking';
@@ -156,7 +156,8 @@ export default function AdminParking() {
       notice_message: regConfig.message
     };
     try {
-      await supabase.from('cbq_parking_settings').upsert([payload]);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_parking_settings').upsert([payload]);
     } catch (err) {
       console.warn('Lỗi lưu cấu hình DB:', err);
     }
@@ -177,7 +178,8 @@ export default function AdminParking() {
 
     if (window.confirm(`Bạn có chắc muốn chuyển ${expiredIds.length} vé đã hết hạn vào Lưu trữ? Các vé này sẽ được cất đi và không hiển thị ở danh sách chính nữa.`)) {
       try {
-        const { error } = await supabase
+        const dbClient = supabaseAdmin || supabase;
+        const { error } = await dbClient
           .from('cbq_parking_registrations')
           .update({ status: 'archived' })
           .in('id', expiredIds);
@@ -320,7 +322,8 @@ export default function AdminParking() {
           ? { id: targetId, ...payload } 
           : payload;
 
-        await supabase
+        const dbClient = supabaseAdmin || supabase;
+        await dbClient
           .from('cbq_parking_packages')
           .upsert([dbPayload], { onConflict: 'package_key' });
       } catch (dbErr) {
@@ -358,7 +361,8 @@ export default function AdminParking() {
     localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
     try {
-      await supabase.from('cbq_parking_packages').delete().eq('id', id);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_parking_packages').delete().eq('id', id);
     } catch (err) {
       console.warn("Lỗi khi xóa:", err);
     }
@@ -371,7 +375,8 @@ export default function AdminParking() {
     localStorage.setItem('cbq_parking_packages', JSON.stringify(updated));
 
     try {
-      await supabase.from('cbq_parking_packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_parking_packages').update({ is_active: !pkg.is_active }).eq('id', pkg.id);
     } catch (err) {
       console.warn("Lỗi:", err);
     }
@@ -384,7 +389,11 @@ export default function AdminParking() {
     if (!window.confirm(msg)) return;
 
     try {
-      await supabase.from('cbq_parking_registrations').update({ status: newStatus }).eq('id', item.id);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_parking_registrations').update({ status: newStatus }).eq('id', item.id);
+      try {
+        DualSupabaseService.update('cbq_parking_registrations', { status: newStatus }, 'id', item.id).catch(() => {});
+      } catch (e) {}
       setParkingList(parkingList.map(i => i.id === item.id ? { ...i, status: newStatus } : i));
     } catch (err) {
       alert("Lỗi: " + err.message);
@@ -472,7 +481,11 @@ export default function AdminParking() {
   const handleDeleteItem = async (item) => {
     if (!window.confirm("Bạn có chắc chắn muốn xóa lượt đăng ký xe này?")) return;
     try {
-      await supabase.from('cbq_parking_registrations').delete().eq('id', item.id);
+      const dbClient = supabaseAdmin || supabase;
+      await dbClient.from('cbq_parking_registrations').delete().eq('id', item.id);
+      try {
+        DualSupabaseService.delete('cbq_parking_registrations', 'id', item.id).catch(() => {});
+      } catch (e) {}
       setParkingList(parkingList.filter(i => i.id !== item.id));
       await logActivity('parking', item.id, item.ticket_code, 'DELETE', 'admin', 'Admin đã xóa vé');
     } catch (err) {
@@ -488,25 +501,50 @@ export default function AdminParking() {
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase
+      const dbClient = supabaseAdmin || supabase;
+      const updatePayload = {
+        student_name: editingTicket.student_name,
+        student_class: editingTicket.student_class,
+        license_plate: editingTicket.license_plate,
+        vehicle_type: editingTicket.vehicle_type,
+        package_type: editingTicket.package_type
+      };
+
+      let query = dbClient
         .from('cbq_parking_registrations')
-        .update({
-          student_name: editingTicket.student_name,
-          student_class: editingTicket.student_class,
-          license_plate: editingTicket.license_plate,
-          vehicle_type: editingTicket.vehicle_type,
-          package_type: editingTicket.package_type
-        })
-        .eq('id', editingTicket.id)
-        .select()
-        .single();
+        .update(updatePayload);
+
+      if (editingTicket.id) {
+        query = query.eq('id', editingTicket.id);
+      } else if (editingTicket.ticket_code) {
+        query = query.eq('ticket_code', editingTicket.ticket_code);
+      }
+
+      const { data, error } = await query.select();
 
       if (error) throw error;
 
-      setParkingList(parkingList.map(i => i.id === data.id ? data : i));
+      const updatedRecord = (data && data.length > 0)
+        ? data[0]
+        : { ...editingTicket, ...updatePayload };
+
+      // Đồng thời cập nhật đồng bộ sang Supabase 1 nếu có cấu hình Dual
+      try {
+        if (editingTicket.id) {
+          DualSupabaseService.update('cbq_parking_registrations', updatePayload, 'id', editingTicket.id).catch(() => {});
+        } else if (editingTicket.ticket_code) {
+          DualSupabaseService.update('cbq_parking_registrations', updatePayload, 'ticket_code', editingTicket.ticket_code).catch(() => {});
+        }
+      } catch (e) {}
+
+      setParkingList(prev => prev.map(i => {
+        if (editingTicket.id && i.id === editingTicket.id) return { ...i, ...updatedRecord };
+        if (editingTicket.ticket_code && i.ticket_code === editingTicket.ticket_code) return { ...i, ...updatedRecord };
+        return i;
+      }));
       
-      const changes = `Admin sửa vé: Tên(${data.student_name}), Lớp(${data.student_class}), Biển số(${data.license_plate}), Loại xe(${data.vehicle_type}), Gói(${data.package_type})`;
-      await logActivity('parking', data.id, data.ticket_code, 'UPDATE', 'admin', changes);
+      const changes = `Admin sửa vé: Tên(${updatedRecord.student_name}), Lớp(${updatedRecord.student_class}), Biển số(${updatedRecord.license_plate}), Loại xe(${updatedRecord.vehicle_type}), Gói(${updatedRecord.package_type})`;
+      await logActivity('parking', updatedRecord.id || editingTicket.id, updatedRecord.ticket_code || editingTicket.ticket_code, 'UPDATE', 'admin', changes);
 
       setShowEditModal(false);
       setEditingTicket(null);

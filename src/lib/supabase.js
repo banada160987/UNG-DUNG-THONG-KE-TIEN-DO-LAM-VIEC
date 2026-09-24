@@ -35,6 +35,15 @@ export const supabaseAdmin = primaryServiceKey
 
 // Khai báo kết nối đích danh
 export const supabase1 = supabase1Url && supabase1AnonKey ? createClient(supabase1Url, supabase1AnonKey) : null;
+export const supabase1Admin = supabase1Url && supabase1ServiceKey 
+  ? createClient(supabase1Url, supabase1ServiceKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    }) 
+  : null;
+
 export const supabase2 = supabase2Url && supabase2AnonKey ? createClient(supabase2Url, supabase2AnonKey) : null;
 export const supabase2Admin = supabase2Url && supabase2ServiceKey 
   ? createClient(supabase2Url, supabase2ServiceKey, {
@@ -156,8 +165,10 @@ export const DualSupabaseService = {
    */
   async insert(table, data) {
     const promises = [];
-    if (supabase1) promises.push(supabase1.from(table).insert(data));
-    if (supabase2) promises.push(supabase2.from(table).insert(data));
+    const client1 = supabase1Admin || supabase1;
+    const client2 = supabase2Admin || supabase2;
+    if (client1) promises.push(client1.from(table).insert(data));
+    if (client2) promises.push(client2.from(table).insert(data));
 
     const results = await Promise.allSettled(promises);
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
@@ -171,8 +182,10 @@ export const DualSupabaseService = {
    */
   async update(table, data, matchColumn, matchValue) {
     const promises = [];
-    if (supabase1) promises.push(supabase1.from(table).update(data).eq(matchColumn, matchValue));
-    if (supabase2) promises.push(supabase2.from(table).update(data).eq(matchColumn, matchValue));
+    const client1 = supabase1Admin || supabase1;
+    const client2 = supabase2Admin || supabase2;
+    if (client1) promises.push(client1.from(table).update(data).eq(matchColumn, matchValue));
+    if (client2) promises.push(client2.from(table).update(data).eq(matchColumn, matchValue));
 
     const results = await Promise.allSettled(promises);
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
@@ -186,8 +199,10 @@ export const DualSupabaseService = {
    */
   async delete(table, matchColumn, matchValue) {
     const promises = [];
-    if (supabase1) promises.push(supabase1.from(table).delete(matchColumn, matchValue));
-    if (supabase2) promises.push(supabase2.from(table).delete(matchColumn, matchValue));
+    const client1 = supabase1Admin || supabase1;
+    const client2 = supabase2Admin || supabase2;
+    if (client1) promises.push(client1.from(table).delete().eq(matchColumn, matchValue));
+    if (client2) promises.push(client2.from(table).delete().eq(matchColumn, matchValue));
 
     const results = await Promise.allSettled(promises);
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
