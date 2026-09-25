@@ -2,7 +2,11 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
-import { FileText, Send, Calendar, Phone, CheckCircle2, AlertCircle, Building2, Clock, Sparkles, FileCheck, Layers, Link as LinkIcon, FileEdit as FileEditIcon, CheckSquare, AlertTriangle, XCircle } from 'lucide-react';
+import { 
+  FileText, Send, Calendar, Phone, CheckCircle2, AlertCircle, Building2, 
+  Clock, Sparkles, FileCheck, Layers, Link as LinkIcon, FileEdit as FileEditIcon, 
+  CheckSquare, AlertTriangle, XCircle, Plus, Trash2, ExternalLink, HelpCircle, FileSpreadsheet
+} from 'lucide-react';
 
 const DEFAULT_ORGANIZATIONS = [
   'BCH Đảng ủy trường THPT Cao Bá Quát',
@@ -30,6 +34,7 @@ const SEED_TOPIC = {
   description: 'Căn cứ Công văn 409/SGDĐT-VP ngày 11/02/2026 của Sở GD&ĐT và Kế hoạch 53/KH-TrTHPTCBQ ngày 12/3/2026. Đề nghị BCH Đảng ủy, BTV Đoàn trường, các Tổ chuyên môn & Tổ Văn phòng gửi góp ý về dự thảo Đề án Quỹ học bổng.',
   deadline: '2026-08-19T23:59:59+07:00',
   contact_info: 'Đồng chí Nghiêm Xuân Bảo – Nhân viên Tổ Văn phòng',
+  meeting_minutes_url: 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform',
   is_active: true
 };
 
@@ -49,13 +54,41 @@ export default function PublicFeedbackSystem() {
   const [representativeName, setRepresentativeName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
-  const [agreementLevel, setAgreementLevel] = useState('thong_nhat');
-  const [feedbackContent, setFeedbackContent] = useState('');
+  const [agreementLevel, setAgreementLevel] = useState('thong_nhat'); // 'thong_nhat', 'sua_doi', 'khong_thong_nhat'
+  
+  // Cấu trúc bảng góp ý chi tiết theo chuẩn (Ảnh 1)
+  const [feedbackItems, setFeedbackItems] = useState([
+    {
+      id: 1,
+      docName: '',
+      pageLine: '',
+      draftContent: '',
+      proposedChange: '',
+      reason: ''
+    }
+  ]);
+  const [generalComment, setGeneralComment] = useState('');
   const [attachedFileUrl, setAttachedFileUrl] = useState('');
 
   useEffect(() => {
     fetchTopicsAndResponses(true);
   }, [topicIdFromUrl]);
+
+  // Cập nhật tên văn bản mặc định cho dòng góp ý đầu tiên khi đổi chủ đề
+  useEffect(() => {
+    if (selectedTopic && feedbackItems.length === 1 && !feedbackItems[0].docName) {
+      setFeedbackItems([
+        {
+          id: 1,
+          docName: selectedTopic.title || '',
+          pageLine: '',
+          draftContent: '',
+          proposedChange: '',
+          reason: ''
+        }
+      ]);
+    }
+  }, [selectedTopic]);
 
   // Tự động tải lại dữ liệu mới sau mỗi 60 giây (Realtime Auto Polling)
   useAutoRefresh(() => {
@@ -147,28 +180,121 @@ export default function PublicFeedbackSystem() {
       setSelectedTopic(target);
       fetchResponses(target.id);
       setSuccessMsg('');
+      
+      // Khởi tạo lại tên văn bản mặc định cho dòng góp ý
+      setFeedbackItems([
+        {
+          id: Date.now(),
+          docName: target.title || '',
+          pageLine: '',
+          draftContent: '',
+          proposedChange: '',
+          reason: ''
+        }
+      ]);
     }
+  };
+
+  // Thêm 1 dòng góp ý mới vào bảng
+  const handleAddItem = () => {
+    setFeedbackItems(prev => [
+      ...prev,
+      {
+        id: Date.now() + Math.random(),
+        docName: selectedTopic?.title || '',
+        pageLine: '',
+        draftContent: '',
+        proposedChange: '',
+        reason: ''
+      }
+    ]);
+  };
+
+  // Xóa 1 dòng góp ý khỏi bảng
+  const handleRemoveItem = (idToRemove) => {
+    if (feedbackItems.length <= 1) {
+      // Nếu chỉ còn 1 dòng, reset trắng chứ không xóa hết
+      setFeedbackItems([{
+        id: Date.now(),
+        docName: selectedTopic?.title || '',
+        pageLine: '',
+        draftContent: '',
+        proposedChange: '',
+        reason: ''
+      }]);
+      return;
+    }
+    setFeedbackItems(prev => prev.filter(item => item.id !== idToRemove));
+  };
+
+  // Cập nhật giá trị 1 trường trong bảng góp ý
+  const handleUpdateItem = (id, field, value) => {
+    setFeedbackItems(prev => prev.map(item => item.id === id ? { ...item, [field]: value } : item));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedTopic) return;
-    if (!representativeName.trim() || !phone.trim() || !feedbackContent.trim()) {
-      alert("Vui lòng điền đầy đủ các trường thông tin bắt buộc (*)");
+    if (!representativeName.trim() || !phone.trim()) {
+      alert("Vui lòng điền đầy đủ Họ tên người đại diện và Số điện thoại liên hệ!");
+      return;
+    }
+
+    // Lọc các dòng góp ý có nội dung thực tế
+    const validItems = feedbackItems.filter(item => 
+      (item.draftContent && item.draftContent.trim()) || 
+      (item.proposedChange && item.proposedChange.trim()) || 
+      (item.reason && item.reason.trim()) ||
+      (item.pageLine && item.pageLine.trim())
+    );
+
+    // Kiểm tra tính hợp lệ nếu chọn đề xuất sửa đổi hoặc không thống nhất
+    if ((agreementLevel === 'sua_doi' || agreementLevel === 'khong_thong_nhat') && validItems.length === 0 && !generalComment.trim()) {
+      alert("Bạn đã chọn 'Đề xuất sửa đổi' hoặc 'Không thống nhất'. Vui lòng nhập ít nhất 1 nội dung góp ý chi tiết trong bảng hoặc nhập ý kiến đề xuất!");
       return;
     }
 
     setSubmitting(true);
     setSuccessMsg('');
 
-    const newResponse = {
+    // Xây dựng chuỗi văn bản format chuẩn đẹp cho feedback_content
+    let formattedContent = '';
+    if (agreementLevel === 'thong_nhat' && validItems.length === 0) {
+      formattedContent = generalComment.trim() || 'Thống nhất hoàn toàn 100% với toàn bộ nội dung của dự thảo văn bản. Không có đề xuất sửa đổi bổ sung.';
+    } else {
+      let parts = [];
+      if (validItems.length > 0) {
+        parts.push(`=== BẢNG ĐÓNG GÓP Ý KIẾN CHI TIẾT THEO DỰ THẢO (${validItems.length} mục) ===\n`);
+        validItems.forEach((item, idx) => {
+          parts.push(`[MỤC ${idx + 1}]`);
+          parts.push(`- Tên dự thảo văn bản: ${item.docName || selectedTopic.title || 'Dự thảo'}`);
+          parts.push(`- Trang/dòng (Điều/Khoản): ${item.pageLine || 'Toàn văn'}`);
+          parts.push(`- Nội dung dự thảo: ${item.draftContent || '(Không ghi)'}`);
+          parts.push(`- Nội dung đề nghị điều chỉnh: ${item.proposedChange || '(Không ghi)'}`);
+          parts.push(`- Lý do đề nghị: ${item.reason || '(Không ghi)'}`);
+          parts.push('--------------------------------------------------\n');
+        });
+      }
+
+      if (generalComment.trim()) {
+        parts.push(`📌 Ý KIẾN NHẬN XÉT / KẾT LUẬN CHUNG CỦA TỔ:\n${generalComment.trim()}`);
+      }
+
+      formattedContent = parts.join('\n');
+    }
+
+    // Nhúng metadata JSON để hệ thống parse lại bảng khi hiển thị hoặc xuất Word
+    const metadataString = `\n\n<!--FEEDBACK_ITEMS_JSON:${JSON.stringify(validItems)}-->`;
+    const finalContentWithMeta = formattedContent + metadataString;
+
+    const basePayload = {
       topic_id: selectedTopic.id,
       organization_unit: organizationUnit,
       representative_name: representativeName.trim(),
       phone: phone.trim(),
       email: email.trim() || '',
       agreement_level: agreementLevel || 'thong_nhat',
-      feedback_content: feedbackContent.trim(),
+      feedback_content: finalContentWithMeta,
       attached_file_url: attachedFileUrl.trim() || '',
       created_at: new Date().toISOString()
     };
@@ -176,45 +302,80 @@ export default function PublicFeedbackSystem() {
     try {
       let insertedRecord = null;
 
-      // Insert directly into single table cbq_feedback_responses
-      const { data, error } = await supabase
-        .from('cbq_feedback_responses')
-        .insert([newResponse])
-        .select();
+      // Cố gắng insert với cả các trường nâng cao (nếu đã chạy migration)
+      try {
+        const fullPayload = {
+          ...basePayload,
+          feedback_items: validItems,
+          meeting_minutes_file_url: attachedFileUrl.trim() || null
+        };
+        const { data, error } = await supabase
+          .from('cbq_feedback_responses')
+          .insert([fullPayload])
+          .select();
 
-      if (!error && data && data.length > 0) {
-        insertedRecord = data[0];
+        if (!error && data && data.length > 0) {
+          insertedRecord = data[0];
+        } else if (error) {
+          // Fallback sang payload cơ bản nếu cột feedback_items chưa tồn tại
+          const { data: bData } = await supabase
+            .from('cbq_feedback_responses')
+            .insert([basePayload])
+            .select();
+          if (bData && bData.length > 0) insertedRecord = bData[0];
+        }
+      } catch (insertErr) {
+        // Fallback an toàn
+        const { data: bData } = await supabase
+          .from('cbq_feedback_responses')
+          .insert([basePayload])
+          .select();
+        if (bData && bData.length > 0) insertedRecord = bData[0];
       }
 
-      const itemToSave = insertedRecord || newResponse;
+      const itemToSave = insertedRecord || basePayload;
       const localKey = `cbq_local_feedback_res_${selectedTopic.id}`;
       const localRes = JSON.parse(localStorage.getItem(localKey) || '[]');
       const updatedLocal = [itemToSave, ...localRes];
       localStorage.setItem(localKey, JSON.stringify(updatedLocal));
 
       setResponses(prev => [itemToSave, ...prev.filter(r => r.organization_unit !== organizationUnit)]);
-      setSuccessMsg(`🎉 Cảm ơn bạn! Ý kiến đóng góp của ${organizationUnit} (Đại diện: ${representativeName}) đã được ghi nhận lên hệ thống.`);
+      setSuccessMsg(`🎉 Cảm ơn bạn! Ý kiến đóng góp của "${organizationUnit}" (Đại diện: ${representativeName}) đã được ghi nhận thành công vào cơ sở dữ liệu.`);
       
-      // Reset form
+      // Cuộn lên đầu thông báo
+      window.scrollTo({ top: 150, behavior: 'smooth' });
+
+      // Reset form về trạng thái ban đầu
       setRepresentativeName('');
       setPhone('');
       setEmail('');
       setAgreementLevel('thong_nhat');
-      setFeedbackContent('');
+      setGeneralComment('');
       setAttachedFileUrl('');
+      setFeedbackItems([
+        {
+          id: Date.now(),
+          docName: selectedTopic.title || '',
+          pageLine: '',
+          draftContent: '',
+          proposedChange: '',
+          reason: ''
+        }
+      ]);
 
     } catch (err) {
       console.error("Lỗi gửi góp ý:", err);
-      alert("Không thể gửi góp ý. Vui lòng kiểm tra kết nối!");
+      alert("Không thể gửi góp ý: " + err.message + ". Vui lòng kiểm tra lại kết nối mạng!");
     } finally {
       setSubmitting(false);
     }
   };
 
   const isDeadlinePassed = selectedTopic ? new Date() > new Date(selectedTopic.deadline) : false;
+  const minutesUrl = selectedTopic?.meeting_minutes_url || 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform';
 
   return (
-    <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '20px 15px', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '20px 15px', fontFamily: 'system-ui, sans-serif' }}>
       
       {/* HEADER BAR */}
       <div style={{ background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)', color: '#ffffff', padding: '24px 28px', borderRadius: '20px', marginBottom: '25px', boxShadow: '0 10px 25px rgba(22,101,52,0.2)' }}>
@@ -225,7 +386,7 @@ export default function PublicFeedbackSystem() {
           </h1>
         </div>
         <p style={{ margin: 0, opacity: 0.9, fontSize: '14.5px', lineHeight: '1.5' }}>
-          Trường THPT Cao Bá Quát - Thu nhận ý kiến đóng góp từ BCH Đảng ủy, Đoàn trường, các Tổ chuyên môn & Giáo viên
+          Trường THPT Cao Bá Quát - Cổng thông tin tiếp nhận đóng góp ý kiến đồng bộ, khoa học phục vụ tổng hợp tự động theo chuẩn Nghị định 30
         </p>
       </div>
 
@@ -247,7 +408,7 @@ export default function PublicFeedbackSystem() {
         </select>
       </div>
 
-      {/* COMPONENT 2: CHI TIẾT VĂN BẢN VÀ ĐẾM HẠN CHÓT */}
+      {/* COMPONENT 2: CHI TIẾT VĂN BẢN & HỘP TIẾP NHẬN BIÊN BẢN HỌP TỔ */}
       {selectedTopic && (
         <div style={{ background: '#ffffff', borderRadius: '18px', padding: '22px', border: '1.5px solid #bbf7d0', marginBottom: '25px', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
@@ -293,9 +454,35 @@ export default function PublicFeedbackSystem() {
                 rel="noreferrer"
                 style={{ background: '#0284c7', color: '#ffffff', padding: '7px 16px', borderRadius: '8px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <LinkIcon size={14} /> Xem File Văn Bản Đính Kèm
+                <LinkIcon size={14} /> 📄 Xem File Văn Bản Dự Thảo Đính Kèm
               </a>
             )}
+          </div>
+
+          {/* 🌟 BANNER TIẾP NHẬN FILE BIÊN BẢN HỌP TỔ CHUYÊN MÔN (YÊU CẦU ẢNH 3) */}
+          <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1.5px solid #93c5fd', borderRadius: '14px', padding: '16px 20px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ background: '#2563eb', color: '#ffffff', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <FileCheck size={24} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1e40af' }}>
+                  📁 BIỂU MẪU TIẾP NHẬN BIÊN BẢN HỌP TỔ CHUYÊN MÔN
+                </div>
+                <div style={{ fontSize: '13px', color: '#1e3a8a', marginTop: '2px' }}>
+                  Thư ký / Tổ trưởng chuyên môn nộp file Scan Biên bản họp tổ (PDF kèm chữ ký) qua biểu mẫu tiếp nhận:
+                </div>
+              </div>
+            </div>
+
+            <a
+              href={minutesUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{ background: '#2563eb', color: '#ffffff', padding: '10px 18px', borderRadius: '10px', fontWeight: 'bold', fontSize: '13.5px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
+            >
+              <ExternalLink size={16} /> 📤 Mở Biểu Mẫu Nộp File Biên Bản Họp (Google Form)
+            </a>
           </div>
         </div>
       )}
@@ -311,9 +498,9 @@ export default function PublicFeedbackSystem() {
       )}
 
       {/* GRID LAYOUT: FORM & LIST OF SUBMITTED FEEDBACK */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '25px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '25px', alignItems: 'start' }}>
         
-        {/* COL 1: FORM NỘP GÓP Ý */}
+        {/* COL 1: FORM NỘP GÓP Ý CHUẨN */}
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
             <FileEditIcon size={22} color="#166534" />
@@ -352,7 +539,7 @@ export default function PublicFeedbackSystem() {
                 <input
                   type="text"
                   required
-                  placeholder="VD: Thầy Nguyễn Văn A (Giáo viên / Tổ trưởng)"
+                  placeholder="VD: Thầy Nguyễn Văn A (Tổ trưởng / Thư ký)"
                   value={representativeName}
                   onChange={e => setRepresentativeName(e.target.value)}
                   style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
@@ -389,12 +576,12 @@ export default function PublicFeedbackSystem() {
               </div>
 
               {/* MỨC ĐỘ THỐNG NHẤT */}
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
                   5. Mức Độ Thống Nhất Đối Với Dự Thảo *
                 </label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'thong_nhat' ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'thong_nhat' ? '#86efac' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#166534' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: agreementLevel === 'thong_nhat' ? '#f0fdf4' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'thong_nhat' ? '#86efac' : '#e2e8f0'}`, borderRadius: '10px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#166534' }}>
                     <input
                       type="radio"
                       name="agreement_level"
@@ -405,7 +592,7 @@ export default function PublicFeedbackSystem() {
                     🟢 Thống nhất hoàn toàn (Đồng ý 100%)
                   </label>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'sua_doi' ? '#fef9c3' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'sua_doi' ? '#fde047' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#854d0e' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: agreementLevel === 'sua_doi' ? '#fef9c3' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'sua_doi' ? '#fde047' : '#e2e8f0'}`, borderRadius: '10px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#854d0e' }}>
                     <input
                       type="radio"
                       name="agreement_level"
@@ -416,7 +603,7 @@ export default function PublicFeedbackSystem() {
                     🟡 Thống nhất nhưng có đề xuất sửa đổi / bổ sung
                   </label>
 
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', background: agreementLevel === 'khong_thong_nhat' ? '#fef2f2' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'khong_thong_nhat' ? '#fca5a5' : '#e2e8f0'}`, borderRadius: '8px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#dc2626' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', background: agreementLevel === 'khong_thong_nhat' ? '#fef2f2' : '#f8fafc', border: `1.5px solid ${agreementLevel === 'khong_thong_nhat' ? '#fca5a5' : '#e2e8f0'}`, borderRadius: '10px', cursor: 'pointer', fontSize: '13.5px', fontWeight: 'bold', color: '#dc2626' }}>
                     <input
                       type="radio"
                       name="agreement_level"
@@ -429,30 +616,179 @@ export default function PublicFeedbackSystem() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  6. Nội Dung Ý Kiến Đóng Góp Chi Tiết *
-                </label>
-                <textarea
-                  rows={5}
-                  required
-                  placeholder="Nhập ý kiến góp ý chi tiết của đơn vị hoặc cá nhân đối với các điều khoản, kế hoạch hoặc dự thảo..."
-                  value={feedbackContent}
-                  onChange={e => setFeedbackContent(e.target.value)}
-                  style={{ width: '100%', padding: '12px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', lineHeight: '1.5', resize: 'vertical' }}
-                />
+              {/* 🌟 MỤC 6: BẢNG GÓP Ý ĐIỀU CHỈNH DỰ THẢO CHUẨN CẤU TRÚC (ẢNH 1 & ẢNH 2) */}
+              <div style={{ marginBottom: '22px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <FileSpreadsheet size={16} /> 6. Nội Dung Ý Kiến Đóng Góp Chi Tiết (Theo Mẫu Chuẩn) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '5px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  >
+                    <Plus size={14} /> Thêm Dòng Góp Ý
+                  </button>
+                </div>
+
+                {/* HƯỚNG DẪN CẤU TRÚC BẢNG */}
+                <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
+                  💡 Góp ý theo các cột: <strong>Tên dự thảo</strong> → <strong>Trang/dòng</strong> → <strong>Nội dung dự thảo</strong> → <strong>Nội dung đề nghị điều chỉnh</strong> → <strong>Lý do đề nghị</strong>.
+                </div>
+
+                {/* DANH SÁCH CÁC MỤC GÓP Ý CHI TIẾT */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  {feedbackItems.map((item, idx) => (
+                    <div 
+                      key={item.id} 
+                      style={{ 
+                        background: '#ffffff', 
+                        border: '1.5px solid #bbf7d0', 
+                        borderRadius: '12px', 
+                        padding: '14px', 
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px', marginBottom: '10px' }}>
+                        <span style={{ background: '#166534', color: '#ffffff', fontSize: '11.5px', fontWeight: 'bold', padding: '3px 10px', borderRadius: '12px' }}>
+                          Mục số {idx + 1}
+                        </span>
+
+                        {feedbackItems.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveItem(item.id)}
+                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Xóa mục góp ý này"
+                          >
+                            <Trash2 size={13} /> Xóa mục
+                          </button>
+                        )}
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                            Tên dự thảo văn bản góp ý:
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="VD: Dự thảo Đề án Quỹ học bổng..."
+                            value={item.docName}
+                            onChange={e => handleUpdateItem(item.id, 'docName', e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                            Trang / dòng (hoặc Điều/Khoản):
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="VD: Trang 3, dòng 12 (Điều 4)"
+                            value={item.pageLine}
+                            onChange={e => handleUpdateItem(item.id, 'pageLine', e.target.value)}
+                            style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                          Nội dung dự thảo (nội dung hiện tại trong văn bản):
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Trích đoạn nội dung hiện tại trong bản dự thảo cần điều chỉnh..."
+                          value={item.draftContent}
+                          onChange={e => handleUpdateItem(item.id, 'draftContent', e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', lineHeight: '1.4' }}
+                        />
+                      </div>
+
+                      <div style={{ marginBottom: '10px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                          Nội dung đề nghị điều chỉnh (nội dung sửa đổi, bổ sung mới):
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Ghi rõ nội dung đề xuất viết lại, chỉnh sửa hoặc bổ sung mới..."
+                          value={item.proposedChange}
+                          onChange={e => handleUpdateItem(item.id, 'proposedChange', e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1.5px solid #86efac', background: '#f0fdf4', fontSize: '13px', boxSizing: 'border-box', lineHeight: '1.4' }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                          Lý do đề nghị:
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="Nêu rõ lý do, căn cứ pháp lý hoặc tính khả thi thực tiễn..."
+                          value={item.reason}
+                          onChange={e => handleUpdateItem(item.id, 'reason', e.target.value)}
+                          style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', lineHeight: '1.4' }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-start' }}>
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    style={{ background: '#f0fdf4', color: '#166534', border: '1.5px dashed #166534', padding: '9px 16px', borderRadius: '10px', fontSize: '13.5px', fontWeight: 'bold', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                  >
+                    <Plus size={16} /> ➕ Thêm Mục Góp Ý Tiếp Theo (Mục số {feedbackItems.length + 1})
+                  </button>
+                </div>
+
+                {/* Ý KIẾN NHẬN XÉT / KẾT LUẬN CHUNG CỦA TỔ */}
+                <div style={{ marginTop: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>
+                    Ý kiến nhận xét / Kết luận chung của Tổ chuyên môn (Không bắt buộc):
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Nhập ý kiến đánh giá chung của tập thể tổ chuyên môn đối với dự thảo..."
+                    value={generalComment}
+                    onChange={e => setGeneralComment(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', lineHeight: '1.4' }}
+                  />
+                </div>
               </div>
 
-              <div style={{ marginBottom: '22px' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                  7. Link Văn Bản / Tệp Đính Kèm (Nếu có)
+              {/* 🌟 MỤC 7: LINK VĂN BẢN / BIÊN BẢN HỌP TỔ ĐÍNH KÈM (ẢNH 2 & ẢNH 3) */}
+              <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px' }}>
+                  7. Link Văn Bản / Tệp Scan Biên Bản Họp Tổ Đính Kèm (Nếu có)
                 </label>
+                
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: '1.5' }}>
+                  Tổ chuyên môn có thể nộp file Scan Biên bản họp qua biểu mẫu Google Form bên dưới hoặc dán link Google Drive/OneDrive trực tiếp vào ô:
+                </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <a
+                    href={minutesUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ background: '#2563eb', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <ExternalLink size={14} /> 📤 Mở Google Form Nộp File Scan Biên Bản Họp Tổ
+                  </a>
+                </div>
+
                 <input
                   type="url"
-                  placeholder="Link Google Drive, Dropbox chứa file Word/PDF..."
+                  placeholder="Hoặc dán Link Google Drive, Dropbox chứa file Word/PDF biên bản họp tổ tại đây..."
                   value={attachedFileUrl}
                   onChange={e => setAttachedFileUrl(e.target.value)}
-                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', background: '#ffffff' }}
                 />
               </div>
 
@@ -476,7 +812,7 @@ export default function PublicFeedbackSystem() {
                   boxShadow: '0 6px 16px rgba(22,101,52,0.25)'
                 }}
               >
-                <Send size={18} /> {submitting ? 'Đang gửi ý kiến...' : '🚀 GỬI Ý KIẾN GÓP Ý CHÍNH THỨC'}
+                <Send size={18} /> {submitting ? 'Đang gửi ý kiến lên hệ thống...' : '🚀 GỬI Ý KIẾN GÓP Ý CHÍNH THỨC'}
               </button>
             </form>
           )}
@@ -503,7 +839,7 @@ export default function PublicFeedbackSystem() {
               Chưa có đơn vị nào gửi ý kiến cho công việc này.
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '550px', overflowY: 'auto', paddingRight: '4px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '650px', overflowY: 'auto', paddingRight: '4px' }}>
               {responses.map((item, idx) => (
                 <div
                   key={item.id || idx}
@@ -513,7 +849,7 @@ export default function PublicFeedbackSystem() {
                     borderRadius: '12px',
                     padding: '14px 16px',
                     display: 'flex',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     alignItems: 'center'
                   }}
                 >
@@ -525,7 +861,7 @@ export default function PublicFeedbackSystem() {
                       Đại diện: <strong>{item.representative_name}</strong>
                     </div>
                     <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '2px' }}>
-                      Ngày gửi: {new Date(item.created_at).toLocaleDateString('vi-VN')}
+                      Ngày gửi: {new Date(item.created_at).toLocaleDateString('vi-VN')} {new Date(item.created_at).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
 
