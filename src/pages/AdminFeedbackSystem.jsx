@@ -5,7 +5,7 @@ import {
   FileText, Download, Trash2, Search, Filter, RefreshCw, PlusCircle, 
   CheckCircle2, Clock, Building2, Layers, Edit, ToggleLeft, ToggleRight, 
   X, Lock, Unlock, CheckSquare, AlertTriangle, UserCheck, Eye, ExternalLink,
-  FileCheck, FileSpreadsheet, Paperclip
+  FileCheck, FileSpreadsheet, Paperclip, BookOpen
 } from 'lucide-react';
 
 const DEFAULT_ORGANIZATIONS = [
@@ -25,6 +25,24 @@ const DEFAULT_ORGANIZATIONS = [
   'Đơn vị khác'
 ];
 
+const DEFAULT_HNVC_SUB_DOCS = [
+  'Báo cáo đánh giá thực hiện Nghị quyết HNVC 2025-2026 & Phương hướng 2026-2027',
+  'Quy chế làm việc của cơ quan, đơn vị trường học',
+  'Quy chế thực hiện dân chủ trong hoạt động của nhà trường',
+  'Quy chế phối hợp công tác giữa Ban Giám hiệu với BCH Công đoàn trường',
+  'Quy chế chi tiêu nội bộ năm học 2026 - 2027 (hoặc năm 2027)',
+  'Báo cáo công khai tài chính năm học 2025 - 2026 và Dự toán thu - chi ngân sách 2026 - 2027',
+  'Quy chế quản lý, bảo quản và sử dụng cơ sở vật chất, thiết bị dạy học, phòng thí nghiệm và thư viện',
+  'Quy chế (Quy định) thi đua, khen thưởng và đánh giá xếp loại viên chức, NLĐ năm học 2026 - 2027',
+  'Báo cáo hoạt động của Ban Thanh tra nhân dân 2025 - 2026 và Kế hoạch giám sát 2026 - 2027',
+  'Quy chế/Quy định về chuyển đổi số, an toàn thông tin mạng, ứng dụng AI và quản lý Học bạ số',
+  'Quy tắc ứng xử văn hóa trong trường học (Quy chế văn hóa công sở)',
+  'Quy chế phối hợp công tác giữa Lãnh đạo với Ban Thường vụ Đoàn TNCS Hồ Chí Minh trường',
+  'Quy định về công tác chủ nhiệm lớp và phối hợp giáo dục giữa Nhà trường - Gia đình - Xã hội',
+  'Kế hoạch đảm bảo an ninh trật tự, an toàn trường học và phòng, chống bạo lực học đường',
+  'Dự thảo Nghị quyết Hội nghị Viên chức và Người lao động năm học 2026 - 2027'
+];
+
 const SEED_TOPIC_ID = 'a1b2c3d4-e5f6-7890-abcd-1234567890ab';
 
 const SEED_TOPIC = {
@@ -35,6 +53,11 @@ const SEED_TOPIC = {
   deadline: '2026-08-19T23:59:59+07:00',
   contact_info: 'Đồng chí Nghiêm Xuân Bảo – Nhân viên Tổ Văn phòng',
   meeting_minutes_url: 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform',
+  sub_documents: [
+    'Dự thảo Đề án Thành lập Quỹ Học bổng',
+    'Dự thảo Quy chế Quản lý và Sử dụng Quỹ Học bổng',
+    'Kế hoạch Vận động tài trợ và Trao học bổng'
+  ],
   is_active: true
 };
 
@@ -88,12 +111,33 @@ const parseFeedbackData = (item) => {
   };
 };
 
+const getTopicSubDocs = (topic) => {
+  if (!topic) return [];
+  if (topic.sub_documents && Array.isArray(topic.sub_documents) && topic.sub_documents.length > 0) {
+    return topic.sub_documents;
+  }
+  const desc = topic.description || '';
+  const match = desc.match(/<!--SUB_DOCS_JSON:(.*?)-->/);
+  if (match && match[1]) {
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    } catch (e) {}
+  }
+  const titleLower = (topic.title || '').toLowerCase();
+  if (titleLower.includes('viên chức') || titleLower.includes('người lao động') || titleLower.includes('hội nghị')) {
+    return DEFAULT_HNVC_SUB_DOCS;
+  }
+  return [];
+};
+
 export default function AdminFeedbackSystem() {
   const [topics, setTopics] = useState([]);
   const [selectedTopicId, setSelectedTopicId] = useState('');
   const [responses, setResponses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubDocFilter, setSelectedSubDocFilter] = useState('ALL');
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -104,6 +148,7 @@ export default function AdminFeedbackSystem() {
   const [newContactInfo, setNewContactInfo] = useState('');
   const [newAttachedDocUrl, setNewAttachedDocUrl] = useState('');
   const [newMeetingMinutesUrl, setNewMeetingMinutesUrl] = useState('https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform');
+  const [newSubDocsText, setNewSubDocsText] = useState('');
 
   // Edit Modal State
   const [showEditModal, setShowEditModal] = useState(false);
@@ -115,6 +160,7 @@ export default function AdminFeedbackSystem() {
   const [editContactInfo, setEditContactInfo] = useState('');
   const [editAttachedDocUrl, setEditAttachedDocUrl] = useState('');
   const [editMeetingMinutesUrl, setEditMeetingMinutesUrl] = useState('');
+  const [editSubDocsText, setEditSubDocsText] = useState('');
   const [editIsActive, setEditIsActive] = useState(true);
 
   // Detail Modal State (Xem chi tiết bảng góp ý của 1 đơn vị)
@@ -207,6 +253,7 @@ export default function AdminFeedbackSystem() {
 
   const handleTopicChange = (newId) => {
     setSelectedTopicId(newId);
+    setSelectedSubDocFilter('ALL');
     fetchResponses(newId);
   };
 
@@ -244,15 +291,20 @@ export default function AdminFeedbackSystem() {
       ? crypto.randomUUID() 
       : 'b' + Date.now().toString(16) + '-1234-4567-89ab-' + Math.floor(Math.random()*1000000000000).toString(16).padStart(12, '0');
 
+    // Chuyển newSubDocsText thành mảng các văn bản con
+    const parsedSubDocs = newSubDocsText.split('\n').map(s => s.trim()).filter(Boolean);
+    const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
+
     const createdTopic = {
       id: generatedUuid,
       title: newTitle.trim(),
       dispatch_number: newDispatchNo.trim() || '',
-      description: newDescription.trim(),
+      description: newDescription.trim() + metaSubDocs,
       deadline: new Date(newDeadline).toISOString(),
       contact_info: newContactInfo.trim() || 'Văn phòng nhà trường',
       attached_doc_url: newAttachedDocUrl.trim() || '',
       meeting_minutes_url: newMeetingMinutesUrl.trim() || '',
+      sub_documents: parsedSubDocs,
       is_active: true,
       created_at: new Date().toISOString()
     };
@@ -270,13 +322,13 @@ export default function AdminFeedbackSystem() {
         if (!error && data && data.length > 0) {
           inserted = data[0];
         } else if (error) {
-          // Fallback bỏ trường meeting_minutes_url nếu cột chưa được thêm vào Supabase
-          const { meeting_minutes_url, ...legacyTopic } = createdTopic;
+          // Fallback bỏ các cột nâng cao nếu schema chưa có
+          const { meeting_minutes_url, sub_documents, ...legacyTopic } = createdTopic;
           const { data: d2 } = await dbClient.from('cbq_feedback_topics').insert([legacyTopic]).select();
           if (d2 && d2.length > 0) inserted = d2[0];
         }
       } catch (e) {
-        const { meeting_minutes_url, ...legacyTopic } = createdTopic;
+        const { meeting_minutes_url, sub_documents, ...legacyTopic } = createdTopic;
         const { data: d2 } = await dbClient.from('cbq_feedback_topics').insert([legacyTopic]).select();
         if (d2 && d2.length > 0) inserted = d2[0];
       }
@@ -297,6 +349,7 @@ export default function AdminFeedbackSystem() {
       setNewDescription('');
       setNewContactInfo('');
       setNewAttachedDocUrl('');
+      setNewSubDocsText('');
       setNewMeetingMinutesUrl('https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform');
 
     } catch (err) {
@@ -313,7 +366,11 @@ export default function AdminFeedbackSystem() {
     setEditingTopic(topicToEdit);
     setEditTitle(topicToEdit.title || '');
     setEditDispatchNo(topicToEdit.dispatch_number || '');
-    setEditDescription(topicToEdit.description || '');
+    
+    // Tách clean description bỏ thẻ metadata
+    const rawDesc = topicToEdit.description || '';
+    const cleanDesc = rawDesc.replace(/<!--SUB_DOCS_JSON:(.*?)-->/, '').trim();
+    setEditDescription(cleanDesc);
     
     if (topicToEdit.deadline) {
       const d = new Date(topicToEdit.deadline);
@@ -326,6 +383,9 @@ export default function AdminFeedbackSystem() {
     setEditContactInfo(topicToEdit.contact_info || '');
     setEditAttachedDocUrl(topicToEdit.attached_doc_url || '');
     setEditMeetingMinutesUrl(topicToEdit.meeting_minutes_url || 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform');
+    
+    const existingSubDocs = getTopicSubDocs(topicToEdit);
+    setEditSubDocsText(existingSubDocs.join('\n'));
     setEditIsActive(topicToEdit.is_active !== false);
 
     setShowEditModal(true);
@@ -336,14 +396,18 @@ export default function AdminFeedbackSystem() {
     e.preventDefault();
     if (!editingTopic) return;
 
+    const parsedSubDocs = editSubDocsText.split('\n').map(s => s.trim()).filter(Boolean);
+    const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
+
     const updatedData = {
       title: editTitle.trim(),
       dispatch_number: editDispatchNo.trim(),
-      description: editDescription.trim(),
+      description: editDescription.trim() + metaSubDocs,
       deadline: new Date(editDeadline).toISOString(),
       contact_info: editContactInfo.trim(),
       attached_doc_url: editAttachedDocUrl.trim(),
       meeting_minutes_url: editMeetingMinutesUrl.trim(),
+      sub_documents: parsedSubDocs,
       is_active: editIsActive
     };
 
@@ -355,8 +419,7 @@ export default function AdminFeedbackSystem() {
         .eq('id', editingTopic.id);
 
       if (error) {
-        // Fallback bỏ meeting_minutes_url nếu schema chưa có
-        const { meeting_minutes_url, ...legacyData } = updatedData;
+        const { meeting_minutes_url, sub_documents, ...legacyData } = updatedData;
         await dbClient.from('cbq_feedback_topics').update(legacyData).eq('id', editingTopic.id);
       }
 
@@ -423,7 +486,7 @@ export default function AdminFeedbackSystem() {
     }
   };
 
-  // 🌟 XUẤT FILE BÁO CÁO WORD THEO CHUẨN NGHỊ ĐỊNH 30 VỚI BẢNG CỘT ĐẦY ĐỦ NHƯ ẢNH 1
+  // 🌟 XUẤT BÁO CÁO WORD TỰ ĐỘNG GOM NHÓM THEO TỪNG VĂN BẢN CON
   const exportWordDoc = () => {
     if (responses.length === 0) {
       alert("Không có dữ liệu đóng góp ý kiến để xuất file Word!");
@@ -436,11 +499,10 @@ export default function AdminFeedbackSystem() {
     const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
     const yearStr = today.getFullYear();
 
-    // Lọc danh sách ý kiến chính thức (đã duyệt hoặc tất cả)
     const deptResponses = filteredResponses.filter(r => r.organization_unit !== 'Cá nhân Giáo viên / Nhân viên' && r.organization_unit !== 'Đơn vị khác');
     const teacherResponses = filteredResponses.filter(r => r.organization_unit === 'Cá nhân Giáo viên / Nhân viên' || r.organization_unit === 'Đơn vị khác');
 
-    // Thống kê mức độ thống nhất
+    // Thống kê
     const totalResp = filteredResponses.length;
     const countThongNhat = filteredResponses.filter(r => !r.agreement_level || r.agreement_level === 'thong_nhat').length;
     const countSuaDoi = filteredResponses.filter(r => r.agreement_level === 'sua_doi').length;
@@ -450,46 +512,79 @@ export default function AdminFeedbackSystem() {
     const percentSuaDoi = totalResp > 0 ? Math.round((countSuaDoi / totalResp) * 100) : 0;
     const percentKhongThongNhat = totalResp > 0 ? Math.round((countKhongThongNhat / totalResp) * 100) : 0;
 
-    // Xây dựng hàng cho bảng chuẩn (Ảnh 1): STT | Tên dự thảo văn bản góp ý | Trang/dòng | Nội dung dự thảo | Nội dung đề nghị điều chỉnh | Lý do đề nghị | Tổ góp ý
-    let structuredRowsHtml = '';
-    let globalStt = 1;
+    // Gom nhóm toàn bộ mục góp ý chi tiết theo từng Tên văn bản con
+    const subDocsMap = new Map();
 
-    deptResponses.forEach((resp) => {
+    deptResponses.forEach(resp => {
       const parsed = parseFeedbackData(resp);
-      const orgInfo = `<strong>${resp.organization_unit}</strong><br/><span style="font-size: 10pt; color: #555;">Đại diện: ${resp.representative_name} (${resp.phone || ''})</span>`;
-      const fileLink = resp.attached_file_url ? `<a href="${resp.attached_file_url}" target="_blank">Xem File/Biên bản</a>` : '-';
+      const orgInfo = `<strong>${resp.organization_unit}</strong><br/><span style="font-size: 10pt; color: #555;">Đại diện: ${resp.representative_name}</span>`;
+      const fileLink = resp.attached_file_url ? `<a href="${resp.attached_file_url}" target="_blank">Xem File/BB</a>` : '-';
 
       if (parsed.items && parsed.items.length > 0) {
-        parsed.items.forEach((subItem) => {
-          structuredRowsHtml += `
-            <tr>
-              <td style="text-align: center; font-weight: bold;">${globalStt++}</td>
-              <td>${subItem.docName || currentTopicObj?.title || 'Dự thảo'}</td>
-              <td style="text-align: center;">${subItem.pageLine || '-'}</td>
-              <td style="text-align: justify;">${(subItem.draftContent || '').replace(/\n/g, '<br/>')}</td>
-              <td style="text-align: justify; font-weight: bold; color: #166534;">${(subItem.proposedChange || '').replace(/\n/g, '<br/>')}</td>
-              <td style="text-align: justify;">${(subItem.reason || '').replace(/\n/g, '<br/>')}</td>
-              <td>${orgInfo}</td>
-              <td style="text-align: center;">${fileLink}</td>
-            </tr>
-          `;
+        parsed.items.forEach(sub => {
+          const docKey = sub.docName || currentTopicObj?.title || 'Dự thảo chung';
+          if (!subDocsMap.has(docKey)) subDocsMap.set(docKey, []);
+          subDocsMap.get(docKey).push({
+            pageLine: sub.pageLine || '-',
+            draftContent: sub.draftContent || '-',
+            proposedChange: sub.proposedChange || '-',
+            reason: sub.reason || '-',
+            orgInfo,
+            fileLink
+          });
         });
       } else {
-        // Nếu không có mảng chi tiết (Thống nhất 100% hoặc ý kiến chung dạng văn bản)
-        const is100 = resp.agreement_level === 'thong_nhat';
-        structuredRowsHtml += `
-          <tr>
-            <td style="text-align: center; font-weight: bold;">${globalStt++}</td>
-            <td>${currentTopicObj?.title || 'Dự thảo'}</td>
-            <td style="text-align: center;">Toàn văn</td>
-            <td style="text-align: center;"><em>${is100 ? 'Thống nhất toàn bộ' : '-'}</em></td>
-            <td style="text-align: justify;">${(parsed.cleanText || (is100 ? 'Nhất trí 100% không có sửa đổi' : '')).replace(/\n/g, '<br/>')}</td>
-            <td style="text-align: center;"><em>${is100 ? 'Đồng thuận' : '-'}</em></td>
-            <td>${orgInfo}</td>
-            <td style="text-align: center;">${fileLink}</td>
-          </tr>
-        `;
+        const docKey = currentTopicObj?.title || 'Dự thảo chung';
+        if (!subDocsMap.has(docKey)) subDocsMap.set(docKey, []);
+        subDocsMap.get(docKey).push({
+          pageLine: 'Toàn văn',
+          draftContent: resp.agreement_level === 'thong_nhat' ? 'Nhất trí 100%' : '-',
+          proposedChange: parsed.cleanText || (resp.agreement_level === 'thong_nhat' ? 'Thống nhất toàn bộ' : '-'),
+          reason: resp.agreement_level === 'thong_nhat' ? 'Đồng thuận cao' : '-',
+          orgInfo,
+          fileLink
+        });
       }
+    });
+
+    // Tạo HTML các bảng theo từng văn bản con
+    let groupedTablesHtml = '';
+    let docIndex = 1;
+
+    subDocsMap.forEach((items, docTitle) => {
+      let rows = items.map((it, idx) => `
+        <tr>
+          <td style="text-align: center; font-weight: bold;">${idx + 1}</td>
+          <td style="text-align: center; font-weight: bold; color: #0369a1;">${it.pageLine}</td>
+          <td style="text-align: justify;">${it.draftContent.replace(/\n/g, '<br/>')}</td>
+          <td style="text-align: justify; font-weight: bold; color: #166534; background-color: #f7fee7;">${it.proposedChange.replace(/\n/g, '<br/>')}</td>
+          <td style="text-align: justify;">${it.reason.replace(/\n/g, '<br/>')}</td>
+          <td>${it.orgInfo}</td>
+          <td style="text-align: center;">${it.fileLink}</td>
+        </tr>
+      `).join('');
+
+      groupedTablesHtml += `
+        <h4 style="color: #166534; margin-top: 18px; margin-bottom: 6px; font-size: 12.5pt;">
+          ${docIndex++}. VĂN BẢN: ${docTitle.toUpperCase()} (${items.length} lượt góp ý)
+        </h4>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 4%;">STT</th>
+              <th style="width: 14%;">Trang/dòng (Điều/Khoản)</th>
+              <th style="width: 23%;">Nội dung dự thảo</th>
+              <th style="width: 25%;">Nội dung đề nghị điều chỉnh</th>
+              <th style="width: 18%;">Lý do đề nghị</th>
+              <th style="width: 11%;">Tổ chuyên môn & Đại diện</th>
+              <th style="width: 5%;">File/BB</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      `;
     });
 
     const teacherRowsHtml = teacherResponses.map((item, idx) => {
@@ -514,7 +609,7 @@ export default function AdminFeedbackSystem() {
       <title>BÁO CÁO TỔNG HỢP Ý KIẾN GÓP Ý CHÍNH THỨC</title>
       <style>
         @page WordSection1 {
-          size: 29.7cm 21.0cm; /* Khổ ngang A4 landscape để bảng hiển thị rộng rãi, chuẩn báo cáo dự thảo */
+          size: 29.7cm 21.0cm; /* Khổ ngang A4 landscape */
           margin: 1.5cm 1.5cm 1.5cm 2.0cm;
           mso-header-margin: 36.0pt;
           mso-footer-margin: 36.0pt;
@@ -522,7 +617,7 @@ export default function AdminFeedbackSystem() {
         }
         div.WordSection1 { page: WordSection1; }
         body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.35; color: #000000; }
-        table { border-collapse: collapse; width: 100%; margin-top: 10px; margin-bottom: 14px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 8px; margin-bottom: 14px; }
         th, td { border: 1px solid #000000; padding: 5pt 6pt; vertical-align: top; font-size: 11pt; }
         th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
         .header-table { border: none; width: 100%; margin-bottom: 15px; }
@@ -552,13 +647,13 @@ export default function AdminFeedbackSystem() {
           </tr>
         </table>
 
-        <div class="title">BÁO CÁO TỔNG HỢP Ý KIẾN ĐÓNG GÓP DỰ THẢO VĂN BẢN</div>
+        <div class="title">BÁO CÁO TỔNG HỢP Ý KIẾN ĐÓNG GÓP CÁC DỰ THẢO VĂN BẢN</div>
         <div class="subtitle">Về việc: ${currentTopicObj?.title || 'Dự thảo công việc'}<br/>${currentTopicObj?.dispatch_number ? `(${currentTopicObj.dispatch_number})` : ''}</div>
 
         <p><strong>Kính gửi:</strong> Ban Giám hiệu Trường THPT Cao Bá Quát</p>
 
         <p style="text-indent: 1cm; text-align: justify;">
-          Căn cứ Kế hoạch công tác của Nhà trường, Tổ Văn phòng đã tiến hành thu nhận, tổng hợp và phân loại ý kiến đóng góp của BCH Đảng ủy, Ban Thường vụ Đoàn trường, các Tổ chuyên môn và cá nhân Giáo viên / Nhân viên đối với <strong>"${currentTopicObj?.title || 'Dự thảo công việc'}"</strong>. Kết quả tổng hợp cụ thể như sau:
+          Căn cứ Kế hoạch công tác của Nhà trường, Tổ Văn phòng đã tiến hành thu nhận, tổng hợp và phân loại ý kiến đóng góp của BCH Đảng ủy, Ban Thường vụ Đoàn trường, các Tổ chuyên môn và cá nhân Giáo viên / Nhân viên đối với <strong>"${currentTopicObj?.title || 'Dự thảo công việc'}"</strong>. Kết quả tổng hợp phân loại theo từng văn bản cụ thể như sau:
         </p>
 
         <h3>I. THỐNG KÊ TIẾN ĐỘ THU NHẬN Ý KIẾN VÀ MỨC ĐỘ THỐNG NHẤT</h3>
@@ -571,27 +666,9 @@ export default function AdminFeedbackSystem() {
           - <strong>Tỷ lệ Chưa thống nhất:</strong> ${countKhongThongNhat} / ${totalResp} lượt (${percentKhongThongNhat}%).
         </p>
 
-        <h3>II. BẢNG TỔNG HỢP Ý KIẾN ĐIỀU CHỈNH CHÍNH THỨC CỦA CÁC TỔ CHUYÊN MÔN / ĐƠN VỊ</h3>
-        <p style="font-style: italic; font-size: 10.5pt; color: #444;">(Bảng tổng hợp chi tiết theo từng điều khoản, trang dòng và lý do đề nghị theo quy chuẩn)</p>
-        ${deptResponses.length === 0 ? '<p><em>Chưa có ý kiến góp ý từ các Tổ chuyên môn.</em></p>' : `
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 4%;">STT</th>
-              <th style="width: 18%;">Tên dự thảo văn bản góp ý</th>
-              <th style="width: 10%;">Trang/dòng (Điều/Khoản)</th>
-              <th style="width: 18%;">Nội dung dự thảo</th>
-              <th style="width: 20%;">Nội dung đề nghị điều chỉnh</th>
-              <th style="width: 14%;">Lý do đề nghị</th>
-              <th style="width: 11%;">Tổ chuyên môn & Đại diện</th>
-              <th style="width: 5%;">File/BB</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${structuredRowsHtml}
-          </tbody>
-        </table>
-        `}
+        <h3>II. BẢNG TỔNG HỢP Ý KIẾN CHI TIẾT THEO TỪNG VĂN BẢN / QUY CHẾ CON</h3>
+        <p style="font-style: italic; font-size: 10.5pt; color: #444;">(Các ý kiến được phân loại chi tiết theo từng văn bản, quy chế, điều khoản và trang dòng theo đúng quy chuẩn)</p>
+        ${subDocsMap.size === 0 ? '<p><em>Chưa có ý kiến góp ý từ các Tổ chuyên môn.</em></p>' : groupedTablesHtml}
 
         <h3>III. BẢNG TỔNG HỢP Ý KIẾN ĐÓNG GÓP CÁ NHÂN CỦA GIÁO VIÊN / NHÂN VIÊN</h3>
         ${teacherResponses.length === 0 ? '<p><em>Không có đóng góp ý kiến cá nhân riêng lẻ.</em></p>' : `
@@ -614,7 +691,7 @@ export default function AdminFeedbackSystem() {
 
         <h3>IV. ĐÁNH GIÁ CHUNG VÀ ĐỀ XUẤT HƯỚNG XỬ LÝ</h3>
         <p style="text-indent: 1cm; text-align: justify;">
-          Qua tổng hợp ý kiến từ các Tổ chuyên môn và cá nhân Giáo viên, hầu hết các ý kiến đóng góp đều thể hiện tinh thần trách nhiệm cao đối với công tác chung của Nhà trường. Tất cả các ý kiến chi tiết trên đã được phân loại đầy đủ để Kính trình Ban Giám Hiệu xem xét, chỉ đạo và hoàn thiện văn bản chính thức.
+          Qua tổng hợp ý kiến từ các Tổ chuyên môn và cá nhân Giáo viên, hầu hết các ý kiến đóng góp đều thể hiện tinh thần trách nhiệm cao đối với công tác chung của Nhà trường. Tất cả các ý kiến chi tiết trên đã được phân loại theo từng văn bản để Kính trình Ban Giám Hiệu xem xét, chỉ đạo và hoàn thiện văn bản chính thức trước khi thông qua tại Hội nghị.
         </p>
 
         <table class="signature-table">
@@ -656,7 +733,7 @@ export default function AdminFeedbackSystem() {
     }
 
     const currentTopicObj = topics.find(t => t.id === selectedTopicId);
-    let csvContent = "\uFEFFSTT,ĐƠN VỊ GÓP Ý,NGƯỜI ĐẠI DIỆN,SỐ ĐIỆN THOẠI,EMAIL,MỨC ĐỘ THỐNG NHẤT,TÊN DỰ THẢO,TRANG/DÒNG,NỘI DUNG DỰ THẢO,NỘI DUNG ĐỀ NGHỊ ĐIỀU CHỈNH,LÝ DO ĐỀ NGHỊ,Ý KIẾN CHUNG,LINK BIÊN BẢN/TỆP ĐÍNH KÈM,NGÀY GỬI\n";
+    let csvContent = "\uFEFFSTT,ĐƠN VỊ GÓP Ý,NGƯỜI ĐẠI DIỆN,SỐ ĐIỆN THOẠI,EMAIL,MỨC ĐỘ THỐNG NHẤT,TÊN VĂN BẢN CON,TRANG/DÒNG,NỘI DUNG DỰ THẢO,NỘI DUNG ĐỀ NGHỊ ĐIỀU CHỈNH,LÝ DO ĐỀ NGHỊ,Ý KIẾN CHUNG,LINK BIÊN BẢN/TỆP ĐÍNH KÈM,NGÀY GỬI\n";
     
     let csvStt = 1;
     filteredResponses.forEach((item) => {
@@ -754,6 +831,7 @@ export default function AdminFeedbackSystem() {
   };
 
   const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
+  const currentSubDocs = getTopicSubDocs(currentTopicObj);
   
   // Submitted Count for Official Departments
   const submittedCount = DEFAULT_ORGANIZATIONS
@@ -764,7 +842,16 @@ export default function AdminFeedbackSystem() {
     const matchSearch = (item.organization_unit || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.representative_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.feedback_content || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchSearch;
+    
+    if (!matchSearch) return false;
+
+    if (selectedSubDocFilter !== 'ALL') {
+      const parsed = parseFeedbackData(item);
+      const matchDoc = parsed.items.some(sub => sub.docName === selectedSubDocFilter);
+      return matchDoc;
+    }
+
+    return true;
   });
 
   return (
@@ -783,7 +870,10 @@ export default function AdminFeedbackSystem() {
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => {
+              setNewSubDocsText(DEFAULT_HNVC_SUB_DOCS.join('\n'));
+              setShowCreateModal(true);
+            }}
             style={{ padding: '9px 16px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(22,101,52,0.2)' }}
           >
             <PlusCircle size={16} /> ➕ Cấu Hình Công Việc Mới
@@ -799,7 +889,7 @@ export default function AdminFeedbackSystem() {
           <button
             onClick={exportWordDoc}
             style={{ padding: '9px 16px', background: '#1e3a8a', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(30,58,138,0.25)' }}
-            title="Tải File Báo Cáo Chuẩn Nghị Định 30 (.doc)"
+            title="Tải File Báo Cáo Gom Nhóm Từng Văn Bản Con (.doc chuẩn Nghị định 30)"
           >
             <FileText size={16} /> 📄 Xuất Báo Cáo Word (.doc)
           </button>
@@ -847,7 +937,7 @@ export default function AdminFeedbackSystem() {
               <button
                 onClick={openEditTopicModal}
                 style={{ padding: '6px 14px', background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
-                title="Chỉnh sửa tên công việc, trích yếu, hạn chót, link nộp biên bản..."
+                title="Chỉnh sửa tên công việc, trích yếu, danh sách văn bản con..."
               >
                 <Edit size={15} /> ✏️ Cấu Hình / Chỉnh Sửa
               </button>
@@ -875,23 +965,16 @@ export default function AdminFeedbackSystem() {
           ))}
         </select>
 
-        {/* THÔNG TIN LINK NỘP BIÊN BẢN HỌP HIỆN TẠI */}
-        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', fontSize: '12.5px', color: '#475569', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px' }}>
-          <div>
-            📁 Link Google Form Nộp Biên Bản Họp Tổ: <strong>{currentTopicObj?.meeting_minutes_url || 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform'}</strong>
+        {/* THÔNG TIN VĂN BẢN CON ĐỢT NÀY */}
+        {currentSubDocs.length > 0 && (
+          <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', fontSize: '12.5px', color: '#166534', background: '#f0fdf4', padding: '8px 12px', borderRadius: '8px', border: '1px solid #86efac' }}>
+            <BookOpen size={16} />
+            <span>Đợt này có <strong>{currentSubDocs.length} văn bản / quy chế con</strong>. Giáo viên có thể chọn nhanh từ danh mục khi góp ý.</span>
           </div>
-          <a
-            href={currentTopicObj?.meeting_minutes_url || 'https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform'}
-            target="_blank"
-            rel="noreferrer"
-            style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-          >
-            <ExternalLink size={13} /> Kiểm tra mở link Form
-          </a>
-        </div>
+        )}
       </div>
 
-      {/* STATS CHECKLIST OF ORGANIZATIONS FOR SELECTED TASK */}
+      {/* STATS CHECKLIST OF ORGANIZATIONS */}
       <div style={{ background: '#ffffff', borderRadius: '14px', border: '1.5px solid #cbd5e1', padding: '14px 18px', marginBottom: '18px', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -929,9 +1012,9 @@ export default function AdminFeedbackSystem() {
         </div>
       </div>
 
-      {/* SEARCH BAR */}
-      <div style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
+      {/* SEARCH BAR & FILTER THEO VĂN BẢN CON */}
+      <div style={{ background: '#ffffff', padding: '14px 16px', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '280px', position: 'relative' }}>
           <input
             type="text"
             placeholder="Tìm theo Đơn vị, Người đại diện hoặc Nội dung góp ý..."
@@ -941,6 +1024,25 @@ export default function AdminFeedbackSystem() {
           />
           <Search size={16} color="#64748b" style={{ position: 'absolute', left: '10px', top: '12px' }} />
         </div>
+
+        {/* 🌟 BỘ LỌC THEO VĂN BẢN CON */}
+        {currentSubDocs.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569' }}>Lọc văn bản con:</span>
+            <select
+              value={selectedSubDocFilter}
+              onChange={e => setSelectedSubDocFilter(e.target.value)}
+              style={{ padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #166534', fontSize: '13px', fontWeight: 'bold', color: '#166534', background: '#f0fdf4', maxWidth: '300px' }}
+            >
+              <option value="ALL">-- Tất cả văn bản ({filteredResponses.length} ý kiến) --</option>
+              {currentSubDocs.map((sDoc, sIdx) => (
+                <option key={sIdx} value={sDoc}>
+                  {sIdx + 1}. {sDoc}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* RESPONSES TABLE */}
@@ -948,7 +1050,7 @@ export default function AdminFeedbackSystem() {
         {loading ? (
           <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>Đang tải danh sách góp ý...</div>
         ) : filteredResponses.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Chưa có đơn vị hay giáo viên nào gửi ý kiến góp ý cho công việc này.</div>
+          <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>Chưa có ý kiến góp ý nào phù hợp với bộ lọc tìm kiếm.</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
@@ -1003,7 +1105,7 @@ export default function AdminFeedbackSystem() {
                               <FileSpreadsheet size={14} /> Có {parsed.items.length} mục góp ý chi tiết theo bảng
                             </div>
                             <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              Mục 1: {parsed.items[0].proposedChange || parsed.items[0].draftContent}
+                              Văn bản: <strong>{parsed.items[0].docName}</strong> ({parsed.items[0].proposedChange})
                             </div>
                           </div>
                         ) : (
@@ -1056,14 +1158,14 @@ export default function AdminFeedbackSystem() {
         )}
       </div>
 
-      {/* 🌟 MODAL XEM CHI TIẾT BẢNG GÓP Ý ĐIỀU CHỈNH THEO DỰ THẢO (ẢNH 1) */}
+      {/* MODAL XEM CHI TIẾT BẢNG GÓP Ý ĐIỀU CHỈNH THEO DỰ THẢO */}
       {viewingDetailResponse && (() => {
         const parsed = parseFeedbackData(viewingDetailResponse);
         const hasItems = parsed.items && parsed.items.length > 0;
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
-            <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+            <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '880px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
               
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px', marginBottom: '16px' }}>
                 <div>
@@ -1079,29 +1181,28 @@ export default function AdminFeedbackSystem() {
                 </button>
               </div>
 
-              {/* BẢNG CỘT THEO ĐÚNG CẤU TRÚC ẢNH 1 */}
               {hasItems ? (
                 <div>
                   <div style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px', marginBottom: '10px' }}>
-                    BẢNG ĐÓNG GÓP Ý KIẾN CHI TIẾT THEO DỰ THẢO ({parsed.items.length} mục):
+                    BẢNG ĐÓNG GÓP Ý KIẾN CHI TIẾT THEO CÁC VĂN BẢN ({parsed.items.length} mục):
                   </div>
                   <div style={{ overflowX: 'auto', marginBottom: '16px', border: '1px solid #cbd5e1', borderRadius: '10px' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
                       <thead>
                         <tr style={{ background: '#f1f5f9', color: '#1e293b', borderBottom: '1.5px solid #cbd5e1' }}>
                           <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px' }}>STT</th>
-                          <th style={{ padding: '8px 10px', width: '22%' }}>Tên dự thảo văn bản góp ý</th>
-                          <th style={{ padding: '8px 10px', width: '15%' }}>Trang/dòng</th>
+                          <th style={{ padding: '8px 10px', width: '24%' }}>Tên dự thảo văn bản con</th>
+                          <th style={{ padding: '8px 10px', width: '14%' }}>Trang/dòng</th>
                           <th style={{ padding: '8px 10px', width: '20%' }}>Nội dung dự thảo</th>
                           <th style={{ padding: '8px 10px', width: '23%' }}>Nội dung đề nghị điều chỉnh</th>
-                          <th style={{ padding: '8px 10px', width: '16%' }}>Lý do đề nghị</th>
+                          <th style={{ padding: '8px 10px', width: '15%' }}>Lý do đề nghị</th>
                         </tr>
                       </thead>
                       <tbody>
                         {parsed.items.map((sub, sIdx) => (
                           <tr key={sIdx} style={{ borderBottom: '1px solid #e2e8f0', background: sIdx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
                             <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 'bold' }}>{sIdx + 1}</td>
-                            <td style={{ padding: '10px' }}>{sub.docName || currentTopicObj?.title || 'Dự thảo'}</td>
+                            <td style={{ padding: '10px', fontWeight: 'bold', color: '#166534' }}>{sub.docName || currentTopicObj?.title || 'Dự thảo'}</td>
                             <td style={{ padding: '10px', textAlign: 'center', fontWeight: '600', color: '#0369a1' }}>{sub.pageLine || '-'}</td>
                             <td style={{ padding: '10px', color: '#475569' }}>{sub.draftContent || '-'}</td>
                             <td style={{ padding: '10px', fontWeight: 'bold', color: '#166534', background: '#f0fdf4' }}>{sub.proposedChange || '-'}</td>
@@ -1121,7 +1222,6 @@ export default function AdminFeedbackSystem() {
                 </div>
               )}
 
-              {/* TỆP ĐÍNH KÈM / BIÊN BẢN */}
               {viewingDetailResponse.attached_file_url && (
                 <div style={{ background: '#eff6ff', padding: '12px 16px', borderRadius: '10px', border: '1px solid #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
                   <div style={{ fontSize: '13px', color: '#1e40af' }}>
@@ -1155,7 +1255,7 @@ export default function AdminFeedbackSystem() {
       {/* MODAL CẤU HÌNH CÔNG VIỆC LẤY Ý KIẾN MỚI */}
       {showCreateModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '650px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '680px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '18px' }}>
@@ -1172,7 +1272,7 @@ export default function AdminFeedbackSystem() {
                 <input
                   type="text"
                   required
-                  placeholder="VD: Dự thảo Kế hoạch Tổ chức Lễ Kỷ niệm 30 năm thành lập trường"
+                  placeholder="VD: Góp ý dự thảo các văn bản chuẩn bị Hội nghị Viên chức & NLĐ 2026 - 2027"
                   value={newTitle}
                   onChange={e => setNewTitle(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
@@ -1183,17 +1283,34 @@ export default function AdminFeedbackSystem() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Số Hiệu Văn Bản / Căn Cứ (Nếu có)</label>
                 <input
                   type="text"
-                  placeholder="VD: Công văn 123/SGDĐT-VP & Kế hoạch 53/KH-TrTHPTCBQ"
+                  placeholder="VD: Kế hoạch số 53/KH-TrTHPTCBQ"
                   value={newDispatchNo}
                   onChange={e => setNewDispatchNo(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
+              {/* 🌟 CẤU HÌNH DANH SÁCH VĂN BẢN CON */}
+              <div style={{ marginBottom: '14px', background: '#f0fdf4', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid #86efac' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                  📚 Danh Sách Các Văn Bản / Quy Chế Con Cần Góp Ý (Mỗi dòng một văn bản):
+                </label>
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                  Giáo viên sẽ được chọn nhanh từ danh mục này khi góp ý thay vì phải gõ tay từng tên văn bản
+                </div>
+                <textarea
+                  rows={5}
+                  placeholder="Quy chế chi tiêu nội bộ năm học 2026 - 2027&#10;Quy chế thi đua, khen thưởng và xếp loại viên chức&#10;Quy chế quản lý CSVC và thiết bị dạy học..."
+                  value={newSubDocsText}
+                  onChange={e => setNewSubDocsText(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #86efac', fontSize: '13px', boxSizing: 'border-box', background: '#ffffff', lineHeight: '1.4' }}
+                />
+              </div>
+
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Trích Yếu Nội Dung & Hướng Dẫn Đóng Góp *</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   required
                   placeholder="Nêu rõ các căn cứ pháp lý, yêu cầu góp ý từ Đảng ủy, Đoàn trường và các Tổ chuyên môn..."
                   value={newDescription}
@@ -1231,21 +1348,17 @@ export default function AdminFeedbackSystem() {
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Link Tệp Văn Bản / Dự Thảo Kèm Theo (Google Drive/Dropbox)</label>
                 <input
                   type="url"
-                  placeholder="VD: https://drive.google.com/file/d/..."
+                  placeholder="VD: https://drive.google.com/drive/folders/..."
                   value={newAttachedDocUrl}
                   onChange={e => setNewAttachedDocUrl(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              {/* 🌟 CẤU HÌNH LINK TIẾP NHẬN BIÊN BẢN HỌP TỔ (ẢNH 3) */}
               <div style={{ marginBottom: '20px', background: '#eff6ff', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid #93c5fd' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#1e40af', marginBottom: '4px' }}>
                   📁 Link Biểu Mẫu Tiếp Nhận Biên Bản Họp Tổ (Google Form / Drive)
                 </label>
-                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
-                  Đường link để Thư ký / Tổ trưởng nộp file scan biên bản họp tổ trực tuyến
-                </div>
                 <input
                   type="url"
                   placeholder="VD: https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform"
@@ -1269,7 +1382,7 @@ export default function AdminFeedbackSystem() {
       {/* MODAL CHỈNH SỬA CÔNG VIỆC ĐÃ TẠO */}
       {showEditModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '650px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '680px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#854d0e', fontWeight: 'bold', fontSize: '18px' }}>
@@ -1302,10 +1415,26 @@ export default function AdminFeedbackSystem() {
                 />
               </div>
 
+              {/* 🌟 CẤU HÌNH DANH SÁCH VĂN BẢN CON TRONG EDIT */}
+              <div style={{ marginBottom: '14px', background: '#f0fdf4', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid #86efac' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                  📚 Danh Sách Các Văn Bản / Quy Chế Con Cần Góp Ý (Mỗi dòng một văn bản):
+                </label>
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                  Chỉnh sửa danh mục văn bản con để giáo viên chọn nhanh từ dropdown
+                </div>
+                <textarea
+                  rows={5}
+                  value={editSubDocsText}
+                  onChange={e => setEditSubDocsText(e.target.value)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #86efac', fontSize: '13px', boxSizing: 'border-box', background: '#ffffff', lineHeight: '1.4' }}
+                />
+              </div>
+
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>Trích Yếu Nội Dung & Hướng Dẫn Đóng Góp *</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   required
                   value={editDescription}
                   onChange={e => setEditDescription(e.target.value)}
@@ -1347,14 +1476,12 @@ export default function AdminFeedbackSystem() {
                 />
               </div>
 
-              {/* 🌟 CẤU HÌNH LINK TIẾP NHẬN BIÊN BẢN HỌP TỔ TRONG EDIT (ẢNH 3) */}
               <div style={{ marginBottom: '16px', background: '#eff6ff', padding: '12px 14px', borderRadius: '10px', border: '1.5px solid #93c5fd' }}>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#1e40af', marginBottom: '4px' }}>
                   📁 Link Biểu Mẫu Tiếp Nhận Biên Bản Họp Tổ (Google Form / Drive)
                 </label>
                 <input
                   type="url"
-                  placeholder="VD: https://docs.google.com/forms/d/1FgEhgB53h3EmbhmjFEwwiZE3-lASx6ujbTvQrpKtqVk/viewform"
                   value={editMeetingMinutesUrl}
                   onChange={e => setEditMeetingMinutesUrl(e.target.value)}
                   style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #93c5fd', fontSize: '13.5px', boxSizing: 'border-box', background: '#ffffff' }}
