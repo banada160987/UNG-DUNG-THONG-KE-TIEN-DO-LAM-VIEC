@@ -64,6 +64,15 @@ const SEED_TOPIC = {
   is_active: true
 };
 
+// Helper làm sạch description loại bỏ mọi thẻ metadata ẩn
+export const getCleanDescription = (desc) => {
+  if (!desc) return '';
+  return desc
+    .replace(/<!--SUB_DOCS_JSON:[\s\S]*?-->/g, '')
+    .replace(/<!--FEEDBACK_ITEMS_JSON:[\s\S]*?-->/g, '')
+    .trim();
+};
+
 // Helper trích xuất danh sách văn bản con của 1 chủ đề
 const getSubDocsList = (topic) => {
   if (!topic) return [];
@@ -74,7 +83,7 @@ const getSubDocsList = (topic) => {
 
   // Parse từ metadata trong description nếu có
   const desc = topic.description || '';
-  const match = desc.match(/<!--SUB_DOCS_JSON:(.*?)-->/);
+  const match = desc.match(/<!--SUB_DOCS_JSON:([\s\S]*?)-->/);
   if (match && match[1]) {
     try {
       const parsed = JSON.parse(match[1]);
@@ -532,9 +541,9 @@ export default function PublicFeedbackSystem() {
             </div>
           </div>
 
-          <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', color: '#334155', fontSize: '13.5px', lineHeight: '1.6', marginBottom: '15px' }}>
+          <div style={{ background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', color: '#334155', fontSize: '13.5px', lineHeight: '1.6', marginBottom: '15px', whiteSpace: 'pre-line' }}>
             <div style={{ fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>📌 CĂN CỨ VÀ HƯỚNG DẪN ĐÓNG GÓP:</div>
-            {selectedTopic.description}
+            {getCleanDescription(selectedTopic.description)}
           </div>
 
           {/* 🌟 DANH MỤC CÁC VĂN BẢN / QUY CHẾ CON CẦN GÓP Ý (ẢNH 1) */}

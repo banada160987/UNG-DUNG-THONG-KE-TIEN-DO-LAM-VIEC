@@ -112,13 +112,22 @@ const parseFeedbackData = (item) => {
   };
 };
 
+// Helper làm sạch description loại bỏ mọi thẻ metadata ẩn
+export const getCleanDescription = (desc) => {
+  if (!desc) return '';
+  return desc
+    .replace(/<!--SUB_DOCS_JSON:[\s\S]*?-->/g, '')
+    .replace(/<!--FEEDBACK_ITEMS_JSON:[\s\S]*?-->/g, '')
+    .trim();
+};
+
 const getTopicSubDocs = (topic) => {
   if (!topic) return [];
   if (topic.sub_documents && Array.isArray(topic.sub_documents) && topic.sub_documents.length > 0) {
     return topic.sub_documents;
   }
   const desc = topic.description || '';
-  const match = desc.match(/<!--SUB_DOCS_JSON:(.*?)-->/);
+  const match = desc.match(/<!--SUB_DOCS_JSON:([\s\S]*?)-->/);
   if (match && match[1]) {
     try {
       const parsed = JSON.parse(match[1]);
@@ -314,13 +323,13 @@ export default function AdminFeedbackSystem() {
 
     // Chuyển newSubDocsText thành mảng các văn bản con
     const parsedSubDocs = newSubDocsText.split('\n').map(s => s.trim()).filter(Boolean);
-    const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
+    const cleanDesc = getCleanDescription(newDescription);
 
     const createdTopic = {
       id: generatedUuid,
       title: newTitle.trim(),
       dispatch_number: newDispatchNo.trim() || '',
-      description: newDescription.trim() + metaSubDocs,
+      description: cleanDesc,
       deadline: new Date(newDeadline).toISOString(),
       contact_info: newContactInfo.trim() || 'Văn phòng nhà trường',
       attached_doc_url: newAttachedDocUrl.trim() || '',
@@ -344,12 +353,16 @@ export default function AdminFeedbackSystem() {
           inserted = data[0];
         } else if (error) {
           // Fallback bỏ các cột nâng cao nếu schema chưa có
+          const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
           const { meeting_minutes_url, sub_documents, ...legacyTopic } = createdTopic;
+          legacyTopic.description = cleanDesc + metaSubDocs;
           const { data: d2 } = await dbClient.from('cbq_feedback_topics').insert([legacyTopic]).select();
           if (d2 && d2.length > 0) inserted = d2[0];
         }
       } catch (e) {
+        const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
         const { meeting_minutes_url, sub_documents, ...legacyTopic } = createdTopic;
+        legacyTopic.description = cleanDesc + metaSubDocs;
         const { data: d2 } = await dbClient.from('cbq_feedback_topics').insert([legacyTopic]).select();
         if (d2 && d2.length > 0) inserted = d2[0];
       }
@@ -390,15 +403,18 @@ export default function AdminFeedbackSystem() {
     
     // Tách clean description bỏ thẻ metadata
     const rawDesc = topicToEdit.description || '';
-    const cleanDesc = rawDesc.replace(/<!--SUB_DOCS_JSON:(.*?)-->/, '').trim();
-    setEditDescription(cleanDesc);
+    setEditDescription(getCleanDescription(rawDesc));
     
     if (topicToEdit.deadline) {
       const d = new Date(topicToEdit.deadline);
-      const formatted = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-      setEditDeadline(formatted);
+      if (!isNaN(d.getTime())) {
+        const formatted = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+        setEditDeadline(formatted);
+      } else {
+        setEditDeadline('2026-09-30T23:59');
+      }
     } else {
-      setEditDeadline('2026-08-19T23:59');
+      setEditDeadline('2026-09-30T23:59');
     }
 
     setEditContactInfo(topicToEdit.contact_info || '');
@@ -418,12 +434,12 @@ export default function AdminFeedbackSystem() {
     if (!editingTopic) return;
 
     const parsedSubDocs = editSubDocsText.split('\n').map(s => s.trim()).filter(Boolean);
-    const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
+    const cleanDesc = getCleanDescription(editDescription);
 
     const updatedData = {
       title: editTitle.trim(),
       dispatch_number: editDispatchNo.trim(),
-      description: editDescription.trim() + metaSubDocs,
+      description: cleanDesc,
       deadline: new Date(editDeadline).toISOString(),
       contact_info: editContactInfo.trim(),
       attached_doc_url: editAttachedDocUrl.trim(),
@@ -440,7 +456,9 @@ export default function AdminFeedbackSystem() {
         .eq('id', editingTopic.id);
 
       if (error) {
+        const metaSubDocs = parsedSubDocs.length > 0 ? `\n\n<!--SUB_DOCS_JSON:${JSON.stringify(parsedSubDocs)}-->` : '';
         const { meeting_minutes_url, sub_documents, ...legacyData } = updatedData;
+        legacyData.description = cleanDesc + metaSubDocs;
         await dbClient.from('cbq_feedback_topics').update(legacyData).eq('id', editingTopic.id);
       }
 
@@ -835,7 +853,7 @@ export default function AdminFeedbackSystem() {
         await dbClient.from('cbq_docs').insert([{
           title: topicObj.title,
           category: 'Quyết định / Ban hành',
-          content: topicObj.description,
+          content: getCleanDescription(topicObj.description),
           author: 'Hiệu trưởng',
           reference_number: topicObj.dispatch_number
         }]);
