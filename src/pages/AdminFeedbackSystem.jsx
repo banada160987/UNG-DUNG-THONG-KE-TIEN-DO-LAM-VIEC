@@ -8,19 +8,20 @@ import {
   FileCheck, FileSpreadsheet, Paperclip, BookOpen
 } from 'lucide-react';
 
+// Danh sách tổ chuyên môn chuẩn từ CSDL trường THPT Cao Bá Quát (fallback nếu chưa nạp xong DB)
 const DEFAULT_ORGANIZATIONS = [
-  'BCH Đảng ủy trường THPT Cao Bá Quát',
-  'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
-  'Tổ Ngữ văn',
+  'Ban Giám Hiệu',
   'Tổ Toán',
-  'Tổ Tin học',
-  'Tổ Vật lí',
-  'Tổ Hóa học',
-  'Tổ Sinh học',
-  'Tổ Sử - Địa - GDKTPL',
-  'Tổ Ngoại ngữ',
+  'Tổ Ngữ Văn',
+  'Tổ Tin học - Ngoại Ngữ',
+  'Tổ Vật Lý - Hóa học',
+  'Tổ Sử - Địa - GDKT&PL',
   'Tổ GDTC - QPAN',
-  'Tổ Văn phòng',
+  'Tổ Văn Phòng',
+  'Tổ Sinh học',
+  'BCH Đảng ủy trường THPT Cao Bá Quát',
+  'BCH Công đoàn trường',
+  'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
   'Cá nhân Giáo viên / Nhân viên',
   'Đơn vị khác'
 ];
@@ -138,6 +139,7 @@ export default function AdminFeedbackSystem() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubDocFilter, setSelectedSubDocFilter] = useState('ALL');
+  const [departmentsList, setDepartmentsList] = useState([]);
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -166,8 +168,27 @@ export default function AdminFeedbackSystem() {
   // Detail Modal State (Xem chi tiết bảng góp ý của 1 đơn vị)
   const [viewingDetailResponse, setViewingDetailResponse] = useState(null);
 
+  // Đồng bộ danh sách tổ chuyên môn từ CSDL cbq_departments
+  const fetchDepartments = async () => {
+    try {
+      const dbClient = supabaseAdmin || supabase;
+      const { data, error } = await dbClient
+        .from('cbq_departments')
+        .select('*')
+        .or('is_active.eq.true,is_active.is.null')
+        .order('sort_order', { ascending: true });
+      if (!error && data && data.length > 0) {
+        const deptNames = data.map(d => d.name ? d.name.trim() : '').filter(Boolean);
+        setDepartmentsList(deptNames);
+      }
+    } catch (err) {
+      console.warn("Lỗi nạp danh sách tổ chuyên môn từ DB:", err);
+    }
+  };
+
   useEffect(() => {
     fetchTopics(true);
+    fetchDepartments();
   }, [selectedTopicId]);
 
   // Tự động đồng bộ dữ liệu mới sau mỗi 60 giây (Realtime Auto-Sync)
@@ -833,9 +854,13 @@ export default function AdminFeedbackSystem() {
   const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
   const currentSubDocs = getTopicSubDocs(currentTopicObj);
   
+  // Danh sách tổ chuyên môn chính thức để theo dõi tiến độ nộp (đồng bộ từ CSDL cbq_departments)
+  const officialDepts = departmentsList.length > 0 
+    ? departmentsList 
+    : DEFAULT_ORGANIZATIONS.filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác');
+
   // Submitted Count for Official Departments
-  const submittedCount = DEFAULT_ORGANIZATIONS
-    .filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác')
+  const submittedCount = officialDepts
     .filter(org => isOrgSubmitted(org, responses)).length;
 
   const filteredResponses = responses.filter(item => {
@@ -980,13 +1005,13 @@ export default function AdminFeedbackSystem() {
           <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <UserCheck size={16} color="#166534" /> TIẾN ĐỘ NỘP GÓP Ý CHÍNH THỨC CỦA CÁC ĐƠN VỊ & TỔ CHUYÊN MÔN:
           </div>
-          <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: submittedCount === 12 ? '#16a34a' : '#0369a1' }}>
-            Đã nộp: {submittedCount} / 12 Đơn vị ({Math.round((submittedCount / 12) * 100)}%)
+          <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: submittedCount === officialDepts.length ? '#16a34a' : '#0369a1' }}>
+            Đã nộp: {submittedCount} / {officialDepts.length} Đơn vị ({officialDepts.length > 0 ? Math.round((submittedCount / officialDepts.length) * 100) : 0}%)
           </div>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-          {DEFAULT_ORGANIZATIONS.filter(org => org !== 'Cá nhân Giáo viên / Nhân viên' && org !== 'Đơn vị khác').map((org) => {
+          {officialDepts.map((org) => {
             const submitted = isOrgSubmitted(org, responses);
             return (
               <div 

@@ -9,19 +9,20 @@ import {
   FileSpreadsheet, BookOpen, ChevronDown, ChevronUp
 } from 'lucide-react';
 
+// Danh sách tổ chuyên môn chuẩn từ CSDL trường THPT Cao Bá Quát (fallback nếu chưa nạp xong DB)
 const DEFAULT_ORGANIZATIONS = [
-  'BCH Đảng ủy trường THPT Cao Bá Quát',
-  'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
-  'Tổ Ngữ văn',
+  'Ban Giám Hiệu',
   'Tổ Toán',
-  'Tổ Tin học',
-  'Tổ Vật lí',
-  'Tổ Hóa học',
-  'Tổ Sinh học',
-  'Tổ Sử - Địa - GDKTPL',
-  'Tổ Ngoại ngữ',
+  'Tổ Ngữ Văn',
+  'Tổ Tin học - Ngoại Ngữ',
+  'Tổ Vật Lý - Hóa học',
+  'Tổ Sử - Địa - GDKT&PL',
   'Tổ GDTC - QPAN',
-  'Tổ Văn phòng',
+  'Tổ Văn Phòng',
+  'Tổ Sinh học',
+  'BCH Đảng ủy trường THPT Cao Bá Quát',
+  'BCH Công đoàn trường',
+  'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
   'Cá nhân Giáo viên / Nhân viên',
   'Đơn vị khác'
 ];
@@ -103,6 +104,7 @@ export default function PublicFeedbackSystem() {
   const [showSubDocsDrawer, setShowSubDocsDrawer] = useState(false);
 
   // Form State
+  const [organizationsList, setOrganizationsList] = useState(DEFAULT_ORGANIZATIONS);
   const [organizationUnit, setOrganizationUnit] = useState(DEFAULT_ORGANIZATIONS[0]);
   const [representativeName, setRepresentativeName] = useState('');
   const [phone, setPhone] = useState('');
@@ -126,8 +128,38 @@ export default function PublicFeedbackSystem() {
 
   const currentSubDocs = getSubDocsList(selectedTopic);
 
+  // Đồng bộ danh sách tổ chuyên môn từ CSDL cbq_departments
+  const fetchDepartments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cbq_departments')
+        .select('*')
+        .or('is_active.eq.true,is_active.is.null')
+        .order('sort_order', { ascending: true });
+      if (!error && data && data.length > 0) {
+        const deptNames = data.map(d => d.name ? d.name.trim() : '').filter(Boolean);
+        const extraOrgs = [
+          'BCH Đảng ủy trường THPT Cao Bá Quát',
+          'BCH Công đoàn trường',
+          'Ban Thường vụ Đoàn trường THPT Cao Bá Quát',
+          'Cá nhân Giáo viên / Nhân viên',
+          'Đơn vị khác'
+        ];
+        const combined = [...deptNames];
+        extraOrgs.forEach(org => {
+          if (!combined.includes(org)) combined.push(org);
+        });
+        setOrganizationsList(combined);
+        setOrganizationUnit(prev => combined.includes(prev) ? prev : combined[0]);
+      }
+    } catch (err) {
+      console.warn("Lỗi nạp danh sách tổ chuyên môn từ DB:", err);
+    }
+  };
+
   useEffect(() => {
     fetchTopicsAndResponses(true);
+    fetchDepartments();
   }, [topicIdFromUrl]);
 
   // Cập nhật tên văn bản mặc định cho dòng góp ý đầu tiên khi đổi chủ đề
@@ -565,32 +597,6 @@ export default function PublicFeedbackSystem() {
               </a>
             )}
           </div>
-
-          {/* BANNER TIẾP NHẬN FILE BIÊN BẢN HỌP TỔ CHUYÊN MÔN */}
-          <div style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)', border: '1.5px solid #93c5fd', borderRadius: '14px', padding: '16px 20px', marginTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div style={{ background: '#2563eb', color: '#ffffff', padding: '10px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <FileCheck size={24} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 'bold', fontSize: '15px', color: '#1e40af' }}>
-                  📁 BIỂU MẪU TIẾP NHẬN BIÊN BẢN HỌP TỔ CHUYÊN MÔN
-                </div>
-                <div style={{ fontSize: '13px', color: '#1e3a8a', marginTop: '2px' }}>
-                  Thư ký / Tổ trưởng chuyên môn nộp file Scan Biên bản họp tổ (PDF kèm chữ ký) qua biểu mẫu tiếp nhận:
-                </div>
-              </div>
-            </div>
-
-            <a
-              href={minutesUrl}
-              target="_blank"
-              rel="noreferrer"
-              style={{ background: '#2563eb', color: '#ffffff', padding: '10px 18px', borderRadius: '10px', fontWeight: 'bold', fontSize: '13.5px', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(37,99,235,0.25)' }}
-            >
-              <ExternalLink size={16} /> 📤 Mở Biểu Mẫu Nộp File Biên Bản Họp (Google Form)
-            </a>
-          </div>
         </div>
       )}
 
@@ -633,7 +639,7 @@ export default function PublicFeedbackSystem() {
                   onChange={e => setOrganizationUnit(e.target.value)}
                   style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '14px', fontWeight: '600', color: '#1e293b', background: '#f8fafc' }}
                 >
-                  {DEFAULT_ORGANIZATIONS.map(org => (
+                  {organizationsList.map(org => (
                     <option key={org} value={org}>{org}</option>
                   ))}
                 </select>
@@ -908,34 +914,54 @@ export default function PublicFeedbackSystem() {
                 </div>
               </div>
 
-              {/* MỤC 7: LINK VĂN BẢN / BIÊN BẢN HỌP TỔ ĐÍNH KÈM */}
-              <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1.5px solid #e2e8f0' }}>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px' }}>
-                  7. Link Văn Bản / Tệp Scan Biên Bản Họp Tổ Đính Kèm (Nếu có)
-                </label>
+              {/* MỤC 7: NỘP FILE BIÊN BẢN HỌP TỔ CHUYÊN MÔN (Scan / PDF có chữ ký) */}
+              <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '16px 18px', borderRadius: '14px', border: '1.5px solid #cbd5e1' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                  <FileCheck size={18} color="#166534" />
+                  <label style={{ display: 'block', fontSize: '13.5px', fontWeight: 'bold', color: '#166534', margin: 0 }}>
+                    7. Nộp File / Tệp Scan Biên Bản Họp Tổ Chuyên Môn (Nếu có)
+                  </label>
+                </div>
                 
-                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '10px', lineHeight: '1.5' }}>
-                  Tổ chuyên môn có thể nộp file Scan Biên bản họp qua biểu mẫu Google Form bên dưới hoặc dán link Google Drive/OneDrive trực tiếp vào ô:
+                <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '12px', lineHeight: '1.5' }}>
+                  Thư ký / Tổ trưởng chuyên môn nộp file Scan Biên bản họp (PDF kèm chữ ký của Tổ trưởng & Thư ký) bằng 1 trong 2 cách thuận tiện dưới đây:
                 </div>
 
-                <div style={{ marginBottom: '10px' }}>
-                  <a
-                    href={minutesUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ background: '#2563eb', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    <ExternalLink size={14} /> 📤 Mở Google Form Nộp File Scan Biên Bản Họp Tổ
-                  </a>
-                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {/* Cách 1: Nộp qua Google Form tiếp nhận */}
+                  <div style={{ background: '#ffffff', border: '1.5px solid #93c5fd', borderRadius: '10px', padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e40af' }}>
+                        Cách 1: Nộp file trực tiếp qua Google Form tiếp nhận của trường
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Tải lên file Scan/PDF biên bản họp có chữ ký của Tổ trưởng & Thư ký
+                      </div>
+                    </div>
+                    <a
+                      href={minutesUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ background: '#2563eb', color: '#ffffff', padding: '9px 16px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(37,99,235,0.2)' }}
+                    >
+                      <ExternalLink size={14} /> 📤 Mở Google Form Nộp File
+                    </a>
+                  </div>
 
-                <input
-                  type="url"
-                  placeholder="Hoặc dán Link Google Drive, Dropbox chứa file Word/PDF biên bản họp tổ tại đây..."
-                  value={attachedFileUrl}
-                  onChange={e => setAttachedFileUrl(e.target.value)}
-                  style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', background: '#ffffff' }}
-                />
+                  {/* Cách 2: Dán link Google Drive */}
+                  <div style={{ background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px 14px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#334155', marginBottom: '6px' }}>
+                      Cách 2: Hoặc dán đường link file Google Drive / OneDrive của Tổ
+                    </div>
+                    <input
+                      type="url"
+                      placeholder="Dán link Google Drive chia sẻ file Word/PDF biên bản họp tổ tại đây (quyền xem)..."
+                      value={attachedFileUrl}
+                      onChange={e => setAttachedFileUrl(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', background: '#f8fafc' }}
+                    />
+                  </div>
+                </div>
               </div>
 
               <button
