@@ -729,20 +729,51 @@ export default function PublicFeedbackSystem() {
                 </div>
               </div>
 
-              {/* 🌟 MỤC 6: BẢNG GÓP Ý ĐIỀU CHỈNH DỰ THẢO VỚI MENU CHỌN NHANH VĂN BẢN CON (ẢNH 1 & ẢNH 2) */}
-              <div style={{ marginBottom: '22px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                  <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <FileSpreadsheet size={16} /> 6. Nội Dung Ý Kiến Đóng Góp Chi Tiết (Theo Mẫu Chuẩn) *
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => handleAddItem()}
-                    style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '5px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Plus size={14} /> Thêm Dòng Góp Ý
-                  </button>
+              {/* 🌟 MỤC 6: BẢNG GÓP Ý HOẶC XÁC NHẬN THỐNG NHẤT 100% */}
+              {agreementLevel === 'thong_nhat' ? (
+                <div style={{ marginBottom: '22px' }}>
+                  <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '14px', padding: '16px 18px', display: 'flex', alignItems: 'flex-start', gap: '14px', boxShadow: '0 2px 8px rgba(34,197,94,0.08)' }}>
+                    <div style={{ background: '#16a34a', color: '#ffffff', padding: '6px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                      <CheckCircle2 size={20} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '14.5px', color: '#166534', marginBottom: '4px' }}>
+                        Đã chọn: Thống nhất hoàn toàn (Đồng ý 100% tất cả các văn bản)
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#15803d', lineHeight: '1.5' }}>
+                        Tập thể hoặc cá nhân nhất trí 100% với các văn bản dự thảo, không có đề xuất điều chỉnh hay sửa đổi câu chữ. Các ô góp ý chi tiết được <strong>tự động ẩn đi</strong> để bạn nộp phiếu nhanh chóng và thuận tiện nhất.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ý KIẾN NHẬN XÉT / GHI CHÚ CHUNG CỦA TỔ (Không bắt buộc) */}
+                  <div style={{ marginTop: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#334155', marginBottom: '5px' }}>
+                      Ý kiến nhận xét / Ghi chú thêm của Tổ chuyên môn (Không bắt buộc):
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Nếu có lời nhắn gửi hoặc nhận xét chung của tổ, bạn có thể ghi tại đây (hoặc để trống)..."
+                      value={generalComment}
+                      onChange={e => setGeneralComment(e.target.value)}
+                      style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', lineHeight: '1.4', background: '#f8fafc' }}
+                    />
+                  </div>
                 </div>
+              ) : (
+                <div style={{ marginBottom: '22px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileSpreadsheet size={16} /> 6. Nội Dung Ý Kiến Đóng Góp Chi Tiết (Theo Mẫu Chuẩn) *
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => handleAddItem()}
+                      style={{ background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '5px 12px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Plus size={14} /> Thêm Dòng Góp Ý
+                    </button>
+                  </div>
 
                 {/* HƯỚNG DẪN CẤU TRÚC BẢNG */}
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px dashed #cbd5e1' }}>
@@ -913,6 +944,7 @@ export default function PublicFeedbackSystem() {
                   />
                 </div>
               </div>
+            )}
 
               {/* MỤC 7: NỘP FILE BIÊN BẢN HỌP TỔ CHUYÊN MÔN (Scan / PDF có chữ ký) */}
               <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '16px 18px', borderRadius: '14px', border: '1.5px solid #cbd5e1' }}>
