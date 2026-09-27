@@ -472,33 +472,112 @@ export default function AdminRegistrations() {
       return alert("Không có học sinh chưa đăng ký trong danh sách đã chọn!");
     }
 
-    const excelData = unregisteredInSelection.map((s, idx) => ({
-      'STT': idx + 1,
-      'Mã Học Sinh': s.student_code || '',
-      'Họ và Tên': s.student_name || s.full_name || '',
-      'Lớp': s.student_class || '',
-      'Khối': s.grade_level || getStudentGradeLevel(s.student_class),
-      'Đợt Đăng Ký': zaloCampaign.title,
-      'Trạng Thái': 'Chưa đăng ký'
-    }));
+    // Sắp xếp theo Lớp rồi theo Họ và Tên
+    const sortedList = [...unregisteredInSelection].sort((a, b) => {
+      const clsA = (a.student_class || '').trim();
+      const clsB = (b.student_class || '').trim();
+      const cmpClass = clsA.localeCompare(clsB, undefined, { numeric: true, sensitivity: 'base' });
+      if (cmpClass !== 0) return cmpClass;
+      return (a.student_name || a.full_name || '').localeCompare(b.student_name || b.full_name || '');
+    });
 
-    const worksheet = XLSX.utils.json_to_sheet(excelData);
-    const colWidths = [
-      { wch: 6 },
-      { wch: 15 },
-      { wch: 25 },
-      { wch: 10 },
-      { wch: 12 },
-      { wch: 30 },
-      { wch: 15 }
+    const today = new Date();
+    const dayStr = today.getDate().toString().padStart(2, '0');
+    const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+    const yearStr = today.getFullYear();
+    const dateStr = `${yearStr}${monthStr}${dayStr}`;
+
+    const scopeClass = zaloTargetClass !== 'ALL' ? `Lớp ${zaloTargetClass}` : 'Toàn trường';
+    const scopeGrade = zaloTargetGrade !== 'ALL' ? zaloTargetGrade : (zaloCampaign.target_grades?.join(', ') || 'Tất cả các khối');
+
+    const sheetRows = [
+      ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
+      ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", ""],
+      [`Số: ... /DS-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", ""],
+      [],
+      ["DANH SÁCH HỌC SINH CHƯA HOÀN THÀNH ĐĂNG KÝ THÔNG TIN"],
+      [`Đợt tiếp nhận: ${(zaloCampaign.title || '').toUpperCase()}`],
+      [`Phạm vi: ${scopeClass} | Khối: ${scopeGrade} | Tổng số chưa nộp: ${sortedList.length} học sinh | Xuất lúc: ${today.toLocaleString('vi-VN')}`],
+      [],
+      [
+        "STT",
+        "Mã Học Sinh",
+        "Họ và Tên Học Sinh",
+        "Lớp",
+        "Khối",
+        "Trạng Thái",
+        "Số Điện Thoại Phụ Huynh / HS",
+        "Ký Nhận Đôn Đốc Của GVCN",
+        "Ghi Chú Phản Hồi Của Học Sinh"
+      ]
     ];
-    worksheet['!cols'] = colWidths;
+
+    sortedList.forEach((s, idx) => {
+      sheetRows.push([
+        idx + 1,
+        s.student_code || '',
+        s.student_name || s.full_name || '',
+        s.student_class || '',
+        s.grade_level || getStudentGradeLevel(s.student_class),
+        "Chưa hoàn thành",
+        s.phone || s.parent_phone || '',
+        "",
+        ""
+      ]);
+    });
+
+    // Summary footer
+    sheetRows.push([]);
+    sheetRows.push([
+      "", "", "", "", "", "",
+      "Đắk Lắk, ngày " + dayStr + " tháng " + monthStr + " năm " + yearStr, "", ""
+    ]);
+    sheetRows.push([
+      "", "NGƯỜI LẬP BIỂU", "", "", "", "",
+      "GIÁO VIÊN CHỦ NHIỆM / BAN GIÁM THỊ", "", ""
+    ]);
+    sheetRows.push([
+      "", "(Ký, ghi rõ họ tên)", "", "", "", "",
+      "(Ký và ghi rõ họ tên)", "", ""
+    ]);
+
+    const ws = XLSX.utils.aoa_to_sheet(sheetRows);
+
+    ws['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 15 }, // Mã HS
+      { wch: 28 }, // Họ và tên
+      { wch: 10 }, // Lớp
+      { wch: 12 }, // Khối
+      { wch: 20 }, // Trạng thái
+      { wch: 22 }, // SĐT
+      { wch: 26 }, // Ký nhận
+      { wch: 32 }  // Ghi chú
+    ];
+
+    ws['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+      { s: { r: 2, c: 4 }, e: { r: 2, c: 8 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } },
+      { s: { r: sheetRows.length - 3, c: 6 }, e: { r: sheetRows.length - 3, c: 8 } },
+      { s: { r: sheetRows.length - 2, c: 6 }, e: { r: sheetRows.length - 2, c: 8 } },
+      { s: { r: sheetRows.length - 1, c: 6 }, e: { r: sheetRows.length - 1, c: 8 } }
+    ];
+
+    const dataEndRow = 9 + sortedList.length;
+    ws['!autofilter'] = { ref: `A9:I${dataEndRow}` };
 
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Chua_Dang_Ky");
+    XLSX.utils.book_append_sheet(workbook, ws, "Chua_Dang_Ky");
 
     const cleanTitle = (zaloCampaign.title || 'Dot_Dang_Ky').replace(/[^a-zA-Z0-9]/g, '_');
-    XLSX.writeFile(workbook, `Danh_sach_CHUA_DANG_KY_${cleanTitle}.xlsx`);
+    XLSX.writeFile(workbook, `Danh_sach_CHUA_DANG_KY_${cleanTitle}_${dateStr}.xlsx`);
   };
 
   const handleCopyZaloCampaignMessage = () => {
@@ -557,186 +636,539 @@ export default function AdminRegistrations() {
     
     const campaign = campaigns.find(c => c.id === selectedCampaignId);
     const schema = getSchemaFields(campaign);
-    
-    const currentClubName = (selectedOptionFilter && selectedOptionFilter !== 'all') 
-      ? selectedOptionFilter 
-      : (campaign?.title || 'Câu lạc bộ');
+    const campaignTitle = campaign?.title || 'Đợt đăng ký';
+    const isFiltered = Boolean(selectedOptionFilter && selectedOptionFilter !== 'all');
+    const filterName = isFiltered ? selectedOptionFilter : 'Tất cả';
+
+    const titleLower = campaignTitle.toLowerCase();
+    const isClub = titleLower.includes('câu lạc bộ') || titleLower.includes('clb') || Boolean(campaign?.prerequisite_club);
+
+    const today = new Date();
+    const dayStr = today.getDate().toString().padStart(2, '0');
+    const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+    const yearStr = today.getFullYear();
+    const dateStr = `${yearStr}${monthStr}${dayStr}`;
+
+    // Lấy các trường lựa chọn (select, radio, checkbox)
+    const selectFields = schema.filter(f => ['select', 'radio', 'checkbox'].includes(f.type));
+
+    // Thống kê từng option trên toàn bộ `results`
+    const optionStatsMap = {};
+    selectFields.forEach(f => {
+      const counts = {};
+      results.forEach(r => {
+        const ans = r.responses ? r.responses[f.id] : undefined;
+        if (Array.isArray(ans)) {
+          ans.forEach(a => { if (a) counts[a] = (counts[a] || 0) + 1; });
+        } else if (ans) {
+          counts[ans] = (counts[ans] || 0) + 1;
+        }
+      });
+      optionStatsMap[f.id] = { label: f.label || f.id, counts };
+    });
+
+    // Lấy danh sách tất cả các lớp xuất hiện trong `results`
+    const classSet = new Set();
+    results.forEach(r => {
+      if (r.student_class) classSet.add(r.student_class.trim());
+    });
+    const sortedClasses = Array.from(classSet).sort((a, b) => 
+      a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+    );
+
+    // Thu thập danh sách các lựa chọn / môn thi nổi bật nhất để làm Ma trận Lớp x Môn
+    let distinctOptions = [];
+    selectFields.forEach(f => {
+      const c = optionStatsMap[f.id]?.counts || {};
+      Object.keys(c).forEach(opt => {
+        if (!distinctOptions.includes(opt)) distinctOptions.push(opt);
+      });
+    });
+    if (distinctOptions.length === 0) {
+      distinctOptions = ['Số lượng đăng ký'];
+    }
+
+    const workbook = XLSX.utils.book_new();
 
     // ==========================================
-    // SHEET 1: SỔ ĐIỂM DANH & ĐÁNH GIÁ TỰ ĐỘNG
+    // SHEET 1: TỔNG HỢP VÀ THỐNG KÊ (DASHBOARD)
     // ==========================================
-    const attendanceHeaderRows = [
-      ['SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['TRƯỜNG THPT CAO BÁ QUÁT', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['SỔ THEO DÕI ĐIỂM DANH VÀ ĐÁNH GIÁ CHUYÊN CẦN THÀNH VIÊN - NĂM HỌC 2026 - 2027', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      [`Đơn vị / Câu lạc bộ: ${currentClubName.toUpperCase()}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['(Quy ước điểm danh: Nhập 1 = Có mặt, Nhập P = Nghỉ có phép [tính 0.5 buổi], Để trống hoặc 0 = Vắng không phép)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      [
-        'STT', 'Mã Học Sinh', 'Họ và Tên', 'Lớp', 'Nội dung / Chuyên môn đăng ký',
-        'B1 (HK1)', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8 (HK1)',
-        'B9 (HK2)', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16 (HK2)',
-        'Tổng buổi tham gia', 'Tỷ lệ chuyên cần', 'Điểm chuyên cần (100)', 'Tự động Xếp loại', 'Đề xuất Khen thưởng', 'Điểm cộng Hạnh kiểm GVCN', 'Ghi chú'
-      ]
+    const sheet1Rows = [
+      ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
+      ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", ""],
+      [`Số: ... /BC-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", ""],
+      [],
+      ["BÁO CÁO THỐNG KÊ VÀ TỔNG HỢP KẾT QUẢ ĐĂNG KÝ HỌC ĐƯỜNG"],
+      [`Đợt đăng ký: ${campaignTitle.toUpperCase()}`],
+      [`Bộ lọc dữ liệu: ${filterName.toUpperCase()} | Đối tượng: ${campaign?.target_grades?.join(', ') || 'Toàn trường'} | Thời gian xuất: ${today.toLocaleString('vi-VN')}`],
+      [],
+      ["I. CHỈ SỐ TỔNG QUAN HỆ THỐNG"],
+      ["STT", "Chỉ Số Đánh Giá", "Số Lượng", "Đơn Vị Tính", "Ghi Chú & Đánh Giá"],
+      [1, "Tổng số học sinh đã đăng ký thành công", results.length, "Học sinh", "Dữ liệu hợp lệ ghi nhận trên cơ sở dữ liệu"],
+      [2, "Số học sinh theo bộ lọc hiện tại", dataToExport.length, "Học sinh", isFiltered ? `Chiếm ${((dataToExport.length / results.length) * 100).toFixed(1)}% trên tổng số đăng ký` : "Toàn bộ danh sách đăng ký"],
+      [3, "Số lớp học có học sinh tham gia", sortedClasses.length, "Lớp", "Phân bổ trên các khối lớp"],
+      [4, "Trạng thái tiếp nhận hồ sơ", campaign?.is_active ? "ĐANG TIẾP NHẬN" : "ĐÃ KẾT THÚC / KHÓA", "Trạng thái", campaign?.end_date ? `Hạn chót: ${new Date(campaign.end_date).toLocaleDateString('vi-VN')}` : "Theo quy định nhà trường"],
+      [],
+      ["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG NỘI DUNG / MÔN HỌC / CLB"]
     ];
 
-    // Build data rows for attendance
-    const attendanceDataRows = dataToExport.map((r, index) => {
-      let majorOrAnswers = '';
-      if (r.responses) {
-        const ansList = [];
-        schema.forEach(field => {
-          const ans = r.responses[field.id];
-          if (ans !== undefined && ans !== null && ans !== '') {
-            const valStr = Array.isArray(ans) ? ans.join(', ') : String(ans);
-            if (valStr !== selectedOptionFilter) {
-              ansList.push(valStr);
-            }
-          }
-        });
-        majorOrAnswers = ansList.length > 0 ? ansList.join(' | ') : '';
-      }
+    // Điền bảng thống kê options
+    selectFields.forEach((field, fIdx) => {
+      const { label, counts } = optionStatsMap[field.id];
+      sheet1Rows.push([`2.${fIdx + 1}. Thống kê: ${label}`]);
+      sheet1Rows.push(["STT", "Nội Dung / Môn Học / CLB", "Số Lượng Đăng Ký", "Tỷ Lệ (%)", "Đánh Giá & Phân Bổ"]);
 
-      return [
-        index + 1,
+      const totalFieldCount = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+      const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+      sortedEntries.forEach(([opt, count], idx) => {
+        const pct = ((count / totalFieldCount) * 100).toFixed(1);
+        const evalText = count >= (totalFieldCount / (sortedEntries.length || 1)) ? "Số lượng đăng ký cao" : "Số lượng đăng ký bình thường";
+        sheet1Rows.push([
+          idx + 1,
+          opt,
+          count,
+          `${pct}%`,
+          evalText
+        ]);
+      });
+
+      // Dòng tổng
+      sheet1Rows.push([
+        "",
+        "TỔNG CỘNG LƯỢT CHỌN",
+        totalFieldCount,
+        "100%",
+        `Tổng số ${sortedEntries.length} phân loại`
+      ]);
+      sheet1Rows.push([]);
+    });
+
+    if (selectFields.length === 0) {
+      sheet1Rows.push(["Không có câu hỏi phân loại trắc nghiệm trong biểu mẫu"]);
+      sheet1Rows.push([]);
+    }
+
+    // Phần III: Ma trận phân bổ theo từng Lớp học
+    sheet1Rows.push(["III. MA TRẬN THỐNG KÊ PHÂN BỔ THEO TỪNG LỚP HỌC"]);
+    const matrixHeader = ["STT", "Lớp", "Khối", "Tổng Đăng Ký", ...distinctOptions];
+    sheet1Rows.push(matrixHeader);
+
+    sortedClasses.forEach((cls, idx) => {
+      const clsStudents = results.filter(r => (r.student_class || '').trim() === cls);
+      const grade = getStudentGradeLevel(cls);
+      
+      const row = [
+        idx + 1,
+        cls,
+        grade,
+        clsStudents.length
+      ];
+
+      // Đếm số lượng từng option trong lớp này
+      distinctOptions.forEach(opt => {
+        if (opt === 'Số lượng đăng ký') {
+          row.push(clsStudents.length);
+        } else {
+          let count = 0;
+          clsStudents.forEach(r => {
+            const respObj = r.responses || {};
+            Object.values(respObj).forEach(val => {
+              if (Array.isArray(val) && val.includes(opt)) count++;
+              else if (val === opt) count++;
+            });
+          });
+          row.push(count);
+        }
+      });
+
+      sheet1Rows.push(row);
+    });
+
+    // Hàng TỔNG TOÀN TRƯỜNG ở cuối Ma trận
+    const summaryMatrixRow = [
+      "",
+      "TỔNG TOÀN TRƯỜNG",
+      "",
+      results.length
+    ];
+
+    distinctOptions.forEach((opt) => {
+      let totalColCount = 0;
+      results.forEach(r => {
+        const respObj = r.responses || {};
+        Object.values(respObj).forEach(val => {
+          if (Array.isArray(val) && val.includes(opt)) totalColCount++;
+          else if (val === opt) totalColCount++;
+        });
+      });
+      summaryMatrixRow.push(totalColCount);
+    });
+    sheet1Rows.push(summaryMatrixRow);
+
+    // Ký tên cuối Sheet 1
+    sheet1Rows.push([]);
+    sheet1Rows.push([
+      "", "", "", "", "",
+      "Đắk Lắk, ngày " + dayStr + " tháng " + monthStr + " năm " + yearStr
+    ]);
+    sheet1Rows.push([
+      "", "NGƯỜI LẬP BIỂU", "", "", "",
+      "HIỆU TRƯỞNG / BAN GIÁM HIỆU"
+    ]);
+    sheet1Rows.push([
+      "", "(Ký, ghi rõ họ tên)", "", "", "",
+      "(Ký, đóng dấu)"
+    ]);
+
+    const ws1 = XLSX.utils.aoa_to_sheet(sheet1Rows);
+
+    // Cấu hình độ rộng cột cho Sheet 1
+    ws1['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 28 }, // Tên chỉ số / Lớp
+      { wch: 18 }, // Số lượng
+      { wch: 16 }, // Tỷ lệ / Tổng ĐK
+      { wch: 32 }, // Đánh giá
+      ...distinctOptions.map(opt => ({ wch: Math.max(opt.length + 4, 12) }))
+    ];
+
+    ws1['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+      { s: { r: 2, c: 4 }, e: { r: 2, c: 8 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } },
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 4 } },
+      { s: { r: 14, c: 0 }, e: { r: 14, c: 4 } }
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, ws1, "TONG_HOP_THONG_KE");
+
+
+    // ==========================================
+    // SHEET 2: DANH SÁCH HỌC SINH ĐĂNG KÝ CHI TIẾT
+    // ==========================================
+    const sheet2Rows = [
+      ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", ""],
+      ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", ""],
+      [`Số: ... /DS-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", ""],
+      [],
+      [`DANH SÁCH CHI TIẾT HỌC SINH ĐĂNG KÝ: ${(isFiltered ? `${selectedOptionFilter}` : campaignTitle).toUpperCase()}`],
+      [`(Danh sách: ${isFiltered ? `Phân loại môn/nội dung "${selectedOptionFilter}"` : 'Toàn bộ học sinh đã nộp'} - Tổng cộng: ${dataToExport.length} học sinh)`],
+      [`Thời gian xuất dữ liệu: ${today.toLocaleString('vi-VN')}`],
+      []
+    ];
+
+    // Tiêu đề cột
+    const tableHeader2 = [
+      "STT",
+      "Mã Học Sinh",
+      "Họ và Tên",
+      "Lớp",
+      "Khối",
+      "Thời Gian Đăng Ký",
+      ...schema.map(f => f.label || f.id)
+    ];
+    sheet2Rows.push(tableHeader2);
+
+    dataToExport.forEach((r, idx) => {
+      const row = [
+        idx + 1,
         r.student_code || '',
         r.student_name || '',
         r.student_class || '',
-        majorOrAnswers,
-        '', '', '', '', '', '', '', '', // HK1: B1 -> B8
-        '', '', '', '', '', '', '', '', // HK2: B9 -> B16
-        null, null, null, null, null, null, '' // Formulas will be inserted
+        getStudentGradeLevel(r.student_class),
+        r.created_at ? new Date(r.created_at).toLocaleString('vi-VN') : ''
       ];
-    });
 
-    const startStudentRow = 7; // 1-indexed row number in Excel
-    const lastStudentRow = startStudentRow + dataToExport.length - 1;
-
-    // Summary Statistics Rows
-    const summaryRows = [
-      [],
-      ['BẢNG TỔNG HỢP VÀ THỐNG KÊ KẾT QUẢ SINH HOẠT CLB', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Tổng số thành viên tham gia CLB:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Số lượng thành viên xếp loại Xuất sắc (>= 90%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Số lượng thành viên xếp loại Tốt (80% - 89%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Số lượng thành viên xếp loại Đạt (65% - 79%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Số lượng thành viên xếp loại Chưa đạt (< 65%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-      ['Tổng số thành viên đủ điều kiện Đề xuất Khen thưởng:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
-    ];
-
-    const allAttendanceGrid = [...attendanceHeaderRows, ...attendanceDataRows, ...summaryRows];
-    const wsAttendance = XLSX.utils.aoa_to_sheet(allAttendanceGrid);
-
-    // Apply Excel formulas to each student row
-    dataToExport.forEach((_, idx) => {
-      const r = startStudentRow + idx;
-      // Col V: Tổng số buổi = COUNTIF(F{r}:U{r}, 1) + COUNTIF(F{r}:U{r}, "P")*0.5 + COUNTIF(F{r}:U{r}, "p")*0.5
-      wsAttendance['V' + r] = { t: 'n', f: `COUNTIF(F${r}:U${r},1)+COUNTIF(F${r}:U${r},"P")*0.5+COUNTIF(F${r}:U${r},"p")*0.5` };
-      // Col W: Tỷ lệ chuyên cần = IF(V{r}>0, V{r}/16, 0)
-      wsAttendance['W' + r] = { t: 'n', f: `IF(V${r}>0,V${r}/16,0)`, z: '0.0%' };
-      // Col X: Điểm chuyên cần (100) = ROUND(W{r}*100,0)
-      wsAttendance['X' + r] = { t: 'n', f: `ROUND(W${r}*100,0)` };
-      // Col Y: Tự động Xếp loại = IF(X{r}>=90,"Xuất sắc",IF(X{r}>=80,"Tốt",IF(X{r}>=65,"Đạt","Chưa đạt")))
-      wsAttendance['Y' + r] = { t: 's', f: `IF(X${r}>=90,"Xuất sắc",IF(X${r}>=80,"Tốt",IF(X${r}>=65,"Đạt","Chưa đạt")))` };
-      // Col Z: Đề xuất Khen thưởng = IF(Y{r}="Xuất sắc","Đề xuất Khen thưởng","")
-      wsAttendance['Z' + r] = { t: 's', f: `IF(Y${r}="Xuất sắc","Đề xuất Khen thưởng","")` };
-      // Col AA: Điểm cộng Hạnh kiểm GVCN = IF(Y{r}="Xuất sắc",10,IF(Y{r}="Tốt",5,IF(Y{r}="Đạt",2,0)))
-      wsAttendance['AA' + r] = { t: 'n', f: `IF(Y${r}="Xuất sắc",10,IF(Y${r}="Tốt",5,IF(Y${r}="Đạt",2,0)))` };
-    });
-
-    // Apply summary formulas
-    const statTotalRow = lastStudentRow + 3;
-    const statXsRow = statTotalRow + 1;
-    const statTotRow = statTotalRow + 2;
-    const statDatRow = statTotalRow + 3;
-    const statChuaDatRow = statTotalRow + 4;
-    const statKhenThuongRow = statTotalRow + 5;
-
-    wsAttendance['B' + statTotalRow] = { t: 'n', f: `COUNTA(C${startStudentRow}:C${lastStudentRow})` };
-    wsAttendance['B' + statXsRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Xuất sắc")` };
-    wsAttendance['B' + statTotRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Tốt")` };
-    wsAttendance['B' + statDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Đạt")` };
-    wsAttendance['B' + statChuaDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Chưa đạt")` };
-    wsAttendance['B' + statKhenThuongRow] = { t: 'n', f: `COUNTIF(Z${startStudentRow}:Z${lastStudentRow},"Đề xuất Khen thưởng")` };
-
-    // Column widths for attendance sheet
-    wsAttendance['!cols'] = [
-      { wch: 6 },  // A: STT
-      { wch: 14 }, // B: Mã HS
-      { wch: 24 }, // C: Họ và Tên
-      { wch: 10 }, // D: Lớp
-      { wch: 30 }, // E: Chuyên môn / Nguyện vọng
-      { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 }, // F-M: B1-B8
-      { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 }, // N-U: B9-B16
-      { wch: 18 }, // V: Tổng buổi tham gia
-      { wch: 16 }, // W: Tỷ lệ chuyên cần
-      { wch: 20 }, // X: Điểm chuyên cần (100)
-      { wch: 18 }, // Y: Tự động Xếp loại
-      { wch: 22 }, // Z: Đề xuất Khen thưởng
-      { wch: 24 }, // AA: Điểm cộng Hạnh kiểm GVCN
-      { wch: 20 }  // AB: Ghi chú
-    ];
-
-    // ==========================================
-    // SHEET 2: DỮ LIỆU ĐĂNG KÝ CHI TIẾT
-    // ==========================================
-    const excelDetailData = dataToExport.map((r, index) => {
-      const row = {
-        'STT': index + 1,
-        'Thời gian đăng ký': new Date(r.created_at).toLocaleString('vi-VN'),
-        'Mã Học Sinh': r.student_code || '',
-        'Họ và Tên': r.student_name || '',
-        'Lớp': r.student_class || ''
-      };
-      
       schema.forEach(field => {
         const ans = r.responses ? r.responses[field.id] : '';
         let ansStr = '';
         if (Array.isArray(ans)) {
-          ansStr = ans.join('; ');
+          ansStr = ans.join(', ');
         } else if (ans !== undefined && ans !== null) {
           ansStr = String(ans);
         }
-        row[field.label || field.id] = ansStr;
+        row.push(ansStr);
       });
-      return row;
+
+      sheet2Rows.push(row);
     });
 
-    const wsDetail = XLSX.utils.json_to_sheet(excelDetailData);
-    const detailColWidths = Object.keys(excelDetailData[0]).map(key => {
-      const maxLen = Math.max(
-        key.length,
-        ...excelDetailData.map(row => (row[key] ? row[key].toString().length : 0))
-      );
-      return { wch: Math.min(Math.max(maxLen + 3, 10), 50) };
-    });
-    wsDetail['!cols'] = detailColWidths;
+    const ws2 = XLSX.utils.aoa_to_sheet(sheet2Rows);
 
-    // Create Workbook and append worksheets
-    const workbook = XLSX.utils.book_new();
-    
-    // Add Sheet 1: Sổ Điểm danh & Đánh giá tự động
-    XLSX.utils.book_append_sheet(workbook, wsAttendance, "Diem_Danh_Tu_Dong");
-    
-    // Add Sheet 2: Toàn bộ dữ liệu đăng ký chi tiết
-    XLSX.utils.book_append_sheet(workbook, wsDetail, "Du_Lieu_Dang_Ky_Chi_Tiet");
-    
-    // Đặt tên file theo tên CLB khi đang chọn / lọc, hoặc tên đợt nếu chọn tất cả
-    let fileName = '';
-    if (selectedOptionFilter && selectedOptionFilter !== 'all') {
-      const cleanClubName = selectedOptionFilter
-        .replace(/[/\\?%*:|"<>]/g, '_')
-        .replace(/\s+/g, '_')
-        .trim();
-      fileName = `Danh_sach_${cleanClubName}`;
+    // Tính độ rộng cột tự động cho Sheet 2
+    ws2['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 14 }, // Mã HS
+      { wch: 26 }, // Họ tên
+      { wch: 10 }, // Lớp
+      { wch: 12 }, // Khối
+      { wch: 20 }, // Thời gian
+      ...schema.map(f => ({ wch: Math.min(Math.max((f.label || f.id).length + 4, 16), 40) }))
+    ];
+
+    ws2['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 0, c: 4 }, e: { r: 0, c: tableHeader2.length - 1 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 1, c: 4 }, e: { r: 1, c: tableHeader2.length - 1 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+      { s: { r: 2, c: 4 }, e: { r: 2, c: tableHeader2.length - 1 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: tableHeader2.length - 1 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: tableHeader2.length - 1 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: tableHeader2.length - 1 } }
+    ];
+
+    const headerRowIndex2 = 8;
+    const lastRowIndex2 = headerRowIndex2 + dataToExport.length;
+    const lastColLetter2 = XLSX.utils.encode_col(tableHeader2.length - 1);
+    ws2['!autofilter'] = { ref: `A9:${lastColLetter2}${lastRowIndex2 + 1}` };
+
+    XLSX.utils.book_append_sheet(workbook, ws2, "DANH_SACH_CHI_TIET");
+
+
+    // ==========================================
+    // SHEET 3: TÙY THEO ĐẶC THÙ ĐỢT ĐĂNG KÝ
+    // ==========================================
+    if (isClub) {
+      // 3A. NẾU LÀ CÂU LẠC BỘ: SỔ ĐIỂM DANH & ĐÁNH GIÁ CHUYÊN CẦN 16 BUỔI
+      const currentClubName = isFiltered ? selectedOptionFilter : campaignTitle;
+      const attendanceHeaderRows = [
+        ['SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['TRƯỜNG THPT CAO BÁ QUÁT', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['SỔ THEO DÕI ĐIỂM DANH VÀ ĐÁNH GIÁ CHUYÊN CẦN THÀNH VIÊN - NĂM HỌC 2026 - 2027', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [`Đơn vị / Câu lạc bộ: ${currentClubName.toUpperCase()}`, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['(Quy ước điểm danh: Nhập 1 = Có mặt, Nhập P = Nghỉ có phép [tính 0.5 buổi], Để trống hoặc 0 = Vắng không phép)', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        [
+          'STT', 'Mã Học Sinh', 'Họ và Tên', 'Lớp', 'Nội dung / Chuyên môn đăng ký',
+          'B1 (HK1)', 'B2', 'B3', 'B4', 'B5', 'B6', 'B7', 'B8 (HK1)',
+          'B9 (HK2)', 'B10', 'B11', 'B12', 'B13', 'B14', 'B15', 'B16 (HK2)',
+          'Tổng buổi tham gia', 'Tỷ lệ chuyên cần', 'Điểm chuyên cần (100)', 'Tự động Xếp loại', 'Đề xuất Khen thưởng', 'Điểm cộng Hạnh kiểm GVCN', 'Ghi chú'
+        ]
+      ];
+
+      const attendanceDataRows = dataToExport.map((r, index) => {
+        let majorOrAnswers = '';
+        if (r.responses) {
+          const ansList = [];
+          schema.forEach(field => {
+            const ans = r.responses[field.id];
+            if (ans !== undefined && ans !== null && ans !== '') {
+              const valStr = Array.isArray(ans) ? ans.join(', ') : String(ans);
+              if (valStr !== selectedOptionFilter) {
+                ansList.push(valStr);
+              }
+            }
+          });
+          majorOrAnswers = ansList.length > 0 ? ansList.join(' | ') : '';
+        }
+
+        return [
+          index + 1,
+          r.student_code || '',
+          r.student_name || '',
+          r.student_class || '',
+          majorOrAnswers,
+          '', '', '', '', '', '', '', '', // HK1: B1 -> B8
+          '', '', '', '', '', '', '', '', // HK2: B9 -> B16
+          null, null, null, null, null, null, '' // Formulas will be inserted
+        ];
+      });
+
+      const startStudentRow = 7; // 1-indexed row number in Excel
+      const lastStudentRow = startStudentRow + dataToExport.length - 1;
+
+      const summaryRows = [
+        [],
+        ['BẢNG TỔNG HỢP VÀ THỐNG KÊ KẾT QUẢ SINH HOẠT CLB', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Tổng số thành viên tham gia CLB:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Số lượng thành viên xếp loại Xuất sắc (>= 90%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Số lượng thành viên xếp loại Tốt (80% - 89%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Số lượng thành viên xếp loại Đạt (65% - 79%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Số lượng thành viên xếp loại Chưa đạt (< 65%):', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
+        ['Tổng số thành viên đủ điều kiện Đề xuất Khen thưởng:', null, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']
+      ];
+
+      const allAttendanceGrid = [...attendanceHeaderRows, ...attendanceDataRows, ...summaryRows];
+      const wsAttendance = XLSX.utils.aoa_to_sheet(allAttendanceGrid);
+
+      // Formulas
+      dataToExport.forEach((_, idx) => {
+        const r = startStudentRow + idx;
+        wsAttendance['V' + r] = { t: 'n', f: `COUNTIF(F${r}:U${r},1)+COUNTIF(F${r}:U${r},"P")*0.5+COUNTIF(F${r}:U${r},"p")*0.5` };
+        wsAttendance['W' + r] = { t: 'n', f: `IF(V${r}>0,V${r}/16,0)`, z: '0.0%' };
+        wsAttendance['X' + r] = { t: 'n', f: `ROUND(W${r}*100,0)` };
+        wsAttendance['Y' + r] = { t: 's', f: `IF(X${r}>=90,"Xuất sắc",IF(X${r}>=80,"Tốt",IF(X${r}>=65,"Đạt","Chưa đạt")))` };
+        wsAttendance['Z' + r] = { t: 's', f: `IF(Y${r}="Xuất sắc","Đề xuất Khen thưởng","")` };
+        wsAttendance['AA' + r] = { t: 'n', f: `IF(Y${r}="Xuất sắc",10,IF(Y${r}="Tốt",5,IF(Y${r}="Đạt",2,0)))` };
+      });
+
+      const statTotalRow = lastStudentRow + 3;
+      const statXsRow = statTotalRow + 1;
+      const statTotRow = statTotalRow + 2;
+      const statDatRow = statTotalRow + 3;
+      const statChuaDatRow = statTotalRow + 4;
+      const statKhenThuongRow = statTotalRow + 5;
+
+      wsAttendance['B' + statTotalRow] = { t: 'n', f: `COUNTA(C${startStudentRow}:C${lastStudentRow})` };
+      wsAttendance['B' + statXsRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Xuất sắc")` };
+      wsAttendance['B' + statTotRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Tốt")` };
+      wsAttendance['B' + statDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Đạt")` };
+      wsAttendance['B' + statChuaDatRow] = { t: 'n', f: `COUNTIF(Y${startStudentRow}:Y${lastStudentRow},"Chưa đạt")` };
+      wsAttendance['B' + statKhenThuongRow] = { t: 'n', f: `COUNTIF(Z${startStudentRow}:Z${lastStudentRow},"Đề xuất Khen thưởng")` };
+
+      wsAttendance['!cols'] = [
+        { wch: 6 },  { wch: 14 }, { wch: 24 }, { wch: 10 }, { wch: 30 },
+        { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 },
+        { wch: 9 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 6 }, { wch: 9 },
+        { wch: 18 }, { wch: 16 }, { wch: 20 }, { wch: 18 }, { wch: 22 }, { wch: 24 }, { wch: 20 }
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, wsAttendance, "SO_DIEM_DANH_CLB");
+
     } else {
-      const cleanTitle = (campaign?.title || 'x')
+      // 3B. NẾU LÀ ĐĂNG KÝ MÔN THI TN THPT HOẶC KHẢO SÁT CHUNG:
+      // BIÊN BẢN BÀN GIAO & KÝ XÁC NHẬN NGUYỆN VỌNG THEO TỪNG LỚP
+      const handoverRows = [
+        ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
+        ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", ""],
+        [`Số: ... /BBXN-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", ""],
+        [],
+        ["BIÊN BẢN BÀN GIAO VÀ ĐỐI CHIẾU KÝ XÁC NHẬN NGUYỆN VỌNG ĐĂNG KÝ"],
+        [`Đợt: ${campaignTitle.toUpperCase()}`],
+        [`(Dành cho Giáo viên chủ nhiệm & Ban kiểm tra hồ sơ kỳ thi TN THPT / học đường - Tổng số: ${dataToExport.length} HS)`],
+        [],
+        [
+          "STT",
+          "Mã Học Sinh",
+          "Họ và Tên",
+          "Lớp",
+          "Khối",
+          "Nguyện Vọng / Môn Thi Đã Đăng Ký",
+          "Chữ Ký Xác Nhận Của Học Sinh",
+          "Chữ Ký GVCN Xác Nhận",
+          "Ghi Chú / Đề Nghị Điều Chỉnh"
+        ]
+      ];
+
+      // Sắp xếp theo Lớp rồi theo Tên học sinh
+      const sortedByClass = [...dataToExport].sort((a, b) => {
+        const clsA = (a.student_class || '').trim();
+        const clsB = (b.student_class || '').trim();
+        const cmpClass = clsA.localeCompare(clsB, undefined, { numeric: true, sensitivity: 'base' });
+        if (cmpClass !== 0) return cmpClass;
+        return (a.student_name || '').localeCompare(b.student_name || '');
+      });
+
+      sortedByClass.forEach((r, idx) => {
+        let choiceSummary = '';
+        if (r.responses) {
+          const ansList = [];
+          schema.forEach(field => {
+            const ans = r.responses[field.id];
+            if (ans !== undefined && ans !== null && ans !== '') {
+              const valStr = Array.isArray(ans) ? ans.join(', ') : String(ans);
+              ansList.push(`${field.label || field.id}: ${valStr}`);
+            }
+          });
+          choiceSummary = ansList.join(' | ');
+        }
+
+        handoverRows.push([
+          idx + 1,
+          r.student_code || '',
+          r.student_name || '',
+          r.student_class || '',
+          getStudentGradeLevel(r.student_class),
+          choiceSummary,
+          "", // Học sinh ký
+          "", // GVCN ký
+          ""  // Ghi chú
+        ]);
+      });
+
+      // Khung chữ ký 3 bên
+      handoverRows.push([]);
+      handoverRows.push([
+        "",
+        "ĐẠI DIỆN HỌC SINH CÁC LỚP",
+        "",
+        "GIÁO VIÊN CHỦ NHIỆM",
+        "",
+        "",
+        "",
+        "BAN GIÁM HIỆU DUYỆT",
+        ""
+      ]);
+      handoverRows.push([
+        "",
+        "(Ký và ghi rõ họ tên)",
+        "",
+        "(Ký và ghi rõ họ tên)",
+        "",
+        "",
+        "",
+        "(Ký, ghi rõ họ tên và đóng dấu)",
+        ""
+      ]);
+
+      const ws3 = XLSX.utils.aoa_to_sheet(handoverRows);
+
+      ws3['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 14 }, // Mã HS
+        { wch: 25 }, // Họ tên
+        { wch: 10 }, // Lớp
+        { wch: 11 }, // Khối
+        { wch: 38 }, // Nguyện vọng
+        { wch: 24 }, // Ký HS
+        { wch: 24 }, // Ký GVCN
+        { wch: 28 }  // Ghi chú
+      ];
+
+      ws3['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+        { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+        { s: { r: 2, c: 4 }, e: { r: 2, c: 8 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } }
+      ];
+
+      const headerRowIndex3 = 8;
+      const lastRowIndex3 = headerRowIndex3 + sortedByClass.length;
+      ws3['!autofilter'] = { ref: `A9:I${lastRowIndex3 + 1}` };
+
+      XLSX.utils.book_append_sheet(workbook, ws3, "BIEN_BAN_BAN_GIAO_LOP");
+    }
+
+    // Đặt tên file xuất chuyên nghiệp
+    let fileName = '';
+    const cleanCampaignTitle = (campaignTitle || 'Dot_Dang_Ky')
+      .replace(/[/\\?%*:|"<>]/g, '_')
+      .replace(/\s+/g, '_')
+      .trim();
+
+    if (isFiltered) {
+      const cleanFilter = selectedOptionFilter
         .replace(/[/\\?%*:|"<>]/g, '_')
         .replace(/\s+/g, '_')
         .trim();
-      fileName = `Danh_sach_dang_ky_${cleanTitle}`;
+      fileName = `Danh_sach_${cleanFilter}_${cleanCampaignTitle}_${dateStr}`;
+    } else {
+      fileName = `Bao_cao_dang_ky_${cleanCampaignTitle}_${dateStr}`;
     }
-    
-    // Download
+
+    // Xuất file
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
   };
 
