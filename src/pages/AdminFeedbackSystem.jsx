@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase, supabaseAdmin } from '../lib/supabase';
 import { 
@@ -765,70 +766,371 @@ export default function AdminFeedbackSystem() {
     document.body.removeChild(link);
   };
 
-  const exportCSV = () => {
+  // 🌟 XUẤT BÁO CÁO EXCEL ĐA SHEET CHUYÊN NGHIỆP & PRO (.XLSX)
+  const exportExcel = () => {
     if (responses.length === 0) {
-      alert("Không có dữ liệu đóng góp ý kiến để xuất file!");
+      alert("Không có dữ liệu đóng góp ý kiến để xuất file Excel!");
       return;
     }
 
-    const currentTopicObj = topics.find(t => t.id === selectedTopicId);
-    let csvContent = "\uFEFFSTT,ĐƠN VỊ GÓP Ý,NGƯỜI ĐẠI DIỆN,SỐ ĐIỆN THOẠI,EMAIL,MỨC ĐỘ THỐNG NHẤT,TÊN VĂN BẢN CON,TRANG/DÒNG,NỘI DUNG DỰ THẢO,NỘI DUNG ĐỀ NGHỊ ĐIỀU CHỈNH,LÝ DO ĐỀ NGHỊ,Ý KIẾN CHUNG,LINK BIÊN BẢN/TỆP ĐÍNH KÈM,NGÀY GỬI\n";
-    
-    let csvStt = 1;
-    filteredResponses.forEach((item) => {
-      const levelLabel = item.agreement_level === 'sua_doi' ? 'Đề xuất sửa đổi' : (item.agreement_level === 'khong_thong_nhat' ? 'Không thống nhất' : 'Thống nhất hoàn toàn');
-      const parsed = parseFeedbackData(item);
+    const currentTopicObj = topics.find(t => t.id === selectedTopicId) || topics[0];
+    const today = new Date();
+    const dayStr = today.getDate().toString().padStart(2, '0');
+    const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+    const yearStr = today.getFullYear();
 
+    // 1. Thống kê tiến độ & phân loại phản hồi
+    const totalResp = filteredResponses.length;
+    const countThongNhat = filteredResponses.filter(r => !r.agreement_level || r.agreement_level === 'thong_nhat').length;
+    const countSuaDoi = filteredResponses.filter(r => r.agreement_level === 'sua_doi').length;
+    const countKhongThongNhat = filteredResponses.filter(r => r.agreement_level === 'khong_thong_nhat').length;
+
+    // Đếm tổng số mục góp ý chi tiết
+    let totalDetailedItems = 0;
+    filteredResponses.forEach(r => {
+      const parsed = parseFeedbackData(r);
       if (parsed.items && parsed.items.length > 0) {
-        parsed.items.forEach((subItem) => {
-          const row = [
-            csvStt++,
-            `"${item.organization_unit || ''}"`,
-            `"${item.representative_name || ''}"`,
-            `"${item.phone || ''}"`,
-            `"${item.email || ''}"`,
-            `"${levelLabel}"`,
-            `"${(subItem.docName || currentTopicObj?.title || '').replace(/"/g, '""')}"`,
-            `"${(subItem.pageLine || '').replace(/"/g, '""')}"`,
-            `"${(subItem.draftContent || '').replace(/"/g, '""')}"`,
-            `"${(subItem.proposedChange || '').replace(/"/g, '""')}"`,
-            `"${(subItem.reason || '').replace(/"/g, '""')}"`,
-            `"${(parsed.cleanText || '').replace(/"/g, '""')}"`,
-            `"${item.attached_file_url || ''}"`,
-            `"${new Date(item.created_at).toLocaleDateString('vi-VN')}"`
-          ];
-          csvContent += row.join(",") + "\n";
-        });
-      } else {
-        const row = [
-          csvStt++,
-          `"${item.organization_unit || ''}"`,
-          `"${item.representative_name || ''}"`,
-          `"${item.phone || ''}"`,
-          `"${item.email || ''}"`,
-          `"${levelLabel}"`,
-          `"${(currentTopicObj?.title || '').replace(/"/g, '""')}"`,
-          `"Toàn văn"`,
-          `"-"`,
-          `"-"`,
-          `"-"`,
-          `"${(parsed.cleanText || item.feedback_content || '').replace(/"/g, '""')}"`,
-          `"${item.attached_file_url || ''}"`,
-          `"${new Date(item.created_at).toLocaleDateString('vi-VN')}"`
-        ];
-        csvContent += row.join(",") + "\n";
+        totalDetailedItems += parsed.items.length;
       }
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `BÁO_CÁO_GÓP_Ý_CHI_TIẾT_${(currentTopicObj?.title || 'CÔNG_VIỆC').slice(0,30)}_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const workbook = XLSX.utils.book_new();
+
+    // ==========================================
+    // SHEET 1: TỔNG HỢP & TIẾN ĐỘ TỔ CHUYÊN MÔN
+    // ==========================================
+    const sheet1Rows = [
+      ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
+      ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", ""],
+      [`Số: ... /BC-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", ""],
+      [],
+      ["BÁO CÁO TỔNG HỢP TIẾN ĐỘ & MỨC ĐỘ ĐỒNG THUẬN ĐÓNG GÓP Ý KIẾN DỰ THẢO"],
+      [`Về việc: ${currentTopicObj?.title || 'Dự thảo văn bản'}`],
+      [`Thời hạn tiếp nhận: ${currentTopicObj?.deadline ? new Date(currentTopicObj.deadline).toLocaleString('vi-VN') : 'Theo thông báo'} | Cán bộ phụ trách: ${currentTopicObj?.contact_info || 'Ban thư ký'}`],
+      [],
+      ["I. BẢNG TỔNG HỢP CHỈ SỐ TIẾN ĐỘ & MỨC ĐỘ ĐỒNG THUẬN"],
+      ["STT", "Chỉ Số Đánh Giá", "Số Lượng", "Tỷ Lệ (%)", "Đánh Giá & Phân Loại"],
+      [1, "Tổng số Tổ chuyên môn chính thức thuộc trường", officialDepts.length, "100%", "9 Tổ chuyên môn thực tế theo mô hình liên tổ"],
+      [2, "Số Tổ chuyên môn ĐÃ NỘP ý kiến chính thức", submittedCount, `${officialDepts.length > 0 ? ((submittedCount / officialDepts.length) * 100).toFixed(1) : 0}%`, submittedCount === officialDepts.length ? "Đạt 100% tiến độ" : `Còn ${officialDepts.length - submittedCount} tổ chưa gửi`],
+      [3, "Số Tổ chuyên môn CHƯA NỘP ý kiến", officialDepts.length - submittedCount, `${officialDepts.length > 0 ? (((officialDepts.length - submittedCount) / officialDepts.length) * 100).toFixed(1) : 0}%`, officialDepts.length - submittedCount === 0 ? "Đã nộp đầy đủ" : "Cần liên hệ đôn đốc gửi gấp"],
+      [4, "Tổng số lượt phản hồi đã tiếp nhận (bao gồm cá nhân)", totalResp, "100%", "Tổng số phiếu nộp trên hệ thống"],
+      [5, "Mức độ: Thống nhất hoàn toàn (Đồng ý 100%)", countThongNhat, `${totalResp > 0 ? ((countThongNhat / totalResp) * 100).toFixed(1) : 0}%`, "Nhất trí cao với toàn văn các dự thảo"],
+      [6, "Mức độ: Thống nhất nhưng có đề xuất sửa đổi", countSuaDoi, `${totalResp > 0 ? ((countSuaDoi / totalResp) * 100).toFixed(1) : 0}%`, "Có ý kiến đề nghị điều chỉnh văn bản con"],
+      [7, "Mức độ: Chưa thống nhất / Đề nghị xem xét lại", countKhongThongNhat, `${totalResp > 0 ? ((countKhongThongNhat / totalResp) * 100).toFixed(1) : 0}%`, "Cần giải trình và thảo luận tại Hội nghị"],
+      [8, "Tổng số điều khoản / câu từ đề nghị điều chỉnh", totalDetailedItems, "-", "Chi tiết được tổng hợp tại Sheet 2"],
+      [],
+      ["II. THEO DÕI TIẾN ĐỘ & TỔNG HỢP THEO TỪNG TỔ CHUYÊN MÔN"],
+      [
+        "STT", 
+        "Tên Tổ Chuyên Môn / Đơn Vị", 
+        "Trạng Thái Nộp", 
+        "Người Đại Diện / Giáo Viên", 
+        "Số Điện Thoại", 
+        "Email Liên Hệ", 
+        "Mức Độ Đồng Thuận", 
+        "Số Mục Góp Ý", 
+        "Biên Bản Họp Tổ (Scan/Link Drive)", 
+        "Thời Gian Gửi Phiếu"
+      ]
+    ];
+
+    // Điền dữ liệu 9 tổ chuyên môn chính thức
+    officialDepts.forEach((dept, idx) => {
+      const resp = responses.find(r => r.organization_unit === dept);
+      if (resp) {
+        const parsed = parseFeedbackData(resp);
+        const levelLabel = resp.agreement_level === 'sua_doi' 
+          ? '🟡 Có đề xuất sửa đổi' 
+          : (resp.agreement_level === 'khong_thong_nhat' ? '🔴 Chưa thống nhất' : '🟢 Thống nhất 100%');
+        const itemCount = parsed.items ? parsed.items.length : 0;
+        const fileUrl = resp.meeting_minutes_file_url || resp.attached_file_url || (resp.meeting_minutes_url ? 'Nộp qua Form tiếp nhận' : 'Chưa đính kèm');
+
+        sheet1Rows.push([
+          idx + 1,
+          dept,
+          "✅ ĐÃ NỘP",
+          resp.representative_name || '',
+          resp.phone || '',
+          resp.email || '',
+          levelLabel,
+          itemCount,
+          fileUrl,
+          new Date(resp.created_at).toLocaleString('vi-VN')
+        ]);
+      } else {
+        sheet1Rows.push([
+          idx + 1,
+          dept,
+          "⏳ CHƯA NỘP",
+          "-",
+          "-",
+          "-",
+          "Chưa gửi",
+          0,
+          "Chưa có",
+          "-"
+        ]);
+      }
+    });
+
+    // Thêm các đơn vị ngoài tổ hoặc cá nhân (nếu có)
+    const extraResponses = filteredResponses.filter(r => !officialDepts.includes(r.organization_unit));
+    if (extraResponses.length > 0) {
+      sheet1Rows.push([]);
+      sheet1Rows.push(["III. Ý KIẾN ĐÓNG GÓP TỪ CÁC ĐƠN VỊ KHÁC / CÁ NHÂN GIÁO VIÊN"]);
+      sheet1Rows.push([
+        "STT", 
+        "Đơn Vị / Đối Tượng", 
+        "Trạng Thái Nộp", 
+        "Họ Và Tên Người Gửi", 
+        "Số Điện Thoại", 
+        "Email Liên Hệ", 
+        "Mức Độ Đồng Thuận", 
+        "Số Mục Góp Ý", 
+        "Biên Bản / Tệp Đính Kèm", 
+        "Thời Gian Gửi Phiếu"
+      ]);
+
+      extraResponses.forEach((resp, eIdx) => {
+        const parsed = parseFeedbackData(resp);
+        const levelLabel = resp.agreement_level === 'sua_doi' 
+          ? '🟡 Có đề xuất sửa đổi' 
+          : (resp.agreement_level === 'khong_thong_nhat' ? '🔴 Chưa thống nhất' : '🟢 Thống nhất 100%');
+        const itemCount = parsed.items ? parsed.items.length : 0;
+        const fileUrl = resp.meeting_minutes_file_url || resp.attached_file_url || 'Không';
+
+        sheet1Rows.push([
+          eIdx + 1,
+          resp.organization_unit || 'Cá nhân',
+          "✅ ĐÃ NỘP",
+          resp.representative_name || '',
+          resp.phone || '',
+          resp.email || '',
+          levelLabel,
+          itemCount,
+          fileUrl,
+          new Date(resp.created_at).toLocaleString('vi-VN')
+        ]);
+      });
+    }
+
+    const ws1 = XLSX.utils.aoa_to_sheet(sheet1Rows);
+    ws1['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 28 }, // Tên tổ
+      { wch: 16 }, // Trạng thái
+      { wch: 26 }, // Người đại diện
+      { wch: 15 }, // SĐT
+      { wch: 28 }, // Email
+      { wch: 26 }, // Mức độ
+      { wch: 14 }, // Số mục góp ý
+      { wch: 45 }, // Biên bản
+      { wch: 22 }  // Thời gian
+    ];
+    ws1['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+      { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+      { s: { r: 2, c: 4 }, e: { r: 2, c: 8 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },
+      { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } },
+      { s: { r: 8, c: 0 }, e: { r: 8, c: 4 } },
+      { s: { r: 19, c: 0 }, e: { r: 19, c: 9 } }
+    ];
+    XLSX.utils.book_append_sheet(workbook, ws1, "TONG_HOP_TIEN_DO");
+
+    // =========================================================================
+    // SHEET 2: BẢNG GÓP Ý CHI TIẾT THEO VĂN BẢN CON (GOM NHÓM CHUẨN NGHỊ ĐỊNH 30)
+    // =========================================================================
+    const sheet2Rows = [
+      ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", "", ""],
+      ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", "", ""],
+      [],
+      ["BẢNG TỔNG HỢP CHI TIẾT Ý KIẾN ĐÓNG GÓP ĐIỀU CHỈNH THEO TỪNG VĂN BẢN DỰ THẢO"],
+      ["(Phục vụ Ban Giám hiệu, Ban Soạn thảo và Đoàn Chủ tịch Hội nghị xem xét, tiếp thu & giải trình)"],
+      [`Chủ đề: ${currentTopicObj?.title || 'Dự thảo văn bản'}`],
+      [],
+      [
+        "STT",
+        "Tên Dự Thảo Văn Bản Con / Quy Chế",
+        "Vị Trí Cần Sửa (Trang / Dòng / Điều)",
+        "Nội Dung Dự Thảo Hiện Tại (Trích dẫn)",
+        "Nội Dung Đề Nghị Điều Chỉnh / Bổ Sung (Đề xuất)",
+        "Lý Do Đề Nghị & Căn Cứ Thực Tiễn",
+        "Đơn Vị Đề Xuất (Tổ chuyên môn)",
+        "Người Đại Diện Góp Ý",
+        "Ý Kiến Nhận Xét Chung Của Tổ",
+        "Ý Kiến Tiếp Thu / Giải Trình Của Ban Soạn Thảo (Ghi chú)"
+      ]
+    ];
+
+    // Gom dữ liệu theo từng mục
+    let detailRowIndex = 1;
+    let detailItemsList = [];
+
+    filteredResponses.forEach(item => {
+      const parsed = parseFeedbackData(item);
+      if (parsed.items && parsed.items.length > 0) {
+        parsed.items.forEach(subItem => {
+          detailItemsList.push({
+            docName: subItem.docName || currentTopicObj?.title || 'Dự thảo chung',
+            pageLine: subItem.pageLine || 'Toàn văn',
+            draftContent: subItem.draftContent || '(Không trích đoạn)',
+            proposedChange: subItem.proposedChange || '(Không ghi nội dung sửa)',
+            reason: subItem.reason || '(Không ghi lý do)',
+            org: item.organization_unit || 'Chưa rõ',
+            author: item.representative_name || '',
+            generalComment: parsed.cleanText || item.generalComment || ''
+          });
+        });
+      } else {
+        // Những đơn vị thống nhất 100% hoặc chỉ có nhận xét chung
+        detailItemsList.push({
+          docName: currentTopicObj?.title || 'Toàn bộ các dự thảo',
+          pageLine: 'Toàn văn',
+          draftContent: 'Nhất trí toàn văn các dự thảo',
+          proposedChange: item.agreement_level === 'thong_nhat' ? 'Thống nhất 100%, không có yêu cầu điều chỉnh' : (parsed.cleanText || 'Đồng ý'),
+          reason: 'Đồng thuận cao trong toàn thể tổ',
+          org: item.organization_unit || 'Chưa rõ',
+          author: item.representative_name || '',
+          generalComment: parsed.cleanText || item.generalComment || ''
+        });
+      }
+    });
+
+    // Sắp xếp các mục theo Tên văn bản con để các ý kiến của cùng một quy chế được gom lại với nhau
+    detailItemsList.sort((a, b) => a.docName.localeCompare(b.docName, 'vi'));
+
+    detailItemsList.forEach(di => {
+      sheet2Rows.push([
+        detailRowIndex++,
+        di.docName,
+        di.pageLine,
+        di.draftContent,
+        di.proposedChange,
+        di.reason,
+        di.org,
+        di.author,
+        di.generalComment,
+        "" // Cột để trống cho Ban soạn thảo phê duyệt / ghi chú tiếp thu
+      ]);
+    });
+
+    const ws2 = XLSX.utils.aoa_to_sheet(sheet2Rows);
+    ws2['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 32 }, // Tên văn bản con
+      { wch: 22 }, // Vị trí
+      { wch: 45 }, // Nội dung dự thảo
+      { wch: 48 }, // Nội dung điều chỉnh
+      { wch: 40 }, // Lý do
+      { wch: 25 }, // Đơn vị
+      { wch: 22 }, // Người đại diện
+      { wch: 30 }, // Ý kiến chung
+      { wch: 36 }  // Ý kiến tiếp thu
+    ];
+    ws2['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+      { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+      { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 9 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 9 } },
+      { s: { r: 5, c: 0 }, e: { r: 5, c: 9 } }
+    ];
+    // Bật Auto-Filter cho bảng góp ý từ hàng tiêu đề
+    if (detailItemsList.length > 0) {
+      ws2['!autofilter'] = { ref: `A8:J${7 + detailItemsList.length}` };
+    }
+    XLSX.utils.book_append_sheet(workbook, ws2, "CHI_TIET_THEO_VAN_BAN");
+
+    // =========================================================================
+    // SHEET 3: DỮ LIỆU GỐC TẤT CẢ PHIẾU (RAW DATA VỚI ĐẦY ĐỦ THÔNG TIN LIÊN HỆ)
+    // =========================================================================
+    const sheet3Rows = [
+      ["DANH SÁCH CHI TIẾT TẤT CẢ PHIẾU GÓP Ý TIẾP NHẬN TỪ HỆ THỐNG TRỰC TUYẾN"],
+      [`Thời gian xuất: ${new Date().toLocaleString('vi-VN')} | Tổng số phiếu: ${filteredResponses.length} phiếu`],
+      [],
+      [
+        "STT",
+        "Mã Phiếu / ID",
+        "Thời Gian Gửi",
+        "Đơn Vị / Tổ Chuyên Môn",
+        "Họ Và Tên Người Đại Diện",
+        "Số Điện Thoại",
+        "Email Liên Hệ",
+        "Mức Độ Thống Nhất",
+        "Số Lượng Mục Góp Ý",
+        "Nội Dung Nhận Xét Chung Của Tổ",
+        "Link File Scan Biên Bản Họp Tổ",
+        "Trạng Thái Tiếp Nhận"
+      ]
+    ];
+
+    filteredResponses.forEach((item, rIdx) => {
+      const parsed = parseFeedbackData(item);
+      const levelLabel = item.agreement_level === 'sua_doi' 
+        ? 'Có đề xuất sửa đổi' 
+        : (item.agreement_level === 'khong_thong_nhat' ? 'Không thống nhất' : 'Thống nhất hoàn toàn');
+      const itemCount = parsed.items ? parsed.items.length : 0;
+      const fileUrl = item.meeting_minutes_file_url || item.attached_file_url || '';
+
+      sheet3Rows.push([
+        rIdx + 1,
+        item.id || `P-${rIdx + 1}`,
+        new Date(item.created_at).toLocaleString('vi-VN'),
+        item.organization_unit || '',
+        item.representative_name || '',
+        item.phone || '',
+        item.email || '',
+        levelLabel,
+        itemCount,
+        parsed.cleanText || item.generalComment || '',
+        fileUrl,
+        item.is_approved ? 'Đã duyệt' : 'Đã tiếp nhận'
+      ]);
+    });
+
+    const ws3 = XLSX.utils.aoa_to_sheet(sheet3Rows);
+    ws3['!cols'] = [
+      { wch: 6 },  // STT
+      { wch: 25 }, // Mã phiếu
+      { wch: 20 }, // Thời gian gửi
+      { wch: 28 }, // Đơn vị
+      { wch: 24 }, // Người đại diện
+      { wch: 15 }, // SĐT
+      { wch: 26 }, // Email
+      { wch: 22 }, // Mức độ
+      { wch: 14 }, // Số lượng
+      { wch: 40 }, // Nhận xét chung
+      { wch: 40 }, // Link biên bản
+      { wch: 18 }  // Trạng thái
+    ];
+    ws3['!merges'] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } }
+    ];
+    if (filteredResponses.length > 0) {
+      ws3['!autofilter'] = { ref: `A4:L${3 + filteredResponses.length}` };
+    }
+    XLSX.utils.book_append_sheet(workbook, ws3, "DANH_SACH_PHIEU_GOP_Y");
+
+    // Xuất file .xlsx
+    const cleanTitle = (currentTopicObj?.title || 'CONG_VIEC')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .replace(/_+/g, '_')
+      .slice(0, 35);
+    const fileName = `Bao_Cao_Tong_Hop_Gop_Y_${cleanTitle}_${yearStr}${monthStr}${dayStr}.xlsx`;
+
+    XLSX.writeFile(workbook, fileName);
   };
+
+  const exportCSV = exportExcel;
 
   const handleApproveTopic = async () => {
     if (!selectedTopicId) return;
@@ -938,11 +1240,11 @@ export default function AdminFeedbackSystem() {
           </button>
 
           <button
-            onClick={exportCSV}
+            onClick={exportExcel}
             style={{ padding: '9px 16px', background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2,132,199,0.2)' }}
-            title="Tải File Bảng Tính Excel (.csv)"
+            title="Tải Báo Cáo Tổng Hợp Excel Chuyên Nghiệp (.xlsx Pro - 3 Sheet Đầy Đủ)"
           >
-            <Download size={16} /> 📊 Xuất Bảng Tính Excel
+            <Download size={16} /> 📊 Xuất Bảng Tính Excel (.xlsx Pro)
           </button>
         </div>
       </div>
