@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck, GraduationCap, Sparkles, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck, GraduationCap, Sparkles, BookOpen, Eye, EyeOff, FileCheck, HardDrive, Link as LinkIcon, FolderOpen, AlertTriangle } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
@@ -39,6 +39,8 @@ export default function AdminRegistrations() {
   const [targetGrades, setTargetGrades] = useState([]); // ['Khối 10', 'Khối 11', 'Khối 12']
   const [prerequisiteMode, setPrerequisiteMode] = useState('none'); // 'none' | 'club' | 'tuition_electives'
   const [prerequisiteClub, setPrerequisiteClub] = useState(''); // Ràng buộc CLB mẹ
+  const [schoolDriveUrlInput, setSchoolDriveUrlInput] = useState(''); // Link thư mục Google Drive của trường
+  const [requiresSignedDocConfig, setRequiresSignedDocConfig] = useState(false); // Yêu cầu nộp đơn có chữ ký
   const [isActive, setIsActive] = useState(true);
   const [isHidden, setIsHidden] = useState(false);
   const [adminCampaignFilter, setAdminCampaignFilter] = useState('all'); // 'all' | 'open' | 'locked' | 'hidden'
@@ -47,6 +49,10 @@ export default function AdminRegistrations() {
   const [closedNotice, setClosedNotice] = useState('');
   const [targetDb, setTargetDb] = useState('sb2'); // 'sb1' | 'sb2'
   const [selectedTuitionSubjectFilter, setSelectedTuitionSubjectFilter] = useState('ALL');
+
+  // Document Proof & Preview Modal States
+  const [signedDocFilter, setSignedDocFilter] = useState('all'); // 'all' | 'has_doc' | 'no_doc'
+  const [adminPreviewDoc, setAdminPreviewDoc] = useState(null); // { url, name, studentName, studentClass }
 
   // Zalo Campaign Reminder Modal States
   const [showZaloCampaignModal, setShowZaloCampaignModal] = useState(false);
@@ -210,6 +216,15 @@ export default function AdminRegistrations() {
     
     const pClub = cam.prerequisite_club || (cam.form_schema && !Array.isArray(cam.form_schema) ? cam.form_schema.prerequisite_club : '') || '';
     setPrerequisiteClub(pClub);
+
+    const sDrive = cam.school_drive_url || (cam.form_schema && !Array.isArray(cam.form_schema) ? cam.form_schema.school_drive_url : '') || '';
+    setSchoolDriveUrlInput(sDrive);
+
+    const reqDoc = Boolean(
+      (cam.form_schema && !Array.isArray(cam.form_schema) && cam.form_schema.requires_signed_document === true) || 
+      isTuitionCampaign(cam)
+    );
+    setRequiresSignedDocConfig(reqDoc);
 
     let pMode = 'none';
     if (cam.form_schema && !Array.isArray(cam.form_schema)) {
@@ -660,6 +675,8 @@ export default function AdminRegistrations() {
         prerequisite_mode: prerequisiteMode,
         prerequisite_club: prerequisiteMode === 'club' ? (prerequisiteClub || null) : null,
         is_tuition_registration: prerequisiteMode === 'tuition_electives',
+        requires_signed_document: requiresSignedDocConfig || prerequisiteMode === 'tuition_electives',
+        school_drive_url: schoolDriveUrlInput.trim() || null,
         is_hidden: isHidden
       };
 
@@ -685,6 +702,8 @@ export default function AdminRegistrations() {
       setIsHidden(false);
       setPrerequisiteMode('none');
       setPrerequisiteClub('');
+      setSchoolDriveUrlInput('');
+      setRequiresSignedDocConfig(false);
       fetchCampaigns();
     } catch (err) {
       alert("Lỗi khi lưu: " + err.message);
@@ -946,7 +965,8 @@ export default function AdminRegistrations() {
       "Lớp",
       "Khối",
       "Thời Gian Đăng Ký",
-      ...schema.map(f => f.label || f.id)
+      ...schema.map(f => f.label || f.id),
+      "Đơn Có Chữ Ký (File / Drive Link)"
     ];
     sheet2Rows.push(tableHeader2);
 
@@ -971,6 +991,10 @@ export default function AdminRegistrations() {
         row.push(ansStr);
       });
 
+      // Cột Đơn có chữ ký (file upload hoặc Google Drive link)
+      const docProof = r.responses?.field_signed_doc_url || r.responses?.field_drive_link || 'Chưa nộp';
+      row.push(docProof);
+
       sheet2Rows.push(row);
     });
 
@@ -984,7 +1008,8 @@ export default function AdminRegistrations() {
       { wch: 10 }, // Lớp
       { wch: 12 }, // Khối
       { wch: 20 }, // Thời gian
-      ...schema.map(f => ({ wch: Math.min(Math.max((f.label || f.id).length + 4, 16), 40) }))
+      ...schema.map(f => ({ wch: Math.min(Math.max((f.label || f.id).length + 4, 16), 40) })),
+      { wch: 35 }  // Cột Đơn có chữ ký
     ];
 
     ws2['!merges'] = [
@@ -1126,7 +1151,7 @@ export default function AdminRegistrations() {
           "Khối",
           ...ALL_TUITION_SUBJECTS,
           "Tổng Môn ĐK",
-          "Chữ Ký Xác Nhận Của Học Sinh",
+          "Đơn Ký / Chữ Ký Xác Nhận Của HS",
           "Chữ Ký GVCN Xác Nhận",
           "Ghi Chú"
         ]
@@ -1165,6 +1190,10 @@ export default function AdminRegistrations() {
           return registered ? 'X' : '';
         });
 
+        const docProof = r.responses?.field_signed_doc_url 
+          ? 'Đã nộp file đơn ký' 
+          : (r.responses?.field_drive_link ? `Link Drive: ${r.responses.field_drive_link}` : 'Chưa nộp đơn ký');
+
         tuitionRows.push([
           idx + 1,
           r.student_code || '',
@@ -1173,7 +1202,7 @@ export default function AdminRegistrations() {
           getStudentGradeLevel(r.student_class),
           ...subjectMarks,
           studentSubjects.length,
-          "", // Ký HS
+          docProof, // Đơn Ký / Chữ Ký Xác Nhận
           "", // Ký GVCN
           ""  // Ghi chú
         ]);
@@ -1450,7 +1479,20 @@ export default function AdminRegistrations() {
       });
     }
 
-    // 3. Sắp xếp
+    // 3. Lọc theo trạng thái nộp Đơn có chữ ký (Minh chứng / Google Drive)
+    if (signedDocFilter === 'has_doc') {
+      list = list.filter(r => {
+        const resp = r.responses || {};
+        return Boolean(resp.field_signed_doc_url || resp.field_drive_link);
+      });
+    } else if (signedDocFilter === 'no_doc') {
+      list = list.filter(r => {
+        const resp = r.responses || {};
+        return !resp.field_signed_doc_url && !resp.field_drive_link;
+      });
+    }
+
+    // 4. Sắp xếp
     list.sort((a, b) => {
       let valA = a[sortField] || '';
       let valB = b[sortField] || '';
@@ -1473,7 +1515,7 @@ export default function AdminRegistrations() {
     });
 
     return list;
-  }, [results, searchQuery, selectedOptionFilter, sortField, sortOrder]);
+  }, [results, searchQuery, selectedOptionFilter, signedDocFilter, sortField, sortOrder]);
 
   // Bộ lọc danh sách đợt đăng ký cho Quản trị viên
   const filteredAdminCampaigns = useMemo(() => {
@@ -1635,6 +1677,8 @@ export default function AdminRegistrations() {
                       setTargetGrades(preset.target_grades);
                       setPrerequisiteMode('tuition_electives');
                       setPrerequisiteClub('');
+                      setSchoolDriveUrlInput('');
+                      setRequiresSignedDocConfig(true);
                       setIsActive(true);
                       setIsHidden(false);
                       setFormSchema(preset.form_schema.fields);
@@ -1653,6 +1697,8 @@ export default function AdminRegistrations() {
                       setTargetGrades([]);
                       setPrerequisiteMode('none');
                       setPrerequisiteClub('');
+                      setSchoolDriveUrlInput('');
+                      setRequiresSignedDocConfig(false);
                       setIsActive(true);
                       setIsHidden(false);
                       setFormSchema([]);
@@ -1806,6 +1852,48 @@ export default function AdminRegistrations() {
                       <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '4px' }}>
                         *Nếu ẩn, học sinh vào Cổng sẽ không nhìn thấy đợt này. Quản trị viên vẫn xem và xuất Excel bình thường.
                       </small>
+                    </div>
+
+                    {/* CẤU HÌNH ĐƠN ĐĂNG KÝ CÓ CHỮ KÝ & GOOGLE DRIVE TIẾP NHẬN */}
+                    <div style={{ gridColumn: '1 / -1', background: '#f0fdf4', padding: '16px', borderRadius: '10px', border: '1.5px solid #86efac', display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '14.5px' }}>
+                          <FileCheck size={20} color="#15803d" />
+                          <span>Quy trình nộp Đơn đăng ký có chữ ký (Mẫu Bộ GD&ĐT) & Google Drive</span>
+                        </div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', backgroundColor: '#ffffff', padding: '6px 12px', borderRadius: '8px', border: '1px solid #86efac' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={requiresSignedDocConfig || prerequisiteMode === 'tuition_electives'}
+                            onChange={(e) => setRequiresSignedDocConfig(e.target.checked)}
+                            disabled={prerequisiteMode === 'tuition_electives'}
+                            style={{ width: '16px', height: '16px', accentColor: '#166534' }}
+                          />
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#166534' }}>
+                            {prerequisiteMode === 'tuition_electives' ? 'Bắt buộc nộp đơn ký (Mặc định cho đợt Học thêm)' : 'Bắt buộc nộp đơn có chữ ký'}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div style={{ fontSize: '12.5px', color: '#15803d', lineHeight: '1.5' }}>
+                        Khi bật tính năng này, hệ thống sẽ tự động tạo đơn Word (.doc) theo mẫu chuẩn Bộ GD&ĐT đã điền sẵn tên, lớp, môn học của học sinh. Học sinh bắt buộc phải tải đơn về, xin chữ ký của Cha Mẹ và học sinh ký tên, sau đó nộp ảnh chụp/PDF hoặc dán link Google Drive mới được hoàn tất.
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#166534', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                          <FolderOpen size={15} /> Link Thư mục Google Drive tiếp nhận đơn của Nhà trường (Tùy chọn):
+                        </label>
+                        <input 
+                          type="url"
+                          value={schoolDriveUrlInput}
+                          onChange={(e) => setSchoolDriveUrlInput(e.target.value)}
+                          placeholder="https://drive.google.com/drive/folders/... (Nếu có, trên Cổng học sinh sẽ có nút mở nhanh thư mục này để nộp)"
+                          style={{ ...styles.input, borderColor: '#86efac', backgroundColor: '#ffffff', fontSize: '13px' }}
+                        />
+                        <small style={{ color: '#15803d', fontSize: '11px', display: 'block', marginTop: '3px' }}>
+                          *Dán đường link thư mục Google Drive của trường (đã bật quyền cho phép học sinh tải tệp lên).
+                        </small>
+                      </div>
                     </div>
 
                     {/* HẠN CHÓT & HẸN GIỜ ĐÓNG MỞ TỰ ĐỘNG */}
@@ -2578,14 +2666,84 @@ export default function AdminRegistrations() {
                         </span>
                       )}
 
-                      {(searchQuery || selectedOptionFilter !== 'all') && (
+                      {signedDocFilter !== 'all' && (
+                        <span style={{ backgroundColor: signedDocFilter === 'has_doc' ? '#dcfce7' : '#fee2e2', color: signedDocFilter === 'has_doc' ? '#15803d' : '#b91c1c', padding: '3px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', border: signedDocFilter === 'has_doc' ? '1px solid #bbf7d0' : '1px solid #fecaca' }}>
+                          📑 {signedDocFilter === 'has_doc' ? 'Đã nộp đơn ký' : 'Chưa nộp đơn ký'}
+                          <button onClick={() => setSignedDocFilter('all')} style={{ background: 'none', border: 'none', color: signedDocFilter === 'has_doc' ? '#15803d' : '#b91c1c', cursor: 'pointer', padding: 0, display: 'inline-flex', alignItems: 'center' }} title="Bỏ lọc đơn ký"><X size={12} /></button>
+                        </span>
+                      )}
+
+                      {(searchQuery || selectedOptionFilter !== 'all' || signedDocFilter !== 'all') && (
                         <button 
-                          onClick={() => { setSearchQuery(''); setSelectedOptionFilter('all'); }}
+                          onClick={() => { setSearchQuery(''); setSelectedOptionFilter('all'); setSignedDocFilter('all'); }}
                           style={{ fontSize: '12px', color: '#ef4444', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', padding: '2px 6px', fontWeight: 'bold' }}
                         >
                           ✕ Xóa bộ lọc
                         </button>
                       )}
+                    </div>
+
+                    {/* BỘ LỌC ĐƠN CÓ CHỮ KÝ */}
+                    <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', gap: '3px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSignedDocFilter('all')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: signedDocFilter === 'all' ? '#ffffff' : 'transparent',
+                          color: signedDocFilter === 'all' ? '#0f172a' : '#64748b',
+                          fontWeight: signedDocFilter === 'all' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: signedDocFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        Tất cả ({results.length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSignedDocFilter('has_doc')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: signedDocFilter === 'has_doc' ? '#ffffff' : 'transparent',
+                          color: signedDocFilter === 'has_doc' ? '#15803d' : '#64748b',
+                          fontWeight: signedDocFilter === 'has_doc' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: signedDocFilter === 'has_doc' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <CheckCircle2 size={13} color="#16a34a" /> Có đơn ký ({results.filter(r => r.responses?.field_signed_doc_url || r.responses?.field_drive_link).length})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setSignedDocFilter('no_doc')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: signedDocFilter === 'no_doc' ? '#ffffff' : 'transparent',
+                          color: signedDocFilter === 'no_doc' ? '#b45309' : '#64748b',
+                          fontWeight: signedDocFilter === 'no_doc' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: signedDocFilter === 'no_doc' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                      >
+                        <AlertTriangle size={13} color="#d97706" /> Chưa có ({results.filter(r => !r.responses?.field_signed_doc_url && !r.responses?.field_drive_link).length})
+                      </button>
                     </div>
                   </div>
 
@@ -2602,12 +2760,13 @@ export default function AdminRegistrations() {
                           {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => (
                             <th key={field.id} style={{ padding: '10px 12px', color: '#0284c7' }}>{field.label}</th>
                           ))}
+                          <th style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#be123c', textAlign: 'center' }}>Đơn có chữ ký</th>
                           <th style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', width: '80px' }}>Thao tác</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAndSortedResults.length === 0 ? (
-                          <tr><td colSpan="10" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy học sinh nào phù hợp với từ khóa hoặc bộ lọc</td></tr>
+                          <tr><td colSpan="12" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy học sinh nào phù hợp với từ khóa hoặc bộ lọc</td></tr>
                         ) : filteredAndSortedResults.map((r, idx) => (
                           <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
                             <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{idx + 1}</td>
@@ -2622,6 +2781,73 @@ export default function AdminRegistrations() {
                               if (Array.isArray(ans)) displayAns = ans.join(', ');
                               return <td key={field.id} style={{ padding: '10px 12px', fontWeight: (selectedOptionFilter && displayAns?.includes(selectedOptionFilter)) || (searchQuery && displayAns?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bold' : 'normal', color: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? '#166534' : 'inherit' }}>{displayAns || '-'}</td>;
                             })}
+
+                            {/* Cột Đơn có chữ ký (Minh chứng / Google Drive) */}
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                              {(() => {
+                                const resp = r.responses || {};
+                                const docUrl = resp.field_signed_doc_url;
+                                const driveLink = resp.field_drive_link;
+                                const fileName = resp.field_signed_doc_name || 'Đơn đăng ký';
+
+                                if (docUrl) {
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => setAdminPreviewDoc({ url: docUrl, name: fileName, studentName: r.student_name, studentClass: r.student_class })}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '5px',
+                                        padding: '5px 11px',
+                                        backgroundColor: '#0284c7',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '6px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        cursor: 'pointer',
+                                        boxShadow: '0 2px 4px rgba(2,132,199,0.2)'
+                                      }}
+                                      title="Bấm để xem ảnh / file PDF đơn đăng ký của học sinh"
+                                    >
+                                      <FileCheck size={14} /> Xem file đơn
+                                    </button>
+                                  );
+                                }
+                                if (driveLink) {
+                                  return (
+                                    <a
+                                      href={driveLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '5px',
+                                        padding: '5px 11px',
+                                        backgroundColor: '#f0fdf4',
+                                        color: '#15803d',
+                                        border: '1px solid #86efac',
+                                        borderRadius: '6px',
+                                        fontSize: '12px',
+                                        fontWeight: '700',
+                                        textDecoration: 'none'
+                                      }}
+                                      title={`Mở Google Drive: ${driveLink}`}
+                                    >
+                                      <ExternalLink size={13} /> Mở Drive
+                                    </a>
+                                  );
+                                }
+                                return (
+                                  <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
+                                    Chưa có đơn ký
+                                  </span>
+                                );
+                              })()}
+                            </td>
+
                             <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
                               <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
                                 <Edit3 size={16} />
@@ -3086,6 +3312,79 @@ export default function AdminRegistrations() {
 
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 📄 MODAL XEM TRƯỚC FILE ĐƠN ĐĂNG KÝ CỦA HỌC SINH (ẢNH / PDF) */}
+      {adminPreviewDoc && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '850px', width: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+            {/* Header */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0f172a', fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileCheck size={20} color="#0284c7" />
+                  Đơn Đăng Ký Của Học Sinh: <span style={{ color: '#be123c' }}>{adminPreviewDoc.studentName}</span> (Lớp {adminPreviewDoc.studentClass})
+                </h3>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Tên tệp: {adminPreviewDoc.name}</span>
+              </div>
+              <button 
+                onClick={() => setAdminPreviewDoc(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Content Preview */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', textAlign: 'center', background: '#1e293b' }}>
+              {adminPreviewDoc.url.startsWith('data:application/pdf') || adminPreviewDoc.url.toLowerCase().endsWith('.pdf') ? (
+                <iframe 
+                  src={adminPreviewDoc.url} 
+                  title="PDF Preview"
+                  style={{ width: '100%', height: '70vh', border: 'none', borderRadius: '8px', background: 'white' }}
+                />
+              ) : (
+                <img 
+                  src={adminPreviewDoc.url} 
+                  alt="Đơn đăng ký có chữ ký"
+                  style={{ maxWidth: '100%', maxHeight: '72vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0,0,0,0.4)' }}
+                />
+              )}
+            </div>
+
+            {/* Footer Buttons */}
+            <div style={{ padding: '12px 20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <a
+                href={adminPreviewDoc.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                download={adminPreviewDoc.name || 'Don_dang_ky_hoc_them'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '8px 16px',
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  textDecoration: 'none'
+                }}
+              >
+                <Download size={15} /> Tải file về máy
+              </a>
+
+              <button
+                type="button"
+                onClick={() => setAdminPreviewDoc(null)}
+                style={{ padding: '8px 18px', backgroundColor: '#64748b', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

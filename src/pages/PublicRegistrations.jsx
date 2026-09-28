@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase, supabase2, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
-import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, Award, X, GraduationCap, Sparkles, BookOpen } from 'lucide-react';
+import { 
+  FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, 
+  ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, 
+  Award, X, GraduationCap, Sparkles, BookOpen, Download, Printer, UploadCloud, 
+  Paperclip, HardDrive, Link as LinkIcon, FolderOpen, FileCheck, Check, Eye
+} from 'lucide-react';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 import {
   isTuitionCampaign,
@@ -10,7 +15,9 @@ import {
   normalizeSubjectName,
   ALL_TUITION_SUBJECTS,
   SUBJECT_METADATA,
-  isCampaignHidden
+  isCampaignHidden,
+  downloadTuitionApplicationDoc,
+  printTuitionApplicationDoc
 } from '../utils/tuitionElectiveService';
 
 export default function PublicRegistrations() {
@@ -36,6 +43,16 @@ export default function PublicRegistrations() {
   const [checkingElectives, setCheckingElectives] = useState(false);
   const [studentElectives, setStudentElectives] = useState([]);
   const [electiveSource, setElectiveSource] = useState('');
+
+  // Signed Document Application States (Tải mẫu, ký tên, nộp minh chứng)
+  const [signedDocFile, setSignedDocFile] = useState(null);
+  const [signedDocUrl, setSignedDocUrl] = useState('');
+  const [signedDocFileName, setSignedDocFileName] = useState('');
+  const [signedDocDriveLink, setSignedDocDriveLink] = useState('');
+  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' | 'drive'
+  const [uploadingSignedDoc, setUploadingSignedDoc] = useState(false);
+  const [signedDocError, setSignedDocError] = useState('');
+  const [previewDocModal, setPreviewDocModal] = useState(false);
 
   // QR Modal State
   const [qrModalItem, setQrModalItem] = useState(null);
@@ -340,6 +357,12 @@ export default function PublicRegistrations() {
     setElectiveSource('');
     setCheckingElectives(false);
     setSubmittedData(null);
+    setSignedDocFile(null);
+    setSignedDocUrl('');
+    setSignedDocFileName('');
+    setSignedDocDriveLink('');
+    setSignedDocError('');
+    setUploadMethod('file');
     
     // Init default responses
     const initialResponses = {};
@@ -380,6 +403,171 @@ export default function PublicRegistrations() {
     if (!requiredClubName) return [];
     return getSubDisciplinesForClub(requiredClubName);
   }, [requiredClubName]);
+
+  // Kiểm tra xem đợt đăng ký có yêu cầu nộp đơn có chữ ký không
+  const requiresSignedDocument = useMemo(() => {
+    if (!selectedCampaign) return false;
+    if (isTuitionCampaign(selectedCampaign)) return true;
+    if (selectedCampaign.form_schema && !Array.isArray(selectedCampaign.form_schema)) {
+      if (selectedCampaign.form_schema.requires_signed_document === true) return true;
+      if (selectedCampaign.form_schema.is_tuition_registration === true) return true;
+    }
+    return false;
+  }, [selectedCampaign]);
+
+  // Lấy link thư mục Google Drive của nhà trường nếu có
+  const schoolDriveUrl = useMemo(() => {
+    if (!selectedCampaign) return '';
+    if (selectedCampaign.school_drive_url) return selectedCampaign.school_drive_url;
+    if (selectedCampaign.form_schema && !Array.isArray(selectedCampaign.form_schema)) {
+      return selectedCampaign.form_schema.school_drive_url || '';
+    }
+    return '';
+  }, [selectedCampaign]);
+
+  // Trích xuất các môn học đã chọn từ responses để in vào đơn
+  const getSelectedTuitionSubjectsList = () => {
+    let chosen = responses['field_tuition_subjects'];
+    if (Array.isArray(chosen) && chosen.length > 0) return chosen;
+    if (typeof chosen === 'string' && chosen) return [chosen];
+    
+    // Tìm trong currentSchemaFields
+    for (const f of currentSchemaFields) {
+      const val = responses[f.id];
+      if (Array.isArray(val) && val.length > 0) return val;
+      if (typeof val === 'string' && val && (f.id.includes('subject') || f.label?.toLowerCase().includes('môn'))) {
+        return [val];
+      }
+    }
+    return [];
+  };
+
+  // Hàm tải file Word (.doc) đơn đăng ký học thêm đã điền thông tin học sinh
+  const handleDownloadApplication = () => {
+    if (!studentName || !studentClass) {
+      return alert("Vui lòng nhập và chọn đúng họ tên học sinh ở Bước 1 trước khi tải đơn.");
+    }
+
+    const chosenSubjects = getSelectedTuitionSubjectsList();
+    if (chosenSubjects.length === 0) {
+      if (!window.confirm("Em chưa tích chọn môn học nào ở Bước 2. Em có chắc chắn muốn tải mẫu đơn trắng để tự viết tay không?")) {
+        return;
+      }
+    }
+
+    const category = responses['field_tuition_category'] || '';
+    const preferredTeacher = responses['field_preferred_teacher'] || '';
+    const parentName = responses['field_parent_name'] || '';
+
+    downloadTuitionApplicationDoc({
+      studentName,
+      studentClass,
+      schoolYear: selectedCampaign?.form_schema?.school_year || '2026 - 2027',
+      schoolName: selectedCampaign?.form_schema?.school_name || 'Trường THPT Cao Bá Quát',
+      subjects: chosenSubjects,
+      category,
+      preferredTeacher,
+      parentName
+    });
+  };
+
+  // Hàm in trực tiếp hoặc xuất PDF đơn đăng ký
+  const handlePrintApplication = () => {
+    if (!studentName || !studentClass) {
+      return alert("Vui lòng nhập và chọn đúng họ tên học sinh ở Bước 1 trước khi in đơn.");
+    }
+
+    const chosenSubjects = getSelectedTuitionSubjectsList();
+    const category = responses['field_tuition_category'] || '';
+    const preferredTeacher = responses['field_preferred_teacher'] || '';
+    const parentName = responses['field_parent_name'] || '';
+
+    printTuitionApplicationDoc({
+      studentName,
+      studentClass,
+      schoolYear: selectedCampaign?.form_schema?.school_year || '2026 - 2027',
+      schoolName: selectedCampaign?.form_schema?.school_name || 'Trường THPT Cao Bá Quát',
+      subjects: chosenSubjects,
+      category,
+      preferredTeacher,
+      parentName
+    });
+  };
+
+  // Xử lý upload file đơn đã ký (ảnh chụp hoặc PDF)
+  const handleSignedDocFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      setSignedDocError("Kích thước file không được vượt quá 15MB.");
+      return;
+    }
+
+    setSignedDocError('');
+    setUploadingSignedDoc(true);
+
+    try {
+      const cleanClass = (studentClass || '12').replace(/[^a-zA-Z0-9]/g, '');
+      const cleanCode = (studentCode || 'HS').replace(/[^a-zA-Z0-9]/g, '');
+      const fileExt = file.name.split('.').pop() || 'jpg';
+      const fileName = `don_hoc_them_${cleanClass}_${cleanCode}_${Date.now()}.${fileExt}`;
+      const filePath = `tuition_applications/${fileName}`;
+
+      const client = (selectedCampaign?._source === 'sb1' && supabase) ? supabase : (supabase2 || supabase);
+      let uploadSuccess = false;
+      let publicUrl = '';
+
+      try {
+        const { data, error: uploadErr } = await client.storage
+          .from('images')
+          .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+        if (!uploadErr && data) {
+          const { data: urlData } = client.storage.from('images').getPublicUrl(filePath);
+          if (urlData?.publicUrl) {
+            publicUrl = urlData.publicUrl;
+            uploadSuccess = true;
+          }
+        }
+      } catch (err) {
+        console.warn("Storage upload failed, trying fallback:", err);
+      }
+
+      if (!uploadSuccess) {
+        if (file.size <= 2.5 * 1024 * 1024) {
+          const reader = new FileReader();
+          reader.onload = (readEvent) => {
+            const base64Data = readEvent.target.result;
+            setSignedDocUrl(base64Data);
+            setSignedDocFileName(file.name);
+            setSignedDocFile(file);
+            setUploadingSignedDoc(false);
+          };
+          reader.readAsDataURL(file);
+          return;
+        } else {
+          throw new Error("Không thể tải file trực tiếp lên máy chủ. Bạn vui lòng tải file lên Google Drive của mình rồi dán link chia sẻ vào ô bên dưới nhé!");
+        }
+      } else {
+        setSignedDocUrl(publicUrl);
+        setSignedDocFileName(file.name);
+        setSignedDocFile(file);
+      }
+    } catch (err) {
+      console.error("Lỗi khi tải file đơn:", err);
+      setSignedDocError(err.message || "Lỗi khi tải file lên. Bạn có thể chuyển sang chọn dán link Google Drive.");
+    } finally {
+      setUploadingSignedDoc(false);
+    }
+  };
+
+  const handleRemoveSignedDoc = () => {
+    setSignedDocFile(null);
+    setSignedDocUrl('');
+    setSignedDocFileName('');
+    setSignedDocError('');
+  };
 
   // Lọc các đợt không bị ẩn bởi Quản trị viên
   const visibleCampaigns = useMemo(() => {
@@ -444,14 +632,36 @@ export default function PublicRegistrations() {
       }
     }
 
+    // Kiểm tra điều kiện nộp đơn có chữ ký (đối với Đăng ký Học thêm / requires_signed_document)
+    if (requiresSignedDocument) {
+      const hasUploadedFile = Boolean(signedDocUrl);
+      const hasDriveUrl = Boolean(signedDocDriveLink && signedDocDriveLink.trim().length > 6);
+      if (!hasUploadedFile && !hasDriveUrl) {
+        alert("⛔ BƯỚC BẮT BUỘC: Em chưa hoàn tất nộp Đơn đăng ký có chữ ký!\n\nTheo quy định của nhà trường:\n1. Em cần bấm nút [Tải Đơn Đăng Ký (Word)] hoặc [Xem & In Trực Tiếp].\n2. In hoặc xin chữ ký của Cha Mẹ học sinh và ký tên em.\n3. Chụp ảnh rõ nét / scan file PDF tải lên, HOẶC dán link Google Drive của đơn vào ô Bước 3 bên dưới để hoàn tất đăng ký.");
+        const sectionEl = document.getElementById('step-signed-doc-section');
+        if (sectionEl) {
+          sectionEl.scrollIntoView({ behavior: 'smooth' });
+        }
+        return;
+      }
+    }
+
     setSubmitting(true);
     try {
+      const finalResponses = {
+        ...responses,
+        field_signed_doc_url: signedDocUrl || '',
+        field_signed_doc_name: signedDocFileName || '',
+        field_drive_link: (signedDocDriveLink || '').trim(),
+        field_has_signed_doc: Boolean(signedDocUrl || signedDocDriveLink?.trim())
+      };
+
       const payload = {
         campaign_id: selectedCampaign.id,
         student_code: studentCode,
         student_name: studentName,
         student_class: studentClass,
-        responses
+        responses: finalResponses
       };
 
       const targetClient = (selectedCampaign._source === 'sb1' && supabase) ? supabase : (supabase2 || supabase);
@@ -468,8 +678,12 @@ export default function PublicRegistrations() {
           studentName,
           studentClass,
           studentCode,
-          responses,
-          campaignTitle: selectedCampaign.title
+          responses: finalResponses,
+          campaignTitle: selectedCampaign.title,
+          signedDocUrl,
+          signedDocFileName,
+          signedDocDriveLink,
+          isTuition: isTuitionCampaign(selectedCampaign)
         });
         setSuccess(true);
       }
@@ -493,6 +707,8 @@ export default function PublicRegistrations() {
   }, [submittedData, subDisciplinesList]);
 
   if (success) {
+    const hasSignedProof = Boolean(submittedData?.signedDocUrl || submittedData?.signedDocDriveLink);
+
     return (
       <div style={{ maxWidth: '650px', margin: '40px auto', padding: '0 16px', textAlign: 'center' }}>
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '36px 24px', boxShadow: '0 10px 30px rgba(0,0,0,0.08)', border: '1px solid #e2e8f0' }}>
@@ -501,6 +717,107 @@ export default function PublicRegistrations() {
           <p style={{ color: '#475569', fontSize: '15px', lineHeight: '1.6', margin: '0 0 20px 0' }}>
             Chúc mừng em <strong>{submittedData?.studentName}</strong> (Lớp <strong>{submittedData?.studentClass}</strong>) đã hoàn tất đăng ký <strong>"{selectedCampaign?.title}"</strong>.
           </p>
+
+          {/* XÁC NHẬN MINH CHỨNG ĐƠN ĐÃ NỘP (DÀNH CHO ĐỢT HỌC THÊM) */}
+          {hasSignedProof && (
+            <div style={{
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+              border: '2px solid #86efac',
+              borderRadius: '16px',
+              padding: '18px',
+              textAlign: 'left',
+              marginBottom: '22px',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.08)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#166534', fontWeight: '800', fontSize: '15px' }}>
+                <FileCheck size={20} color="#15803d" />
+                <span>Minh Chứng Đơn Đăng Ký Có Chữ Ký: Đã Ghi Nhận</span>
+              </div>
+
+              <div style={{ fontSize: '13px', color: '#334155', background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #bbf7d0', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {submittedData.signedDocUrl && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle2 size={16} color="#16a34a" />
+                      <strong>File đơn đã nộp:</strong> {submittedData.signedDocFileName || 'Đơn đăng ký có chữ ký'}
+                    </span>
+                    <a
+                      href={submittedData.signedDocUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '4px 10px',
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Eye size={13} /> Xem lại file đơn
+                    </a>
+                  </div>
+                )}
+
+                {submittedData.signedDocDriveLink && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <HardDrive size={16} color="#0284c7" />
+                      <strong>Link Google Drive:</strong>
+                      <span style={{ maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#0284c7' }}>
+                        {submittedData.signedDocDriveLink}
+                      </span>
+                    </span>
+                    <a
+                      href={submittedData.signedDocDriveLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '4px 10px',
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <ExternalLink size={13} /> Mở Drive
+                    </a>
+                  </div>
+                )}
+
+                <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                  <span style={{ fontSize: '12px', color: '#64748b' }}>Cần lưu lại bản mềm đơn đã điền thông tin?</span>
+                  <button
+                    type="button"
+                    onClick={handleDownloadApplication}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0284c7',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      textDecoration: 'underline'
+                    }}
+                  >
+                    <Download size={13} /> 📥 Tải lại đơn Word (.doc)
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* NẾU ĐĂNG KÝ MÔN PHỤ -> HIỆN THÔNG TIN NHÓM ZALO VÀ LỊCH TẬP NGAY */}
           {submittedSubDiscipline && (
@@ -1401,6 +1718,306 @@ export default function PublicRegistrations() {
                     })}
                   </div>
 
+                  {/* BƯỚC 3: TẢI ĐƠN ĐĂNG KÝ, KÝ TÊN VÀ NỘP MINH CHỨNG (*BẮT BUỘC KHI LÀ ĐỢT HỌC THÊM) */}
+                  {requiresSignedDocument && (
+                    <div id="step-signed-doc-section" style={{
+                      marginTop: '30px',
+                      padding: '22px',
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '16px',
+                      border: (signedDocUrl || signedDocDriveLink?.trim()) ? '2px solid #86efac' : '2px solid #f59e0b',
+                      boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
+                      transition: 'all 0.2s'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+                        <h4 style={{ margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: '800' }}>
+                          <FileCheck size={22} color="#be123c" />
+                          3. Tải Đơn Đăng Ký, Ký Tên & Nộp File Minh Chứng
+                          <span style={{ color: '#ef4444', fontSize: '13px' }}>(*Bắt buộc)</span>
+                        </h4>
+                        
+                        {(signedDocUrl || signedDocDriveLink?.trim()) ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', backgroundColor: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '12px', border: '1px solid #86efac' }}>
+                            <CheckCircle2 size={14} /> Đã đính kèm đơn ký
+                          </span>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: '800', backgroundColor: '#fef3c7', color: '#b45309', padding: '4px 10px', borderRadius: '12px', border: '1px solid #fde68a' }}>
+                            <AlertTriangle size={14} /> Chưa nộp file minh chứng
+                          </span>
+                        )}
+                      </div>
+
+                      <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: '#475569', lineHeight: '1.5' }}>
+                        Theo quy định của Bộ GD&ĐT, học sinh đăng ký học thêm bắt buộc phải có <strong>Đơn đăng ký có ý kiến, chữ ký của Cha Mẹ học sinh và chữ ký của học sinh</strong>.
+                      </p>
+
+                      {/* KHUNG TẢI ĐƠN ĐÃ ĐIỀN THÔNG TIN */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
+                        border: '1.5px solid #bfdbfe',
+                        borderRadius: '12px',
+                        padding: '16px',
+                        marginBottom: '18px'
+                      }}>
+                        <div style={{ fontSize: '13px', color: '#1e40af', marginBottom: '10px' }}>
+                          📄 <strong>Bước A: Xuất mẫu đơn chuẩn Bộ GD&ĐT</strong> (Hệ thống đã tự động điền sẵn tên: <strong>{studentName}</strong>, lớp: <strong>{studentClass}</strong> và các môn em chọn):
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                          <button
+                            type="button"
+                            onClick={handleDownloadApplication}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '10px 18px',
+                              backgroundColor: '#0284c7',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '13.5px',
+                              cursor: 'pointer',
+                              boxShadow: '0 2px 6px rgba(2,132,199,0.3)',
+                              transition: 'all 0.15s'
+                            }}
+                          >
+                            <Download size={16} /> 📥 Tải Đơn Đăng Ký (Word .doc)
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handlePrintApplication}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '10px 16px',
+                              backgroundColor: '#ffffff',
+                              color: '#0369a1',
+                              border: '1.5px solid #0284c7',
+                              borderRadius: '8px',
+                              fontWeight: '700',
+                              fontSize: '13.5px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <Printer size={16} /> 🖨️ Xem & In Trực Tiếp
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#0369a1', fontStyle: 'italic' }}>
+                          💡 Mẹo: Bấm "Tải Đơn Đăng Ký" để tải file Word về máy tính/điện thoại, hoặc bấm "Xem & In Trực Tiếp" để in ra máy in ngay.
+                        </div>
+                      </div>
+
+                      {/* HƯỚNG DẪN KÝ TÊN */}
+                      <div style={{ fontSize: '13px', color: '#334155', background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
+                        <strong>✍️ Bước B: Xin chữ ký của Cha Mẹ và Học sinh:</strong>
+                        <div style={{ marginTop: '4px', lineHeight: '1.5', fontSize: '12.5px', color: '#475569' }}>
+                          In đơn ra giấy (hoặc ký điện tử), đưa cho <strong>Cha/Mẹ/Người giám hộ ký ghi rõ họ tên</strong> vào mục <em>Ý kiến của cha mẹ học sinh</em> và <strong>em ký ghi rõ họ tên</strong> vào mục <em>Người làm đơn</em>.
+                        </div>
+                      </div>
+
+                      {/* BƯỚC C: NỘP MINH CHỨNG (CHỌN 1 TRONG 2 CÁCH) */}
+                      <div>
+                        <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: 'bold', marginBottom: '8px' }}>
+                          📤 Bước C: Nộp file đơn đã ký lên hệ thống (Chọn 1 trong 2 cách):
+                        </div>
+
+                        {/* TAB CHUYỂN ĐỔI PHƯƠNG THỨC NỘP */}
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setUploadMethod('file')}
+                            style={{
+                              flex: 1,
+                              padding: '9px 12px',
+                              borderRadius: '8px',
+                              border: uploadMethod === 'file' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                              background: uploadMethod === 'file' ? '#e0f2fe' : '#ffffff',
+                              color: uploadMethod === 'file' ? '#0369a1' : '#475569',
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <UploadCloud size={16} /> Cách 1: Tải trực tiếp Ảnh / PDF
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setUploadMethod('drive')}
+                            style={{
+                              flex: 1,
+                              padding: '9px 12px',
+                              borderRadius: '8px',
+                              border: uploadMethod === 'drive' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                              background: uploadMethod === 'drive' ? '#e0f2fe' : '#ffffff',
+                              color: uploadMethod === 'drive' ? '#0369a1' : '#475569',
+                              fontWeight: '700',
+                              fontSize: '13px',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px'
+                            }}
+                          >
+                            <HardDrive size={16} /> Cách 2: Nộp qua Google Drive
+                          </button>
+                        </div>
+
+                        {/* NỘI DUNG CÁCH 1: UPLOAD ẢNH / PDF TRỰC TIẾP */}
+                        {uploadMethod === 'file' && (
+                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px dashed #cbd5e1', padding: '16px', textAlign: 'center' }}>
+                            {signedDocUrl ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '14px' }}>
+                                  <CheckCircle2 size={20} color="#16a34a" />
+                                  Đã tải lên: {signedDocFileName || 'Đơn đăng ký có chữ ký'}
+                                </div>
+                                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => setPreviewDocModal(true)}
+                                    style={{
+                                      padding: '6px 14px',
+                                      backgroundColor: '#0284c7',
+                                      color: 'white',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      fontSize: '12.5px',
+                                      fontWeight: '600',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Eye size={14} /> Xem lại file đơn
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={handleRemoveSignedDoc}
+                                    style={{
+                                      padding: '6px 14px',
+                                      backgroundColor: '#f1f5f9',
+                                      color: '#dc2626',
+                                      border: '1px solid #fca5a5',
+                                      borderRadius: '6px',
+                                      fontSize: '12.5px',
+                                      fontWeight: '600',
+                                      cursor: 'pointer'
+                                    }}
+                                  >
+                                    ✕ Đổi file khác
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <UploadCloud size={32} color="#0284c7" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                                <label style={{ display: 'inline-block', padding: '9px 18px', backgroundColor: '#0284c7', color: '#ffffff', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2,132,199,0.2)' }}>
+                                  {uploadingSignedDoc ? 'Đang tải file lên...' : '📁 Bấm để chọn Ảnh chụp hoặc File PDF đơn đã ký'}
+                                  <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={handleSignedDocFileUpload}
+                                    style={{ display: 'none' }}
+                                    disabled={uploadingSignedDoc}
+                                  />
+                                </label>
+                                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '6px' }}>
+                                  Hỗ trợ file ảnh JPG, PNG hoặc file PDF (Tối đa 15MB). Hãy chụp rõ nét phần chữ ký.
+                                </div>
+                              </div>
+                            )}
+
+                            {signedDocError && (
+                              <div style={{ marginTop: '8px', color: '#dc2626', fontSize: '12.5px', fontWeight: '600' }}>
+                                ⚠️ {signedDocError}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* NỘI DUNG CÁCH 2: DÁN LINK GOOGLE DRIVE */}
+                        {uploadMethod === 'drive' && (
+                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '16px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                              <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <LinkIcon size={14} color="#0284c7" /> Dán đường link Google Drive của đơn đã ký:
+                              </label>
+
+                              {schoolDriveUrl && (
+                                <a
+                                  href={schoolDriveUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '4px 10px',
+                                    background: '#f0fdf4',
+                                    color: '#15803d',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    textDecoration: 'none',
+                                    border: '1px solid #86efac'
+                                  }}
+                                >
+                                  <FolderOpen size={13} /> 📁 Mở Thư Mục Google Drive Của Nhà Trường
+                                </a>
+                              )}
+                            </div>
+
+                            <input
+                              type="url"
+                              value={signedDocDriveLink}
+                              onChange={(e) => setSignedDocDriveLink(e.target.value)}
+                              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                              style={{
+                                width: '100%',
+                                padding: '10px 12px',
+                                borderRadius: '8px',
+                                border: '1.5px solid #cbd5e1',
+                                fontSize: '13.5px',
+                                boxSizing: 'border-box'
+                              }}
+                            />
+
+                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
+                              📌 <strong>Lưu ý:</strong> Vui lòng bật quyền truy cập là <em>"Bất kỳ ai có đường liên kết đều có thể xem"</em> để Thầy/Cô và Ban Giám hiệu có thể kiểm tra chữ ký.
+                            </div>
+                          </div>
+                        )}
+
+                        {/* TRẠNG THÁI TỔNG HỢP MINH CHỨNG */}
+                        <div style={{ marginTop: '14px', padding: '10px 12px', borderRadius: '8px', fontSize: '12.5px', backgroundColor: (signedDocUrl || signedDocDriveLink?.trim()) ? '#ecfdf5' : '#fffbeb', border: (signedDocUrl || signedDocDriveLink?.trim()) ? '1px solid #86efac' : '1px solid #fde68a', color: (signedDocUrl || signedDocDriveLink?.trim()) ? '#166534' : '#b45309', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {(signedDocUrl || signedDocDriveLink?.trim()) ? (
+                            <>
+                              <CheckCircle2 size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                              <span><strong>Đã sẵn sàng:</strong> Em đã hoàn tất đính kèm đơn đăng ký có chữ ký. Hãy kiểm tra lại thông tin và bấm nút "GỬI ĐĂNG KÝ" bên dưới.</span>
+                            </>
+                          ) : (
+                            <>
+                              <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                              <span><strong>Bắt buộc:</strong> Em cần hoàn tất Bước C (Tải ảnh/PDF hoặc dán link Google Drive) mới có thể gửi đăng ký.</span>
+                            </>
+                          )}
+                        </div>
+
+                      </div>
+                    </div>
+                  )}
+
                   <button 
                     type="submit" 
                     disabled={submitting}
@@ -1469,6 +2086,52 @@ export default function PublicRegistrations() {
             >
               Mở Trực Tiếp Trên Zalo
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* POPUP XEM LẠI FILE ĐƠN ĐĂNG KÝ ĐÃ TẢI LÊN */}
+      {previewDocModal && signedDocUrl && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '750px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', position: 'relative', boxShadow: '0 25px 50px rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', color: '#0f172a', fontSize: '15px' }}>
+                <FileCheck size={18} color="#0284c7" />
+                <span>Xem lại file đơn: {signedDocFileName || 'Đơn đăng ký có chữ ký'}</span>
+              </div>
+              <button 
+                onClick={() => setPreviewDocModal(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '16px', textAlign: 'center', background: '#334155' }}>
+              {signedDocUrl.startsWith('data:application/pdf') || signedDocUrl.toLowerCase().endsWith('.pdf') ? (
+                <iframe 
+                  src={signedDocUrl} 
+                  title="PDF Preview"
+                  style={{ width: '100%', height: '70vh', border: 'none', borderRadius: '8px' }}
+                />
+              ) : (
+                <img 
+                  src={signedDocUrl} 
+                  alt="Ảnh đơn có chữ ký"
+                  style={{ maxWidth: '100%', maxHeight: '75vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}
+                />
+              )}
+            </div>
+
+            <div style={{ padding: '12px 18px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '10px', background: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setPreviewDocModal(false)}
+                style={{ padding: '8px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}

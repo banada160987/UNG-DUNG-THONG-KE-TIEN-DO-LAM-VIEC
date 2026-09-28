@@ -193,63 +193,248 @@ export async function fetchStudentElectives({ studentCode, studentName, studentC
 }
 
 /**
- * Mẫu cấu hình Đợt Đăng Ký Học Thêm Khối 12 chuẩn GDPT 2018
+ * Mẫu cấu hình Đợt Đăng Ký Học Thêm Khối 12 chuẩn GDPT 2018 theo Thông tư Bộ GD&ĐT
  */
 export function getTuitionCampaignPreset() {
   return {
     title: 'Đăng ký học thêm các môn năm học 2026 - 2027 (Khối 12)',
-    description: 'Học sinh Khối 12 đăng ký học thêm / ôn thi Tốt nghiệp THPT 2027. Môn Toán và Ngữ Văn áp dụng cho toàn bộ học sinh Khối 12; các môn tự chọn chỉ áp dụng đúng 02 môn tự chọn học sinh đã đăng ký trước đó.',
+    description: 'Học sinh Khối 12 đăng ký học thêm / ôn thi Tốt nghiệp THPT 2027 theo quy định của Bộ GD&ĐT. Môn Toán và Ngữ Văn áp dụng cho toàn bộ học sinh Khối 12; các môn tự chọn chỉ áp dụng đúng 02 môn tự chọn học sinh đã đăng ký trước đó. Yêu cầu tải mẫu đơn, xin chữ ký của Cha Mẹ học sinh và nộp file lên hệ thống / Drive để hoàn tất.',
     target_grades: ['Khối 12'],
     prerequisite_mode: 'tuition_electives',
     form_schema: {
       prerequisite_mode: 'tuition_electives',
       is_tuition_registration: true,
+      requires_signed_document: true,
+      school_name: 'Trường THPT Cao Bá Quát',
+      school_year: '2026 - 2027',
       fields: [
         {
           id: 'field_tuition_subjects',
           type: 'checkbox',
-          label: 'Các môn đăng ký học thêm (Toán, Văn + 02 môn tự chọn của em)',
+          label: '1. Môn học đăng kí học thêm (Toán, Văn + 02 môn tự chọn của em)',
           options: ALL_TUITION_SUBJECTS,
           required: true,
           description: 'Môn Toán & Ngữ Văn mở cho toàn bộ khối 12. Học sinh chỉ được tích chọn thêm đúng 2 môn tự chọn đã đăng ký.'
         },
         {
-          id: 'field_tuition_target',
+          id: 'field_tuition_category',
           type: 'select',
-          label: 'Mục tiêu điểm số và định hướng xét tuyển',
+          label: '2. Đối tượng đăng kí học thêm (Quy định tại khoản 1 Điều 5)',
           options: [
-            '1. Ôn thi Tốt nghiệp THPT đạt chuẩn & Khá giỏi',
-            '2. Luyện thi Đánh giá năng lực (ĐGNL) - Đánh giá tư duy (ĐGTD)',
-            '3. Xét tuyển Đại học Top đầu (Khối A00, A01, B00, C00, D01...)',
-            '4. Củng cố kiến thức nền tảng & Chống điểm liệt'
+            '1. Học sinh có nguyện vọng học thêm để củng cố, nâng cao kiến thức, rèn luyện kỹ năng',
+            '2. Học sinh có nguyện vọng học thêm để ôn thi tuyển sinh, ôn thi tốt nghiệp THPT',
+            '3. Học sinh có học lực chưa đạt chuẩn, cần được bồi dưỡng, phụ đạo để đạt chuẩn kiến thức'
           ],
-          required: true
+          required: true,
+          description: 'Chọn đúng 1 trong 3 đối tượng quy định tại khoản 1 Điều 5 Thông tư quy định về dạy thêm, học thêm.'
+        },
+        {
+          id: 'field_preferred_teacher',
+          type: 'text',
+          label: '3. Nguyện vọng đăng kí giáo viên (nếu có)',
+          required: false,
+          description: 'Ghi rõ họ và tên giáo viên dạy thêm môn mong muốn (hoặc để trống nếu kính nhờ nhà trường phân công).'
+        },
+        {
+          id: 'field_parent_name',
+          type: 'text',
+          label: 'Họ và tên Cha / Mẹ / Người giám hộ ký đơn',
+          required: true,
+          description: 'Ghi rõ họ tên người sẽ ký vào mục Ý kiến của cha mẹ học sinh.'
         },
         {
           id: 'field_parent_phone',
           type: 'text',
-          label: 'Số điện thoại Zalo của Phụ huynh / Học sinh nhận lịch học & thông báo',
-          required: true
+          label: 'Số điện thoại Zalo của Cha Mẹ / Học sinh',
+          required: true,
+          description: 'Số điện thoại để nhà trường gửi thông báo xếp lớp, thời khóa biểu và liên lạc.'
         },
         {
           id: 'field_tuition_commitment',
           type: 'radio',
-          label: 'Cam kết chuyên cần và thực hiện nội quy học thêm',
+          label: 'Cam kết của học sinh và gia đình',
           options: [
-            'Em và gia đình cam kết tham gia học tập nghiêm túc, đúng giờ và chấp hành đầy đủ nội quy',
-            'Không đăng ký học thêm bất kỳ môn nào'
+            'Em và gia đình kính đề nghị nhà trường cho phép tham gia học thêm và cam kết chấp hành nghiêm túc nội quy',
+            'Không có nguyện vọng tham gia học thêm'
           ],
           required: true
-        },
-        {
-          id: 'field_student_note',
-          type: 'textarea',
-          label: 'Ghi chú / Nguyện vọng đặc biệt gửi Ban Giám Hiệu & Giáo viên bộ môn',
-          required: false
         }
       ]
     }
   };
+}
+
+/**
+ * Tạo nội dung file Word (.doc) theo đúng chuẩn mẫu "ĐƠN ĐĂNG KÍ HỌC THÊM"
+ * của Thông tư dạy thêm học thêm - Bộ Giáo dục và Đào tạo
+ */
+export function generateTuitionApplicationDoc({
+  studentName = '',
+  studentClass = '',
+  schoolYear = '2026 - 2027',
+  schoolName = 'Trường THPT Cao Bá Quát',
+  subjects = [],
+  category = '',
+  preferredTeacher = '',
+  parentName = '',
+  date = new Date()
+}) {
+  const d = date instanceof Date ? date : new Date();
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+
+  const subjectsText = Array.isArray(subjects) && subjects.length > 0 
+    ? subjects.join(', ') 
+    : (typeof subjects === 'string' && subjects ? subjects : '...........................................................................');
+
+  const gradeMatch = (studentClass || '').match(/^(10|11|12)/);
+  const gradeText = gradeMatch ? `Khối ${gradeMatch[1]}` : 'Khối 12';
+
+  const categoryText = category || 'Học sinh có nguyện vọng học thêm để củng cố, nâng cao kiến thức, rèn luyện kỹ năng và ôn thi tốt nghiệp THPT.';
+  const preferredTeacherText = preferredTeacher || 'Kính nhờ Nhà trường và Ban Giám hiệu phân công giáo viên giảng dạy theo kế hoạch của trường.';
+
+  return `
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+    <head>
+      <meta charset='utf-8'>
+      <title>ĐƠN ĐĂNG KÍ HỌC THÊM</title>
+      <style>
+        @page Section1 {
+          size: 21.0cm 29.7cm;
+          margin: 2.0cm 2.0cm 2.0cm 2.5cm;
+          mso-header-margin: 35.4pt;
+          mso-footer-margin: 35.4pt;
+          mso-paper-source: 0;
+        }
+        div.Section1 { page: Section1; }
+        body {
+          font-family: 'Times New Roman', serif;
+          font-size: 13pt;
+          line-height: 1.45;
+          color: #000000;
+        }
+        .header-table { width: 100%; border: none; margin-bottom: 20px; }
+        .header-table td { border: none; vertical-align: top; text-align: center; }
+        .title { text-align: center; font-size: 15pt; font-weight: bold; margin-top: 15px; margin-bottom: 20px; text-transform: uppercase; }
+        .recipient { margin-left: 50px; margin-bottom: 18px; font-weight: bold; }
+        .content-p { text-indent: 1cm; text-align: justify; margin-top: 7px; margin-bottom: 7px; line-height: 1.5; }
+        .item-p { margin-left: 0.5cm; text-align: justify; margin-top: 8px; margin-bottom: 8px; line-height: 1.5; }
+        .footer-table { width: 100%; border: none; margin-top: 25px; }
+        .footer-table td { border: none; vertical-align: top; text-align: center; }
+        .footnotes { margin-top: 35px; border-top: 1pt solid #000000; padding-top: 6px; font-size: 10pt; font-style: italic; }
+      </style>
+    </head>
+    <body>
+      <div class="Section1">
+        <table class="header-table" style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="width: 100%; text-align: center;">
+              <p style="margin: 0; font-weight: bold; font-size: 13pt; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+              <p style="margin: 4px 0 0 0; font-weight: bold; font-size: 14pt;">Độc lập - Tự do - Hạnh phúc</p>
+              <p style="margin: 5px 0 0 0; letter-spacing: 2px;">-------***-------</p>
+            </td>
+          </tr>
+        </table>
+
+        <div class="title">ĐƠN ĐĂNG KÍ HỌC THÊM</div>
+
+        <div class="recipient">
+          <p style="margin: 0;">Kính gửi:</p>
+          <p style="margin: 4px 0 0 20px;">- Hiệu trưởng ${schoolName};</p>
+          <p style="margin: 4px 0 0 20px;">- Giáo viên chủ nhiệm Lớp ${studentClass || '........'}.</p>
+        </div>
+
+        <p class="content-p">
+          Tên em là: <strong>${(studentName || '').toUpperCase()}</strong>
+        </p>
+        <p class="content-p">
+          Học sinh lớp: <strong>${studentClass || '...........'}</strong> (tên lớp đang học chính khóa tại nhà trường).
+        </p>
+        <p class="content-p">
+          Em viết đơn này kính mong nhà trường cho phép em được đăng kí học thêm trong năm học <strong>${schoolYear}</strong><sup>1</sup>, cụ thể như sau:
+        </p>
+
+        <p class="item-p">
+          <strong>1. Môn học đăng kí học thêm:</strong> <span style="color: #000080; font-weight: bold;">${subjectsText}</span> (ghi tên môn học theo chương trình giáo dục), lớp <strong>${gradeText}</strong> (ghi khối lớp đăng kí học thêm).
+        </p>
+
+        <p class="item-p">
+          <strong>2. Đối tượng đăng kí học thêm<sup>2</sup>:</strong> ${categoryText}
+        </p>
+
+        <p class="item-p">
+          <strong>3. Nguyện vọng đăng kí giáo viên (nếu có):</strong> ${preferredTeacherText}
+        </p>
+
+        <p class="content-p">
+          Em xin trân trọng cảm ơn!
+        </p>
+
+        <table class="footer-table" style="width: 100%; border-collapse: collapse; margin-top: 25px;">
+          <tr>
+            <td style="width: 50%; text-align: center; vertical-align: top;">
+              <p style="margin: 0; font-weight: bold; text-transform: uppercase;">Ý KIẾN CỦA CHA MẸ HỌC SINH</p>
+              <p style="margin: 3px 0 0 0; font-style: italic; font-size: 11pt;">(Đối với người chưa thành niên)</p>
+              <p style="margin: 3px 0 0 0; font-style: italic; font-size: 10.5pt;">(Kí và ghi rõ họ tên)</p>
+              <div style="height: 70px;"></div>
+              <p style="margin: 0; font-weight: bold;">${parentName || ''}</p>
+            </td>
+            <td style="width: 50%; text-align: center; vertical-align: top;">
+              <p style="margin: 0; font-style: italic;">Đắk Lắk, ngày ${day} tháng ${month} năm ${year}</p>
+              <p style="margin: 3px 0 0 0; font-weight: bold; text-transform: uppercase;">NGƯỜI LÀM ĐƠN</p>
+              <p style="margin: 3px 0 0 0; font-style: italic; font-size: 10.5pt;">(Kí và ghi rõ họ tên)</p>
+              <div style="height: 70px;"></div>
+              <p style="margin: 0; font-weight: bold;">${studentName || ''}</p>
+            </td>
+          </tr>
+        </table>
+
+        <div class="footnotes">
+          <p style="margin: 2px 0;"><sup>1</sup> Ghi năm học học sinh có nguyện vọng đăng kí học thêm</p>
+          <p style="margin: 2px 0;"><sup>2</sup> Ghi rõ 1 trong 3 đối tượng quy định tại khoản 1 Điều 5 Thông tư này</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+/**
+ * Tải file Word (.doc) đơn đăng ký học thêm đã điền thông tin học sinh
+ */
+export function downloadTuitionApplicationDoc(params) {
+  const htmlContent = generateTuitionApplicationDoc(params);
+  const cleanName = (params.studentName || 'HocSinh').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
+  const cleanClass = (params.studentClass || '12').replace(/[^a-zA-Z0-9]/g, '');
+  const fileName = `Don_Dang_Ki_Hoc_Them_${cleanClass}_${cleanName}.doc`;
+  
+  const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+/**
+ * Mở cửa sổ in trực tiếp hoặc lưu PDF đơn đăng ký học thêm
+ */
+export function printTuitionApplicationDoc(params) {
+  const htmlContent = generateTuitionApplicationDoc(params);
+  const printWindow = window.open('', '_blank', 'width=850,height=950');
+  if (printWindow) {
+    printWindow.document.open();
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 450);
+  }
 }
 
 /**
