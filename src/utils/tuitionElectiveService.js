@@ -251,3 +251,15 @@ export function getTuitionCampaignPreset() {
     }
   };
 }
+
+/**
+ * Kiểm tra xem một đợt đăng ký có bị Quản trị viên ẩn khỏi Cổng học sinh hay không
+ */
+export function isCampaignHidden(cam) {
+  if (!cam) return false;
+  if (cam.is_hidden === true) return true;
+  if (cam.form_schema && typeof cam.form_schema === 'object' && !Array.isArray(cam.form_schema)) {
+    if (cam.form_schema.is_hidden === true) return true;
+  }
+  return false;
+}

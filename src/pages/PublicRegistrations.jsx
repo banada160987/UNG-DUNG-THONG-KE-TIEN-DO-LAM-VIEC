@@ -9,12 +9,14 @@ import {
   fetchStudentElectives,
   normalizeSubjectName,
   ALL_TUITION_SUBJECTS,
-  SUBJECT_METADATA
+  SUBJECT_METADATA,
+  isCampaignHidden
 } from '../utils/tuitionElectiveService';
 
 export default function PublicRegistrations() {
   const [campaigns, setCampaigns] = useState([]);
   const [selectedCampaign, setSelectedCampaign] = useState(null);
+  const [statusFilter, setStatusFilter] = useState('open'); // 'open' | 'closed' | 'all'
   
   // Verification States
   const [studentRoster, setStudentRoster] = useState([]);
@@ -379,6 +381,29 @@ export default function PublicRegistrations() {
     return getSubDisciplinesForClub(requiredClubName);
   }, [requiredClubName]);
 
+  // Lọc các đợt không bị ẩn bởi Quản trị viên
+  const visibleCampaigns = useMemo(() => {
+    return campaigns.filter(c => !isCampaignHidden(c));
+  }, [campaigns]);
+
+  const openCampaignsCount = useMemo(() => {
+    return visibleCampaigns.filter(c => !getCampaignStatus(c).isLocked).length;
+  }, [visibleCampaigns]);
+
+  const closedCampaignsCount = useMemo(() => {
+    return visibleCampaigns.filter(c => getCampaignStatus(c).isLocked).length;
+  }, [visibleCampaigns]);
+
+  const displayedCampaigns = useMemo(() => {
+    if (statusFilter === 'open') {
+      return visibleCampaigns.filter(c => !getCampaignStatus(c).isLocked);
+    }
+    if (statusFilter === 'closed') {
+      return visibleCampaigns.filter(c => getCampaignStatus(c).isLocked);
+    }
+    return visibleCampaigns;
+  }, [visibleCampaigns, statusFilter]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isVerified) {
@@ -601,14 +626,125 @@ export default function PublicRegistrations() {
         
         {!selectedCampaign ? (
           <div>
-            <h3 style={{ marginTop: 0, color: '#334155' }}>Danh sách các đợt đăng ký ({campaigns.length})</h3>
-            {campaigns.length === 0 ? (
-              <div style={{ padding: '20px', textAlign: 'center', background: '#f8fafc', borderRadius: '10px', color: '#64748b' }}>
-                Hiện tại nhà trường chưa tạo đợt đăng ký nào.
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+              <h3 style={{ margin: 0, color: '#334155' }}>
+                Danh sách đợt đăng ký ({displayedCampaigns.length})
+              </h3>
+
+              {/* BỘ LỌC TRẠNG THÁI: ĐANG MỞ (MẶC ĐỊNH) / ĐÃ ĐÓNG / TẤT CẢ */}
+              <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '4px', borderRadius: '10px', gap: '4px' }}>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('open')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: statusFilter === 'open' ? '#ffffff' : 'transparent',
+                    color: statusFilter === 'open' ? '#16a34a' : '#64748b',
+                    fontWeight: statusFilter === 'open' ? '800' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: statusFilter === 'open' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.15s'
+                  }}
+                  title="Chỉ hiển thị các đợt đang mở tiếp nhận hồ sơ"
+                >
+                  <span>🟢 Đang mở</span>
+                  <span style={{ fontSize: '11px', background: statusFilter === 'open' ? '#dcfce7' : '#e2e8f0', color: statusFilter === 'open' ? '#15803d' : '#475569', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    {openCampaignsCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('closed')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: statusFilter === 'closed' ? '#ffffff' : 'transparent',
+                    color: statusFilter === 'closed' ? '#dc2626' : '#64748b',
+                    fontWeight: statusFilter === 'closed' ? '800' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: statusFilter === 'closed' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.15s'
+                  }}
+                  title="Xem các đợt đã tạm khóa hoặc kết thúc"
+                >
+                  <span>🔴 Đã khóa</span>
+                  <span style={{ fontSize: '11px', background: statusFilter === 'closed' ? '#fee2e2' : '#e2e8f0', color: statusFilter === 'closed' ? '#b91c1c' : '#475569', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    {closedCampaignsCount}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: statusFilter === 'all' ? '#ffffff' : 'transparent',
+                    color: statusFilter === 'all' ? '#0f172a' : '#64748b',
+                    fontWeight: statusFilter === 'all' ? '800' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: statusFilter === 'all' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    transition: 'all 0.15s'
+                  }}
+                  title="Hiển thị toàn bộ các đợt"
+                >
+                  <span>Tất cả</span>
+                  <span style={{ fontSize: '11px', background: statusFilter === 'all' ? '#e2e8f0' : '#cbd5e1', color: '#334155', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    {visibleCampaigns.length}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* CHÚ THÍCH GỢI Ý KHI ĐANG ẨN ĐỢT ĐÃ KHÓA */}
+            {statusFilter === 'open' && closedCampaignsCount > 0 && (
+              <div style={{ marginBottom: '14px', fontSize: '12.5px', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <span>✨ Đang ẩn <strong>{closedCampaignsCount} đợt đã khóa</strong> để giao diện gọn gàng.</span>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('closed')}
+                  style={{ background: 'none', border: 'none', color: '#0284c7', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', fontWeight: '600' }}
+                >
+                  Xem đợt đã khóa →
+                </button>
+              </div>
+            )}
+
+            {displayedCampaigns.length === 0 ? (
+              <div style={{ padding: '30px 20px', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', color: '#64748b', border: '1px dashed #cbd5e1' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: '600', color: '#475569' }}>
+                  {statusFilter === 'open' ? 'Hiện tại không có đợt đăng ký nào đang mở.' : statusFilter === 'closed' ? 'Không có đợt nào đang bị khóa.' : 'Hiện tại chưa có đợt đăng ký nào.'}
+                </p>
+                {statusFilter === 'open' && closedCampaignsCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter('all')}
+                    style={{ padding: '6px 14px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Xem tất cả ({visibleCampaigns.length} đợt)
+                  </button>
+                )}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {campaigns.map(cam => {
+                {displayedCampaigns.map(cam => {
                   const status = getCampaignStatus(cam);
                   const reqClub = getPrerequisiteClub(cam);
                   return (

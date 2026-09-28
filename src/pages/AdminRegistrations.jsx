@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck, GraduationCap, Sparkles, BookOpen } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck, GraduationCap, Sparkles, BookOpen, Eye, EyeOff } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
@@ -15,7 +15,8 @@ import {
   ELECTIVE_SUBJECTS,
   ALL_TUITION_SUBJECTS,
   SUBJECT_METADATA,
-  getTuitionCampaignPreset
+  getTuitionCampaignPreset,
+  isCampaignHidden
 } from '../utils/tuitionElectiveService';
 
 export const getSchemaFields = (cam) => {
@@ -39,6 +40,8 @@ export default function AdminRegistrations() {
   const [prerequisiteMode, setPrerequisiteMode] = useState('none'); // 'none' | 'club' | 'tuition_electives'
   const [prerequisiteClub, setPrerequisiteClub] = useState(''); // Ràng buộc CLB mẹ
   const [isActive, setIsActive] = useState(true);
+  const [isHidden, setIsHidden] = useState(false);
+  const [adminCampaignFilter, setAdminCampaignFilter] = useState('all'); // 'all' | 'open' | 'locked' | 'hidden'
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [closedNotice, setClosedNotice] = useState('');
@@ -221,6 +224,9 @@ export default function AdminRegistrations() {
     }
     setPrerequisiteMode(pMode);
 
+    const hidden = isCampaignHidden(cam);
+    setIsHidden(hidden);
+
     setIsActive(cam.is_active);
     setStartDate(cam.start_date ? new Date(new Date(cam.start_date).getTime() - (new Date(cam.start_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
     setEndDate(cam.end_date ? new Date(new Date(cam.end_date).getTime() - (new Date(cam.end_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
@@ -257,6 +263,30 @@ export default function AdminRegistrations() {
       setCampaigns(campaigns.map(c => c.id === cam.id ? { ...c, is_active: nextActive } : c));
     } catch (err) {
       alert("Lỗi khi đổi trạng thái khóa: " + err.message);
+    }
+  };
+
+  const handleQuickToggleHide = async (cam) => {
+    try {
+      const currentlyHidden = isCampaignHidden(cam);
+      const nextHidden = !currentlyHidden;
+
+      const existingSchema = (cam.form_schema && typeof cam.form_schema === 'object' && !Array.isArray(cam.form_schema))
+        ? { ...cam.form_schema }
+        : { fields: Array.isArray(cam.form_schema) ? cam.form_schema : [] };
+      
+      existingSchema.is_hidden = nextHidden;
+
+      await DualSupabaseService.update('cbq_registration_campaigns', { form_schema: existingSchema }, 'id', cam.id);
+      
+      setCampaigns(campaigns.map(c => {
+        if (c.id === cam.id) {
+          return { ...c, form_schema: existingSchema, is_hidden: nextHidden };
+        }
+        return c;
+      }));
+    } catch (err) {
+      alert("Lỗi khi đổi trạng thái ẩn/hiện: " + err.message);
     }
   };
 
@@ -629,7 +659,8 @@ export default function AdminRegistrations() {
         closed_notice: closedNotice.trim(),
         prerequisite_mode: prerequisiteMode,
         prerequisite_club: prerequisiteMode === 'club' ? (prerequisiteClub || null) : null,
-        is_tuition_registration: prerequisiteMode === 'tuition_electives'
+        is_tuition_registration: prerequisiteMode === 'tuition_electives',
+        is_hidden: isHidden
       };
 
       const payload = {
@@ -651,6 +682,7 @@ export default function AdminRegistrations() {
       alert("Lưu đợt đăng ký thành công!");
       setShowForm(false);
       setEditingId(null);
+      setIsHidden(false);
       setPrerequisiteMode('none');
       setPrerequisiteClub('');
       fetchCampaigns();
@@ -1443,6 +1475,14 @@ export default function AdminRegistrations() {
     return list;
   }, [results, searchQuery, selectedOptionFilter, sortField, sortOrder]);
 
+  // Bộ lọc danh sách đợt đăng ký cho Quản trị viên
+  const filteredAdminCampaigns = useMemo(() => {
+    if (adminCampaignFilter === 'open') return campaigns.filter(c => c.is_active);
+    if (adminCampaignFilter === 'locked') return campaigns.filter(c => !c.is_active);
+    if (adminCampaignFilter === 'hidden') return campaigns.filter(c => isCampaignHidden(c));
+    return campaigns;
+  }, [campaigns, adminCampaignFilter]);
+
   // 📄 XUẤT BÁO CÁO FILE WORD (.DOC) THEO CHUẨN NGHỊ ĐỊNH 30/2020/NĐ-CP
   const exportToWordDecree30 = () => {
     const reportElement = document.getElementById('decree30-report-content');
@@ -1596,6 +1636,7 @@ export default function AdminRegistrations() {
                       setPrerequisiteMode('tuition_electives');
                       setPrerequisiteClub('');
                       setIsActive(true);
+                      setIsHidden(false);
                       setFormSchema(preset.form_schema.fields);
                       setShowForm(true);
                     }} 
@@ -1613,6 +1654,7 @@ export default function AdminRegistrations() {
                       setPrerequisiteMode('none');
                       setPrerequisiteClub('');
                       setIsActive(true);
+                      setIsHidden(false);
                       setFormSchema([]);
                       setShowForm(true);
                     }} 
@@ -1748,6 +1790,24 @@ export default function AdminRegistrations() {
                       </label>
                     </div>
 
+                    <div>
+                      <label style={styles.label}>Hiển thị trên Cổng học sinh</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={!isHidden}
+                          onChange={(e) => setIsHidden(!e.target.checked)}
+                          style={{ width: '18px', height: '18px', accentColor: '#7c3aed' }}
+                        />
+                        <span style={{ fontWeight: !isHidden ? 'bold' : 'normal', color: !isHidden ? '#7c3aed' : '#64748b', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          {!isHidden ? <><Eye size={16} /> Hiển thị công khai trên Cổng</> : <><EyeOff size={16} color="#64748b" /> 🙈 Đã ẩn khỏi Cổng học sinh</>}
+                        </span>
+                      </label>
+                      <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                        *Nếu ẩn, học sinh vào Cổng sẽ không nhìn thấy đợt này. Quản trị viên vẫn xem và xuất Excel bình thường.
+                      </small>
+                    </div>
+
                     {/* HẠN CHÓT & HẸN GIỜ ĐÓNG MỞ TỰ ĐỘNG */}
                     <div style={{ gridColumn: '1 / -1', background: '#f8fafc', padding: '15px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                       <div style={{ gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: '6px', color: '#0f172a', fontWeight: 'bold' }}>
@@ -1870,10 +1930,84 @@ export default function AdminRegistrations() {
               )}
 
               <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
-                  <h3 style={{ margin: 0, color: '#be123c' }}>
-                    📋 Danh sách các Đợt đăng ký ({campaigns.length})
-                  </h3>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '15px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, color: '#be123c' }}>
+                      📋 Danh sách các Đợt đăng ký ({campaigns.length})
+                    </h3>
+
+                    {/* BỘ LỌC ADMIN */}
+                    <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', gap: '3px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCampaignFilter('all')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: adminCampaignFilter === 'all' ? '#ffffff' : 'transparent',
+                          color: adminCampaignFilter === 'all' ? '#0f172a' : '#64748b',
+                          fontWeight: adminCampaignFilter === 'all' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: adminCampaignFilter === 'all' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        Tất cả ({campaigns.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCampaignFilter('open')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: adminCampaignFilter === 'open' ? '#ffffff' : 'transparent',
+                          color: adminCampaignFilter === 'open' ? '#16a34a' : '#64748b',
+                          fontWeight: adminCampaignFilter === 'open' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: adminCampaignFilter === 'open' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        🟢 Đang mở ({campaigns.filter(c => c.is_active).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCampaignFilter('locked')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: adminCampaignFilter === 'locked' ? '#ffffff' : 'transparent',
+                          color: adminCampaignFilter === 'locked' ? '#ef4444' : '#64748b',
+                          fontWeight: adminCampaignFilter === 'locked' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: adminCampaignFilter === 'locked' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        🔴 Đã khóa ({campaigns.filter(c => !c.is_active).length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAdminCampaignFilter('hidden')}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: adminCampaignFilter === 'hidden' ? '#ffffff' : 'transparent',
+                          color: adminCampaignFilter === 'hidden' ? '#7c3aed' : '#64748b',
+                          fontWeight: adminCampaignFilter === 'hidden' ? 'bold' : 'normal',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          boxShadow: adminCampaignFilter === 'hidden' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        🙈 Đang ẩn ({campaigns.filter(c => isCampaignHidden(c)).length})
+                      </button>
+                    </div>
+                  </div>
 
                   {/* NÚT THAO TÁC HÀNG LOẠT */}
                   <div style={{ display: 'flex', gap: '8px' }}>
@@ -1901,22 +2035,23 @@ export default function AdminRegistrations() {
                         <th style={{ padding: '10px' }}>Tiêu đề</th>
                         <th style={{ padding: '10px' }}>Khối áp dụng</th>
                         <th style={{ padding: '10px' }}>Nơi lưu</th>
-                        <th style={{ padding: '10px' }}>Trạng thái</th>
+                        <th style={{ padding: '10px' }}>Trạng thái & Cổng</th>
                         <th style={{ padding: '10px' }}>Hạn chót</th>
                         <th style={{ padding: '10px', textAlign: 'right' }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {campaigns.length === 0 ? (
-                        <tr><td colSpan="6" style={{ padding: '15px', textAlign: 'center', color: '#64748b' }}>Chưa có đợt đăng ký nào</td></tr>
-                      ) : campaigns.map(cam => {
+                      {filteredAdminCampaigns.length === 0 ? (
+                        <tr><td colSpan="6" style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Không có đợt đăng ký nào phù hợp với bộ lọc</td></tr>
+                      ) : filteredAdminCampaigns.map(cam => {
                         const now = new Date();
                         const isExpired = cam.end_date && now > new Date(cam.end_date);
                         const isPending = cam.start_date && now < new Date(cam.start_date);
                         const schemaFields = getSchemaFields(cam);
+                        const isHidden = isCampaignHidden(cam);
 
                         return (
-                          <tr key={cam.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <tr key={cam.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: isHidden ? '#faf5ff' : 'transparent' }}>
                             <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>
                               {cam.title}
                               <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
@@ -1937,29 +2072,64 @@ export default function AdminRegistrations() {
                               </span>
                             </td>
                             <td style={{ padding: '10px' }}>
-                              {!cam.is_active ? (
-                                <span style={{ color: '#ef4444', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fef2f2', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                                  <Lock size={12} /> Đã khóa
-                                </span>
-                              ) : isPending ? (
-                                <span style={{ color: '#d97706', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fffbeb', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                                  <Clock size={12} /> Chờ đến giờ
-                                </span>
-                              ) : isExpired ? (
-                                <span style={{ color: '#ea580c', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff7ed', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                                  <Clock size={12} /> Đã hết hạn
-                                </span>
-                              ) : (
-                                <span style={{ color: '#16a34a', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f0fdf4', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
-                                  🟢 Đang mở
-                                </span>
-                              )}
+                              <div>
+                                {!cam.is_active ? (
+                                  <span style={{ color: '#ef4444', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fef2f2', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                    <Lock size={12} /> Đã khóa
+                                  </span>
+                                ) : isPending ? (
+                                  <span style={{ color: '#d97706', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fffbeb', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                    <Clock size={12} /> Chờ đến giờ
+                                  </span>
+                                ) : isExpired ? (
+                                  <span style={{ color: '#ea580c', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#fff7ed', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                    <Clock size={12} /> Đã hết hạn
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#16a34a', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#f0fdf4', padding: '3px 8px', borderRadius: '12px', fontSize: '12px' }}>
+                                    🟢 Đang mở
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ marginTop: '4px' }}>
+                                {isHidden ? (
+                                  <span style={{ color: '#6b21a8', background: '#f3e8ff', border: '1px solid #d8b4fe', padding: '2px 6px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                    <EyeOff size={11} /> 🙈 Đã ẩn Cổng HS
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#0369a1', background: '#e0f2fe', border: '1px solid #bae6fd', padding: '2px 6px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                    <Eye size={11} /> 👁️ Hiện trên Cổng
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td style={{ padding: '10px', fontSize: '12px', color: '#64748b' }}>
                               {cam.end_date ? new Date(cam.end_date).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' }) : 'Không có'}
                             </td>
                             <td style={{ padding: '10px', textAlign: 'right' }}>
                               <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                                {/* NÚT QUICK HIDE / SHOW TOGGLE */}
+                                <button 
+                                  onClick={() => handleQuickToggleHide(cam)} 
+                                  style={{ 
+                                    padding: '6px 10px', 
+                                    borderRadius: '6px', 
+                                    border: isHidden ? '1px solid #cbd5e1' : '1px solid #ddd6fe', 
+                                    background: isHidden ? '#f1f5f9' : '#f5f3ff', 
+                                    color: isHidden ? '#64748b' : '#7c3aed', 
+                                    cursor: 'pointer', 
+                                    fontWeight: 'bold', 
+                                    fontSize: '12px', 
+                                    display: 'inline-flex', 
+                                    alignItems: 'center', 
+                                    gap: '4px' 
+                                  }}
+                                  title={isHidden ? 'Đang ẩn khỏi Cổng học sinh. Bấm để Hiện lại' : 'Đang hiện trên Cổng học sinh. Bấm để Ẩn đi'}
+                                >
+                                  {isHidden ? <Eye size={13} /> : <EyeOff size={13} />}
+                                  {isHidden ? 'Hiện Cổng' : 'Ẩn Cổng'}
+                                </button>
+
                                 {/* NÚT QUICK LOCK TOGGLE */}
                                 <button 
                                   onClick={() => handleQuickToggleLock(cam)} 
