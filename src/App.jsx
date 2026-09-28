@@ -62,6 +62,8 @@ const AppHub = lazy(() => import('./pages/AppHub'));
 const DepartmentDrive = lazy(() => import('./pages/DepartmentDrive'));
 const PublicRegistrations = lazy(() => import('./pages/PublicRegistrations'));
 const AdminRegistrations = lazy(() => import('./pages/AdminRegistrations'));
+const PublicMeetingAttendance = lazy(() => import('./pages/PublicMeetingAttendance'));
+const AdminMeetingAttendance = lazy(() => import('./pages/AdminMeetingAttendance'));
 
 // Student Features
 const ClassJournal = lazy(() => import('./pages/student_features/ClassJournal'));
@@ -156,6 +158,9 @@ function App() {
             <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
             <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
             <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
+            <Route path="/hop-online" element={<PublicMeetingAttendance />} />
+            <Route path="/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
+            <Route path="/giao-vien/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
             
             {/* Teacher Portal */}
             <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
@@ -221,6 +226,8 @@ function App() {
               <Route path="/admin/the-thao" element={permissions.canViewSports ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y" element={permissions.canViewFeedback ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y-quy-hoc-bong" element={<Navigate to="/admin/gop-y" replace />} />
+              <Route path="/admin/diem-danh-hop-online" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminMeetingAttendance /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/hop-online" element={<Navigate to="/admin/diem-danh-hop-online" replace />} />
               <Route path="/admin/truyen-lua-control" element={(role === 'admin' || role === 'secretary' || permissions.canViewPages) ? <AdminTorchControl /> : <Navigate to="/admin/committee" replace />} />
             </>
           ) : (

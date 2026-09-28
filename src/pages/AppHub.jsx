@@ -88,6 +88,21 @@ export default function AppHub() {
       }
     }
 
+    // Luôn đảm bảo có ứng dụng Điểm Danh Họp Trực Tuyến & Sĩ Số
+    if (!filtered.some(a => (a.url || '').includes('hop-online'))) {
+      filtered.unshift({
+        id: 'online_meeting_attendance',
+        title: 'Điểm Danh Họp Online & Sĩ Số',
+        url: '/hop-online',
+        category: 'Hành Chính & Chuyên Môn',
+        description: 'Điểm danh phiên họp trực tuyến bằng OTP 6 số, đếm ngược tự động và Tổ trưởng (TTCM) báo cáo sĩ số tổ trực tiếp cho BGH.',
+        icon: 'Video',
+        bg_color: '#ecfdf5',
+        border_color: '#a7f3d0',
+        type: 'hub_global'
+      });
+    }
+
     // Luôn đảm bảo có ứng dụng Căn Chỉnh Văn Bản Chuẩn Nghị Định 30
     if (!filtered.some(a => (a.url || '').includes('can-chinh-nghi-dinh-30'))) {
       filtered.unshift({

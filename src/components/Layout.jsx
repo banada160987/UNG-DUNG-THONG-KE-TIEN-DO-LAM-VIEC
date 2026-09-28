@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -69,6 +69,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác & Thời Khóa Biểu', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/staff', icon: Users, label: '👨‍🏫 Đội Ngũ Cán Bộ & Phân Công Dạy', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
+    { path: '/admin/diem-danh-hop-online', icon: Video, label: '💻 Điểm Danh Họp Trực Tuyến & Sĩ Số', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' || !!permissions.canViewDocs },
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Sổ Sách (Hub)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
 
     // 2. 📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN
