@@ -46,6 +46,20 @@ export default function AdminMeetingAttendance() {
   const [copiedToast, setCopiedToast] = useState('');
   const [showSqlModal, setShowSqlModal] = useState(false);
 
+  // Modal Thư ký nhập / sửa báo cáo sĩ số cho Tổ (Báo cáo Zalo / Trực tiếp)
+  const [showDeptReportModal, setShowDeptReportModal] = useState(false);
+  const [modalDept, setModalDept] = useState('');
+  const [modalReporterName, setModalReporterName] = useState('Tổ trưởng (Báo qua Zalo)');
+  const [modalReportSource, setModalReportSource] = useState('ZALO'); // 'ZALO' | 'DIRECT' | 'SECRETARY'
+  const [modalReportMode, setModalReportMode] = useState('MEMBERS'); // 'MEMBERS' | 'COUNTS'
+  const [modalMemberStatuses, setModalMemberStatuses] = useState({}); // { [staffName]: { status, reason } }
+  const [modalManualPresent, setModalManualPresent] = useState(0);
+  const [modalManualExcused, setModalManualExcused] = useState(0);
+  const [modalManualUnexcused, setModalManualUnexcused] = useState(0);
+  const [modalAbsentNote, setModalAbsentNote] = useState('');
+  const [modalDeptNote, setModalDeptNote] = useState('');
+  const [submittingDeptReport, setSubmittingDeptReport] = useState(false);
+
   // Timer ref
   const timerRef = useRef(null);
 
@@ -107,7 +121,7 @@ export default function AdminMeetingAttendance() {
       setStaffList(staff);
 
       if (allMeetings.length > 0) {
-        setSelectedMeetingId(allMeetings[0].id);
+        setSelectedMeetingId(prev => (prev && allMeetings.some(m => m.id === prev)) ? prev : allMeetings[0].id);
       }
     } catch (e) {
       console.error('Lỗi nạp dữ liệu:', e);
@@ -296,6 +310,203 @@ export default function AdminMeetingAttendance() {
       setCopiedToast(message);
       setTimeout(() => setCopiedToast(''), 3000);
     });
+  };
+
+  // =========================================================================
+  // XỬ LÝ THƯ KÝ NHẬP / SỬA BÁO CÁO SĨ SỐ CHO TỔ (THEO ZALO HOẶC TRỰC TIẾP)
+  // =========================================================================
+  const handleOpenDeptReportModal = (deptName) => {
+    if (!currentMeeting) {
+      alert('Vui lòng chọn hoặc tạo một cuộc họp trước!');
+      return;
+    }
+    const targetDept = deptName || departments[0] || 'Tổ Toán';
+    setModalDept(targetDept);
+    setModalReportSource('ZALO');
+
+    const existingRep = deptReports.find(r => r.department === targetDept);
+    const deptMembers = staffList.filter(s => s.department === targetDept);
+
+    if (existingRep) {
+      setModalReporterName(existingRep.reporter_name || 'Tổ trưởng (Báo qua Zalo)');
+      setModalDeptNote(existingRep.note || '');
+      setModalManualPresent(existingRep.present_count || 0);
+      setModalManualExcused(existingRep.excused_count || 0);
+      setModalManualUnexcused(existingRep.unexcused_count || 0);
+      if (existingRep.absent_details && existingRep.absent_details.length > 0) {
+        setModalAbsentNote(existingRep.absent_details.map(a => `${a.name} (${a.reason || 'Có phép'})`).join('; '));
+      } else {
+        setModalAbsentNote('');
+      }
+    } else {
+      setModalReporterName('Tổ trưởng (Báo qua Zalo)');
+      setModalDeptNote('');
+      setModalManualPresent(deptMembers.length);
+      setModalManualExcused(0);
+      setModalManualUnexcused(0);
+      setModalAbsentNote('');
+    }
+
+    const initialStatuses = {};
+    deptMembers.forEach(s => {
+      const att = attendances.find(a => a.staff_name.toLowerCase().trim() === s.name.toLowerCase().trim());
+      initialStatuses[s.name] = {
+        status: att ? att.status : 'PRESENT',
+        reason: att?.note || ''
+      };
+    });
+    setModalMemberStatuses(initialStatuses);
+    setModalReportMode(deptMembers.length > 0 ? 'MEMBERS' : 'COUNTS');
+    setShowDeptReportModal(true);
+  };
+
+  const handleModalDeptChange = (newDept) => {
+    setModalDept(newDept);
+    const existingRep = deptReports.find(r => r.department === newDept);
+    const deptMembers = staffList.filter(s => s.department === newDept);
+
+    if (existingRep) {
+      setModalReporterName(existingRep.reporter_name || 'Tổ trưởng (Báo qua Zalo)');
+      setModalDeptNote(existingRep.note || '');
+      setModalManualPresent(existingRep.present_count || 0);
+      setModalManualExcused(existingRep.excused_count || 0);
+      setModalManualUnexcused(existingRep.unexcused_count || 0);
+      if (existingRep.absent_details && existingRep.absent_details.length > 0) {
+        setModalAbsentNote(existingRep.absent_details.map(a => `${a.name} (${a.reason || 'Có phép'})`).join('; '));
+      } else {
+        setModalAbsentNote('');
+      }
+    } else {
+      setModalManualPresent(deptMembers.length);
+      setModalManualExcused(0);
+      setModalManualUnexcused(0);
+      setModalAbsentNote('');
+    }
+
+    const initialStatuses = {};
+    deptMembers.forEach(s => {
+      const att = attendances.find(a => a.staff_name.toLowerCase().trim() === s.name.toLowerCase().trim());
+      initialStatuses[s.name] = {
+        status: att ? att.status : 'PRESENT',
+        reason: att?.note || ''
+      };
+    });
+    setModalMemberStatuses(initialStatuses);
+    if (deptMembers.length > 0 && modalReportMode !== 'COUNTS') {
+      setModalReportMode('MEMBERS');
+    }
+  };
+
+  const handleModalMemberStatusChange = (staffName, field, value) => {
+    setModalMemberStatuses(prev => ({
+      ...prev,
+      [staffName]: {
+        ...prev[staffName],
+        [field]: value
+      }
+    }));
+  };
+
+  const handleSetAllMembersPresent = () => {
+    setModalMemberStatuses(prev => {
+      const updated = { ...prev };
+      Object.keys(updated).forEach(name => {
+        updated[name] = { ...updated[name], status: 'PRESENT', reason: '' };
+      });
+      return updated;
+    });
+  };
+
+  const handleSaveDeptReport = async (e) => {
+    e.preventDefault();
+    if (!currentMeeting) return alert('Vui lòng chọn cuộc họp!');
+    if (!modalDept) return alert('Vui lòng chọn Tổ chuyên môn!');
+
+    setSubmittingDeptReport(true);
+    try {
+      const deptMembers = staffList.filter(s => s.department === modalDept);
+      let presentCount = 0;
+      let excusedCount = 0;
+      let unexcusedCount = 0;
+      let absentDetails = [];
+      let verifiedAttendances = [];
+
+      if (modalReportMode === 'MEMBERS') {
+        deptMembers.forEach(s => {
+          const item = modalMemberStatuses[s.name] || { status: 'PRESENT', reason: '' };
+          if (item.status === 'PRESENT') {
+            presentCount++;
+          } else if (item.status === 'EXCUSED') {
+            excusedCount++;
+            absentDetails.push({ name: s.name, reason: item.reason || 'Có phép' });
+          } else {
+            unexcusedCount++;
+            absentDetails.push({ name: s.name, reason: item.reason || 'Không phép' });
+          }
+
+          verifiedAttendances.push({
+            staff_id: s.id,
+            staff_name: s.name,
+            title: s.title || 'Giáo viên',
+            status: item.status,
+            note: item.reason || (item.status === 'PRESENT' ? 'Thư ký xác nhận có mặt (Theo Zalo/Hội trường)' : 'Báo vắng')
+          });
+        });
+      } else {
+        presentCount = Number(modalManualPresent) || 0;
+        excusedCount = Number(modalManualExcused) || 0;
+        unexcusedCount = Number(modalManualUnexcused) || 0;
+        if (modalAbsentNote.trim()) {
+          absentDetails = [{ name: 'Danh sách vắng', reason: modalAbsentNote.trim() }];
+        }
+      }
+
+      const roleText = modalReportSource === 'ZALO' 
+        ? 'Tổ trưởng báo qua Zalo (Thư ký nhập)' 
+        : (modalReportSource === 'DIRECT' ? 'Tổ trưởng báo trực tiếp tại hội trường' : 'Thư ký điểm danh thay');
+
+      await OnlineMeetingService.submitDepartmentReport({
+        meetingId: currentMeeting.id,
+        department: modalDept,
+        reporterName: modalReporterName.trim() || 'Tổ trưởng chuyên môn',
+        reporterRole: roleText,
+        totalMembers: deptMembers.length || (presentCount + excusedCount + unexcusedCount),
+        presentCount,
+        excusedCount,
+        unexcusedCount,
+        absentDetails,
+        note: modalDeptNote.trim() || roleText,
+        verifiedAttendances
+      });
+
+      setShowDeptReportModal(false);
+      await loadMeetingDetails(currentMeeting.id, false);
+      setCopiedToast(`Đã lưu báo cáo sĩ số cho Tổ ${modalDept} thành công!`);
+      setTimeout(() => setCopiedToast(''), 3000);
+    } catch (err) {
+      alert('Lỗi lưu báo cáo tổ: ' + err.message);
+    } finally {
+      setSubmittingDeptReport(false);
+    }
+  };
+
+  // Cập nhật nhanh trạng thái cho một giáo viên trực tiếp từ bảng
+  const handleQuickUpdateStaffStatus = async (staffName, department, newStatus) => {
+    if (!currentMeeting) return;
+    try {
+      await OnlineMeetingService.updateSingleAttendance({
+        meetingId: currentMeeting.id,
+        staffName,
+        department,
+        status: newStatus,
+        verifiedByName: 'Thư ký cuộc họp'
+      });
+      await loadMeetingDetails(currentMeeting.id, false);
+      setCopiedToast(`Đã chuyển trạng thái [${staffName}]: ${newStatus === 'PRESENT' ? '✅ Có mặt' : (newStatus === 'EXCUSED' ? '🟡 Vắng có phép' : (newStatus === 'UNEXCUSED' ? '🔴 Vắng không phép' : 'Chưa điểm danh'))}`);
+      setTimeout(() => setCopiedToast(''), 2500);
+    } catch (e) {
+      alert('Lỗi cập nhật: ' + e.message);
+    }
   };
 
   // =========================================================================
@@ -723,6 +934,31 @@ export default function AdminMeetingAttendance() {
         </div>
 
         {/* 2. BẢNG ĐIỀU HÀNH LIVE (HOST CONTROL PANEL) */}
+        {!currentMeeting && (
+          <div style={{
+            backgroundColor: '#fff', borderRadius: '14px', padding: '36px 20px',
+            border: '2px dashed #cbd5e1', textAlign: 'center', marginBottom: '24px'
+          }}>
+            <Video size={48} color="#0284c7" style={{ margin: '0 auto 12px' }} />
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+              Chưa có phiên họp nào được chọn hoặc được tạo
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#64748b', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto' }}>
+              Thầy/Cô vui lòng nhấn nút bên dưới để tạo phiên họp mới (Trực tiếp tại Hội trường, Trực tuyến Meet/Zoom, hoặc Hỗn hợp) để bắt đầu:
+            </p>
+            <button
+              onClick={() => handleOpenMeetingModal()}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 22px',
+                backgroundColor: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px',
+                fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+              }}
+            >
+              <Plus size={18} /> + Tạo Phiên Họp Mới Ngay
+            </button>
+          </div>
+        )}
+
         {currentMeeting && (
           <div style={{
             backgroundColor: '#0f172a', color: '#fff', borderRadius: '14px',
@@ -978,6 +1214,34 @@ export default function AdminMeetingAttendance() {
         {/* ========================================================================= */}
         {activeTab === 'departments' && (
           <div>
+            {/* THANH ĐIỀU HƯỚNG THƯ KÝ NHẬP BÁO CÁO ZALO */}
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              backgroundColor: '#f8fafc', padding: '14px 18px', borderRadius: '12px',
+              border: '1px solid #e2e8f0', marginBottom: '18px', flexWrap: 'wrap', gap: '12px'
+            }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+                  Tiến độ tiếp nhận báo cáo của các Tổ Chuyên Môn ({statistics.reportedDepts} / {statistics.totalDepts} Tổ)
+                </h4>
+                <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '3px' }}>
+                  💡 <strong>Dành cho Thư ký / Quản trị:</strong> Nếu Tổ trưởng đã nhắn báo cáo sĩ số qua Zalo hoặc báo trực tiếp bằng miệng, Thầy/Cô có thể bấm nút bên cạnh hoặc bấm nút trên từng tổ để nhập vào hệ thống ngay.
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleOpenDeptReportModal(departments[0])}
+                style={{
+                  padding: '9px 16px', backgroundColor: '#15803d', color: '#fff',
+                  border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 'bold',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px',
+                  boxShadow: '0 2px 6px rgba(21, 128, 61, 0.25)'
+                }}
+              >
+                <Plus size={16} /> 📲 Nhập Báo Cáo Sĩ Số Từ Zalo
+              </button>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '16px' }}>
               {departments.map(dept => {
                 const rep = deptReports.find(r => r.department === dept);
@@ -1052,6 +1316,25 @@ export default function AdminMeetingAttendance() {
                         Đang chờ Tổ trưởng chuyên môn xác nhận & gửi báo cáo sĩ số.
                       </div>
                     )}
+
+                    {/* NÚT THƯ KÝ NHẬP / SỬA BÁO CÁO CHO TỔ */}
+                    <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                      <button
+                        onClick={() => handleOpenDeptReportModal(dept)}
+                        style={{
+                          width: '100%', padding: '8px 12px',
+                          backgroundColor: isReported ? '#f0fdf4' : '#eff6ff',
+                          color: isReported ? '#15803d' : '#0284c7',
+                          border: isReported ? '1px solid #bbf7d0' : '1px solid #bae6fd',
+                          borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold',
+                          cursor: 'pointer', display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', gap: '6px'
+                        }}
+                        title="Thư ký tự nhập hoặc chỉnh sửa số lượng sĩ số của tổ này theo tin nhắn Zalo"
+                      >
+                        <Edit3 size={14} /> {isReported ? 'Sửa Sĩ Số Tổ (Thư Ký / Zalo)' : 'Nhập Sĩ Số Tổ (Thư Ký / Zalo)'}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -1140,27 +1423,28 @@ export default function AdminMeetingAttendance() {
                         <td style={{ padding: '10px', textAlign: 'center', color: '#0369a1', fontFamily: 'monospace' }}>
                           {att ? new Date(att.checkin_time).toLocaleTimeString('vi-VN') : '-'}
                         </td>
-                        <td style={{ padding: '10px', textAlign: 'center' }}>
-                          {isPresent && (
-                            <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '3px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
-                              ✅ Có mặt
-                            </span>
-                          )}
-                          {isExcused && (
-                            <span style={{ backgroundColor: '#fef9c3', color: '#854d0e', padding: '3px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
-                              🟡 Có phép
-                            </span>
-                          )}
-                          {isUnexcused && (
-                            <span style={{ backgroundColor: '#fee2e2', color: '#991b1b', padding: '3px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
-                              🔴 Không phép
-                            </span>
-                          )}
-                          {!att && (
-                            <span style={{ backgroundColor: '#f1f5f9', color: '#64748b', padding: '3px 8px', borderRadius: '10px', fontSize: '12px' }}>
-                              ⏳ Chưa vào
-                            </span>
-                          )}
+                        <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                          <select
+                            value={att ? att.status : 'UNREPORTED'}
+                            onChange={e => {
+                              const val = e.target.value;
+                              if (val === 'UNREPORTED') return;
+                              handleQuickUpdateStaffStatus(staff.name, staff.department, val);
+                            }}
+                            title="Bấm để Thư ký đổi nhanh trạng thái điểm danh cho giáo viên này"
+                            style={{
+                              padding: '5px 8px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold',
+                              border: isPresent ? '1px solid #86efac' : (isExcused ? '1px solid #fde047' : (isUnexcused ? '1px solid #fca5a5' : '1px solid #cbd5e1')),
+                              backgroundColor: isPresent ? '#dcfce7' : (isExcused ? '#fef9c3' : (isUnexcused ? '#fee2e2' : '#f8fafc')),
+                              color: isPresent ? '#166534' : (isExcused ? '#854d0e' : (isUnexcused ? '#991b1b' : '#64748b')),
+                              cursor: 'pointer', outline: 'none'
+                            }}
+                          >
+                            <option value="PRESENT">✅ Có mặt</option>
+                            <option value="EXCUSED">🟡 Vắng có phép</option>
+                            <option value="UNEXCUSED">🔴 Vắng K.phép</option>
+                            {!att && <option value="UNREPORTED">⏳ Chưa điểm danh</option>}
+                          </select>
                         </td>
                         <td style={{ padding: '10px', fontSize: '12px', color: '#475569' }}>
                           {att?.verified_by_ttcm ? (
@@ -1600,6 +1884,361 @@ export default function AdminMeetingAttendance() {
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* MODAL THƯ KÝ NHẬP / SỬA BÁO CÁO SĨ SỐ CHO TỔ (THEO ZALO HOẶC TRỰC TIẾP)   */}
+        {/* ========================================================================= */}
+        {showDeptReportModal && (
+          <div style={{
+            position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.7)',
+            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px',
+            backdropFilter: 'blur(4px)'
+          }}>
+            <div style={{
+              backgroundColor: '#fff', borderRadius: '16px', padding: '24px', maxWidth: '780px',
+              width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+            }}>
+              {/* HEADER MODAL */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px', marginBottom: '16px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ backgroundColor: '#dcfce7', color: '#166534', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold' }}>
+                      Thư Ký / Quản Trị Nhập Báo Cáo
+                    </span>
+                    <span style={{ fontSize: '13px', color: '#64748b' }}>
+                      {currentMeeting?.title}
+                    </span>
+                  </div>
+                  <h3 style={{ margin: '6px 0 0', fontSize: '19px', fontWeight: '900', color: '#0f172a' }}>
+                    📝 Báo Cáo Sĩ Số Tổ: {modalDept}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowDeptReportModal(false)}
+                  style={{ background: '#f1f5f9', border: 'none', width: '32px', height: '32px', borderRadius: '50%', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* BODY MODAL SCROLLABLE */}
+              <div style={{ overflowY: 'auto', flex: 1, paddingRight: '6px' }}>
+                <form id="deptReportForm" onSubmit={handleSaveDeptReport} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  
+                  {/* DÒNG 1: CHỌN TỔ & NGUỒN BÁO CÁO */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#334155' }}>
+                        1. Tổ Chuyên Môn *
+                      </label>
+                      <select
+                        value={modalDept}
+                        onChange={e => handleModalDeptChange(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '2px solid #0284c7', fontSize: '14px', fontWeight: 'bold', color: '#0284c7', backgroundColor: '#f0f9ff' }}
+                      >
+                        {departments.map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#334155' }}>
+                        2. Nguồn tiếp nhận thông tin *
+                      </label>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {[
+                          { id: 'ZALO', label: '📲 Báo qua Zalo' },
+                          { id: 'DIRECT', label: '🏢 Báo tại Hội trường' },
+                          { id: 'SECRETARY', label: '📋 Thư ký điểm danh' }
+                        ].map(src => (
+                          <button
+                            key={src.id}
+                            type="button"
+                            onClick={() => setModalReportSource(src.id)}
+                            style={{
+                              flex: 1, padding: '8px 4px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold',
+                              border: modalReportSource === src.id ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                              backgroundColor: modalReportSource === src.id ? '#e0f2fe' : '#fff',
+                              color: modalReportSource === src.id ? '#0284c7' : '#475569',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            {src.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#334155' }}>
+                        3. Người báo cáo (TTCM) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ví dụ: Thầy Phan Văn A (TTCM)"
+                        value={modalReporterName}
+                        onChange={e => setModalReporterName(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* DÒNG 2: PHƯƠNG THỨC NHẬP */}
+                  <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setModalReportMode('MEMBERS')}
+                      style={{
+                        padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: 'bold',
+                        backgroundColor: modalReportMode === 'MEMBERS' ? '#0284c7' : '#f1f5f9',
+                        color: modalReportMode === 'MEMBERS' ? '#fff' : '#475569'
+                      }}
+                    >
+                      👥 Danh Sách Từng Giáo Viên Trong Tổ ({staffList.filter(s => s.department === modalDept).length} người)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setModalReportMode('COUNTS')}
+                      style={{
+                        padding: '6px 14px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                        fontSize: '13px', fontWeight: 'bold',
+                        backgroundColor: modalReportMode === 'COUNTS' ? '#0284c7' : '#f1f5f9',
+                        color: modalReportMode === 'COUNTS' ? '#fff' : '#475569'
+                      }}
+                    >
+                      🔢 Nhập Số Lượng Gộp Nhanh (Dành cho họp cũ / Zalo chỉ gửi số)
+                    </button>
+                  </div>
+
+                  {/* CHẾ ĐỘ 1: TÍCH CHỌN DANH SÁCH GIÁO VIÊN */}
+                  {modalReportMode === 'MEMBERS' && (() => {
+                    const deptMembers = staffList.filter(s => s.department === modalDept);
+                    let calcPresent = 0;
+                    let calcExcused = 0;
+                    let calcUnexcused = 0;
+                    deptMembers.forEach(m => {
+                      const st = modalMemberStatuses[m.name]?.status || 'PRESENT';
+                      if (st === 'PRESENT') calcPresent++;
+                      else if (st === 'EXCUSED') calcExcused++;
+                      else calcUnexcused++;
+                    });
+
+                    return (
+                      <div>
+                        {/* THANH TỔNG HỢP NHANH */}
+                        <div style={{
+                          backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '8px',
+                          border: '1px solid #e2e8f0', marginBottom: '12px', display: 'flex',
+                          justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px'
+                        }}>
+                          <div style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', gap: '12px', alignItems: 'center' }}>
+                            <span>Tổng số: <strong>{deptMembers.length}</strong></span>
+                            <span style={{ color: '#16a34a' }}>🟢 Có mặt: <strong>{calcPresent}</strong></span>
+                            <span style={{ color: '#ca8a04' }}>🟡 Vắng phép: <strong>{calcExcused}</strong></span>
+                            <span style={{ color: '#dc2626' }}>🔴 K.phép: <strong>{calcUnexcused}</strong></span>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={handleSetAllMembersPresent}
+                            style={{
+                              padding: '5px 12px', backgroundColor: '#dcfce7', color: '#166534',
+                              border: '1px solid #86efac', borderRadius: '6px', fontSize: '12px',
+                              fontWeight: 'bold', cursor: 'pointer'
+                            }}
+                          >
+                            ✅ Đánh dấu tất cả Có Mặt
+                          </button>
+                        </div>
+
+                        {/* DANH SÁCH THÀNH VIÊN */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '360px', overflowY: 'auto' }}>
+                          {deptMembers.map(staff => {
+                            const cur = modalMemberStatuses[staff.name] || { status: 'PRESENT', reason: '' };
+
+                            return (
+                              <div key={staff.id || staff.name} style={{
+                                padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
+                                backgroundColor: cur.status === 'PRESENT' ? '#fff' : (cur.status === 'EXCUSED' ? '#fefce8' : '#fef2f2'),
+                                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px'
+                              }}>
+                                <div>
+                                  <div style={{ fontWeight: 'bold', fontSize: '13.5px', color: '#0f172a' }}>
+                                    {staff.name}
+                                  </div>
+                                  <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+                                    {staff.title || 'Giáo viên'}
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleModalMemberStatusChange(staff.name, 'status', 'PRESENT')}
+                                    style={{
+                                      padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold',
+                                      border: cur.status === 'PRESENT' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                                      backgroundColor: cur.status === 'PRESENT' ? '#dcfce7' : '#fff',
+                                      color: cur.status === 'PRESENT' ? '#166534' : '#64748b', cursor: 'pointer'
+                                    }}
+                                  >
+                                    🟢 Có mặt
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleModalMemberStatusChange(staff.name, 'status', 'EXCUSED')}
+                                    style={{
+                                      padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold',
+                                      border: cur.status === 'EXCUSED' ? '2px solid #ca8a04' : '1px solid #cbd5e1',
+                                      backgroundColor: cur.status === 'EXCUSED' ? '#fef9c3' : '#fff',
+                                      color: cur.status === 'EXCUSED' ? '#854d0e' : '#64748b', cursor: 'pointer'
+                                    }}
+                                  >
+                                    🟡 Vắng phép
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleModalMemberStatusChange(staff.name, 'status', 'UNEXCUSED')}
+                                    style={{
+                                      padding: '5px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold',
+                                      border: cur.status === 'UNEXCUSED' ? '2px solid #dc2626' : '1px solid #cbd5e1',
+                                      backgroundColor: cur.status === 'UNEXCUSED' ? '#fee2e2' : '#fff',
+                                      color: cur.status === 'UNEXCUSED' ? '#991b1b' : '#64748b', cursor: 'pointer'
+                                    }}
+                                  >
+                                    🔴 K.phép
+                                  </button>
+
+                                  {cur.status !== 'PRESENT' && (
+                                    <input
+                                      type="text"
+                                      placeholder="Lý do vắng (ốm, công tác...)"
+                                      value={cur.reason || ''}
+                                      onChange={e => handleModalMemberStatusChange(staff.name, 'reason', e.target.value)}
+                                      style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '160px' }}
+                                    />
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+
+                          {deptMembers.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontStyle: 'italic' }}>
+                              Chưa có danh sách giáo viên của tổ này. Thầy/Cô vui lòng chuyển sang tab <strong>"Nhập số lượng gộp"</strong> để điền số liệu.
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* CHẾ ĐỘ 2: NHẬP SỐ LƯỢNG GỘP NHANH */}
+                  {modalReportMode === 'COUNTS' && (
+                    <div style={{ backgroundColor: '#f8fafc', padding: '16px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '14px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                            Số lượng Có mặt *
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            required
+                            value={modalManualPresent}
+                            onChange={e => setModalManualPresent(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '2px solid #86efac', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', color: '#15803d' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#854d0e', marginBottom: '4px' }}>
+                            Vắng có phép
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={modalManualExcused}
+                            onChange={e => setModalManualExcused(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '2px solid #fde047', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', color: '#a16207' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#991b1b', marginBottom: '4px' }}>
+                            Vắng không phép
+                          </label>
+                          <input
+                            type="number"
+                            min={0}
+                            value={modalManualUnexcused}
+                            onChange={e => setModalManualUnexcused(e.target.value)}
+                            style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '2px solid #fca5a5', fontSize: '18px', fontWeight: 'bold', textAlign: 'center', color: '#e11d48' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '4px', color: '#334155' }}>
+                          Danh sách giáo viên vắng & lý do (nếu có):
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ví dụ: Thầy Trần Văn B (ốm), Cô Nguyễn Thị C (bận việc riêng có phép)..."
+                          value={modalAbsentNote}
+                          onChange={e => setModalAbsentNote(e.target.value)}
+                          style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* GHI CHÚ CHUNG CỦA TỔ */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#334155' }}>
+                      Ý kiến / Ghi chú của Tổ chuyên môn (Tùy chọn)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ví dụ: Tổ thống nhất cao với các nội dung BGH triển khai..."
+                      value={modalDeptNote}
+                      onChange={e => setModalDeptNote(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+                    />
+                  </div>
+                </form>
+              </div>
+
+              {/* FOOTER MODAL */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '14px', marginTop: '16px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowDeptReportModal(false)}
+                  style={{ padding: '8px 16px', backgroundColor: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  form="deptReportForm"
+                  disabled={submittingDeptReport}
+                  style={{
+                    padding: '9px 24px', backgroundColor: '#15803d', color: '#fff', border: 'none',
+                    borderRadius: '8px', fontWeight: 'bold', fontSize: '14px', cursor: submittingDeptReport ? 'not-allowed' : 'pointer',
+                    display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 6px rgba(21, 128, 61, 0.25)'
+                  }}
+                >
+                  <Check size={18} /> {submittingDeptReport ? 'Đang lưu...' : 'LƯU BÁO CÁO SĨ SỐ TỔ'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

@@ -76,7 +76,7 @@ export const OnlineMeetingService = {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (!error && data) {
+      if (!error && data && data.length > 0) {
         cloudMeetings = data;
         setLocalData(STORAGE_KEYS.MEETINGS, data);
         return data;
@@ -86,8 +86,14 @@ export const OnlineMeetingService = {
     }
 
     // Fallback LocalStorage
-    const local = getLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS);
-    return local.length > 0 ? local : SEED_MEETINGS;
+    const local = getLocalData(STORAGE_KEYS.MEETINGS, []);
+    if (local && local.length > 0) {
+      return local;
+    }
+
+    // Nếu hoàn toàn chưa có cuộc họp nào, khởi tạo cuộc họp mẫu mặc định
+    setLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS);
+    return SEED_MEETINGS;
   },
 
   /**
@@ -442,7 +448,50 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 11. LẤY DANH SÁCH GIÁO VIÊN & TỔ CHUYÊN MÔN TỪ CSDL
+   * 11. CẬP NHẬT TRỰC TIẾP ĐIỂM DANH CHO MỘT GIÁO VIÊN (DÀNH CHO ADMIN / THƯ KÝ)
+   */
+  async updateSingleAttendance({ meetingId, staffName, department, status, note, verifiedByName }) {
+    if (!meetingId || !staffName) return { success: false, message: 'Thiếu dữ liệu cuộc họp hoặc tên giáo viên' };
+
+    const allAttendances = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
+    const idx = allAttendances.findIndex(
+      a => a.meeting_id === meetingId && a.staff_name.toLowerCase().trim() === staffName.toLowerCase().trim()
+    );
+
+    const record = {
+      id: idx >= 0 ? allAttendances[idx].id : `att_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      meeting_id: meetingId,
+      staff_name: staffName.trim(),
+      department: department?.trim() || 'Chưa phân tổ',
+      checkin_time: idx >= 0 ? allAttendances[idx].checkin_time : new Date().toISOString(),
+      status: status || 'PRESENT',
+      verified_by_ttcm: true,
+      verified_by_name: verifiedByName || 'Thư ký cuộc họp',
+      note: note || (status === 'PRESENT' ? 'Thư ký xác nhận có mặt' : 'Thư ký cập nhật'),
+      device_info: 'Cập nhật trực tiếp từ Cổng Thư ký'
+    };
+
+    if (idx >= 0) {
+      allAttendances[idx] = { ...allAttendances[idx], ...record };
+    } else {
+      allAttendances.push(record);
+    }
+    setLocalData(STORAGE_KEYS.ATTENDANCES, allAttendances);
+
+    // Đồng bộ lên Supabase nếu có kết nối
+    try {
+      await dbClient.from('cbq_meeting_attendances').upsert(record, {
+        onConflict: 'meeting_id,staff_name,department'
+      });
+    } catch (e) {
+      console.warn('[OnlineMeetingService] Cập nhật attendance lên Supabase lỗi:', e.message);
+    }
+
+    return { success: true, attendance: record };
+  },
+
+  /**
+   * 12. LẤY DANH SÁCH GIÁO VIÊN & TỔ CHUYÊN MÔN TỪ CSDL
    */
   async getStaffAndDepartments() {
     let departments = [];
