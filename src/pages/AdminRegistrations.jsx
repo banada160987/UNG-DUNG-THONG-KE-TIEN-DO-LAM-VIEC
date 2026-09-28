@@ -2,10 +2,21 @@ import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabase2Admin, supabase2, DualSupabaseService } from '../lib/supabase';
 const adminClient = supabase2Admin || supabase2;
-import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck } from 'lucide-react';
+import { Plus, Save, Trash2, Edit3, Settings, Users, FileText, CheckCircle2, ListFilter, Download, Server, Printer, Filter, X, ArrowUpDown, Lock, Unlock, Clock, MessageSquare, Copy, Check, ExternalLink, Search, CalendarCheck, ShieldCheck, GraduationCap, Sparkles, BookOpen } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
+import {
+  isTuitionCampaign,
+  isCoreSubject,
+  isSubjectAllowedForStudent,
+  normalizeSubjectName,
+  CORE_SUBJECTS,
+  ELECTIVE_SUBJECTS,
+  ALL_TUITION_SUBJECTS,
+  SUBJECT_METADATA,
+  getTuitionCampaignPreset
+} from '../utils/tuitionElectiveService';
 
 export const getSchemaFields = (cam) => {
   if (!cam || !cam.form_schema) return [];
@@ -25,12 +36,14 @@ export default function AdminRegistrations() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [targetGrades, setTargetGrades] = useState([]); // ['Khối 10', 'Khối 11', 'Khối 12']
+  const [prerequisiteMode, setPrerequisiteMode] = useState('none'); // 'none' | 'club' | 'tuition_electives'
   const [prerequisiteClub, setPrerequisiteClub] = useState(''); // Ràng buộc CLB mẹ
   const [isActive, setIsActive] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [closedNotice, setClosedNotice] = useState('');
   const [targetDb, setTargetDb] = useState('sb2'); // 'sb1' | 'sb2'
+  const [selectedTuitionSubjectFilter, setSelectedTuitionSubjectFilter] = useState('ALL');
 
   // Zalo Campaign Reminder Modal States
   const [showZaloCampaignModal, setShowZaloCampaignModal] = useState(false);
@@ -191,7 +204,23 @@ export default function AdminRegistrations() {
     setTitle(cam.title || '');
     setDescription(cam.description || '');
     setTargetGrades(cam.target_grades || []);
-    setPrerequisiteClub(cam.prerequisite_club || (cam.form_schema && !Array.isArray(cam.form_schema) ? cam.form_schema.prerequisite_club : '') || '');
+    
+    const pClub = cam.prerequisite_club || (cam.form_schema && !Array.isArray(cam.form_schema) ? cam.form_schema.prerequisite_club : '') || '';
+    setPrerequisiteClub(pClub);
+
+    let pMode = 'none';
+    if (cam.form_schema && !Array.isArray(cam.form_schema)) {
+      if (cam.form_schema.prerequisite_mode) pMode = cam.form_schema.prerequisite_mode;
+      else if (cam.form_schema.is_tuition_registration) pMode = 'tuition_electives';
+      else if (pClub) pMode = 'club';
+    } else if (pClub) {
+      pMode = 'club';
+    }
+    if (isTuitionCampaign(cam)) {
+      pMode = 'tuition_electives';
+    }
+    setPrerequisiteMode(pMode);
+
     setIsActive(cam.is_active);
     setStartDate(cam.start_date ? new Date(new Date(cam.start_date).getTime() - (new Date(cam.start_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
     setEndDate(cam.end_date ? new Date(new Date(cam.end_date).getTime() - (new Date(cam.end_date).getTimezoneOffset() * 60000)).toISOString().slice(0, 16) : '');
@@ -598,7 +627,9 @@ export default function AdminRegistrations() {
       const schemaWithNotice = {
         fields: formSchema,
         closed_notice: closedNotice.trim(),
-        prerequisite_club: prerequisiteClub || null
+        prerequisite_mode: prerequisiteMode,
+        prerequisite_club: prerequisiteMode === 'club' ? (prerequisiteClub || null) : null,
+        is_tuition_registration: prerequisiteMode === 'tuition_electives'
       };
 
       const payload = {
@@ -620,6 +651,7 @@ export default function AdminRegistrations() {
       alert("Lưu đợt đăng ký thành công!");
       setShowForm(false);
       setEditingId(null);
+      setPrerequisiteMode('none');
       setPrerequisiteClub('');
       fetchCampaigns();
     } catch (err) {
@@ -678,14 +710,18 @@ export default function AdminRegistrations() {
 
     // Thu thập danh sách các lựa chọn / môn thi nổi bật nhất để làm Ma trận Lớp x Môn
     let distinctOptions = [];
-    selectFields.forEach(f => {
-      const c = optionStatsMap[f.id]?.counts || {};
-      Object.keys(c).forEach(opt => {
-        if (!distinctOptions.includes(opt)) distinctOptions.push(opt);
+    if (isTuitionCampaign(campaign)) {
+      distinctOptions = [...ALL_TUITION_SUBJECTS];
+    } else {
+      selectFields.forEach(f => {
+        const c = optionStatsMap[f.id]?.counts || {};
+        Object.keys(c).forEach(opt => {
+          if (!distinctOptions.includes(opt)) distinctOptions.push(opt);
+        });
       });
-    });
-    if (distinctOptions.length === 0) {
-      distinctOptions = ['Số lượng đăng ký'];
+      if (distinctOptions.length === 0) {
+        distinctOptions = ['Số lượng đăng ký'];
+      }
     }
 
     const workbook = XLSX.utils.book_new();
@@ -774,8 +810,11 @@ export default function AdminRegistrations() {
           clsStudents.forEach(r => {
             const respObj = r.responses || {};
             Object.values(respObj).forEach(val => {
-              if (Array.isArray(val) && val.includes(opt)) count++;
-              else if (val === opt) count++;
+              if (Array.isArray(val)) {
+                if (val.some(v => v === opt || (isTuitionCampaign(campaign) && normalizeSubjectName(v) === opt))) count++;
+              } else if (val === opt || (isTuitionCampaign(campaign) && normalizeSubjectName(val) === opt)) {
+                count++;
+              }
             });
           });
           row.push(count);
@@ -798,8 +837,11 @@ export default function AdminRegistrations() {
       results.forEach(r => {
         const respObj = r.responses || {};
         Object.values(respObj).forEach(val => {
-          if (Array.isArray(val) && val.includes(opt)) totalColCount++;
-          else if (val === opt) totalColCount++;
+          if (Array.isArray(val)) {
+            if (val.some(v => v === opt || (isTuitionCampaign(campaign) && normalizeSubjectName(v) === opt))) totalColCount++;
+          } else if (val === opt || (isTuitionCampaign(campaign) && normalizeSubjectName(val) === opt)) {
+            totalColCount++;
+          }
         });
       });
       summaryMatrixRow.push(totalColCount);
@@ -1032,8 +1074,169 @@ export default function AdminRegistrations() {
 
       XLSX.utils.book_append_sheet(workbook, wsAttendance, "SO_DIEM_DANH_CLB");
 
+    } else if (isTuitionCampaign(campaign)) {
+      // 3B. NẾU LÀ ĐĂNG KÝ HỌC THÊM KHỐI 12 (GDPT 2018):
+      // MA TRẬN PHÂN MÔN & ĐỐI CHIẾU KÝ XÁC NHẬN HỌC THÊM TỪNG LỚP
+      const tuitionRows = [
+        ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+        ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+        [`Số: ... /DSHT-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""],
+        [],
+        ["MA TRẬN ĐĂNG KÝ MÔN HỌC THÊM KHỐI 12 (CHƯƠNG TRÌNH GDPT 2018)"],
+        [`Đợt: ${campaignTitle.toUpperCase()}`],
+        [`(Gồm môn chung Toán, Văn & 02 môn tự chọn đã đăng ký - Tổng số: ${dataToExport.length} HS)`],
+        [],
+        [
+          "STT",
+          "Mã Học Sinh",
+          "Họ và Tên",
+          "Lớp",
+          "Khối",
+          ...ALL_TUITION_SUBJECTS,
+          "Tổng Môn ĐK",
+          "Chữ Ký Xác Nhận Của Học Sinh",
+          "Chữ Ký GVCN Xác Nhận",
+          "Ghi Chú"
+        ]
+      ];
+
+      // Sắp xếp theo Lớp rồi theo Tên học sinh
+      const sortedByClass = [...dataToExport].sort((a, b) => {
+        const clsA = (a.student_class || '').trim();
+        const clsB = (b.student_class || '').trim();
+        const cmpClass = clsA.localeCompare(clsB, undefined, { numeric: true, sensitivity: 'base' });
+        if (cmpClass !== 0) return cmpClass;
+        return (a.student_name || '').localeCompare(b.student_name || '');
+      });
+
+      const subjectCounts = {};
+      ALL_TUITION_SUBJECTS.forEach(s => { subjectCounts[s] = 0; });
+
+      sortedByClass.forEach((r, idx) => {
+        const studentSubjects = [];
+        schema.forEach(field => {
+          const ans = r.responses ? r.responses[field.id] : null;
+          if (Array.isArray(ans)) {
+            ans.forEach(a => {
+              const norm = normalizeSubjectName(a);
+              if (norm && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+            });
+          } else if (ans) {
+            const norm = normalizeSubjectName(ans);
+            if (norm && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+          }
+        });
+
+        const subjectMarks = ALL_TUITION_SUBJECTS.map(subj => {
+          const registered = studentSubjects.includes(subj);
+          if (registered) subjectCounts[subj] = (subjectCounts[subj] || 0) + 1;
+          return registered ? 'X' : '';
+        });
+
+        tuitionRows.push([
+          idx + 1,
+          r.student_code || '',
+          r.student_name || '',
+          r.student_class || '',
+          getStudentGradeLevel(r.student_class),
+          ...subjectMarks,
+          studentSubjects.length,
+          "", // Ký HS
+          "", // Ký GVCN
+          ""  // Ghi chú
+        ]);
+      });
+
+      // Dòng Tổng cộng số HS đăng ký từng môn
+      const headerLen = 5 + ALL_TUITION_SUBJECTS.length + 4;
+      const totalRegisteredMarks = Object.values(subjectCounts).reduce((a, b) => a + b, 0);
+
+      tuitionRows.push([
+        "",
+        "TỔNG CỘNG SỐ LƯỢT ĐĂNG KÝ",
+        "",
+        "",
+        "",
+        ...ALL_TUITION_SUBJECTS.map(subj => subjectCounts[subj] || 0),
+        totalRegisteredMarks,
+        "",
+        "",
+        ""
+      ]);
+
+      // Khung chữ ký 3 bên
+      tuitionRows.push([]);
+      tuitionRows.push([
+        "",
+        "ĐẠI DIỆN HỌC SINH CÁC LỚP",
+        "",
+        "",
+        "GIÁO VIÊN CHỦ NHIỆM / TỔ TRƯỞNG CM",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "HIỆU TRƯỞNG / BAN GIÁM HIỆU DUYỆT",
+        ""
+      ]);
+      tuitionRows.push([
+        "",
+        "(Ký và ghi rõ họ tên)",
+        "",
+        "",
+        "(Ký và ghi rõ họ tên)",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "(Ký, ghi rõ họ tên và đóng dấu)",
+        ""
+      ]);
+
+      const ws3 = XLSX.utils.aoa_to_sheet(tuitionRows);
+
+      ws3['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 14 }, // Mã HS
+        { wch: 25 }, // Họ tên
+        { wch: 10 }, // Lớp
+        { wch: 9 },  // Khối
+        ...ALL_TUITION_SUBJECTS.map(s => ({ wch: Math.max(s.length + 3, 10) })),
+        { wch: 14 }, // Tổng môn
+        { wch: 24 }, // Ký HS
+        { wch: 24 }, // Ký GVCN
+        { wch: 28 }  // Ghi chú
+      ];
+
+      ws3['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },
+        { s: { r: 0, c: 5 }, e: { r: 0, c: headerLen - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },
+        { s: { r: 1, c: 5 }, e: { r: 1, c: headerLen - 1 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 4 } },
+        { s: { r: 2, c: 5 }, e: { r: 2, c: headerLen - 1 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: headerLen - 1 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: headerLen - 1 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: headerLen - 1 } }
+      ];
+
+      const headerRowIndex3 = 8;
+      const lastRowIndex3 = headerRowIndex3 + sortedByClass.length;
+      const lastColLetter = XLSX.utils.encode_col(headerLen - 1);
+      ws3['!autofilter'] = { ref: `A9:${lastColLetter}${lastRowIndex3 + 1}` };
+
+      XLSX.utils.book_append_sheet(workbook, ws3, "MA_TRAN_MON_HOC_THEM");
+
     } else {
-      // 3B. NẾU LÀ ĐĂNG KÝ MÔN THI TN THPT HOẶC KHẢO SÁT CHUNG:
+      // 3C. NẾU LÀ ĐĂNG KÝ MÔN THI TN THPT HOẶC KHẢO SÁT CHUNG:
       // BIÊN BẢN BÀN GIAO & KÝ XÁC NHẬN NGUYỆN VỌNG THEO TỪNG LỚP
       const handoverRows = [
         ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
@@ -1382,13 +1585,33 @@ export default function AdminRegistrations() {
           {activeTab === 'campaigns' && (
             <div>
               {!showForm && (
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginBottom: '15px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => {
+                      const preset = getTuitionCampaignPreset();
+                      setEditingId(null);
+                      setTitle(preset.title);
+                      setDescription(preset.description);
+                      setTargetGrades(preset.target_grades);
+                      setPrerequisiteMode('tuition_electives');
+                      setPrerequisiteClub('');
+                      setIsActive(true);
+                      setFormSchema(preset.form_schema.fields);
+                      setShowForm(true);
+                    }} 
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2,132,199,0.3)' }}
+                  >
+                    <Sparkles size={16} /> ⚡ Tạo Nhanh Đợt Học Thêm Khối 12 (GDPT 2018)
+                  </button>
+
                   <button 
                     onClick={() => {
                       setEditingId(null);
                       setTitle('');
                       setDescription('');
                       setTargetGrades([]);
+                      setPrerequisiteMode('none');
+                      setPrerequisiteClub('');
                       setIsActive(true);
                       setFormSchema([]);
                       setShowForm(true);
@@ -1410,7 +1633,7 @@ export default function AdminRegistrations() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginTop: '15px' }}>
                     <div style={{ gridColumn: '1 / -1' }}>
                       <label style={styles.label}>Tên / Tiêu đề Đợt đăng ký (*)</label>
-                      <input type="text" required value={title} onChange={e => setTitle(e.target.value)} style={styles.input} placeholder="VD: Đăng ký câu lạc bộ Hè 2026" />
+                      <input type="text" required value={title} onChange={e => setTitle(e.target.value)} style={styles.input} placeholder="VD: Đăng ký học thêm các môn năm học 2026 - 2027 (Khối 12)" />
                     </div>
 
                     <div style={{ gridColumn: '1 / -1' }}>
@@ -1434,26 +1657,66 @@ export default function AdminRegistrations() {
                       </div>
                     </div>
 
-                    {/* RÀNG BUỘC ĐIỀU KIỆN TIÊN QUYẾT: ĐÃ ĐĂNG KÝ CÂU LẠC BỘ MẸ */}
-                    <div style={{ gridColumn: '1 / -1', background: '#eff6ff', padding: '12px 16px', borderRadius: '10px', border: '1.5px solid #bfdbfe' }}>
-                      <label style={{ ...styles.label, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <ShieldCheck size={16} color="#2563eb" /> Ràng buộc tư cách thành viên Câu lạc bộ (Chỉ cho HS đã đăng ký CLB chọn môn phụ):
+                    {/* RÀNG BUỘC ĐIỀU KIỆN TIÊN QUYẾT: 3 CHẾ ĐỘ */}
+                    <div style={{ gridColumn: '1 / -1', background: '#eff6ff', padding: '16px', borderRadius: '12px', border: '1.5px solid #bfdbfe' }}>
+                      <label style={{ ...styles.label, color: '#1e40af', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '14px', marginBottom: '10px' }}>
+                        <ShieldCheck size={18} color="#2563eb" /> Chế độ Ràng buộc Điều kiện Tiên quyết:
                       </label>
-                      <select
-                        value={prerequisiteClub}
-                        onChange={(e) => setPrerequisiteClub(e.target.value)}
-                        style={{ ...styles.input, marginTop: '4px', borderColor: '#93c5fd', backgroundColor: '#ffffff', fontWeight: '600' }}
-                      >
-                        <option value="">-- Không ràng buộc (Mọi học sinh thuộc khối đều đăng ký được) --</option>
-                        {Object.keys(CLUB_SUB_DISCIPLINES).map(clubKey => (
-                          <option key={clubKey} value={clubKey}>
-                            {clubKey} (Bắt buộc HS phải có tên trong danh sách đăng ký CLB này)
-                          </option>
-                        ))}
-                      </select>
-                      <small style={{ color: '#3b82f6', fontSize: '11.5px', marginTop: '4px', display: 'block' }}>
-                        * Nếu chọn CLB, hệ thống sẽ tự động đối soát CSDL Supabase 2 khi học sinh nhập tên. Chỉ học sinh đã đăng ký CLB này ở đợt 1 mới được nộp đơn!
-                      </small>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '10px' }}>
+                        {/* Option 1: None */}
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: prerequisiteMode === 'none' ? '#ffffff' : '#f8fafc', padding: '12px', borderRadius: '8px', border: prerequisiteMode === 'none' ? '2px solid #2563eb' : '1px solid #cbd5e1', cursor: 'pointer' }}>
+                          <input type="radio" name="prereq_mode" value="none" checked={prerequisiteMode === 'none'} onChange={() => { setPrerequisiteMode('none'); setPrerequisiteClub(''); }} style={{ marginTop: '3px' }} />
+                          <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>1. Không ràng buộc</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>Mọi học sinh thuộc khối đều đăng ký tự do.</div>
+                          </div>
+                        </label>
+
+                        {/* Option 2: Club Prerequisite */}
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: prerequisiteMode === 'club' ? '#ffffff' : '#f8fafc', padding: '12px', borderRadius: '8px', border: prerequisiteMode === 'club' ? '2px solid #2563eb' : '1px solid #cbd5e1', cursor: 'pointer' }}>
+                          <input type="radio" name="prereq_mode" value="club" checked={prerequisiteMode === 'club'} onChange={() => setPrerequisiteMode('club')} style={{ marginTop: '3px' }} />
+                          <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>2. Ràng buộc theo Câu lạc bộ</div>
+                            <div style={{ fontSize: '12px', color: '#64748b' }}>Chỉ học sinh đã đăng ký CLB mẹ mới được chọn môn phụ.</div>
+                          </div>
+                        </label>
+
+                        {/* Option 3: Tuition Electives */}
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', background: prerequisiteMode === 'tuition_electives' ? '#f0fdf4' : '#f8fafc', padding: '12px', borderRadius: '8px', border: prerequisiteMode === 'tuition_electives' ? '2px solid #16a34a' : '1px solid #cbd5e1', cursor: 'pointer' }}>
+                          <input type="radio" name="prereq_mode" value="tuition_electives" checked={prerequisiteMode === 'tuition_electives'} onChange={() => { setPrerequisiteMode('tuition_electives'); setPrerequisiteClub(''); }} style={{ marginTop: '3px' }} />
+                          <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#166534' }}>⭐ 3. Học Thêm theo Môn Tự Chọn (Khối 12)</div>
+                            <div style={{ fontSize: '12px', color: '#15803d' }}>Toán & Văn mở toàn khối 12; Môn tự chọn tự động lọc theo 2 môn HS đã đăng ký!</div>
+                          </div>
+                        </label>
+                      </div>
+
+                      {/* Dropdown if Club */}
+                      {prerequisiteMode === 'club' && (
+                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #bfdbfe' }}>
+                          <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e40af' }}>Chọn Câu lạc bộ mẹ bắt buộc:</label>
+                          <select
+                            value={prerequisiteClub}
+                            onChange={(e) => setPrerequisiteClub(e.target.value)}
+                            style={{ ...styles.input, marginTop: '4px', borderColor: '#93c5fd', backgroundColor: '#ffffff', fontWeight: '600' }}
+                          >
+                            <option value="">-- Chọn câu lạc bộ --</option>
+                            {Object.keys(CLUB_SUB_DISCIPLINES).map(clubKey => (
+                              <option key={clubKey} value={clubKey}>
+                                {clubKey} (Bắt buộc HS phải có tên trong danh sách đăng ký CLB này)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Info if Tuition */}
+                      {prerequisiteMode === 'tuition_electives' && (
+                        <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #86efac', color: '#166534', fontSize: '12.5px', lineHeight: '1.5' }}>
+                          ✅ <strong>Cơ chế tự động:</strong> Khi học sinh khối 12 nhập tên xác thực, hệ thống tự động kiểm tra CSDL môn tự chọn (đã ghi nhận 389 hồ sơ). Môn Toán & Ngữ Văn mở cho toàn bộ khối 12; các môn tự chọn (Lí, Hóa, Sinh, Sử, Địa, GDKTPL, Tiếng Anh, Tin, CN) chỉ mở đúng 02 môn học sinh đã đăng ký.
+                        </div>
+                      )}
                     </div>
 
                     <div>
@@ -1844,6 +2107,185 @@ export default function AdminRegistrations() {
               {!loadingResults && results.length > 0 && (() => {
                 const currentCampaign = campaigns.find(c => c.id === selectedCampaignId);
                 const campaignTitle = currentCampaign?.title || 'Đợt đăng ký';
+                const isTuition = isTuitionCampaign(currentCampaign);
+
+                // NẾU LÀ ĐỢT HỌC THÊM -> HIỂN THỊ DASHBOARD CHUYÊN SÂU GDPT 2018
+                if (isTuition) {
+                  // Tính số lượng đăng ký cho từng môn
+                  const subjectCounts = {};
+                  ALL_TUITION_SUBJECTS.forEach(subj => {
+                    const normTarget = normalizeSubjectName(subj);
+                    subjectCounts[subj] = results.filter(r => {
+                      const respObj = r.responses || {};
+                      return Object.values(respObj).some(val => {
+                        if (Array.isArray(val)) {
+                          return val.some(item => normalizeSubjectName(item) === normTarget);
+                        }
+                        return normalizeSubjectName(String(val)) === normTarget;
+                      });
+                    }).length;
+                  });
+
+                  // Danh sách lớp khối 12 có học sinh đăng ký
+                  const classList = Array.from(new Set(results.map(r => (r.student_class || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
+                  return (
+                    <div style={{ marginBottom: '25px', padding: '20px', backgroundColor: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '14px', boxShadow: '0 4px 15px rgba(16,185,129,0.06)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '8px' }}>
+                        <div>
+                          <h4 style={{ margin: 0, color: '#166534', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px', fontWeight: '800' }}>
+                            <GraduationCap size={22} color="#15803d" />
+                            BẢNG THỐNG KÊ ĐĂNG KÝ HỌC THÊM KHỐI 12 (GDPT 2018)
+                          </h4>
+                          <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#15803d' }}>
+                            Toán & Ngữ Văn mở cho toàn bộ khối 12 • Các môn tự chọn được đối soát tự động theo đúng 02 môn tự chọn của học sinh.
+                          </p>
+                        </div>
+                        {selectedOptionFilter !== 'all' && (
+                          <button 
+                            onClick={() => setSelectedOptionFilter('all')} 
+                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                          >
+                            <X size={14} /> Bỏ lọc ({selectedOptionFilter})
+                          </button>
+                        )}
+                      </div>
+
+                      {/* LƯỚI THỐNG KÊ SĨ SỐ TỪNG MÔN */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '18px' }}>
+                        {/* Thẻ Tổng số */}
+                        <div 
+                          onClick={() => setSelectedOptionFilter('all')}
+                          style={{ 
+                            background: selectedOptionFilter === 'all' ? '#166534' : '#ffffff', 
+                            color: selectedOptionFilter === 'all' ? '#ffffff' : '#166534', 
+                            padding: '12px 14px', 
+                            borderRadius: '10px', 
+                            border: '1.5px solid #86efac',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s',
+                            boxShadow: selectedOptionFilter === 'all' ? '0 4px 12px rgba(22,101,52,0.25)' : 'none'
+                          }}
+                        >
+                          <div style={{ fontSize: '11px', textTransform: 'uppercase', fontWeight: 'bold', opacity: 0.9 }}>TỔNG ĐĂNG KÝ</div>
+                          <div style={{ fontSize: '24px', fontWeight: '900', marginTop: '2px' }}>{results.length}</div>
+                          <div style={{ fontSize: '11px', opacity: 0.8, marginTop: '2px' }}>Học sinh K12</div>
+                        </div>
+
+                        {/* Thẻ từng môn học */}
+                        {ALL_TUITION_SUBJECTS.map(subj => {
+                          const normSubj = normalizeSubjectName(subj);
+                          const isCore = isCoreSubject(normSubj);
+                          const count = subjectCounts[subj] || 0;
+                          const isSelected = selectedOptionFilter === subj;
+                          const meta = SUBJECT_METADATA[normSubj] || {};
+                          const pct = results.length > 0 ? Math.round((count / results.length) * 100) : 0;
+
+                          return (
+                            <div
+                              key={subj}
+                              onClick={() => setSelectedOptionFilter(isSelected ? 'all' : subj)}
+                              style={{
+                                background: isSelected ? meta.color : '#ffffff',
+                                color: isSelected ? '#ffffff' : '#1e293b',
+                                border: isSelected ? `2px solid ${meta.color}` : `1px solid ${meta.border || '#cbd5e1'}`,
+                                borderRadius: '10px',
+                                padding: '10px 12px',
+                                cursor: 'pointer',
+                                transition: 'all 0.15s',
+                                boxShadow: isSelected ? `0 4px 12px ${meta.border}` : 'none'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                                <span style={{ fontSize: '16px' }}>{meta.icon || '📚'}</span>
+                                <span style={{ 
+                                  fontSize: '10px', 
+                                  fontWeight: '800', 
+                                  padding: '2px 6px', 
+                                  borderRadius: '4px',
+                                  backgroundColor: isSelected ? 'rgba(255,255,255,0.25)' : (isCore ? '#e0f2fe' : '#f1f5f9'),
+                                  color: isSelected ? '#ffffff' : (isCore ? '#0369a1' : '#64748b')
+                                }}>
+                                  {isCore ? 'Bắt buộc' : 'Tự chọn'}
+                                </span>
+                              </div>
+                              <div style={{ fontWeight: '800', fontSize: '13px', marginTop: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {subj}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px', marginTop: '2px' }}>
+                                <span style={{ fontSize: '20px', fontWeight: '900' }}>{count}</span>
+                                <span style={{ fontSize: '11px', opacity: 0.75 }}>({pct}%)</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* MA TRẬN PHÂN BỔ MÔN HỌC THÊM THEO TỪNG LỚP 12 */}
+                      <div style={{ background: '#ffffff', borderRadius: '10px', border: '1px solid #bbf7d0', padding: '14px', overflowX: 'auto' }}>
+                        <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#166534', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <BookOpen size={16} color="#15803d" />
+                          Ma trận Số lượng Đăng ký Học thêm theo từng Lớp Khối 12:
+                        </div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'center' }}>
+                          <thead>
+                            <tr style={{ background: '#f0fdf4', borderBottom: '2px solid #86efac', color: '#166534' }}>
+                              <th style={{ padding: '8px 10px', textAlign: 'left' }}>Lớp</th>
+                              <th style={{ padding: '8px 6px' }}>Sĩ số ĐK</th>
+                              {ALL_TUITION_SUBJECTS.map(s => (
+                                <th key={s} style={{ padding: '8px 6px', whiteSpace: 'nowrap' }}>
+                                  {s}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {classList.map(cls => {
+                              const classRegs = results.filter(r => (r.student_class || '').trim() === cls);
+                              return (
+                                <tr key={cls} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 'bold', color: '#0f172a' }}>
+                                    Lớp {cls}
+                                  </td>
+                                  <td style={{ padding: '8px 6px', fontWeight: 'bold', color: '#15803d', background: '#f0fdf4' }}>
+                                    {classRegs.length}
+                                  </td>
+                                  {ALL_TUITION_SUBJECTS.map(subj => {
+                                    const normSubj = normalizeSubjectName(subj);
+                                    const count = classRegs.filter(r => {
+                                      const respObj = r.responses || {};
+                                      return Object.values(respObj).some(val => {
+                                        if (Array.isArray(val)) return val.some(i => normalizeSubjectName(i) === normSubj);
+                                        return normalizeSubjectName(String(val)) === normSubj;
+                                      });
+                                    }).length;
+                                    return (
+                                      <td key={subj} style={{ padding: '8px 6px', color: count > 0 ? '#0f172a' : '#cbd5e1', fontWeight: count > 0 ? '700' : 'normal', backgroundColor: count > 0 ? (isCoreSubject(normSubj) ? '#f0f9ff' : '#ffffff') : 'transparent' }}>
+                                        {count > 0 ? count : '-'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                            {/* Dòng Tổng cộng */}
+                            <tr style={{ background: '#f8fafc', fontWeight: '900', borderTop: '2px solid #cbd5e1' }}>
+                              <td style={{ padding: '8px 10px', textAlign: 'left', color: '#be123c' }}>TỔNG CỘNG</td>
+                              <td style={{ padding: '8px 6px', color: '#be123c', background: '#fee2e2' }}>{results.length}</td>
+                              {ALL_TUITION_SUBJECTS.map(subj => (
+                                <td key={subj} style={{ padding: '8px 6px', color: '#166534' }}>
+                                  {subjectCounts[subj] || 0}
+                                </td>
+                              ))}
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // GIAO DIỆN MẶC ĐỊNH CHO CÁC ĐỢT KHÁC (CLB, NỘI TRÚ...)
                 return (
                   <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>

@@ -1,7 +1,16 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase, supabase2, DualSupabaseService, fetchStudentsByClass, searchStudentsByName } from '../lib/supabase';
-import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, Award, X } from 'lucide-react';
+import { FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, Award, X, GraduationCap, Sparkles, BookOpen } from 'lucide-react';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
+import {
+  isTuitionCampaign,
+  isCoreSubject,
+  isSubjectAllowedForStudent,
+  fetchStudentElectives,
+  normalizeSubjectName,
+  ALL_TUITION_SUBJECTS,
+  SUBJECT_METADATA
+} from '../utils/tuitionElectiveService';
 
 export default function PublicRegistrations() {
   const [campaigns, setCampaigns] = useState([]);
@@ -20,6 +29,11 @@ export default function PublicRegistrations() {
   const [checkingClubEligibility, setCheckingClubEligibility] = useState(false);
   const [clubEligibility, setClubEligibility] = useState(null); 
   // { eligible: boolean, requiredClub: string, registeredClubs: string[] }
+
+  // Tuition & Elective Subjects States (GDPT 2018 - Khối 12)
+  const [checkingElectives, setCheckingElectives] = useState(false);
+  const [studentElectives, setStudentElectives] = useState([]);
+  const [electiveSource, setElectiveSource] = useState('');
 
   // QR Modal State
   const [qrModalItem, setQrModalItem] = useState(null);
@@ -179,12 +193,16 @@ export default function PublicRegistrations() {
     setStudentName(val);
     setIsVerified(false);
     setClubEligibility(null);
+    setStudentElectives([]);
+    setElectiveSource('');
     filterNameSuggestions(val);
   };
 
   const handleClassChange = (val) => {
     setStudentClass(val);
     setClubEligibility(null);
+    setStudentElectives([]);
+    setElectiveSource('');
     filterClassSuggestions(val);
     if (val) fetchStudentsByClass(val);
   };
@@ -193,6 +211,8 @@ export default function PublicRegistrations() {
     setStudentClass(clsName);
     setShowClassSuggestions(false);
     setClubEligibility(null);
+    setStudentElectives([]);
+    setElectiveSource('');
     fetchStudentsByClass(clsName);
     filterNameSuggestions(studentName, clsName);
   };
@@ -285,6 +305,25 @@ export default function PublicRegistrations() {
 
     // Kiểm tra điều kiện CLB
     await verifyClubPrerequisite(student.student_code, selectedCampaign);
+
+    // Kiểm tra điều kiện Môn tự chọn nếu là đợt Đăng ký học thêm GDPT 2018 (Khối 12)
+    if (isTuitionCampaign(selectedCampaign)) {
+      setCheckingElectives(true);
+      try {
+        const res = await fetchStudentElectives({
+          studentCode: student.student_code,
+          studentName: student.student_name,
+          studentClass: student.student_class,
+          targetCampaign: selectedCampaign
+        });
+        setStudentElectives(res.electives || []);
+        setElectiveSource(res.source || '');
+      } catch (err) {
+        console.error("Lỗi khi tra cứu môn tự chọn học sinh:", err);
+      } finally {
+        setCheckingElectives(false);
+      }
+    }
   };
 
   const selectCampaign = (cam) => {
@@ -295,6 +334,9 @@ export default function PublicRegistrations() {
     setStudentClass('');
     setStudentCode('');
     setClubEligibility(null);
+    setStudentElectives([]);
+    setElectiveSource('');
+    setCheckingElectives(false);
     setSubmittedData(null);
     
     // Init default responses
@@ -349,6 +391,22 @@ export default function PublicRegistrations() {
     // Kiểm tra điều kiện CLB
     if (clubEligibility && clubEligibility.eligible === false) {
       return alert(`⛔ Bạn không đủ điều kiện đăng ký đợt này vì chưa có tên trong danh sách đăng ký ${clubEligibility.requiredClub}.`);
+    }
+
+    // Kiểm tra điều kiện Môn tự chọn (đối với Đăng ký Học thêm Khối 12)
+    if (isTuitionCampaign(selectedCampaign)) {
+      for (const field of currentSchemaFields) {
+        const val = responses[field.id];
+        const chosenList = Array.isArray(val) ? val : [val].filter(Boolean);
+        for (const chosen of chosenList) {
+          const norm = normalizeSubjectName(chosen);
+          if (ALL_TUITION_SUBJECTS.includes(norm)) {
+            if (!isSubjectAllowedForStudent(norm, studentElectives)) {
+              return alert(`⛔ Môn "${chosen}" không hợp lệ!\n\nTheo quy định của nhà trường, em chỉ được đăng ký môn Toán, Ngữ Văn (toàn khối 12) và 02 môn tự chọn mà em đã đăng ký (${studentElectives.join(', ') || 'Chưa có dữ liệu môn tự chọn'}).`);
+            }
+          }
+        }
+      }
     }
 
     // Validate required fields
@@ -740,18 +798,86 @@ export default function PublicRegistrations() {
                     </div>
                   )}
 
+                  {checkingElectives && (
+                    <div style={{ background: '#f0fdf4', padding: '12px', borderRadius: '8px', border: '1px solid #86efac', color: '#166534', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={16} className="animate-spin" /> Đang tra cứu danh sách 02 môn tự chọn đã đăng ký của em trên CSDL...
+                    </div>
+                  )}
+
                   {/* THÔNG BÁO XÁC THỰC THÀNH CÔNG VÀ ĐỦ ĐIỀU KIỆN CLB */}
                   {isVerified && clubEligibility?.eligible === true && (
                     <div style={{ background: '#ecfdf5', padding: '14px', borderRadius: '10px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '13.5px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', marginBottom: '4px' }}>
                         <CheckCircle2 size={18} color="#059669" /> Đã xác thực danh tính hợp lệ
-                        <button type="button" onClick={() => { setIsVerified(false); setClubEligibility(null); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }}>Đổi học sinh khác</button>
+                        <button type="button" onClick={() => { setIsVerified(false); setClubEligibility(null); setStudentElectives([]); }} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#059669', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px' }}>Đổi học sinh khác</button>
                       </div>
                       {clubEligibility.requiredClub && (
                         <div style={{ fontSize: '12.5px', color: '#047857', display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
                           <ShieldCheck size={15} /> Xác nhận: Học sinh đã đăng ký <strong>{clubEligibility.requiredClub}</strong> ở đợt 1.
                         </div>
                       )}
+                    </div>
+                  )}
+
+                  {/* THẺ ĐỊNH DANH MÔN TỰ CHỌN GDPT 2018 (ĐỐI VỚI ĐỢT HỌC THÊM KHỐI 12) */}
+                  {isVerified && isTuitionCampaign(selectedCampaign) && (
+                    <div style={{
+                      background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                      border: '2px solid #86efac',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      boxShadow: '0 4px 12px rgba(16,185,129,0.08)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        <GraduationCap size={22} color="#059669" />
+                        <span style={{ fontSize: '15px', fontWeight: '800', color: '#065f46' }}>
+                          Quy định Đăng ký Học thêm Khối 12 (Chương trình GDPT 2018)
+                        </span>
+                      </div>
+
+                      <div style={{ background: '#ffffff', borderRadius: '10px', padding: '12px 14px', border: '1px solid #bbf7d0', marginBottom: '10px' }}>
+                        <div style={{ fontSize: '13px', color: '#334155', marginBottom: '6px' }}>
+                          🎯 <strong>02 Môn tự chọn em đã đăng ký:</strong>
+                        </div>
+                        {studentElectives.length > 0 ? (
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                            {studentElectives.map(s => {
+                              const meta = SUBJECT_METADATA[normalizeSubjectName(s)] || {};
+                              return (
+                                <span key={s} style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  padding: '5px 12px',
+                                  borderRadius: '999px',
+                                  backgroundColor: meta.bg || '#eff6ff',
+                                  color: meta.color || '#1e40af',
+                                  border: `1.5px solid ${meta.border || '#bfdbfe'}`,
+                                  fontWeight: '700',
+                                  fontSize: '13px'
+                                }}>
+                                  <span>{meta.icon || '📚'}</span>
+                                  <span>{s}</span>
+                                  <CheckCircle2 size={14} color={meta.color || '#16a34a'} />
+                                </span>
+                              );
+                            })}
+                            <span style={{ fontSize: '12px', color: '#059669', fontStyle: 'italic', marginLeft: '6px' }}>
+                              (Đã xác thực từ hệ thống CSDL môn tự chọn)
+                            </span>
+                          </div>
+                        ) : (
+                          <div style={{ color: '#b45309', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <AlertTriangle size={16} color="#d97706" />
+                            <span>Chưa tìm thấy dữ liệu đăng ký 02 môn tự chọn của em. Em vẫn có thể đăng ký 2 môn chung (Toán, Văn).</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '12.5px', color: '#166534', lineHeight: '1.6', background: 'rgba(255,255,255,0.7)', padding: '10px 12px', borderRadius: '8px' }}>
+                        <div>📘 <strong>Môn Toán & Ngữ Văn:</strong> Mở cho <strong>toàn bộ học sinh Khối 12</strong> (Môn thi bắt buộc).</div>
+                        <div>⚡ <strong>Môn tự chọn:</strong> Em <strong>chỉ được phép chọn học thêm đúng 02 môn tự chọn đã đăng ký</strong> ({studentElectives.length > 0 ? studentElectives.join(' & ') : 'theo hồ sơ của em'}). Hệ thống tự động khóa các môn khác.</div>
+                      </div>
                     </div>
                   )}
 
@@ -992,21 +1118,146 @@ export default function PublicRegistrations() {
                                 </div>
                               )}
 
-                              {field.type === 'checkbox' && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                  {(field.options || []).map((opt, idx) => (
-                                    <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
-                                      <input 
-                                        type="checkbox" 
-                                        value={opt}
-                                        checked={(responses[field.id] || []).includes(opt)}
-                                        onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
-                                      />
-                                      {opt}
-                                    </label>
-                                  ))}
-                                </div>
-                              )}
+                              {field.type === 'checkbox' && (() => {
+                                const isTuitionSubjField = isTuitionCampaign(selectedCampaign) && 
+                                  (field.id === 'field_tuition_subjects' || 
+                                   (field.label && (field.label.toLowerCase().includes('môn') || field.label.toLowerCase().includes('học thêm'))) ||
+                                   (field.options || []).some(o => ALL_TUITION_SUBJECTS.includes(normalizeSubjectName(o))));
+
+                                if (!isTuitionSubjField) {
+                                  return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                                      {(field.options || []).map((opt, idx) => (
+                                        <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
+                                          <input 
+                                            type="checkbox" 
+                                            value={opt}
+                                            checked={(responses[field.id] || []).includes(opt)}
+                                            onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
+                                          />
+                                          {opt}
+                                        </label>
+                                      ))}
+                                    </div>
+                                  );
+                                }
+
+                                // GIAO DIỆN CHỌN MÔN HỌC THÊM THÔNG MINH CHO KHỐI 12
+                                return (
+                                  <div style={{ marginTop: '8px' }}>
+                                    {/* Thanh phím tắt chọn nhanh */}
+                                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const allowedNames = ['Toán', 'Ngữ Văn', ...studentElectives].map(normalizeSubjectName);
+                                          const matchingOpts = (field.options || []).filter(o => allowedNames.includes(normalizeSubjectName(o)));
+                                          setResponses({ ...responses, [field.id]: matchingOpts });
+                                        }}
+                                        style={{
+                                          padding: '7px 14px',
+                                          borderRadius: '8px',
+                                          backgroundColor: '#f0fdf4',
+                                          border: '1.5px solid #86efac',
+                                          color: '#166534',
+                                          fontWeight: '700',
+                                          fontSize: '12.5px',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '6px'
+                                        }}
+                                      >
+                                        ⚡ Chọn nhanh tất cả môn của em ({['Toán', 'Văn', ...(studentElectives.length > 0 ? studentElectives : ['2 môn tự chọn'])].join(' + ')})
+                                      </button>
+
+                                      {(responses[field.id] || []).length > 0 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => setResponses({ ...responses, [field.id]: [] })}
+                                          style={{
+                                            padding: '7px 12px',
+                                            borderRadius: '8px',
+                                            backgroundColor: '#f8fafc',
+                                            border: '1px solid #cbd5e1',
+                                            color: '#64748b',
+                                            fontSize: '12px',
+                                            cursor: 'pointer'
+                                          }}
+                                        >
+                                          Bỏ chọn
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {/* Danh sách từng môn học */}
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '10px' }}>
+                                      {(field.options || []).map((opt, idx) => {
+                                        const normOpt = normalizeSubjectName(opt);
+                                        const isCore = isCoreSubject(normOpt);
+                                        const isElective = studentElectives.map(normalizeSubjectName).includes(normOpt);
+                                        const isAllowed = isCore || isElective;
+                                        const isChecked = (responses[field.id] || []).includes(opt);
+                                        const meta = SUBJECT_METADATA[normOpt] || { icon: '📘', color: '#0284c7', bg: '#f0f9ff', border: '#bae6fd' };
+
+                                        return (
+                                          <div
+                                            key={idx}
+                                            onClick={() => {
+                                              if (isAllowed) {
+                                                handleResponseChange(field.id, opt, 'checkbox');
+                                              } else {
+                                                alert(`⛔ Môn "${opt}" không thuộc 02 môn tự chọn của em!\n\nTheo quy định của nhà trường, em chỉ được đăng ký môn Toán, Ngữ Văn (toàn khối 12) và 02 môn tự chọn đã đăng ký (${studentElectives.join(', ') || 'Chưa có dữ liệu môn tự chọn'}).`);
+                                              }
+                                            }}
+                                            style={{
+                                              border: isChecked ? `2px solid ${meta.color}` : isAllowed ? `1.5px solid #cbd5e1` : '1px dashed #cbd5e1',
+                                              backgroundColor: isChecked ? meta.bg : isAllowed ? '#ffffff' : '#f8fafc',
+                                              opacity: isAllowed ? 1 : 0.5,
+                                              cursor: isAllowed ? 'pointer' : 'not-allowed',
+                                              borderRadius: '10px',
+                                              padding: '12px 14px',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'space-between',
+                                              gap: '10px',
+                                              transition: 'all 0.15s',
+                                              boxShadow: isChecked ? `0 2px 8px ${meta.border}` : 'none'
+                                            }}
+                                          >
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                              <span style={{ fontSize: '18px' }}>{meta.icon}</span>
+                                              <div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '13.5px', color: isChecked ? meta.color : isAllowed ? '#1e293b' : '#94a3b8' }}>
+                                                  {opt}
+                                                </div>
+                                                <div style={{ fontSize: '11px', marginTop: '2px' }}>
+                                                  {isCore ? (
+                                                    <span style={{ color: '#0369a1', fontWeight: '700' }}>📘 Môn chung toàn Khối 12</span>
+                                                  ) : isElective ? (
+                                                    <span style={{ color: '#166534', fontWeight: '700' }}>✅ 02 Môn tự chọn của em</span>
+                                                  ) : (
+                                                    <span style={{ color: '#64748b' }}>🔒 Không thuộc 02 môn tự chọn</span>
+                                                  )}
+                                                </div>
+                                              </div>
+                                            </div>
+
+                                            <input 
+                                              type="checkbox" 
+                                              value={opt}
+                                              disabled={!isAllowed}
+                                              checked={isChecked}
+                                              onChange={() => {}}
+                                              style={{ width: '18px', height: '18px', cursor: isAllowed ? 'pointer' : 'not-allowed', accentColor: meta.color }}
+                                            />
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </>
                           )}
                         </div>
