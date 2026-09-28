@@ -29,6 +29,8 @@ const SEED_MEETINGS = [
     id: 'meet_seed_001',
     title: 'Hội nghị Sư phạm & Triển khai Nhiệm vụ Năm học 2026 - 2027',
     meeting_type: 'Hội đồng sư phạm',
+    meeting_format: 'OFFLINE', // 'OFFLINE' (Trực tiếp), 'ONLINE' (Trực tuyến), 'HYBRID' (Hỗn hợp)
+    location: 'Hội trường lớn - Trường THPT Cao Bá Quát',
     meeting_date: new Date().toISOString().split('T')[0],
     meeting_link: 'https://meet.google.com/cbq-supham-online',
     checkin_code: '839201',
@@ -502,6 +504,8 @@ CREATE TABLE IF NOT EXISTS public.cbq_online_meetings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     meeting_type TEXT DEFAULT 'Hội đồng sư phạm',
+    meeting_format VARCHAR(20) DEFAULT 'OFFLINE', -- 'OFFLINE' (Trực tiếp), 'ONLINE' (Trực tuyến), 'HYBRID' (Hỗn hợp)
+    location TEXT DEFAULT 'Hội trường lớn THPT Cao Bá Quát',
     meeting_date DATE DEFAULT CURRENT_DATE,
     meeting_link TEXT,
     checkin_code VARCHAR(10),

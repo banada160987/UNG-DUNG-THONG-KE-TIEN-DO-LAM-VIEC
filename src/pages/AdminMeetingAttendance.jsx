@@ -35,6 +35,8 @@ export default function AdminMeetingAttendance() {
   const [editingMeeting, setEditingMeeting] = useState(null);
   const [formTitle, setFormTitle] = useState('');
   const [formType, setFormType] = useState('Hội đồng sư phạm');
+  const [formFormat, setFormFormat] = useState('OFFLINE'); // 'OFFLINE' | 'ONLINE' | 'HYBRID'
+  const [formLocation, setFormLocation] = useState('Hội trường lớn - Trường THPT Cao Bá Quát');
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
   const [formLink, setFormLink] = useState('');
   const [formPollQuestion, setFormPollQuestion] = useState('');
@@ -221,6 +223,8 @@ export default function AdminMeetingAttendance() {
       setEditingMeeting(meeting);
       setFormTitle(meeting.title);
       setFormType(meeting.meeting_type || 'Hội đồng sư phạm');
+      setFormFormat(meeting.meeting_format || (meeting.meeting_link ? 'ONLINE' : 'OFFLINE'));
+      setFormLocation(meeting.location || (meeting.meeting_link ? 'Trực tuyến (Meet/Zoom)' : 'Hội trường lớn - Trường THPT Cao Bá Quát'));
       setFormDate(meeting.meeting_date || new Date().toISOString().split('T')[0]);
       setFormLink(meeting.meeting_link || '');
       setFormPollQuestion(meeting.poll_question || '');
@@ -229,6 +233,8 @@ export default function AdminMeetingAttendance() {
       setEditingMeeting(null);
       setFormTitle('');
       setFormType('Hội đồng sư phạm');
+      setFormFormat('OFFLINE');
+      setFormLocation('Hội trường lớn - Trường THPT Cao Bá Quát');
       setFormDate(new Date().toISOString().split('T')[0]);
       setFormLink('');
       setFormPollQuestion('');
@@ -250,6 +256,8 @@ export default function AdminMeetingAttendance() {
       id: editingMeeting?.id,
       title: formTitle.trim(),
       meeting_type: formType,
+      meeting_format: formFormat,
+      location: formLocation.trim() || (formFormat === 'OFFLINE' ? 'Hội trường lớn - Trường THPT Cao Bá Quát' : 'Trực tuyến'),
       meeting_date: formDate,
       meeting_link: formLink.trim(),
       poll_question: formPollQuestion.trim(),
@@ -305,12 +313,20 @@ export default function AdminMeetingAttendance() {
     const reportedDeptNames = new Set(deptReports.map(r => r.department));
     const missingDepts = departments.filter(d => !reportedDeptNames.has(d));
 
-    let msg = `📢 [THPT CAO BÁ QUÁT - ĐÔN ĐỐC ĐIỂM DANH HỌP TRỰC TUYẾN]\n`;
+    let msg = `📢 [THPT CAO BÁ QUÁT - ĐÔN ĐỐC ĐIỂM DANH HỌP]\n`;
     msg += `📌 Cuộc họp: ${currentMeeting.title.toUpperCase()}\n`;
     msg += `⏰ Thời gian: ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}\n`;
-    if (currentMeeting.meeting_link) msg += `🔗 Link họp Meet/Zoom: ${currentMeeting.meeting_link}\n`;
+    if (currentMeeting.meeting_format === 'OFFLINE') {
+      msg += `🏢 Hình thức: Họp TRỰC TIẾP tại ${currentMeeting.location || 'Hội trường lớn'}\n`;
+    } else if (currentMeeting.meeting_format === 'ONLINE') {
+      msg += `💻 Hình thức: Họp TRỰC TUYẾN\n`;
+      if (currentMeeting.meeting_link) msg += `🔗 Link họp Meet/Zoom: ${currentMeeting.meeting_link}\n`;
+    } else {
+      msg += `🌐 Hình thức: Họp HỖN HỢP tại ${currentMeeting.location || 'Hội trường'} và trực tuyến\n`;
+      if (currentMeeting.meeting_link) msg += `🔗 Link họp Meet/Zoom: ${currentMeeting.meeting_link}\n`;
+    }
     msg += `\n🔑 MÃ SỐ ĐIỂM DANH (OTP): ${currentMeeting.checkin_code || 'Đang mở'}\n`;
-    msg += `👉 Cổng điểm danh giáo viên: ${meetingUrl}\n\n`;
+    msg += `👉 Cổng điểm danh giáo viên (hoặc quét mã QR trên màn chiếu): ${meetingUrl}&code=${currentMeeting.checkin_code || ''}\n\n`;
 
     if (missingDepts.length > 0) {
       msg += `⚠️ CÁC TỔ CHUYÊN MÔN CHƯA BÁO CÁO SĨ SỐ (${missingDepts.length} tổ):\n`;
@@ -383,12 +399,16 @@ export default function AdminMeetingAttendance() {
           </tr>
         </table>
 
-        <div class="title">BIÊN BẢN TỔNG HỢP ĐIỂM DANH & SĨ SỐ CUỘC HỌP TRỰC TUYẾN</div>
+        <div class="title">BIÊN BẢN TỔNG HỢP ĐIỂM DANH & SĨ SỐ CUỘC HỌP</div>
         <div class="subtitle">Cuộc họp: ${currentMeeting.title.toUpperCase()}</div>
 
         <p><strong>I. THỜI GIAN, HÌNH THỨC VÀ ĐỊA ĐIỂM</strong></p>
         <p>- <strong>Thời gian:</strong> Ngày ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}.</p>
-        <p>- <strong>Hình thức:</strong> Trực tuyến qua hệ thống ${currentMeeting.meeting_link ? `(Link: ${currentMeeting.meeting_link})` : 'Google Meet / Zoom'}.</p>
+        <p>- <strong>Hình thức:</strong> ${
+          currentMeeting.meeting_format === 'OFFLINE' ? 'Họp trực tiếp tại đơn vị' :
+          (currentMeeting.meeting_format === 'ONLINE' ? 'Họp trực tuyến' : 'Họp hỗn hợp (trực tiếp kết hợp trực tuyến)')
+        }${currentMeeting.meeting_link ? ` (Link: ${currentMeeting.meeting_link})` : ''}.</p>
+        <p>- <strong>Địa điểm:</strong> ${currentMeeting.location || 'Hội trường lớn - Trường THPT Cao Bá Quát'}.</p>
         <p>- <strong>Chủ trì:</strong> Ban Giám Hiệu Trường THPT Cao Bá Quát.</p>
         <p>- <strong>Thư ký:</strong> Ban Thư Ký Hội Đồng Sư Phạm.</p>
 
@@ -511,8 +531,12 @@ export default function AdminMeetingAttendance() {
       ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", ""],
       [`Số: ... /BC-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", ""],
       [],
-      ["BẢNG TỔNG HỢP SĨ SỐ & KẾT QUẢ ĐIỂM DANH HỌP TRỰC TUYẾN"],
+      ["BẢNG TỔNG HỢP SĨ SỐ & KẾT QUẢ ĐIỂM DANH CUỘC HỌP"],
       [`Cuộc họp: ${currentMeeting.title.toUpperCase()}`],
+      [`Hình thức: ${
+        currentMeeting.meeting_format === 'OFFLINE' ? 'Trực tiếp tại đơn vị' :
+        (currentMeeting.meeting_format === 'ONLINE' ? 'Trực tuyến qua Meet/Zoom' : 'Hỗn hợp Trực tiếp & Trực tuyến')
+      } | Địa điểm: ${currentMeeting.location || 'Hội trường lớn - Trường THPT Cao Bá Quát'}`],
       [`Thời gian: ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')} | Xuất lúc: ${today.toLocaleString('vi-VN')}`],
       [],
       ["I. CHỈ SỐ TOÀN TRƯỜNG"],
@@ -707,7 +731,7 @@ export default function AdminMeetingAttendance() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '20px' }}>
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', flexWrap: 'wrap' }}>
                   <span style={{ 
                     backgroundColor: currentMeeting.is_checkin_open ? '#10b981' : '#64748b', 
                     color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px' 
@@ -720,6 +744,12 @@ export default function AdminMeetingAttendance() {
                   }}>
                     {currentMeeting.ttcm_reporting_open ? '📢 ĐANG YÊU CẦU TTCM BÁO CÁO' : 'TẮT BÁO CÁO TTCM'}
                   </span>
+                  <span style={{ 
+                    backgroundColor: currentMeeting.meeting_format === 'OFFLINE' ? '#2563eb' : (currentMeeting.meeting_format === 'ONLINE' ? '#7c3aed' : '#0891b2'), 
+                    color: '#fff', fontSize: '11px', fontWeight: 'bold', padding: '3px 8px', borderRadius: '12px' 
+                  }}>
+                    {currentMeeting.meeting_format === 'OFFLINE' ? '🏢 TRỰC TIẾP' : (currentMeeting.meeting_format === 'ONLINE' ? '💻 TRỰC TUYẾN' : '🌐 HỖN HỢP')}
+                  </span>
                   <span style={{ color: '#94a3b8', fontSize: '13px' }}>
                     Loại: {currentMeeting.meeting_type} • Ngày: {new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}
                   </span>
@@ -727,11 +757,18 @@ export default function AdminMeetingAttendance() {
                 <h3 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#f8fafc' }}>
                   {currentMeeting.title}
                 </h3>
-                {currentMeeting.meeting_link && (
-                  <div style={{ marginTop: '6px', fontSize: '13px', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <ExternalLink size={14} /> Link họp: <a href={currentMeeting.meeting_link} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>{currentMeeting.meeting_link}</a>
-                  </div>
-                )}
+                <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap', fontSize: '13px' }}>
+                  {currentMeeting.location && (
+                    <span style={{ color: '#cbd5e1' }}>
+                      📍 <strong>Địa điểm:</strong> {currentMeeting.location}
+                    </span>
+                  )}
+                  {currentMeeting.meeting_link && (
+                    <span style={{ color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <ExternalLink size={14} /> Link Meet/Zoom: <a href={currentMeeting.meeting_link} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline' }}>{currentMeeting.meeting_link}</a>
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* KHỐI MÃ OTP & ĐẾM NGƯỢC */}
@@ -762,9 +799,9 @@ export default function AdminMeetingAttendance() {
                     borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: '6px'
                   }}
-                  title="Chiếu mã OTP to toàn màn hình để chia sẻ trên Google Meet"
+                  title="Chiếu mã QR và mã OTP to lên màn hình Hội trường hoặc Google Meet"
                 >
-                  <Eye size={16} /> Chiếu To Meet
+                  <QrCode size={16} /> Chiếu QR & OTP Hội Trường
                 </button>
               </div>
             </div>
@@ -1176,9 +1213,17 @@ export default function AdminMeetingAttendance() {
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px'
                 }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '11px', fontWeight: 'bold', backgroundColor: '#e2e8f0', padding: '2px 6px', borderRadius: '4px' }}>
                         {m.meeting_type}
+                      </span>
+                      <span style={{ 
+                        fontSize: '11px', fontWeight: 'bold', 
+                        backgroundColor: m.meeting_format === 'OFFLINE' ? '#dbeafe' : (m.meeting_format === 'ONLINE' ? '#f3e8ff' : '#cffafe'),
+                        color: m.meeting_format === 'OFFLINE' ? '#1d4ed8' : (m.meeting_format === 'ONLINE' ? '#7e22ce' : '#0e7490'),
+                        padding: '2px 6px', borderRadius: '4px' 
+                      }}>
+                        {m.meeting_format === 'OFFLINE' ? '🏢 Trực tiếp' : (m.meeting_format === 'ONLINE' ? '💻 Trực tuyến' : '🌐 Hỗn hợp')}
                       </span>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>
                         {new Date(m.meeting_date).toLocaleDateString('vi-VN')}
@@ -1187,6 +1232,11 @@ export default function AdminMeetingAttendance() {
                     <h4 style={{ margin: '4px 0', fontSize: '15px', fontWeight: 'bold', color: '#0f172a' }}>
                       {m.title}
                     </h4>
+                    {m.location && (
+                      <div style={{ fontSize: '12px', color: '#475569' }}>
+                        📍 {m.location}
+                      </div>
+                    )}
                     {m.meeting_link && (
                       <div style={{ fontSize: '12px', color: '#0284c7' }}>
                         Link: <a href={m.meeting_link} target="_blank" rel="noreferrer">{m.meeting_link}</a>
@@ -1226,61 +1276,188 @@ export default function AdminMeetingAttendance() {
         )}
 
         {/* ========================================================================= */}
-        {/* MODAL CHIẾU MÃ OTP TOÀN MÀN HÌNH (DÀNH CHO CHIA SẺ TRÊN GOOGLE MEET)      */}
+        {/* MODAL CHIẾU MÃ QR & OTP TOÀN MÀN HÌNH (DÀNH CHO HỘI TRƯỜNG & GOOGLE MEET)  */}
         {/* ========================================================================= */}
-        {showOtpModal && currentMeeting && (
-          <div style={{
-            position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.95)',
-            zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
-          }}>
+        {showOtpModal && currentMeeting && (() => {
+          const checkinUrlWithOtp = `${window.location.origin}/hop-online?id=${currentMeeting.id}&code=${currentMeeting.checkin_code}`;
+          const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(checkinUrlWithOtp)}&margin=10`;
+
+          return (
             <div style={{
-              backgroundColor: '#1e293b', border: '2px solid #38bdf8', borderRadius: '24px',
-              padding: '40px', maxWidth: '700px', width: '100%', textAlign: 'center', color: '#fff',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', position: 'relative'
+              position: 'fixed', inset: 0, backgroundColor: 'rgba(15,23,42,0.96)',
+              zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+              backdropFilter: 'blur(8px)'
             }}>
-              <button
-                onClick={() => setShowOtpModal(false)}
-                style={{
-                  position: 'absolute', top: '18px', right: '18px', background: 'none',
-                  border: 'none', color: '#94a3b8', fontSize: '24px', cursor: 'pointer'
-                }}
-              >
-                ✕
-              </button>
-
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                TRƯỜNG THPT CAO BÁ QUÁT • CỔNG ĐIỂM DANH HỌP TRỰC TUYẾN
-              </div>
-
-              <h2 style={{ fontSize: '22px', fontWeight: '800', margin: '10px 0 20px', color: '#f8fafc' }}>
-                {currentMeeting.title}
-              </h2>
-
               <div style={{
-                backgroundColor: '#0f172a', padding: '24px', borderRadius: '16px',
-                border: '1px solid #334155', display: 'inline-block', margin: '0 auto 20px'
+                backgroundColor: '#1e293b', border: '2px solid #38bdf8', borderRadius: '24px',
+                padding: '32px 36px', maxWidth: '1050px', width: '100%', color: '#fff',
+                boxShadow: '0 25px 60px -10px rgba(0,0,0,0.7)', position: 'relative'
               }}>
-                <div style={{ fontSize: '12px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold', marginBottom: '4px' }}>
-                  MÃ SỐ ĐIỂM DANH (NHẬP VÀO ĐIỆN THOẠI)
-                </div>
-                <div style={{ fontSize: '64px', fontWeight: '900', letterSpacing: '8px', color: '#38bdf8', fontFamily: 'monospace' }}>
-                  {currentMeeting.checkin_code || '------'}
-                </div>
-              </div>
+                <button
+                  onClick={() => setShowOtpModal(false)}
+                  style={{
+                    position: 'absolute', top: '18px', right: '18px', background: '#334155',
+                    border: 'none', color: '#94a3b8', width: '36px', height: '36px', borderRadius: '50%',
+                    fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}
+                  title="Đóng màn chiếu"
+                >
+                  ✕
+                </button>
 
-              <div style={{ fontSize: '16px', color: '#cbd5e1', marginBottom: '24px' }}>
-                ⏳ Thời gian còn lại: <strong style={{ color: countdownSeconds < 60 ? '#f43f5e' : '#34d399', fontSize: '20px' }}>
-                  {Math.floor(countdownSeconds / 60)} phút {(countdownSeconds % 60).toString().padStart(2, '0')} giây
-                </strong>
-              </div>
+                {/* HEADER TRÊN CÙNG */}
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: 'bold', color: '#38bdf8', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    TRƯỜNG THPT CAO BÁ QUÁT • CỔNG ĐIỂM DANH CUỘC HỌP
+                  </div>
 
-              <div style={{ backgroundColor: '#334155', padding: '14px', borderRadius: '10px', fontSize: '14px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
-                <span>👉 Thầy/Cô mở trình duyệt trên điện thoại truy cập:</span>
-                <strong style={{ color: '#38bdf8', textDecoration: 'underline' }}>{window.location.origin}/hop-online</strong>
+                  <h2 style={{ fontSize: '24px', fontWeight: '900', margin: '6px 0 10px', color: '#f8fafc' }}>
+                    {currentMeeting.title}
+                  </h2>
+
+                  <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '13px' }}>
+                    <span style={{
+                      backgroundColor: currentMeeting.meeting_format === 'OFFLINE' ? '#2563eb' : (currentMeeting.meeting_format === 'ONLINE' ? '#7c3aed' : '#0891b2'),
+                      color: '#fff', padding: '3px 10px', borderRadius: '12px', fontWeight: 'bold'
+                    }}>
+                      {currentMeeting.meeting_format === 'OFFLINE' ? '🏢 HỌP TRỰC TIẾP' : (currentMeeting.meeting_format === 'ONLINE' ? '💻 HỌP TRỰC TUYẾN' : '🌐 HỌP HỖN HỢP')}
+                    </span>
+                    {currentMeeting.location && (
+                      <span style={{ color: '#e2e8f0', fontWeight: 'bold' }}>
+                        📍 {currentMeeting.location}
+                      </span>
+                    )}
+                    <span style={{ color: '#94a3b8' }}>
+                      📅 {new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* KHỐI 2 CỘT: CỘT TRÁI QR CODE - CỘT PHẢI MÃ OTP & TIẾN ĐỘ SĨ SỐ */}
+                <div style={{
+                  display: 'grid', gridTemplateColumns: 'minmax(280px, 340px) 1fr',
+                  gap: '28px', alignItems: 'center', backgroundColor: '#0f172a',
+                  padding: '24px', borderRadius: '20px', border: '1px solid #334155'
+                }}>
+                  {/* CỘT TRÁI: MÃ QR CODE */}
+                  <div style={{ textAlign: 'center', borderRight: '1px solid #334155', paddingRight: '20px' }}>
+                    <div style={{
+                      backgroundColor: '#fff', padding: '12px', borderRadius: '16px',
+                      display: 'inline-block', boxShadow: '0 8px 20px rgba(0,0,0,0.3)',
+                      border: '3px solid #38bdf8'
+                    }}>
+                      <img 
+                        src={qrImageUrl} 
+                        alt="QR Code Điểm danh"
+                        style={{ width: '220px', height: '220px', display: 'block', borderRadius: '8px' }}
+                      />
+                    </div>
+                    <div style={{ marginTop: '12px', fontSize: '13px', fontWeight: 'bold', color: '#38bdf8' }}>
+                      📱 Giơ Camera điện thoại quét mã QR
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px', lineHeight: '1.4' }}>
+                      Tự động mở trang điểm danh & <strong>điền sẵn mã OTP</strong> trong 3 giây!
+                    </div>
+                  </div>
+
+                  {/* CỘT PHẢI: MÃ OTP & ĐỒNG HỒ & TIẾN ĐỘ SĨ SỐ */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>
+                          MÃ SỐ PHIÊN HỌP (OTP NHẬP TAY)
+                        </div>
+                        <div style={{ fontSize: '52px', fontWeight: '900', letterSpacing: '6px', color: '#38bdf8', fontFamily: 'monospace', lineHeight: 1.1, margin: '4px 0' }}>
+                          {currentMeeting.checkin_code || '------'}
+                        </div>
+                      </div>
+
+                      {/* ĐỒNG HỒ ĐẾM NGƯỢC */}
+                      <div style={{ backgroundColor: '#1e293b', padding: '10px 18px', borderRadius: '12px', border: '1px solid #334155', textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 'bold' }}>THỜI GIAN CÒN LẠI</div>
+                        <div style={{ fontSize: '24px', fontWeight: '900', color: countdownSeconds > 0 ? (countdownSeconds < 60 ? '#f43f5e' : '#34d399') : '#64748b' }}>
+                          {countdownSeconds > 0 
+                            ? `${Math.floor(countdownSeconds / 60)}:${(countdownSeconds % 60).toString().padStart(2, '0')}`
+                            : 'Đã hết giờ'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* TIẾN ĐỘ SĨ SỐ LIVE TRỰC TIẾP TRÊN MÀN HÌNH */}
+                    <div style={{ marginTop: '20px', backgroundColor: '#1e293b', padding: '16px', borderRadius: '14px', border: '1px solid #334155' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0' }}>
+                          📊 Sĩ số đã có mặt: <strong style={{ color: '#34d399', fontSize: '16px' }}>{statistics.presentCount} / {statistics.totalStaff}</strong> đồng chí
+                        </span>
+                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#38bdf8' }}>
+                          {statistics.presentPct}%
+                        </span>
+                      </div>
+
+                      {/* PROGRESS BAR */}
+                      <div style={{ width: '100%', height: '12px', backgroundColor: '#0f172a', borderRadius: '6px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${Math.min(100, Math.max(0, Number(statistics.presentPct)))}%`,
+                          height: '100%', backgroundColor: '#10b981',
+                          borderRadius: '6px', transition: 'width 0.6s ease'
+                        }} />
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', fontSize: '12px', color: '#94a3b8' }}>
+                        <span>🟡 Vắng có phép: <strong>{statistics.excusedCount}</strong></span>
+                        <span>🔴 Chưa điểm danh: <strong>{statistics.unreportedCount + statistics.unexcusedCount}</strong></span>
+                        <span>👥 TTCM đã báo cáo: <strong style={{ color: '#38bdf8' }}>{statistics.reportedDepts} / {statistics.totalDepts}</strong> Tổ</span>
+                      </div>
+                    </div>
+
+                    {/* DÀNH CHO TTCM */}
+                    <div style={{ marginTop: '12px', fontSize: '12.5px', color: '#cbd5e1', backgroundColor: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '10px 14px', borderRadius: '10px' }}>
+                      💡 <strong>Tổ trưởng Chuyên môn (TTCM):</strong> Có thể mở Tab <em>"Tổ Trưởng Báo Cáo Sĩ Số"</em> để điểm danh nhanh các thành viên trong tổ và nộp báo cáo cho BGH.
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTTOM ACTIONS */}
+                <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ fontSize: '13px', color: '#94a3b8' }}>
+                    🔗 Link điểm danh: <strong style={{ color: '#38bdf8' }}>{window.location.origin}/hop-online</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => handleStartCheckin(5)}
+                      style={{
+                        padding: '8px 16px', backgroundColor: '#059669', color: '#fff', border: 'none',
+                        borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer'
+                      }}
+                    >
+                      + Thêm 5 phút
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(checkinUrlWithOtp, 'Đã sao chép link điểm danh kèm mã OTP!')}
+                      style={{
+                        padding: '8px 16px', backgroundColor: '#0284c7', color: '#fff', border: 'none',
+                        borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', gap: '6px'
+                      }}
+                    >
+                      <Copy size={14} /> Sao chép link QR
+                    </button>
+                    <button
+                      onClick={() => setShowOtpModal(false)}
+                      style={{
+                        padding: '8px 18px', backgroundColor: '#475569', color: '#fff', border: 'none',
+                        borderRadius: '8px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer'
+                      }}
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ========================================================================= */}
         {/* MODAL TẠO / SỬA CUỘC HỌP                                                 */}
@@ -1291,7 +1468,7 @@ export default function AdminMeetingAttendance() {
             zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px'
           }}>
             <form onSubmit={handleSaveMeeting} style={{
-              backgroundColor: '#fff', borderRadius: '14px', padding: '24px', maxWidth: '550px',
+              backgroundColor: '#fff', borderRadius: '14px', padding: '24px', maxWidth: '600px',
               width: '100%', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -1301,7 +1478,7 @@ export default function AdminMeetingAttendance() {
                 <button type="button" onClick={() => setShowMeetingModal(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer' }}>✕</button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Tên cuộc họp *</label>
                   <input 
@@ -1313,7 +1490,7 @@ export default function AdminMeetingAttendance() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Loại cuộc họp</label>
                     <select
@@ -1331,6 +1508,36 @@ export default function AdminMeetingAttendance() {
                   </div>
 
                   <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px', color: '#0369a1' }}>
+                      Hình thức tổ chức *
+                    </label>
+                    <select
+                      value={formFormat}
+                      onChange={e => setFormFormat(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '2px solid #0284c7', fontSize: '14px', fontWeight: 'bold', color: '#0369a1', backgroundColor: '#f0f9ff' }}
+                    >
+                      <option value="OFFLINE">🏢 Họp Trực Tiếp (Hội trường/Phòng)</option>
+                      <option value="ONLINE">💻 Họp Trực Tuyến (Meet / Zoom)</option>
+                      <option value="HYBRID">🌐 Họp Hỗn Hợp (Trực tiếp + Online)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
+                      Địa điểm tổ chức / Phòng họp
+                    </label>
+                    <input 
+                      type="text"
+                      placeholder="Ví dụ: Hội trường lớn, Phòng họp 1..."
+                      value={formLocation}
+                      onChange={e => setFormLocation(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }}
+                    />
+                  </div>
+
+                  <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Ngày họp</label>
                     <input 
                       type="date"
@@ -1342,7 +1549,9 @@ export default function AdminMeetingAttendance() {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Link Google Meet / Zoom</label>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>
+                    Link Google Meet / Zoom {formFormat === 'OFFLINE' ? '(Tùy chọn)' : '(Dành cho thành viên online)'}
+                  </label>
                   <input 
                     type="url"
                     placeholder="https://meet.google.com/..."

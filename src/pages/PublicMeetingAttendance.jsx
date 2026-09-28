@@ -17,6 +17,7 @@ const ABSENT_REASONS = [
 export default function PublicMeetingAttendance() {
   const [searchParams] = useSearchParams();
   const meetingIdParam = searchParams.get('id');
+  const codeParam = searchParams.get('code');
 
   const [activeTab, setActiveTab] = useState('teacher'); // 'teacher' | 'ttcm'
   const [meetings, setMeetings] = useState([]);
@@ -32,11 +33,18 @@ export default function PublicMeetingAttendance() {
   // Form Giáo viên điểm danh
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedStaffName, setSelectedStaffName] = useState('');
-  const [checkinOtp, setCheckinOtp] = useState('');
+  const [checkinOtp, setCheckinOtp] = useState(codeParam || '');
   const [selectedPollAnswer, setSelectedPollAnswer] = useState('');
   const [submittingCheckin, setSubmittingCheckin] = useState(false);
   const [checkinSuccessData, setCheckinSuccessData] = useState(null);
   const [checkinError, setCheckinError] = useState('');
+
+  // Tự động điền mã khi quét QR có param ?code=...
+  useEffect(() => {
+    if (codeParam) {
+      setCheckinOtp(codeParam);
+    }
+  }, [codeParam]);
 
   // Form TTCM báo cáo sĩ số
   const [ttcmDept, setTtcmDept] = useState('');
@@ -315,7 +323,7 @@ export default function PublicMeetingAttendance() {
           </div>
 
           {currentMeeting && (
-            <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ marginTop: '12px', display: 'flex', justifyContent: 'center', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
               <span style={{
                 backgroundColor: currentMeeting.is_checkin_open ? '#dcfce7' : '#fee2e2',
                 color: currentMeeting.is_checkin_open ? '#166534' : '#991b1b',
@@ -323,6 +331,23 @@ export default function PublicMeetingAttendance() {
               }}>
                 {currentMeeting.is_checkin_open ? '🔴 Đang Mở Điểm Danh' : '⚪ Đã Đóng Điểm Danh'}
               </span>
+
+              <span style={{
+                backgroundColor: currentMeeting.meeting_format === 'OFFLINE' ? '#dbeafe' : (currentMeeting.meeting_format === 'ONLINE' ? '#f3e8ff' : '#cffafe'),
+                color: currentMeeting.meeting_format === 'OFFLINE' ? '#1d4ed8' : (currentMeeting.meeting_format === 'ONLINE' ? '#7e22ce' : '#0e7490'),
+                padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold'
+              }}>
+                {currentMeeting.meeting_format === 'OFFLINE' ? '🏢 Họp Trực Tiếp' : (currentMeeting.meeting_format === 'ONLINE' ? '💻 Họp Trực Tuyến' : '🌐 Họp Hỗn Hợp')}
+              </span>
+
+              {currentMeeting.location && (
+                <span style={{
+                  backgroundColor: '#f1f5f9', color: '#334155',
+                  padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: '600'
+                }}>
+                  📍 {currentMeeting.location}
+                </span>
+              )}
 
               {currentMeeting.meeting_link && (
                 <a
@@ -334,7 +359,7 @@ export default function PublicMeetingAttendance() {
                     fontSize: '12px', color: '#0284c7', fontWeight: 'bold', textDecoration: 'none'
                   }}
                 >
-                  <ExternalLink size={14} /> Vào phòng họp Meet / Zoom
+                  <ExternalLink size={14} /> Link Meet / Zoom
                 </a>
               )}
             </div>
@@ -508,9 +533,20 @@ export default function PublicMeetingAttendance() {
 
                   {/* BƯỚC 3: NHẬP MÃ OTP */}
                   <div>
-                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#0369a1', marginBottom: '6px' }}>
-                      3. Nhập Mã số phiên họp (Mã OTP 6 chữ số đang chiếu trên Meet) *
-                    </label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 'bold', color: '#0369a1' }}>
+                        3. Mã số phiên họp (Mã OTP 6 chữ số) *
+                      </label>
+                      {codeParam && (
+                        <span style={{
+                          fontSize: '11.5px', fontWeight: 'bold', backgroundColor: '#dcfce7',
+                          color: '#166534', padding: '2px 8px', borderRadius: '10px',
+                          display: 'inline-flex', alignItems: 'center', gap: '4px'
+                        }}>
+                          ✨ Đã quét mã QR tự động điền sẵn mã!
+                        </span>
+                      )}
+                    </div>
                     <input
                       type="text"
                       maxLength={10}
@@ -519,12 +555,12 @@ export default function PublicMeetingAttendance() {
                       onChange={e => setCheckinOtp(e.target.value)}
                       style={{
                         width: '100%', padding: '14px', borderRadius: '10px',
-                        border: '2px solid #0284c7', fontSize: '20px', fontWeight: '900',
+                        border: '2px solid #0284c7', fontSize: '22px', fontWeight: '900',
                         color: '#0284c7', letterSpacing: '4px', textAlign: 'center', backgroundColor: '#f0f9ff'
                       }}
                     />
                     <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                      * Xem mã số được Ban Giám Hiệu chiếu trên màn hình chia sẻ Google Meet/Zoom hoặc do Chủ tọa đọc.
+                      * Xem mã số trên màn hình máy chiếu Hội trường, màn hình Meet/Zoom hoặc quét mã QR.
                     </div>
                   </div>
 
@@ -597,12 +633,21 @@ export default function PublicMeetingAttendance() {
             )}
 
             <div style={{ marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
-                Tổ Trưởng Chuyên Môn (TTCM) Báo Cáo & Xác Nhận Sĩ Số Tổ
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                Dành cho TTCM hoặc người được ủy quyền kiểm diện, xác nhận danh sách thành viên trong tổ và báo cáo trực tiếp cho Ban Giám Hiệu.
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Users size={20} color="#d97706" />
+                <h3 style={{ margin: '0', fontSize: '18px', fontWeight: 'bold', color: '#0f172a' }}>
+                  Tổ Trưởng Chuyên Môn (TTCM) Báo Cáo & Xác Nhận Sĩ Số Tổ
+                </h3>
+              </div>
+              
+              <div style={{
+                marginTop: '10px', backgroundColor: '#fef3c7', padding: '12px 16px',
+                borderRadius: '10px', border: '1px solid #fde68a', fontSize: '13px', color: '#92400e', lineHeight: '1.5'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>📌 Hướng dẫn dành cho Quý Thầy/Cô Tổ trưởng (TTCM):</div>
+                <div>• <strong>Họp trực tiếp tại Hội trường:</strong> Thầy/Cô chỉ cần nhìn nhanh hàng ghế tổ mình, kiểm tra ai có mặt / vắng phép / vắng k.phép, nhập lý do (nếu có) và nhấn nút <strong>"GỬI BÁO CÁO SĨ SỐ TỔ CHO BGH"</strong> bên dưới.</div>
+                <div>• <strong>Họp trực tuyến qua Meet/Zoom:</strong> Thầy/Cô kiểm diện danh sách thành viên đang tham gia trong phòng họp và gửi báo cáo cho BGH.</div>
+              </div>
             </div>
 
             <form onSubmit={handleTtcmSubmit}>
