@@ -702,10 +702,7 @@ export default function AdminRegistrations() {
         is_active: isActive,
         start_date: startDate ? new Date(startDate).toISOString() : null,
         end_date: endDate ? new Date(endDate).toISOString() : null,
-        form_schema: schemaWithNotice,
-        school_drive_url: schoolDriveUrlInput.trim() || null,
-        google_drive_script_url: googleDriveScriptUrlInput.trim() || null,
-        google_drive_folder_id: googleDriveFolderIdInput.trim() || null
+        form_schema: schemaWithNotice
       };
 
       if (editingId) {

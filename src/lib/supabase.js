@@ -174,7 +174,9 @@ export const DualSupabaseService = {
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
     if (okRes) return okRes.value;
-    throw new Error('Cả 02 Supabase đều chèn dữ liệu thất bại!');
+    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
+    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
+    throw new Error(`Cả 02 Supabase đều chèn dữ liệu thất bại!${detail}`);
   },
 
   /**
@@ -191,7 +193,9 @@ export const DualSupabaseService = {
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
     if (okRes) return okRes.value;
-    throw new Error('Cả 02 Supabase đều cập nhật thất bại!');
+    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
+    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
+    throw new Error(`Cả 02 Supabase đều cập nhật thất bại!${detail}`);
   },
 
   /**
@@ -208,7 +212,9 @@ export const DualSupabaseService = {
     const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
 
     if (okRes) return okRes.value;
-    throw new Error('Cả 02 Supabase đều xóa thất bại!');
+    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
+    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
+    throw new Error(`Cả 02 Supabase đều xóa thất bại!${detail}`);
   }
 };
 
