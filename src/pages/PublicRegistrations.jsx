@@ -894,6 +894,36 @@ export default function PublicRegistrations() {
     }
   };
 
+  // Quay lại Cổng Đăng Ký từ màn hình thành công
+  const handleBackToPortal = () => {
+    setSuccess(false);
+    setSelectedCampaign(null);
+    setSubmittedData(null);
+    setIsVerified(false);
+    setStudentName('');
+    setStudentClass('');
+    setStudentCode('');
+    setSuggestions([]);
+    setShowSuggestions(false);
+    setShowClassSuggestions(false);
+    setClubEligibility(null);
+    setStudentElectives([]);
+    setElectiveSource('');
+    setCheckingElectives(false);
+    setSignedDocFile(null);
+    setSignedDocUrl('');
+    setSignedDocFileName('');
+    setSignedDocDriveLink('');
+    setSignedDocClassFolderUrl('');
+    setSignedDocSource('');
+    setSignedDocError('');
+    setUploadMethod('sign');
+    setParentSignature(null);
+    setStudentSignature(null);
+    setResponses({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Trích xuất môn phụ đã chọn sau khi nộp thành công để hiện nút Zalo
   const submittedSubDiscipline = useMemo(() => {
     if (!submittedData || !subDisciplinesList || subDisciplinesList.length === 0) return null;
@@ -1138,10 +1168,25 @@ export default function PublicRegistrations() {
           )}
 
           <button 
-            onClick={() => setSelectedCampaign(null)} 
-            style={{ padding: '12px 28px', background: '#be123c', color: 'white', borderRadius: '10px', border: 'none', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', boxShadow: '0 4px 15px rgba(190, 18, 60, 0.25)' }}
+            type="button"
+            onClick={handleBackToPortal} 
+            style={{ 
+              padding: '12px 28px', 
+              background: '#be123c', 
+              color: 'white', 
+              borderRadius: '10px', 
+              border: 'none', 
+              fontWeight: 'bold', 
+              fontSize: '14.5px', 
+              cursor: 'pointer', 
+              boxShadow: '0 4px 15px rgba(190, 18, 60, 0.25)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.15s'
+            }}
           >
-            Quay lại Cổng Đăng Ký
+            ← Quay lại Cổng Đăng Ký
           </button>
         </div>
       </div>

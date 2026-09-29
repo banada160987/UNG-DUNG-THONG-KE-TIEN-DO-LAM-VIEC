@@ -3126,148 +3126,257 @@ export default function AdminRegistrations() {
                         )}
                       </div>
 
-                      <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                          <thead>
-                            <tr style={{ borderBottom: '2px solid #cbd5e1', textAlign: 'left', background: '#f8fafc' }}>
-                              <th style={{ padding: '10px 12px', whiteSpace: 'nowrap', width: '50px', textAlign: 'center' }}>STT</th>
-                              <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Thời gian</th>
-                              <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Mã HS</th>
-                              <th style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>Họ và Tên</th>
-                              <th style={{ padding: '10px 14px', whiteSpace: 'nowrap', minWidth: '75px', textAlign: 'center' }}>Lớp</th>
-                              {/* Render dynamic columns based on campaign schema */}
-                              {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => (
-                                <th key={field.id} style={{ padding: '10px 12px', color: '#0284c7' }}>{field.label}</th>
-                              ))}
-                              <th style={{ padding: '10px 12px', whiteSpace: 'nowrap', color: '#be123c', textAlign: 'center' }}>Đơn có chữ ký</th>
-                              <th style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap', width: '80px' }}>Thao tác</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredAndSortedResults.length === 0 ? (
-                              <tr><td colSpan="12" style={{ padding: '24px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy học sinh nào phù hợp với từ khóa hoặc bộ lọc</td></tr>
-                            ) : filteredAndSortedResults.map((r, idx) => (
-                              <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                                <td style={{ padding: '10px 12px', color: '#94a3b8', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{idx + 1}</td>
-                                <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap' }}>{new Date(r.created_at).toLocaleString('vi-VN')}</td>
-                                <td style={{ padding: '10px 12px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{r.student_code}</td>
-                                <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b', whiteSpace: 'nowrap' }}>{r.student_name}</td>
-                                <td style={{ padding: '10px 14px', color: '#be123c', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{r.student_class}</td>
-                                
-                                {getSchemaFields(campaigns.find(c => c.id === selectedCampaignId)).map(field => {
-                                  const ans = r.responses ? r.responses[field.id] : undefined;
-                                  let displayAns = ans;
-                                  if (Array.isArray(ans)) displayAns = ans.join(', ');
-                                  return <td key={field.id} style={{ padding: '10px 12px', fontWeight: (selectedOptionFilter && displayAns?.includes(selectedOptionFilter)) || (searchQuery && displayAns?.toLowerCase().includes(searchQuery.toLowerCase())) ? 'bold' : 'normal', color: selectedOptionFilter && displayAns?.includes(selectedOptionFilter) ? '#166534' : 'inherit' }}>{displayAns || '-'}</td>;
-                                })}
+                      {(() => {
+                        const currentCam = campaigns.find(c => c.id === selectedCampaignId);
+                        const schemaFields = getSchemaFields(currentCam);
+                        const tableMinCalculated = Math.max(1200, 650 + schemaFields.length * 240);
 
-                                {/* Cột Đơn có chữ ký (Minh chứng / Google Drive) */}
-                                <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                                  {(() => {
-                                    const resp = r.responses || {};
-                                    const docUrl = resp.field_signed_doc_url;
-                                    const driveLink = resp.field_drive_link;
-                                    const classFolderUrl = resp.field_class_folder_url;
-                                    const fileName = resp.field_signed_doc_name || 'Đơn đăng ký';
+                        return (
+                          <div style={{ overflowX: 'auto', border: '1px solid #cbd5e1', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', backgroundColor: '#ffffff' }}>
+                            <table style={{ width: '100%', minWidth: `${tableMinCalculated}px`, borderCollapse: 'collapse', fontSize: '13px' }}>
+                              <thead>
+                                <tr style={{ borderBottom: '2px solid #cbd5e1', textAlign: 'left', background: '#f8fafc' }}>
+                                  <th style={{ padding: '12px 10px', whiteSpace: 'nowrap', width: '50px', textAlign: 'center' }}>STT</th>
+                                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap', minWidth: '135px' }}>Thời gian</th>
+                                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap', minWidth: '95px' }}>Mã HS</th>
+                                  <th style={{ padding: '12px 12px', whiteSpace: 'nowrap', minWidth: '150px' }}>Họ và Tên</th>
+                                  <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', minWidth: '75px', textAlign: 'center' }}>Lớp</th>
+                                  {/* Render dynamic columns based on campaign schema */}
+                                  {schemaFields.map(field => {
+                                    const isSubject = isTuitionSubjectField(field);
+                                    const isPhone = field.id?.includes('phone') || field.label?.toLowerCase().includes('điện thoại') || field.label?.toLowerCase().includes('sđt');
+                                    const colMinW = isPhone ? '130px' : (isSubject ? '220px' : '260px');
+                                    const colMaxW = isPhone ? '160px' : (isSubject ? '320px' : '420px');
 
-                                    if (docUrl || driveLink) {
-                                      return (
-                                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
-                                          {docUrl && (
-                                            <button
-                                              type="button"
-                                              onClick={() => setAdminPreviewDoc({ url: docUrl, name: fileName, studentName: r.student_name, studentClass: r.student_class })}
-                                              style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                                padding: '5px 10px',
-                                                backgroundColor: '#0284c7',
-                                                color: '#ffffff',
-                                                border: 'none',
-                                                borderRadius: '6px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                cursor: 'pointer',
-                                                boxShadow: '0 2px 4px rgba(2,132,199,0.2)'
-                                              }}
-                                              title="Xem file đơn đã nộp"
-                                            >
-                                              <FileCheck size={14} /> Xem đơn
-                                            </button>
-                                          )}
-
-                                          {driveLink && (
-                                            <a
-                                              href={driveLink}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                                padding: '5px 10px',
-                                                backgroundColor: '#f0fdf4',
-                                                color: '#15803d',
-                                                border: '1px solid #86efac',
-                                                borderRadius: '6px',
-                                                fontSize: '12px',
-                                                fontWeight: '700',
-                                                textDecoration: 'none'
-                                              }}
-                                              title={`Mở file Google Drive: ${driveLink}`}
-                                            >
-                                              <HardDrive size={13} color="#16a34a" /> Drive
-                                            </a>
-                                          )}
-
-                                          {classFolderUrl && (
-                                            <a
-                                              href={classFolderUrl}
-                                              target="_blank"
-                                              rel="noopener noreferrer"
-                                              style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '3px',
-                                                padding: '5px 8px',
-                                                backgroundColor: '#eff6ff',
-                                                color: '#1d4ed8',
-                                                border: '1px solid #bfdbfe',
-                                                borderRadius: '6px',
-                                                fontSize: '11.5px',
-                                                fontWeight: '600',
-                                                textDecoration: 'none'
-                                              }}
-                                              title={`Mở thư mục Google Drive của Lớp ${r.student_class}`}
-                                            >
-                                              <FolderOpen size={12} /> Lớp
-                                            </a>
-                                          )}
-                                        </div>
-                                      );
-                                    }
                                     return (
-                                      <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
-                                        Chưa có đơn ký
-                                      </span>
+                                      <th 
+                                        key={field.id} 
+                                        style={{ 
+                                          padding: '12px 14px', 
+                                          color: '#0369a1', 
+                                          fontWeight: '700',
+                                          minWidth: colMinW,
+                                          maxWidth: colMaxW,
+                                          lineHeight: '1.4'
+                                        }}
+                                        title={field.label}
+                                      >
+                                        <div style={{ minWidth: colMinW, maxWidth: colMaxW, wordBreak: 'break-word', whiteSpace: 'normal', fontSize: '12.5px' }}>
+                                          {field.label}
+                                        </div>
+                                      </th>
                                     );
-                                  })()}
-                                </td>
+                                  })}
+                                  <th style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: '#be123c', textAlign: 'center', minWidth: '170px' }}>Đơn có chữ ký</th>
+                                  <th style={{ padding: '12px 12px', textAlign: 'right', whiteSpace: 'nowrap', width: '85px', minWidth: '85px' }}>Thao tác</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {filteredAndSortedResults.length === 0 ? (
+                                  <tr><td colSpan={7 + schemaFields.length} style={{ padding: '28px', textAlign: 'center', color: '#64748b' }}>Không tìm thấy học sinh nào phù hợp với từ khóa hoặc bộ lọc</td></tr>
+                                ) : filteredAndSortedResults.map((r, idx) => (
+                                  <tr key={r.id} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                    <td style={{ padding: '10px 10px', color: '#94a3b8', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{idx + 1}</td>
+                                    <td style={{ padding: '10px 12px', color: '#64748b', fontSize: '12px', whiteSpace: 'nowrap' }}>{new Date(r.created_at).toLocaleString('vi-VN')}</td>
+                                    <td style={{ padding: '10px 12px', fontWeight: 'bold', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{r.student_code}</td>
+                                    <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#1e293b', whiteSpace: 'nowrap' }}>{r.student_name}</td>
+                                    <td style={{ padding: '10px 14px', color: '#be123c', fontWeight: 'bold', whiteSpace: 'nowrap', textAlign: 'center' }}>{r.student_class}</td>
+                                    
+                                    {schemaFields.map(field => {
+                                      const isSubject = isTuitionSubjectField(field);
+                                      const isPhone = field.id?.includes('phone') || field.label?.toLowerCase().includes('điện thoại') || field.label?.toLowerCase().includes('sđt');
+                                      const ans = r.responses ? r.responses[field.id] : undefined;
+                                      const colMinW = isPhone ? '130px' : (isSubject ? '220px' : '260px');
+                                      const colMaxW = isPhone ? '160px' : (isSubject ? '320px' : '420px');
 
-                                <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                  <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
-                                    <Edit3 size={16} />
-                                  </button>
-                                  <button onClick={() => handleDeleteResult(r)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Xóa">
-                                    <Trash2 size={16} />
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
+                                      if (isSubject) {
+                                        let subList = [];
+                                        if (Array.isArray(ans)) subList = ans;
+                                        else if (typeof ans === 'string' && ans.trim()) {
+                                          subList = ans.includes(',') ? ans.split(',').map(s => s.trim()) : [ans.trim()];
+                                        }
+                                        subList = subList.filter(Boolean);
+
+                                        return (
+                                          <td key={field.id} style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                            <div style={{ minWidth: colMinW, maxWidth: colMaxW, display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                                              {subList.length === 0 ? (
+                                                <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '12px' }}>-</span>
+                                              ) : (
+                                                subList.map((sub, sIdx) => {
+                                                  const isMatchFilter = selectedOptionFilter && sub.includes(selectedOptionFilter);
+                                                  return (
+                                                    <span 
+                                                      key={sIdx} 
+                                                      style={{
+                                                        backgroundColor: isMatchFilter ? '#dcfce7' : '#eff6ff',
+                                                        color: isMatchFilter ? '#15803d' : '#1d4ed8',
+                                                        border: isMatchFilter ? '1px solid #86efac' : '1px solid #bfdbfe',
+                                                        borderRadius: '6px',
+                                                        padding: '2px 8px',
+                                                        fontSize: '12px',
+                                                        fontWeight: '600',
+                                                        display: 'inline-flex',
+                                                        alignItems: 'center',
+                                                        gap: '3px',
+                                                        whiteSpace: 'nowrap'
+                                                      }}
+                                                    >
+                                                      📚 {sub}
+                                                    </span>
+                                                  );
+                                                })
+                                              )}
+                                            </div>
+                                          </td>
+                                        );
+                                      }
+
+                                      if (isPhone) {
+                                        return (
+                                          <td key={field.id} style={{ padding: '10px 14px', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                            <div style={{ minWidth: colMinW, fontFamily: 'monospace', fontWeight: '600', color: '#334155' }}>
+                                              {ans ? `📞 ${ans}` : '-'}
+                                            </div>
+                                          </td>
+                                        );
+                                      }
+
+                                      let displayAns = ans;
+                                      if (Array.isArray(ans)) displayAns = ans.join(', ');
+                                      const isMatchSearch = (selectedOptionFilter && displayAns?.includes(selectedOptionFilter)) || 
+                                                            (searchQuery && displayAns?.toLowerCase().includes(searchQuery.toLowerCase()));
+
+                                      return (
+                                        <td key={field.id} style={{ padding: '10px 14px', verticalAlign: 'middle' }}>
+                                          <div 
+                                            style={{ 
+                                              minWidth: colMinW, 
+                                              maxWidth: colMaxW, 
+                                              lineHeight: '1.45', 
+                                              wordBreak: 'break-word', 
+                                              whiteSpace: 'normal',
+                                              fontSize: '12.5px',
+                                              fontWeight: isMatchSearch ? 'bold' : 'normal',
+                                              color: isMatchSearch ? '#166534' : '#334155'
+                                            }}
+                                            title={typeof displayAns === 'string' ? displayAns : ''}
+                                          >
+                                            {displayAns || '-'}
+                                          </div>
+                                        </td>
+                                      );
+                                    })}
+
+                                    {/* Cột Đơn có chữ ký (Minh chứng / Google Drive) */}
+                                    <td style={{ padding: '8px 12px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                                      {(() => {
+                                        const resp = r.responses || {};
+                                        const docUrl = resp.field_signed_doc_url;
+                                        const driveLink = resp.field_drive_link;
+                                        const classFolderUrl = resp.field_class_folder_url;
+                                        const fileName = resp.field_signed_doc_name || 'Đơn đăng ký';
+
+                                        if (docUrl || driveLink) {
+                                          return (
+                                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'center' }}>
+                                              {docUrl && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => setAdminPreviewDoc({ url: docUrl, name: fileName, studentName: r.student_name, studentClass: r.student_class })}
+                                                  style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    padding: '5px 10px',
+                                                    backgroundColor: '#0284c7',
+                                                    color: '#ffffff',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer',
+                                                    boxShadow: '0 2px 4px rgba(2,132,199,0.2)'
+                                                  }}
+                                                  title="Xem file đơn đã nộp"
+                                                >
+                                                  <FileCheck size={14} /> Xem đơn
+                                                </button>
+                                              )}
+
+                                              {driveLink && (
+                                                <a
+                                                  href={driveLink}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    padding: '5px 10px',
+                                                    backgroundColor: '#f0fdf4',
+                                                    color: '#15803d',
+                                                    border: '1px solid #86efac',
+                                                    borderRadius: '6px',
+                                                    fontSize: '12px',
+                                                    fontWeight: '700',
+                                                    textDecoration: 'none'
+                                                  }}
+                                                  title={`Mở file Google Drive: ${driveLink}`}
+                                                >
+                                                  <HardDrive size={13} color="#16a34a" /> Drive
+                                                </a>
+                                              )}
+
+                                              {classFolderUrl && (
+                                                <a
+                                                  href={classFolderUrl}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '3px',
+                                                    padding: '5px 8px',
+                                                    backgroundColor: '#eff6ff',
+                                                    color: '#1d4ed8',
+                                                    border: '1px solid #bfdbfe',
+                                                    borderRadius: '6px',
+                                                    fontSize: '11.5px',
+                                                    fontWeight: '600',
+                                                    textDecoration: 'none'
+                                                  }}
+                                                  title={`Mở thư mục Google Drive của Lớp ${r.student_class}`}
+                                                >
+                                                  <FolderOpen size={12} /> Lớp
+                                                </a>
+                                              )}
+                                            </div>
+                                          );
+                                        }
+                                        return (
+                                          <span style={{ fontSize: '11px', color: '#94a3b8', fontStyle: 'italic', backgroundColor: '#f1f5f9', padding: '3px 8px', borderRadius: '4px' }}>
+                                            Chưa có đơn ký
+                                          </span>
+                                        );
+                                      })()}
+                                    </td>
+
+                                    <td style={{ padding: '10px 12px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                                      <button onClick={() => handleEditResult(r)} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', marginRight: '10px' }} title="Sửa">
+                                        <Edit3 size={16} />
+                                      </button>
+                                      <button onClick={() => handleDeleteResult(r)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }} title="Xóa">
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
