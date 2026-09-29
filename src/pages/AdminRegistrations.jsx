@@ -460,6 +460,113 @@ export default function AdminRegistrations() {
       return matchClass && matchGrade;
     });
 
+    // Registered students pool for the selection
+    const registeredInSelection = zaloCampaignRegistrations.filter(r => {
+      const sClass = (r.student_class || r.responses?.student_class || '').replace(/^Lớp\s*/i, '').trim();
+      const sGrade = getStudentGradeLevel(sClass);
+      const matchClass = zaloTargetClass === 'ALL' || sClass === zaloTargetClass.replace(/^Lớp\s*/i, '').trim();
+      const matchGrade = zaloTargetGrade === 'ALL' || sGrade === zaloTargetGrade;
+      return matchClass && matchGrade;
+    }).sort((a, b) => {
+      const clsA = (a.student_class || '').trim();
+      const clsB = (b.student_class || '').trim();
+      const cmpClass = clsA.localeCompare(clsB, undefined, { numeric: true, sensitivity: 'base' });
+      if (cmpClass !== 0) return cmpClass;
+      return (a.student_name || '').localeCompare(b.student_name || '');
+    });
+
+    const schema = getSchemaFields(zaloCampaign);
+    const getStudentChoiceSummary = (r) => {
+      const studentSubjects = [];
+      schema.forEach(field => {
+        if (!isTuitionSubjectField(field)) return;
+        const ans = r.responses ? r.responses[field.id] : null;
+        if (Array.isArray(ans)) {
+          ans.forEach(a => {
+            const norm = normalizeSubjectName(a);
+            if (ALL_TUITION_SUBJECTS.includes(norm) && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+          });
+        } else if (ans) {
+          const norm = normalizeSubjectName(ans);
+          if (ALL_TUITION_SUBJECTS.includes(norm) && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+        }
+      });
+      if (studentSubjects.length > 0) return studentSubjects.join(', ');
+      
+      // Fallback
+      if (r.responses) {
+        const parts = [];
+        schema.forEach(field => {
+          const ans = r.responses[field.id];
+          if (ans && !['field_signed_doc_url', 'field_drive_link', 'field_class_folder_url', 'field_parent_opinion', 'field_parent_name'].includes(field.id)) {
+            parts.push(Array.isArray(ans) ? ans.join(', ') : String(ans));
+          }
+        });
+        if (parts.length > 0) return parts.join('; ');
+      }
+      return 'Đã nộp đơn';
+    };
+
+    // 👨‍🏫 MẪU: BGH / ADMIN GỬI CHO TOÀN THỂ GVCN HOẶC GVCN LỚP CỤ THỂ
+    if (zaloTemplateType === 'admin_to_gvcn_audit') {
+      const classNameLabel = zaloTargetClass !== 'ALL' ? `LỚP ${zaloTargetClass}` : 'CÁC LỚP TOÀN TRƯỜNG';
+      let msg = `📢 [BGH TRƯỜNG THPT CAO BÁ QUÁT - THÔNG BÁO TỚI GVCN ${classNameLabel}]\n`;
+      msg += `📌 V/v: Rà soát danh sách học sinh đăng ký học thêm & đối chiếu chữ ký Phụ huynh\n`;
+      msg += `🎯 Đợt: ${campaignTitle}\n`;
+      msg += `⏰ Hạn chót phản hồi về BGH: Trước ${endDateStr}\n\n`;
+      msg += `Kính gửi Quý Thầy/Cô Giáo viên chủ nhiệm ${classNameLabel},\n\n`;
+      msg += `Hiện tại, hệ thống đã mở tiếp nhận đơn đăng ký học thêm trực tuyến của học sinh. Để đảm bảo đúng quy định của Bộ GD&ĐT, tôn trọng nguyên tắc tự nguyện và phòng ngừa trường hợp học sinh tự ý đăng ký hoặc tự ký thay cha mẹ:\n\n`;
+      msg += `BGH Nhà trường đề nghị Quý Thầy/Cô GVCN khẩn trương thực hiện:\n`;
+      msg += `1️⃣ Truy cập hệ thống để kiểm tra danh sách học sinh lớp mình đã đăng ký và các môn học các em đã chọn.\n`;
+      msg += `2️⃣ Chuyển tiếp "Mẫu tin nhắn đối chiếu gửi Phụ huynh" trên hệ thống vào Nhóm Zalo Phụ huynh của lớp để cha mẹ học sinh trực tiếp kiểm tra, xác nhận nguyện vọng và chữ ký.\n`;
+      msg += `3️⃣ Trường hợp Phụ huynh phản hồi không đồng ý hoặc phát hiện con tự ý ký thay, GVCN hướng dẫn các em điều chỉnh hoặc lập danh sách báo về BGH trước ${endDateStr}.\n`;
+      msg += `4️⃣ Sau thời hạn trên, BGH sẽ chốt danh sách chính thức theo xác nhận của GVCN để tiến hành xếp lớp và bố trí thời khóa biểu.\n\n`;
+      if (zaloTargetClass !== 'ALL') {
+        msg += `📊 Thống kê hiện tại Lớp ${zaloTargetClass}:\n`;
+        msg += `• Đã hoàn thành đăng ký: ${registeredInSelection.length} học sinh\n`;
+        msg += `• Chưa đăng ký: ${unregisteredInSelection.length} học sinh\n\n`;
+      }
+      msg += `🔗 Link Cổng Đăng Ký & Quản Lý: ${registerUrl}\n\n`;
+      msg += `Kính mong Quý Thầy/Cô phối hợp thực hiện nghiêm túc. Trân trọng cảm ơn!`;
+      return msg;
+    }
+
+    // 👨‍👩‍👧 MẪU: GVCN GỬI VÀO NHÓM ZALO PHỤ HUYNH ĐỂ XÁC NHẬN CHỮ KÝ VÀ MÔN ĐĂNG KÝ
+    if (zaloTemplateType === 'gvcn_to_parents_confirm') {
+      const classNameLabel = zaloTargetClass !== 'ALL' ? `LỚP ${zaloTargetClass}` : 'LỚP ...';
+      let msg = `📢 [THPT CAO BÁ QUÁT - THÔNG BÁO TỪ GVCN ${classNameLabel}]\n`;
+      msg += `📌 V/v: Đối chiếu danh sách đăng ký học thêm & xác nhận chữ ký Phụ huynh học sinh\n`;
+      msg += `🎯 Đợt: ${campaignTitle}\n`;
+      msg += `⏰ Thời hạn phản hồi điều chỉnh: Trước ${endDateStr}\n\n`;
+      msg += `Kính gửi Quý Cha Mẹ học sinh ${classNameLabel},\n\n`;
+      msg += `Thực hiện kế hoạch của Nhà trường về việc tổ chức dạy thêm, học thêm theo đúng Thông tư quy định của Bộ GD&ĐT, dưới đây là danh sách học sinh ${classNameLabel} đã nộp đơn đăng ký học thêm trên hệ thống:\n\n`;
+
+      if (registeredInSelection.length === 0) {
+        msg += `📌 Hiện tại hệ thống chưa ghi nhận học sinh nào của lớp nộp đơn đăng ký.\n`;
+        msg += `👉 Nếu có nguyện vọng tham gia học thêm, Quý Phụ huynh vui lòng nhắc con truy cập đường link bên dưới để đăng ký trước ${endDateStr}:\n`;
+        msg += `🔗 Link đăng ký: ${registerUrl}\n\n`;
+      } else {
+        msg += `📋 DANH SÁCH HỌC SINH ĐÃ NỘP ĐƠN (${registeredInSelection.length} HỌC SINH):\n`;
+        registeredInSelection.forEach((r, idx) => {
+          const sName = r.student_name || '';
+          const sCode = r.student_code ? ` (${r.student_code})` : '';
+          const sClass = zaloTargetClass === 'ALL' ? ` [${r.student_class}]` : '';
+          const subjects = getStudentChoiceSummary(r);
+          const hasDoc = Boolean(r.responses?.field_signed_doc_url || r.responses?.field_drive_link);
+          const docBadge = hasDoc ? ' [Đã có đơn & chữ ký]' : ' [Chưa đính kèm đơn ký]';
+          msg += `${idx + 1}. ${sName}${sCode}${sClass} - Môn: ${subjects}${docBadge}\n`;
+        });
+        msg += `\n⚠️ KÍNH ĐỀ NGHỊ QUÝ PHỤ HUYNH LƯU Ý & KIỂM TRA KỸ:\n`;
+        msg += `1. Đúng nguyện vọng: Xác nhận các môn học trên có đúng với nguyện vọng học thêm mà gia đình và em đã thống nhất hay không.\n`;
+        msg += `2. Xác nhận chữ ký: Quý phụ huynh vui lòng kiểm tra xem mình đã trực tiếp ký xác nhận trên đơn đăng ký hay chưa. Nhà trường và GVCN tuyệt đối không chấp nhận các trường hợp học sinh tự ý đăng ký hoặc tự ký thay cha mẹ.\n`;
+        msg += `3. Phản hồi điều chỉnh: Nếu có bất kỳ sự sai lệch nào hoặc phụ huynh chưa đồng ý cho con học các môn trên, xin vui lòng nhắn tin hoặc gọi điện trực tiếp cho GVCN trước ${endDateStr} để điều chỉnh kịp thời.\n\n`;
+        msg += `Sau thời gian trên, nếu không nhận được phản hồi khác, GVCN và Nhà trường sẽ coi như Quý Phụ huynh đã hoàn toàn đồng ý với danh sách đăng ký trên và tiến hành chốt danh sách mở lớp chính thức.\n\n`;
+      }
+
+      msg += `Xin chân thành cảm ơn sự phối hợp của Quý Phụ huynh!`;
+      return msg;
+    }
+
     if (zaloTemplateType === 'class_group') {
       const classNameLabel = zaloTargetClass !== 'ALL' ? `LỚP ${zaloTargetClass}` : 'CÁC LỚP';
       let msg = `📢 [THPT CAO BÁ QUÁT - THÔNG BÁO TỪ GVCN ${classNameLabel}]\n`;
@@ -3547,9 +3654,11 @@ export default function AdminRegistrations() {
                       onChange={e => setZaloTemplateType(e.target.value)}
                       style={{ ...styles.input, backgroundColor: 'white', fontWeight: 'bold' }}
                     >
-                      <option value="class_group">💬 Mẫu 1: Nhóm Zalo Lớp (GVCN)</option>
-                      <option value="school_report">📊 Mẫu 2: Tiến Độ Toàn Trường</option>
-                      <option value="simple_list">📋 Mẫu 3: Danh Sách Rút Gọn</option>
+                      <option value="admin_to_gvcn_audit">👨‍🏫 Mẫu 1: BGH / Admin Gửi GVCN (Rà soát & Đối chiếu PH)</option>
+                      <option value="gvcn_to_parents_confirm">👨‍👩‍👧 Mẫu 2: GVCN Gửi Phụ Huynh (Xác nhận môn & Chữ ký PH)</option>
+                      <option value="class_group">💬 Mẫu 3: Nhóm Zalo Lớp (Đôn đốc HS chưa nộp)</option>
+                      <option value="school_report">📊 Mẫu 4: Báo Cáo Tiến Độ Toàn Trường</option>
+                      <option value="simple_list">📋 Mẫu 5: Danh Sách Rút Gọn HS Chưa Nộp</option>
                     </select>
                   </div>
                 </div>

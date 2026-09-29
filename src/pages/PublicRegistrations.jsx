@@ -4,8 +4,11 @@ import {
   FileText, CheckCircle2, User, Search, Navigation, Lock, Clock, AlertTriangle, 
   ShieldCheck, ShieldAlert, Users, QrCode, ExternalLink, Calendar, MapPin, 
   Award, X, GraduationCap, Sparkles, BookOpen, Download, Printer, UploadCloud, 
-  Paperclip, HardDrive, Link as LinkIcon, FolderOpen, FileCheck, Check, Eye
+  Paperclip, HardDrive, Link as LinkIcon, FolderOpen, FileCheck, Check, Eye,
+  PenTool, RefreshCw
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import SignaturePadModal from '../components/SignaturePadModal';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
 import {
   isTuitionCampaign,
@@ -52,11 +55,19 @@ export default function PublicRegistrations() {
   const [signedDocFileName, setSignedDocFileName] = useState('');
   const [signedDocDriveLink, setSignedDocDriveLink] = useState('');
   const [signedDocClassFolderUrl, setSignedDocClassFolderUrl] = useState('');
-  const [signedDocSource, setSignedDocSource] = useState(''); // 'google_drive' | 'supabase'
-  const [uploadMethod, setUploadMethod] = useState('file'); // 'file' | 'drive'
+  const [signedDocSource, setSignedDocSource] = useState(''); // 'google_drive' | 'supabase' | 'e_signature'
+  const [uploadMethod, setUploadMethod] = useState('sign'); // 'sign' | 'file' | 'drive'
   const [uploadingSignedDoc, setUploadingSignedDoc] = useState(false);
   const [signedDocError, setSignedDocError] = useState('');
   const [previewDocModal, setPreviewDocModal] = useState(false);
+
+  // E-Signature States (Ký trực tiếp trên màn hình)
+  const [activeSignerModal, setActiveSignerModal] = useState(null); // 'parent' | 'student' | null
+  const [parentSignature, setParentSignature] = useState(null);
+  const [studentSignature, setStudentSignature] = useState(null);
+  const [parentOpinion, setParentOpinion] = useState('Tôi hoàn toàn đồng ý và tạo điều kiện cho con tham gia học thêm.');
+  const [isGeneratingESignedDoc, setIsGeneratingESignedDoc] = useState(false);
+  const paperRef = useRef(null);
 
   // QR Modal State
   const [qrModalItem, setQrModalItem] = useState(null);
@@ -365,8 +376,14 @@ export default function PublicRegistrations() {
     setSignedDocUrl('');
     setSignedDocFileName('');
     setSignedDocDriveLink('');
+    setSignedDocClassFolderUrl('');
+    setSignedDocSource('');
     setSignedDocError('');
-    setUploadMethod('file');
+    setUploadMethod('sign');
+    setParentSignature(null);
+    setStudentSignature(null);
+    setParentOpinion('Tôi hoàn toàn đồng ý và tạo điều kiện cho con tham gia học thêm.');
+    setIsGeneratingESignedDoc(false);
     
     // Init default responses
     const initialResponses = {};
@@ -628,6 +645,121 @@ export default function PublicRegistrations() {
     setSignedDocClassFolderUrl('');
     setSignedDocSource('');
     setSignedDocError('');
+    setParentSignature(null);
+    setStudentSignature(null);
+  };
+
+  // Mở modal ký tên cho Cha/Mẹ hoặc Học sinh
+  const handleOpenSignModal = (signer) => {
+    if (!studentName || !studentClass) {
+      return alert("Vui lòng nhập và chọn đúng họ tên học sinh ở Bước 1 trước khi thực hiện ký tên.");
+    }
+    setActiveSignerModal(signer);
+  };
+
+  // Tải ảnh đơn đăng ký đã ký về máy tính / điện thoại
+  const handleDownloadSignedDocImage = () => {
+    if (!signedDocUrl) return;
+    const a = document.createElement('a');
+    a.href = signedDocUrl;
+    const cleanClass = (studentClass || '12').replace(/^Lớp\s*/i, '').trim();
+    const cleanName = (studentName || 'HocSinh').replace(/[/\\?%*:|"<>]/g, '_').trim();
+    a.download = signedDocFileName || `[${cleanClass}] - ${cleanName} - Don_Dang_Ky_Online.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  // Tự động ghép chữ ký vào mẫu A4 và nộp thẳng lên Google Drive
+  const handleGenerateAndUploadESignedDoc = async () => {
+    if (!studentName || !studentClass) {
+      return alert("Vui lòng nhập và chọn đúng họ tên học sinh ở Bước 1 trước khi tạo đơn.");
+    }
+    if (!parentSignature) {
+      return alert("⚠️ Cha Mẹ / Người giám hộ chưa ký tên. Vui lòng bấm vào ô 'Bấm để Ký tên (Cha/Mẹ)' ở trên!");
+    }
+    if (!studentSignature) {
+      return alert("⚠️ Học sinh chưa ký tên. Vui lòng bấm vào ô 'Bấm để Ký tên (Học sinh)' ở trên!");
+    }
+
+    const chosenSubjects = getSelectedTuitionSubjectsList();
+    if (chosenSubjects.length === 0) {
+      if (!window.confirm("Em chưa tích chọn môn học nào ở Bước 2. Em có chắc chắn muốn tiếp tục tạo đơn không?")) {
+        return;
+      }
+    }
+
+    setIsGeneratingESignedDoc(true);
+    setSignedDocError('');
+
+    try {
+      // Đợi DOM cập nhật nội dung văn bản
+      await new Promise(resolve => setTimeout(resolve, 200));
+
+      if (!paperRef.current) {
+        throw new Error("Không tìm thấy khung mẫu văn bản.");
+      }
+
+      // Render thành Canvas ảnh chất lượng cao 2x
+      const canvas = await html2canvas(paperRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false
+      });
+
+      const base64Data = canvas.toDataURL('image/png');
+      const cleanClass = (studentClass || '12').replace(/^Lớp\s*/i, '').trim();
+      const cleanName = (studentName || 'HocSinh').replace(/[/\\?%*:|"<>]/g, '_').trim();
+      const cleanCode = (studentCode || 'HS').trim();
+      const fileName = `[${cleanClass}] - ${cleanName} (${cleanCode}) - Don_Dang_Ky_Online.png`;
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const fileObj = new File([blob], fileName, { type: 'image/png' });
+
+      let driveSuccess = false;
+      const scriptUrl = selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url;
+      const parentFolderId = selectedCampaign?.google_drive_folder_id || selectedCampaign?.form_schema?.google_drive_folder_id;
+
+      if (scriptUrl) {
+        try {
+          const driveRes = await uploadFileToGoogleDrive({
+            scriptUrl,
+            file: fileObj,
+            studentClass: cleanClass,
+            studentName,
+            studentCode: cleanCode,
+            campaignTitle: selectedCampaign?.title || 'Đăng ký học thêm',
+            parentFolderId
+          });
+
+          if (driveRes && driveRes.status === 'success') {
+            setSignedDocDriveLink(driveRes.fileUrl);
+            setSignedDocClassFolderUrl(driveRes.classFolderUrl);
+            setSignedDocSource('google_drive');
+            driveSuccess = true;
+          }
+        } catch (driveErr) {
+          console.warn("Lưu Google Drive gặp sự cố, chuyển sang lưu trực tiếp:", driveErr);
+        }
+      }
+
+      if (!driveSuccess) {
+        setSignedDocSource('e_signature');
+      }
+
+      setSignedDocUrl(base64Data);
+      setSignedDocFileName(fileName);
+      setSignedDocFile(fileObj);
+
+      alert(`🎉 KÝ TÊN & TẠO ĐƠN THÀNH CÔNG!\n\nĐơn đăng ký học thêm của em đã được tự động ghép chữ ký của Cha Mẹ và Học sinh${driveSuccess ? ` và đã lưu thẳng vào Thư mục Lớp ${cleanClass} trên Google Drive!` : '!'}\n\nEm vui lòng kiểm tra lại đơn và bấm nút "GỬI ĐĂNG KÝ" bên dưới để hoàn tất.`);
+    } catch (err) {
+      console.error("Lỗi khi tạo đơn ký điện tử:", err);
+      setSignedDocError(err.message || "Lỗi khi tạo đơn ký điện tử. Vui lòng thử lại!");
+      alert("Lỗi khi tạo đơn ký điện tử: " + err.message);
+    } finally {
+      setIsGeneratingESignedDoc(false);
+    }
   };
 
   // Lọc các đợt không bị ẩn bởi Quản trị viên
@@ -1863,133 +1995,509 @@ export default function PublicRegistrations() {
                       </div>
 
                       <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: '#475569', lineHeight: '1.5' }}>
-                        Theo quy định của Bộ GD&ĐT, học sinh đăng ký học thêm bắt buộc phải có <strong>Đơn đăng ký có ý kiến, chữ ký của Cha Mẹ học sinh và chữ ký của học sinh</strong>.
+                        Theo quy định của Bộ GD&ĐT, học sinh đăng ký học thêm bắt buộc phải có <strong>Đơn đăng ký có ý kiến, chữ ký của Cha Mẹ học sinh và chữ ký của học sinh</strong>. Em hãy chọn 1 trong 3 cách thuận tiện nhất dưới đây:
                       </p>
 
-                      {/* KHUNG TẢI ĐƠN ĐÃ ĐIỀN THÔNG TIN */}
-                      <div style={{
-                        background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
-                        border: '1.5px solid #bfdbfe',
-                        borderRadius: '12px',
-                        padding: '16px',
-                        marginBottom: '18px'
-                      }}>
-                        <div style={{ fontSize: '13px', color: '#1e40af', marginBottom: '10px' }}>
-                          📄 <strong>Bước A: Xuất mẫu đơn chuẩn Bộ GD&ĐT</strong> (Hệ thống đã tự động điền sẵn tên: <strong>{studentName}</strong>, lớp: <strong>{studentClass}</strong> và các môn em chọn):
-                        </div>
+                      {/* TAB CHUYỂN ĐỔI PHƯƠNG THỨC HOÀN TẤT ĐƠN */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginBottom: '16px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMethod('sign')}
+                          style={{
+                            padding: '11px 12px',
+                            borderRadius: '10px',
+                            border: uploadMethod === 'sign' ? '2px solid #be123c' : '1px solid #cbd5e1',
+                            background: uploadMethod === 'sign' ? '#fff1f2' : '#ffffff',
+                            color: uploadMethod === 'sign' ? '#9f1239' : '#475569',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: uploadMethod === 'sign' ? '0 2px 8px rgba(190, 18, 60, 0.15)' : 'none',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <PenTool size={16} color={uploadMethod === 'sign' ? '#be123c' : '#64748b'} />
+                          <span>✍️ Cách 1: Ký Trực Tiếp Trên Màn Hình</span>
+                        </button>
 
-                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                          <button
-                            type="button"
-                            onClick={handleDownloadApplication}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '10px 18px',
-                              backgroundColor: '#0284c7',
-                              color: '#ffffff',
-                              border: 'none',
-                              borderRadius: '8px',
-                              fontWeight: '700',
-                              fontSize: '13.5px',
-                              cursor: 'pointer',
-                              boxShadow: '0 2px 6px rgba(2,132,199,0.3)',
-                              transition: 'all 0.15s'
-                            }}
-                          >
-                            <Download size={16} /> 📥 Tải Đơn Đăng Ký (Word .doc)
-                          </button>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMethod('file')}
+                          style={{
+                            padding: '11px 12px',
+                            borderRadius: '10px',
+                            border: uploadMethod === 'file' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: uploadMethod === 'file' ? '#e0f2fe' : '#ffffff',
+                            color: uploadMethod === 'file' ? '#0369a1' : '#475569',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: uploadMethod === 'file' ? '0 2px 8px rgba(2, 132, 199, 0.15)' : 'none',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <UploadCloud size={16} color={uploadMethod === 'file' ? '#0284c7' : '#64748b'} />
+                          <span>📄 Cách 2: In Ra Giấy & Tải Ảnh / PDF</span>
+                        </button>
 
-                          <button
-                            type="button"
-                            onClick={handlePrintApplication}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                              padding: '10px 16px',
-                              backgroundColor: '#ffffff',
-                              color: '#0369a1',
-                              border: '1.5px solid #0284c7',
-                              borderRadius: '8px',
-                              fontWeight: '700',
-                              fontSize: '13.5px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            <Printer size={16} /> 🖨️ Xem & In Trực Tiếp
-                          </button>
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#0369a1', fontStyle: 'italic' }}>
-                          💡 Mẹo: Bấm "Tải Đơn Đăng Ký" để tải file Word về máy tính/điện thoại, hoặc bấm "Xem & In Trực Tiếp" để in ra máy in ngay.
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setUploadMethod('drive')}
+                          style={{
+                            padding: '11px 12px',
+                            borderRadius: '10px',
+                            border: uploadMethod === 'drive' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: uploadMethod === 'drive' ? '#e0f2fe' : '#ffffff',
+                            color: uploadMethod === 'drive' ? '#0369a1' : '#475569',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            boxShadow: uploadMethod === 'drive' ? '0 2px 8px rgba(2, 132, 199, 0.15)' : 'none',
+                            transition: 'all 0.15s'
+                          }}
+                        >
+                          <HardDrive size={16} color={uploadMethod === 'drive' ? '#0284c7' : '#64748b'} />
+                          <span>🔗 Cách 3: Dán Link Google Drive</span>
+                        </button>
                       </div>
 
-                      {/* HƯỚNG DẪN KÝ TÊN */}
-                      <div style={{ fontSize: '13px', color: '#334155', background: '#ffffff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '16px' }}>
-                        <strong>✍️ Bước B: Xin chữ ký của Cha Mẹ và Học sinh:</strong>
-                        <div style={{ marginTop: '4px', lineHeight: '1.5', fontSize: '12.5px', color: '#475569' }}>
-                          In đơn ra giấy (hoặc ký điện tử), đưa cho <strong>Cha/Mẹ/Người giám hộ ký ghi rõ họ tên</strong> vào mục <em>Ý kiến của cha mẹ học sinh</em> và <strong>em ký ghi rõ họ tên</strong> vào mục <em>Người làm đơn</em>.
+                      {/* NỘI DUNG CÁCH 1: KÝ TRỰC TIẾP TRÊN MÀN HÌNH */}
+                      {uploadMethod === 'sign' && (
+                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px solid #fecdd3', padding: '16px' }}>
+                          <div style={{ background: 'linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%)', borderRadius: '10px', padding: '12px 14px', border: '1px solid #fecdd3', marginBottom: '16px' }}>
+                            <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#9f1239', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                              <Sparkles size={16} color="#be123c" /> Ký điện tử 100% online — Nhanh chóng, không cần in giấy!
+                            </div>
+                            <div style={{ fontSize: '12.5px', color: '#881337', lineHeight: '1.5' }}>
+                              Cha Mẹ và Học sinh ký trực tiếp bằng <strong>ngón tay trên điện thoại</strong> hoặc <strong>chuột máy tính</strong>. Hệ thống sẽ tự động ghép thông tin và chữ ký vào tờ đơn A4 chuẩn Bộ GD&ĐT rồi lưu thẳng vào Thư mục Lớp trên Google Drive của trường.
+                            </div>
+                          </div>
+
+                          {/* KHUNG Ý KIẾN VÀ 2 Ô CHỮ KÝ */}
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                            
+                            {/* KHUNG 1: Ý KIẾN VÀ CHỮ KÝ CHA MẸ HỌC SINH */}
+                            <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1.5px solid #e2e8f0', padding: '14px', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>👨‍👩‍👦 1. Ý kiến & Chữ ký của Cha/Mẹ học sinh:</span>
+                                {parentSignature && (
+                                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px', marginLeft: 'auto' }}>
+                                    ✓ Đã ký
+                                  </span>
+                                )}
+                              </div>
+
+                              <label style={{ fontSize: '12px', color: '#475569', marginBottom: '4px' }}>Ý kiến của Cha Mẹ / Người giám hộ:</label>
+                              <textarea
+                                rows={2}
+                                value={parentOpinion}
+                                onChange={(e) => setParentOpinion(e.target.value)}
+                                placeholder="Nhập ý kiến của Cha Mẹ..."
+                                style={{
+                                  width: '100%',
+                                  padding: '8px 10px',
+                                  borderRadius: '6px',
+                                  border: '1px solid #cbd5e1',
+                                  fontSize: '12.5px',
+                                  boxSizing: 'border-box',
+                                  marginBottom: '10px',
+                                  fontFamily: 'inherit',
+                                  resize: 'vertical'
+                                }}
+                              />
+
+                              <div style={{ flex: 1, minHeight: '110px', background: '#ffffff', borderRadius: '8px', border: parentSignature ? '1.5px solid #86efac' : '1.5px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', position: 'relative' }}>
+                                {parentSignature ? (
+                                  <div style={{ width: '100%', textAlign: 'center' }}>
+                                    <img 
+                                      src={parentSignature} 
+                                      alt="Chữ ký Cha Mẹ" 
+                                      style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} 
+                                    />
+                                    <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenSignModal('parent')}
+                                        style={{
+                                          padding: '4px 10px',
+                                          fontSize: '12px',
+                                          color: '#0369a1',
+                                          background: '#f0f9ff',
+                                          border: '1px solid #bae6fd',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                          fontWeight: '600',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <RefreshCw size={12} /> Ký lại
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenSignModal('parent')}
+                                    style={{
+                                      background: '#eff6ff',
+                                      border: '1.5px solid #93c5fd',
+                                      borderRadius: '8px',
+                                      padding: '10px 14px',
+                                      color: '#1d4ed8',
+                                      fontWeight: '700',
+                                      fontSize: '13px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(29, 78, 216, 0.1)'
+                                    }}
+                                  >
+                                    <PenTool size={15} /> ✍️ Bấm để Cha/Mẹ Ký Tên
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
+                                (Chạm tay ký trên điện thoại hoặc di chuột trên máy tính)
+                              </div>
+                            </div>
+
+                            {/* KHUNG 2: CHỮ KÝ HỌC SINH */}
+                            <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1.5px solid #e2e8f0', padding: '14px', display: 'flex', flexDirection: 'column' }}>
+                              <div style={{ fontWeight: '700', fontSize: '13px', color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span>🧑‍🎓 2. Chữ ký của Học sinh (Người làm đơn):</span>
+                                {studentSignature && (
+                                  <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px', marginLeft: 'auto' }}>
+                                    ✓ Đã ký
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '10px' }}>
+                                Học sinh: <strong>{studentName || '...'}</strong> - Lớp <strong>{studentClass || '...'}</strong>
+                              </div>
+
+                              <div style={{ flex: 1, minHeight: '110px', background: '#ffffff', borderRadius: '8px', border: studentSignature ? '1.5px solid #86efac' : '1.5px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px', position: 'relative' }}>
+                                {studentSignature ? (
+                                  <div style={{ width: '100%', textAlign: 'center' }}>
+                                    <img 
+                                      src={studentSignature} 
+                                      alt="Chữ ký Học sinh" 
+                                      style={{ maxHeight: '80px', maxWidth: '100%', objectFit: 'contain' }} 
+                                    />
+                                    <div style={{ marginTop: '6px', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenSignModal('student')}
+                                        style={{
+                                          padding: '4px 10px',
+                                          fontSize: '12px',
+                                          color: '#0369a1',
+                                          background: '#f0f9ff',
+                                          border: '1px solid #bae6fd',
+                                          borderRadius: '6px',
+                                          cursor: 'pointer',
+                                          fontWeight: '600',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px'
+                                        }}
+                                      >
+                                        <RefreshCw size={12} /> Ký lại
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenSignModal('student')}
+                                    style={{
+                                      background: '#eff6ff',
+                                      border: '1.5px solid #93c5fd',
+                                      borderRadius: '8px',
+                                      padding: '10px 14px',
+                                      color: '#1d4ed8',
+                                      fontWeight: '700',
+                                      fontSize: '13px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '6px',
+                                      boxShadow: '0 2px 4px rgba(29, 78, 216, 0.1)'
+                                    }}
+                                  >
+                                    <PenTool size={15} /> ✍️ Bấm để Học Sinh Ký Tên
+                                  </button>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
+                                (Học sinh ký tên xác nhận nguyện vọng)
+                              </div>
+                            </div>
+
+                          </div>
+
+                          {/* KHUNG NÚT HOÀN TẤT KÝ & LƯU HOẶC HIỂN THỊ KẾT QUẢ ĐÃ TẠO */}
+                          {signedDocUrl ? (
+                            <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', padding: '14px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '14px', marginBottom: '6px' }}>
+                                <CheckCircle2 size={20} color="#16a34a" />
+                                <span>{signedDocSource === 'google_drive' ? 'Đã ghép chữ ký & lưu vào Google Drive: ' : 'Đã ghép chữ ký thành công: '}</span>
+                                <span style={{ color: '#0f172a' }}>{signedDocFileName || 'Đơn đăng ký có chữ ký'}</span>
+                              </div>
+
+                              {signedDocClassFolderUrl && (
+                                <div style={{ fontSize: '12.5px', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '10px' }}>
+                                  <FolderOpen size={14} /> Tự động gom vào Thư mục: <strong>Lớp {studentClass}</strong> trên Google Drive trường
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setPreviewDocModal(true)}
+                                  style={{
+                                    padding: '7px 14px',
+                                    backgroundColor: '#0284c7',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '12.5px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <Eye size={14} /> 👁️ Xem lại tờ đơn đã ký
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={handleDownloadSignedDocImage}
+                                  style={{
+                                    padding: '7px 14px',
+                                    backgroundColor: '#ffffff',
+                                    color: '#0284c7',
+                                    border: '1.5px solid #0284c7',
+                                    borderRadius: '6px',
+                                    fontSize: '12.5px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <Download size={14} /> 📥 Tải ảnh đơn về máy
+                                </button>
+
+                                {signedDocDriveLink && (
+                                  <a
+                                    href={signedDocDriveLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      padding: '7px 14px',
+                                      backgroundColor: '#f0fdf4',
+                                      color: '#15803d',
+                                      border: '1px solid #86efac',
+                                      borderRadius: '6px',
+                                      fontSize: '12.5px',
+                                      fontWeight: '600',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <ExternalLink size={14} /> Mở file trên Drive
+                                  </a>
+                                )}
+
+                                {signedDocClassFolderUrl && (
+                                  <a
+                                    href={signedDocClassFolderUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      padding: '7px 14px',
+                                      backgroundColor: '#eff6ff',
+                                      color: '#1d4ed8',
+                                      border: '1px solid #bfdbfe',
+                                      borderRadius: '6px',
+                                      fontSize: '12.5px',
+                                      fontWeight: '600',
+                                      textDecoration: 'none',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <FolderOpen size={14} /> Mở Thư Mục Lớp
+                                  </a>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={handleRemoveSignedDoc}
+                                  style={{
+                                    padding: '7px 14px',
+                                    backgroundColor: '#fef2f2',
+                                    color: '#dc2626',
+                                    border: '1px solid #fecdd3',
+                                    borderRadius: '6px',
+                                    fontSize: '12.5px',
+                                    fontWeight: '600',
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px'
+                                  }}
+                                >
+                                  <RefreshCw size={14} /> Ký lại / Làm mới
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={handleGenerateAndUploadESignedDoc}
+                                disabled={isGeneratingESignedDoc || !parentSignature || !studentSignature}
+                                style={{
+                                  width: '100%',
+                                  maxWidth: '460px',
+                                  padding: '12px 20px',
+                                  backgroundColor: (parentSignature && studentSignature) ? '#be123c' : '#94a3b8',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '10px',
+                                  fontWeight: '800',
+                                  fontSize: '14.5px',
+                                  cursor: (parentSignature && studentSignature && !isGeneratingESignedDoc) ? 'pointer' : 'not-allowed',
+                                  boxShadow: (parentSignature && studentSignature) ? '0 4px 14px rgba(190, 18, 60, 0.35)' : 'none',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '8px',
+                                  transition: 'all 0.15s'
+                                }}
+                              >
+                                {isGeneratingESignedDoc ? (
+                                  <>
+                                    <RefreshCw size={18} className="animate-spin" /> Đang ghép chữ ký & nộp lên Google Drive...
+                                  </>
+                                ) : (
+                                  <>
+                                    <CheckCircle2 size={18} /> GHÉP CHỮ KÝ VÀO ĐƠN & LƯU LÊN HỆ THỐNG
+                                  </>
+                                )}
+                              </button>
+
+                              {(!parentSignature || !studentSignature) && (
+                                <div style={{ fontSize: '12px', color: '#b45309', marginTop: '8px' }}>
+                                  ⚠️ Vui lòng hoàn tất cả 2 chữ ký của <strong>Cha Mẹ</strong> và <strong>Học sinh</strong> ở trên trước khi bấm nộp đơn.
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {signedDocError && (
+                            <div style={{ marginTop: '10px', color: '#dc2626', fontSize: '12.5px', fontWeight: '600', textAlign: 'center' }}>
+                              ⚠️ {signedDocError}
+                            </div>
+                          )}
                         </div>
-                      </div>
+                      )}
 
-                      {/* BƯỚC C: NỘP MINH CHỨNG (CHỌN 1 TRONG 2 CÁCH) */}
-                      <div>
-                        <div style={{ fontSize: '13px', color: '#0f172a', fontWeight: 'bold', marginBottom: '8px' }}>
-                          📤 Bước C: Nộp file đơn đã ký lên hệ thống (Chọn 1 trong 2 cách):
-                        </div>
+                      {/* NỘI DUNG CÁCH 2: IN RA GIẤY & TẢI ẢNH / PDF TRUYỀN THỐNG */}
+                      {uploadMethod === 'file' && (
+                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '16px' }}>
+                          {/* Bước A: Tải đơn */}
+                          <div style={{
+                            background: 'linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)',
+                            border: '1.5px solid #bfdbfe',
+                            borderRadius: '10px',
+                            padding: '14px',
+                            marginBottom: '14px'
+                          }}>
+                            <div style={{ fontSize: '13px', color: '#1e40af', marginBottom: '8px' }}>
+                              📄 <strong>Bước A: Xuất mẫu đơn chuẩn Bộ GD&ĐT</strong> (Hệ thống đã tự động điền sẵn tên: <strong>{studentName}</strong>, lớp: <strong>{studentClass}</strong> và các môn em chọn):
+                            </div>
 
-                        {/* TAB CHUYỂN ĐỔI PHƯƠNG THỨC NỘP */}
-                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                          <button
-                            type="button"
-                            onClick={() => setUploadMethod('file')}
-                            style={{
-                              flex: 1,
-                              padding: '10px 12px',
-                              borderRadius: '8px',
-                              border: uploadMethod === 'file' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                              background: uploadMethod === 'file' ? '#e0f2fe' : '#ffffff',
-                              color: uploadMethod === 'file' ? '#0369a1' : '#475569',
-                              fontWeight: '700',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <UploadCloud size={16} /> {selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url ? 'Cách 1: Nộp trực tiếp lên Google Drive' : 'Cách 1: Tải trực tiếp Ảnh / PDF'}
-                          </button>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                              <button
+                                type="button"
+                                onClick={handleDownloadApplication}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '9px 16px',
+                                  backgroundColor: '#0284c7',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  fontWeight: '700',
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  boxShadow: '0 2px 6px rgba(2,132,199,0.25)'
+                                }}
+                              >
+                                <Download size={15} /> 📥 Tải Đơn Đăng Ký (Word .doc)
+                              </button>
 
-                          <button
-                            type="button"
-                            onClick={() => setUploadMethod('drive')}
-                            style={{
-                              flex: 1,
-                              padding: '10px 12px',
-                              borderRadius: '8px',
-                              border: uploadMethod === 'drive' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                              background: uploadMethod === 'drive' ? '#e0f2fe' : '#ffffff',
-                              color: uploadMethod === 'drive' ? '#0369a1' : '#475569',
-                              fontWeight: '700',
-                              fontSize: '13px',
-                              cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px'
-                            }}
-                          >
-                            <HardDrive size={16} /> Cách 2: Dán Link Google Drive
-                          </button>
-                        </div>
+                              <button
+                                type="button"
+                                onClick={handlePrintApplication}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  padding: '9px 15px',
+                                  backgroundColor: '#ffffff',
+                                  color: '#0369a1',
+                                  border: '1.5px solid #0284c7',
+                                  borderRadius: '8px',
+                                  fontWeight: '700',
+                                  fontSize: '13px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <Printer size={15} /> 🖨️ Xem & In Trực Tiếp
+                              </button>
+                            </div>
+                            <div style={{ fontSize: '11.5px', color: '#0369a1', fontStyle: 'italic' }}>
+                              💡 Mẹo: Bấm "Tải Đơn Đăng Ký" để tải file Word về máy tính/điện thoại, hoặc bấm "Xem & In Trực Tiếp" để in ra máy in ngay.
+                            </div>
+                          </div>
 
-                        {/* NỘI DUNG CÁCH 1: UPLOAD ẢNH / PDF TRỰC TIẾP */}
-                        {uploadMethod === 'file' && (
-                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px dashed #cbd5e1', padding: '18px 16px', textAlign: 'center' }}>
+                          {/* Bước B: Ký trên giấy */}
+                          <div style={{ fontSize: '12.5px', color: '#334155', background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
+                            <strong>✍️ Bước B: Xin chữ ký của Cha Mẹ và Học sinh:</strong>
+                            <div style={{ marginTop: '4px', lineHeight: '1.5', color: '#475569' }}>
+                              In đơn ra giấy, đưa cho <strong>Cha/Mẹ/Người giám hộ ký ghi rõ họ tên</strong> vào mục <em>Ý kiến của cha mẹ học sinh</em> và <strong>em ký ghi rõ họ tên</strong> vào mục <em>Người làm đơn</em>.
+                            </div>
+                          </div>
+
+                          {/* Bước C: Upload ảnh / PDF */}
+                          <div style={{ background: '#f8fafc', borderRadius: '10px', border: '1.5px dashed #cbd5e1', padding: '16px', textAlign: 'center' }}>
                             {(selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url) && (
                               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', color: '#15803d', fontWeight: 'bold', marginBottom: '12px' }}>
                                 <HardDrive size={14} color="#16a34a" /> Hệ thống tự động phân loại vào Thư mục: Lớp {studentClass || 'của em'}
@@ -2122,76 +2630,75 @@ export default function PublicRegistrations() {
                               </div>
                             )}
                           </div>
-                        )}
-
-                        {/* NỘI DUNG CÁCH 2: DÁN LINK GOOGLE DRIVE */}
-                        {uploadMethod === 'drive' && (
-                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '16px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
-                              <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <LinkIcon size={14} color="#0284c7" /> Dán đường link Google Drive của đơn đã ký:
-                              </label>
-
-                              {schoolDriveUrl && (
-                                <a
-                                  href={schoolDriveUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    padding: '4px 10px',
-                                    background: '#f0fdf4',
-                                    color: '#15803d',
-                                    borderRadius: '6px',
-                                    fontSize: '12px',
-                                    fontWeight: '700',
-                                    textDecoration: 'none',
-                                    border: '1px solid #86efac'
-                                  }}
-                                >
-                                  <FolderOpen size={13} /> 📁 Mở Thư Mục Google Drive Của Nhà Trường
-                                </a>
-                              )}
-                            </div>
-
-                            <input
-                              type="url"
-                              value={signedDocDriveLink}
-                              onChange={(e) => setSignedDocDriveLink(e.target.value)}
-                              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
-                              style={{
-                                width: '100%',
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                border: '1.5px solid #cbd5e1',
-                                fontSize: '13.5px',
-                                boxSizing: 'border-box'
-                              }}
-                            />
-
-                            <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
-                              📌 <strong>Lưu ý:</strong> Vui lòng bật quyền truy cập là <em>"Bất kỳ ai có đường liên kết đều có thể xem"</em> để Thầy/Cô và Ban Giám hiệu có thể kiểm tra chữ ký.
-                            </div>
-                          </div>
-                        )}
-
-                        {/* TRẠNG THÁI TỔNG HỢP MINH CHỨNG */}
-                        <div style={{ marginTop: '14px', padding: '10px 12px', borderRadius: '8px', fontSize: '12.5px', backgroundColor: (signedDocUrl || signedDocDriveLink?.trim()) ? '#ecfdf5' : '#fffbeb', border: (signedDocUrl || signedDocDriveLink?.trim()) ? '1px solid #86efac' : '1px solid #fde68a', color: (signedDocUrl || signedDocDriveLink?.trim()) ? '#166534' : '#b45309', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {(signedDocUrl || signedDocDriveLink?.trim()) ? (
-                            <>
-                              <CheckCircle2 size={16} color="#16a34a" style={{ flexShrink: 0 }} />
-                              <span><strong>Đã sẵn sàng:</strong> Em đã hoàn tất đính kèm đơn đăng ký có chữ ký. Hãy kiểm tra lại thông tin và bấm nút "GỬI ĐĂNG KÝ" bên dưới.</span>
-                            </>
-                          ) : (
-                            <>
-                              <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
-                              <span><strong>Bắt buộc:</strong> Em cần hoàn tất Bước C (Tải ảnh/PDF hoặc dán link Google Drive) mới có thể gửi đăng ký.</span>
-                            </>
-                          )}
                         </div>
+                      )}
 
+                      {/* NỘI DUNG CÁCH 3: DÁN LINK GOOGLE DRIVE */}
+                      {uploadMethod === 'drive' && (
+                        <div style={{ background: '#ffffff', borderRadius: '12px', border: '1px solid #cbd5e1', padding: '16px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                            <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <LinkIcon size={14} color="#0284c7" /> Dán đường link Google Drive của đơn đã ký:
+                            </label>
+
+                            {schoolDriveUrl && (
+                              <a
+                                href={schoolDriveUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  padding: '4px 10px',
+                                  background: '#f0fdf4',
+                                  color: '#15803d',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '700',
+                                  textDecoration: 'none',
+                                  border: '1px solid #86efac'
+                                }}
+                              >
+                                <FolderOpen size={13} /> 📁 Mở Thư Mục Google Drive Của Nhà Trường
+                              </a>
+                            )}
+                          </div>
+
+                          <input
+                            type="url"
+                            value={signedDocDriveLink}
+                            onChange={(e) => setSignedDocDriveLink(e.target.value)}
+                            placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
+                            style={{
+                              width: '100%',
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              border: '1.5px solid #cbd5e1',
+                              fontSize: '13.5px',
+                              boxSizing: 'border-box'
+                            }}
+                          />
+
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', lineHeight: '1.4' }}>
+                            📌 <strong>Lưu ý:</strong> Vui lòng bật quyền truy cập là <em>"Bất kỳ ai có đường liên kết đều có thể xem"</em> để Thầy/Cô và Ban Giám hiệu có thể kiểm tra chữ ký.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* TRẠNG THÁI TỔNG HỢP MINH CHỨNG */}
+                      <div style={{ marginTop: '14px', padding: '10px 12px', borderRadius: '8px', fontSize: '12.5px', backgroundColor: (signedDocUrl || signedDocDriveLink?.trim()) ? '#ecfdf5' : '#fffbeb', border: (signedDocUrl || signedDocDriveLink?.trim()) ? '1px solid #86efac' : '1px solid #fde68a', color: (signedDocUrl || signedDocDriveLink?.trim()) ? '#166534' : '#b45309', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {(signedDocUrl || signedDocDriveLink?.trim()) ? (
+                          <>
+                            <CheckCircle2 size={16} color="#16a34a" style={{ flexShrink: 0 }} />
+                            <span><strong>Đã sẵn sàng:</strong> Em đã hoàn tất đơn đăng ký có chữ ký. Hãy kiểm tra lại thông tin và bấm nút "GỬI ĐĂNG KÝ" bên dưới.</span>
+                          </>
+                        ) : (
+                          <>
+                            <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                            <span><strong>Bắt buộc:</strong> Em cần hoàn tất ký đơn hoặc nộp file minh chứng để có thể gửi đăng ký.</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   )}
@@ -2313,6 +2820,195 @@ export default function PublicRegistrations() {
           </div>
         </div>
       )}
+
+      {/* BẢNG VẼ CHỮ KÝ ĐIỆN TỬ CHO CHA MẸ HOẶC HỌC SINH */}
+      <SignaturePadModal
+        isOpen={Boolean(activeSignerModal)}
+        onClose={() => setActiveSignerModal(null)}
+        signerTitle={activeSignerModal === 'parent' ? 'Cha/Mẹ / Người Giám Hộ' : 'Học Sinh'}
+        signerName={
+          activeSignerModal === 'parent' 
+            ? (responses['field_parent_name'] || (studentName ? `Phụ huynh em ${studentName}` : 'Cha/Mẹ học sinh'))
+            : (studentName || 'Học sinh')
+        }
+        initialSignature={activeSignerModal === 'parent' ? parentSignature : studentSignature}
+        onSaveSignature={(signatureDataUrl) => {
+          if (activeSignerModal === 'parent') {
+            setParentSignature(signatureDataUrl);
+          } else if (activeSignerModal === 'student') {
+            setStudentSignature(signatureDataUrl);
+          }
+          setActiveSignerModal(null);
+        }}
+      />
+
+      {/* BẢN IN ĐƠN A4 ẨN ĐỂ RENDER THÀNH CANVAS & XUẤT ẢNH PNG RETINA CÓ CHỮ KÝ */}
+      <div 
+        style={{ 
+          position: 'fixed', 
+          left: '-9999px', 
+          top: '0', 
+          width: '794px', 
+          height: 'auto', 
+          overflow: 'visible', 
+          opacity: 1, 
+          zIndex: -9999, 
+          pointerEvents: 'none' 
+        }}
+      >
+        <div 
+          ref={paperRef}
+          style={{
+            width: '794px',
+            minHeight: '1123px',
+            padding: '45px 52px',
+            backgroundColor: '#ffffff',
+            color: '#000000',
+            fontFamily: '"Times New Roman", Times, serif',
+            boxSizing: 'border-box',
+            lineHeight: '1.45',
+            fontSize: '13pt'
+          }}
+        >
+          {/* Quốc hiệu & Tiêu ngữ */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '18px' }}>
+            <tbody>
+              <tr>
+                <td style={{ textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontWeight: 'bold', fontSize: '13pt', textTransform: 'uppercase' }}>
+                    CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                  </p>
+                  <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', fontSize: '14pt' }}>
+                    Độc lập - Tự do - Hạnh phúc
+                  </p>
+                  <p style={{ margin: '5px 0 0 0', letterSpacing: '2px', fontWeight: 'bold' }}>
+                    -------***-------
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Tiêu đề */}
+          <div style={{ textAlign: 'center', fontSize: '15pt', fontWeight: 'bold', margin: '15px 0 20px 0', textTransform: 'uppercase' }}>
+            ĐƠN ĐĂNG KÍ HỌC THÊM
+          </div>
+
+          {/* Kính gửi */}
+          <div style={{ marginLeft: '45px', marginBottom: '18px', fontWeight: 'bold' }}>
+            <p style={{ margin: 0 }}>Kính gửi:</p>
+            <p style={{ margin: '4px 0 0 20px' }}>- Hiệu trưởng {selectedCampaign?.form_schema?.school_name || 'Trường THPT Cao Bá Quát'};</p>
+            <p style={{ margin: '4px 0 0 20px' }}>- Giáo viên chủ nhiệm Lớp {studentClass || '........'}.</p>
+          </div>
+
+          {/* Nội dung */}
+          <p style={{ textIndent: '1cm', textAlign: 'justify', margin: '7px 0' }}>
+            Tên em là: <strong>{(studentName || '').toUpperCase()}</strong>
+          </p>
+          <p style={{ textIndent: '1cm', textAlign: 'justify', margin: '7px 0' }}>
+            Học sinh lớp: <strong>{studentClass || '...........'}</strong> (tên lớp đang học chính khóa tại nhà trường).
+          </p>
+          <p style={{ textIndent: '1cm', textAlign: 'justify', margin: '7px 0' }}>
+            Em viết đơn này kính mong nhà trường cho phép em được đăng kí học thêm trong năm học <strong>{selectedCampaign?.form_schema?.school_year || '2026 - 2027'}</strong><sup>1</sup>, cụ thể như sau:
+          </p>
+
+          <p style={{ marginLeft: '0.5cm', textAlign: 'justify', margin: '8px 0' }}>
+            <strong>1. Môn học đăng kí học thêm:</strong>{' '}
+            <span style={{ color: '#000080', fontWeight: 'bold' }}>
+              {getSelectedTuitionSubjectsList().length > 0 ? getSelectedTuitionSubjectsList().join(', ') : '...........................................................................'}
+            </span>{' '}
+            (ghi tên môn học theo chương trình giáo dục), lớp <strong>{(studentClass || '').match(/^(10|11|12)/) ? `Khối ${(studentClass || '').match(/^(10|11|12)/)[1]}` : 'Khối 12'}</strong> (ghi khối lớp đăng kí học thêm).
+          </p>
+
+          <p style={{ marginLeft: '0.5cm', textAlign: 'justify', margin: '8px 0' }}>
+            <strong>2. Đối tượng đăng kí học thêm<sup>2</sup>:</strong>{' '}
+            <span>
+              {responses['field_tuition_category'] || 'Học sinh có nguyện vọng học thêm để củng cố, nâng cao kiến thức, rèn luyện kỹ năng và ôn thi tốt nghiệp THPT.'}
+            </span>
+          </p>
+
+          <p style={{ marginLeft: '0.5cm', textAlign: 'justify', margin: '8px 0' }}>
+            <strong>3. Nguyện vọng đăng kí giáo viên (nếu có):</strong>{' '}
+            <span>
+              {responses['field_preferred_teacher'] || 'Kính nhờ Nhà trường và Ban Giám hiệu phân công giáo viên giảng dạy theo kế hoạch của trường.'}
+            </span>
+          </p>
+
+          <p style={{ textIndent: '1cm', textAlign: 'justify', margin: '7px 0' }}>
+            Em xin trân trọng cảm ơn!
+          </p>
+
+          {/* Bảng chữ ký 2 cột */}
+          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '24px' }}>
+            <tbody>
+              <tr>
+                {/* CỘT 1: CHA MẸ HỌC SINH */}
+                <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', padding: '0 10px' }}>
+                  <p style={{ margin: 0, fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    Ý KIẾN CỦA CHA MẸ HỌC SINH
+                  </p>
+                  <p style={{ margin: '3px 0 0 0', fontStyle: 'italic', fontSize: '11pt' }}>
+                    (Đối với người chưa thành niên)
+                  </p>
+                  <div style={{ margin: '6px 0 2px 0', fontSize: '11pt', fontStyle: 'italic', color: '#1e293b', minHeight: '36px', textAlign: 'center' }}>
+                    "{parentOpinion || 'Tôi hoàn toàn đồng ý và tạo điều kiện cho con tham gia học thêm.'}"
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontStyle: 'italic', fontSize: '10.5pt', color: '#475569' }}>
+                    (Kí và ghi rõ họ tên)
+                  </p>
+                  <div style={{ height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px 0' }}>
+                    {parentSignature ? (
+                      <img 
+                        src={parentSignature} 
+                        alt="Chữ ký Cha Mẹ" 
+                        style={{ maxHeight: '72px', maxWidth: '190px', objectFit: 'contain' }} 
+                      />
+                    ) : (
+                      <div style={{ height: '70px' }}></div>
+                    )}
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontWeight: 'bold' }}>
+                    {responses['field_parent_name'] || (studentName ? `Phụ huynh em ${studentName}` : '')}
+                  </p>
+                </td>
+
+                {/* CỘT 2: HỌC SINH */}
+                <td style={{ width: '50%', textAlign: 'center', verticalAlign: 'top', padding: '0 10px' }}>
+                  <p style={{ margin: 0, fontStyle: 'italic' }}>
+                    Đắk Lắk, ngày {String(new Date().getDate()).padStart(2, '0')} tháng {String(new Date().getMonth() + 1).padStart(2, '0')} năm {new Date().getFullYear()}
+                  </p>
+                  <p style={{ margin: '3px 0 0 0', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                    NGƯỜI LÀM ĐƠN
+                  </p>
+                  <p style={{ margin: '3px 0 0 0', fontStyle: 'italic', fontSize: '10.5pt', color: '#475569' }}>
+                    (Kí và ghi rõ họ tên)
+                  </p>
+                  <div style={{ height: '76px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '2px 0' }}>
+                    {studentSignature ? (
+                      <img 
+                        src={studentSignature} 
+                        alt="Chữ ký Học sinh" 
+                        style={{ maxHeight: '72px', maxWidth: '190px', objectFit: 'contain' }} 
+                      />
+                    ) : (
+                      <div style={{ height: '70px' }}></div>
+                    )}
+                  </div>
+                  <p style={{ margin: '2px 0 0 0', fontWeight: 'bold' }}>
+                    {studentName || ''}
+                  </p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* Chú thích chân trang */}
+          <div style={{ marginTop: '35px', borderTop: '1pt solid #000000', paddingTop: '6px', fontSize: '10pt', fontStyle: 'italic' }}>
+            <p style={{ margin: '2px 0' }}><sup>1</sup> Ghi năm học học sinh có nguyện vọng đăng kí học thêm</p>
+            <p style={{ margin: '2px 0' }}><sup>2</sup> Ghi rõ 1 trong 3 đối tượng quy định tại khoản 1 Điều 5 Thông tư này</p>
+          </div>
+        </div>
+      </div>
 
     </div>
   );
