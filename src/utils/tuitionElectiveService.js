@@ -201,10 +201,17 @@ export function getTuitionCampaignPreset() {
     description: 'Học sinh Khối 12 đăng ký học thêm / ôn thi Tốt nghiệp THPT 2027 theo quy định của Bộ GD&ĐT. Môn Toán và Ngữ Văn áp dụng cho toàn bộ học sinh Khối 12; các môn tự chọn chỉ áp dụng đúng 02 môn tự chọn học sinh đã đăng ký trước đó. Yêu cầu tải mẫu đơn, xin chữ ký của Cha Mẹ học sinh và nộp file lên hệ thống / Drive để hoàn tất.',
     target_grades: ['Khối 12'],
     prerequisite_mode: 'tuition_electives',
+    school_drive_url: '',
+    google_drive_script_url: '',
+    google_drive_folder_id: '',
+    requires_signed_document: true,
     form_schema: {
       prerequisite_mode: 'tuition_electives',
       is_tuition_registration: true,
       requires_signed_document: true,
+      school_drive_url: '',
+      google_drive_script_url: '',
+      google_drive_folder_id: '',
       school_name: 'Trường THPT Cao Bá Quát',
       school_year: '2026 - 2027',
       fields: [
@@ -448,3 +455,210 @@ export function isCampaignHidden(cam) {
   }
   return false;
 }
+
+/**
+ * Trích xuất Google Drive Folder ID từ URL hoặc chuỗi ID
+ */
+export function extractDriveFolderId(urlOrId) {
+  if (!urlOrId) return '';
+  const str = String(urlOrId).trim();
+  const match = str.match(/folders\/([a-zA-Z0-9_-]+)/);
+  if (match && match[1]) return match[1];
+  const idMatch = str.match(/id=([a-zA-Z0-9_-]+)/);
+  if (idMatch && idMatch[1]) return idMatch[1];
+  return str;
+}
+
+/**
+ * Mã nguồn Google Apps Script (GAS) tự động tiếp nhận file từ học sinh,
+ * tự động tạo thư mục theo LỚP và lưu file ngay ngắn trên Google Drive của Thầy/Cô.
+ */
+export const GOOGLE_APPS_SCRIPT_TUITION_CODE = `/**
+ * GOOGLE APPS SCRIPT: TỰ ĐỘNG TIẾP NHẬN ĐƠN ĐĂNG KÝ HỌC THÊM & GOM NHÓM THEO LỚP
+ * ---------------------------------------------------------------------------------
+ * HƯỚNG DẪN CÀI ĐẶT 30 GIÂY:
+ * 1. Truy cập https://script.google.com bằng tài khoản Google của Trường / Thầy Cô.
+ * 2. Bấm "Dự án mới" (New project), xóa hết mã cũ và dán toàn bộ đoạn mã này vào.
+ * 3. Bấm biểu tượng 💾 (Lưu).
+ * 4. Bấm "Triển khai" (Deploy) -> "Tùy chọn triển khai mới" (New deployment).
+ *    - Chọn loại: "Ứng dụng web" (Web app).
+ *    - Mô tả: "Tiếp nhận đơn học thêm theo lớp".
+ *    - Thực thi với tư cách: "Tôi" (Me - your email).
+ *    - Ai có quyền truy cập: "Bất kỳ ai" (Anyone) -> RẤT QUAN TRỌNG để học sinh nộp được.
+ * 5. Bấm "Triển khai" -> Chọn "Xem lại quyền truy cập" -> Chọn tài khoản -> Bấm "Nâng cao" (Advanced) -> "Đi tới [Tên dự án] (không an toàn)" -> Bấm "Cho phép" (Allow).
+ * 6. Sao chép "URL ứng dụng web" (có đuôi /exec) và dán vào phần Cài đặt Đợt đăng ký trên hệ thống.
+ */
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  // Đợi tối đa 30 giây để xử lý tuần tự, chống xung đột ghi đè
+  if (!lock.tryLock(30000)) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: "Hệ thống Google Drive đang bận xử lý nhiều tệp cùng lúc. Vui lòng bấm thử lại sau giây lát!"
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+
+  try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return ContentService.createTextOutput(JSON.stringify({
+        status: "error",
+        message: "Không tìm thấy dữ liệu tệp được gửi đến."
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    var data = JSON.parse(e.postData.contents);
+    var base64Data = data.base64Data;
+    var rawFileName = data.fileName || "Don_dang_ky.pdf";
+    var mimeType = data.mimeType || "application/pdf";
+    var studentClass = String(data.studentClass || "Chung").trim();
+    var studentName = String(data.studentName || "HocSinh").trim();
+    var studentCode = String(data.studentCode || "").trim();
+    var campaignTitle = String(data.campaignTitle || "Hồ Sơ Đăng Ký Học Thêm").trim();
+    var parentFolderId = data.parentFolderId ? String(data.parentFolderId).trim() : "";
+
+    // 1. Xác định Thư mục Gốc của Đợt
+    var parentFolder;
+    if (parentFolderId) {
+      try {
+        parentFolder = DriveApp.getFolderById(parentFolderId);
+      } catch (err) {
+        parentFolder = null;
+      }
+    }
+
+    if (!parentFolder) {
+      var rootFolders = DriveApp.getRootFolder().getFoldersByName(campaignTitle);
+      if (rootFolders.hasNext()) {
+        parentFolder = rootFolders.next();
+      } else {
+        parentFolder = DriveApp.getRootFolder().createFolder(campaignTitle);
+        try {
+          parentFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        } catch (e) {}
+      }
+    }
+
+    // 2. Tìm hoặc Tạo Thư mục Con gom nhóm theo từng LỚP (Ví dụ: "Lớp 12A1")
+    var cleanClassName = studentClass.replace(/^Lớp\\s*/i, '').trim() || "Chung";
+    var folderName = "Lớp " + cleanClassName;
+    var classFolders = parentFolder.getFoldersByName(folderName);
+    var classFolder;
+    if (classFolders.hasNext()) {
+      classFolder = classFolders.next();
+    } else {
+      classFolder = parentFolder.createFolder(folderName);
+      try {
+        classFolder.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (e) {}
+    }
+
+    // 3. Đặt tên file chuẩn mực: [12A1] - Nguyễn Văn A (HS1201) - Don_Hoc_Them.pdf
+    var fileExt = rawFileName.split('.').pop() || "pdf";
+    var standardizedFileName = "[" + cleanClassName + "] " + studentName + (studentCode ? " (" + studentCode + ")" : "") + " - Don_Dang_Ky." + fileExt;
+
+    // 4. Giải mã Base64 và Lưu tệp vào Thư mục Lớp
+    var decoded = Utilities.base64Decode(base64Data);
+    var blob = Utilities.newBlob(decoded, mimeType, standardizedFileName);
+    var newFile = classFolder.createFile(blob);
+    newFile.setDescription("Đơn đăng ký học thêm của học sinh: " + studentName + " - Lớp: " + cleanClassName + " - Mã HS: " + studentCode);
+    try {
+      newFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    } catch (e) {}
+
+    var result = {
+      status: "success",
+      fileUrl: newFile.getUrl(),
+      fileId: newFile.getId(),
+      downloadUrl: "https://drive.google.com/uc?export=download&id=" + newFile.getId(),
+      previewUrl: "https://drive.google.com/file/d/" + newFile.getId() + "/view",
+      classFolderUrl: classFolder.getUrl(),
+      classFolderId: classFolder.getId(),
+      className: cleanClassName,
+      fileName: standardizedFileName,
+      studentName: studentName
+    };
+
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "error",
+      message: "Lỗi lưu file trên Google Drive: " + err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput(JSON.stringify({
+    status: "ready",
+    message: "Google Apps Script Web App sẵn sàng tiếp nhận đơn đăng ký học thêm theo lớp!"
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+`;
+
+/**
+ * Gửi tải file trực tiếp lên Google Apps Script Web App để lưu vào Google Drive theo từng Lớp
+ */
+export async function uploadFileToGoogleDrive({
+  scriptUrl,
+  file,
+  studentClass,
+  studentName,
+  studentCode,
+  campaignTitle,
+  parentFolderId
+}) {
+  if (!scriptUrl || !scriptUrl.startsWith('http')) {
+    throw new Error("URL Web App Google Apps Script chưa được cấu hình hoặc không hợp lệ.");
+  }
+
+  // Đọc file thành chuỗi base64
+  const base64Data = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = typeof result === 'string' && result.includes(',') 
+        ? result.split(',')[1] 
+        : result;
+      resolve(base64);
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+
+  const payload = {
+    base64Data,
+    fileName: file.name,
+    mimeType: file.type || 'application/octet-stream',
+    studentClass: studentClass || '',
+    studentName: studentName || '',
+    studentCode: studentCode || '',
+    campaignTitle: campaignTitle || 'Đăng ký học thêm',
+    parentFolderId: parentFolderId ? extractDriveFolderId(parentFolderId) : ''
+  };
+
+  const response = await fetch(scriptUrl, {
+    method: 'POST',
+    // Dùng text/plain để tránh CORS preflight OPTIONS request
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`Google Apps Script phản hồi HTTP ${response.status}. Vui lòng kiểm tra lại quyền triển khai (Ai có quyền truy cập: Bất kỳ ai).`);
+  }
+
+  const json = await response.json();
+  if (json.status !== 'success') {
+    throw new Error(json.message || 'Lỗi không xác định khi lưu file vào Google Drive.');
+  }
+
+  return json;
+}
+

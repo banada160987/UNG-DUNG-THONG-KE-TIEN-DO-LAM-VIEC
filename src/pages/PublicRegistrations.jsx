@@ -17,7 +17,8 @@ import {
   SUBJECT_METADATA,
   isCampaignHidden,
   downloadTuitionApplicationDoc,
-  printTuitionApplicationDoc
+  printTuitionApplicationDoc,
+  uploadFileToGoogleDrive
 } from '../utils/tuitionElectiveService';
 
 export default function PublicRegistrations() {
@@ -49,6 +50,8 @@ export default function PublicRegistrations() {
   const [signedDocUrl, setSignedDocUrl] = useState('');
   const [signedDocFileName, setSignedDocFileName] = useState('');
   const [signedDocDriveLink, setSignedDocDriveLink] = useState('');
+  const [signedDocClassFolderUrl, setSignedDocClassFolderUrl] = useState('');
+  const [signedDocSource, setSignedDocSource] = useState(''); // 'google_drive' | 'supabase'
   const [uploadMethod, setUploadMethod] = useState('file'); // 'file' | 'drive'
   const [uploadingSignedDoc, setUploadingSignedDoc] = useState(false);
   const [signedDocError, setSignedDocError] = useState('');
@@ -494,13 +497,13 @@ export default function PublicRegistrations() {
     });
   };
 
-  // Xử lý upload file đơn đã ký (ảnh chụp hoặc PDF)
+  // Xử lý upload file đơn đã ký (ảnh chụp hoặc PDF) - Hỗ trợ nộp trực tiếp lên Google Drive gom nhóm theo Lớp
   const handleSignedDocFileUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 15 * 1024 * 1024) {
-      setSignedDocError("Kích thước file không được vượt quá 15MB.");
+    if (file.size > 20 * 1024 * 1024) {
+      setSignedDocError("Kích thước file không được vượt quá 20MB.");
       return;
     }
 
@@ -510,9 +513,46 @@ export default function PublicRegistrations() {
     try {
       const cleanClass = (studentClass || '12').replace(/[^a-zA-Z0-9]/g, '');
       const cleanCode = (studentCode || 'HS').replace(/[^a-zA-Z0-9]/g, '');
+      const schema = selectedCampaign?.form_schema;
+      const googleDriveScriptUrl = selectedCampaign?.google_drive_script_url || 
+        (schema && typeof schema === 'object' && !Array.isArray(schema) ? schema.google_drive_script_url : '');
+      const parentFolderId = selectedCampaign?.google_drive_folder_id || 
+        (schema && typeof schema === 'object' && !Array.isArray(schema) ? schema.google_drive_folder_id : '');
+
+      // 1. NẾU CÓ CẤU HÌNH GOOGLE APPS SCRIPT -> TẢI TRỰC TIẾP LÊN GOOGLE DRIVE CỦA TRƯỜNG & TỰ ĐỘNG GOM VÀO THƯ MỤC LỚP
+      if (googleDriveScriptUrl && googleDriveScriptUrl.startsWith('http')) {
+        try {
+          const driveResult = await uploadFileToGoogleDrive({
+            scriptUrl: googleDriveScriptUrl,
+            file,
+            studentClass: studentClass || 'Khối 12',
+            studentName: studentName || 'Học sinh',
+            studentCode: studentCode || '',
+            campaignTitle: selectedCampaign?.title || 'Đơn đăng ký học thêm',
+            parentFolderId
+          });
+
+          if (driveResult && driveResult.fileUrl) {
+            setSignedDocUrl(driveResult.previewUrl || driveResult.fileUrl);
+            setSignedDocDriveLink(driveResult.fileUrl);
+            setSignedDocClassFolderUrl(driveResult.classFolderUrl || '');
+            setSignedDocFileName(driveResult.fileName || file.name);
+            setSignedDocFile(file);
+            setSignedDocSource('google_drive');
+            setUploadingSignedDoc(false);
+            return;
+          }
+        } catch (gasErr) {
+          console.warn("Upload Google Drive qua Google Apps Script gặp sự cố, tự động kích hoạt lưu trữ dự phòng:", gasErr);
+          // Không throw để fallback tiếp tục sang Supabase
+        }
+      }
+
+      // 2. PHƯƠNG ÁN DỰ PHÒNG: TẢI LÊN SUPABASE STORAGE THEO CẤU TRÚC THƯ MỤC THEO LỚP
       const fileExt = file.name.split('.').pop() || 'jpg';
       const fileName = `don_hoc_them_${cleanClass}_${cleanCode}_${Date.now()}.${fileExt}`;
-      const filePath = `tuition_applications/${fileName}`;
+      const campaignKey = selectedCampaign?.id || 'dot_chung';
+      const filePath = `tuition_applications/${campaignKey}/${cleanClass}/${fileName}`;
 
       const client = (selectedCampaign?._source === 'sb1' && supabase) ? supabase : (supabase2 || supabase);
       let uploadSuccess = false;
@@ -542,17 +582,19 @@ export default function PublicRegistrations() {
             setSignedDocUrl(base64Data);
             setSignedDocFileName(file.name);
             setSignedDocFile(file);
+            setSignedDocSource('data_url');
             setUploadingSignedDoc(false);
           };
           reader.readAsDataURL(file);
           return;
         } else {
-          throw new Error("Không thể tải file trực tiếp lên máy chủ. Bạn vui lòng tải file lên Google Drive của mình rồi dán link chia sẻ vào ô bên dưới nhé!");
+          throw new Error("Không thể tải file tự động. Bạn vui lòng tải file lên Google Drive của mình rồi dán link chia sẻ vào ô bên dưới nhé!");
         }
       } else {
         setSignedDocUrl(publicUrl);
         setSignedDocFileName(file.name);
         setSignedDocFile(file);
+        setSignedDocSource('supabase');
       }
     } catch (err) {
       console.error("Lỗi khi tải file đơn:", err);
@@ -566,6 +608,9 @@ export default function PublicRegistrations() {
     setSignedDocFile(null);
     setSignedDocUrl('');
     setSignedDocFileName('');
+    setSignedDocDriveLink('');
+    setSignedDocClassFolderUrl('');
+    setSignedDocSource('');
     setSignedDocError('');
   };
 
@@ -653,6 +698,8 @@ export default function PublicRegistrations() {
         field_signed_doc_url: signedDocUrl || '',
         field_signed_doc_name: signedDocFileName || '',
         field_drive_link: (signedDocDriveLink || '').trim(),
+        field_class_folder_url: (signedDocClassFolderUrl || '').trim(),
+        field_doc_storage_type: signedDocSource || (signedDocDriveLink ? 'google_drive' : 'supabase'),
         field_has_signed_doc: Boolean(signedDocUrl || signedDocDriveLink?.trim())
       };
 
@@ -683,6 +730,8 @@ export default function PublicRegistrations() {
           signedDocUrl,
           signedDocFileName,
           signedDocDriveLink,
+          signedDocClassFolderUrl,
+          signedDocSource,
           isTuition: isTuitionCampaign(selectedCampaign)
         });
         setSuccess(true);
@@ -790,6 +839,35 @@ export default function PublicRegistrations() {
                       }}
                     >
                       <ExternalLink size={13} /> Mở Drive
+                    </a>
+                  </div>
+                )}
+
+                {submittedData.signedDocClassFolderUrl && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px', background: '#f8fafc', padding: '6px 10px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}>
+                      <FolderOpen size={15} color="#15803d" />
+                      <strong>Thư mục lưu trữ:</strong> Lớp {submittedData.studentClass}
+                    </span>
+                    <a
+                      href={submittedData.signedDocClassFolderUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '4px 10px',
+                        background: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #86efac',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: '700',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <FolderOpen size={13} /> Mở Thư Mục Lớp
                     </a>
                   </div>
                 )}
@@ -1832,7 +1910,7 @@ export default function PublicRegistrations() {
                             onClick={() => setUploadMethod('file')}
                             style={{
                               flex: 1,
-                              padding: '9px 12px',
+                              padding: '10px 12px',
                               borderRadius: '8px',
                               border: uploadMethod === 'file' ? '2px solid #0284c7' : '1px solid #cbd5e1',
                               background: uploadMethod === 'file' ? '#e0f2fe' : '#ffffff',
@@ -1846,7 +1924,7 @@ export default function PublicRegistrations() {
                               gap: '6px'
                             }}
                           >
-                            <UploadCloud size={16} /> Cách 1: Tải trực tiếp Ảnh / PDF
+                            <UploadCloud size={16} /> {selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url ? 'Cách 1: Nộp trực tiếp lên Google Drive' : 'Cách 1: Tải trực tiếp Ảnh / PDF'}
                           </button>
 
                           <button
@@ -1854,7 +1932,7 @@ export default function PublicRegistrations() {
                             onClick={() => setUploadMethod('drive')}
                             style={{
                               flex: 1,
-                              padding: '9px 12px',
+                              padding: '10px 12px',
                               borderRadius: '8px',
                               border: uploadMethod === 'drive' ? '2px solid #0284c7' : '1px solid #cbd5e1',
                               background: uploadMethod === 'drive' ? '#e0f2fe' : '#ffffff',
@@ -1868,20 +1946,34 @@ export default function PublicRegistrations() {
                               gap: '6px'
                             }}
                           >
-                            <HardDrive size={16} /> Cách 2: Nộp qua Google Drive
+                            <HardDrive size={16} /> Cách 2: Dán Link Google Drive
                           </button>
                         </div>
 
                         {/* NỘI DUNG CÁCH 1: UPLOAD ẢNH / PDF TRỰC TIẾP */}
                         {uploadMethod === 'file' && (
-                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px dashed #cbd5e1', padding: '16px', textAlign: 'center' }}>
+                          <div style={{ background: '#ffffff', borderRadius: '12px', border: '1.5px dashed #cbd5e1', padding: '18px 16px', textAlign: 'center' }}>
+                            {(selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url) && (
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '20px', padding: '4px 12px', fontSize: '12px', color: '#15803d', fontWeight: 'bold', marginBottom: '12px' }}>
+                                <HardDrive size={14} color="#16a34a" /> Hệ thống tự động phân loại vào Thư mục: Lớp {studentClass || 'của em'}
+                              </div>
+                            )}
+
                             {signedDocUrl ? (
                               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '14px' }}>
                                   <CheckCircle2 size={20} color="#16a34a" />
-                                  Đã tải lên: {signedDocFileName || 'Đơn đăng ký có chữ ký'}
+                                  {signedDocSource === 'google_drive' ? 'Đã lưu trên Google Drive: ' : 'Đã tải lên: '}
+                                  <span style={{ color: '#0f172a' }}>{signedDocFileName || 'Đơn đăng ký có chữ ký'}</span>
                                 </div>
-                                <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+
+                                {signedDocClassFolderUrl && (
+                                  <div style={{ fontSize: '12px', color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <FolderOpen size={13} /> Thư mục: <strong>Lớp {studentClass}</strong> trên Google Drive trường
+                                  </div>
+                                )}
+
+                                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
                                   <button
                                     type="button"
                                     onClick={() => setPreviewDocModal(true)}
@@ -1901,6 +1993,53 @@ export default function PublicRegistrations() {
                                   >
                                     <Eye size={14} /> Xem lại file đơn
                                   </button>
+
+                                  {signedDocDriveLink && (
+                                    <a
+                                      href={signedDocDriveLink}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        padding: '6px 14px',
+                                        backgroundColor: '#f0fdf4',
+                                        color: '#15803d',
+                                        border: '1px solid #86efac',
+                                        borderRadius: '6px',
+                                        fontSize: '12.5px',
+                                        fontWeight: '600',
+                                        textDecoration: 'none',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      <ExternalLink size={14} /> Mở file trên Drive
+                                    </a>
+                                  )}
+
+                                  {signedDocClassFolderUrl && (
+                                    <a
+                                      href={signedDocClassFolderUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        padding: '6px 14px',
+                                        backgroundColor: '#eff6ff',
+                                        color: '#1d4ed8',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '6px',
+                                        fontSize: '12.5px',
+                                        fontWeight: '600',
+                                        textDecoration: 'none',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      <FolderOpen size={14} /> Mở Thư Mục Lớp
+                                    </a>
+                                  )}
+
                                   <button
                                     type="button"
                                     onClick={handleRemoveSignedDoc}
@@ -1921,9 +2060,9 @@ export default function PublicRegistrations() {
                               </div>
                             ) : (
                               <div>
-                                <UploadCloud size={32} color="#0284c7" style={{ margin: '0 auto 6px auto', display: 'block' }} />
-                                <label style={{ display: 'inline-block', padding: '9px 18px', backgroundColor: '#0284c7', color: '#ffffff', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2,132,199,0.2)' }}>
-                                  {uploadingSignedDoc ? 'Đang tải file lên...' : '📁 Bấm để chọn Ảnh chụp hoặc File PDF đơn đã ký'}
+                                <UploadCloud size={34} color="#0284c7" style={{ margin: '0 auto 6px auto', display: 'block' }} />
+                                <label style={{ display: 'inline-block', padding: '10px 20px', backgroundColor: '#0284c7', color: '#ffffff', borderRadius: '8px', fontWeight: '700', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2,132,199,0.25)' }}>
+                                  {uploadingSignedDoc ? `Đang tải tệp vào Thư mục Lớp ${studentClass || ''}...` : `📁 Bấm để chọn Ảnh chụp hoặc File PDF đơn đã ký`}
                                   <input
                                     type="file"
                                     accept="image/*,application/pdf"
@@ -1932,8 +2071,10 @@ export default function PublicRegistrations() {
                                     disabled={uploadingSignedDoc}
                                   />
                                 </label>
-                                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '6px' }}>
-                                  Hỗ trợ file ảnh JPG, PNG hoặc file PDF (Tối đa 15MB). Hãy chụp rõ nét phần chữ ký.
+                                <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '8px' }}>
+                                  {(selectedCampaign?.google_drive_script_url || selectedCampaign?.form_schema?.google_drive_script_url)
+                                    ? `Tệp sẽ được tự động đưa vào Thư mục Lớp ${studentClass || 'của em'} trên Google Drive của Trường.` 
+                                    : 'Hỗ trợ file ảnh JPG, PNG hoặc file PDF (Tối đa 20MB). Hãy chụp rõ nét phần chữ ký.'}
                                 </div>
                               </div>
                             )}
