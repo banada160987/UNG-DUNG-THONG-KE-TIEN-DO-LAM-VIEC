@@ -41,21 +41,88 @@ export const SUBJECT_METADATA = {
 export function normalizeSubjectName(subj) {
   if (!subj) return '';
   const raw = String(subj).trim();
-  const s = raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (raw.length === 0) return '';
 
-  if (s.includes('toan')) return 'Toán';
-  if (s.includes('van') || s.includes('ngu van')) return 'Ngữ Văn';
-  if (s.includes('vat li') || s.includes('vat ly') || s === 'li' || s === 'ly') return 'Vật Lí';
-  if (s.includes('hoa') || s.includes('hoa hoc')) return 'Hóa học';
-  if (s.includes('sinh') || s.includes('sinh hoc')) return 'Sinh học';
-  if (s.includes('lich su') || s.includes('su')) return 'Lịch Sử';
-  if (s.includes('dia li') || s.includes('dia ly') || s.includes('dia')) return 'Địa Lí';
-  if (s.includes('gdkt') || s.includes('phap luat') || s.includes('kinh te')) return 'GDKTPL';
-  if (s.includes('tieng anh') || s.includes('anh') || s.includes('ngoai ngu')) return 'Tiếng Anh';
-  if (s.includes('tin hoc') || s.includes('tin')) return 'Tin học';
-  if (s.includes('cong nghe')) return 'Công nghệ';
+  // Một tên môn học thông thường không bao giờ vượt quá 35 ký tự hoặc quá 6 từ
+  if (raw.length > 35 || raw.split(/\s+/).length > 6) return raw;
+
+  // Lọc nhanh các văn bản hành chính / cam kết / thông tin cá nhân / trường học
+  const lowerRaw = raw.toLowerCase();
+  if (
+    lowerRaw.includes('cam kết') ||
+    lowerRaw.includes('kính đề nghị') ||
+    lowerRaw.includes('nguyện vọng') ||
+    lowerRaw.includes('chấp hành') ||
+    lowerRaw.includes('học sinh') ||
+    lowerRaw.includes('nhà trường') ||
+    lowerRaw.includes('nội quy') ||
+    lowerRaw.includes('người giám hộ') ||
+    lowerRaw.includes('cha mẹ') ||
+    lowerRaw.includes('điện thoại') ||
+    lowerRaw.includes('thông tư') ||
+    lowerRaw.includes('học lực')
+  ) {
+    return raw;
+  }
+
+  const s = raw
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .trim();
+
+  // Khớp chính xác hoặc theo ranh giới từ (tránh nuốt từ như "chấp hành", "học sinh", "thông tin", "khóa học")
+  if (!s.includes('thanh toan') && !s.includes('toan bo') && /(^|\b)(toan|toan hoc|mon toan)(\b|$)/i.test(s)) return 'Toán';
+  if (!s.includes('van ban') && !s.includes('tu van') && !s.includes('van de') && /(^|\b)(ngu van|van hoc|mon van|^van$|^van\s*\d+)/i.test(s)) return 'Ngữ Văn';
+  if (/(^|\b)(vat li|vat ly|mon li|mon ly|^li$|^ly$|^vat li\s*\d+|^vat ly\s*\d+)/i.test(s)) return 'Vật Lí';
+  if (!s.includes('khoa') && !s.includes('hoa binh') && !s.includes('hoa don') && /(^|\b)(hoa hoc|mon hoa|^hoa$|^hoa\s*\d+)/i.test(s)) return 'Hóa học';
+  if (!s.includes('hoc sinh') && !s.includes('giang sinh') && !s.includes('ve sinh') && !s.includes('phat sinh') && /(^|\b)(sinh hoc|mon sinh|^sinh$|^sinh\s*\d+)/i.test(s)) return 'Sinh học';
+  if (!s.includes('giao su') && !s.includes('su viec') && /(^|\b)(lich su|mon su|^su$|^su\s*\d+)/i.test(s)) return 'Lịch Sử';
+  if (!s.includes('dia diem') && !s.includes('dia chi') && /(^|\b)(dia li|dia ly|mon dia|^dia$|^dia\s*\d+)/i.test(s)) return 'Địa Lí';
+  if (/(^|\b)(gdkt|gdktpl|gdkt&pl|ktpl|phap luat|kinh te)/i.test(s)) return 'GDKTPL';
+  if (!s.includes('chap hanh') && !s.includes('hoan thanh') && !s.includes('thanh tich') && !s.includes('hinh anh') && /(^|\b)(tieng anh|ngoai ngu|english|mon anh|^anh$|^anh\s*\d+)/i.test(s)) return 'Tiếng Anh';
+  if (!s.includes('thong tin') && !s.includes('tu tin') && !s.includes('tin tuong') && /(^|\b)(tin hoc|mon tin|^tin$|^tin\s*\d+)/i.test(s)) return 'Tin học';
+  if (/(^|\b)(cong nghe|mon cong nghe|^cong nghe\s*\d+)/i.test(s)) return 'Công nghệ';
 
   return raw;
+}
+
+/**
+ * Kiểm tra xem một trường trong form có phải là trường chọn Môn Học Thêm hay không
+ */
+export function isTuitionSubjectField(field) {
+  if (!field) return false;
+  if (field.id === 'field_tuition_subjects') return true;
+  
+  const label = (field.label || '').toLowerCase();
+  // Loại trừ các trường cam kết, đối tượng, giáo viên, người giám hộ, lý do...
+  if (
+    label.includes('cam kết') || 
+    label.includes('đối tượng') || 
+    label.includes('giáo viên') || 
+    label.includes('nguyện vọng') || 
+    label.includes('lý do') || 
+    label.includes('nộp đơn') || 
+    label.includes('cha mẹ') || 
+    label.includes('điện thoại')
+  ) {
+    return false;
+  }
+  
+  // Nếu nhãn có chữ "môn" hoặc "môn học"
+  if (label.includes('môn')) return true;
+  
+  // Hoặc nếu options chứa ít nhất 2 môn học trong danh mục ALL_TUITION_SUBJECTS
+  if (Array.isArray(field.options)) {
+    const subjectCount = field.options.filter(opt => {
+      const norm = normalizeSubjectName(opt);
+      return ALL_TUITION_SUBJECTS.includes(norm);
+    }).length;
+    if (subjectCount >= 2) return true;
+  }
+  
+  return false;
 }
 
 /**
@@ -258,13 +325,13 @@ export function getTuitionCampaignPreset() {
         },
         {
           id: 'field_tuition_commitment',
-          type: 'radio',
+          type: 'checkbox',
           label: 'Cam kết của học sinh và gia đình',
           options: [
-            'Em và gia đình kính đề nghị nhà trường cho phép tham gia học thêm và cam kết chấp hành nghiêm túc nội quy',
-            'Không có nguyện vọng tham gia học thêm'
+            'Em và gia đình kính đề nghị nhà trường cho phép tham gia học thêm và cam kết chấp hành nghiêm túc nội quy'
           ],
-          required: true
+          required: true,
+          description: 'Học sinh tích chọn để xác nhận sự đồng thuận và cam kết tự nguyện học thêm của em và gia đình.'
         }
       ]
     }

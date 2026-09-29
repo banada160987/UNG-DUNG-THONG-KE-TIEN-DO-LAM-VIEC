@@ -18,7 +18,8 @@ import {
   isCampaignHidden,
   downloadTuitionApplicationDoc,
   printTuitionApplicationDoc,
-  uploadFileToGoogleDrive
+  uploadFileToGoogleDrive,
+  isTuitionSubjectField
 } from '../utils/tuitionElectiveService';
 
 export default function PublicRegistrations() {
@@ -371,7 +372,7 @@ export default function PublicRegistrations() {
     const initialResponses = {};
     const schemaFields = Array.isArray(cam.form_schema) ? cam.form_schema : (cam.form_schema?.fields || []);
     schemaFields.forEach(f => {
-      if (f.type === 'checkbox') initialResponses[f.id] = [];
+      if (f.type === 'checkbox' || f.id === 'field_tuition_commitment') initialResponses[f.id] = [];
       else initialResponses[f.id] = '';
     });
     setResponses(initialResponses);
@@ -380,7 +381,7 @@ export default function PublicRegistrations() {
 
   const handleResponseChange = (fieldId, value, type) => {
     if (type === 'checkbox') {
-      const current = responses[fieldId] || [];
+      const current = Array.isArray(responses[fieldId]) ? responses[fieldId] : (responses[fieldId] ? [responses[fieldId]] : []);
       if (current.includes(value)) {
         setResponses({ ...responses, [fieldId]: current.filter(v => v !== value) });
       } else {
@@ -393,9 +394,25 @@ export default function PublicRegistrations() {
 
   const currentSchemaFields = useMemo(() => {
     if (!selectedCampaign) return [];
-    return Array.isArray(selectedCampaign.form_schema) 
+    const fields = Array.isArray(selectedCampaign.form_schema) 
       ? selectedCampaign.form_schema 
       : (selectedCampaign.form_schema?.fields || []);
+
+    return fields.map(f => {
+      // Làm sạch trường cam kết học thêm: loại bỏ lựa chọn thừa "Không có nguyện vọng", chuyển sang dạng checkbox xác nhận tích chọn
+      if (f.id === 'field_tuition_commitment' || (f.label && f.label.toLowerCase().includes('cam kết') && isTuitionCampaign(selectedCampaign))) {
+        const cleanedOpts = (f.options || []).filter(
+          opt => !opt.toLowerCase().includes('không có nguyện vọng') && !opt.toLowerCase().includes('khong co nguyen vong')
+        );
+        return {
+          ...f,
+          type: 'checkbox',
+          options: cleanedOpts.length > 0 ? cleanedOpts : ['Em và gia đình kính đề nghị nhà trường cho phép tham gia học thêm và cam kết chấp hành nghiêm túc nội quy'],
+          description: f.description || 'Học sinh tích chọn để xác nhận sự đồng thuận và cam kết tự nguyện học thêm của em và gia đình.'
+        };
+      }
+      return f;
+    });
   }, [selectedCampaign]);
 
   const requiredClubName = useMemo(() => {
@@ -434,13 +451,12 @@ export default function PublicRegistrations() {
     if (Array.isArray(chosen) && chosen.length > 0) return chosen;
     if (typeof chosen === 'string' && chosen) return [chosen];
     
-    // Tìm trong currentSchemaFields
+    // Tìm trong currentSchemaFields (chỉ lấy từ các trường chọn môn học)
     for (const f of currentSchemaFields) {
+      if (!isTuitionSubjectField(f)) continue;
       const val = responses[f.id];
       if (Array.isArray(val) && val.length > 0) return val;
-      if (typeof val === 'string' && val && (f.id.includes('subject') || f.label?.toLowerCase().includes('môn'))) {
-        return [val];
-      }
+      if (typeof val === 'string' && val) return [val];
     }
     return [];
   };
@@ -654,6 +670,9 @@ export default function PublicRegistrations() {
     // Kiểm tra điều kiện Môn tự chọn (đối với Đăng ký Học thêm Khối 12)
     if (isTuitionCampaign(selectedCampaign)) {
       for (const field of currentSchemaFields) {
+        // CHỈ kiểm tra các trường chọn môn học thêm, bỏ qua trường cam kết, ý kiến, v.v.
+        if (!isTuitionSubjectField(field)) continue;
+
         const val = responses[field.id];
         const chosenList = Array.isArray(val) ? val : [val].filter(Boolean);
         for (const chosen of chosenList) {
@@ -1650,25 +1669,43 @@ export default function PublicRegistrations() {
                               )}
 
                               {field.type === 'checkbox' && (() => {
-                                const isTuitionSubjField = isTuitionCampaign(selectedCampaign) && 
-                                  (field.id === 'field_tuition_subjects' || 
-                                   (field.label && (field.label.toLowerCase().includes('môn') || field.label.toLowerCase().includes('học thêm'))) ||
-                                   (field.options || []).some(o => ALL_TUITION_SUBJECTS.includes(normalizeSubjectName(o))));
+                                const isTuitionSubjField = isTuitionCampaign(selectedCampaign) && isTuitionSubjectField(field);
 
                                 if (!isTuitionSubjField) {
                                   return (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                                      {(field.options || []).map((opt, idx) => (
-                                        <label key={idx} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13.5px', cursor: 'pointer' }}>
-                                          <input 
-                                            type="checkbox" 
-                                            value={opt}
-                                            checked={(responses[field.id] || []).includes(opt)}
-                                            onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
-                                          />
-                                          {opt}
-                                        </label>
-                                      ))}
+                                      {(field.options || []).map((opt, idx) => {
+                                        const isChecked = (responses[field.id] || []).includes(opt);
+                                        const isCommitment = field.id === 'field_tuition_commitment' || field.label?.toLowerCase().includes('cam kết');
+                                        return (
+                                          <label 
+                                            key={idx} 
+                                            style={{ 
+                                              display: 'flex', 
+                                              alignItems: 'flex-start', 
+                                              gap: '10px', 
+                                              fontSize: '13.5px', 
+                                              cursor: 'pointer',
+                                              padding: isCommitment ? '10px 14px' : '0',
+                                              backgroundColor: isCommitment ? (isChecked ? '#f0fdf4' : '#f8fafc') : 'transparent',
+                                              border: isCommitment ? (isChecked ? '1.5px solid #86efac' : '1px solid #e2e8f0') : 'none',
+                                              borderRadius: isCommitment ? '10px' : '0',
+                                              transition: 'all 0.15s ease'
+                                            }}
+                                          >
+                                            <input 
+                                              type="checkbox" 
+                                              value={opt}
+                                              checked={isChecked}
+                                              onChange={(e) => handleResponseChange(field.id, e.target.value, 'checkbox')}
+                                              style={{ marginTop: '3px', accentColor: '#16a34a', cursor: 'pointer', width: '17px', height: '17px' }}
+                                            />
+                                            <span style={{ fontWeight: isCommitment && isChecked ? '600' : 'normal', color: isCommitment && isChecked ? '#15803d' : '#334155', lineHeight: '1.45' }}>
+                                              {opt}
+                                            </span>
+                                          </label>
+                                        );
+                                      })}
                                     </div>
                                   );
                                 }

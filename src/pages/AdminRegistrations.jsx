@@ -17,7 +17,8 @@ import {
   SUBJECT_METADATA,
   getTuitionCampaignPreset,
   isCampaignHidden,
-  GOOGLE_APPS_SCRIPT_TUITION_CODE
+  GOOGLE_APPS_SCRIPT_TUITION_CODE,
+  isTuitionSubjectField
 } from '../utils/tuitionElectiveService';
 
 export const getSchemaFields = (cam) => {
@@ -1194,15 +1195,16 @@ export default function AdminRegistrations() {
       sortedByClass.forEach((r, idx) => {
         const studentSubjects = [];
         schema.forEach(field => {
+          if (!isTuitionSubjectField(field)) return;
           const ans = r.responses ? r.responses[field.id] : null;
           if (Array.isArray(ans)) {
             ans.forEach(a => {
               const norm = normalizeSubjectName(a);
-              if (norm && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+              if (ALL_TUITION_SUBJECTS.includes(norm) && !studentSubjects.includes(norm)) studentSubjects.push(norm);
             });
           } else if (ans) {
             const norm = normalizeSubjectName(ans);
-            if (norm && !studentSubjects.includes(norm)) studentSubjects.push(norm);
+            if (ALL_TUITION_SUBJECTS.includes(norm) && !studentSubjects.includes(norm)) studentSubjects.push(norm);
           }
         });
 
@@ -2481,13 +2483,22 @@ export default function AdminRegistrations() {
 
                 // NẾU LÀ ĐỢT HỌC THÊM -> HIỂN THỊ DASHBOARD CHUYÊN SÂU GDPT 2018
                 if (isTuition) {
+                  const schemaFields = getSchemaFields(currentCampaign);
+                  const tuitionSubjFieldIds = schemaFields.filter(isTuitionSubjectField).map(f => f.id);
+                  const getResponsesToCheck = (respObj) => {
+                    if (tuitionSubjFieldIds.length > 0) {
+                      return tuitionSubjFieldIds.map(fid => respObj[fid]).filter(Boolean);
+                    }
+                    return Object.values(respObj || {});
+                  };
+
                   // Tính số lượng đăng ký cho từng môn
                   const subjectCounts = {};
                   ALL_TUITION_SUBJECTS.forEach(subj => {
                     const normTarget = normalizeSubjectName(subj);
                     subjectCounts[subj] = results.filter(r => {
                       const respObj = r.responses || {};
-                      return Object.values(respObj).some(val => {
+                      return getResponsesToCheck(respObj).some(val => {
                         if (Array.isArray(val)) {
                           return val.some(item => normalizeSubjectName(item) === normTarget);
                         }
@@ -2624,7 +2635,7 @@ export default function AdminRegistrations() {
                                     const normSubj = normalizeSubjectName(subj);
                                     const count = classRegs.filter(r => {
                                       const respObj = r.responses || {};
-                                      return Object.values(respObj).some(val => {
+                                      return getResponsesToCheck(respObj).some(val => {
                                         if (Array.isArray(val)) return val.some(i => normalizeSubjectName(i) === normSubj);
                                         return normalizeSubjectName(String(val)) === normSubj;
                                       });
