@@ -11,23 +11,14 @@ export default function TeacherRegister() {
     confirm_password: '',
     full_name: '',
     teacher_code: '',
-    department: 'Tổ Toán',
+    department: '',
     homeroom_class: '',
     phone: '',
     email: ''
   });
 
-  const [departmentList, setDepartmentList] = useState([
-    'Tổ Toán',
-    'Tổ Ngữ Văn',
-    'Tổ Tiếng Anh',
-    'Tổ Vật Lý - Công Nghệ',
-    'Tổ Hóa Học',
-    'Tổ Sinh Học - Thể Dục',
-    'Tổ Lịch Sử - Địa Lý - GDKTPL',
-    'Tổ Tin Học',
-    'BGH / Cán Bộ / Nhân Viên'
-  ]);
+  const [departmentList, setDepartmentList] = useState([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
 
   const [staffRoster, setStaffRoster] = useState([]);
   const [loadingRoster, setLoadingRoster] = useState(false);
@@ -38,12 +29,63 @@ export default function TeacherRegister() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Fetch teacher list when department changes
+  // 1. Fetch departments directly from cbq_departments table on mount
   useEffect(() => {
-    fetchStaffByDepartment(formData.department);
+    fetchDepartments();
+  }, []);
+
+  const fetchDepartments = async () => {
+    setLoadingDepartments(true);
+    try {
+      const { data, error } = await supabase
+        .from('cbq_departments')
+        .select('*')
+        .or('is_active.eq.true,is_active.is.null')
+        .order('sort_order', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        setDepartmentList(data);
+        setFormData(prev => ({
+          ...prev,
+          department: prev.department && data.some(d => d.name === prev.department)
+            ? prev.department
+            : data[0].name
+        }));
+      } else {
+        // Fallback default departments if table is empty
+        const fallback = [
+          { id: '1', name: 'Lãnh đạo trường' },
+          { id: '2', name: 'Tổ Toán' },
+          { id: '3', name: 'Tổ Ngữ Văn' },
+          { id: '4', name: 'Tổ Tin học - Ngoại Ngữ' },
+          { id: '5', name: 'Tổ Vật Lý - Hóa học' },
+          { id: '6', name: 'Tổ Sử - Địa - GDKT&PL' },
+          { id: '7', name: 'Tổ GDTC - QPAN' },
+          { id: '8', name: 'Tổ Văn Phòng' },
+          { id: '9', name: 'Tổ Sinh học' }
+        ];
+        setDepartmentList(fallback);
+        setFormData(prev => ({
+          ...prev,
+          department: prev.department || fallback[0].name
+        }));
+      }
+    } catch (err) {
+      console.warn("Lỗi nạp danh sách tổ chuyên môn từ cbq_departments:", err);
+    } finally {
+      setLoadingDepartments(false);
+    }
+  };
+
+  // 2. Fetch teacher list when department changes
+  useEffect(() => {
+    if (formData.department) {
+      fetchStaffByDepartment(formData.department);
+    }
   }, [formData.department]);
 
   const fetchStaffByDepartment = async (dept) => {
+    if (!dept) return;
     setLoadingRoster(true);
     setSelectedStaffId('');
     setAlreadyRegisteredTeacher(null);
@@ -55,10 +97,22 @@ export default function TeacherRegister() {
       const { data, error } = await supabase
         .from('cbq_staff')
         .select('*')
-        .or(`department.ilike.%${cleanDept}%,department.eq.${cleanDept}`)
-        .order('name', { ascending: true });
+        .eq('department', cleanDept)
+        .or('is_active.eq.true,is_active.is.null')
+        .order('sort_order', { ascending: true });
 
       let list = data || [];
+
+      // Fallback search if exact eq returns nothing
+      if (list.length === 0) {
+        const { data: fuzzyData } = await supabase
+          .from('cbq_staff')
+          .select('*')
+          .ilike('department', `%${cleanDept}%`)
+          .or('is_active.eq.true,is_active.is.null')
+          .order('sort_order', { ascending: true });
+        list = fuzzyData || [];
+      }
 
       // If empty in DB or fallback local storage
       if (list.length === 0) {
@@ -293,11 +347,22 @@ export default function TeacherRegister() {
             <select 
               value={formData.department} 
               onChange={e => setFormData({ ...formData, department: e.target.value })}
-              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', fontWeight: 'bold', color: '#166534' }}
+              disabled={loadingDepartments}
+              style={{ width: '100%', padding: '11px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '14px', boxSizing: 'border-box', fontWeight: 'bold', color: '#166534', backgroundColor: loadingDepartments ? '#f8fafc' : '#ffffff' }}
             >
-              {departmentList.map(dept => (
-                <option key={dept} value={dept}>🏫 {dept}</option>
-              ))}
+              {loadingDepartments ? (
+                <option value="">⏳ Đang nạp danh sách Tổ Chuyên Môn từ hệ thống...</option>
+              ) : (
+                departmentList.map(dept => {
+                  const dName = typeof dept === 'string' ? dept : dept.name;
+                  const dId = typeof dept === 'string' ? dept : (dept.id || dName);
+                  return (
+                    <option key={dId} value={dName}>
+                      🏫 {dName}
+                    </option>
+                  );
+                })
+              )}
             </select>
           </div>
 
