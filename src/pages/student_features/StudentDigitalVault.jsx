@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { ArrowLeft, FileBadge, QrCode, Download, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, FileBadge, QrCode, Download, ShieldCheck, AlertTriangle, HardDrive, ExternalLink } from 'lucide-react';
+import { parseDocContent } from '../../services/googleDriveService';
 
 export default function StudentDigitalVault() {
   const navigate = useNavigate();
@@ -69,46 +70,74 @@ export default function StudentDigitalVault() {
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-            {documents.map(doc => (
-              <div key={doc.id} style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', position: 'relative' }}>
-                
-                {doc.status !== 'Active' && (
-                  <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.7)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
-                    <div style={{ background: '#dc2626', color: 'white', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <AlertTriangle size={18} /> ĐÃ THU HỒI
+            {documents.map(doc => {
+              const { text: docText, driveUrl } = parseDocContent(doc.content);
+              return (
+                <div key={doc.id} style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', position: 'relative' }}>
+                  
+                  {doc.status !== 'Active' && (
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.7)', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(2px)' }}>
+                      <div style={{ background: '#dc2626', color: 'white', padding: '8px 16px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <AlertTriangle size={18} /> ĐÃ THU HỒI
+                      </div>
                     </div>
-                  </div>
-                )}
-
-                <div style={{ padding: '24px', borderBottom: '1px dashed #cbd5e1' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    <span style={{ display: 'inline-block', background: '#eff6ff', color: '#1d4ed8', padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' }}>
-                      {doc.document_type}
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#16a34a', fontSize: '13px', fontWeight: 'bold' }}>
-                      <ShieldCheck size={16} /> Đã xác thực
-                    </span>
-                  </div>
-                  <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#0f172a', lineHeight: '1.4' }}>{doc.title}</h3>
-                  {doc.content && (
-                    <p style={{ margin: 0, color: '#475569', fontSize: '14px', lineHeight: '1.5' }}>{doc.content}</p>
                   )}
-                </div>
 
-                <div style={{ padding: '16px 24px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Cấp bởi: {doc.issued_by}</div>
-                    <div style={{ fontSize: '12px', color: '#64748b' }}>Ngày: {new Date(doc.issue_date).toLocaleDateString('vi-VN')}</div>
+                  <div style={{ padding: '24px', borderBottom: '1px dashed #cbd5e1' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <span style={{ display: 'inline-block', background: '#eff6ff', color: '#1d4ed8', padding: '4px 12px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold' }}>
+                        {doc.document_type}
+                      </span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#16a34a', fontSize: '13px', fontWeight: 'bold' }}>
+                        <ShieldCheck size={16} /> Đã xác thực
+                      </span>
+                    </div>
+                    <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', color: '#0f172a', lineHeight: '1.4' }}>{doc.title}</h3>
+                    {docText && (
+                      <p style={{ margin: 0, color: '#475569', fontSize: '14px', lineHeight: '1.5' }}>{docText}</p>
+                    )}
+
+                    {driveUrl && (
+                      <div style={{ marginTop: '14px' }}>
+                        <a 
+                          href={driveUrl} 
+                          target="_blank" 
+                          rel="noreferrer" 
+                          style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '6px', 
+                            padding: '7px 14px', 
+                            backgroundColor: '#f0fdf4', 
+                            color: '#15803d', 
+                            border: '1px solid #86efac', 
+                            borderRadius: '8px', 
+                            fontSize: '13px', 
+                            fontWeight: 'bold', 
+                            textDecoration: 'none' 
+                          }}
+                        >
+                          <HardDrive size={15} color="#16a34a" /> Xem bản scan gốc trên Google Drive <ExternalLink size={13} />
+                        </a>
+                      </div>
+                    )}
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer' }}>
-                      <QrCode size={16} color="#334155" />
-                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>Mã: {doc.document_code}</span>
+
+                  <div style={{ padding: '16px 24px', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '4px' }}>Cấp bởi: {doc.issued_by}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>Ngày: {new Date(doc.issue_date).toLocaleDateString('vi-VN')}</div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #cbd5e1', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer' }}>
+                        <QrCode size={16} color="#334155" />
+                        <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>Mã: {doc.document_code}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

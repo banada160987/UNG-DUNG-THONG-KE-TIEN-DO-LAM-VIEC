@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Plus, Trash2, Download, Bot, Edit3, Settings, Save, X } from 'lucide-react';
+import { Plus, Trash2, Download, Bot, Edit3, Settings, Save, X, HardDrive } from 'lucide-react';
 import { exportAiRulesToWordDecree30 } from '../utils/decree30AiRulesWord';
+import FileUpload from '../components/FileUpload';
+import GoogleDriveConfigModal from '../components/GoogleDriveConfigModal';
 
 const DEFAULT_RULES_TEXT = `<!-- CHƯƠNG I -->
 <div class="chapter-title">Chương I. QUY ĐỊNH CHUNG</div>
@@ -74,6 +76,7 @@ export default function AdminDocs() {
   const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({ title: '', published_date: '', file_url: '' });
   const [aiRulesPublished, setAiRulesPublished] = useState(false);
+  const [showDriveConfig, setShowDriveConfig] = useState(false);
 
   // Form chỉnh sửa thể thức & nội dung Dự thảo AI
   const [showAiEditModal, setShowAiEditModal] = useState(false);
@@ -365,12 +368,33 @@ export default function AdminDocs() {
         </div>
       )}
 
-      {/* TIÊU ĐỀ & NÚT THÊM VĂN BẢN KHÁC */}
+      {/* TIÊU ĐỀ & NÚT THAO TÁC */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '1rem' }}>
         <h3 style={{ margin: 0, fontSize: '18px', color: '#1e293b' }}>Danh sách Văn bản & Kế hoạch Khác</h3>
-        <button onClick={handleOpenCreateForm} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1.5rem' }}>
-          <Plus size={20} /> Thêm Văn bản
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button 
+            type="button"
+            onClick={() => setShowDriveConfig(true)}
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              padding: '0.65rem 1.2rem', 
+              backgroundColor: '#ecfdf5', 
+              color: '#059669', 
+              border: '1.5px solid #a7f3d0', 
+              borderRadius: '8px', 
+              fontWeight: 'bold', 
+              fontSize: '13px', 
+              cursor: 'pointer' 
+            }}
+          >
+            <HardDrive size={16} /> Cấu hình Google Drive Toàn Trường
+          </button>
+          <button onClick={handleOpenCreateForm} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1.2rem' }}>
+            <Plus size={18} /> Thêm Văn bản
+          </button>
+        </div>
       </div>
 
       {/* FORM THÊM / SỬA VĂN BẢN THÔNG THƯỜNG */}
@@ -379,17 +403,39 @@ export default function AdminDocs() {
           <h4 style={{ margin: '0 0 1rem 0', color: '#0f172a' }}>{editingId ? '✏️ Chỉnh sửa thông tin Văn bản' : '➕ Thêm Văn bản mới'}</h4>
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: '1rem' }}>
             <div>
-              <label>Tên văn bản / Trích yếu</label>
+              <label>Tên văn bản / Trích yếu (*)</label>
               <input type="text" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required style={styles.input} />
             </div>
             <div>
-              <label>Ngày ban hành</label>
+              <label>Ngày ban hành (*)</label>
               <input type="date" value={formData.published_date} onChange={e => setFormData({...formData, published_date: e.target.value})} required style={styles.input} />
             </div>
-            <div>
-              <label>Link tải File (Link Google Drive, PDF...)</label>
-              <input type="text" value={formData.file_url} onChange={e => setFormData({...formData, file_url: e.target.value})} style={styles.input} />
+            
+            {/* TÍCH HỢP TẢI FILE LÊN GOOGLE DRIVE */}
+            <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+              <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '8px', fontSize: '13.5px', color: '#0f172a' }}>
+                📁 Tệp Công văn / Văn bản đính kèm (Lưu trữ Google Drive):
+              </label>
+              <FileUpload 
+                category="van_ban"
+                subFolder={formData.published_date ? formData.published_date.substring(0, 4) : '2026'}
+                entityName={formData.title}
+                currentUrl={formData.file_url}
+                onUploadSuccess={(url) => setFormData(prev => ({ ...prev, file_url: url }))}
+                onRemove={() => setFormData(prev => ({ ...prev, file_url: '' }))}
+              />
+              <div style={{ marginTop: '8px' }}>
+                <label style={{ fontSize: '12px', color: '#64748b' }}>Hoặc dán trực tiếp link file/Google Drive:</label>
+                <input 
+                  type="text" 
+                  value={formData.file_url} 
+                  onChange={e => setFormData({...formData, file_url: e.target.value})} 
+                  placeholder="https://drive.google.com/file/d/... hoặc link tài liệu"
+                  style={styles.input} 
+                />
+              </div>
             </div>
+
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button type="submit" className="btn-primary" style={{ padding: '0.5rem 1.5rem' }}>
                 {editingId ? 'Lưu thay đổi' : 'Lưu mới'}
@@ -417,7 +463,34 @@ export default function AdminDocs() {
                 <td style={{padding: '12px'}}>{new Date(d.published_date).toLocaleDateString('vi-VN')}</td>
                 <td style={{padding: '12px', fontWeight: '500'}}>{d.title}</td>
                 <td style={{padding: '12px'}}>
-                  {d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer" style={{color: '#3b82f6'}}>Xem file</a> : '-'}
+                  {d.file_url ? (
+                    d.file_url.includes('drive.google.com') ? (
+                      <a 
+                        href={d.file_url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          padding: '4px 10px',
+                          backgroundColor: '#ecfdf5',
+                          color: '#059669',
+                          border: '1px solid #a7f3d0',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <HardDrive size={14} /> Mở Google Drive
+                      </a>
+                    ) : (
+                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{color: '#3b82f6', fontWeight: '500'}}>
+                        Xem file
+                      </a>
+                    )
+                  ) : '-'}
                 </td>
                 <td style={{padding: '12px'}}>
                   <button onClick={() => handleOpenEditForm(d)} title="Sửa văn bản này" style={{color: '#0284c7', border: 'none', background: 'transparent', cursor: 'pointer', marginRight: '10px'}}>
@@ -433,6 +506,12 @@ export default function AdminDocs() {
           </tbody>
         </table>
       </div>
+
+      {/* MODAL CẤU HÌNH GOOGLE DRIVE TOÀN TRƯỜNG */}
+      <GoogleDriveConfigModal 
+        isOpen={showDriveConfig} 
+        onClose={() => setShowDriveConfig(false)} 
+      />
     </Layout>
   );
 }

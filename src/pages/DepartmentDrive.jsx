@@ -5,9 +5,10 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   FolderOpen, Settings, Save, AlertCircle, ArrowLeft, Plus, CheckCircle2, 
-  XCircle, Clock, FileText, ExternalLink, Filter, Eye, Check, RefreshCw, MessageSquare, ShieldCheck 
+  XCircle, Clock, FileText, ExternalLink, Filter, Eye, Check, RefreshCw, MessageSquare, ShieldCheck, HardDrive 
 } from 'lucide-react';
 import FileUpload from '../components/FileUpload';
+import GoogleDriveConfigModal from '../components/GoogleDriveConfigModal';
 
 export default function DepartmentDrive() {
   const location = useLocation();
@@ -44,6 +45,7 @@ export default function DepartmentDrive() {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [showInspectModal, setShowInspectModal] = useState(false);
   const [selectedDossier, setSelectedDossier] = useState(null);
+  const [showGlobalDriveConfig, setShowGlobalDriveConfig] = useState(false);
 
   // Submit Form State
   const [submitForm, setSubmitForm] = useState({
@@ -210,6 +212,7 @@ export default function DepartmentDrive() {
     setSubmitting(true);
     try {
       const selectedCategory = categories.find(c => c.id === submitForm.category_id);
+      const driveUrlFinal = submitForm.drive_url.trim() || (submitForm.file_url && submitForm.file_url.includes('drive.google.com') ? submitForm.file_url : '');
       const payload = {
         category_id: submitForm.category_id,
         category_code: selectedCategory?.code || 'GIAO_AN_TUAN',
@@ -221,7 +224,7 @@ export default function DepartmentDrive() {
         week_number: Number(submitForm.week_number) || 1,
         title: submitForm.title.trim(),
         file_url: submitForm.file_url,
-        drive_url: submitForm.drive_url.trim(),
+        drive_url: driveUrlFinal,
         status: 'pending'
       };
 
@@ -377,7 +380,17 @@ export default function DepartmentDrive() {
         </div>
 
         {/* Action Buttons */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {isAdmin && (
+            <button 
+              type="button"
+              onClick={() => setShowGlobalDriveConfig(true)}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#ecfdf5', color: '#059669', border: '1.5px solid #a7f3d0', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+            >
+              <HardDrive size={16} /> Cấu hình Google Drive Toàn Trường
+            </button>
+          )}
+
           <button
             onClick={() => setShowSubmitModal(true)}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(37,99,235,0.2)' }}
@@ -390,7 +403,7 @@ export default function DepartmentDrive() {
               onClick={() => setShowConfig(true)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
             >
-              <Settings size={16} /> Cài đặt Google Drive
+              <Settings size={16} /> Cài đặt Thư Mục Tổ
             </button>
           )}
         </div>
@@ -769,9 +782,22 @@ export default function DepartmentDrive() {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', color: '#334155' }}>Upload File (PDF/Docx):</label>
+                <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '6px', color: '#334155' }}>
+                  Upload File (Tự động tải lên Google Drive / PDF/Docx):
+                </label>
                 <FileUpload 
-                  onUploadComplete={(url) => setSubmitForm({ ...submitForm, file_url: url })}
+                  category="giao_vien"
+                  subFolder={currentTeacher?.department || teacherDept || selectedDept || 'To Chuyen Mon'}
+                  entityName={`${currentTeacher?.full_name || 'GV'}_Tuan${submitForm.week_number}_${submitForm.title || 'GiaoAn'}`}
+                  currentUrl={submitForm.file_url}
+                  onUploadSuccess={(url) => {
+                    setSubmitForm(prev => ({ 
+                      ...prev, 
+                      file_url: url,
+                      drive_url: url.includes('drive.google.com') ? url : prev.drive_url
+                    }));
+                  }}
+                  onRemove={() => setSubmitForm(prev => ({ ...prev, file_url: '' }))}
                 />
                 {submitForm.file_url && <div style={{ color: '#059669', fontSize: '13px', marginTop: '4px' }}>✓ Đã tải lên file thành công!</div>}
               </div>
@@ -953,6 +979,12 @@ export default function DepartmentDrive() {
           </div>
         </div>
       )}
+
+      {/* MODAL CẤU HÌNH GOOGLE DRIVE TOÀN TRƯỜNG */}
+      <GoogleDriveConfigModal 
+        isOpen={showGlobalDriveConfig} 
+        onClose={() => setShowGlobalDriveConfig(false)} 
+      />
     </div>
   );
 
