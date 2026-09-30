@@ -2916,23 +2916,17 @@ export default function PublicRegistrations() {
           }}
         >
           {/* Quốc hiệu & Tiêu ngữ */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '18px' }}>
-            <tbody>
-              <tr>
-                <td style={{ textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontWeight: 'bold', fontSize: '13pt', textTransform: 'uppercase' }}>
-                    CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
-                  </p>
-                  <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', fontSize: '14pt' }}>
-                    Độc lập - Tự do - Hạnh phúc
-                  </p>
-                  <p style={{ margin: '5px 0 0 0', letterSpacing: '2px', fontWeight: 'bold' }}>
-                    -------***-------
-                  </p>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div style={{ width: '100%', textAlign: 'center', marginBottom: '18px' }}>
+            <p style={{ margin: 0, fontWeight: 'bold', fontSize: '13pt', textTransform: 'uppercase', textAlign: 'center' }}>
+              CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+            </p>
+            <p style={{ margin: '4px 0 0 0', fontWeight: 'bold', fontSize: '14pt', textAlign: 'center' }}>
+              Độc lập - Tự do - Hạnh phúc
+            </p>
+            <p style={{ margin: '5px 0 0 0', letterSpacing: '2px', fontWeight: 'bold', textAlign: 'center' }}>
+              -------***-------
+            </p>
+          </div>
 
           {/* Tiêu đề */}
           <div style={{ textAlign: 'center', fontSize: '15pt', fontWeight: 'bold', margin: '15px 0 20px 0', textTransform: 'uppercase' }}>
@@ -2984,7 +2978,7 @@ export default function PublicRegistrations() {
           </p>
 
           {/* Bảng chữ ký 2 cột */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '24px' }}>
+          <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', marginTop: '24px' }}>
             <tbody>
               <tr>
                 {/* CỘT 1: CHA MẸ HỌC SINH */}

@@ -388,28 +388,23 @@ export function generateTuitionApplicationDoc({
           line-height: 1.45;
           color: #000000;
         }
-        .header-table { width: 100%; border: none; margin-bottom: 20px; }
-        .header-table td { border: none; vertical-align: top; text-align: center; }
+        .national-motto { width: 100%; text-align: center; margin-bottom: 20px; }
         .title { text-align: center; font-size: 15pt; font-weight: bold; margin-top: 15px; margin-bottom: 20px; text-transform: uppercase; }
         .recipient { margin-left: 50px; margin-bottom: 18px; font-weight: bold; }
         .content-p { text-indent: 1cm; text-align: justify; margin-top: 7px; margin-bottom: 7px; line-height: 1.5; }
         .item-p { margin-left: 0.5cm; text-align: justify; margin-top: 8px; margin-bottom: 8px; line-height: 1.5; }
-        .footer-table { width: 100%; border: none; margin-top: 25px; }
+        .footer-table { width: 100%; table-layout: fixed; border: none; margin-top: 25px; }
         .footer-table td { border: none; vertical-align: top; text-align: center; }
         .footnotes { margin-top: 35px; border-top: 1pt solid #000000; padding-top: 6px; font-size: 10pt; font-style: italic; }
       </style>
     </head>
     <body>
       <div class="Section1">
-        <table class="header-table" style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="width: 100%; text-align: center;">
-              <p style="margin: 0; font-weight: bold; font-size: 13pt; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
-              <p style="margin: 4px 0 0 0; font-weight: bold; font-size: 14pt;">Độc lập - Tự do - Hạnh phúc</p>
-              <p style="margin: 5px 0 0 0; letter-spacing: 2px;">-------***-------</p>
-            </td>
-          </tr>
-        </table>
+        <div class="national-motto" style="text-align: center; margin-bottom: 20px; width: 100%;">
+          <p style="margin: 0; font-weight: bold; font-size: 13pt; text-transform: uppercase; text-align: center;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+          <p style="margin: 4px 0 0 0; font-weight: bold; font-size: 14pt; text-align: center;">Độc lập - Tự do - Hạnh phúc</p>
+          <p style="margin: 5px 0 0 0; letter-spacing: 2px; text-align: center;">-------***-------</p>
+        </div>
 
         <div class="title">ĐƠN ĐĂNG KÍ HỌC THÊM</div>
 
