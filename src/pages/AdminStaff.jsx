@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
-import { Users, Plus, Save, Trash2, Edit3, Eye, Upload, List } from 'lucide-react';
+import { Users, Plus, Save, Trash2, Edit3, Eye, Upload, List, RefreshCw, Search, Filter, BookOpen } from 'lucide-react';
+import masterTimetableData from '../data/master_timetable.json';
+import { TEACHER_FULL_MAP } from '../utils/proTimetableSolver';
 
 export default function AdminStaff() {
   const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'department'
@@ -31,6 +33,11 @@ export default function AdminStaff() {
   const [depName, setDepName] = useState('');
   const [depDescription, setDepDescription] = useState('');
   const [depSortOrder, setDepSortOrder] = useState(0);
+
+  // Search & Filter & Sync State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterDept, setFilterDept] = useState('ALL');
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -77,6 +84,137 @@ export default function AdminStaff() {
       console.error("Lỗi nạp danh sách tổ chuyên môn:", err);
     }
   }
+
+  // --- SYNC TIMETABLE TEACHERS ---
+  const handleSyncFromTimetable = async () => {
+    if (!window.confirm("Bạn có chắc chắn muốn quét và đồng bộ lại danh sách toàn bộ Giáo viên từ Thời khóa biểu chính thức vào CSDL?")) return;
+    setSyncing(true);
+    try {
+      function mapSubjectToDepartment(subject, teacherName) {
+        if (teacherName === 'Lê Thị Thảo' || teacherName === 'Nguyễn Hữu Lam' || teacherName === 'Phạm Thị Nguyệt Thơ') {
+          return 'Ban Giám Hiệu';
+        }
+        const s = (subject || '').toLowerCase().trim();
+        if (s.includes('địa') || s.includes('địa lý') || s.includes('địa lí') || s.includes('sử') || s.includes('lịch sử') || s.includes('gdkt&pl') || s.includes('gdcd') || s.includes('kinh tế') || s.includes('pháp luật')) {
+          return 'Tổ Sử - Địa - GDKT&PL';
+        }
+        if (s.includes('toán')) return 'Tổ Toán';
+        if (s.includes('văn') || s.includes('ngữ văn')) return 'Tổ Ngữ Văn';
+        if (s.includes('tin') || s.includes('tin học') || s.includes('anh') || s.includes('tiếng anh') || s.includes('nn')) {
+          return 'Tổ Tin học - Ngoại Ngữ';
+        }
+        if (s.includes('sinh') || s.includes('sinh học')) return 'Tổ Sinh học';
+        if (s.includes('vật lý') || s.includes('vật lí') || s.includes('hóa') || s.includes('hóa học') || s.includes('công nghệ') || s.includes('cn') || s === 'lý' || s === 'lí') {
+          return 'Tổ Vật Lý - Hóa học';
+        }
+        if (s.includes('thể dục') || s.includes('gdtc') || s.includes('qp') || s.includes('qpan') || s.includes('quốc phòng')) {
+          return 'Tổ GDTC - QPAN';
+        }
+        return 'Tổ Sử - Địa - GDKT&PL';
+      }
+
+      const teachers = {};
+      masterTimetableData.forEach(row => {
+        const shortName = row.teacher_short || row.teacher_name;
+        let fullName = row.teacher_name;
+        if (!fullName || fullName === shortName) {
+          fullName = TEACHER_FULL_MAP[shortName] || shortName;
+        }
+        if (!fullName || fullName === 'GVCN' || fullName === 'Chưa gán GV') return;
+
+        const subject = (row.subject || '').trim();
+        if (!teachers[fullName]) {
+          teachers[fullName] = {
+            name: fullName,
+            shortName: shortName,
+            subjectCounts: {},
+            classes: new Set(),
+            totalPeriods: 0
+          };
+        }
+        if (subject) {
+          teachers[fullName].subjectCounts[subject] = (teachers[fullName].subjectCounts[subject] || 0) + 1;
+        }
+        if (row.student_class) {
+          teachers[fullName].classes.add(row.student_class);
+        }
+        teachers[fullName].totalPeriods++;
+      });
+
+      const avatarPool = [
+        'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=80',
+        'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&q=80',
+        'https://images.unsplash.com/photo-1580894732413-87b1c4c1a5b8?w=300&q=80',
+        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&q=80',
+        'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=300&q=80',
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=80',
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&q=80',
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&q=80'
+      ];
+
+      const { data: currentStaff } = await supabase.from('cbq_staff').select('*');
+      const existingMap = new Map();
+      (currentStaff || []).forEach(s => existingMap.set(s.name.trim().toLowerCase(), s));
+
+      const detailedList = Object.values(teachers);
+      let count = 0;
+
+      for (let idx = 0; idx < detailedList.length; idx++) {
+        const t = detailedList[idx];
+        const subjects = Object.entries(t.subjectCounts).sort((a, b) => b[1] - a[1]);
+        const coreSubjects = subjects.filter(([subj]) => {
+          const s = subj.toLowerCase();
+          return !s.includes('chào cờ') && !s.includes('shl') && !s.includes('sinh hoạt') && !s.includes('hđ trải nghiệm') && !s.includes('hdtn');
+        });
+        const mainSubject = coreSubjects.length > 0 ? coreSubjects[0][0] : (subjects[0] ? subjects[0][0] : 'Bộ môn');
+        const allCoreSubjectNames = coreSubjects.map(([s]) => s).join(', ') || mainSubject;
+        const department = mapSubjectToDepartment(mainSubject, t.name);
+
+        let title = 'Giáo viên';
+        if (t.name === 'Lê Thị Thảo') title = 'Hiệu trưởng';
+        else if (t.name === 'Nguyễn Hữu Lam' || t.name === 'Phạm Thị Nguyệt Thơ') title = 'Phó Hiệu trưởng';
+        else if (t.name === 'Lương Thị Kim Thu') title = 'Tổ trưởng (Tổ Toán)';
+        else if (t.name === 'Trần Thị Quế Quyên') title = 'Tổ trưởng (Tổ Ngữ Văn)';
+        else if (t.name === 'Tam Bou Branh') title = 'Tổ trưởng (Tổ Tin học - Ngoại Ngữ)';
+        else if (t.name === 'Nguyễn Công Sự') title = 'Tổ trưởng (Tổ GDTC - QPAN)';
+
+        const nameParts = t.name.split(' ');
+        const lastName = nameParts[nameParts.length - 1];
+        const initials = nameParts.slice(0, -1).map(p => p[0]).join('');
+        const emailSlug = `${lastName.toLowerCase()}.${initials.toLowerCase()}@thptcaobaquat.edu.vn`
+          .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D');
+
+        const key = t.name.trim().toLowerCase();
+        if (existingMap.has(key)) {
+          const existing = existingMap.get(key);
+          await supabase.from('cbq_staff').update({
+            department: department,
+            sort_order: idx + 1,
+            is_active: true
+          }).eq('id', existing.id);
+        } else {
+          await supabase.from('cbq_staff').insert([{
+            name: t.name,
+            title: title,
+            department: department,
+            avatar_url: avatarPool[idx % avatarPool.length],
+            email: emailSlug,
+            bio: `Giáo viên ${allCoreSubjectNames}. Dạy ${t.totalPeriods} tiết/tuần tại các lớp: ${Array.from(t.classes).join(', ')}.`,
+            sort_order: idx + 1,
+            is_active: true
+          }]);
+        }
+        count++;
+      }
+
+      alert(`🎉 ĐỒNG BỘ THÀNH CÔNG!\n\nĐã đồng bộ thông tin của ${count} Giáo viên từ bảng Thời khóa biểu sang CSDL Quản lý Giáo viên.`);
+      await fetchStaff();
+    } catch (err) {
+      alert("Lỗi khi đồng bộ: " + err.message);
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   // --- STAFF HANDLERS ---
   const handleAvatarUpload = async (e) => {
@@ -242,6 +380,15 @@ export default function AdminStaff() {
     }
   };
 
+  const filteredStaffList = staffList.filter(s => {
+    const matchSearch = !searchTerm.trim() || 
+      (s.name && s.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.title && s.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (s.bio && s.bio.toLowerCase().includes(searchTerm.toLowerCase()));
+    const matchDept = filterDept === 'ALL' || s.department === filterDept;
+    return matchSearch && matchDept;
+  });
+
   return (
     <Layout title="Quản lý Đội ngũ & Tổ chuyên môn">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
@@ -250,7 +397,7 @@ export default function AdminStaff() {
             <Users size={24} color="#be123c" /> Quản lý Đội ngũ & Tổ Chuyên Môn
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '14px' }}>
-            Quản lý hồ sơ cán bộ giáo viên, phân tổ chuyên môn
+            Quản lý hồ sơ cán bộ giáo viên, phân tổ chuyên môn và đồng bộ với Thời khóa biểu
           </p>
         </div>
 
@@ -262,7 +409,7 @@ export default function AdminStaff() {
             className="btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#0284c7', textDecoration: 'none', padding: '10px 18px' }}
           >
-            <Eye size={18} /> Xem Danh Mục
+            <Eye size={18} /> Xem Danh Mục Công Khai
           </a>
         </div>
       </div>
@@ -273,13 +420,13 @@ export default function AdminStaff() {
           onClick={() => setActiveTab('staff')}
           style={{ ...styles.tabBtn, borderBottom: activeTab === 'staff' ? '3px solid #be123c' : '3px solid transparent', color: activeTab === 'staff' ? '#be123c' : '#475569' }}
         >
-          <Users size={18} /> Quản lý Giáo Viên
+          <Users size={18} /> Quản lý Giáo Viên ({staffList.length})
         </button>
         <button 
           onClick={() => setActiveTab('department')}
           style={{ ...styles.tabBtn, borderBottom: activeTab === 'department' ? '3px solid #be123c' : '3px solid transparent', color: activeTab === 'department' ? '#be123c' : '#475569' }}
         >
-          <List size={18} /> Quản lý Tổ Chuyên Môn
+          <List size={18} /> Quản lý Tổ Chuyên Môn ({departmentsList.length})
         </button>
       </div>
 
@@ -287,23 +434,74 @@ export default function AdminStaff() {
         <>
           {activeTab === 'staff' && (
             <div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '15px' }}>
-                <button 
-                  onClick={() => {
-                    setEditingStaffId(null);
-                    setName('');
-                    setTitle('');
-                    setAvatarUrl('');
-                    setEmail('');
-                    setPhone('');
-                    setBio('');
-                    setShowStaffForm(!showStaffForm);
-                  }} 
-                  className="btn-primary" 
-                  style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 22px', backgroundColor: '#be123c' }}
-                >
-                  <Plus size={18} /> {showStaffForm ? 'Đóng Form' : 'Thêm Giáo Viên Mới'}
-                </button>
+              {/* TOOLBAR: SEARCH + FILTER + SYNC + ADD */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'white', padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    <Search size={16} color="#64748b" />
+                    <input 
+                      type="text" 
+                      placeholder="Tìm theo tên giáo viên, môn..." 
+                      value={searchTerm} 
+                      onChange={e => setSearchTerm(e.target.value)}
+                      style={{ border: 'none', outline: 'none', fontSize: '13.5px', width: '220px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Filter size={16} color="#64748b" />
+                    <select 
+                      value={filterDept} 
+                      onChange={e => setFilterDept(e.target.value)}
+                      style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', background: 'white', fontWeight: 'bold', color: '#334155' }}
+                    >
+                      <option value="ALL">Tất cả Tổ chuyên môn ({staffList.length})</option>
+                      {departmentsList.map(d => (
+                        <option key={d.id} value={d.name}>{d.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button 
+                    type="button"
+                    onClick={handleSyncFromTimetable}
+                    disabled={syncing}
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      padding: '10px 16px', 
+                      backgroundColor: '#ecfdf5', 
+                      color: '#059669', 
+                      border: '1.5px solid #a7f3d0', 
+                      borderRadius: '8px', 
+                      fontWeight: 'bold', 
+                      fontSize: '13px', 
+                      cursor: 'pointer' 
+                    }}
+                    title="Đồng bộ lại danh sách từ bảng Thời Khóa Biểu gốc"
+                  >
+                    <RefreshCw size={16} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Đang đồng bộ...' : 'Đồng bộ từ Thời Khóa Biểu'}
+                  </button>
+
+                  <button 
+                    onClick={() => {
+                      setEditingStaffId(null);
+                      setName('');
+                      setTitle('');
+                      setAvatarUrl('');
+                      setEmail('');
+                      setPhone('');
+                      setBio('');
+                      setShowStaffForm(!showStaffForm);
+                    }} 
+                    className="btn-primary" 
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 20px', backgroundColor: '#be123c' }}
+                  >
+                    <Plus size={18} /> {showStaffForm ? 'Đóng Form' : 'Thêm Giáo Viên Mới'}
+                  </button>
+                </div>
               </div>
 
               {showStaffForm && (
@@ -375,8 +573,11 @@ export default function AdminStaff() {
               )}
 
               <div className="glass" style={{ padding: '2rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-                <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px' }}>
-                  👨‍🏫 Danh sách Cán bộ Giáo viên ({staffList.length})
+                <h3 style={{ marginTop: 0, color: '#be123c', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <span>👨‍🏫 Danh sách Cán bộ Giáo viên ({filteredStaffList.length} / {staffList.length})</span>
+                  <span style={{ fontSize: '13px', color: '#16a34a', fontWeight: 'bold', background: '#dcfce7', padding: '4px 12px', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
+                    ✓ Đã tích hợp đầy đủ từ Thời khóa biểu ({staffList.length} GV)
+                  </span>
                 </h3>
 
                 <div style={{ overflowX: 'auto' }}>
@@ -392,7 +593,7 @@ export default function AdminStaff() {
                       </tr>
                     </thead>
                     <tbody>
-                      {staffList.map((s, idx) => (
+                      {filteredStaffList.map((s, idx) => (
                         <tr key={s.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
                           <td style={{ padding: '10px' }}>
                             <img 
@@ -401,9 +602,42 @@ export default function AdminStaff() {
                               style={{ width: '45px', height: '45px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }}
                             />
                           </td>
-                          <td style={{ padding: '10px', fontWeight: 'bold', color: '#1e293b' }}>{s.name}</td>
-                          <td style={{ padding: '10px', fontWeight: '600', color: '#b45309' }}>{s.title || 'Giáo viên'}</td>
-                          <td style={{ padding: '10px', color: '#be123c', fontWeight: 'bold' }}>{s.department}</td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{s.name}</div>
+                            {s.bio && (
+                              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px', maxWidth: '340px', lineHeight: '1.4' }}>
+                                {s.bio}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ 
+                              display: 'inline-block',
+                              padding: '2px 8px',
+                              borderRadius: '12px',
+                              fontSize: '11.5px',
+                              fontWeight: 'bold',
+                              backgroundColor: s.title && s.title.includes('trưởng') ? '#fef3c7' : '#f1f5f9',
+                              color: s.title && s.title.includes('trưởng') ? '#b45309' : '#475569',
+                              border: s.title && s.title.includes('trưởng') ? '1px solid #fde68a' : '1px solid #e2e8f0'
+                            }}>
+                              {s.title || 'Giáo viên'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ 
+                              display: 'inline-block', 
+                              padding: '3px 10px', 
+                              borderRadius: '12px', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold',
+                              backgroundColor: '#fff1f2',
+                              color: '#be123c',
+                              border: '1px solid #fecdd3'
+                            }}>
+                              {s.department}
+                            </span>
+                          </td>
                           <td style={{ padding: '10px', color: '#64748b' }}>{s.email || '-'}</td>
                           <td style={{ padding: '10px', textAlign: 'right' }}>
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
