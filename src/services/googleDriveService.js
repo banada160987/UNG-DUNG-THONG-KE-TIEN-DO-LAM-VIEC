@@ -48,10 +48,24 @@ function doPost(e) {
     var base64Data = data.base64Data;
     var rawFileName = data.fileName || "Tep_dinh_kem.pdf";
     var mimeType = data.mimeType || "application/octet-stream";
-    var category = String(data.category || "chung").toLowerCase(); // van_bang | giao_vien | van_ban | hoc_sinh | chung
+    var category = String(data.category || "").toLowerCase(); // van_bang | giao_vien | van_ban | hoc_sinh | chung
     var subFolder = String(data.subFolder || "").trim(); // Tên lớp (12A1), Tổ chuyên môn (Toán), hoặc Năm
     var entityName = String(data.entityName || "").trim(); // Tên học sinh, tên giáo viên, hoặc số công văn
-    var rootFolderId = data.rootFolderId ? String(data.rootFolderId).trim() : "";
+    var rootFolderId = data.rootFolderId ? String(data.rootFolderId).trim() : (data.parentFolderId ? String(data.parentFolderId).trim() : "");
+
+    // Tương thích ngược với tính năng Đăng ký học thêm / Đơn ký trực tuyến
+    if (!category && (data.campaignTitle || data.studentClass)) {
+      category = "hoc_sinh";
+    }
+    if (!category) {
+      category = "chung";
+    }
+    if (!subFolder && data.studentClass) {
+      subFolder = "Lớp " + String(data.studentClass).trim();
+    }
+    if (!entityName && data.studentName) {
+      entityName = String(data.studentName).trim() + (data.studentCode ? " (" + data.studentCode + ")" : "");
+    }
 
     // 1. Xác định Thư mục Gốc của Trường
     var rootFolder;
