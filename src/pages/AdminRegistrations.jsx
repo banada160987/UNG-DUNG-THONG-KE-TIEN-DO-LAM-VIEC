@@ -125,20 +125,20 @@ export default function AdminRegistrations() {
   async function fetchResults(campaignId) {
     setLoadingResults(true);
     try {
-      const campaign = campaigns.find(c => c.id === selectedCampaignId);
+      const targetCampId = campaignId || selectedCampaignId;
+      const campaign = campaigns.find(c => c.id === targetCampId);
       const client = campaign?._source === 'sb1' ? supabase : adminClient;
       
       let allRegs = [];
       let from = 0;
-      const step = 1000;
+      const step = 200;
       let fetchMore = true;
 
       while (fetchMore) {
         const { data, error } = await client
           .from('cbq_student_registrations')
           .select('*')
-          .eq('campaign_id', campaignId)
-          .order('created_at', { ascending: false })
+          .eq('campaign_id', targetCampId)
           .range(from, from + step - 1);
 
         if (!error && data && data.length > 0) {
@@ -146,13 +146,17 @@ export default function AdminRegistrations() {
           from += step;
           if (data.length < step) fetchMore = false;
         } else {
+          if (error) console.warn("Lỗi tải kết quả đăng ký đợt:", error);
           fetchMore = false;
         }
       }
 
+      // Sắp xếp giảm dần theo thời gian nộp ở phía client (cực nhanh, không gây quá tải DB)
+      allRegs.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
       setResults(allRegs);
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi khi tải kết quả đăng ký:", err);
     } finally {
       setLoadingResults(false);
     }

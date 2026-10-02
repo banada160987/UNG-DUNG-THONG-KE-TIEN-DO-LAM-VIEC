@@ -737,6 +737,7 @@ export default function PublicRegistrations() {
             setSignedDocDriveLink(driveRes.fileUrl);
             setSignedDocClassFolderUrl(driveRes.classFolderUrl);
             setSignedDocSource('google_drive');
+            setSignedDocUrl(driveRes.fileUrl);
             driveSuccess = true;
           }
         } catch (driveErr) {
@@ -745,10 +746,31 @@ export default function PublicRegistrations() {
       }
 
       if (!driveSuccess) {
-        setSignedDocSource('e_signature');
+        try {
+          const client = (selectedCampaign?._source === 'sb1' && supabase) ? supabase : (supabase2 || supabase);
+          const storageFileName = `signed_docs/${cleanClass}/${cleanCode}_${Date.now()}.png`;
+          const { error: upErr } = await client.storage
+            .from('documents')
+            .upload(storageFileName, fileObj, { contentType: 'image/png', upsert: true });
+
+          if (!upErr) {
+            const { data: pubData } = client.storage.from('documents').getPublicUrl(storageFileName);
+            if (pubData?.publicUrl) {
+              setSignedDocUrl(pubData.publicUrl);
+              setSignedDocSource('supabase');
+              driveSuccess = true;
+            }
+          }
+        } catch (storageErr) {
+          console.warn("Lưu Supabase Storage gặp sự cố:", storageErr);
+        }
       }
 
-      setSignedDocUrl(base64Data);
+      if (!driveSuccess) {
+        setSignedDocSource('e_signature');
+        setSignedDocUrl(base64Data);
+      }
+
       setSignedDocFileName(fileName);
       setSignedDocFile(fileObj);
 
