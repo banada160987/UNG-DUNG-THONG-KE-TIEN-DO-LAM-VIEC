@@ -1,13 +1,34 @@
-import { supabase, supabaseAdmin, DualSupabaseService } from '../lib/supabase';
+import { supabase, supabaseAdmin, supabase2, supabase2Admin } from '../lib/supabase';
 
-const dbClient = supabaseAdmin || supabase;
+// Ưu tiên Client Supabase 2 (Đặc quyền Admin nếu có, fallback Client Anon)
+const dbClient = supabase2Admin || supabaseAdmin || supabase2 || supabase;
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   MEETINGS: 'cbq_online_meetings_store',
   ATTENDANCES: 'cbq_meeting_attendances_store',
   DEPT_REPORTS: 'cbq_meeting_dept_reports_store',
   OFFLINE_STAFF: 'cbq_meeting_staff_cache'
 };
+
+// Kiểm tra chuỗi có phải UUID hợp lệ hay không
+export function isValidUUID(str) {
+  if (!str || typeof str !== 'string') return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str.trim());
+}
+
+// Sinh mã UUID v4 an toàn tương thích mọi trình duyệt và Node.js
+export function generateUUID() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    try {
+      return crypto.randomUUID();
+    } catch (e) {}
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
 
 // Danh mục các Tổ chuyên môn chuẩn của Trường THPT Cao Bá Quát
 export const DEFAULT_DEPARTMENTS = [
@@ -23,10 +44,10 @@ export const DEFAULT_DEPARTMENTS = [
   'Tổ Văn Phòng'
 ];
 
-// Dữ liệu cuộc họp mẫu mặc định
+// Dữ liệu cuộc họp mẫu mặc định (Dùng UUID chuẩn)
 const SEED_MEETINGS = [
   {
-    id: 'meet_seed_001',
+    id: '00000000-0000-4000-a000-000000000001',
     title: 'Hội nghị Sư phạm & Triển khai Nhiệm vụ Năm học 2026 - 2027',
     meeting_type: 'Hội đồng sư phạm',
     meeting_format: 'OFFLINE', // 'OFFLINE' (Trực tiếp), 'ONLINE' (Trực tuyến), 'HYBRID' (Hỗn hợp)
@@ -44,6 +65,23 @@ const SEED_MEETINGS = [
     created_by: 'Ban Thư Ký Hội Đồng'
   }
 ];
+
+// Danh sách các cột thực tế trên bảng cbq_online_meetings của Supabase
+const DB_MEETING_COLUMNS = [
+  'id', 'title', 'meeting_type', 'meeting_date', 'meeting_link',
+  'checkin_code', 'checkin_opened_at', 'checkin_expires_at',
+  'is_checkin_open', 'ttcm_reporting_open', 'poll_question',
+  'poll_options', 'created_at', 'created_by'
+];
+
+function sanitizeMeetingPayload(data) {
+  if (!data) return data;
+  const clean = {};
+  DB_MEETING_COLUMNS.forEach(col => {
+    if (data[col] !== undefined) clean[col] = data[col];
+  });
+  return clean;
+}
 
 // Helper đọc LocalStorage an toàn
 const getLocalData = (key, fallback = []) => {
@@ -64,11 +102,70 @@ const setLocalData = (key, data) => {
   }
 };
 
+/**
+ * Tự động chuyển đổi các ID cũ dạng chuỗi (meet_..., att_...) trong localStorage sang UUID chuẩn
+ */
+function migrateOldStorageData() {
+  try {
+    const localMeetings = getLocalData(STORAGE_KEYS.MEETINGS, []);
+    let changed = false;
+    const idMap = {};
+
+    localMeetings.forEach(m => {
+      if (!isValidUUID(m.id)) {
+        const newId = generateUUID();
+        idMap[m.id] = newId;
+        m.id = newId;
+        changed = true;
+      }
+    });
+
+    if (changed) {
+      setLocalData(STORAGE_KEYS.MEETINGS, localMeetings);
+
+      // Cập nhật mapping ID trong danh sách điểm danh cá nhân
+      const localAtts = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
+      let attChanged = false;
+      localAtts.forEach(a => {
+        if (idMap[a.meeting_id]) {
+          a.meeting_id = idMap[a.meeting_id];
+          attChanged = true;
+        }
+        if (!isValidUUID(a.id)) {
+          a.id = generateUUID();
+          attChanged = true;
+        }
+      });
+      if (attChanged) setLocalData(STORAGE_KEYS.ATTENDANCES, localAtts);
+
+      // Cập nhật mapping ID trong danh sách báo cáo tổ trưởng
+      const localReps = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
+      let repChanged = false;
+      localReps.forEach(r => {
+        if (idMap[r.meeting_id]) {
+          r.meeting_id = idMap[r.meeting_id];
+          repChanged = true;
+        }
+        if (!isValidUUID(r.id)) {
+          r.id = generateUUID();
+          repChanged = true;
+        }
+      });
+      if (repChanged) setLocalData(STORAGE_KEYS.DEPT_REPORTS, localReps);
+    }
+  } catch (e) {
+    console.warn('[OnlineMeetingService] Lỗi migrate storage:', e);
+  }
+}
+
 export const OnlineMeetingService = {
   /**
-   * 1. LẤY DANH SÁCH CUỘC HỌP
+   * 1. LẤY DANH SÁCH CUỘC HỌP (ĐỒNG BỘ 2 CHIỀU GIỮA SUPABASE VÀ LOCALSTORAGE)
    */
   async getMeetings() {
+    // Luôn migrate ID cũ nếu có trong LocalStorage
+    migrateOldStorageData();
+
     let cloudMeetings = [];
     try {
       const { data, error } = await dbClient
@@ -76,37 +173,123 @@ export const OnlineMeetingService = {
         .select('*')
         .order('created_at', { ascending: false });
       
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         cloudMeetings = data;
-        setLocalData(STORAGE_KEYS.MEETINGS, data);
-        return data;
       }
     } catch (err) {
       console.warn('[OnlineMeetingService] Đọc Supabase không thành công, dùng LocalStorage:', err.message);
     }
 
-    // Fallback LocalStorage
     const local = getLocalData(STORAGE_KEYS.MEETINGS, []);
-    if (local && local.length > 0) {
+    const localMap = new Map(local.map(m => [m.id, m]));
+
+    // Nếu Cloud đã có dữ liệu
+    if (cloudMeetings.length > 0) {
+      // Gộp thông tin hiển thị (location, meeting_format) từ LocalStorage nếu có
+      cloudMeetings = cloudMeetings.map(m => {
+        const loc = localMap.get(m.id);
+        return {
+          location: loc?.location || (m.meeting_link ? 'Trực tuyến (Meet/Zoom)' : 'Hội trường lớn - Trường THPT Cao Bá Quát'),
+          meeting_format: loc?.meeting_format || (m.meeting_link ? 'ONLINE' : 'OFFLINE'),
+          ...m
+        };
+      });
+
+      // Kiểm tra xem LocalStorage có cuộc họp nào chưa kịp đẩy lên Cloud không
+      const cloudIdSet = new Set(cloudMeetings.map(m => m.id));
+      for (const locMeeting of local) {
+        if (isValidUUID(locMeeting.id) && !cloudIdSet.has(locMeeting.id)) {
+          try {
+            await dbClient.from('cbq_online_meetings').upsert(sanitizeMeetingPayload(locMeeting));
+            cloudMeetings.unshift(locMeeting);
+            cloudIdSet.add(locMeeting.id);
+          } catch (e) {
+            console.warn('[OnlineMeetingService] Đồng bộ local sang cloud:', e);
+          }
+        }
+      }
+
+      setLocalData(STORAGE_KEYS.MEETINGS, cloudMeetings);
+      return cloudMeetings;
+    }
+
+    // Nếu Cloud chưa có dữ liệu nhưng LocalStorage có: Đẩy toàn bộ lên Cloud!
+    if (local.length > 0) {
+      for (const locMeeting of local) {
+        if (isValidUUID(locMeeting.id)) {
+          try {
+            await dbClient.from('cbq_online_meetings').upsert(sanitizeMeetingPayload(locMeeting));
+            cloudMeetings.push(locMeeting);
+          } catch (e) {
+            console.warn('[OnlineMeetingService] Lưu local lên cloud trống:', e);
+          }
+        }
+      }
+      if (cloudMeetings.length > 0) {
+        setLocalData(STORAGE_KEYS.MEETINGS, cloudMeetings);
+        return cloudMeetings;
+      }
       return local;
     }
 
-    // Nếu hoàn toàn chưa có cuộc họp nào, khởi tạo cuộc họp mẫu mặc định
-    setLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS);
-    return SEED_MEETINGS;
+    // Nếu hoàn toàn chưa có cuộc họp nào cả ở Cloud và LocalStorage: Khởi tạo SEED_MEETING
+    const seeds = SEED_MEETINGS.map(m => ({
+      ...m,
+      id: isValidUUID(m.id) ? m.id : generateUUID()
+    }));
+    try {
+      await dbClient.from('cbq_online_meetings').upsert(seeds.map(sanitizeMeetingPayload));
+    } catch (e) {}
+
+    setLocalData(STORAGE_KEYS.MEETINGS, seeds);
+    return seeds;
   },
 
   /**
-   * 2. LƯU HOẶC CẬP NHẬT CUỘC HỌP
+   * 2. LẤY CHI TIẾT 1 CUỘC HỌP THEO ID
+   */
+  async getMeetingById(meetingId) {
+    if (!meetingId) return null;
+
+    if (isValidUUID(meetingId)) {
+      try {
+        const { data, error } = await dbClient
+          .from('cbq_online_meetings')
+          .select('*')
+          .eq('id', meetingId)
+          .maybeSingle();
+        if (!error && data) {
+          return {
+            location: data.meeting_link ? 'Trực tuyến (Meet/Zoom)' : 'Hội trường lớn - Trường THPT Cao Bá Quát',
+            meeting_format: data.meeting_link ? 'ONLINE' : 'OFFLINE',
+            ...data
+          };
+        }
+      } catch (e) {
+        console.warn('[OnlineMeetingService] Lỗi getMeetingById:', e);
+      }
+    }
+
+    const local = getLocalData(STORAGE_KEYS.MEETINGS, []);
+    return local.find(m => m.id === meetingId) || null;
+  },
+
+  /**
+   * 3. LƯU HOẶC CẬP NHẬT CUỘC HỌP
    */
   async saveMeeting(meeting) {
+    let meetingId = meeting.id;
+    if (!meetingId || !isValidUUID(meetingId)) {
+      meetingId = generateUUID();
+    }
+
     const payload = {
       ...meeting,
-      id: meeting.id || `meet_${Date.now()}`,
+      id: meetingId,
       created_at: meeting.created_at || new Date().toISOString()
     };
 
-    // Lưu vào LocalStorage trước để phản hồi tức thì
+    // Lưu vào LocalStorage
     const local = getLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS);
     const existingIdx = local.findIndex(m => m.id === payload.id);
     if (existingIdx >= 0) {
@@ -116,9 +299,19 @@ export const OnlineMeetingService = {
     }
     setLocalData(STORAGE_KEYS.MEETINGS, local);
 
-    // Thử đồng bộ lên Supabase nếu bảng tồn tại
+    // Đồng bộ tức thời lên Supabase Cloud (lọc đúng các cột có trong database)
     try {
-      await dbClient.from('cbq_online_meetings').upsert(payload);
+      const sanitized = sanitizeMeetingPayload(payload);
+      const { data, error } = await dbClient
+        .from('cbq_online_meetings')
+        .upsert(sanitized)
+        .select();
+
+      if (error) {
+        console.error('[OnlineMeetingService] Lỗi upsert cuộc họp lên Supabase:', error);
+      } else if (data && data.length > 0) {
+        return { ...payload, ...data[0] };
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Không thể ghi lên Supabase, dữ liệu lưu cục bộ:', err.message);
     }
@@ -127,16 +320,18 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 3. XÓA CUỘC HỌP
+   * 4. XÓA CUỘC HỌP
    */
   async deleteMeeting(meetingId) {
     const local = getLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS).filter(m => m.id !== meetingId);
     setLocalData(STORAGE_KEYS.MEETINGS, local);
 
     try {
-      await dbClient.from('cbq_online_meetings').delete().eq('id', meetingId);
-      await dbClient.from('cbq_meeting_attendances').delete().eq('meeting_id', meetingId);
-      await dbClient.from('cbq_meeting_department_reports').delete().eq('meeting_id', meetingId);
+      if (isValidUUID(meetingId)) {
+        await dbClient.from('cbq_meeting_attendances').delete().eq('meeting_id', meetingId);
+        await dbClient.from('cbq_meeting_department_reports').delete().eq('meeting_id', meetingId);
+        await dbClient.from('cbq_online_meetings').delete().eq('id', meetingId);
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Lỗi xóa trên Supabase:', err.message);
     }
@@ -144,7 +339,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 4. BẮT ĐẦU ĐIỂM DANH - SINH MÃ OTP & ĐẾM NGƯỢC
+   * 5. BẮT ĐẦU ĐIỂM DANH - SINH MÃ OTP & ĐẾM NGƯỢC
    */
   async startCheckin(meetingId, minutes = 5) {
     // Sinh mã ngẫu nhiên 6 chữ số
@@ -159,7 +354,7 @@ export const OnlineMeetingService = {
       is_checkin_open: true
     };
 
-    // Update local
+    // Cập nhật LocalStorage
     const local = getLocalData(STORAGE_KEYS.MEETINGS, SEED_MEETINGS);
     const m = local.find(x => x.id === meetingId);
     if (m) {
@@ -167,8 +362,15 @@ export const OnlineMeetingService = {
       setLocalData(STORAGE_KEYS.MEETINGS, local);
     }
 
+    // Cập nhật Supabase Cloud
     try {
-      await dbClient.from('cbq_online_meetings').update(updateFields).eq('id', meetingId);
+      if (isValidUUID(meetingId)) {
+        const { error } = await dbClient
+          .from('cbq_online_meetings')
+          .update(updateFields)
+          .eq('id', meetingId);
+        if (error) console.error('[OnlineMeetingService] Lỗi cập nhật OTP Supabase:', error);
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Không thể cập nhật OTP lên Supabase:', err.message);
     }
@@ -177,7 +379,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 5. ĐÓNG / MỞ CỔNG ĐIỂM DANH THỦ CÔNG
+   * 6. ĐÓNG / MỞ CỔNG ĐIỂM DANH THỦ CÔNG
    */
   async toggleCheckin(meetingId, isOpen) {
     const updateFields = { is_checkin_open: isOpen };
@@ -190,7 +392,9 @@ export const OnlineMeetingService = {
     }
 
     try {
-      await dbClient.from('cbq_online_meetings').update(updateFields).eq('id', meetingId);
+      if (isValidUUID(meetingId)) {
+        await dbClient.from('cbq_online_meetings').update(updateFields).eq('id', meetingId);
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Lỗi toggleCheckin:', err.message);
     }
@@ -198,7 +402,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 6. BẬT / TẮT LỆNH YÊU CẦU TTCM BÁO CÁO SĨ SỐ TỔ
+   * 7. BẬT / TẮT LỆNH YÊU CẦU TTCM BÁO CÁO SĨ SỐ TỔ
    */
   async toggleTtcmReporting(meetingId, isOpen) {
     const updateFields = { ttcm_reporting_open: isOpen };
@@ -211,7 +415,9 @@ export const OnlineMeetingService = {
     }
 
     try {
-      await dbClient.from('cbq_online_meetings').update(updateFields).eq('id', meetingId);
+      if (isValidUUID(meetingId)) {
+        await dbClient.from('cbq_online_meetings').update(updateFields).eq('id', meetingId);
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Lỗi toggleTtcmReporting:', err.message);
     }
@@ -219,22 +425,25 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 7. LẤY DANH SÁCH ĐIỂM DANH CỦA CUỘC HỌP
+   * 8. LẤY DANH SÁCH ĐIỂM DANH CỦA CUỘC HỌP
    */
   async getAttendances(meetingId) {
-    try {
-      const { data, error } = await dbClient
-        .from('cbq_meeting_attendances')
-        .select('*')
-        .eq('meeting_id', meetingId)
-        .order('checkin_time', { ascending: false });
+    if (!meetingId) return [];
 
-      if (!error && data) {
-        // Cập nhật local
-        const allLocal = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
-        const filtered = allLocal.filter(a => a.meeting_id !== meetingId);
-        setLocalData(STORAGE_KEYS.ATTENDANCES, [...data, ...filtered]);
-        return data;
+    try {
+      if (isValidUUID(meetingId)) {
+        const { data, error } = await dbClient
+          .from('cbq_meeting_attendances')
+          .select('*')
+          .eq('meeting_id', meetingId)
+          .order('checkin_time', { ascending: false });
+
+        if (!error && data) {
+          const allLocal = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
+          const filtered = allLocal.filter(a => a.meeting_id !== meetingId);
+          setLocalData(STORAGE_KEYS.ATTENDANCES, [...data, ...filtered]);
+          return data;
+        }
       }
     } catch (err) {
       console.warn('[OnlineMeetingService] Đọc attendances từ Supabase lỗi:', err.message);
@@ -245,20 +454,34 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 8. GIÁO VIÊN GỬI ĐIỂM DANH BẰNG MÃ OTP
+   * 9. GIÁO VIÊN GỬI ĐIỂM DANH BẰNG MÃ OTP (HỖ TRỢ TỰ ĐỘNG TÌM PHIÊN HỌP)
    */
   async submitTeacherCheckin({ meetingId, staffId, staffName, department, title, checkinCode, pollAnswer, deviceInfo }) {
-    if (!meetingId || !staffName || !department) {
-      return { success: false, message: 'Thiếu thông tin người điểm danh hoặc cuộc họp!' };
+    if (!staffName || !department) {
+      return { success: false, message: 'Thiếu thông tin người điểm danh hoặc Tổ chuyên môn!' };
     }
 
-    // Kiểm tra trạng thái cuộc họp & mã OTP
+    // Nạp danh sách cuộc họp mới nhất
     const meetings = await this.getMeetings();
-    const meeting = meetings.find(m => m.id === meetingId);
+
+    // 1. Tìm cuộc họp theo meetingId
+    let meeting = meetings.find(m => m.id === meetingId);
+
+    // 2. Nếu không tìm thấy, thử tìm theo checkinCode nhập vào
+    if (!meeting && checkinCode) {
+      meeting = meetings.find(m => String(m.checkin_code).trim() === String(checkinCode).trim());
+    }
+
+    // 3. Nếu vẫn không thấy, thử tìm cuộc họp đang mở điểm danh
+    if (!meeting) {
+      meeting = meetings.find(m => m.is_checkin_open);
+    }
 
     if (!meeting) {
-      return { success: false, message: 'Cuộc họp không tồn tại hoặc đã bị xóa!' };
+      return { success: false, message: 'Cuộc họp không tồn tại hoặc đã kết thúc!' };
     }
+
+    const activeMeetingId = meeting.id;
 
     if (!meeting.is_checkin_open) {
       return { success: false, message: 'Cổng điểm danh đã được Ban Giám Hiệu đóng lại!' };
@@ -279,8 +502,8 @@ export const OnlineMeetingService = {
     }
 
     const newAttendance = {
-      id: `att_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      meeting_id: meetingId,
+      id: generateUUID(),
+      meeting_id: activeMeetingId,
       staff_id: staffId || null,
       staff_name: staffName.trim(),
       department: department.trim(),
@@ -290,13 +513,13 @@ export const OnlineMeetingService = {
       poll_answer: pollAnswer || null,
       verified_by_ttcm: false,
       note: 'Tự điểm danh qua mã OTP',
-      device_info: deviceInfo || navigator.userAgent || 'Thiết bị cá nhân'
+      device_info: deviceInfo || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Thiết bị di động cá nhân')
     };
 
     // Lưu vào LocalStorage
     const allAttendances = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
     const existingIdx = allAttendances.findIndex(
-      a => a.meeting_id === meetingId && a.staff_name.toLowerCase() === staffName.trim().toLowerCase()
+      a => a.meeting_id === activeMeetingId && a.staff_name.toLowerCase() === staffName.trim().toLowerCase()
     );
 
     if (existingIdx >= 0) {
@@ -306,33 +529,60 @@ export const OnlineMeetingService = {
     }
     setLocalData(STORAGE_KEYS.ATTENDANCES, allAttendances);
 
-    // Ghi lên Supabase
+    // Ghi lên Supabase Cloud
     try {
-      await dbClient.from('cbq_meeting_attendances').upsert(newAttendance, {
-        onConflict: 'meeting_id,staff_name,department'
-      });
+      if (isValidUUID(activeMeetingId)) {
+        const dbPayload = {
+          meeting_id: activeMeetingId,
+          staff_id: staffId || null,
+          staff_name: staffName.trim(),
+          department: department.trim(),
+          title: title || 'Giáo viên',
+          checkin_time: newAttendance.checkin_time,
+          status: 'PRESENT',
+          poll_answer: pollAnswer || null,
+          verified_by_ttcm: false,
+          note: 'Tự điểm danh qua mã OTP',
+          device_info: newAttendance.device_info
+        };
+
+        const { data, error } = await dbClient
+          .from('cbq_meeting_attendances')
+          .upsert(dbPayload, { onConflict: 'meeting_id,staff_name,department' })
+          .select();
+
+        if (!error && data && data.length > 0) {
+          newAttendance.id = data[0].id;
+        } else if (error) {
+          console.warn('[OnlineMeetingService] Lỗi upsert attendance Supabase:', error);
+        }
+      }
     } catch (err) {
       console.warn('[OnlineMeetingService] Lưu attendance lên Supabase lỗi:', err.message);
     }
 
-    return { success: true, attendance: newAttendance };
+    return { success: true, attendance: newAttendance, meeting };
   },
 
   /**
-   * 9. LẤY BÁO CÁO CỦA CÁC TỔ TRƯỞNG CHUYÊN MÔN (TTCM)
+   * 10. LẤY BÁO CÁO CỦA CÁC TỔ TRƯỞNG CHUYÊN MÔN (TTCM)
    */
   async getDepartmentReports(meetingId) {
-    try {
-      const { data, error } = await dbClient
-        .from('cbq_meeting_department_reports')
-        .select('*')
-        .eq('meeting_id', meetingId);
+    if (!meetingId) return [];
 
-      if (!error && data) {
-        const allReports = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
-        const filtered = allReports.filter(r => r.meeting_id !== meetingId);
-        setLocalData(STORAGE_KEYS.DEPT_REPORTS, [...data, ...filtered]);
-        return data;
+    try {
+      if (isValidUUID(meetingId)) {
+        const { data, error } = await dbClient
+          .from('cbq_meeting_department_reports')
+          .select('*')
+          .eq('meeting_id', meetingId);
+
+        if (!error && data) {
+          const allReports = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
+          const filtered = allReports.filter(r => r.meeting_id !== meetingId);
+          setLocalData(STORAGE_KEYS.DEPT_REPORTS, [...data, ...filtered]);
+          return data;
+        }
       }
     } catch (err) {
       console.warn('[OnlineMeetingService] Đọc TTCM reports lỗi:', err.message);
@@ -343,7 +593,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 10. TỔ TRƯỞNG CHUYÊN MÔN (TTCM) GỬI BÁO CÁO SĨ SỐ & ĐIỂM DANH HỘ
+   * 11. TỔ TRƯỞNG CHUYÊN MÔN (TTCM) GỬI BÁO CÁO SĨ SỐ & ĐIỂM DANH HỘ
    */
   async submitDepartmentReport({
     meetingId,
@@ -363,7 +613,7 @@ export const OnlineMeetingService = {
     }
 
     const reportData = {
-      id: `rep_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      id: generateUUID(),
       meeting_id: meetingId,
       department: department.trim(),
       reporter_name: reporterName.trim(),
@@ -396,15 +646,14 @@ export const OnlineMeetingService = {
           a => a.meeting_id === meetingId && a.staff_name.toLowerCase() === item.staff_name.toLowerCase()
         );
         const record = {
-          id: item.id || `att_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+          id: (idx >= 0 && isValidUUID(allAttendances[idx].id)) ? allAttendances[idx].id : generateUUID(),
           meeting_id: meetingId,
           staff_id: item.staff_id || null,
-          staff_name: item.staff_name,
+          staff_name: item.staff_name.trim(),
           department: department.trim(),
           title: item.title || 'Giáo viên',
-          checkin_time: item.checkin_time || new Date().toISOString(),
-          status: item.status || 'PRESENT', // 'PRESENT' | 'EXCUSED' | 'UNEXCUSED'
-          poll_answer: item.poll_answer || null,
+          checkin_time: new Date().toISOString(),
+          status: item.status || 'PRESENT',
           verified_by_ttcm: true,
           verified_by_name: reporterName.trim(),
           note: item.note || (item.status === 'PRESENT' ? 'TTCM xác nhận có mặt' : 'TTCM báo vắng'),
@@ -421,23 +670,39 @@ export const OnlineMeetingService = {
       setLocalData(STORAGE_KEYS.ATTENDANCES, allAttendances);
     }
 
-    // 3. Thử đồng bộ lên Supabase
+    // 3. Đồng bộ lên Supabase Cloud
     try {
-      await dbClient.from('cbq_meeting_department_reports').upsert(reportData, {
-        onConflict: 'meeting_id,department'
-      });
+      if (isValidUUID(meetingId)) {
+        const dbReportPayload = {
+          meeting_id: meetingId,
+          department: department.trim(),
+          reporter_name: reporterName.trim(),
+          reporter_role: reporterRole,
+          total_members: totalMembers,
+          present_count: presentCount,
+          excused_count: excusedCount,
+          unexcused_count: unexcusedCount,
+          absent_details: absentDetails,
+          reported_at: reportData.reported_at,
+          note: note.trim()
+        };
 
-      if (verifiedAttendances && verifiedAttendances.length > 0) {
-        for (const item of verifiedAttendances) {
-          await dbClient.from('cbq_meeting_attendances').upsert({
-            meeting_id: meetingId,
-            staff_name: item.staff_name,
-            department: department.trim(),
-            status: item.status || 'PRESENT',
-            verified_by_ttcm: true,
-            verified_by_name: reporterName.trim(),
-            note: item.note || ''
-          }, { onConflict: 'meeting_id,staff_name,department' });
+        await dbClient.from('cbq_meeting_department_reports').upsert(dbReportPayload, {
+          onConflict: 'meeting_id,department'
+        });
+
+        if (verifiedAttendances && verifiedAttendances.length > 0) {
+          for (const item of verifiedAttendances) {
+            await dbClient.from('cbq_meeting_attendances').upsert({
+              meeting_id: meetingId,
+              staff_name: item.staff_name.trim(),
+              department: department.trim(),
+              status: item.status || 'PRESENT',
+              verified_by_ttcm: true,
+              verified_by_name: reporterName.trim(),
+              note: item.note || ''
+            }, { onConflict: 'meeting_id,staff_name,department' });
+          }
         }
       }
     } catch (err) {
@@ -448,7 +713,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 11. CẬP NHẬT TRỰC TIẾP ĐIỂM DANH CHO MỘT GIÁO VIÊN (DÀNH CHO ADMIN / THƯ KÝ)
+   * 12. CẬP NHẬT TRỰC TIẾP ĐIỂM DANH CHO MỘT GIÁO VIÊN (DÀNH CHO ADMIN / THƯ KÝ)
    */
   async updateSingleAttendance({ meetingId, staffName, department, status, note, verifiedByName }) {
     if (!meetingId || !staffName) return { success: false, message: 'Thiếu dữ liệu cuộc họp hoặc tên giáo viên' };
@@ -459,7 +724,7 @@ export const OnlineMeetingService = {
     );
 
     const record = {
-      id: idx >= 0 ? allAttendances[idx].id : `att_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      id: (idx >= 0 && isValidUUID(allAttendances[idx].id)) ? allAttendances[idx].id : generateUUID(),
       meeting_id: meetingId,
       staff_name: staffName.trim(),
       department: department?.trim() || 'Chưa phân tổ',
@@ -478,11 +743,23 @@ export const OnlineMeetingService = {
     }
     setLocalData(STORAGE_KEYS.ATTENDANCES, allAttendances);
 
-    // Đồng bộ lên Supabase nếu có kết nối
+    // Đồng bộ lên Supabase nếu là UUID hợp lệ
     try {
-      await dbClient.from('cbq_meeting_attendances').upsert(record, {
-        onConflict: 'meeting_id,staff_name,department'
-      });
+      if (isValidUUID(meetingId)) {
+        await dbClient.from('cbq_meeting_attendances').upsert({
+          meeting_id: meetingId,
+          staff_name: staffName.trim(),
+          department: department?.trim() || 'Chưa phân tổ',
+          checkin_time: record.checkin_time,
+          status: status || 'PRESENT',
+          verified_by_ttcm: true,
+          verified_by_name: verifiedByName || 'Thư ký cuộc họp',
+          note: record.note,
+          device_info: 'Cập nhật trực tiếp từ Cổng Thư ký'
+        }, {
+          onConflict: 'meeting_id,staff_name,department'
+        });
+      }
     } catch (e) {
       console.warn('[OnlineMeetingService] Cập nhật attendance lên Supabase lỗi:', e.message);
     }
@@ -491,7 +768,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 12. LẤY DANH SÁCH GIÁO VIÊN & TỔ CHUYÊN MÔN TỪ CSDL
+   * 13. LẤY DANH SÁCH GIÁO VIÊN & TỔ CHUYÊN MÔN TỪ CSDL
    */
   async getStaffAndDepartments() {
     let departments = [];
@@ -540,7 +817,7 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 12. CÂU LỆNH SQL DỰ PHÒNG CHO SUPABASE
+   * 14. CÂU LỆNH SQL DỰ PHÒNG CHO SUPABASE
    */
   getSupabaseSqlSchema() {
     return `-- =========================================================================
@@ -553,7 +830,7 @@ CREATE TABLE IF NOT EXISTS public.cbq_online_meetings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     meeting_type TEXT DEFAULT 'Hội đồng sư phạm',
-    meeting_format VARCHAR(20) DEFAULT 'OFFLINE', -- 'OFFLINE' (Trực tiếp), 'ONLINE' (Trực tuyến), 'HYBRID' (Hỗn hợp)
+    meeting_format VARCHAR(20) DEFAULT 'OFFLINE',
     location TEXT DEFAULT 'Hội trường lớn THPT Cao Bá Quát',
     meeting_date DATE DEFAULT CURRENT_DATE,
     meeting_link TEXT,
@@ -577,7 +854,7 @@ CREATE TABLE IF NOT EXISTS public.cbq_meeting_attendances (
     department TEXT NOT NULL,
     title TEXT,
     checkin_time TIMESTAMPTZ DEFAULT NOW(),
-    status VARCHAR(20) DEFAULT 'PRESENT', -- 'PRESENT', 'EXCUSED', 'UNEXCUSED'
+    status VARCHAR(20) DEFAULT 'PRESENT',
     poll_answer TEXT,
     verified_by_ttcm BOOLEAN DEFAULT false,
     verified_by_name TEXT,

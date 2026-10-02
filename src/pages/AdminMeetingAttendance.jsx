@@ -121,7 +121,11 @@ export default function AdminMeetingAttendance() {
       setStaffList(staff);
 
       if (allMeetings.length > 0) {
-        setSelectedMeetingId(prev => (prev && allMeetings.some(m => m.id === prev)) ? prev : allMeetings[0].id);
+        setSelectedMeetingId(prev => {
+          if (prev && allMeetings.some(m => m.id === prev)) return prev;
+          const openMeeting = allMeetings.find(m => m.is_checkin_open);
+          return openMeeting ? openMeeting.id : allMeetings[0].id;
+        });
       }
     } catch (e) {
       console.error('Lỗi nạp dữ liệu:', e);
@@ -1704,7 +1708,7 @@ export default function AdminMeetingAttendance() {
                 {/* BOTTOM ACTIONS */}
                 <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ fontSize: '13px', color: '#94a3b8' }}>
-                    🔗 Link điểm danh: <strong style={{ color: '#38bdf8' }}>{window.location.origin}/hop-online</strong>
+                    🔗 Link điểm danh: <a href={checkinUrlWithOtp} target="_blank" rel="noreferrer" style={{ color: '#38bdf8', textDecoration: 'underline', fontWeight: 'bold' }}>{window.location.origin}/hop-online?id={currentMeeting.id.slice(0, 8)}...&code={currentMeeting.checkin_code}</a>
                   </div>
 
                   <div style={{ display: 'flex', gap: '10px' }}>

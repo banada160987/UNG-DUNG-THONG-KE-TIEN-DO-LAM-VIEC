@@ -82,6 +82,22 @@ export default function PublicMeetingAttendance() {
     }
   }, []);
 
+  // Tự động đồng bộ trạng thái cuộc họp & danh sách điểm danh mỗi 8 giây
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      try {
+        const refreshedMeetings = await OnlineMeetingService.getMeetings();
+        setMeetings(refreshedMeetings);
+        if (selectedMeetingId) {
+          loadMeetingData(selectedMeetingId);
+        }
+      } catch (e) {
+        // im lặng nếu mất mạng tạm thời
+      }
+    }, 8000);
+    return () => clearInterval(timer);
+  }, [selectedMeetingId]);
+
   async function loadData() {
     setLoading(true);
     try {
@@ -99,10 +115,48 @@ export default function PublicMeetingAttendance() {
         setTtcmDept(depts[0]);
       }
 
-      if (meetingIdParam && allMeetings.some(m => m.id === meetingIdParam)) {
-        setSelectedMeetingId(meetingIdParam);
-      } else if (allMeetings.length > 0) {
-        setSelectedMeetingId(allMeetings[0].id);
+      // XÁC ĐỊNH PHIÊN HỌP PHÙ HỢP NHẤT TỰ ĐỘNG
+      let targetId = null;
+
+      // 1. Khớp theo ID truyền trên URL (?id=...)
+      if (meetingIdParam) {
+        const foundById = allMeetings.find(m => m.id === meetingIdParam);
+        if (foundById) {
+          targetId = foundById.id;
+        } else {
+          // Thử tìm nạp trực tiếp cuộc họp từ Cloud Supabase theo ID này
+          const directMeeting = await OnlineMeetingService.getMeetingById(meetingIdParam);
+          if (directMeeting) {
+            allMeetings.unshift(directMeeting);
+            setMeetings([...allMeetings]);
+            targetId = directMeeting.id;
+          }
+        }
+      }
+
+      // 2. Nếu chưa có targetId, thử tìm theo mã OTP trên URL (?code=...)
+      if (!targetId && codeParam) {
+        const foundByCode = allMeetings.find(m => String(m.checkin_code || '').trim() === codeParam.trim());
+        if (foundByCode) {
+          targetId = foundByCode.id;
+        }
+      }
+
+      // 3. Nếu vẫn chưa có targetId, ưu tiên phiên họp ĐANG MỞ ĐIỂM DANH (Đang điều hành trực tiếp)
+      if (!targetId) {
+        const activeMeeting = allMeetings.find(m => m.is_checkin_open);
+        if (activeMeeting) {
+          targetId = activeMeeting.id;
+        }
+      }
+
+      // 4. Mặc định chọn phiên họp mới nhất
+      if (!targetId && allMeetings.length > 0) {
+        targetId = allMeetings[0].id;
+      }
+
+      if (targetId) {
+        setSelectedMeetingId(targetId);
       }
     } catch (e) {
       console.error(e);
@@ -183,8 +237,11 @@ export default function PublicMeetingAttendance() {
       if (!res.success) {
         setCheckinError(res.message);
       } else {
+        if (res.meeting && res.meeting.id !== selectedMeetingId) {
+          setSelectedMeetingId(res.meeting.id);
+        }
         setCheckinSuccessData(res.attendance);
-        await loadMeetingData(selectedMeetingId);
+        await loadMeetingData(res.meeting?.id || selectedMeetingId);
       }
     } catch (err) {
       setCheckinError('Có lỗi xảy ra: ' + err.message);
@@ -316,7 +373,7 @@ export default function PublicMeetingAttendance() {
             >
               {meetings.map(m => (
                 <option key={m.id} value={m.id}>
-                  {m.title} ({new Date(m.meeting_date).toLocaleDateString('vi-VN')})
+                  {m.is_checkin_open ? '🟢 [ĐANG ĐIỀU HÀNH] ' : ''}{m.title} ({new Date(m.meeting_date).toLocaleDateString('vi-VN')})
                 </option>
               ))}
             </select>
