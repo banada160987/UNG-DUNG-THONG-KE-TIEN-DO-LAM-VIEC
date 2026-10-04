@@ -87,12 +87,25 @@ const isOrgSubmitted = (orgName, responseList) => {
 
 // Helper trích xuất các dòng góp ý chi tiết từ bản ghi phản hồi
 const parseFeedbackData = (item) => {
-  if (!item) return { items: [], cleanText: '' };
+  if (!item) return { items: [], cleanText: '', isStudent: false };
   
+  const isStudent = item.topic_id === STUDENT_ASPIRATIONS_TOPIC_ID || 
+                    (item.feedback_items?.[0]?.category !== undefined && item.feedback_items?.[0]?.docName === undefined);
+
+  if (isStudent) {
+    return {
+      items: [], // Học sinh gửi tâm tư trực tiếp, không phải đóng góp điều khoản văn bản con
+      studentMeta: item.feedback_items?.[0] || {},
+      cleanText: item.feedback_content || '',
+      isStudent: true
+    };
+  }
+
   if (item.feedback_items && Array.isArray(item.feedback_items) && item.feedback_items.length > 0) {
     return {
       items: item.feedback_items,
-      cleanText: (item.feedback_content || '').replace(/<!--FEEDBACK_ITEMS_JSON:(.*?)-->/, '').trim()
+      cleanText: (item.feedback_content || '').replace(/<!--FEEDBACK_ITEMS_JSON:(.*?)-->/, '').trim(),
+      isStudent: false
     };
   }
 
@@ -105,7 +118,8 @@ const parseFeedbackData = (item) => {
         const cleanText = raw.replace(/<!--FEEDBACK_ITEMS_JSON:(.*?)-->/, '').trim();
         return {
           items: parsed,
-          cleanText: cleanText
+          cleanText: cleanText,
+          isStudent: false
         };
       }
     } catch (e) {}
@@ -113,7 +127,8 @@ const parseFeedbackData = (item) => {
 
   return {
     items: [],
-    cleanText: raw.trim()
+    cleanText: raw.trim(),
+    isStudent: false
   };
 };
 
@@ -181,8 +196,61 @@ export default function AdminFeedbackSystem() {
   const [editSubDocsText, setEditSubDocsText] = useState('');
   const [editIsActive, setEditIsActive] = useState(true);
 
-  // Detail Modal State (Xem chi tiết bảng góp ý của 1 đơn vị)
+  // Detail Modal State (Xem chi tiết bảng góp ý của 1 đơn vị hoặc phiếu tâm tư học sinh)
   const [viewingDetailResponse, setViewingDetailResponse] = useState(null);
+  const [adminNoteInput, setAdminNoteInput] = useState('');
+  const [isSavingNote, setIsSavingNote] = useState(false);
+
+  useEffect(() => {
+    if (viewingDetailResponse) {
+      const existingNote = viewingDetailResponse.feedback_items?.[0]?.admin_note || '';
+      setAdminNoteInput(existingNote);
+    } else {
+      setAdminNoteInput('');
+    }
+  }, [viewingDetailResponse]);
+
+  // Lưu ghi chú xử lý của BGH cho tâm tư học sinh
+  const handleSaveAdminNote = async () => {
+    if (!viewingDetailResponse) return;
+    setIsSavingNote(true);
+    try {
+      const dbClient = supabaseAdmin || supabase;
+      const currentItems = viewingDetailResponse.feedback_items && Array.isArray(viewingDetailResponse.feedback_items) && viewingDetailResponse.feedback_items.length > 0
+        ? viewingDetailResponse.feedback_items
+        : [{}];
+
+      const updatedItems = [
+        {
+          ...(currentItems[0] || {}),
+          admin_note: adminNoteInput.trim(),
+          handled_at: new Date().toISOString()
+        },
+        ...currentItems.slice(1)
+      ];
+
+      await dbClient
+        .from('cbq_feedback_responses')
+        .update({ feedback_items: updatedItems, is_verified: true })
+        .eq('id', viewingDetailResponse.id);
+
+      const updatedResp = { ...viewingDetailResponse, feedback_items: updatedItems, is_verified: true };
+      setViewingDetailResponse(updatedResp);
+      setResponses(prev => prev.map(r => r.id === viewingDetailResponse.id ? updatedResp : r));
+
+      const localKey = `cbq_local_feedback_res_${selectedTopicId}`;
+      const local = JSON.parse(localStorage.getItem(localKey) || '[]');
+      const updatedLocal = local.map(r => r.id === viewingDetailResponse.id ? updatedResp : r);
+      localStorage.setItem(localKey, JSON.stringify(updatedLocal));
+
+      alert('🎉 Đã lưu ghi chú xử lý & đánh dấu Đã tiếp nhận thành công!');
+    } catch (err) {
+      console.error('Lỗi lưu ghi chú BGH:', err);
+      alert('Không thể lưu ghi chú: ' + err.message);
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   // Đồng bộ danh sách tổ chuyên môn từ CSDL cbq_departments
   const fetchDepartments = async () => {
@@ -1554,8 +1622,8 @@ export default function AdminFeedbackSystem() {
                   <th style={{ padding: '12px 10px' }}>{selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ? 'THỜI GIAN GỬI' : 'NGƯỜI ĐẠI DIỆN'}</th>
                   <th style={{ padding: '12px 10px' }}>{selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ? 'CHỦ ĐỀ & MỨC ĐỘ' : 'MỨC ĐỘ THỐNG NHẤT'}</th>
                   <th style={{ padding: '12px 10px' }}>{selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ? 'NỘI DUNG TÂM TƯ / KIẾN NGHỊ' : 'NỘI DUNG GÓP Ý DỰ THẢO'}</th>
-                  <th style={{ padding: '12px 10px' }}>BIÊN BẢN / FILE</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>CHI TIẾT</th>
+                  {selectedTopicId !== STUDENT_ASPIRATIONS_TOPIC_ID && <th style={{ padding: '12px 10px' }}>BIÊN BẢN / FILE</th>}
+                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>{selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ? 'XEM TÂM TƯ' : 'CHI TIẾT'}</th>
                   <th style={{ padding: '12px 10px', textAlign: 'center' }}>{selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ? 'TIẾP NHẬN' : 'DUYỆT BC'}</th>
                   <th style={{ padding: '12px 10px', textAlign: 'center' }}>XÓA</th>
                 </tr>
@@ -1656,7 +1724,7 @@ export default function AdminFeedbackSystem() {
                       </td>
 
                       {/* Cột Nội dung */}
-                      <td style={{ padding: '12px 10px', color: '#334155', maxWidth: '340px' }}>
+                      <td style={{ padding: '12px 10px', color: '#334155', maxWidth: isStudentTopic ? '420px' : '340px' }}>
                         {hasStructuredItems && !isStudentTopic ? (
                           <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px', padding: '8px 10px' }}>
                             <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -1667,26 +1735,44 @@ export default function AdminFeedbackSystem() {
                             </div>
                           </div>
                         ) : (
-                          <div style={{ background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '12.5px', lineHeight: '1.4', maxHeight: '75px', overflowY: 'auto' }}>
+                          <div style={{ background: isStudentTopic ? '#fffdfa' : '#ffffff', padding: '8px 12px', borderRadius: '8px', border: isStudentTopic ? '1px solid #fecdd3' : '1px solid #e2e8f0', fontSize: '13px', lineHeight: '1.5', maxHeight: '85px', overflowY: 'auto', fontWeight: isStudentTopic ? '600' : 'normal', color: '#0f172a' }}>
                             {parsed.cleanText || item.feedback_content}
                           </div>
                         )}
                       </td>
 
-                      <td style={{ padding: '12px 10px' }}>
-                        {item.attached_file_url ? (
-                          <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                            <Paperclip size={13} /> Xem File
-                          </a>
-                        ) : '-'}
-                      </td>
+                      {/* Cột Biên bản / File - Chỉ hiện với các công việc thường, ẩn với học sinh */}
+                      {!isStudentTopic && (
+                        <td style={{ padding: '12px 10px' }}>
+                          {item.attached_file_url ? (
+                            <a href={item.attached_file_url} target="_blank" rel="noreferrer" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'underline', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                              <Paperclip size={13} /> Xem File
+                            </a>
+                          ) : '-'}
+                        </td>
+                      )}
+
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
                         <button
                           onClick={() => setViewingDetailResponse(item)}
-                          style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0f172a', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                          title="Xem chi tiết toàn bộ bảng góp ý"
+                          style={{
+                            padding: isStudentTopic ? '6px 12px' : '5px 10px',
+                            borderRadius: '8px',
+                            border: isStudentTopic ? '1.5px solid #fecdd3' : '1px solid #cbd5e1',
+                            background: isStudentTopic ? '#fff1f2' : '#ffffff',
+                            color: isStudentTopic ? '#be123c' : '#0f172a',
+                            fontWeight: 'bold',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            boxShadow: isStudentTopic ? '0 2px 6px rgba(225,29,72,0.12)' : 'none'
+                          }}
+                          title={isStudentTopic ? 'Xem phiếu tâm tư chi tiết của học sinh' : 'Xem chi tiết toàn bộ bảng góp ý'}
                         >
-                          <Eye size={13} color="#0284c7" /> Xem
+                          {isStudentTopic ? <Mail size={13} color="#e11d48" /> : <Eye size={13} color="#0284c7" />}
+                          <span>{isStudentTopic ? 'Xem Thư' : 'Xem'}</span>
                         </button>
                       </td>
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
@@ -1717,11 +1803,273 @@ export default function AdminFeedbackSystem() {
         )}
       </div>
 
-      {/* MODAL XEM CHI TIẾT BẢNG GÓP Ý ĐIỀU CHỈNH THEO DỰ THẢO */}
+      {/* MODAL XEM CHI TIẾT GÓP Ý HOẶC TÂM TƯ HỌC SINH */}
       {viewingDetailResponse && (() => {
         const parsed = parseFeedbackData(viewingDetailResponse);
-        const hasItems = parsed.items && parsed.items.length > 0;
+        const isStudentResp = viewingDetailResponse.topic_id === STUDENT_ASPIRATIONS_TOPIC_ID || 
+                              selectedTopicId === STUDENT_ASPIRATIONS_TOPIC_ID ||
+                              parsed.isStudent;
 
+        const isAnonymous = (viewingDetailResponse.organization_unit || '').includes('Ẩn danh') || 
+                            (viewingDetailResponse.representative_name || '').includes('Ẩn danh');
+        const isUrgent = viewingDetailResponse.agreement_level === 'phan_anh_khan_cap' || 
+                         (viewingDetailResponse.feedback_content || '').toLowerCase().includes('khẩn cấp') || 
+                         viewingDetailResponse.feedback_items?.[0]?.urgency === 'Khẩn cấp';
+        const isConcern = viewingDetailResponse.feedback_items?.[0]?.urgency === 'Cần quan tâm';
+        const categoryLabel = viewingDetailResponse.feedback_items?.[0]?.category || viewingDetailResponse.agreement_level || 'Chung';
+        const currentAdminNote = viewingDetailResponse.feedback_items?.[0]?.admin_note || '';
+
+        // NẾU LÀ HÒM THƯ TÂM TƯ HỌC SINH: HIỂN THỊ PHIẾU TIẾP NHẬN CHUẨN SƯ PHẠM
+        if (isStudentResp) {
+          return (
+            <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.72)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '16px' }}>
+              <div style={{
+                background: '#ffffff',
+                borderRadius: '24px',
+                maxWidth: '720px',
+                width: '100%',
+                maxHeight: '92vh',
+                display: 'flex',
+                flexDirection: 'column',
+                boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.2)',
+                overflow: 'hidden'
+              }}>
+                {/* Header Banner */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #881337 0%, #be123c 50%, #e11d48 100%)',
+                  padding: '20px 24px',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  boxShadow: '0 4px 14px rgba(136, 19, 55, 0.3)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{
+                      width: '46px',
+                      height: '46px',
+                      borderRadius: '14px',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      backdropFilter: 'blur(4px)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      border: '1.5px solid rgba(255, 255, 255, 0.35)'
+                    }}>
+                      <Mail size={24} />
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', letterSpacing: '0.3px', color: '#ffffff' }}>
+                          PHIẾU TIẾP NHẬN TÂM TƯ & NGUYỆN VỌNG HỌC SINH
+                        </h3>
+                        <span style={{
+                          fontSize: '11px',
+                          backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontWeight: '800'
+                        }}>
+                          BGH & ĐOÀN TRƯỜNG
+                        </span>
+                      </div>
+                      <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: 'rgba(255, 255, 255, 0.9)' }}>
+                        Cổng Quản Trị & Lắng Nghe Trực Tuyến — Trường THPT Cao Bá Quát
+                      </p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setViewingDetailResponse(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      border: 'none',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                      width: '34px',
+                      height: '34px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+
+                {/* Body chính */}
+                <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  
+                  {/* 4 Thẻ tổng quan */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
+                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'bold' }}>👤 Người Gửi:</div>
+                      <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a', marginTop: '3px' }}>
+                        {isAnonymous ? '🔒 Ẩn danh bảo mật' : (viewingDetailResponse.representative_name || 'Học sinh CBQ')}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'bold' }}>🏫 Chi Đoàn / Lớp:</div>
+                      <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a', marginTop: '3px' }}>
+                        {viewingDetailResponse.organization_unit || 'Toàn trường'}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'bold' }}>⚡ Mức Độ Cần Hỗ Trợ:</div>
+                      <div style={{ marginTop: '3px' }}>
+                        {isUrgent ? (
+                          <span style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '2px 8px', borderRadius: '8px', fontSize: '11.5px', fontWeight: '900' }}>
+                            🚨 KHẨN CẤP
+                          </span>
+                        ) : isConcern ? (
+                          <span style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047', padding: '2px 8px', borderRadius: '8px', fontSize: '11.5px', fontWeight: '800' }}>
+                            🟡 Cần quan tâm
+                          </span>
+                        ) : (
+                          <span style={{ background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '2px 8px', borderRadius: '8px', fontSize: '11.5px', fontWeight: '800' }}>
+                            🟢 Bình thường
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'bold' }}>🕒 Thời Gian Tiếp Nhận:</div>
+                      <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', marginTop: '3px' }}>
+                        {new Date(viewingDetailResponse.created_at).toLocaleString('vi-VN')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Thẻ Chủ đề */}
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '13px', color: '#1e40af', fontWeight: '700' }}>
+                      📌 Chủ đề tâm tư: <span style={{ color: '#1e3a8a', fontWeight: '900' }}>{categoryLabel}</span>
+                    </div>
+                    {viewingDetailResponse.phone && viewingDetailResponse.phone !== 'Bảo mật' && (
+                      <div style={{ fontSize: '12.5px', color: '#2563eb', fontWeight: '600' }}>
+                        📞 SĐT / Zalo: <strong>{viewingDetailResponse.phone}</strong>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* NỘI DUNG TÂM TƯ HỌC SINH */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '900', color: '#881337', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Heart size={16} color="#e11d48" />
+                        NỘI DUNG TÂM TƯ / NGUYỆN VỌNG HỌC SINH GỬI BGH:
+                      </div>
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                        {(viewingDetailResponse.feedback_content || '').length} ký tự
+                      </span>
+                    </div>
+
+                    <div style={{
+                      background: '#fffdfa',
+                      border: '2px solid #fecdd3',
+                      borderRadius: '16px',
+                      padding: '20px 22px',
+                      boxShadow: '0 4px 15px rgba(225, 29, 72, 0.05)',
+                      fontSize: '15.5px',
+                      lineHeight: '1.8',
+                      color: '#0f172a',
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'inherit',
+                      fontWeight: '500'
+                    }}>
+                      {viewingDetailResponse.feedback_content || 'Không có nội dung'}
+                    </div>
+                  </div>
+
+                  {/* TIẾN ĐỘ XỬ LÝ & GHI CHÚ NỘI BỘ BGH */}
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '16px 18px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CheckCircle2 size={16} color="#166534" />
+                        TIẾN ĐỘ XỬ LÝ CỦA BAN GIÁM HIỆU & ĐOÀN TRƯỜNG:
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleVerified(viewingDetailResponse.id, viewingDetailResponse.is_verified !== false)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          border: 'none',
+                          background: viewingDetailResponse.is_verified !== false ? '#dcfce7' : '#fef9c3',
+                          color: viewingDetailResponse.is_verified !== false ? '#166534' : '#854d0e',
+                          fontWeight: '800',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px'
+                        }}
+                      >
+                        {viewingDetailResponse.is_verified !== false ? '✅ Đã Tiếp Nhận' : '⏳ Đang Chờ Xử Lý'}
+                      </button>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: '#475569', marginBottom: '6px' }}>
+                        Ghi chú nội bộ / Phân công xử lý (BGH):
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <input
+                          type="text"
+                          placeholder="Nhập ghi chú xử lý (ví dụ: Đã giao thầy Nam - CSVC kiểm tra lại căng tin)..."
+                          value={adminNoteInput}
+                          onChange={e => setAdminNoteInput(e.target.value)}
+                          style={{ flex: 1, padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px' }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleSaveAdminNote}
+                          disabled={isSavingNote}
+                          style={{ padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', fontWeight: 'bold', fontSize: '12.5px', cursor: isSavingNote ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap' }}
+                        >
+                          {isSavingNote ? 'Đang Lưu...' : 'Lưu Ghi Chú'}
+                        </button>
+                      </div>
+                      {currentAdminNote && (
+                        <div style={{ marginTop: '8px', fontSize: '12.5px', color: '#0369a1', background: '#e0f2fe', padding: '8px 12px', borderRadius: '8px', border: '1px solid #bae6fd' }}>
+                          📝 <strong>Ghi chú hiện tại:</strong> {currentAdminNote}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Footer Actions */}
+                <div style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '16px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    style={{ padding: '8px 16px', borderRadius: '8px', border: '1.5px solid #cbd5e1', background: '#ffffff', color: '#334155', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🖨️ In Phiếu Tiếp Nhận
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setViewingDetailResponse(null)}
+                    style={{ padding: '9px 22px', borderRadius: '8px', border: 'none', background: '#e11d48', color: '#ffffff', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer' }}
+                  >
+                    Đóng
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // NẾU LÀ GÓP Ý DỰ THẢO VĂN BẢN (GIÁO VIÊN / TỔ CHUYÊN MÔN)
+        const hasItems = parsed.items && parsed.items.length > 0;
         return (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
             <div style={{ background: '#ffffff', borderRadius: '20px', padding: '25px', maxWidth: '880px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
@@ -1805,7 +2153,6 @@ export default function AdminFeedbackSystem() {
                   Đóng
                 </button>
               </div>
-
             </div>
           </div>
         );
