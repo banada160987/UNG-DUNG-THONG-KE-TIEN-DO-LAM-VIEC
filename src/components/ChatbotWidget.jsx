@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   MessageSquare, X, Send, Bot, User, Minimize2, Maximize2, 
   Settings, Sparkles, Brain, BookOpen, Compass, Trash2, 
   Key, Check, ShieldCheck, HelpCircle, RefreshCw, ExternalLink,
-  Mail, Heart, Shield, AlertTriangle, CheckCircle2, Wand2
+  Mail, Heart, Shield, AlertTriangle, CheckCircle2, Wand2,
+  Lock, Loader2
 } from 'lucide-react';
 import { 
   PSYCHOLOGY_TOPICS, 
@@ -76,6 +78,18 @@ export default function ChatbotWidget() {
       scrollToBottom();
     }
   }, [messages, isTyping, isOpen, isMinimized]);
+
+  // Đóng modal khi nhấn ESC
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showAspirationModal && !isSubmittingAspiration) setShowAspirationModal(false);
+        if (showSettingsModal) setShowSettingsModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAspirationModal, showSettingsModal, isSubmittingAspiration]);
 
   // Xử lý gửi tin nhắn
   const handleSendMessage = async (textToSend = null) => {
@@ -743,416 +757,695 @@ export default function ChatbotWidget() {
         </>
       )}
 
-      {/* MODAL HÒM THƯ TÂM TƯ & NGUYỆN VỌNG HỌC SINH (GỬI BGH) */}
-      {showAspirationModal && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.75)',
-          backdropFilter: 'blur(5px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 999999,
-          padding: '12px'
-        }}>
+      {/* MODAL HÒM THƯ TÂM TƯ & NGUYỆN VỌNG HỌC SINH (GỬI BGH) - FULL SCREEN PRO PORTAL */}
+      {showAspirationModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isSubmittingAspiration) {
+              setShowAspirationModal(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 99999999,
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
           <div style={{
             backgroundColor: '#ffffff',
-            borderRadius: '20px',
+            borderRadius: '24px',
             width: '100%',
-            maxWidth: '460px',
+            maxWidth: '680px',
             maxHeight: '92vh',
-            overflowY: 'auto',
-            padding: '22px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.45)',
-            border: '1.5px solid #cbd5e1',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15)',
+            overflow: 'hidden',
+            animation: 'cbqModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
             boxSizing: 'border-box'
           }}>
-            {/* Modal Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff', boxShadow: '0 4px 10px rgba(225, 29, 72, 0.3)' }}>
-                  <Mail size={20} />
+            {/* Header Sang Trọng */}
+            <div style={{
+              background: 'linear-gradient(135deg, #881337 0%, #be123c 45%, #e11d48 100%)',
+              padding: '20px 24px',
+              color: '#ffffff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              boxShadow: '0 4px 12px rgba(136, 19, 55, 0.3)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '14px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  backdropFilter: 'blur(4px)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  border: '1.5px solid rgba(255, 255, 255, 0.35)',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+                }}>
+                  <Mail size={24} />
                 </div>
                 <div>
-                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '900', color: '#881337' }}>
-                    HÒM THƯ TÂM TƯ & NGUYỆN VỌNG
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '900', letterSpacing: '0.3px', color: '#ffffff' }}>
+                      HÒM THƯ TÂM TƯ & NGUYỆN VỌNG
+                    </h3>
+                    <span style={{
+                      fontSize: '10.5px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontWeight: '800',
+                      letterSpacing: '0.2px'
+                    }}>
+                      BGH LẮNG NGHE
+                    </span>
+                  </div>
+                  <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: 'rgba(255, 255, 255, 0.9)', lineHeight: '1.4' }}>
+                    Kênh kết nối trực tiếp & bảo mật với Ban Giám Hiệu & Đoàn Trường THPT Cao Bá Quát
+                  </p>
+                </div>
+              </div>
+
+              <button 
+                type="button" 
+                onClick={() => setShowAspirationModal(false)}
+                title="Đóng hộp thư (Esc)"
+                style={{
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.32)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Nội Dung Body */}
+            {aspirationSuccess ? (
+              <div style={{ textAlign: 'center', padding: '48px 24px', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{
+                  width: '76px',
+                  height: '76px',
+                  borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 18px auto',
+                  color: '#15803d',
+                  boxShadow: '0 10px 25px -5px rgba(22, 163, 74, 0.3)'
+                }}>
+                  <CheckCircle2 size={44} />
+                </div>
+                <h3 style={{ fontSize: '20px', fontWeight: '900', color: '#166534', margin: '0 0 10px 0' }}>
+                  Đã Chuyển Tâm Tư Tới Ban Giám Hiệu!
+                </h3>
+                <p style={{ fontSize: '14px', color: '#334155', lineHeight: '1.6', maxWidth: '480px', margin: '0 auto 20px auto' }}>
+                  Thông báo đã được phát chuông tới Cổng Quản trị BGH theo thời gian thực. Thầy Cô sẽ đọc và lắng nghe tâm tư của em trong thời gian sớm nhất.
+                </p>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '12px 20px', fontSize: '13px', color: '#15803d', fontWeight: '600' }}>
+                  🌿 Cảm ơn em đã tin tưởng và góp ý xây dựng Trường THPT Cao Bá Quát!
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleAspirationSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, margin: 0 }}>
+                <div style={{
+                  padding: '22px 24px',
+                  overflowY: 'auto',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '18px'
+                }}>
+                  {/* 1. Chọn chế độ danh tính (2 Radio cards lớn, sang trọng) */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>
+                        1. Em muốn gửi ý kiến theo hình thức nào?
+                      </label>
+                      <span style={{ fontSize: '11.5px', color: '#059669', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ShieldCheck size={14} /> Bảo mật tuyệt đối
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px' }}>
+                      {/* Thẻ Ẩn danh */}
+                      <div
+                        onClick={() => setAspirationIsAnonymous(true)}
+                        style={{
+                          padding: '14px 16px',
+                          borderRadius: '14px',
+                          border: aspirationIsAnonymous ? '2px solid #059669' : '1.5px solid #e2e8f0',
+                          backgroundColor: aspirationIsAnonymous ? '#ecfdf5' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          transition: 'all 0.15s ease',
+                          boxShadow: aspirationIsAnonymous ? '0 4px 14px rgba(5, 150, 105, 0.12)' : 'none'
+                        }}
+                      >
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          backgroundColor: aspirationIsAnonymous ? '#d1fae5' : '#f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: aspirationIsAnonymous ? '#059669' : '#64748b',
+                          flexShrink: 0
+                        }}>
+                          <Shield size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '13.5px', fontWeight: '800', color: aspirationIsAnonymous ? '#065f46' : '#334155' }}>
+                              🔒 Ẩn danh bảo mật 100%
+                            </span>
+                            <div style={{
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '50%',
+                              border: aspirationIsAnonymous ? '5px solid #059669' : '2px solid #cbd5e1',
+                              backgroundColor: '#ffffff'
+                            }} />
+                          </div>
+                          <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: aspirationIsAnonymous ? '#047857' : '#64748b', lineHeight: '1.4' }}>
+                            Hệ thống không lưu họ tên em. Thoải mái chia sẻ chân thành mà không e ngại bất cứ điều gì.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Thẻ Ghi danh tính */}
+                      <div
+                        onClick={() => setAspirationIsAnonymous(false)}
+                        style={{
+                          padding: '14px 16px',
+                          borderRadius: '14px',
+                          border: !aspirationIsAnonymous ? '2px solid #2563eb' : '1.5px solid #e2e8f0',
+                          backgroundColor: !aspirationIsAnonymous ? '#eff6ff' : '#ffffff',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '12px',
+                          transition: 'all 0.15s ease',
+                          boxShadow: !aspirationIsAnonymous ? '0 4px 14px rgba(37, 99, 235, 0.12)' : 'none'
+                        }}
+                      >
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          backgroundColor: !aspirationIsAnonymous ? '#dbeafe' : '#f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: !aspirationIsAnonymous ? '#2563eb' : '#64748b',
+                          flexShrink: 0
+                        }}>
+                          <User size={20} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ fontSize: '13.5px', fontWeight: '800', color: !aspirationIsAnonymous ? '#1e40af' : '#334155' }}>
+                              👤 Ghi rõ họ tên & lớp
+                            </span>
+                            <div style={{
+                              width: '18px',
+                              height: '18px',
+                              borderRadius: '50%',
+                              border: !aspirationIsAnonymous ? '5px solid #2563eb' : '2px solid #cbd5e1',
+                              backgroundColor: '#ffffff'
+                            }} />
+                          </div>
+                          <p style={{ margin: '3px 0 0 0', fontSize: '11.5px', color: !aspirationIsAnonymous ? '#1d4ed8' : '#64748b', lineHeight: '1.4' }}>
+                            Để Ban Giám Hiệu & Thầy Cô nắm rõ và tiện liên hệ phản hồi, hỗ trợ riêng cho em khi cần.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Trường nhập thông tin */}
+                    {!aspirationIsAnonymous ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginTop: '12px', backgroundColor: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                            Họ và tên của em: <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input 
+                            type="text"
+                            required
+                            value={aspirationStudentName}
+                            onChange={e => setAspirationStudentName(e.target.value)}
+                            placeholder="Ví dụ: Nguyễn Văn An"
+                            style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                            onFocus={e => e.target.style.borderColor = '#2563eb'}
+                            onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                            Lớp học: <span style={{ color: '#ef4444' }}>*</span>
+                          </label>
+                          <input 
+                            type="text"
+                            required
+                            value={aspirationClassName}
+                            onChange={e => setAspirationClassName(e.target.value)}
+                            placeholder="Ví dụ: 10A1, 11A3, 12A8..."
+                            style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                            onFocus={e => e.target.style.borderColor = '#2563eb'}
+                            onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                            Số ĐT / Zalo (Tùy chọn):
+                          </label>
+                          <input 
+                            type="text"
+                            value={aspirationPhone}
+                            onChange={e => setAspirationPhone(e.target.value)}
+                            placeholder="Số để Thầy Cô liên hệ riêng..."
+                            style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', outline: 'none' }}
+                            onFocus={e => e.target.style.borderColor = '#2563eb'}
+                            onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ marginTop: '10px', backgroundColor: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <label style={{ fontSize: '12px', fontWeight: '700', color: '#64748b', whiteSpace: 'nowrap' }}>
+                          Khối / Lớp (Tùy chọn):
+                        </label>
+                        <input 
+                          type="text"
+                          value={aspirationClassName}
+                          onChange={e => setAspirationClassName(e.target.value)}
+                          placeholder="Ví dụ: Khối 10, Lớp 11A2 (hoặc để trống nếu muốn ẩn hoàn toàn)..."
+                          style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', outline: 'none' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 2. Chọn chủ đề tâm tư / nguyện vọng */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '6px' }}>
+                      2. Chủ đề em muốn chia sẻ hoặc phản ánh:
+                    </label>
+                    <select
+                      value={aspirationCategory}
+                      onChange={e => setAspirationCategory(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 14px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '13.5px',
+                        fontWeight: '700',
+                        color: '#1e293b',
+                        backgroundColor: '#ffffff',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {ASPIRATION_CATEGORIES.map(c => (
+                        <option key={c.id} value={c.id}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                    {(() => {
+                      const currentCat = ASPIRATION_CATEGORIES.find(c => c.id === aspirationCategory);
+                      return currentCat ? (
+                        <p style={{ margin: '5px 0 0 2px', fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                          💡 Gợi ý: {currentCat.desc}
+                        </p>
+                      ) : null;
+                    })()}
+                  </div>
+
+                  {/* 3. Mức độ cần Ban Giám Hiệu hỗ trợ (3 nút ngang thoáng đãng) */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '800', color: '#1e293b', marginBottom: '8px' }}>
+                      3. Mức độ cần Nhà Trường quan tâm & hỗ trợ:
+                    </label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                      {[
+                        { id: 'Bình thường', label: '🟢 Bình thường', desc: 'Góp ý, chia sẻ ý tưởng', color: '#10b981', bg: '#f0fdf4', border: '#10b981' },
+                        { id: 'Cần quan tâm', label: '🟡 Cần quan tâm', desc: 'Thầy Cô lắng nghe & tháo gỡ', color: '#d97706', bg: '#fffbeb', border: '#f59e0b' },
+                        { id: 'Khẩn cấp', label: '🚨 Khẩn cấp', desc: 'Cần can thiệp gấp / an toàn', color: '#e11d48', bg: '#fff1f2', border: '#e11d48' }
+                      ].map(item => {
+                        const isSel = aspirationUrgency === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => setAspirationUrgency(item.id)}
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '12px',
+                              border: isSel ? `2px solid ${item.border}` : '1.5px solid #e2e8f0',
+                              backgroundColor: isSel ? item.bg : '#ffffff',
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                              transition: 'all 0.15s ease',
+                              boxShadow: isSel ? `0 4px 12px ${item.bg}` : 'none'
+                            }}
+                          >
+                            <div style={{ fontSize: '13px', fontWeight: '800', color: isSel ? item.color : '#334155' }}>
+                              {item.label}
+                            </div>
+                            <div style={{ fontSize: '11px', color: isSel ? item.color : '#94a3b8', marginTop: '2px', fontWeight: '500' }}>
+                              {item.desc}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 4. Khung nội dung tâm tư */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: '800', color: '#1e293b' }}>
+                        4. Nội dung tâm tư, ý kiến hoặc nguyện vọng: <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handlePolishAspiration}
+                        disabled={isPolishing || !aspirationContent.trim()}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          background: isPolishing || !aspirationContent.trim() ? '#e2e8f0' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                          color: isPolishing || !aspirationContent.trim() ? '#94a3b8' : '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          cursor: isPolishing || !aspirationContent.trim() ? 'not-allowed' : 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          boxShadow: isPolishing || !aspirationContent.trim() ? 'none' : '0 3px 10px rgba(99, 102, 241, 0.35)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Nhờ AI trau chuốt câu từ lịch sự, khúc chiết, chuẩn mực học trò gửi Thầy Cô"
+                      >
+                        {isPolishing ? <Loader2 size={13} className="cbq-spin" /> : <Sparkles size={13} />}
+                        <span>{isPolishing ? 'AI Đang Trau Chuốt...' : '✨ AI Trau Chuốt Lời Văn'}</span>
+                      </button>
+                    </div>
+
+                    <textarea 
+                      rows={6}
+                      required
+                      value={aspirationContent}
+                      onChange={e => setAspirationContent(e.target.value)}
+                      placeholder="Em xin kính gửi tâm tư, trăn trở, phản ánh hoặc đề xuất tới Ban Giám Hiệu..."
+                      style={{
+                        width: '100%',
+                        minHeight: '130px',
+                        padding: '12px 14px',
+                        borderRadius: '12px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '13.5px',
+                        outline: 'none',
+                        boxSizing: 'border-box',
+                        lineHeight: '1.6',
+                        fontFamily: 'inherit',
+                        transition: 'border-color 0.15s ease'
+                      }}
+                      onFocus={e => e.target.style.borderColor = '#6366f1'}
+                      onBlur={e => e.target.style.borderColor = '#cbd5e1'}
+                    />
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', fontSize: '11.5px', color: '#64748b' }}>
+                      <span>💡 Em có thể viết ý nháp tự nhiên, sau đó bấm <strong>AI Trau Chuốt</strong> để hoàn thiện lời văn.</span>
+                      <span>{aspirationContent.length} ký tự</span>
+                    </div>
+                  </div>
+
+                  {/* Cam kết bảo mật & Trách nhiệm */}
+                  <div style={{
+                    backgroundColor: '#ecfdf5',
+                    padding: '12px 16px',
+                    borderRadius: '12px',
+                    border: '1px solid #a7f3d0',
+                    fontSize: '12px',
+                    color: '#065f46',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                    lineHeight: '1.5'
+                  }}>
+                    <ShieldCheck size={18} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong>Bảo đảm từ Nhà trường:</strong> Hòm thư được kết nối trực tiếp vào Cổng Quản trị của Ban Giám Hiệu. Nhà trường cam kết lắng nghe chân thành, thấu cảm và giữ kín danh tính của học sinh.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  borderTop: '1px solid #e2e8f0',
+                  padding: '16px 24px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block' }} />
+                    <span>Hệ thống trực tuyến 24/7</span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => setShowAspirationModal(false)}
+                      disabled={isSubmittingAspiration}
+                      style={{
+                        padding: '10px 18px',
+                        borderRadius: '10px',
+                        border: '1.5px solid #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        color: '#475569',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      Hủy Bỏ
+                    </button>
+                    <button 
+                      type="submit"
+                      disabled={isSubmittingAspiration || !aspirationContent.trim()}
+                      style={{
+                        padding: '10px 24px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        background: isSubmittingAspiration || !aspirationContent.trim() ? '#cbd5e1' : 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
+                        color: '#ffffff',
+                        fontSize: '13.5px',
+                        fontWeight: '800',
+                        cursor: isSubmittingAspiration || !aspirationContent.trim() ? 'not-allowed' : 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        boxShadow: isSubmittingAspiration || !aspirationContent.trim() ? 'none' : '0 4px 15px rgba(225, 29, 72, 0.4)',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      {isSubmittingAspiration ? <Loader2 size={16} className="cbq-spin" /> : null}
+                      <span>{isSubmittingAspiration ? 'Đang Chuyển Tới BGH...' : '🚀 Gửi Tới Ban Giám Hiệu'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* MODAL CÀI ĐẶT GEMINI AI - PRO PORTAL */}
+      {showSettingsModal && typeof document !== 'undefined' && createPortal(
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSettingsModal(false);
+            }
+          }}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(15, 23, 42, 0.72)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 99999999,
+            padding: '16px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '24px',
+            width: '100%',
+            maxWidth: '460px',
+            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.15)',
+            overflow: 'hidden',
+            animation: 'cbqModalPop 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+            boxSizing: 'border-box'
+          }}>
+            {/* Header */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+              padding: '18px 22px',
+              color: '#ffffff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '40px',
+                  height: '40px',
+                  borderRadius: '12px',
+                  background: 'rgba(255, 255, 255, 0.2)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.3)'
+                }}>
+                  <Key size={20} />
+                </div>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#ffffff' }}>
+                    CÀI ĐẶT GOOGLE GEMINI AI
                   </h4>
-                  <p style={{ margin: '2px 0 0 0', fontSize: '11.5px', color: '#64748b' }}>
-                    Gửi trực tiếp tới Ban Giám Hiệu & Đoàn trường CBQ
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: 'rgba(255, 255, 255, 0.85)' }}>
+                    Kết nối AI thế hệ mới cho học sinh CBQ
                   </p>
                 </div>
               </div>
               <button 
                 type="button" 
-                onClick={() => setShowAspirationModal(false)}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '18px', padding: '4px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {aspirationSuccess ? (
-              <div style={{ textAlign: 'center', padding: '30px 10px' }}>
-                <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px auto', color: '#16a34a' }}>
-                  <CheckCircle2 size={36} />
-                </div>
-                <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#15803d', margin: '0 0 8px 0' }}>
-                  Gửi Thành Công Tới Ban Giám Hiệu!
-                </h3>
-                <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.5', margin: 0 }}>
-                  Thông báo đã được chuyển tới Cổng Quản trị của Ban Giám Hiệu theo thời gian thực. Cảm ơn em đã chia sẻ!
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleAspirationSubmit}>
-                {/* 1. Chọn chế độ danh tính */}
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-                    Hình thức gửi:
-                  </label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setAspirationIsAnonymous(true)}
-                      style={{
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: aspirationIsAnonymous ? '2px solid #059669' : '1px solid #cbd5e1',
-                        backgroundColor: aspirationIsAnonymous ? '#ecfdf5' : '#f8fafc',
-                        color: aspirationIsAnonymous ? '#065f46' : '#64748b',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <Shield size={14} color={aspirationIsAnonymous ? '#059669' : '#94a3b8'} />
-                      <span>🔒 Ẩn danh (Bảo mật 100%)</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setAspirationIsAnonymous(false)}
-                      style={{
-                        padding: '8px 10px',
-                        borderRadius: '10px',
-                        border: !aspirationIsAnonymous ? '2px solid #2563eb' : '1px solid #cbd5e1',
-                        backgroundColor: !aspirationIsAnonymous ? '#eff6ff' : '#f8fafc',
-                        color: !aspirationIsAnonymous ? '#1e40af' : '#64748b',
-                        fontSize: '12px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <User size={14} color={!aspirationIsAnonymous ? '#2563eb' : '#94a3b8'} />
-                      <span>👤 Ghi rõ họ tên & lớp</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Điền tên/lớp */}
-                {!aspirationIsAnonymous ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '14px' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
-                        Họ và tên của em: *
-                      </label>
-                      <input 
-                        type="text"
-                        required
-                        value={aspirationStudentName}
-                        onChange={e => setAspirationStudentName(e.target.value)}
-                        placeholder="Nguyễn Văn A..."
-                        style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
-                        Lớp học: *
-                      </label>
-                      <input 
-                        type="text"
-                        required
-                        value={aspirationClassName}
-                        onChange={e => setAspirationClassName(e.target.value)}
-                        placeholder="Ví dụ: 10A1, 11A5..."
-                        style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ marginBottom: '14px' }}>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#64748b', marginBottom: '3px' }}>
-                      Khối / Lớp của em (Tùy chọn, có thể để trống):
-                    </label>
-                    <input 
-                      type="text"
-                      value={aspirationClassName}
-                      onChange={e => setAspirationClassName(e.target.value)}
-                      placeholder="Ví dụ: Khối 10, Lớp 11A3 (hoặc để trống)..."
-                      style={{ width: '100%', padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                )}
-
-                {/* 2. Chọn chủ đề */}
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-                    Chủ đề tâm tư / ý kiến:
-                  </label>
-                  <select
-                    value={aspirationCategory}
-                    onChange={e => setAspirationCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '8px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '12.5px',
-                      fontWeight: '600',
-                      color: '#1e293b',
-                      backgroundColor: '#f8fafc',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    {ASPIRATION_CATEGORIES.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 3. Mức độ ưu tiên */}
-                <div style={{ marginBottom: '14px' }}>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-                    Mức độ cần hỗ trợ:
-                  </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    {['Bình thường', 'Cần quan tâm', 'Khẩn cấp'].map(lvl => {
-                      const isSel = aspirationUrgency === lvl;
-                      const color = lvl === 'Khẩn cấp' ? '#e11d48' : (lvl === 'Cần quan tâm' ? '#f59e0b' : '#10b981');
-                      const bg = lvl === 'Khẩn cấp' ? '#fff1f2' : (lvl === 'Cần quan tâm' ? '#fefce8' : '#f0fdf4');
-                      return (
-                        <button
-                          key={lvl}
-                          type="button"
-                          onClick={() => setAspirationUrgency(lvl)}
-                          style={{
-                            flex: 1,
-                            padding: '6px 8px',
-                            borderRadius: '8px',
-                            border: isSel ? `2px solid ${color}` : '1px solid #cbd5e1',
-                            backgroundColor: isSel ? bg : '#ffffff',
-                            color: isSel ? color : '#64748b',
-                            fontSize: '11.5px',
-                            fontWeight: '700',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          {lvl === 'Khẩn cấp' && '🚨 '}
-                          {lvl === 'Cần quan tâm' && '🟡 '}
-                          {lvl === 'Bình thường' && '🟢 '}
-                          {lvl}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* 4. Nội dung */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155' }}>
-                      Nội dung tâm tư / góp ý: *
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handlePolishAspiration}
-                      disabled={isPolishing || !aspirationContent.trim()}
-                      style={{
-                        padding: '3px 8px',
-                        borderRadius: '6px',
-                        border: '1px solid #c7d2fe',
-                        backgroundColor: '#eef2ff',
-                        color: '#4338ca',
-                        fontSize: '11px',
-                        fontWeight: '700',
-                        cursor: isPolishing || !aspirationContent.trim() ? 'not-allowed' : 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '3px'
-                      }}
-                      title="Nhờ AI trau chuốt câu từ lịch sự, khúc chiết, chuẩn mực học trò gửi BGH"
-                    >
-                      <Wand2 size={11} />
-                      {isPolishing ? 'AI đang trau chuốt...' : '✨ AI Trau Chuốt Lời Văn'}
-                    </button>
-                  </div>
-                  <textarea 
-                    rows={5}
-                    required
-                    value={aspirationContent}
-                    onChange={e => setAspirationContent(e.target.value)}
-                    placeholder="Em xin kính gửi tâm tư, trăn trở, phản ánh hoặc đề xuất tới Ban Giám Hiệu..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '10px',
-                      border: '1.5px solid #cbd5e1',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box',
-                      lineHeight: '1.5',
-                      fontFamily: 'inherit'
-                    }}
-                  />
-                </div>
-
-                {/* Cam kết bảo mật */}
-                <div style={{ backgroundColor: '#f8fafc', padding: '8px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '11px', color: '#64748b', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <ShieldCheck size={14} color="#10b981" />
-                  <span>Ý kiến của em được chuyển thẳng vào Cổng Quản trị Ban Giám Hiệu. Nhà trường cam kết bảo mật danh tính tuyệt đối.</span>
-                </div>
-
-                {/* Footer Buttons */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button 
-                    type="button"
-                    onClick={() => setShowAspirationModal(false)}
-                    style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
-                  >
-                    Hủy Bỏ
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={isSubmittingAspiration}
-                    style={{
-                      padding: '8px 20px',
-                      borderRadius: '8px',
-                      border: 'none',
-                      background: 'linear-gradient(135deg, #e11d48 0%, #be123c 100%)',
-                      color: '#ffffff',
-                      fontSize: '12.5px',
-                      fontWeight: '800',
-                      cursor: isSubmittingAspiration ? 'not-allowed' : 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      boxShadow: '0 4px 12px rgba(225, 29, 72, 0.35)'
-                    }}
-                  >
-                    {isSubmittingAspiration ? 'Đang Gửi...' : '🚀 Gửi Tới Ban Giám Hiệu'}
-                  </button>
-                </div>
-              </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showSettingsModal && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.65)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 999999,
-          padding: '16px'
-        }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '16px',
-            width: '100%',
-            maxWidth: '380px',
-            padding: '20px',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
-            border: '1px solid #cbd5e1'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #f1f5f9', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Key size={18} color="#2563eb" />
-                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#1e3a8a' }}>
-                  CÀI ĐẶT GOOGLE GEMINI AI
-                </h4>
-              </div>
-              <button 
-                type="button" 
                 onClick={() => setShowSettingsModal(false)}
-                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#64748b', fontSize: '18px' }}
-              >
-                ✕
-              </button>
-            </div>
-
-            <p style={{ fontSize: '12.5px', color: '#475569', lineHeight: '1.5', margin: '0 0 12px 0' }}>
-              Nhập <strong>Google Gemini API Key</strong> để kích hoạt mô hình AI thế hệ mới (Gemini 1.5 Flash / Pro). Nếu để trống, hệ thống sẽ tự động dùng <strong>Bộ Tri Thức Tâm Lý Học Đường Offline</strong> có sẵn.
-            </p>
-
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
-                Gemini API Key:
-              </label>
-              <input 
-                type="password"
-                value={apiKeyInput}
-                onChange={e => setApiKeyInput(e.target.value)}
-                placeholder="AIzaSy..."
                 style={{
-                  width: '100%',
-                  padding: '9px 12px',
-                  borderRadius: '8px',
-                  border: '1.5px solid #cbd5e1',
-                  fontSize: '13px',
-                  outline: 'none',
-                  boxSizing: 'border-box'
+                  border: 'none',
+                  background: 'rgba(255, 255, 255, 0.18)',
+                  cursor: 'pointer',
+                  color: '#ffffff',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
-              />
+              >
+                <X size={16} />
+              </button>
             </div>
 
-            <div style={{ backgroundColor: '#eff6ff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #bfdbfe', fontSize: '11.5px', color: '#1e40af', marginBottom: '16px', lineHeight: '1.4' }}>
-              💡 Bạn có thể lấy API Key hoàn toàn miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '2px' }}>Google AI Studio <ExternalLink size={11} /></a> bằng tài khoản Gmail của mình.
-            </div>
+            {/* Body */}
+            <div style={{ padding: '22px' }}>
+              <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
+                Nhập <strong>Google Gemini API Key</strong> để kích hoạt AI đàm thoại trực tiếp (Gemini 1.5 Flash / Pro). Nếu để trống, hệ thống sẽ tự động dùng <strong>Bộ Tri Thức Tâm Lý Học Đường Offline</strong> có sẵn.
+              </p>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button 
-                type="button"
-                onClick={() => setShowSettingsModal(false)}
-                style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
-              >
-                Đóng
-              </button>
-              <button 
-                type="button"
-                onClick={handleSaveApiKey}
-                style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)' }}
-              >
-                {saveKeySuccess ? <Check size={14} /> : null}
-                {saveKeySuccess ? 'Đã Lưu!' : 'Lưu API Key'}
-              </button>
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: '800', color: '#334155', marginBottom: '6px' }}>
+                  Gemini API Key:
+                </label>
+                <input 
+                  type="password"
+                  value={apiKeyInput}
+                  onChange={e => setApiKeyInput(e.target.value)}
+                  placeholder="AIzaSy..."
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '13.5px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div style={{ backgroundColor: '#eff6ff', padding: '12px 14px', borderRadius: '10px', border: '1px solid #bfdbfe', fontSize: '12px', color: '#1e40af', marginBottom: '20px', lineHeight: '1.5' }}>
+                💡 Bạn có thể lấy API Key hoàn toàn miễn phí tại <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#2563eb', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>Google AI Studio <ExternalLink size={12} /></a> bằng tài khoản Gmail của mình.
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button 
+                  type="button"
+                  onClick={() => setShowSettingsModal(false)}
+                  style={{ padding: '9px 16px', borderRadius: '10px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontSize: '13px', fontWeight: '700', cursor: 'pointer', color: '#475569' }}
+                >
+                  Đóng
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleSaveApiKey}
+                  style={{ padding: '9px 20px', borderRadius: '10px', border: 'none', backgroundColor: '#2563eb', color: '#ffffff', fontSize: '13px', fontWeight: '800', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 3px 10px rgba(37, 99, 235, 0.35)' }}
+                >
+                  {saveKeySuccess ? <Check size={16} /> : null}
+                  {saveKeySuccess ? 'Đã Lưu Thành Công!' : 'Lưu API Key'}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* STYLES FOR TYPING ANIMATION */}
+      {/* STYLES FOR ANIMATIONS */}
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes cbqTyping {
           0%, 100% { transform: translateY(0); opacity: 0.4; }
@@ -1164,6 +1457,17 @@ export default function ChatbotWidget() {
           background-color: #6366f1;
           border-radius: 50%;
           animation: cbqTyping 1s infinite ease-in-out;
+        }
+        @keyframes cbqModalPop {
+          0% { transform: scale(0.95); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes cbqSpin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .cbq-spin {
+          animation: cbqSpin 0.85s linear infinite;
         }
       `}} />
     </div>
