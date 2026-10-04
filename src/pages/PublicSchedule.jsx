@@ -135,17 +135,26 @@ export const getSubjectTheme = (subject) => {
   return { bg: '#f8fafc', border: '#cbd5e1', text: '#334155', icon: '📚', badgeBg: '#e2e8f0', label: s };
 };
 
-export const getTodayVN = (customTimings = null) => {
+export const getTodayVN = (customTimings = null, customDate = null) => {
   const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-  const now = new Date();
+  const now = customDate instanceof Date ? customDate : (customDate ? new Date(customDate) : new Date());
   const dayIndex = now.getDay();
   const dayName = dayNames[dayIndex];
   const isSchoolDay = dayIndex >= 1 && dayIndex <= 6;
   const dateStr = now.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const dateString = dateStr;
+
+  const h = String(now.getHours()).padStart(2, '0');
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  const timeStr = `${h}:${m}`;
+  const timeString = `${h}:${m}:${s}`;
   
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   let currentPeriod = null;
   let statusText = 'Ngoài giờ học';
+  let sessionName = 'Ngoài giờ học';
+  let minutesLeftInPeriod = 0;
 
   const timings = (customTimings && customTimings.length > 0) ? customTimings : getStoredPeriodTimings();
 
@@ -156,10 +165,14 @@ export const getTodayVN = (customTimings = null) => {
     const endMin = eh * 60 + em;
     if (currentMinutes >= startMin && currentMinutes <= endMin) {
       currentPeriod = pt.period;
-      statusText = `Đang diễn ra Tiết ${pt.period} (${pt.start} - ${pt.end})`;
+      sessionName = pt.session === 'Chiều' ? 'Ca Chiều' : 'Ca Sáng';
+      minutesLeftInPeriod = endMin - currentMinutes;
+      statusText = `Đang diễn ra Tiết ${pt.period} (${pt.start} - ${pt.end}) • Còn ${minutesLeftInPeriod} phút`;
       break;
     }
   }
+
+  const isCurrentClassTime = isSchoolDay && currentPeriod !== null;
 
   if (!currentPeriod && isSchoolDay) {
     const mP1 = timings.find(pt => pt.period === 1);
@@ -172,16 +185,47 @@ export const getTodayVN = (customTimings = null) => {
     const aStartMin = aP6 ? Number(aP6.start.split(':')[0]) * 60 + Number(aP6.start.split(':')[1]) : 13 * 60 + 30;
     const aEndMin = aP10 ? Number(aP10.end.split(':')[0]) * 60 + Number(aP10.end.split(':')[1]) : 17 * 60 + 45;
 
-    if (currentMinutes >= mStartMin && currentMinutes < mEndMin) {
-      statusText = 'Giờ giải lao / Chuẩn bị đổi tiết sáng';
+    if (currentMinutes < mStartMin) {
+      statusText = `Sắp bắt đầu Ca Sáng (Vào học lúc ${mP1?.start || '07:00'})`;
+      sessionName = 'Đầu giờ sáng';
+    } else if (currentMinutes >= mStartMin && currentMinutes < mEndMin) {
+      const nextP = timings.find(pt => {
+        const [sh, sm] = (pt.start || '00:00').split(':').map(Number);
+        return (sh * 60 + sm) > currentMinutes && pt.period <= 5;
+      });
+      statusText = nextP ? `Giờ ra chơi / Chuẩn bị vào Tiết ${nextP.period} (${nextP.start})` : 'Giờ giải lao ca sáng';
+      sessionName = 'Giải lao Ca Sáng';
     } else if (currentMinutes >= mEndMin && currentMinutes < aStartMin) {
-      statusText = 'Nghỉ trưa bán trú / Chuyển ca';
+      statusText = `Nghỉ trưa bán trú • Vào ca chiều lúc ${aP6?.start || '13:30'}`;
+      sessionName = 'Nghỉ trưa';
     } else if (currentMinutes >= aStartMin && currentMinutes < aEndMin) {
-      statusText = 'Giờ giải lao / Chuẩn bị đổi tiết chiều';
+      const nextP = timings.find(pt => {
+        const [sh, sm] = (pt.start || '00:00').split(':').map(Number);
+        return (sh * 60 + sm) > currentMinutes && pt.period >= 6;
+      });
+      statusText = nextP ? `Giờ ra chơi / Chuẩn bị vào Tiết ${nextP.period} (${nextP.start})` : 'Giờ giải lao ca chiều';
+      sessionName = 'Giải lao Ca Chiều';
+    } else {
+      statusText = 'Đã kết thúc các tiết học trong ngày';
+      sessionName = 'Tan học';
     }
   }
 
-  return { dayName, isSchoolDay, dateStr, currentPeriod, statusText };
+  return {
+    dayName,
+    dayIndex,
+    isSchoolDay,
+    dateStr,
+    dateString,
+    timeStr,
+    timeString,
+    currentMinutes,
+    currentPeriod,
+    isCurrentClassTime,
+    statusText,
+    sessionName,
+    minutesLeftInPeriod
+  };
 };
 
 const TEACHER_FULL_MAP = {
@@ -335,8 +379,21 @@ export default function PublicSchedule() {
   const [teacherSearchInput, setTeacherSearchInput] = useState('');
   const [todayViewFocus, setTodayViewFocus] = useState(false);
 
-  // State for Free Teachers Finder
-  const todayInfo = useMemo(() => getTodayVN(periodTimings), [periodTimings]);
+  // Live Real-Time Clock Heartbeat Ticker (Tự động cập nhật theo thời gian thực không cần reload)
+  const [currentClockTick, setCurrentClockTick] = useState(() => Date.now());
+
+  useEffect(() => {
+    // Heartbeat ticker: Tự động cập nhật mỗi 5 giây để nhảy tiết học theo thời gian thực chuẩn xác 100%
+    const timer = setInterval(() => {
+      setCurrentClockTick(Date.now());
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Tính toán thông tin ngày & tiết học theo thời gian thực
+  const todayInfo = useMemo(() => {
+    return getTodayVN(periodTimings, new Date(currentClockTick));
+  }, [periodTimings, currentClockTick]);
   const [freeDay, setFreeDay] = useState(todayInfo.isSchoolDay ? todayInfo.dayName : 'Thứ 2'); // 'Thứ 2'..'Thứ 7'
   const [freeSessionFilter, setFreeSessionFilter] = useState('all_day'); // 'all_day' | 'morning' | 'afternoon' | 'specific_period' | 'all'
   const [freeSpecificPeriod, setFreeSpecificPeriod] = useState(1); // 1..10
@@ -964,6 +1021,20 @@ export default function PublicSchedule() {
           table { width: 100% !important; border-collapse: collapse !important; margin-top: 10px !important; }
           th, td { border: 1px solid #1e293b !important; padding: 6px 8px !important; font-size: 12px !important; }
           th { background-color: #f1f5f9 !important; -webkit-print-color-adjust: exact; }
+        }
+        @keyframes pulseLiveGlow {
+          0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+          50% { box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+        @keyframes pulseLiveDot {
+          0% { opacity: 0.4; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.3); }
+          100% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .live-active-period-card {
+          border: 2px solid #ef4444 !important;
+          animation: pulseLiveGlow 2s infinite ease-in-out !important;
         }
       `}</style>
 
@@ -1886,9 +1957,17 @@ export default function PublicSchedule() {
 
                 <tbody>
                   {[
-                    { label: '🌅 BUỔI SÁNG (07:00 - 11:05)', isHeader: true, session: 'morning' },
+                    {
+                      label: `🌅 BUỔI SÁNG (${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 1)?.start || '07:00'} - ${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 5)?.end || '11:05'})`,
+                      isHeader: true,
+                      session: 'morning'
+                    },
                     1, 2, 3, 4, 5,
-                    { label: '🌇 BUỔI CHIỀU (13:30 - 17:45)', isHeader: true, session: 'afternoon' },
+                    {
+                      label: `🌇 BUỔI CHIỀU (${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:30'} - ${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:45'})`,
+                      isHeader: true,
+                      session: 'afternoon'
+                    },
                     6, 7, 8, 9, 10
                   ].map((p, idx) => {
                     if (p.isHeader) {
@@ -1915,6 +1994,7 @@ export default function PublicSchedule() {
 
                     const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === p);
                     const isMorning = p <= 5;
+                    const isThisPeriodActiveNow = todayInfo.isSchoolDay && todayInfo.currentPeriod === p;
 
                     return (
                       <tr key={p}>
@@ -1923,15 +2003,23 @@ export default function PublicSchedule() {
                           padding: '6px 8px',
                           textAlign: 'center',
                           borderRadius: '8px',
-                          backgroundColor: isMorning ? '#f0f9ff' : '#fffbeb',
-                          border: `1px solid ${isMorning ? '#bae6fd' : '#fde68a'}`,
+                          backgroundColor: isThisPeriodActiveNow ? (isMorning ? '#e0f2fe' : '#fef3c7') : (isMorning ? '#f0f9ff' : '#fffbeb'),
+                          border: isThisPeriodActiveNow ? (isMorning ? '2px solid #0284c7' : '2px solid #d97706') : `1px solid ${isMorning ? '#bae6fd' : '#fde68a'}`,
                           verticalAlign: 'middle',
                           width: '100px',
                           minWidth: '100px',
-                          whiteSpace: 'nowrap'
+                          whiteSpace: 'nowrap',
+                          boxShadow: isThisPeriodActiveNow ? '0 0 10px rgba(2, 132, 199, 0.25)' : 'none'
                         }}>
-                          <div style={{ fontWeight: '900', fontSize: '13px', color: isMorning ? '#0284c7' : '#b45309' }}>
-                            Tiết {p}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <div style={{ fontWeight: '900', fontSize: '13px', color: isMorning ? '#0284c7' : '#b45309' }}>
+                              Tiết {p}
+                            </div>
+                            {isThisPeriodActiveNow && (
+                              <span style={{ fontSize: '8px', fontWeight: '900', padding: '1px 4px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#ffffff' }}>
+                                LIVE
+                              </span>
+                            )}
                           </div>
                           <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
                             {timing?.start} - {timing?.end}
@@ -1987,14 +2075,15 @@ export default function PublicSchedule() {
                                 onClick={() => setSelectedLessonDetail({ ...item, day: d, period: p })}
                                 style={{
                                   backgroundColor: isHighlighted ? '#fef08a' : theme.bg,
-                                  border: isHighlighted ? '2px solid #ca8a04' : `1.5px solid ${theme.border}`,
-                                  borderLeft: `4px solid ${isHighlighted ? '#ca8a04' : theme.text}`,
+                                  border: isHighlighted ? '2px solid #ca8a04' : (isCurrentActive ? '2px solid #ef4444' : `1.5px solid ${theme.border}`),
+                                  borderLeft: `4px solid ${isHighlighted ? '#ca8a04' : (isCurrentActive ? '#ef4444' : theme.text)}`,
                                   borderRadius: '8px',
                                   padding: '6px 8px',
                                   display: 'flex',
                                   flexDirection: 'column',
                                   gap: '2px',
-                                  boxShadow: isCurrentActive ? '0 0 12px rgba(2, 132, 199, 0.4)' : '0 1px 3px rgba(0,0,0,0.03)',
+                                  boxShadow: isCurrentActive ? '0 0 0 2px #ef4444, 0 6px 16px rgba(239, 68, 68, 0.4)' : '0 1px 3px rgba(0,0,0,0.03)',
+                                  animation: isCurrentActive ? 'pulseLiveGlow 2s infinite ease-in-out' : 'none',
                                   position: 'relative'
                                 }}
                               >
@@ -2004,7 +2093,21 @@ export default function PublicSchedule() {
                                     <span>{item.subject}</span>
                                   </span>
                                   {isCurrentActive && (
-                                    <span style={{ fontSize: '9px', fontWeight: '900', padding: '1px 5px', borderRadius: '6px', backgroundColor: '#ef4444', color: '#ffffff' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '9px',
+                                        fontWeight: '900',
+                                        padding: '1.5px 6px',
+                                        borderRadius: '6px',
+                                        backgroundColor: '#ef4444',
+                                        color: '#ffffff',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '3px',
+                                        boxShadow: '0 2px 6px rgba(239, 68, 68, 0.4)'
+                                      }}
+                                    >
+                                      <span style={{ display: 'inline-block', width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#ffffff', animation: 'pulseLiveDot 1.2s infinite' }} />
                                       LIVE
                                     </span>
                                   )}
@@ -2309,13 +2412,18 @@ export default function PublicSchedule() {
             {/* MATRIX TABLES RENDERING */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
               {daysToRender.map(day => {
+                const mStart = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 1)?.start || '07:00';
+                const mEnd = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 5)?.end || '11:05';
+                const aStart = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:30';
+                const aEnd = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:45';
+
                 const periodsToRender = [
                   ...(selectedGradeSession === 'afternoon' ? [] : [
-                    { label: `--- SÁNG (${day}) (07:00 - 11:05) ---`, isHeader: true },
+                    { label: `--- SÁNG (${day}) (${mStart} - ${mEnd}) ---`, isHeader: true },
                     1, 2, 3, 4, 5
                   ]),
                   ...(selectedGradeSession === 'morning' ? [] : [
-                    { label: `--- CHIỀU (${day}) (13:30 - 17:45) ---`, isHeader: true },
+                    { label: `--- CHIỀU (${day}) (${aStart} - ${aEnd}) ---`, isHeader: true },
                     6, 7, 8, 9, 10
                   ])
                 ];
@@ -2402,6 +2510,7 @@ export default function PublicSchedule() {
 
                             const isMorning = p <= 5;
                             const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === p);
+                            const isThisPeriodActiveNow = day === todayInfo.dayName && todayInfo.currentPeriod === p;
 
                             return (
                               <tr key={p} style={{ ...styles.tableRow, backgroundColor: isMorning ? '#ffffff' : '#fafafa' }}>
@@ -2411,21 +2520,28 @@ export default function PublicSchedule() {
                                   ...styles.td,
                                   fontWeight: '800',
                                   textAlign: 'center',
-                                  backgroundColor: isMorning ? '#f0f9ff' : '#fffbeb',
+                                  backgroundColor: isThisPeriodActiveNow ? (isMorning ? '#e0f2fe' : '#fef3c7') : (isMorning ? '#f0f9ff' : '#fffbeb'),
                                   color: isMorning ? '#0369a1' : '#b45309',
                                   position: 'sticky',
                                   left: 0,
                                   zIndex: 5,
-                                  boxShadow: '2px 0 6px rgba(0,0,0,0.06)',
-                                  borderRight: '1px solid #cbd5e1',
+                                  boxShadow: isThisPeriodActiveNow ? '0 0 10px rgba(2, 132, 199, 0.3)' : '2px 0 6px rgba(0,0,0,0.06)',
+                                  borderRight: isThisPeriodActiveNow ? (isMorning ? '2px solid #0284c7' : '2px solid #d97706') : '1px solid #cbd5e1',
                                   width: '100px',
                                   minWidth: '100px',
                                   whiteSpace: 'nowrap',
                                   padding: '6px 8px',
                                   verticalAlign: 'middle'
                                 }}>
-                                  <div style={{ fontSize: '13px', fontWeight: '900', color: isMorning ? '#0284c7' : '#b45309' }}>
-                                    Tiết {p}
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '900', color: isMorning ? '#0284c7' : '#b45309' }}>
+                                      Tiết {p}
+                                    </div>
+                                    {isThisPeriodActiveNow && (
+                                      <span style={{ fontSize: '8px', fontWeight: '900', padding: '1px 4px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#ffffff' }}>
+                                        LIVE
+                                      </span>
+                                    )}
                                   </div>
                                   <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '700', marginTop: '2px' }}>
                                     {timing?.start} - {timing?.end}
@@ -2457,7 +2573,8 @@ export default function PublicSchedule() {
                                       style={{
                                         ...styles.td,
                                         borderLeft: '1px solid #e2e8f0',
-                                        backgroundColor: isMatched ? '#fef08a' : sTheme.bg,
+                                        backgroundColor: isMatched ? '#fef08a' : (isThisPeriodActiveNow ? '#eff6ff' : sTheme.bg),
+                                        boxShadow: isThisPeriodActiveNow ? 'inset 0 0 0 1.5px #38bdf8' : 'none',
                                         transition: 'background-color 0.2s',
                                         padding: '6px 8px',
                                         cursor: 'pointer',
