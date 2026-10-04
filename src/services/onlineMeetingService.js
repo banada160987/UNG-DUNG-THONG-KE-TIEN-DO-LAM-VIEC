@@ -501,23 +501,54 @@ export const OnlineMeetingService = {
       return { success: false, message: 'Mã số phiên họp không chính xác! Vui lòng xem màn hình cuộc họp.' };
     }
 
+    // Kiểm tra xem giáo viên này đã được TTCM / Thư ký chốt điểm danh chưa
+    const allAttendances = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
+    const existing = allAttendances.find(
+      a => a.meeting_id === activeMeetingId && a.staff_name.toLowerCase().trim() === staffName.toLowerCase().trim()
+    );
+
+    // 1. Nếu TTCM hoặc Thư ký đã kiểm diện thực tế và xác nhận người này VẮNG: Chặn tự quét QR để ghi đè thành có mặt!
+    if (existing && existing.verified_by_ttcm && existing.status !== 'PRESENT') {
+      const vName = existing.verified_by_name || 'Tổ trưởng chuyên môn';
+      const statusText = existing.status === 'EXCUSED' ? 'Vắng có phép' : 'Vắng không phép';
+      return {
+        success: false,
+        message: `Tổ trưởng chuyên môn (${vName}) đã kiểm diện thực tế và xác nhận bạn là "${statusText}" (Lý do: ${existing.note || 'Không có mặt'})! Bạn không thể tự quét mã để chuyển thành Có mặt. Nếu bạn vừa đến hội trường, vui lòng gặp trực tiếp TTCM để được báo lại.`
+      };
+    }
+
+    // 2. Nếu Tổ chuyên môn đã nộp báo cáo sĩ số với BGH và giáo viên này đang bị báo vắng
+    const allReports = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
+    const deptReport = allReports.find(
+      r => r.meeting_id === activeMeetingId && r.department.toLowerCase().trim() === department.toLowerCase().trim()
+    );
+    if (deptReport && existing && existing.status !== 'PRESENT') {
+      return {
+        success: false,
+        message: `Tổ trưởng (${deptReport.reporter_name}) đã chốt nộp báo cáo sĩ số Tổ ${department} với Ban Giám Hiệu. Bạn đang được ghi nhận vắng mặt. Vui lòng gặp trực tiếp TTCM hoặc Thư ký hội đồng để báo lại!`
+      };
+    }
+
+    const isAlreadyVerified = existing?.verified_by_ttcm || false;
+    const verifiedByName = existing?.verified_by_name || null;
+
     const newAttendance = {
-      id: generateUUID(),
+      id: (existing && isValidUUID(existing.id)) ? existing.id : generateUUID(),
       meeting_id: activeMeetingId,
       staff_id: staffId || null,
       staff_name: staffName.trim(),
       department: department.trim(),
       title: title || 'Giáo viên',
-      checkin_time: new Date().toISOString(),
+      checkin_time: (existing && existing.checkin_time) ? existing.checkin_time : new Date().toISOString(),
       status: 'PRESENT',
-      poll_answer: pollAnswer || null,
-      verified_by_ttcm: false,
-      note: 'Tự điểm danh qua mã OTP',
+      poll_answer: pollAnswer || existing?.poll_answer || null,
+      verified_by_ttcm: isAlreadyVerified,
+      verified_by_name: verifiedByName,
+      note: isAlreadyVerified ? (existing?.note || 'TTCM đã xác nhận có mặt') : 'Tự điểm danh qua mã OTP',
       device_info: deviceInfo || (typeof navigator !== 'undefined' ? navigator.userAgent : 'Thiết bị di động cá nhân')
     };
 
     // Lưu vào LocalStorage
-    const allAttendances = getLocalData(STORAGE_KEYS.ATTENDANCES, []);
     const existingIdx = allAttendances.findIndex(
       a => a.meeting_id === activeMeetingId && a.staff_name.toLowerCase() === staffName.trim().toLowerCase()
     );
@@ -606,10 +637,27 @@ export const OnlineMeetingService = {
     unexcusedCount,
     absentDetails = [],
     note = '',
-    verifiedAttendances = []
+    verifiedAttendances = [],
+    forceOverride = false
   }) {
     if (!meetingId || !department || !reporterName) {
       return { success: false, message: 'Thiếu thông tin cuộc họp, tổ hoặc người báo cáo!' };
+    }
+
+    const allReports = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
+    const repIdx = allReports.findIndex(
+      r => r.meeting_id === meetingId && r.department.toLowerCase().trim() === department.toLowerCase().trim()
+    );
+
+    // Nếu tổ này đã có báo cáo từ trước và người dùng KHÔNG chủ động mở khóa ghi đè (forceOverride)
+    if (repIdx >= 0 && !forceOverride) {
+      const existing = allReports[repIdx];
+      return {
+        success: false,
+        isAlreadyReported: true,
+        existingReport: existing,
+        message: `Tổ ${department} đã được TTCM (${existing.reporter_name}) gửi báo cáo lúc ${new Date(existing.reported_at).toLocaleTimeString('vi-VN')}! Vui lòng chọn "Mở khóa cập nhật" nếu bạn là TTCM muốn điều chỉnh lại.`
+      };
     }
 
     const reportData = {
@@ -628,8 +676,6 @@ export const OnlineMeetingService = {
     };
 
     // 1. Lưu report vào LocalStorage
-    const allReports = getLocalData(STORAGE_KEYS.DEPT_REPORTS, []);
-    const repIdx = allReports.findIndex(r => r.meeting_id === meetingId && r.department === department.trim());
     if (repIdx >= 0) {
       allReports[repIdx] = reportData;
     } else {
@@ -643,7 +689,7 @@ export const OnlineMeetingService = {
       
       verifiedAttendances.forEach(item => {
         const idx = allAttendances.findIndex(
-          a => a.meeting_id === meetingId && a.staff_name.toLowerCase() === item.staff_name.toLowerCase()
+          a => a.meeting_id === meetingId && a.staff_name.toLowerCase().trim() === item.staff_name.toLowerCase().trim()
         );
         const record = {
           id: (idx >= 0 && isValidUUID(allAttendances[idx].id)) ? allAttendances[idx].id : generateUUID(),
@@ -652,12 +698,12 @@ export const OnlineMeetingService = {
           staff_name: item.staff_name.trim(),
           department: department.trim(),
           title: item.title || 'Giáo viên',
-          checkin_time: new Date().toISOString(),
+          checkin_time: (idx >= 0 && allAttendances[idx].checkin_time) ? allAttendances[idx].checkin_time : new Date().toISOString(),
           status: item.status || 'PRESENT',
           verified_by_ttcm: true,
           verified_by_name: reporterName.trim(),
           note: item.note || (item.status === 'PRESENT' ? 'TTCM xác nhận có mặt' : 'TTCM báo vắng'),
-          device_info: 'TTCM xác nhận qua cổng Tổ trưởng'
+          device_info: `TTCM (${reporterName.trim()}) xác nhận tại hội trường`
         };
 
         if (idx >= 0) {
@@ -700,7 +746,8 @@ export const OnlineMeetingService = {
               status: item.status || 'PRESENT',
               verified_by_ttcm: true,
               verified_by_name: reporterName.trim(),
-              note: item.note || ''
+              note: item.note || (item.status === 'PRESENT' ? 'TTCM xác nhận có mặt' : 'TTCM báo vắng'),
+              device_info: `TTCM (${reporterName.trim()}) xác nhận tại hội trường`
             }, { onConflict: 'meeting_id,staff_name,department' });
           }
         }

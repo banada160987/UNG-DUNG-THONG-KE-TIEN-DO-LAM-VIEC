@@ -480,7 +480,8 @@ export default function AdminMeetingAttendance() {
         unexcusedCount,
         absentDetails,
         note: modalDeptNote.trim() || roleText,
-        verifiedAttendances
+        verifiedAttendances,
+        forceOverride: true
       });
 
       setShowDeptReportModal(false);
