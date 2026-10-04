@@ -61,6 +61,46 @@ import {
   solveExtracurricularSchedule,
   buildStudentOverlapMatrix
 } from '../utils/extracurricularClubSolver';
+import { DEFAULT_PERIOD_TIMINGS, getStoredPeriodTimings } from './PublicSchedule';
+
+export const PRESET_TIMINGS_STANDARD = [
+  { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
+  { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
+  { period: 3, session: 'Sáng', start: '08:50', end: '09:35', label: 'Tiết 3 (08:50 - 09:35)' },
+  { period: 4, session: 'Sáng', start: '09:35', end: '10:20', label: 'Tiết 4 (09:35 - 10:20)' },
+  { period: 5, session: 'Sáng', start: '10:20', end: '11:05', label: 'Tiết 5 (10:20 - 11:05)' },
+  { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
+  { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
+  { period: 8, session: 'Chiều', start: '15:20', end: '16:05', label: 'Tiết 8 (15:20 - 16:05)' },
+  { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
+  { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
+];
+
+export const PRESET_TIMINGS_WINTER = [
+  { period: 1, session: 'Sáng', start: '07:15', end: '08:00', label: 'Tiết 1 (07:15 - 08:00)' },
+  { period: 2, session: 'Sáng', start: '08:05', end: '08:50', label: 'Tiết 2 (08:05 - 08:50)' },
+  { period: 3, session: 'Sáng', start: '09:05', end: '09:50', label: 'Tiết 3 (09:05 - 09:50)' },
+  { period: 4, session: 'Sáng', start: '09:55', end: '10:40', label: 'Tiết 4 (09:55 - 10:40)' },
+  { period: 5, session: 'Sáng', start: '10:45', end: '11:30', label: 'Tiết 5 (10:45 - 11:30)' },
+  { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
+  { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
+  { period: 8, session: 'Chiều', start: '15:20', end: '16:05', label: 'Tiết 8 (15:20 - 16:05)' },
+  { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
+  { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
+];
+
+export const PRESET_TIMINGS_SHORT = [
+  { period: 1, session: 'Sáng', start: '07:30', end: '08:05', label: 'Tiết 1 (07:30 - 08:05)' },
+  { period: 2, session: 'Sáng', start: '08:10', end: '08:45', label: 'Tiết 2 (08:10 - 08:45)' },
+  { period: 3, session: 'Sáng', start: '09:00', end: '09:35', label: 'Tiết 3 (09:00 - 09:35)' },
+  { period: 4, session: 'Sáng', start: '09:40', end: '10:15', label: 'Tiết 4 (09:40 - 10:15)' },
+  { period: 5, session: 'Sáng', start: '10:20', end: '10:55', label: 'Tiết 5 (10:20 - 10:55)' },
+  { period: 6, session: 'Chiều', start: '13:45', end: '14:20', label: 'Tiết 6 (13:45 - 14:20)' },
+  { period: 7, session: 'Chiều', start: '14:25', end: '15:00', label: 'Tiết 7 (14:25 - 15:00)' },
+  { period: 8, session: 'Chiều', start: '15:15', end: '15:50', label: 'Tiết 8 (15:15 - 15:50)' },
+  { period: 9, session: 'Chiều', start: '15:55', end: '16:30', label: 'Tiết 9 (15:55 - 16:30)' },
+  { period: 10, session: 'Chiều', start: '16:35', end: '17:10', label: 'Tiết 10 (16:35 - 17:10)' }
+];
 
 export default function AdminSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -237,6 +277,28 @@ export default function AdminSchedule() {
       note: 'Áp dụng chính thức cho toàn trường'
     };
   });
+
+  // Khung Giờ Tiết Học (Period Timings) State
+  const [periodTimings, setPeriodTimings] = useState(() => getStoredPeriodTimings());
+  const [showPeriodTimingsModal, setShowPeriodTimingsModal] = useState(false);
+  const [editingPeriodTimings, setEditingPeriodTimings] = useState(() => getStoredPeriodTimings());
+  const [autoMorningStart, setAutoMorningStart] = useState('07:00');
+  const [autoAfternoonStart, setAutoAfternoonStart] = useState('13:30');
+  const [autoDuration, setAutoDuration] = useState(45);
+  const [autoBreak, setAutoBreak] = useState(15);
+
+  useEffect(() => {
+    const handleTimingsSync = () => {
+      const latest = getStoredPeriodTimings();
+      setPeriodTimings(latest);
+    };
+    window.addEventListener('storage', handleTimingsSync);
+    window.addEventListener('cbq_period_timings_updated', handleTimingsSync);
+    return () => {
+      window.removeEventListener('storage', handleTimingsSync);
+      window.removeEventListener('cbq_period_timings_updated', handleTimingsSync);
+    };
+  }, []);
 
   // Layout & View Mode States
   const [studioLayoutMode, setStudioLayoutMode] = useState('split'); // 'split' (Lớp + GV song song) | 'single' (Đơn)
@@ -511,6 +573,11 @@ export default function AdminSchedule() {
               setTkbMetadata(parsedMeta);
               setEditingTkbMeta(parsedMeta);
               localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
+            }
+            if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
+              setPeriodTimings(parsedMeta.periodTimings);
+              setEditingPeriodTimings(parsedMeta.periodTimings);
+              localStorage.setItem('cbq_period_timings', JSON.stringify(parsedMeta.periodTimings));
             }
           } catch (mErr) {
             console.warn("Lỗi đọc metadata TKB từ DB:", mErr);
@@ -2332,7 +2399,10 @@ export default function AdminSchedule() {
   };
 
   const handleSaveTkbMetadata = async (customMeta) => {
-    const metaToSave = customMeta || editingTkbMeta;
+    const metaToSave = {
+      ...(customMeta || editingTkbMeta),
+      periodTimings: periodTimings || getStoredPeriodTimings()
+    };
     setSaving(true);
     try {
       setTkbMetadata(metaToSave);
@@ -2361,6 +2431,117 @@ export default function AdminSchedule() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSavePeriodTimings = async (customTimings) => {
+    const timingsToSave = (customTimings || editingPeriodTimings).map(pt => ({
+      ...pt,
+      label: `Tiết ${pt.period} (${pt.start} - ${pt.end})`
+    }));
+    setSaving(true);
+    try {
+      setPeriodTimings(timingsToSave);
+      setEditingPeriodTimings(timingsToSave);
+      localStorage.setItem('cbq_period_timings', JSON.stringify(timingsToSave));
+
+      const updatedMeta = { ...tkbMetadata, periodTimings: timingsToSave };
+      setTkbMetadata(updatedMeta);
+      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(updatedMeta));
+
+      window.dispatchEvent(new Event('cbq_period_timings_updated'));
+      window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
+
+      try {
+        const client = supabase2 || supabase;
+        await client.from('cbq_timetable_items').delete().eq('student_class', 'CONFIG_META');
+        await client.from('cbq_timetable_items').insert([{
+          student_class: 'CONFIG_META',
+          day_of_week: 'ALL',
+          period: 0,
+          subject: JSON.stringify(updatedMeta),
+          teacher_name: 'BAN_GIAM_HIEU',
+          room: updatedMeta.applyDate
+        }]);
+      } catch (dbErr) {
+        console.warn("Không thể lưu CONFIG_META lên Supabase:", dbErr);
+      }
+
+      setShowPeriodTimingsModal(false);
+      alert(`⏰ ĐÃ LƯU THÀNH CÔNG KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG!\n\n• Cấu hình 10 tiết học (Ca sáng & Ca chiều) đã được cập nhật.\n• Cổng tra cứu của Giáo viên, Học sinh và Hệ thống quản lý đã đồng bộ khung giờ mới ngay lập tức!`);
+    } catch (err) {
+      alert("Lỗi lưu khung giờ: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePeriodTimeChange = (periodNum, field, val) => {
+    setEditingPeriodTimings(prev => prev.map(p => {
+      if (p.period === periodNum) {
+        const updated = { ...p, [field]: val };
+        return {
+          ...updated,
+          label: `Tiết ${updated.period} (${updated.start} - ${updated.end})`
+        };
+      }
+      return p;
+    }));
+  };
+
+  const handleAutoCalculateTimings = (morningStart = '07:00', afternoonStart = '13:30', durationMinutes = 45, breakMinutes = 15) => {
+    const addMinutes = (timeStr, mins) => {
+      const [h, m] = timeStr.split(':').map(Number);
+      const totalMins = h * 60 + m + mins;
+      const newH = Math.floor(totalMins / 60) % 24;
+      const newM = totalMins % 60;
+      return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
+    };
+
+    const calculated = [];
+    // Ca Sáng: Tiết 1..5
+    let curM = morningStart;
+    for (let p = 1; p <= 5; p++) {
+      const start = curM;
+      const end = addMinutes(start, durationMinutes);
+      calculated.push({
+        period: p,
+        session: 'Sáng',
+        start,
+        end,
+        label: `Tiết ${p} (${start} - ${end})`
+      });
+      const gap = (p === 2) ? breakMinutes : 5;
+      curM = addMinutes(end, gap);
+    }
+
+    // Ca Chiều: Tiết 6..10
+    let curA = afternoonStart;
+    for (let p = 6; p <= 10; p++) {
+      const start = curA;
+      const end = addMinutes(start, durationMinutes);
+      calculated.push({
+        period: p,
+        session: 'Chiều',
+        start,
+        end,
+        label: `Tiết ${p} (${start} - ${end})`
+      });
+      const gap = (p === 7) ? breakMinutes : 5;
+      curA = addMinutes(end, gap);
+    }
+
+    setEditingPeriodTimings(calculated);
+  };
+
+  const calcDurationMinutes = (start, end) => {
+    if (!start || !end) return '';
+    try {
+      const [h1, m1] = start.split(':').map(Number);
+      const [h2, m2] = end.split(':').map(Number);
+      const diff = (h2 * 60 + m2) - (h1 * 60 + m1);
+      if (diff > 0) return `${diff} phút`;
+    } catch (e) {}
+    return '';
   };
 
   const uniqueClassesCount = new Set((timetableData || []).map(t => t?.student_class)).size;
@@ -2730,6 +2911,17 @@ export default function AdminSchedule() {
 
                 <button
                   type="button"
+                  onClick={() => {
+                    setEditingPeriodTimings(periodTimings || getStoredPeriodTimings());
+                    setShowPeriodTimingsModal(true);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#f0f9ff', color: '#0369a1', border: '1.5px solid #bae6fd', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)' }}
+                >
+                  <Clock size={16} color="#0284c7" /> ⏰ Cài Đặt Khung Giờ Tiết Học
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleDownloadSampleExcel}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                 >
@@ -2859,6 +3051,31 @@ export default function AdminSchedule() {
                 style={{ marginTop: '10px', padding: '6px 12px', backgroundColor: '#fde68a', color: '#92400e', border: 'none', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
               >
                 <Edit3 size={13} /> Sửa ngày áp dụng
+              </button>
+            </div>
+
+            <div style={{ backgroundColor: '#f0fdfa', padding: '16px', borderRadius: '12px', border: '1.5px solid #99f6e4', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f766e' }}>Khung Giờ Tiết Học</span>
+                  <Clock size={22} color="#0d9488" />
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#134e4a', marginTop: '4px' }}>
+                  10 Tiết Chuẩn
+                </div>
+                <div style={{ fontSize: '12px', color: '#0f766e', fontWeight: '600', marginTop: '2px' }}>
+                  Sáng: {(periodTimings?.[0]?.start || '07:00')} • Chiều: {(periodTimings?.[5]?.start || '13:30')}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingPeriodTimings(periodTimings || getStoredPeriodTimings());
+                  setShowPeriodTimingsModal(true);
+                }}
+                style={{ marginTop: '10px', padding: '6px 12px', backgroundColor: '#ccfbf1', color: '#0f766e', border: 'none', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+              >
+                <Clock size={13} /> Cài đặt khung giờ
               </button>
             </div>
           </div>
@@ -7521,6 +7738,280 @@ export default function AdminSchedule() {
                 style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#d97706', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(217, 119, 6, 0.3)' }}
               >
                 {saving ? 'Đang lưu...' : '💾 Lưu Ngày Áp Dụng'}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CÀI ĐẶT KHUNG GIỜ TIẾT HỌC (PERIOD TIMINGS) */}
+      {showPeriodTimingsModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '900px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1.5px solid #cbd5e1' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '19px', fontWeight: '900', color: '#0f766e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Clock size={24} color="#0d9488" /> CÀI ĐẶT KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Tùy chỉnh giờ bắt đầu & kết thúc cho từng tiết học (10 tiết). Cổng tra cứu của GV & HS sẽ đồng bộ tức thì.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPeriodTimingsModal(false)}
+                style={{ border: 'none', background: '#f1f5f9', borderRadius: '50%', width: '32px', height: '32px', fontSize: '16px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* PRESETS BAR */}
+            <div style={{ backgroundColor: '#f8fafc', padding: '14px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#334155', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={15} color="#f59e0b" /> ÁP DỤNG MẪU KHUNG GIỜ NHANH (1-CLICK):
+              </div>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingPeriodTimings(PRESET_TIMINGS_STANDARD)}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #0284c7', backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  ⚡ Chuẩn THPT (07:00 / 13:30 - 45p)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingPeriodTimings(PRESET_TIMINGS_WINTER)}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #6366f1', backgroundColor: '#e0e7ff', color: '#4338ca', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  ❄️ Mùa Đông (+15p: 07:15 / 13:30)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingPeriodTimings(PRESET_TIMINGS_SHORT)}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #d97706', backgroundColor: '#fef3c7', color: '#92400e', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  🎪 Tiết 35 phút (Lễ hội / Chuyên đề)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingPeriodTimings(DEFAULT_PERIOD_TIMINGS)}
+                  style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  ↺ Khôi Phục Mặc Định
+                </button>
+              </div>
+            </div>
+
+            {/* AUTO CALCULATOR PANEL */}
+            <div style={{ backgroundColor: '#f0fdf4', padding: '14px 16px', borderRadius: '12px', border: '1px solid #bbf7d0', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#166534', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={15} color="#16a34a" /> BỘ TÍNH TOÁN KHUNG GIỜ TỰ ĐỘNG:
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '10px', alignItems: 'flex-end' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                    Vào lớp sáng:
+                  </label>
+                  <input
+                    type="time"
+                    value={autoMorningStart}
+                    onChange={e => setAutoMorningStart(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #86efac', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                    Vào lớp chiều:
+                  </label>
+                  <input
+                    type="time"
+                    value={autoAfternoonStart}
+                    onChange={e => setAutoAfternoonStart(e.target.value)}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #86efac', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                    Số phút/tiết:
+                  </label>
+                  <input
+                    type="number"
+                    min="20"
+                    max="90"
+                    value={autoDuration}
+                    onChange={e => setAutoDuration(Number(e.target.value))}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #86efac', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
+                    Ra chơi (phút):
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="60"
+                    value={autoBreak}
+                    onChange={e => setAutoBreak(Number(e.target.value))}
+                    style={{ width: '100%', padding: '6px 8px', borderRadius: '6px', border: '1px solid #86efac', fontSize: '13px', outline: 'none' }}
+                  />
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => handleAutoCalculateTimings(autoMorningStart, autoAfternoonStart, autoDuration, autoBreak)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: 'none', backgroundColor: '#16a34a', color: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)' }}
+                  >
+                    🚀 Tự Động Tính
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* TWO COLUMNS PERIOD EDITING GRID */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '18px', marginBottom: '20px' }}>
+              
+              {/* MORNING SESSION: PERIOD 1 TO 5 */}
+              <div style={{ backgroundColor: '#f0f9ff', padding: '16px', borderRadius: '14px', border: '1.5px solid #bae6fd' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #bae6fd' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sun size={17} color="#0284c7" /> CA SÁNG (Tiết 1 – Tiết 5)
+                  </span>
+                  <span style={{ fontSize: '11.5px', fontWeight: '700', backgroundColor: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '10px' }}>
+                    5 Tiết
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(editingPeriodTimings || DEFAULT_PERIOD_TIMINGS).filter(p => p.period <= 5).map(pt => {
+                    const dur = calcDurationMinutes(pt.start, pt.end);
+                    return (
+                      <div
+                        key={pt.period}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          padding: '10px 12px',
+                          border: '1px solid #e0f2fe',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <div style={{ width: '56px', fontWeight: '900', color: '#0369a1', fontSize: '13px' }}>
+                          Tiết {pt.period}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="time"
+                            value={pt.start}
+                            onChange={e => handlePeriodTimeChange(pt.period, 'start', e.target.value)}
+                            style={{ padding: '5px 8px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', outline: 'none' }}
+                          />
+                          <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>–</span>
+                          <input
+                            type="time"
+                            value={pt.end}
+                            onChange={e => handlePeriodTimeChange(pt.period, 'end', e.target.value)}
+                            style={{ padding: '5px 8px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', outline: 'none' }}
+                          />
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '8px', backgroundColor: '#f0fdf4', color: '#166534', minWidth: '55px', textAlign: 'center' }}>
+                          {dur || '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* AFTERNOON SESSION: PERIOD 6 TO 10 */}
+              <div style={{ backgroundColor: '#fffbeb', padding: '16px', borderRadius: '14px', border: '1.5px solid #fde68a' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #fde68a' }}>
+                  <span style={{ fontSize: '14px', fontWeight: '900', color: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Moon size={17} color="#d97706" /> CA CHIỀU (Tiết 6 – Tiết 10)
+                  </span>
+                  <span style={{ fontSize: '11.5px', fontWeight: '700', backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '10px' }}>
+                    5 Tiết
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {(editingPeriodTimings || DEFAULT_PERIOD_TIMINGS).filter(p => p.period >= 6).map(pt => {
+                    const dur = calcDurationMinutes(pt.start, pt.end);
+                    return (
+                      <div
+                        key={pt.period}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '10px',
+                          padding: '10px 12px',
+                          border: '1px solid #fef3c7',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          justifyContent: 'space-between'
+                        }}
+                      >
+                        <div style={{ width: '56px', fontWeight: '900', color: '#b45309', fontSize: '13px' }}>
+                          Tiết {pt.period}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="time"
+                            value={pt.start}
+                            onChange={e => handlePeriodTimeChange(pt.period, 'start', e.target.value)}
+                            style={{ padding: '5px 8px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', outline: 'none' }}
+                          />
+                          <span style={{ color: '#94a3b8', fontWeight: 'bold' }}>–</span>
+                          <input
+                            type="time"
+                            value={pt.end}
+                            onChange={e => handlePeriodTimeChange(pt.period, 'end', e.target.value)}
+                            style={{ padding: '5px 8px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontWeight: 'bold', color: '#0f172a', outline: 'none' }}
+                          />
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: '700', padding: '3px 8px', borderRadius: '8px', backgroundColor: '#f0fdf4', color: '#166534', minWidth: '55px', textAlign: 'center' }}>
+                          {dur || '—'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+            </div>
+
+            {/* NOTICE BOX */}
+            <div style={{ backgroundColor: '#f0fdfa', padding: '12px 16px', borderRadius: '10px', border: '1px solid #99f6e4', fontSize: '12.5px', color: '#134e4a', lineHeight: '1.5', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Info size={18} color="#0d9488" style={{ flexShrink: 0 }} />
+              <div>
+                Khung giờ mới sau khi lưu sẽ đồng bộ thời gian thực sang Cổng tra cứu công khai của <strong>Giáo viên, Học sinh và Phụ huynh</strong>, cập nhật tính năng xác định tiết học đang diễn ra (LIVE) và các bản in TKB.
+              </div>
+            </div>
+
+            {/* MODAL ACTIONS */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowPeriodTimingsModal(false)}
+                style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSavePeriodTimings(editingPeriodTimings)}
+                disabled={saving}
+                style={{ padding: '9px 24px', borderRadius: '8px', border: 'none', backgroundColor: '#0d9488', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(13, 148, 136, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Save size={16} />
+                {saving ? 'Đang lưu...' : '💾 Lưu & Áp Dụng Toàn Trường'}
               </button>
             </div>
 

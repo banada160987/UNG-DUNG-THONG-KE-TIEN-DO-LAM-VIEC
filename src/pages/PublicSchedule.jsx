@@ -39,7 +39,7 @@ const DEFAULT_SCHEDULE = {
 
 const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
-export const PERIOD_TIMINGS = [
+export const DEFAULT_PERIOD_TIMINGS = [
   { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
   { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
   { period: 3, session: 'Sáng', start: '08:50', end: '09:35', label: 'Tiết 3 (08:50 - 09:35)' },
@@ -51,6 +51,26 @@ export const PERIOD_TIMINGS = [
   { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
   { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
 ];
+
+export const getStoredPeriodTimings = () => {
+  try {
+    const saved = localStorage.getItem('cbq_period_timings');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+    const metaSaved = localStorage.getItem('cbq_timetable_metadata');
+    if (metaSaved) {
+      const parsedMeta = JSON.parse(metaSaved);
+      if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
+        return parsedMeta.periodTimings;
+      }
+    }
+  } catch (e) {}
+  return DEFAULT_PERIOD_TIMINGS;
+};
+
+export const PERIOD_TIMINGS = getStoredPeriodTimings();
 
 export const getSubjectTheme = (subject) => {
   if (!subject) return { bg: '#f8fafc', border: '#e2e8f0', text: '#475569', icon: '📝', badgeBg: '#f1f5f9', label: 'Khác' };
@@ -115,7 +135,7 @@ export const getSubjectTheme = (subject) => {
   return { bg: '#f8fafc', border: '#cbd5e1', text: '#334155', icon: '📚', badgeBg: '#e2e8f0', label: s };
 };
 
-export const getTodayVN = () => {
+export const getTodayVN = (customTimings = null) => {
   const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
   const now = new Date();
   const dayIndex = now.getDay();
@@ -127,9 +147,11 @@ export const getTodayVN = () => {
   let currentPeriod = null;
   let statusText = 'Ngoài giờ học';
 
-  for (const pt of PERIOD_TIMINGS) {
-    const [sh, sm] = pt.start.split(':').map(Number);
-    const [eh, em] = pt.end.split(':').map(Number);
+  const timings = (customTimings && customTimings.length > 0) ? customTimings : getStoredPeriodTimings();
+
+  for (const pt of timings) {
+    const [sh, sm] = (pt.start || '00:00').split(':').map(Number);
+    const [eh, em] = (pt.end || '00:00').split(':').map(Number);
     const startMin = sh * 60 + sm;
     const endMin = eh * 60 + em;
     if (currentMinutes >= startMin && currentMinutes <= endMin) {
@@ -140,11 +162,21 @@ export const getTodayVN = () => {
   }
 
   if (!currentPeriod && isSchoolDay) {
-    if (currentMinutes >= 7 * 60 && currentMinutes < 11 * 60 + 5) {
+    const mP1 = timings.find(pt => pt.period === 1);
+    const mP5 = timings.find(pt => pt.period === 5);
+    const aP6 = timings.find(pt => pt.period === 6);
+    const aP10 = timings.find(pt => pt.period === 10);
+
+    const mStartMin = mP1 ? Number(mP1.start.split(':')[0]) * 60 + Number(mP1.start.split(':')[1]) : 7 * 60;
+    const mEndMin = mP5 ? Number(mP5.end.split(':')[0]) * 60 + Number(mP5.end.split(':')[1]) : 11 * 60 + 5;
+    const aStartMin = aP6 ? Number(aP6.start.split(':')[0]) * 60 + Number(aP6.start.split(':')[1]) : 13 * 60 + 30;
+    const aEndMin = aP10 ? Number(aP10.end.split(':')[0]) * 60 + Number(aP10.end.split(':')[1]) : 17 * 60 + 45;
+
+    if (currentMinutes >= mStartMin && currentMinutes < mEndMin) {
       statusText = 'Giờ giải lao / Chuẩn bị đổi tiết sáng';
-    } else if (currentMinutes >= 11 * 60 + 5 && currentMinutes < 13 * 60 + 30) {
+    } else if (currentMinutes >= mEndMin && currentMinutes < aStartMin) {
       statusText = 'Nghỉ trưa bán trú / Chuyển ca';
-    } else if (currentMinutes >= 13 * 60 + 30 && currentMinutes < 17 * 60 + 45) {
+    } else if (currentMinutes >= aStartMin && currentMinutes < aEndMin) {
       statusText = 'Giờ giải lao / Chuẩn bị đổi tiết chiều';
     }
   }
@@ -273,6 +305,22 @@ export default function PublicSchedule() {
       window.removeEventListener('cbq_tkb_metadata_updated', handleMetaUpdate);
     };
   }, []);
+
+  // Khung Giờ Tiết Học Động
+  const [periodTimings, setPeriodTimings] = useState(() => getStoredPeriodTimings());
+  const [showPeriodTimingsModal, setShowPeriodTimingsModal] = useState(false);
+
+  useEffect(() => {
+    const handleTimingsUpdate = () => {
+      setPeriodTimings(getStoredPeriodTimings());
+    };
+    window.addEventListener('storage', handleTimingsUpdate);
+    window.addEventListener('cbq_period_timings_updated', handleTimingsUpdate);
+    return () => {
+      window.removeEventListener('storage', handleTimingsUpdate);
+      window.removeEventListener('cbq_period_timings_updated', handleTimingsUpdate);
+    };
+  }, []);
   
   // State for TKB Toan Truong (Theo Khoi)
   const [selectedGrade, setSelectedGrade] = useState('10'); // '10' | '11' | '12' | 'all'
@@ -288,7 +336,7 @@ export default function PublicSchedule() {
   const [todayViewFocus, setTodayViewFocus] = useState(false);
 
   // State for Free Teachers Finder
-  const todayInfo = useMemo(() => getTodayVN(), []);
+  const todayInfo = useMemo(() => getTodayVN(periodTimings), [periodTimings]);
   const [freeDay, setFreeDay] = useState(todayInfo.isSchoolDay ? todayInfo.dayName : 'Thứ 2'); // 'Thứ 2'..'Thứ 7'
   const [freeSessionFilter, setFreeSessionFilter] = useState('all_day'); // 'all_day' | 'morning' | 'afternoon' | 'specific_period' | 'all'
   const [freeSpecificPeriod, setFreeSpecificPeriod] = useState(1); // 1..10
@@ -483,6 +531,10 @@ export default function PublicSchedule() {
             if (parsedMeta && parsedMeta.applyDate) {
               setTkbMetadata(prev => ({ ...prev, ...parsedMeta }));
               localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
+            }
+            if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
+              setPeriodTimings(parsedMeta.periodTimings);
+              localStorage.setItem('cbq_period_timings', JSON.stringify(parsedMeta.periodTimings));
             }
           } catch (metaErr) {
             console.warn("Lỗi đọc cấu hình metadata TKB:", metaErr);
@@ -928,35 +980,70 @@ export default function PublicSchedule() {
             </div>
           </div>
 
-          {/* BADGE THỜI KHÓA BIỂU & NGÀY ÁP DỤNG */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            backgroundColor: '#fef3c7',
-            border: '1.5px solid #fde68a',
-            padding: '6px 14px',
-            borderRadius: '20px',
-            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)'
-          }}>
-            <span style={{ fontSize: '15px' }}>📅</span>
-            <span style={{ fontSize: '13px', fontWeight: '800', color: '#92400e' }}>
-              TKB {tkbMetadata.version || 'Số 01'}
-            </span>
-            <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
-            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#78350f' }}>
-              Áp dụng từ: <strong style={{ color: '#b45309' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong>
-            </span>
-            <span style={{
-              fontSize: '11px',
-              fontWeight: '700',
-              padding: '2px 8px',
-              borderRadius: '10px',
-              backgroundColor: '#fde68a',
-              color: '#92400e'
+          {/* BADGE THỜI KHÓA BIỂU & NGÀY ÁP DỤNG + KHUNG GIỜ TIẾT HỌC */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              backgroundColor: '#fef3c7',
+              border: '1.5px solid #fde68a',
+              padding: '6px 14px',
+              borderRadius: '20px',
+              boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)'
             }}>
-              {tkbMetadata.semester || 'Học kỳ I'}
-            </span>
+              <span style={{ fontSize: '15px' }}>📅</span>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#92400e' }}>
+                TKB {tkbMetadata.version || 'Số 01'}
+              </span>
+              <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+              <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#78350f' }}>
+                Áp dụng từ: <strong style={{ color: '#b45309' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong>
+              </span>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                padding: '2px 8px',
+                borderRadius: '10px',
+                backgroundColor: '#fde68a',
+                color: '#92400e'
+              }}>
+                {tkbMetadata.semester || 'Học kỳ I'}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowPeriodTimingsModal(true)}
+              title="Xem bảng khung giờ 10 tiết học của trường"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                backgroundColor: '#ffffff',
+                border: '1.5px solid #cbd5e1',
+                color: '#0f172a',
+                fontSize: '12.5px',
+                fontWeight: '700',
+                padding: '6px 13px',
+                borderRadius: '20px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = '#0284c7';
+                e.currentTarget.style.color = '#0284c7';
+                e.currentTarget.style.backgroundColor = '#f0f9ff';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = '#cbd5e1';
+                e.currentTarget.style.color = '#0f172a';
+                e.currentTarget.style.backgroundColor = '#ffffff';
+              }}
+            >
+              <span>⏰</span> Khung Giờ Học
+            </button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
@@ -1643,7 +1730,7 @@ export default function PublicSchedule() {
                     {todayLessons.map((l, idx) => {
                       const lTheme = getSubjectTheme(l.subject);
                       const isCurrent = todayInfo.currentPeriod === Number(l.period);
-                      const timing = PERIOD_TIMINGS.find(pt => pt.period === Number(l.period));
+                      const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === Number(l.period));
 
                       return (
                         <div
@@ -1826,7 +1913,7 @@ export default function PublicSchedule() {
                       );
                     }
 
-                    const timing = PERIOD_TIMINGS.find(pt => pt.period === p);
+                    const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === p);
                     const isMorning = p <= 5;
 
                     return (
@@ -2314,7 +2401,7 @@ export default function PublicSchedule() {
                             }
 
                             const isMorning = p <= 5;
-                            const timing = PERIOD_TIMINGS.find(pt => pt.period === p);
+                            const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === p);
 
                             return (
                               <tr key={p} style={{ ...styles.tableRow, backgroundColor: isMorning ? '#ffffff' : '#fafafa' }}>
@@ -2439,7 +2526,7 @@ export default function PublicSchedule() {
       {/* INTERACTIVE LESSON DETAIL MODAL */}
       {selectedLessonDetail && (() => {
         const dTheme = getSubjectTheme(selectedLessonDetail.subject);
-        const timing = PERIOD_TIMINGS.find(pt => pt.period === Number(selectedLessonDetail.period));
+        const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === Number(selectedLessonDetail.period));
 
         return (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 99999, padding: '20px' }}>
@@ -3437,6 +3524,307 @@ export default function PublicSchedule() {
               </button>
               <button type="button" onClick={handleExecutePublicExport} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                 📥 Tải File Word (.doc)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TRA CỨU KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG */}
+      {showPeriodTimingsModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          padding: '20px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '680px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            border: '1.5px solid #cbd5e1'
+          }}>
+            {/* MODAL HEADER */}
+            <div style={{
+              padding: '20px 24px',
+              backgroundColor: '#0f172a',
+              color: '#ffffff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              borderTopLeftRadius: '18px',
+              borderTopRightRadius: '18px'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '24px' }}>⏰</span>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#38bdf8' }}>
+                    KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG
+                  </h3>
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#94a3b8', marginTop: '4px' }}>
+                  Căn cứ Thời khóa biểu <strong>{tkbMetadata.version || 'Số 01'}</strong> • Áp dụng từ <strong>{tkbMetadata.applyDate || '01/09/2026'}</strong>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPeriodTimingsModal(false)}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: 'none',
+                  color: '#ffffff',
+                  fontSize: '20px',
+                  borderRadius: '50%',
+                  width: '36px',
+                  height: '36px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div style={{ padding: '24px' }}>
+              
+              {/* CURRENT LIVE TIME STATUS BANNER */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: todayInfo.isCurrentClassTime ? '#f0fdf4' : '#f8fafc',
+                border: `1.5px solid ${todayInfo.isCurrentClassTime ? '#86efac' : '#e2e8f0'}`,
+                padding: '12px 16px',
+                borderRadius: '12px',
+                marginBottom: '20px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '20px' }}>{todayInfo.isCurrentClassTime ? '🟢' : '⚪'}</span>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: todayInfo.isCurrentClassTime ? '#166534' : '#475569' }}>
+                      {todayInfo.isCurrentClassTime
+                        ? `Đang trong giờ học: Tiết ${todayInfo.currentPeriod}`
+                        : `Hiện tại ngoài giờ học`}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      Hôm nay: {todayInfo.dayName}, {todayInfo.dateString} • {todayInfo.timeString}
+                    </div>
+                  </div>
+                </div>
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  padding: '4px 10px',
+                  borderRadius: '20px',
+                  backgroundColor: todayInfo.isCurrentClassTime ? '#dcfce7' : '#e2e8f0',
+                  color: todayInfo.isCurrentClassTime ? '#15803d' : '#475569'
+                }}>
+                  {todayInfo.sessionName}
+                </span>
+              </div>
+
+              {/* TWO SESSIONS GRID */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '18px' }}>
+                
+                {/* CA SÁNG */}
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1.5px solid #bae6fd',
+                  borderRadius: '14px',
+                  padding: '16px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '12px',
+                    paddingBottom: '8px',
+                    borderBottom: '2px solid #bae6fd'
+                  }}>
+                    <span style={{ fontSize: '14px', fontWeight: '900', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ☀️ CA SÁNG
+                    </span>
+                    <span style={{ fontSize: '11.5px', fontWeight: '700', backgroundColor: '#e0f2fe', color: '#0284c7', padding: '2px 8px', borderRadius: '12px' }}>
+                      5 Tiết Học
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(periodTimings || DEFAULT_PERIOD_TIMINGS).filter(p => p.period <= 5).map(pt => {
+                      const isNow = todayInfo.currentPeriod === pt.period;
+                      return (
+                        <div
+                          key={pt.period}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: isNow ? '#ffffff' : 'rgba(255, 255, 255, 0.75)',
+                            border: isNow ? '2px solid #0284c7' : '1px solid #e0f2fe',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
+                            boxShadow: isNow ? '0 2px 8px rgba(2, 132, 199, 0.25)' : 'none'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{
+                              fontWeight: '900',
+                              fontSize: '13px',
+                              width: '56px',
+                              color: isNow ? '#0284c7' : '#0369a1'
+                            }}>
+                              Tiết {pt.period}
+                            </span>
+                            {isNow && (
+                              <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '1px 6px', borderRadius: '8px' }}>
+                                LIVE
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                            {pt.start} <span style={{ color: '#94a3b8' }}>–</span> {pt.end}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: '10px', fontSize: '11px', color: '#0369a1', textAlign: 'center', fontStyle: 'italic' }}>
+                    * Giờ ra chơi giữa ca: 08:35 - 08:50 (15 phút)
+                  </div>
+                </div>
+
+                {/* CA CHIỀU */}
+                <div style={{
+                  backgroundColor: '#fffbeb',
+                  border: '1.5px solid #fde68a',
+                  borderRadius: '14px',
+                  padding: '16px'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    marginBottom: '12px',
+                    paddingBottom: '8px',
+                    borderBottom: '2px solid #fde68a'
+                  }}>
+                    <span style={{ fontSize: '14px', fontWeight: '900', color: '#b45309', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🌤️ CA CHIỀU
+                    </span>
+                    <span style={{ fontSize: '11.5px', fontWeight: '700', backgroundColor: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px' }}>
+                      5 Tiết Học
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(periodTimings || DEFAULT_PERIOD_TIMINGS).filter(p => p.period >= 6).map(pt => {
+                      const isNow = todayInfo.currentPeriod === pt.period;
+                      return (
+                        <div
+                          key={pt.period}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: isNow ? '#ffffff' : 'rgba(255, 255, 255, 0.75)',
+                            border: isNow ? '2px solid #d97706' : '1px solid #fef3c7',
+                            borderRadius: '10px',
+                            padding: '8px 12px',
+                            boxShadow: isNow ? '0 2px 8px rgba(217, 119, 6, 0.25)' : 'none'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{
+                              fontWeight: '900',
+                              fontSize: '13px',
+                              width: '56px',
+                              color: isNow ? '#b45309' : '#92400e'
+                            }}>
+                              Tiết {pt.period}
+                            </span>
+                            {isNow && (
+                              <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#fde68a', color: '#92400e', padding: '1px 6px', borderRadius: '8px' }}>
+                                LIVE
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a' }}>
+                            {pt.start} <span style={{ color: '#94a3b8' }}>–</span> {pt.end}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{ marginTop: '10px', fontSize: '11px', color: '#b45309', textAlign: 'center', fontStyle: 'italic' }}>
+                    * Giờ ra chơi giữa ca: 15:05 - 15:20 (15 phút)
+                  </div>
+                </div>
+
+              </div>
+
+              {/* FOOTER NOTE */}
+              <div style={{
+                marginTop: '18px',
+                padding: '12px 16px',
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '10px',
+                fontSize: '12px',
+                color: '#64748b',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>💡</span>
+                <span>
+                  Mỗi tiết học chuẩn kéo dài <strong>45 phút</strong>. Khung giờ được cấu hình thống nhất bởi Ban Giám Hiệu nhà trường.
+                </span>
+              </div>
+
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              backgroundColor: '#f8fafc',
+              borderBottomLeftRadius: '18px',
+              borderBottomRightRadius: '18px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowPeriodTimingsModal(false)}
+                style={{
+                  padding: '9px 24px',
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  fontSize: '13.5px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 10px rgba(2, 132, 199, 0.25)'
+                }}
+              >
+                Đã Hiểu & Đóng
               </button>
             </div>
 
