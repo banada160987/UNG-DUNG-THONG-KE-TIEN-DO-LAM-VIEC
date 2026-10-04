@@ -1,8 +1,15 @@
-/**
- * CBQ PSYCHOLOGY & ACADEMIC AI ADVISOR SERVICE
- * Hệ thống Cố vấn Tâm lý Học đường, Phương pháp Nghiên cứu Khoa học & Hỗ trợ Học sinh
- * Trường THPT Cao Bá Quát - TP. Buôn Ma Thuột / Phường Tân An - Tỉnh Đắk Lắk
- */
+import { supabase, supabaseAdmin } from '../lib/supabase';
+
+export const STUDENT_ASPIRATIONS_TOPIC_ID = 'e98a1000-cb00-4b9a-9000-00000000cb01';
+
+export const ASPIRATION_CATEGORIES = [
+  { id: 'co_so_vat_chat', label: '🏫 Cơ sở vật chất & Căng tin', icon: '🏫', desc: 'Bàn ghế, quạt mát, đèn chiếu sáng, nhà vệ sinh, đồ ăn căng tin...' },
+  { id: 'hoc_tap_thi_cu', label: '📚 Học tập, bài vở & Lịch thi', icon: '📚', desc: 'Thời khóa biểu, đề cương ôn tập, áp lực kiểm tra, phương pháp dạy học...' },
+  { id: 'tam_ly_ban_be', label: '🤝 Tâm lý học đường & Bạn bè', icon: '🤝', desc: 'Giải tỏa áp lực, lo âu điểm số, bất hòa bạn bè, lắng nghe tâm tư...' },
+  { id: 'phong_trao_clb', label: '⚽ Hoạt động Đoàn & Sự kiện', icon: '⚽', desc: 'Sân chơi câu lạc bộ, giải đấu thể thao, hội thao, sinh hoạt ngoại khóa...' },
+  { id: 'sang_kien_truong', label: '💡 Sáng kiến & Đề xuất với BGH', icon: '💡', desc: 'Hiến kế cho nhà trường, đổi mới không gian học tập, chuyển đổi số...' },
+  { id: 'phan_anh_khan_cap', label: '🚨 Phản ánh cần BGH can thiệp gấp', icon: '🚨', desc: 'Sự việc ảnh hưởng an toàn học sinh, bạo lực học đường hoặc nguy cơ khẩn cấp...' }
+];
 
 export const PSYCHOLOGY_TOPICS = [
   {
@@ -62,9 +69,21 @@ export const QUICK_PROMPTS = [
     prompt: 'Em đang phân vân chưa biết mình hợp với ngành nghề nào. Em nên bắt đầu tự đánh giá bản thân (như thuyết Holland, Ikigai) từ đâu?'
   },
   {
+    topic: 'psychology',
+    label: '💌 Gửi tâm tư tới BGH',
+    action: 'open_aspiration_modal',
+    prompt: 'Em muốn gửi tâm tư, nguyện vọng hoặc ý kiến đóng góp trực tiếp tới Ban Giám Hiệu nhà trường thì làm thế nào ạ?'
+  },
+  {
     topic: 'school_info',
     label: '📅 Tra cứu TKB & Giờ học',
     prompt: 'Hướng dẫn em cách xem Thời khóa biểu của lớp và khung giờ 10 tiết học trên hệ thống nhà trường.'
+  },
+  {
+    topic: 'school_info',
+    label: '💌 Hòm thư góp ý BGH',
+    action: 'open_aspiration_modal',
+    prompt: 'Em muốn gửi kiến nghị cơ sở vật chất hoặc ý kiến đóng góp cho Ban Giám Hiệu nhà trường.'
   }
 ];
 
@@ -319,14 +338,196 @@ Hệ thống điều hành Trường THPT Cao Bá Quát hỗ trợ tra cứu tr�
 3. **Xem Bảng Khung Giờ:** Bấm nút **\`⏰ Khung Giờ Học\`** trên đầu trang để mở bảng tra cứu chi tiết giờ vào lớp - giờ tan học.`;
   }
 
-  // 7. Mặc định / Lời chào hỏi hoặc câu hỏi khác
+  // 7. Góp ý / Tâm tư gửi BGH / Hòm thư nhà trường
+  if (lower.includes('góp ý') || lower.includes('bgh') || lower.includes('ban giám hiệu') || lower.includes('tâm tư') || lower.includes('nguyện vọng') || lower.includes('hòm thư') || lower.includes('phản ánh') || lower.includes('nhà vệ sinh') || lower.includes('cơ sở vật chất') || lower.includes('bắt nạt')) {
+    return `### 💌 Hòm Thư Tâm Tư & Nguyện Vọng Học Sinh (Gửi Ban Giám Hiệu)
+
+Chào em! Ban Giám Hiệu Trường THPT Cao Bá Quát luôn trân trọng lắng nghe mọi tâm tư, nguyện vọng, phản ánh và sáng kiến của học sinh:
+
+* **🔒 Bảo mật & Ẩn danh tuyệt đối:** Em có thể chọn gửi ẩn danh 100%, không lưu tên hay số điện thoại, thoải mái nói lên sự thật và tâm sự của mình.
+* **⚡ Báo trực tiếp tới Thầy/Cô BGH:** Ngay khi em gửi, hệ thống sẽ rung chuông thông báo LIVE tới cổng quản trị của Ban Giám Hiệu để thầy cô kịp thời nắm bắt và xử lý.
+* **✨ Hỗ trợ từ AI:** Trợ lý AI có thể giúp em trau chuốt lời văn thật lễ phép, lịch sự và khúc chiết trước khi gửi!
+
+👉 **Hãy bấm vào nút \`[💌 Gửi BGH]\` ở góc trên thanh công cụ của Chatbot** để mở Hòm thư và gửi tâm tư của em ngay nhé!`;
+  }
+
+  // 8. Mặc định / Lời chào hỏi hoặc câu hỏi khác
   return `Chào bạn! Mình là **Trợ lý AI & Cố vấn Học đường** của Trường THPT Cao Bá Quát.
 
 Mình có thể đồng hành và hỗ trợ bạn trong các lĩnh vực:
 * 🧠 **Tâm lý & Cảm xúc:** Lắng nghe, giải tỏa áp lực thi cử, lo âu, cân bằng cuộc sống tuổi học trò.
 * 📚 **Khoa học học tập:** Hướng dẫn kỹ thuật Feynman, Active Recall, Spaced Repetition, trị bệnh trì hoãn.
 * 🎯 **Hướng nghiệp & Mục tiêu:** Khám phá năng lực theo trắc nghiệm Holland, Ikigai, chọn khối & ngành.
+* 💌 **Hòm thư Ban Giám Hiệu:** Giúp bạn gửi tâm tư, nguyện vọng hoặc phản ánh trực tiếp tới BGH (ẩn danh 100%).
 * 🏫 **Thông tin nhà trường:** Hướng dẫn tra cứu Thời khóa biểu, lịch công tác, quy chế học tập.
 
 *Bạn đang gặp khó khăn hay cần mình chia sẻ về điều gì cứ tự nhiên tâm sự nhé!*`;
 }
+
+/**
+ * GỬI TÂM TƯ & NGUYỆN VỌNG HỌC SINH VÀO DATABASE VÀ BẮN THÔNG BÁO CHO BGH
+ */
+export async function submitStudentAspiration({
+  content,
+  category = 'co_so_vat_chat',
+  urgency = 'Bình thường',
+  isAnonymous = true,
+  studentName = '',
+  className = '',
+  phone = ''
+}) {
+  if (!content || !content.trim()) {
+    throw new Error('Nội dung tâm tư không được để trống.');
+  }
+
+  const categoryObj = ASPIRATION_CATEGORIES.find(c => c.id === category) || ASPIRATION_CATEGORIES[0];
+  const timestamp = new Date().toISOString();
+  const dbClient = supabaseAdmin || supabase;
+
+  // Chuẩn bị payload lưu vào cbq_feedback_responses
+  const orgName = isAnonymous 
+    ? (className ? `Học sinh lớp ${className} (Ẩn danh)` : 'Học sinh toàn trường (Ẩn danh)')
+    : (className ? `Học sinh lớp ${className}` : 'Học sinh CBQ');
+
+  const repName = isAnonymous ? 'Học sinh ẩn danh' : (studentName.trim() || 'Học sinh CBQ');
+  const safePhone = isAnonymous ? 'Bảo mật' : (phone.trim() || 'Bảo mật');
+
+  const feedbackItems = [
+    {
+      category: categoryObj.label,
+      categoryId: category,
+      urgency,
+      isAnonymous,
+      studentName: isAnonymous ? 'Ẩn danh' : studentName,
+      className: className.trim(),
+      timestamp
+    }
+  ];
+
+  const payload = {
+    topic_id: STUDENT_ASPIRATIONS_TOPIC_ID,
+    organization_unit: orgName,
+    representative_name: repName,
+    phone: safePhone,
+    email: '',
+    agreement_level: category,
+    feedback_content: content.trim(),
+    feedback_items: feedbackItems,
+    created_at: timestamp
+  };
+
+  let insertedRecord = null;
+  let insertError = null;
+
+  try {
+    const { data, error } = await dbClient
+      .from('cbq_feedback_responses')
+      .insert([payload])
+      .select();
+
+    if (error) {
+      console.warn('[StudentAspiration] Lỗi ghi DB chính:', error.message);
+      insertError = error;
+    } else if (data && data.length > 0) {
+      insertedRecord = data[0];
+    }
+  } catch (err) {
+    console.warn('[StudentAspiration] Exception ghi DB:', err.message);
+    insertError = err;
+  }
+
+  // Bắn thông báo REALTIME vào cbq_notifications để chuông Admin/BGH reo
+  try {
+    const isUrgent = urgency === 'Khẩn cấp';
+    const notifTitle = isUrgent 
+      ? `🚨 [KHẨN CẤP] Tâm tư mới từ học sinh` 
+      : `💌 [Hòm thư AI] Tâm tư mới từ học sinh`;
+
+    const summaryText = content.trim().length > 100 
+      ? `${content.trim().slice(0, 100)}...` 
+      : content.trim();
+
+    const notifMessage = `[${orgName} - ${categoryObj.label}]: ${summaryText}`;
+
+    await dbClient.from('cbq_notifications').insert([{
+      title: notifTitle,
+      message: notifMessage,
+      created_at: timestamp
+    }]);
+  } catch (notifErr) {
+    console.warn('[StudentAspiration] Lỗi bắn notification:', notifErr.message);
+  }
+
+  // Lưu bản sao vào LocalStorage (Đảm bảo an toàn không mất dữ liệu)
+  try {
+    const localResKey = `cbq_local_feedback_res_${STUDENT_ASPIRATIONS_TOPIC_ID}`;
+    const localList = JSON.parse(localStorage.getItem(localResKey) || '[]');
+    const recordToSave = insertedRecord || { ...payload, id: `local_${Date.now()}` };
+    localStorage.setItem(localResKey, JSON.stringify([recordToSave, ...localList]));
+
+    // Lưu vào lịch sử đã gửi trên thiết bị của học sinh
+    const myHistory = JSON.parse(localStorage.getItem('cbq_my_aspirations') || '[]');
+    localStorage.setItem('cbq_my_aspirations', JSON.stringify([recordToSave, ...myHistory]));
+  } catch (localErr) {
+    console.warn('[StudentAspiration] Lỗi lưu local storage:', localErr);
+  }
+
+  return {
+    success: true,
+    data: insertedRecord || payload
+  };
+}
+
+/**
+ * NHỜ AI TRAU CHUỐT VĂN PHONG TÂM TƯ / GÓP Ý TRƯỚC KHI GỬI BGH
+ */
+export async function polishAspirationWithAi(draftText, category = 'co_so_vat_chat') {
+  if (!draftText || !draftText.trim()) return '';
+
+  const apiKey = getStoredAiKey();
+  const categoryObj = ASPIRATION_CATEGORIES.find(c => c.id === category);
+
+  const polishPrompt = `Bạn là chuyên gia cố vấn ngôn ngữ học đường Trường THPT Cao Bá Quát.
+Học sinh viết bản nháp gửi Ban Giám Hiệu về chủ đề "${categoryObj?.label || 'Tâm tư học sinh'}".
+Bản nháp của học sinh:
+"${draftText.trim()}"
+
+YÊU CẦU:
+1. Giữ nguyên 100% nguyện vọng, mong muốn và ý kiến cốt lõi của học sinh.
+2. Sửa lại cách diễn đạt: Lễ phép, khiêm tốn, khúc chiết, mang tính đóng góp xây dựng cao, chuẩn mực ngôn phong học trò gửi Thầy Cô BGH.
+3. Bắt đầu bằng lời chào kính thưa gửi Ban Giám Hiệu / Thầy Cô (ngắn gọn), kết thúc bằng lời cảm ơn.
+4. CHỈ TRẢ VỀ DUY NHẤT ĐOẠN VĂN ĐÃ ĐƯỢC TRAU CHUỐT. Không viết thêm bất kỳ lời dẫn giải nào của AI.`;
+
+  if (apiKey) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: polishPrompt }] }],
+          generationConfig: { temperature: 0.4, maxOutputTokens: 1024 }
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const polished = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (polished && polished.trim()) return polished.trim();
+      }
+    } catch (e) {
+      console.warn('[PolishAI] Lỗi gọi Gemini, chuyển sang rule offline:', e);
+    }
+  }
+
+  // Fallback offline nếu không có API key
+  const cleaned = draftText.trim().replace(/^kính gửi.*?\n/i, '');
+  return `Kính gửi Ban Giám Hiệu và các Thầy Cô Trường THPT Cao Bá Quát,
+
+Em xin phép được gửi gắm tâm tư và ý kiến đóng góp về ${categoryObj?.label || 'nhà trường'} như sau:
+
+${cleaned}
+
+Kính mong Ban Giám Hiệu xem xét để tạo điều kiện học tập tốt nhất cho chúng em. Em xin trân trọng cảm ơn Thầy Cô!`;
+}
+

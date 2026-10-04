@@ -21,6 +21,8 @@ export default function Layout({ children, title }) {
     setShowNotifications(false);
     if (notif.task_id) {
       navigate(`/admin/committee?taskId=${notif.task_id}`);
+    } else if (notif.title && (notif.title.includes('Tâm tư') || notif.title.includes('Hòm thư'))) {
+      navigate('/admin/gop-y?topicId=e98a1000-cb00-4b9a-9000-00000000cb01');
     }
   };
 
