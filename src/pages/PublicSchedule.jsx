@@ -216,6 +216,15 @@ const processRawTimetableItems = (items) => {
     }));
 };
 
+export const DEFAULT_TKB_METADATA = {
+  version: 'Số 01',
+  applyDate: '01/09/2026',
+  semester: 'Học kỳ I',
+  schoolYear: '2026 - 2027',
+  decisionNo: '15/QĐ-THPTCBQ',
+  note: 'Áp dụng chính thức cho toàn trường'
+};
+
 export default function PublicSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
@@ -236,6 +245,34 @@ export default function PublicSchedule() {
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedTeacher, setSelectedTeacher] = useState('');
+
+  // Metadata Thông Tin Ngày Áp Dụng TKB
+  const [tkbMetadata, setTkbMetadata] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cbq_timetable_metadata');
+      if (saved) {
+        return { ...DEFAULT_TKB_METADATA, ...JSON.parse(saved) };
+      }
+    } catch (e) {}
+    return DEFAULT_TKB_METADATA;
+  });
+
+  useEffect(() => {
+    const handleMetaUpdate = () => {
+      try {
+        const saved = localStorage.getItem('cbq_timetable_metadata');
+        if (saved) {
+          setTkbMetadata(prev => ({ ...prev, ...JSON.parse(saved) }));
+        }
+      } catch (e) {}
+    };
+    window.addEventListener('storage', handleMetaUpdate);
+    window.addEventListener('cbq_tkb_metadata_updated', handleMetaUpdate);
+    return () => {
+      window.removeEventListener('storage', handleMetaUpdate);
+      window.removeEventListener('cbq_tkb_metadata_updated', handleMetaUpdate);
+    };
+  }, []);
   
   // State for TKB Toan Truong (Theo Khoi)
   const [selectedGrade, setSelectedGrade] = useState('10'); // '10' | '11' | '12' | 'all'
@@ -438,6 +475,20 @@ export default function PublicSchedule() {
       const client = supabase2 || supabase;
       const { data, error } = await client.from('cbq_timetable_items').select('*').range(0, 1999);
       if (!error && data && data.length > 0) {
+        // Tự động kiểm tra bản ghi Metadata cấu hình TKB nếu có lưu trong DB
+        const metaRow = data.find(item => item.student_class === 'CONFIG_META');
+        if (metaRow && metaRow.subject) {
+          try {
+            const parsedMeta = JSON.parse(metaRow.subject);
+            if (parsedMeta && parsedMeta.applyDate) {
+              setTkbMetadata(prev => ({ ...prev, ...parsedMeta }));
+              localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
+            }
+          } catch (metaErr) {
+            console.warn("Lỗi đọc cấu hình metadata TKB:", metaErr);
+          }
+        }
+
         const cleaned = processRawTimetableItems(data);
         setTimetableData(cleaned);
         localStorage.setItem('cbq_master_timetable', JSON.stringify({
@@ -506,7 +557,7 @@ export default function PublicSchedule() {
     const matrixData = [
       { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
       { "Tiết / Ngày": `THỜI KHÓA BIỂU LỚP ${selectedClass}`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
-      { "Tiết / Ngày": "Năm học: 2026 - 2027 • Áp dụng từ ngày 01/09/2026", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": `TKB ${tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày: ${tkbMetadata.applyDate || '01/09/2026'} • ${tkbMetadata.semester || 'Học kỳ I'} (Năm học ${tkbMetadata.schoolYear || '2026 - 2027'})`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
       { "Tiết / Ngày": "", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" }
     ];
 
@@ -543,7 +594,7 @@ export default function PublicSchedule() {
     const matrixData = [
       { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
       { "Tiết / Ngày": `THỜI KHÓA BIỂU CÁ NHÂN GIÁO VIÊN: ${selectedTeacher.toUpperCase()}`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
-      { "Tiết / Ngày": "Năm học: 2026 - 2027 • Áp dụng từ ngày 01/09/2026", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
+      { "Tiết / Ngày": `TKB ${tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày: ${tkbMetadata.applyDate || '01/09/2026'} • ${tkbMetadata.semester || 'Học kỳ I'} (Năm học ${tkbMetadata.schoolYear || '2026 - 2027'})`, "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" },
       { "Tiết / Ngày": "", "Thứ 2": "", "Thứ 3": "", "Thứ 4": "", "Thứ 5": "", "Thứ 6": "", "Thứ 7": "" }
     ];
 
@@ -594,8 +645,8 @@ export default function PublicSchedule() {
     const matrixData = [
       { "Tiết / Ngày": "SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
       { "Tiết / Ngày": "TRƯỜNG THPT CAO BÁ QUÁT - PHƯỜNG TÂN AN - TỈNH ĐẮK LẮK", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
-      { "Tiết / Ngày": `BẢNG THỜI KHÓA BIỂU TỔNG HỢP ${gradeLabel.toUpperCase()} - NĂM HỌC 2026-2027`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
-      { "Tiết / Ngày": `Áp dụng từ ngày 01/09/2026 • Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": `BẢNG THỜI KHÓA BIỂU TỔNG HỢP ${gradeLabel.toUpperCase()} - NĂM HỌC ${tkbMetadata.schoolYear || '2026-2027'}`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
+      { "Tiết / Ngày": `TKB ${tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày: ${tkbMetadata.applyDate || '01/09/2026'} • ${tkbMetadata.semester || 'Học kỳ I'} • Ngày xuất: ${new Date().toLocaleDateString('vi-VN')}`, ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) },
       { "Tiết / Ngày": "", ...targetClasses.reduce((acc, c) => ({ ...acc, [c]: "" }), {}) }
     ];
 
@@ -866,11 +917,46 @@ export default function PublicSchedule() {
 
       {/* HEADER TOP CARD */}
       <div style={styles.headerCard} className="no-print">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <Calendar size={32} color="#be123c" />
-          <div>
-            <h2 style={styles.pageTitle}>TRA CỨU LỊCH CÔNG TÁC & THỜI KHÓA BIỂU</h2>
-            <p style={styles.pageSubtitle}>Trường THPT Cao Bá Quát • Hệ thống quản lý điều hành ({timetableData.length} tiết đã nạp)</p>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Calendar size={32} color="#be123c" />
+            <div>
+              <h2 style={styles.pageTitle}>TRA CỨU LỊCH CÔNG TÁC & THỜI KHÓA BIỂU</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginTop: '3px' }}>
+                <p style={{ ...styles.pageSubtitle, margin: 0 }}>Trường THPT Cao Bá Quát • Hệ thống quản lý điều hành ({timetableData.length} tiết đã nạp)</p>
+              </div>
+            </div>
+          </div>
+
+          {/* BADGE THỜI KHÓA BIỂU & NGÀY ÁP DỤNG */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            backgroundColor: '#fef3c7',
+            border: '1.5px solid #fde68a',
+            padding: '6px 14px',
+            borderRadius: '20px',
+            boxShadow: '0 2px 8px rgba(245, 158, 11, 0.15)'
+          }}>
+            <span style={{ fontSize: '15px' }}>📅</span>
+            <span style={{ fontSize: '13px', fontWeight: '800', color: '#92400e' }}>
+              TKB {tkbMetadata.version || 'Số 01'}
+            </span>
+            <span style={{ color: '#d97706', fontWeight: 'bold' }}>•</span>
+            <span style={{ fontSize: '12.5px', fontWeight: '600', color: '#78350f' }}>
+              Áp dụng từ: <strong style={{ color: '#b45309' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong>
+            </span>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: '700',
+              padding: '2px 8px',
+              borderRadius: '10px',
+              backgroundColor: '#fde68a',
+              color: '#92400e'
+            }}>
+              {tkbMetadata.semester || 'Học kỳ I'}
+            </span>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
@@ -1260,13 +1346,41 @@ export default function PublicSchedule() {
                   </div>
                 )}
                 <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
-                  Áp dụng Học kỳ I • Năm học 2026 - 2027 • Trường THPT Cao Bá Quát
+                  TKB {tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày {tkbMetadata.applyDate || '01/09/2026'} • {tkbMetadata.semester || 'Học kỳ I'} - Năm học {tkbMetadata.schoolYear || '2026 - 2027'} • Trường THPT Cao Bá Quát
                 </div>
               </div>
             </div>
 
             {/* CONTROL TOOLBAR (NO-PRINT) */}
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+              
+              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+                backgroundColor: '#ffffff',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                border: '1.5px solid #fde68a',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400e', fontSize: '13.5px', fontWeight: '700', flexWrap: 'wrap' }}>
+                  <Calendar size={18} color="#d97706" />
+                  <span>Thời Khóa Biểu: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.version || 'Số 01'}</strong></span>
+                  <span style={{ color: '#f59e0b' }}>•</span>
+                  <span>Ngày bắt đầu áp dụng: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong></span>
+                  <span style={{ color: '#f59e0b' }}>•</span>
+                  <span style={{ color: '#78350f' }}>{tkbMetadata.semester || 'Học kỳ I'} (Năm học {tkbMetadata.schoolYear || '2026 - 2027'})</span>
+                </div>
+                {tkbMetadata.note && (
+                  <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>📌</span> {tkbMetadata.note}
+                  </div>
+                )}
+              </div>
               
               {/* ROW 1: QUICK TARGET SELECTOR */}
               {activeMainTab === 'class_tkb' ? (
@@ -1483,6 +1597,17 @@ export default function PublicSchedule() {
                         color: '#ffffff'
                       }}>
                         {todayInfo.isSchoolDay ? '🔥 ĐANG TRONG TUẦN HỌC' : '🏖️ NGÀY NGHỈ'}
+                      </span>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: '700',
+                        padding: '2px 8px',
+                        borderRadius: '20px',
+                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: '#bae6fd'
+                      }}>
+                        📅 TKB {tkbMetadata.version || 'Số 01'} • Áp dụng: {tkbMetadata.applyDate || '01/09/2026'}
                       </span>
                     </div>
                     <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff' }}>
@@ -1881,7 +2006,7 @@ export default function PublicSchedule() {
                   {selectedGradeDay === 'all' ? 'Toàn bộ các ngày trong tuần (Thứ 2 đến Thứ 7)' : `Thời khóa biểu ngày: ${selectedGradeDay}`}
                 </div>
                 <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
-                  Năm học 2026 - 2027 • Áp dụng từ ngày 01/09/2026
+                  TKB {tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày {tkbMetadata.applyDate || '01/09/2026'} • {tkbMetadata.semester || 'Học kỳ I'} - Năm học {tkbMetadata.schoolYear || '2026 - 2027'} • Trường THPT Cao Bá Quát
                 </div>
               </div>
             </div>
@@ -1889,6 +2014,34 @@ export default function PublicSchedule() {
             {/* CONTROL TOOLBAR (NO-PRINT) */}
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
               
+              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px',
+                backgroundColor: '#ffffff',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                border: '1.5px solid #fde68a',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400e', fontSize: '13.5px', fontWeight: '700', flexWrap: 'wrap' }}>
+                  <Calendar size={18} color="#d97706" />
+                  <span>Thời Khóa Biểu: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.version || 'Số 01'}</strong></span>
+                  <span style={{ color: '#f59e0b' }}>•</span>
+                  <span>Ngày bắt đầu áp dụng: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong></span>
+                  <span style={{ color: '#f59e0b' }}>•</span>
+                  <span style={{ color: '#78350f' }}>{tkbMetadata.semester || 'Học kỳ I'} (Năm học {tkbMetadata.schoolYear || '2026 - 2027'})</span>
+                </div>
+                {tkbMetadata.note && (
+                  <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span>📌</span> {tkbMetadata.note}
+                  </div>
+                )}
+              </div>
+
               {/* ROW 1: GRADE FILTER & DAY SELECTOR */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 
@@ -2411,9 +2564,38 @@ export default function PublicSchedule() {
                   Điều kiện: {freeSessionFilter === 'all_day' ? 'Nghỉ trọn vẹn cả ngày (Tiết 1 - 10)' : freeSessionFilter === 'morning' ? 'Nghỉ ca sáng (Tiết 1 - 5)' : freeSessionFilter === 'afternoon' ? 'Nghỉ ca chiều (Tiết 6 - 10)' : freeSessionFilter === 'specific_period' ? `Trống Tiết ${freeSpecificPeriod}` : 'Toàn thể giáo viên'} • Lọc môn: {freeSubjectFilter === 'all' ? 'Tất cả môn' : freeSubjectFilter}
                 </div>
                 <div style={{ fontSize: '11.5px', fontStyle: 'italic', color: '#475569' }}>
-                  Năm học 2026 - 2027 • Dữ liệu Thời khóa biểu chính thức
+                  TKB {tkbMetadata.version || 'Số 01'} • Áp dụng từ ngày {tkbMetadata.applyDate || '01/09/2026'} • {tkbMetadata.semester || 'Học kỳ I'} - Năm học {tkbMetadata.schoolYear || '2026 - 2027'} • Trường THPT Cao Bá Quát
                 </div>
               </div>
+            </div>
+
+            {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
+            <div className="no-print" style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '10px',
+              backgroundColor: '#ffffff',
+              padding: '10px 16px',
+              borderRadius: '12px',
+              border: '1.5px solid #fde68a',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+              marginBottom: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#92400e', fontSize: '13.5px', fontWeight: '700', flexWrap: 'wrap' }}>
+                <Calendar size={18} color="#d97706" />
+                <span>Thời Khóa Biểu: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.version || 'Số 01'}</strong></span>
+                <span style={{ color: '#f59e0b' }}>•</span>
+                <span>Ngày bắt đầu áp dụng: <strong style={{ color: '#b45309', fontSize: '14px' }}>{tkbMetadata.applyDate || '01/09/2026'}</strong></span>
+                <span style={{ color: '#f59e0b' }}>•</span>
+                <span style={{ color: '#78350f' }}>{tkbMetadata.semester || 'Học kỳ I'} (Năm học {tkbMetadata.schoolYear || '2026 - 2027'})</span>
+              </div>
+              {tkbMetadata.note && (
+                <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>📌</span> {tkbMetadata.note}
+                </div>
+              )}
             </div>
 
             {/* KPI BANNER (NO-PRINT) */}

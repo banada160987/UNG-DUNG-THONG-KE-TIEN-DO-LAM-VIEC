@@ -205,9 +205,38 @@ export default function AdminSchedule() {
   const [assignmentShiftFilter, setAssignmentShiftFilter] = useState('ALL');
   const [selectedLockTeacher, setSelectedLockTeacher] = useState('');
 
-  // Publish Modal State
+  // Publish Modal State & Timetable Metadata
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishStep, setPublishStep] = useState(1);
+  const [showTkbMetaModal, setShowTkbMetaModal] = useState(false);
+  const [tkbMetadata, setTkbMetadata] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cbq_timetable_metadata');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      version: 'Số 01',
+      applyDate: '01/09/2026',
+      semester: 'Học kỳ I',
+      schoolYear: '2026 - 2027',
+      decisionNo: '15/QĐ-THPTCBQ',
+      note: 'Áp dụng chính thức cho toàn trường'
+    };
+  });
+  const [editingTkbMeta, setEditingTkbMeta] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cbq_timetable_metadata');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      version: 'Số 01',
+      applyDate: '01/09/2026',
+      semester: 'Học kỳ I',
+      schoolYear: '2026 - 2027',
+      decisionNo: '15/QĐ-THPTCBQ',
+      note: 'Áp dụng chính thức cho toàn trường'
+    };
+  });
 
   // Layout & View Mode States
   const [studioLayoutMode, setStudioLayoutMode] = useState('split'); // 'split' (Lớp + GV song song) | 'single' (Đơn)
@@ -473,6 +502,21 @@ export default function AdminSchedule() {
 
       let finalTimetable = [];
       if (!error && data && data.length > 0) {
+        // Kiểm tra bản ghi Metadata cấu hình TKB nếu có trong DB
+        const metaRow = data.find(item => item.student_class === 'CONFIG_META');
+        if (metaRow && metaRow.subject) {
+          try {
+            const parsedMeta = JSON.parse(metaRow.subject);
+            if (parsedMeta && parsedMeta.applyDate) {
+              setTkbMetadata(parsedMeta);
+              setEditingTkbMeta(parsedMeta);
+              localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
+            }
+          } catch (mErr) {
+            console.warn("Lỗi đọc metadata TKB từ DB:", mErr);
+          }
+        }
+
         finalTimetable = processRawTimetableItems(data);
         setTimetableData(finalTimetable);
         localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
@@ -909,6 +953,15 @@ export default function AdminSchedule() {
           teacher_name: item.teacher_name,
           room: item.room
         }));
+        // Đính kèm bản ghi cấu hình Metadata TKB
+        cleanPayload.push({
+          student_class: 'CONFIG_META',
+          day_of_week: 'ALL',
+          period: 0,
+          subject: JSON.stringify(tkbMetadata),
+          teacher_name: 'BAN_GIAM_HIEU',
+          room: tkbMetadata.applyDate
+        });
         await supabase.from('cbq_timetable_items').insert(cleanPayload);
       } catch (dbErr) {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
@@ -916,9 +969,11 @@ export default function AdminSchedule() {
 
       // 2. Save to localStorage
       localStorage.setItem('cbq_master_timetable', JSON.stringify(excelPreview));
+      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(tkbMetadata));
+      window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
       setTimetableData(excelPreview);
       setExcelPreview([]);
-      alert(`✅ ĐÃ XUẤT BẢN THÀNH CÔNG THỜI KHÓA BIỂU TOÀN TRƯỜNG (${excelPreview.length} TIẾT HỌC)!`);
+      alert(`✅ ĐÃ XUẤT BẢN THÀNH CÔNG THỜI KHÓA BIỂU TOÀN TRƯỜNG (${excelPreview.length} TIẾT HỌC)!\n\n• Số TKB: ${tkbMetadata.version}\n• Áp dụng từ ngày: ${tkbMetadata.applyDate}\n• Học kỳ: ${tkbMetadata.semester} (${tkbMetadata.schoolYear})`);
     } catch (err) {
       alert("Có lỗi xảy ra: " + err.message);
     } finally {
@@ -2248,18 +2303,61 @@ export default function AdminSchedule() {
           teacher_name: item.teacher_name,
           room: item.room || `Phòng ${item.student_class}`
         }));
+        // Đính kèm bản ghi cấu hình Metadata TKB
+        cleanPayload.push({
+          student_class: 'CONFIG_META',
+          day_of_week: 'ALL',
+          period: 0,
+          subject: JSON.stringify(tkbMetadata),
+          teacher_name: 'BAN_GIAM_HIEU',
+          room: tkbMetadata.applyDate
+        });
         await supabase.from('cbq_timetable_items').insert(cleanPayload);
       } catch (dbErr) {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
       }
 
       localStorage.setItem('cbq_master_timetable', JSON.stringify(draftSchedule));
+      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(tkbMetadata));
+      window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
       setTimetableData(draftSchedule);
       setShowPublishModal(false);
       setPublishStep(1);
-      alert(`🎉 CHÚC MỪNG! ĐÃ XUẤT BẢN THỜI KHÓA BIỂU TOÀN TRƯỜNG (${draftSchedule.length} TIẾT HỌC) VỚI 0% XUNG ĐỘT!\n\nThời khóa biểu mới đã được cập nhật trực tiếp lên Cổng tra cứu của Giáo viên và Học sinh.`);
+      alert(`🎉 CHÚC MỪNG! ĐÃ XUẤT BẢN THỜI KHÓA BIỂU TOÀN TRƯỜNG (${draftSchedule.length} TIẾT HỌC) VỚI 0% XUNG ĐỘT!\n\n• Số TKB: ${tkbMetadata.version}\n• Áp dụng từ ngày: ${tkbMetadata.applyDate}\n• Học kỳ: ${tkbMetadata.semester} (${tkbMetadata.schoolYear})\n\nThời khóa biểu mới đã được cập nhật trực tiếp lên Cổng tra cứu của Giáo viên và Học sinh.`);
     } catch (err) {
       alert("Có lỗi khi xuất bản: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveTkbMetadata = async (customMeta) => {
+    const metaToSave = customMeta || editingTkbMeta;
+    setSaving(true);
+    try {
+      setTkbMetadata(metaToSave);
+      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(metaToSave));
+      window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
+
+      try {
+        const client = supabase2 || supabase;
+        await client.from('cbq_timetable_items').delete().eq('student_class', 'CONFIG_META');
+        await client.from('cbq_timetable_items').insert([{
+          student_class: 'CONFIG_META',
+          day_of_week: 'ALL',
+          period: 0,
+          subject: JSON.stringify(metaToSave),
+          teacher_name: 'BAN_GIAM_HIEU',
+          room: metaToSave.applyDate
+        }]);
+      } catch (dbErr) {
+        console.warn("Không thể lưu CONFIG_META lên Supabase:", dbErr);
+      }
+
+      setShowTkbMetaModal(false);
+      alert(`✅ ĐÃ LƯU THÀNH CÔNG THÔNG TIN ÁP DỤNG THỜI KHÓA BIỂU!\n\n• Số TKB: ${metaToSave.version}\n• Ngày áp dụng: ${metaToSave.applyDate}\n• Học kỳ: ${metaToSave.semester} (${metaToSave.schoolYear})\n• Ghi chú: ${metaToSave.note || 'Không có'}\n\nCổng tra cứu công khai đã cập nhật thông tin này ngay lập tức!`);
+    } catch (err) {
+      alert("Lỗi lưu thông tin: " + err.message);
     } finally {
       setSaving(false);
     }
@@ -2621,6 +2719,17 @@ export default function AdminSchedule() {
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => {
+                    setEditingTkbMeta({ ...tkbMetadata });
+                    setShowTkbMetaModal(true);
+                  }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#fef3c7', color: '#92400e', border: '1.5px solid #fde68a', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 2px 6px rgba(245, 158, 11, 0.15)' }}
+                >
+                  <Calendar size={16} color="#d97706" /> ⚙️ Cài Đặt Ngày Áp Dụng TKB
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleDownloadSampleExcel}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                 >
@@ -2726,6 +2835,31 @@ export default function AdminSchedule() {
               <div style={{ fontSize: '26px', fontWeight: '900', color: '#78350f', marginTop: '4px' }}>
                 {uniqueTeachersCount} <small style={{ fontSize: '13px', fontWeight: 'normal', color: '#ca8a04' }}>giáo viên</small>
               </div>
+            </div>
+
+            <div style={{ backgroundColor: '#fffbeb', padding: '16px', borderRadius: '12px', border: '1.5px solid #fde68a', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#92400e' }}>Ngày Áp Dụng TKB</span>
+                  <Calendar size={22} color="#d97706" />
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#78350f', marginTop: '4px' }}>
+                  TKB {tkbMetadata.version || 'Số 01'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#b45309', fontWeight: '600', marginTop: '2px' }}>
+                  Áp dụng: {tkbMetadata.applyDate || '01/09/2026'} ({tkbMetadata.semester || 'Học kỳ I'})
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingTkbMeta({ ...tkbMetadata });
+                  setShowTkbMetaModal(true);
+                }}
+                style={{ marginTop: '10px', padding: '6px 12px', backgroundColor: '#fde68a', color: '#92400e', border: 'none', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
+              >
+                <Edit3 size={13} /> Sửa ngày áp dụng
+              </button>
             </div>
           </div>
 
@@ -7185,10 +7319,64 @@ export default function AdminSchedule() {
                   Bạn đang chuẩn bị xuất bản <strong>{(draftSchedule || []).length} tiết học</strong> từ Bản nháp AI làm Thời khóa biểu chính thức của toàn trường.
                 </p>
 
+                {/* CẤU HÌNH THỜI GIAN & NGÀY ÁP DỤNG TRƯỚC KHI XUẤT BẢN */}
+                <div style={{ backgroundColor: '#fffbeb', padding: '14px', borderRadius: '12px', border: '1px solid #fde68a', marginBottom: '16px' }}>
+                  <div style={{ fontWeight: 'bold', color: '#92400e', fontSize: '13.5px', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={16} color="#d97706" /> THIẾT LẬP THÔNG TIN ÁP DỤNG TKB:
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#78350f', marginBottom: '4px' }}>Số hiệu TKB:</label>
+                      <input
+                        type="text"
+                        value={tkbMetadata.version}
+                        onChange={e => setTkbMetadata({ ...tkbMetadata, version: e.target.value })}
+                        placeholder="Số 01"
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#78350f', marginBottom: '4px' }}>Ngày bắt đầu áp dụng:</label>
+                      <input
+                        type="text"
+                        value={tkbMetadata.applyDate}
+                        onChange={e => setTkbMetadata({ ...tkbMetadata, applyDate: e.target.value })}
+                        placeholder="01/09/2026"
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', outline: 'none', fontWeight: 'bold', color: '#0369a1' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#78350f', marginBottom: '4px' }}>Học kỳ:</label>
+                      <select
+                        value={tkbMetadata.semester}
+                        onChange={e => setTkbMetadata({ ...tkbMetadata, semester: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', outline: 'none' }}
+                      >
+                        <option value="Học kỳ I">Học kỳ I</option>
+                        <option value="Học kỳ II">Học kỳ II</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#78350f', marginBottom: '4px' }}>Năm học:</label>
+                      <input
+                        type="text"
+                        value={tkbMetadata.schoolYear}
+                        onChange={e => setTkbMetadata({ ...tkbMetadata, schoolYear: e.target.value })}
+                        placeholder="2026 - 2027"
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', outline: 'none' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div style={{ backgroundColor: '#f0fdf4', padding: '14px', borderRadius: '10px', border: '1px solid #bbf7d0', marginBottom: '16px', fontSize: '13px', color: '#166534' }}>
                   ✓ Đã kiểm tra 0% xung đột lịch giáo viên.<br />
                   ✓ Cổng tra cứu học sinh và giáo viên sẽ cập nhật ngay lập tức.<br />
-                  ✓ Bản sao lưu TKB hiện tại sẽ được lưu trữ tự động.
+                  ✓ Thông tin ngày áp dụng sẽ tự động đồng bộ trên toàn bộ hệ thống.
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
@@ -7207,7 +7395,7 @@ export default function AdminSchedule() {
                     <AlertTriangle size={18} color="#dc2626" /> XÁC NHẬN LẦN CUỐI (BƯỚC 2/2)
                   </div>
                   <div style={{ fontSize: '13px', color: '#b91c1c', lineHeight: '1.5' }}>
-                    Thao tác này sẽ ghi đè Thời khóa biểu đang áp dụng trên hệ thống. Bạn có chắc chắn muốn xuất bản ngay bây giờ không?
+                    Thao tác này sẽ xuất bản <strong>TKB {tkbMetadata.version} (Áp dụng từ {tkbMetadata.applyDate})</strong> và ghi đè Thời khóa biểu đang áp dụng trên hệ thống. Bạn có chắc chắn muốn xuất bản ngay bây giờ không?
                   </div>
                 </div>
 
@@ -7226,6 +7414,115 @@ export default function AdminSchedule() {
                 </div>
               </div>
             )}
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CÀI ĐẶT THỜI GIAN ÁP DỤNG TKB */}
+      {showTkbMetaModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', maxWidth: '480px', width: '100%', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.3)', border: '1px solid #cbd5e1' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#92400e', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={22} color="#d97706" /> CÀI ĐẶT NGÀY ÁP DỤNG THỜI KHÓA BIỂU
+              </h3>
+              <button type="button" onClick={() => setShowTkbMetaModal(false)} style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '20px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  Số hiệu Thời khóa biểu:
+                </label>
+                <input
+                  type="text"
+                  value={editingTkbMeta.version}
+                  onChange={e => setEditingTkbMeta({ ...editingTkbMeta, version: e.target.value })}
+                  placeholder="Ví dụ: Số 01, Số 02..."
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  Ngày bắt đầu áp dụng:
+                </label>
+                <input
+                  type="text"
+                  value={editingTkbMeta.applyDate}
+                  onChange={e => setEditingTkbMeta({ ...editingTkbMeta, applyDate: e.target.value })}
+                  placeholder="Ví dụ: 01/09/2026 hoặc Thứ Hai, 01/09/2026"
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '14px', outline: 'none', fontWeight: 'bold', color: '#0369a1' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    Học kỳ:
+                  </label>
+                  <select
+                    value={editingTkbMeta.semester}
+                    onChange={e => setEditingTkbMeta({ ...editingTkbMeta, semester: e.target.value })}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', outline: 'none' }}
+                  >
+                    <option value="Học kỳ I">Học kỳ I</option>
+                    <option value="Học kỳ II">Học kỳ II</option>
+                    <option value="Ôn tập Hè">Ôn tập Hè</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    Năm học:
+                  </label>
+                  <input
+                    type="text"
+                    value={editingTkbMeta.schoolYear}
+                    onChange={e => setEditingTkbMeta({ ...editingTkbMeta, schoolYear: e.target.value })}
+                    placeholder="2026 - 2027"
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', outline: 'none' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  Ghi chú / Căn cứ áp dụng:
+                </label>
+                <input
+                  type="text"
+                  value={editingTkbMeta.note}
+                  onChange={e => setEditingTkbMeta({ ...editingTkbMeta, note: e.target.value })}
+                  placeholder="Ví dụ: Áp dụng chính thức toàn trường theo QĐ số 15/QĐ-CBQ"
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ backgroundColor: '#fffbeb', padding: '12px', borderRadius: '8px', border: '1px solid #fde68a', fontSize: '12.5px', color: '#92400e', lineHeight: '1.5' }}>
+                💡 <em>Thông tin ngày áp dụng này sẽ hiển thị trang trọng trên Cổng tra cứu của Giáo viên & Học sinh, trên bản in A4 và trong toàn bộ các file Excel xuất ra.</em>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setShowTkbMetaModal(false)}
+                style={{ padding: '9px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSaveTkbMetadata(editingTkbMeta)}
+                disabled={saving}
+                style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#d97706', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 10px rgba(217, 119, 6, 0.3)' }}
+              >
+                {saving ? 'Đang lưu...' : '💾 Lưu Ngày Áp Dụng'}
+              </button>
+            </div>
 
           </div>
         </div>
