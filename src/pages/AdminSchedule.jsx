@@ -23,7 +23,8 @@ import {
   aggregateYearlyPlanFromMonths,
   exportMonthlyPlanToWordDecree30,
   exportYearlyPlanToWordDecree30,
-  ROMAN_NUMERALS 
+  ROMAN_NUMERALS,
+  DEFAULT_WEEK5_APPENDIX
 } from '../utils/decree30ScheduleWord';
 import { parseWeeklyScheduleText, SAMPLE_WEEK_5_TEXT } from '../utils/scheduleParser';
 import {
@@ -156,6 +157,20 @@ export default function AdminSchedule() {
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [showSmartImportModal, setShowSmartImportModal] = useState(false);
   const [smartImportText, setSmartImportText] = useState('');
+  
+  // Phụ lục & Lịch bổ sung phát sinh trong tuần
+  const [appendixItems, setAppendixItems] = useState([]);
+  const [showAddAppendixModal, setShowAddAppendixModal] = useState(false);
+  const [newAppendixItem, setNewAppendixItem] = useState({
+    time: '',
+    content: '',
+    location: '',
+    chair: '',
+    participants: '',
+    tag: 'Bổ sung',
+    type: 'urgent',
+    note: ''
+  });
 
   // Excel TKB State
   const [excelPreview, setExcelPreview] = useState([]);
@@ -702,6 +717,8 @@ export default function AdminSchedule() {
       setSignerTitle(existing.signer_title || metaObj.signer_title || 'HIỆU TRƯỜNG');
       setAttachedPdfUrl(existing.attached_pdf_url || metaObj.attached_pdf_url || (wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
       setAttachedPdfName(existing.attached_pdf_name || metaObj.attached_pdf_name || (wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
+      const rawAppendix = existing.appendix_items || metaObj.appendix_items;
+      setAppendixItems(Array.isArray(rawAppendix) && rawAppendix.length > 0 ? rawAppendix : (wNum === 5 ? DEFAULT_WEEK5_APPENDIX : []));
       setIsActive(existing.is_active ?? true);
       setDayItems(cleanDayItems.length > 0 ? cleanDayItems : getDefaultScheduleDays(targetWeek));
     } else {
@@ -720,6 +737,7 @@ export default function AdminSchedule() {
       setSignerTitle('HIỆU TRƯỜNG');
       setAttachedPdfUrl(wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
       setAttachedPdfName(wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
+      setAppendixItems(wNum === 5 ? DEFAULT_WEEK5_APPENDIX : []);
       setIsActive(true);
       setDayItems(getDefaultScheduleDays(targetWeek));
     }
@@ -905,7 +923,8 @@ export default function AdminSchedule() {
         signer_name: signerName,
         signer_title: signerTitle,
         attached_pdf_url: attachedPdfUrl || '',
-        attached_pdf_name: attachedPdfName || ''
+        attached_pdf_name: attachedPdfName || '',
+        appendix_items: appendixItems || []
       };
 
       const payload = {
@@ -917,6 +936,7 @@ export default function AdminSchedule() {
         teacher_duty: teacherDuty,
         note,
         schedule_items: [...dayItems, metaObj],
+        appendix_items: appendixItems || [],
         is_active: isActive,
         updated_at: new Date().toISOString()
       };
@@ -2973,6 +2993,281 @@ export default function AdminSchedule() {
                   </tbody>
                 </table>
               </div>
+            </div>
+
+            {/* APPENDIX / PHỤ LỤC & LỊCH BỔ SUNG PHÁT SINH TRONG TUẦN */}
+            <div style={{
+              marginBottom: '24px',
+              padding: '18px',
+              background: '#fffdf0',
+              borderRadius: '14px',
+              border: '1.5px solid #fde047',
+              boxShadow: '0 2px 10px rgba(202, 138, 4, 0.05)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Pin size={18} color="#b45309" />
+                  <div>
+                    <span style={{ fontWeight: '800', color: '#854d0e', fontSize: '15px' }}>
+                      📌 QUẢN LÝ PHỤ LỤC & THÔNG TIN BỔ SUNG (PHÁT SINH TRONG TUẦN)
+                    </span>
+                    <div style={{ fontSize: '12px', color: '#a16207', marginTop: '2px' }}>
+                      Thêm các lịch họp, công việc, hoạt động phát sinh ngoài văn bản PDF gốc đã ký ban hành. Tự động hiển thị trên web và đính kèm vào cuối bản Word.
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddAppendixModal(true)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    backgroundColor: '#eab308',
+                    color: '#713f12',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(234, 179, 8, 0.3)'
+                  }}
+                >
+                  <Plus size={16} /> ➕ Thêm Mục Phụ Lục Phát Sinh
+                </button>
+              </div>
+
+              {/* BẢNG DANH SÁCH MỤC PHỤ LỤC */}
+              {appendixItems.length > 0 ? (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', border: '1px solid #fef08a' }}>
+                    <thead>
+                      <tr style={{ background: '#fef9c3', color: '#854d0e', borderBottom: '2px solid #fde047' }}>
+                        <th style={{ padding: '8px', width: '5%', textAlign: 'center', border: '1px solid #fef08a' }}>TT</th>
+                        <th style={{ padding: '8px', width: '22%', textAlign: 'left', border: '1px solid #fef08a' }}>Thời gian & Phân loại</th>
+                        <th style={{ padding: '8px', width: '38%', textAlign: 'left', border: '1px solid #fef08a' }}>Nội dung công việc bổ sung</th>
+                        <th style={{ padding: '8px', width: '15%', textAlign: 'left', border: '1px solid #fef08a' }}>Địa điểm</th>
+                        <th style={{ padding: '8px', width: '15%', textAlign: 'left', border: '1px solid #fef08a' }}>Chủ trì / Thành phần</th>
+                        <th style={{ padding: '8px', width: '5%', textAlign: 'center', border: '1px solid #fef08a' }}>Xóa</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {appendixItems.map((app, aIdx) => {
+                        const isUrgent = app.type === 'urgent' || (app.tag || '').includes('khẩn') || (app.tag || '').includes('Khẩn');
+                        const isWarning = app.type === 'warning' || (app.tag || '').includes('chỉnh') || (app.tag || '').includes('Chỉnh');
+                        return (
+                          <tr key={app.id || aIdx} style={{ backgroundColor: aIdx % 2 === 0 ? '#ffffff' : '#fffdf5', borderBottom: '1px solid #fef08a' }}>
+                            <td style={{ padding: '10px 6px', textAlign: 'center', fontWeight: 'bold', color: '#854d0e', border: '1px solid #fef08a', verticalAlign: 'top' }}>
+                              {aIdx + 1}
+                            </td>
+
+                            <td style={{ padding: '10px 8px', border: '1px solid #fef08a', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{app.time}</div>
+                              <div style={{ marginTop: '4px' }}>
+                                <span style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  fontSize: '11px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: isUrgent ? '#fee2e2' : isWarning ? '#fef3c7' : '#dcfce7',
+                                  color: isUrgent ? '#991b1b' : isWarning ? '#92400e' : '#166534',
+                                  border: isUrgent ? '1px solid #fca5a5' : isWarning ? '1px solid #fde047' : '1px solid #86efac'
+                                }}>
+                                  {isUrgent ? '🔴 ' : isWarning ? '🟡 ' : '🟢 '}
+                                  {app.tag || 'Bổ sung'}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '10px 8px', border: '1px solid #fef08a', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: '600', color: '#1e293b' }}>{app.content}</div>
+                              {app.note && (
+                                <div style={{ marginTop: '4px', fontSize: '12px', fontStyle: 'italic', color: '#78350f' }}>
+                                  💡 Ghi chú: {app.note}
+                                </div>
+                              )}
+                            </td>
+
+                            <td style={{ padding: '10px 8px', border: '1px solid #fef08a', verticalAlign: 'top', color: '#334155' }}>
+                              {app.location || '-'}
+                            </td>
+
+                            <td style={{ padding: '10px 8px', border: '1px solid #fef08a', verticalAlign: 'top', color: '#334155' }}>
+                              <div style={{ fontWeight: 'bold' }}>{app.chair || '-'}</div>
+                              {app.participants && <div style={{ fontSize: '11.5px', color: '#64748b' }}>{app.participants}</div>}
+                            </td>
+
+                            <td style={{ padding: '10px 6px', textAlign: 'center', border: '1px solid #fef08a', verticalAlign: 'top' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm(`Bạn có chắc muốn xóa mục phụ lục này?`)) {
+                                    setAppendixItems(prev => prev.filter((_, idx) => idx !== aIdx));
+                                  }
+                                }}
+                                style={{ padding: '4px 8px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                title="Xóa mục này"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div style={{ padding: '20px', textAlign: 'center', color: '#854d0e', backgroundColor: '#fefce8', borderRadius: '8px', fontSize: '13px' }}>
+                  Chưa có mục phụ lục bổ sung nào cho tuần này. Bấm nút <strong>"➕ Thêm Mục Phụ Lục Phát Sinh"</strong> nếu có công việc mới phát sinh ngoài văn bản gốc.
+                </div>
+              )}
+
+              {/* MODAL / FORM THÊM MỤC PHỤ LỤC MỚI */}
+              {showAddAppendixModal && (
+                <div style={{
+                  marginTop: '16px',
+                  padding: '16px',
+                  backgroundColor: '#ffffff',
+                  borderRadius: '10px',
+                  border: '1.5px dashed #eab308'
+                }}>
+                  <div style={{ fontWeight: 'bold', color: '#854d0e', marginBottom: '12px', fontSize: '14px' }}>
+                    📝 Thêm Mục Phụ Lục / Nhiệm Vụ Bổ Sung Mới:
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                        Thời gian / Buổi (*):
+                      </label>
+                      <input
+                        type="text"
+                        value={newAppendixItem.time}
+                        onChange={e => setNewAppendixItem(prev => ({ ...prev, time: e.target.value }))}
+                        placeholder="Ví dụ: Chiều Thứ Tư (07/10) - 15h00"
+                        style={{ ...styles.input, fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                        Phân loại:
+                      </label>
+                      <select
+                        value={newAppendixItem.tag}
+                        onChange={e => {
+                          const tag = e.target.value;
+                          const type = tag.includes('khẩn') ? 'urgent' : tag.includes('chỉnh') ? 'warning' : 'info';
+                          setNewAppendixItem(prev => ({ ...prev, tag, type }));
+                        }}
+                        style={{ ...styles.select, fontSize: '13px' }}
+                      >
+                        <option value="Bổ sung khẩn">🔴 Bổ sung khẩn</option>
+                        <option value="Điều chỉnh lịch">🟡 Điều chỉnh lịch</option>
+                        <option value="Bổ sung công tác">🟢 Bổ sung công tác</option>
+                        <option value="Thông báo">🔵 Thông báo chung</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                        Địa điểm:
+                      </label>
+                      <input
+                        type="text"
+                        value={newAppendixItem.location}
+                        onChange={e => setNewAppendixItem(prev => ({ ...prev, location: e.target.value }))}
+                        placeholder="Ví dụ: Phòng Hội đồng / Trực tuyến"
+                        style={{ ...styles.input, fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                      Nội dung công việc bổ sung (*):
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={newAppendixItem.content}
+                      onChange={e => setNewAppendixItem(prev => ({ ...prev, content: e.target.value }))}
+                      placeholder="Nhập nội dung công việc bổ sung..."
+                      style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                    ></textarea>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                        Người chủ trì / Thành phần:
+                      </label>
+                      <input
+                        type="text"
+                        value={newAppendixItem.chair}
+                        onChange={e => setNewAppendixItem(prev => ({ ...prev, chair: e.target.value }))}
+                        placeholder="Ví dụ: Cô Lê Thị Thảo - Hiệu trưởng chủ trì, BGH, TTCM..."
+                        style={{ ...styles.input, fontSize: '13px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#475569', marginBottom: '4px' }}>
+                        Ghi chú / Chỉ đạo của BGH:
+                      </label>
+                      <input
+                        type="text"
+                        value={newAppendixItem.note}
+                        onChange={e => setNewAppendixItem(prev => ({ ...prev, note: e.target.value }))}
+                        placeholder="Ví dụ: Các bộ phận chuẩn bị báo cáo..."
+                        style={{ ...styles.input, fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddAppendixModal(false)}
+                      style={{ padding: '7px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      Hủy bỏ
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newAppendixItem.content.trim()) {
+                          alert('Vui lòng nhập nội dung công việc bổ sung!');
+                          return;
+                        }
+                        const itemToAdd = {
+                          ...newAppendixItem,
+                          id: 'app-' + Date.now(),
+                          time: newAppendixItem.time.trim() || 'Trong tuần'
+                        };
+                        setAppendixItems(prev => [...prev, itemToAdd]);
+                        setNewAppendixItem({
+                          time: '',
+                          content: '',
+                          location: '',
+                          chair: '',
+                          participants: '',
+                          tag: 'Bổ sung',
+                          type: 'urgent',
+                          note: ''
+                        });
+                        setShowAddAppendixModal(false);
+                      }}
+                      style={{ padding: '7px 18px', borderRadius: '6px', border: 'none', backgroundColor: '#166534', color: '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                    >
+                      Thêm vào phụ lục
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* NOTES, RECIPIENTS & SIGNATURE FOOTER CONFIGURATION */}

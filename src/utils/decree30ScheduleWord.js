@@ -63,6 +63,61 @@ export function getSchoolWeeks2026() {
 }
 
 /**
+ * Lấy tuần học hiện tại dựa theo ngày thực tế (Mặc định Tuần 05: 05/10/2026 - 11/10/2026)
+ */
+export function getCurrentSchoolWeekNumber(date = new Date()) {
+  const weeks = getSchoolWeeks2026();
+  try {
+    const pad = (n) => String(n).padStart(2, '0');
+    const targetDateStr = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const found = weeks.find(w => targetDateStr >= w.start_date && targetDateStr <= w.end_date);
+    if (found) return found.week_number;
+    if (targetDateStr < weeks[0].start_date) return 1;
+    if (targetDateStr > weeks[weeks.length - 1].end_date) return 35;
+  } catch (e) {}
+  return 5;
+}
+
+/**
+ * Dữ liệu mẫu Phụ lục công tác phát sinh Tuần 05 (05/10/2026 - 11/10/2026)
+ */
+export const DEFAULT_WEEK5_APPENDIX = [
+  {
+    id: 'app-w5-1',
+    time: 'Chiều Thứ Tư (07/10/2026) - 15h00',
+    content: 'Bổ sung: Họp Ban chỉ đạo chuyển đổi số và ứng dụng CNTT trường học quý IV/2026',
+    location: 'Phòng Hội đồng',
+    chair: 'Cô Lê Thị Thảo - Hiệu trưởng',
+    participants: 'BGH, Tổ CNTT, Thư ký Hội đồng, đại diện các Tổ chuyên môn',
+    tag: 'Bổ sung khẩn',
+    type: 'urgent',
+    note: 'Tổ CNTT chuẩn bị báo cáo tiến độ số hóa hồ sơ sổ sách và hệ thống camera an ninh.'
+  },
+  {
+    id: 'app-w5-2',
+    time: 'Sáng Thứ Năm (08/10/2026) - 08h30',
+    content: 'Điều chỉnh địa điểm: Sinh hoạt chuyên môn theo nghiên cứu bài học (Tổ Sử - GDCD chuyển sang Phòng Đa năng)',
+    location: 'Phòng Đa năng (thay cho Phòng Tổ CM)',
+    chair: 'Thầy Lam - Phó Hiệu trưởng',
+    participants: 'Toàn thể giáo viên Tổ Sử - GDCD',
+    tag: 'Điều chỉnh lịch',
+    type: 'warning',
+    note: 'Các đồng chí mang theo máy tính xách tay và tài liệu chuyên đề.'
+  },
+  {
+    id: 'app-w5-3',
+    time: 'Chiều Thứ Sáu (09/10/2026) - 14h00',
+    content: 'Bổ sung: Kiểm tra công tác y tế học đường, vệ sinh an toàn thực phẩm khu nội trú và căng tin',
+    location: 'Phòng Y tế & Căng tin trường',
+    chair: 'Ban Giám Hiệu',
+    participants: 'BGH, Cán bộ Y tế, Đại diện Ban đại diện CMHS',
+    tag: 'Bổ sung công tác',
+    type: 'info',
+    note: 'Bộ phận Y tế hoàn thiện sổ theo dõi khám sức khỏe ban đầu của học sinh.'
+  }
+];
+
+/**
  * Returns list of months for School Year 2026 - 2027
  */
 export function getSchoolMonths2026() {
@@ -322,6 +377,17 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
   const metaObj = Array.isArray(rawItems) ? (rawItems.find(i => i && i._is_meta) || {}) : (rawItems?.meta || {});
 
   const week5FallbackPdf = Number(weekNo) === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '';
+  const week5ScanPages = Number(weekNo) === 5 ? [
+    '/schedules/lich_tuan_05_trang_1.png',
+    '/schedules/lich_tuan_05_trang_2.png'
+  ] : [];
+
+  const rawAppendix = dbMatch?.appendix_items || metaObj.appendix_items;
+  const appendixItems = Array.isArray(rawAppendix) && rawAppendix.length > 0
+    ? rawAppendix
+    : (Number(weekNo) === 5 ? DEFAULT_WEEK5_APPENDIX : []);
+
+  const scanPages = dbMatch?.scan_pages || metaObj.scan_pages || week5ScanPages;
 
   if (dbMatch && cleanItems.length > 0) {
     return {
@@ -338,7 +404,9 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
       signer_title: dbMatch.signer_title || metaObj.signer_title || 'HIỆU TRƯỜNG',
       day_items: cleanItems,
       attached_pdf_url: dbMatch.attached_pdf_url || metaObj.attached_pdf_url || week5FallbackPdf,
-      attached_pdf_name: dbMatch.attached_pdf_name || metaObj.attached_pdf_name || (Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '')
+      attached_pdf_name: dbMatch.attached_pdf_name || metaObj.attached_pdf_name || (Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''),
+      appendix_items: appendixItems,
+      scan_pages: scanPages
     };
   }
 
@@ -359,7 +427,9 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
     signer_name: 'Lê Thị Thảo',
     signer_title: 'HIỆU TRƯỜNG',
     attached_pdf_url: week5FallbackPdf,
-    attached_pdf_name: Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''
+    attached_pdf_name: Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '',
+    appendix_items: appendixItems,
+    scan_pages: scanPages
   };
 }
 
@@ -586,6 +656,58 @@ export function buildWeekScheduleHtml(scheduleData) {
           </td>
         </tr>
       </table>
+
+      <!-- APPENDIX BLOCK IF EXISTS -->
+      ${(() => {
+        const appendixItems = scheduleData?.appendix_items || [];
+        if (!Array.isArray(appendixItems) || appendixItems.length === 0) return '';
+        const appendixRows = appendixItems.map((app, idx) => `
+          <tr>
+            <td style="border: 1px solid #000; padding: 6px 8px; text-align: center; vertical-align: top; width: 6%; font-weight: bold;">
+              ${idx + 1}
+            </td>
+            <td style="border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: top; width: 22%; font-weight: bold;">
+              ${formatCellText(app.time)}
+              ${app.tag ? `<br/><span style="font-size: 10pt; color: #be123c;">[${formatCellText(app.tag)}]</span>` : ''}
+            </td>
+            <td style="border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: top; width: 38%;">
+              ${formatCellText(app.content)}
+              ${app.note ? `<br/><span style="font-style: italic; font-size: 10pt;">*Ghi chú: ${formatCellText(app.note)}</span>` : ''}
+            </td>
+            <td style="border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: top; width: 17%;">
+              ${formatCellText(app.location || '-')}
+            </td>
+            <td style="border: 1px solid #000; padding: 6px 8px; text-align: left; vertical-align: top; width: 17%;">
+              ${formatCellText(app.chair || app.participants || '-')}
+            </td>
+          </tr>
+        `).join('');
+
+        return `
+          <div style="margin-top: 35px; page-break-inside: avoid;">
+            <div style="font-size: 13pt; font-weight: bold; text-transform: uppercase; text-align: center; margin-bottom: 4px;">
+              PHỤ LỤC: LỊCH CÔNG TÁC BỔ SUNG & ĐIỀU CHỈNH TRONG TUẦN
+            </div>
+            <div style="font-size: 11pt; font-style: italic; text-align: center; margin-bottom: 12px;">
+              (Nội dung phát sinh ngoài văn bản lịch tuần gốc đã ký ban hành)
+            </div>
+            <table style="width: 100%; border: 1px solid #000;">
+              <thead>
+                <tr style="background-color: #f2f2f2;">
+                  <th style="border: 1px solid #000; padding: 6px; width: 6%; text-align: center;">TT</th>
+                  <th style="border: 1px solid #000; padding: 6px; width: 22%; text-align: center;">Thời gian</th>
+                  <th style="border: 1px solid #000; padding: 6px; width: 38%; text-align: center;">Nội dung công việc bổ sung</th>
+                  <th style="border: 1px solid #000; padding: 6px; width: 17%; text-align: center;">Địa điểm</th>
+                  <th style="border: 1px solid #000; padding: 6px; width: 17%; text-align: center;">Chủ trì / Thành phần</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${appendixRows}
+              </tbody>
+            </table>
+          </div>
+        `;
+      })()}
     </div>
   `;
 }
