@@ -12,20 +12,51 @@ export const parseTimingsCompactString = (timingsStr) => {
   try {
     const parts = timingsStr.split(';').map(p => p.trim()).filter(Boolean);
     if (parts.length === 0) return null;
-    const result = parts.map(part => {
-      const [pStr, range] = part.split(':');
-      const period = parseInt(pStr, 10);
-      const [start, end] = (range || '').split('-');
-      const session = period <= 5 ? 'Sáng' : 'Chiều';
-      return {
-        period,
-        session,
-        start: start || '07:00',
-        end: end || '07:45',
-        label: `Tiết ${period} (${start} - ${end})`
-      };
-    });
-    return result.sort((a, b) => a.period - b.period);
+    const result = [];
+
+    for (const part of parts) {
+      // 1. Phân giải dạng chuẩn: "1:07:00-07:45"
+      const match = part.match(/^(\d{1,2}):(\d{1,2}:\d{2})-(\d{1,2}:\d{2})$/);
+      if (match) {
+        const period = parseInt(match[1], 10);
+        const start = match[2];
+        const end = match[3];
+        const session = period <= 5 ? 'Sáng' : 'Chiều';
+        result.push({
+          period,
+          session,
+          start,
+          end,
+          label: `Tiết ${period} (${start} - ${end})`
+        });
+        continue;
+      }
+
+      // 2. Dự phòng: tìm dấu ':' đầu tiên ngăn cách số tiết và khung giờ
+      const firstColon = part.indexOf(':');
+      if (firstColon > 0) {
+        const pNum = parseInt(part.slice(0, firstColon), 10);
+        const range = part.slice(firstColon + 1);
+        const [s, e] = range.split('-');
+        const sTrim = (s || '').trim();
+        const eTrim = (e || '').trim();
+        if (/^\d{1,2}:\d{2}$/.test(sTrim) && /^\d{1,2}:\d{2}$/.test(eTrim)) {
+          const session = pNum <= 5 ? 'Sáng' : 'Chiều';
+          result.push({
+            period: pNum,
+            session,
+            start: sTrim,
+            end: eTrim,
+            label: `Tiết ${pNum} (${sTrim} - ${eTrim})`
+          });
+        }
+      }
+    }
+
+    if (result.length >= 5) {
+      return result.sort((a, b) => a.period - b.period);
+    }
+    return null;
   } catch (err) {
     console.warn('Lỗi phân giải chuỗi khung giờ rút gọn:', err);
     return null;
@@ -35,7 +66,11 @@ export const parseTimingsCompactString = (timingsStr) => {
 export const serializeTimingsCompact = (timings) => {
   if (!Array.isArray(timings)) return '';
   return timings
-    .map(t => `${t.period}:${t.start}-${t.end}`)
+    .map(t => {
+      const s = (t.start || '').trim();
+      const e = (t.end || '').trim();
+      return `${t.period}:${s}-${e}`;
+    })
     .join(';');
 };
 
@@ -57,7 +92,26 @@ export async function saveTimetableConfigToCloud(meta = {}, timings = []) {
     note: (meta.note || '').slice(0, 100)
   };
 
-  const compactTimingsStr = serializeTimingsCompact(timings);
+  // Chuẩn hóa khung giờ để bảo vệ toàn vẹn định dạng HH:mm
+  const cleanTimings = (timings || []).map(pt => {
+    let s = (pt.start || '').trim();
+    let e = (pt.end || '').trim();
+    if (!/^\d{1,2}:\d{2}$/.test(s)) {
+      s = pt.period <= 5 ? '07:00' : '13:30';
+    }
+    if (!/^\d{1,2}:\d{2}$/.test(e)) {
+      e = pt.period <= 5 ? '07:45' : '14:15';
+    }
+    return {
+      period: pt.period,
+      session: pt.session || (pt.period <= 5 ? 'Sáng' : 'Chiều'),
+      start: s,
+      end: e,
+      label: `Tiết ${pt.period} (${s} - ${e})`
+    };
+  });
+
+  const compactTimingsStr = serializeTimingsCompact(cleanTimings);
 
   const rowsToInsert = [
     {
@@ -79,14 +133,14 @@ export async function saveTimetableConfigToCloud(meta = {}, timings = []) {
   ];
 
   // Lưu thêm 10 bản ghi chi tiết cho từng tiết học (CONFIG_PERIOD)
-  (timings || []).forEach(pt => {
+  cleanTimings.forEach(pt => {
     rowsToInsert.push({
       student_class: 'CONFIG_PERIOD',
       day_of_week: 'ALL',
       period: pt.period,
       subject: `${pt.start} - ${pt.end}`,
-      teacher_name: pt.session || (pt.period <= 5 ? 'Sáng' : 'Chiều'),
-      room: pt.label || `Tiết ${pt.period} (${pt.start} - ${pt.end})`
+      teacher_name: pt.session,
+      room: pt.label
     });
   });
 
@@ -154,20 +208,29 @@ export async function fetchTimetableConfigFromCloud() {
     if (!periodTimings || periodTimings.length === 0) {
       const periodRows = data.filter(r => r.student_class === 'CONFIG_PERIOD');
       if (periodRows.length > 0) {
-        periodTimings = periodRows
+        const parsedRows = periodRows
           .map(r => {
-            const [start, end] = (r.subject || '').split(' - ');
+            const parts = (r.subject || '').split(' - ');
+            const s = (parts[0] || '').trim();
+            const e = (parts[1] || '').trim();
+            if (!/^\d{1,2}:\d{2}$/.test(s) || !/^\d{1,2}:\d{2}$/.test(e)) {
+              return null;
+            }
             const period = r.period;
             const session = r.teacher_name || (period <= 5 ? 'Sáng' : 'Chiều');
             return {
               period,
               session,
-              start: start || '07:00',
-              end: end || '07:45',
-              label: r.room || `Tiết ${period} (${start} - ${end})`
+              start: s,
+              end: e,
+              label: r.room || `Tiết ${period} (${s} - ${e})`
             };
           })
-          .sort((a, b) => a.period - b.period);
+          .filter(Boolean);
+
+        if (parsedRows.length >= 5) {
+          periodTimings = parsedRows.sort((a, b) => a.period - b.period);
+        }
       }
     }
 

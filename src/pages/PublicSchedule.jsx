@@ -59,13 +59,17 @@ export const getStoredPeriodTimings = () => {
     const saved = localStorage.getItem('cbq_period_timings');
     if (saved) {
       const parsed = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed) && parsed.length >= 5) {
+        const isValid = parsed.every(p => /^\d{1,2}:\d{2}$/.test(p?.start) && /^\d{1,2}:\d{2}$/.test(p?.end));
+        if (isValid) return parsed;
+      }
     }
     const metaSaved = localStorage.getItem('cbq_timetable_metadata');
     if (metaSaved) {
       const parsedMeta = JSON.parse(metaSaved);
-      if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
-        return parsedMeta.periodTimings;
+      if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length >= 5) {
+        const isValid = parsedMeta.periodTimings.every(p => /^\d{1,2}:\d{2}$/.test(p?.start) && /^\d{1,2}:\d{2}$/.test(p?.end));
+        if (isValid) return parsedMeta.periodTimings;
       }
     }
   } catch (e) {}
