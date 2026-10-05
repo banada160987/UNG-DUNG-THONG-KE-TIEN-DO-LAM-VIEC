@@ -63,6 +63,9 @@ import {
   buildStudentOverlapMatrix
 } from '../utils/extracurricularClubSolver';
 import { DEFAULT_PERIOD_TIMINGS, getStoredPeriodTimings } from './PublicSchedule';
+import { saveTimetableConfigToCloud, fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
+
+
 
 export const PRESET_TIMINGS_STANDARD = [
   { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
@@ -562,34 +565,34 @@ export default function AdminSchedule() {
   async function fetchTimetableData() {
     try {
       const client = supabase2 || supabase;
+
+      // 1. Tải cấu hình thời khóa biểu & khung giờ 10 tiết độc lập từ Supabase
+      try {
+        const cloudConfig = await fetchTimetableConfigFromCloud();
+        if (cloudConfig.metadata && cloudConfig.metadata.applyDate) {
+          setTkbMetadata(cloudConfig.metadata);
+          setEditingTkbMeta(cloudConfig.metadata);
+          localStorage.setItem('cbq_timetable_metadata', JSON.stringify(cloudConfig.metadata));
+        }
+        if (cloudConfig.periodTimings && Array.isArray(cloudConfig.periodTimings) && cloudConfig.periodTimings.length > 0) {
+          setPeriodTimings(cloudConfig.periodTimings);
+          setEditingPeriodTimings(cloudConfig.periodTimings);
+          localStorage.setItem('cbq_period_timings', JSON.stringify(cloudConfig.periodTimings));
+        }
+      } catch (cfgErr) {
+        console.warn("Lỗi đọc cấu hình TKB từ DB:", cfgErr);
+      }
+
+      // 2. Tải thời khóa biểu các lớp (loại trừ các bản ghi cấu hình)
       const { data, error } = await client
         .from('cbq_timetable_items')
         .select('*')
+        .not('student_class', 'in', '("CONFIG_META","CONFIG_TIMINGS","CONFIG_PERIOD")')
         .range(0, 1999)
         .order('student_class', { ascending: true });
 
       let finalTimetable = [];
       if (!error && data && data.length > 0) {
-        // Kiểm tra bản ghi Metadata cấu hình TKB nếu có trong DB
-        const metaRow = data.find(item => item.student_class === 'CONFIG_META');
-        if (metaRow && metaRow.subject) {
-          try {
-            const parsedMeta = JSON.parse(metaRow.subject);
-            if (parsedMeta && parsedMeta.applyDate) {
-              setTkbMetadata(parsedMeta);
-              setEditingTkbMeta(parsedMeta);
-              localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
-            }
-            if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
-              setPeriodTimings(parsedMeta.periodTimings);
-              setEditingPeriodTimings(parsedMeta.periodTimings);
-              localStorage.setItem('cbq_period_timings', JSON.stringify(parsedMeta.periodTimings));
-            }
-          } catch (mErr) {
-            console.warn("Lỗi đọc metadata TKB từ DB:", mErr);
-          }
-        }
-
         finalTimetable = processRawTimetableItems(data);
         setTimetableData(finalTimetable);
         localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
@@ -1110,7 +1113,10 @@ export default function AdminSchedule() {
     try {
       // 1. Save to Supabase cbq_timetable_items if available
       try {
-        await supabase.from('cbq_timetable_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const client = supabase2 || supabase;
+        await client.from('cbq_timetable_items')
+          .delete()
+          .not('student_class', 'in', '("CONFIG_META","CONFIG_TIMINGS","CONFIG_PERIOD")');
         const cleanPayload = excelPreview.map(item => ({
           student_class: item.student_class,
           day_of_week: item.day_of_week,
@@ -1119,16 +1125,9 @@ export default function AdminSchedule() {
           teacher_name: item.teacher_name,
           room: item.room
         }));
-        // Đính kèm bản ghi cấu hình Metadata TKB
-        cleanPayload.push({
-          student_class: 'CONFIG_META',
-          day_of_week: 'ALL',
-          period: 0,
-          subject: JSON.stringify(tkbMetadata),
-          teacher_name: 'BAN_GIAM_HIEU',
-          room: tkbMetadata.applyDate
-        });
-        await supabase.from('cbq_timetable_items').insert(cleanPayload);
+        await client.from('cbq_timetable_items').insert(cleanPayload);
+        // Đồng bộ cấu hình metadata và khung giờ đi kèm an toàn lên Cloud
+        await saveTimetableConfigToCloud(tkbMetadata, periodTimings);
       } catch (dbErr) {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
       }
@@ -2460,7 +2459,10 @@ export default function AdminSchedule() {
     setSaving(true);
     try {
       try {
-        await supabase.from('cbq_timetable_items').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const client = supabase2 || supabase;
+        await client.from('cbq_timetable_items')
+          .delete()
+          .not('student_class', 'in', '("CONFIG_META","CONFIG_TIMINGS","CONFIG_PERIOD")');
         const cleanPayload = draftSchedule.map(item => ({
           student_class: item.student_class,
           day_of_week: item.day_of_week,
@@ -2469,16 +2471,9 @@ export default function AdminSchedule() {
           teacher_name: item.teacher_name,
           room: item.room || `Phòng ${item.student_class}`
         }));
-        // Đính kèm bản ghi cấu hình Metadata TKB
-        cleanPayload.push({
-          student_class: 'CONFIG_META',
-          day_of_week: 'ALL',
-          period: 0,
-          subject: JSON.stringify(tkbMetadata),
-          teacher_name: 'BAN_GIAM_HIEU',
-          room: tkbMetadata.applyDate
-        });
-        await supabase.from('cbq_timetable_items').insert(cleanPayload);
+        await client.from('cbq_timetable_items').insert(cleanPayload);
+        // Đồng bộ cấu hình metadata và khung giờ đi kèm an toàn lên Cloud
+        await saveTimetableConfigToCloud(tkbMetadata, periodTimings);
       } catch (dbErr) {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
       }
@@ -2499,32 +2494,20 @@ export default function AdminSchedule() {
 
   const handleSaveTkbMetadata = async (customMeta) => {
     const metaToSave = {
-      ...(customMeta || editingTkbMeta),
-      periodTimings: periodTimings || getStoredPeriodTimings()
+      ...(customMeta || editingTkbMeta)
     };
+    const currentTimings = periodTimings || getStoredPeriodTimings();
     setSaving(true);
     try {
       setTkbMetadata(metaToSave);
       localStorage.setItem('cbq_timetable_metadata', JSON.stringify(metaToSave));
       window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
 
-      try {
-        const client = supabase2 || supabase;
-        await client.from('cbq_timetable_items').delete().eq('student_class', 'CONFIG_META');
-        await client.from('cbq_timetable_items').insert([{
-          student_class: 'CONFIG_META',
-          day_of_week: 'ALL',
-          period: 0,
-          subject: JSON.stringify(metaToSave),
-          teacher_name: 'BAN_GIAM_HIEU',
-          room: metaToSave.applyDate
-        }]);
-      } catch (dbErr) {
-        console.warn("Không thể lưu CONFIG_META lên Supabase:", dbErr);
-      }
+      // Lưu lên Cloud Supabase an toàn (tách thành bản ghi nhỏ <= 255 chars)
+      await saveTimetableConfigToCloud(metaToSave, currentTimings);
 
       setShowTkbMetaModal(false);
-      alert(`✅ ĐÃ LƯU THÀNH CÔNG THÔNG TIN ÁP DỤNG THỜI KHÓA BIỂU!\n\n• Số TKB: ${metaToSave.version}\n• Ngày áp dụng: ${metaToSave.applyDate}\n• Học kỳ: ${metaToSave.semester} (${metaToSave.schoolYear})\n• Ghi chú: ${metaToSave.note || 'Không có'}\n\nCổng tra cứu công khai đã cập nhật thông tin này ngay lập tức!`);
+      alert(`✅ ĐÃ LƯU THÀNH CÔNG THÔNG TIN ÁP DỤNG THỜI KHÓA BIỂU!\n\n• Số TKB: ${metaToSave.version}\n• Ngày áp dụng: ${metaToSave.applyDate}\n• Học kỳ: ${metaToSave.semester} (${metaToSave.schoolYear})\n• Ghi chú: ${metaToSave.note || 'Không có'}\n\nCổng tra cứu công khai và mọi thiết bị (điện thoại/máy tính) đã cập nhật thông tin này ngay lập tức!`);
     } catch (err) {
       alert("Lỗi lưu thông tin: " + err.message);
     } finally {
@@ -2543,30 +2526,18 @@ export default function AdminSchedule() {
       setEditingPeriodTimings(timingsToSave);
       localStorage.setItem('cbq_period_timings', JSON.stringify(timingsToSave));
 
-      const updatedMeta = { ...tkbMetadata, periodTimings: timingsToSave };
+      const updatedMeta = { ...tkbMetadata };
       setTkbMetadata(updatedMeta);
       localStorage.setItem('cbq_timetable_metadata', JSON.stringify(updatedMeta));
 
       window.dispatchEvent(new Event('cbq_period_timings_updated'));
       window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
 
-      try {
-        const client = supabase2 || supabase;
-        await client.from('cbq_timetable_items').delete().eq('student_class', 'CONFIG_META');
-        await client.from('cbq_timetable_items').insert([{
-          student_class: 'CONFIG_META',
-          day_of_week: 'ALL',
-          period: 0,
-          subject: JSON.stringify(updatedMeta),
-          teacher_name: 'BAN_GIAM_HIEU',
-          room: updatedMeta.applyDate
-        }]);
-      } catch (dbErr) {
-        console.warn("Không thể lưu CONFIG_META lên Supabase:", dbErr);
-      }
+      // Lưu lên Cloud Supabase an toàn (tách thành bản ghi nhỏ <= 255 chars)
+      await saveTimetableConfigToCloud(updatedMeta, timingsToSave);
 
       setShowPeriodTimingsModal(false);
-      alert(`⏰ ĐÃ LƯU THÀNH CÔNG KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG!\n\n• Cấu hình 10 tiết học (Ca sáng & Ca chiều) đã được cập nhật.\n• Cổng tra cứu của Giáo viên, Học sinh và Hệ thống quản lý đã đồng bộ khung giờ mới ngay lập tức!`);
+      alert(`⏰ ĐÃ LƯU THÀNH CÔNG KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG!\n\n• Cấu hình 10 tiết học (Ca sáng & Ca chiều) đã được đồng bộ lên Cloud.\n• Cổng tra cứu của Giáo viên, Học sinh trên mọi thiết bị & điện thoại đã nhận khung giờ mới ngay lập tức!`);
     } catch (err) {
       alert("Lỗi lưu khung giờ: " + err.message);
     } finally {

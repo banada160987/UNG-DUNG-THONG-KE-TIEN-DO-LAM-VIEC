@@ -21,6 +21,8 @@ import {
   exportYearlyPlanToWordDecree30,
   formatWeekTitle
 } from '../utils/decree30ScheduleWord';
+import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
+
 
 const DEFAULT_SCHEDULE = {
   title: 'LỊCH CÔNG TÁC TUẦN 01 - NĂM HỌC 2026-2027',
@@ -559,26 +561,30 @@ export default function PublicSchedule() {
   async function fetchTimetableData() {
     try {
       const client = supabase2 || supabase;
-      const { data, error } = await client.from('cbq_timetable_items').select('*').range(0, 1999);
-      if (!error && data && data.length > 0) {
-        // Tự động kiểm tra bản ghi Metadata cấu hình TKB nếu có lưu trong DB
-        const metaRow = data.find(item => item.student_class === 'CONFIG_META');
-        if (metaRow && metaRow.subject) {
-          try {
-            const parsedMeta = JSON.parse(metaRow.subject);
-            if (parsedMeta && parsedMeta.applyDate) {
-              setTkbMetadata(prev => ({ ...prev, ...parsedMeta }));
-              localStorage.setItem('cbq_timetable_metadata', JSON.stringify(parsedMeta));
-            }
-            if (parsedMeta && Array.isArray(parsedMeta.periodTimings) && parsedMeta.periodTimings.length > 0) {
-              setPeriodTimings(parsedMeta.periodTimings);
-              localStorage.setItem('cbq_period_timings', JSON.stringify(parsedMeta.periodTimings));
-            }
-          } catch (metaErr) {
-            console.warn("Lỗi đọc cấu hình metadata TKB:", metaErr);
-          }
-        }
 
+      // 1. Luôn tải cấu hình khung giờ 10 tiết và metadata mới nhất từ Cloud Supabase
+      try {
+        const cloudConfig = await fetchTimetableConfigFromCloud();
+        if (cloudConfig.metadata && cloudConfig.metadata.applyDate) {
+          setTkbMetadata(prev => ({ ...prev, ...cloudConfig.metadata }));
+          localStorage.setItem('cbq_timetable_metadata', JSON.stringify(cloudConfig.metadata));
+        }
+        if (cloudConfig.periodTimings && Array.isArray(cloudConfig.periodTimings) && cloudConfig.periodTimings.length > 0) {
+          setPeriodTimings(cloudConfig.periodTimings);
+          localStorage.setItem('cbq_period_timings', JSON.stringify(cloudConfig.periodTimings));
+        }
+      } catch (cfgErr) {
+        console.warn("Lỗi tải cấu hình TKB từ Cloud:", cfgErr);
+      }
+
+      // 2. Tải dữ liệu các tiết học thời khóa biểu (loại trừ các bản ghi cấu hình)
+      const { data, error } = await client
+        .from('cbq_timetable_items')
+        .select('*')
+        .not('student_class', 'in', '("CONFIG_META","CONFIG_TIMINGS","CONFIG_PERIOD")')
+        .range(0, 1999);
+
+      if (!error && data && data.length > 0) {
         const cleaned = processRawTimetableItems(data);
         setTimetableData(cleaned);
         localStorage.setItem('cbq_master_timetable', JSON.stringify({
