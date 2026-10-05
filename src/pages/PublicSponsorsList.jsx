@@ -19,7 +19,9 @@ export default function PublicSponsorsList() {
     fetchSponsors();
   }, []);
 
-  useAutoRefresh(fetchSponsors, 60000);
+  // Tự động làm mới mỗi 5 phút (nếu tab hiển thị)
+  useAutoRefresh(fetchSponsors, 300000);
+
 
   const filteredSponsors = sponsors.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase())

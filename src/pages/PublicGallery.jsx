@@ -20,7 +20,9 @@ export default function PublicGallery() {
     fetchImages();
   }, []);
 
-  useAutoRefresh(fetchImages, 60000);
+  // Tự động làm mới mỗi 5 phút (nếu tab hiển thị)
+  useAutoRefresh(fetchImages, 300000);
+
 
   // AUTO PLAY SLIDESHOW
   useEffect(() => {

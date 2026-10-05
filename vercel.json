@@ -10,7 +10,34 @@
       ]
     },
     {
+      "source": "/(.*)\\.(jpg|jpeg|png|gif|svg|webp|ico|mp3|wav|ogg|woff|woff2|ttf|eot)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
       "source": "/favicon.(ico|png|svg)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/schedules/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400, stale-while-revalidate=604800"
+        }
+      ]
+    },
+    {
+      "source": "/tools/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -40,6 +67,23 @@
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/(.*)\\.php",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wp-(.*)",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/(xmlrpc|phpmyadmin|adminer)(.*)",
+      "destination": "/",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/assets/:path*",
@@ -48,6 +92,10 @@
     {
       "source": "/tools/:path*",
       "destination": "/tools/:path*"
+    },
+    {
+      "source": "/schedules/:path*",
+      "destination": "/schedules/:path*"
     },
     {
       "source": "/:path*",

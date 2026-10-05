@@ -138,9 +138,11 @@ export default function PublicMeetingAttendance() {
     }
   }, []);
 
-  // Tự động đồng bộ trạng thái cuộc họp & danh sách điểm danh mỗi 8 giây
+  // Tự động đồng bộ trạng thái cuộc họp & danh sách điểm danh (chỉ chạy khi tab hiển thị, chống quá tải)
   useEffect(() => {
-    const timer = setInterval(async () => {
+    const doSync = async () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       try {
         const refreshedMeetings = await OnlineMeetingService.getMeetings();
         setMeetings(refreshedMeetings);
@@ -150,8 +152,18 @@ export default function PublicMeetingAttendance() {
       } catch (e) {
         // im lặng nếu mất mạng tạm thời
       }
-    }, 8000);
-    return () => clearInterval(timer);
+    };
+
+    const timer = setInterval(doSync, 20000);
+    const handleVis = () => {
+      if (!document.hidden) doSync();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVis);
+    };
   }, [selectedMeetingId]);
 
   async function loadData() {

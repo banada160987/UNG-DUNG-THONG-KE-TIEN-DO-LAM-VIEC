@@ -15,7 +15,9 @@ export default function PublicNewsList() {
     fetchNews();
   }, []);
 
-  useAutoRefresh(fetchNews, 60000);
+  // Tự động làm mới mỗi 5 phút (nếu tab hiển thị)
+  useAutoRefresh(fetchNews, 300000);
+
 
   return (
     <div style={styles.container}>

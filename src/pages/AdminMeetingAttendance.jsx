@@ -98,14 +98,26 @@ export default function AdminMeetingAttendance() {
     return () => clearInterval(timerRef.current);
   }, [selectedMeetingId, meetings]);
 
-  // Polling tự động làm mới dữ liệu mỗi 15 giây
+  // Polling tự động làm mới dữ liệu (chỉ chạy khi tab hiển thị, chống quá tải)
   useEffect(() => {
-    const interval = setInterval(() => {
+    const doSync = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       if (selectedMeetingId) {
         loadMeetingDetails(selectedMeetingId, false);
       }
-    }, 15000);
-    return () => clearInterval(interval);
+    };
+
+    const interval = setInterval(doSync, 20000);
+    const handleVis = () => {
+      if (!document.hidden) doSync();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVis);
+    };
   }, [selectedMeetingId]);
 
   async function loadInitialData() {

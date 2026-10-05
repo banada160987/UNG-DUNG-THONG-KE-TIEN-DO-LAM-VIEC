@@ -63,80 +63,48 @@ export const DualSupabaseService = {
    * - Nếu cả 2 đều hoạt động và có dữ liệu trùng nhau, tự động lọc trùng theo uniqueKey ('id' hoặc 'ticket_code').
    */
   async selectSmart(table, buildQueryFn, uniqueKey = 'id') {
-    const fetch1 = (async () => {
-      if (!supabase1) return null;
+    const primaryClient = USE_SUPABASE_2_AS_PRIMARY ? supabase2 : (supabase1 || supabase);
+    const secondaryClient = USE_SUPABASE_2_AS_PRIMARY ? (supabase1 || supabase) : supabase2;
+
+    // 1. Ưu tiên truy vấn Primary DB trước (Không đánh thức Secondary DB nếu Primary thành công)
+    if (primaryClient) {
       try {
-        let q = supabase1.from(table).select('*');
+        let q = primaryClient.from(table).select('*');
         if (buildQueryFn) q = buildQueryFn(q);
         const res = await q;
-        if (res.error) throw res.error;
-        return (res.data || []).map(item => ({ ...item, _source: 'sb1' }));
+        if (!res.error && res.data) {
+          return {
+            data: res.data.map(item => ({ ...item, _source: USE_SUPABASE_2_AS_PRIMARY ? 'sb2' : 'sb1' })),
+            error: null,
+            source: USE_SUPABASE_2_AS_PRIMARY ? 'sb2' : 'sb1'
+          };
+        }
       } catch (err) {
-        console.warn(`[DualSupabase] Supabase 1 ngắt kết nối hoặc gặp lỗi:`, err.message || err);
-        return null;
+        console.warn(`[DualSupabase] Primary DB gặp sự cố, tự động failover sang Secondary:`, err.message || err);
       }
-    })();
+    }
 
-    const fetch2 = (async () => {
-      if (!supabase2) return null;
+    // 2. Dự phòng Secondary DB nếu Primary gặp lỗi
+    if (secondaryClient && secondaryClient !== primaryClient) {
       try {
-        let q = supabase2.from(table).select('*');
+        let q = secondaryClient.from(table).select('*');
         if (buildQueryFn) q = buildQueryFn(q);
         const res = await q;
-        if (res.error) throw res.error;
-        return (res.data || []).map(item => ({ ...item, _source: 'sb2' }));
+        if (!res.error && res.data) {
+          return {
+            data: res.data.map(item => ({ ...item, _source: USE_SUPABASE_2_AS_PRIMARY ? 'sb1' : 'sb2' })),
+            error: null,
+            source: USE_SUPABASE_2_AS_PRIMARY ? 'sb1' : 'sb2'
+          };
+        }
       } catch (err) {
-        console.warn(`[DualSupabase] Supabase 2 ngắt kết nối hoặc gặp lỗi:`, err.message || err);
-        return null;
+        console.warn(`[DualSupabase] Secondary DB gặp sự cố:`, err.message || err);
       }
-    })();
-
-    const [data1, data2] = await Promise.all([fetch1, fetch2]);
-
-    // Trường hợp 1: Chỉ Supabase 1 hoạt động
-    if (data1 && !data2) {
-      return { data: data1, error: null, source: 'sb1' };
-    }
-
-    // Trường hợp 2: Chỉ Supabase 2 hoạt động
-    if (!data1 && data2) {
-      return { data: data2, error: null, source: 'sb2' };
-    }
-
-    // Trường hợp 3: Cả 2 Supabase đều hoạt động -> Gộp và Lọc bỏ dữ liệu trùng lặp (Ưu tiên DB Primary)
-    if (data1 || data2) {
-      const mergedMap = new Map();
-      const primaryData = USE_SUPABASE_2_AS_PRIMARY ? data2 : data1;
-      const secondaryData = USE_SUPABASE_2_AS_PRIMARY ? data1 : data2;
-
-      // Nạp dữ liệu từ Primary DB trước (được ưu tiên tuyệt đối)
-      if (primaryData) {
-        primaryData.forEach(item => {
-          const key = item[uniqueKey] || JSON.stringify(item);
-          mergedMap.set(key, item);
-        });
-      }
-
-      // Nạp dữ liệu từ Secondary DB (chỉ nạp các key chưa tồn tại ở Primary DB)
-      if (secondaryData) {
-        secondaryData.forEach(item => {
-          const key = item[uniqueKey] || JSON.stringify(item);
-          if (!mergedMap.has(key)) {
-            mergedMap.set(key, item);
-          }
-        });
-      }
-
-      return {
-        data: Array.from(mergedMap.values()),
-        error: null,
-        source: 'merged'
-      };
     }
 
     return {
       data: [],
-      error: new Error('Cả 02 Supabase đều ngắt kết nối hoặc gặp lỗi!'),
+      error: new Error('Không thể kết nối đến cơ sở dữ liệu!'),
       source: 'none'
     };
   },

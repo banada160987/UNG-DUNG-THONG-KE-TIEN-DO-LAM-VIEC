@@ -181,12 +181,23 @@ export default function OnlineInvitation() {
     fetchData();
     setTimeout(() => setShowConfetti(false), 5000);
 
-    // Auto-sync wishes every 10 seconds to pull deletes from Admin
-    const wishesInterval = setInterval(() => {
+    // Tự động đồng bộ lời chúc (chỉ chạy khi tab hiển thị, chu kỳ 45s chống quá tải)
+    const doSyncWishes = () => {
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
       fetchWishes();
-    }, 10000);
+    };
 
-    return () => clearInterval(wishesInterval);
+    const wishesInterval = setInterval(doSyncWishes, 45000);
+    const handleVis = () => {
+      if (!document.hidden) doSyncWishes();
+    };
+    document.addEventListener('visibilitychange', handleVis);
+
+    return () => {
+      clearInterval(wishesInterval);
+      document.removeEventListener('visibilitychange', handleVis);
+    };
   }, [code]);
 
   useEffect(() => {

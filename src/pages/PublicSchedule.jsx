@@ -454,7 +454,20 @@ export default function PublicSchedule() {
     fetchTimetableData();
   }, []);
 
-  async function fetchSchedules() {
+  async function fetchSchedules(forceRefresh = false) {
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem('cbq_cached_schedules');
+        if (cached) {
+          const { data, timestamp } = JSON.parse(cached);
+          if (Date.now() - timestamp < 3 * 60 * 1000 && Array.isArray(data) && data.length > 0) {
+            setSchedules(data);
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -465,6 +478,10 @@ export default function PublicSchedule() {
 
       if (!error && data && data.length > 0) {
         setSchedules(data);
+        sessionStorage.setItem('cbq_cached_schedules', JSON.stringify({
+          data,
+          timestamp: Date.now()
+        }));
       }
     } catch (err) {
       console.warn("Dùng lịch công tác mặc định:", err);
@@ -558,7 +575,7 @@ export default function PublicSchedule() {
     exportYearlyPlanToWordDecree30(yData);
   };
 
-  async function fetchTimetableData() {
+  async function fetchTimetableData(forceRefresh = false) {
     try {
       const client = supabase2 || supabase;
 
@@ -575,6 +592,22 @@ export default function PublicSchedule() {
         }
       } catch (cfgErr) {
         console.warn("Lỗi tải cấu hình TKB từ Cloud:", cfgErr);
+      }
+
+      // Kiểm tra bộ nhớ đệm TKB (TTL 5 phút, tránh gọi liên tục gây quá tải)
+      if (!forceRefresh) {
+        try {
+          const cached = localStorage.getItem('cbq_master_timetable');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            const cachedItems = Array.isArray(parsed) ? parsed : parsed?.data;
+            const ts = parsed?.timestamp || 0;
+            if (Array.isArray(cachedItems) && cachedItems.length > 0 && (Date.now() - ts < 5 * 60 * 1000)) {
+              setTimetableData(cachedItems);
+              return;
+            }
+          }
+        } catch (cErr) {}
       }
 
       // 2. Tải dữ liệu các tiết học thời khóa biểu (loại trừ các bản ghi cấu hình)
