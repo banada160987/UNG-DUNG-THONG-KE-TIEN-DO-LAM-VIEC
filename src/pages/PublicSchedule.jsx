@@ -312,6 +312,7 @@ export default function PublicSchedule() {
   const [selectedWeekNo, setSelectedWeekNo] = useState(1);
   const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
   const [showExportModal, setShowExportModal] = useState(false);
+  const [showPdfModal, setShowPdfModal] = useState(false);
   const [exportMode, setExportMode] = useState('single');
   const [fromWeek, setFromWeek] = useState(1);
   const [toWeek, setToWeek] = useState(35);
@@ -494,27 +495,7 @@ export default function PublicSchedule() {
 
   // Get current active schedule object for selected week
   const getCurrentScheduleObj = () => {
-    const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
-    const foundInDb = schedules.find(s => Number(s.week_number) === selectedWeekNo);
-
-    if (foundInDb) {
-      return {
-        ...targetWeek,
-        ...foundInDb,
-        title: formatWeekTitle(foundInDb.title || targetWeek.title, selectedWeekNo),
-        day_items: foundInDb.day_items || foundInDb.schedule_items || getDefaultScheduleDays(targetWeek)
-      };
-    }
-
-    return {
-      ...targetWeek,
-      title: formatWeekTitle(targetWeek.title, selectedWeekNo),
-      note: '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
-      recipients: 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
-      signer_name: 'Lê Thị Thảo',
-      signer_title: 'HIỆU TRƯỜNG',
-      day_items: getDefaultScheduleDays(targetWeek)
-    };
+    return getScheduleDataForWeek(selectedWeekNo, schedules);
   };
 
   const handleExportPublicWordDecree30 = () => {
@@ -1163,6 +1144,23 @@ export default function PublicSchedule() {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {scheduleViewMode === 'week' && (
                 <>
+                  <button 
+                    onClick={() => setShowPdfModal(true)} 
+                    style={{ 
+                      ...styles.printBtn, 
+                      backgroundColor: currentSched.attached_pdf_url ? '#be123c' : '#831843', 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '6px',
+                      boxShadow: currentSched.attached_pdf_url ? '0 2px 10px rgba(190, 18, 60, 0.4)' : 'none'
+                    }}
+                    title={currentSched.attached_pdf_url ? 'Xem tệp PDF gốc có dấu đỏ và chữ ký của Hiệu trưởng' : 'Xem thông tin bản scan PDF gốc'}
+                  >
+                    <FileText size={16} /> 📑 Xem Bản PDF Gốc (Dấu Đỏ)
+                    {currentSched.attached_pdf_url && (
+                      <span style={{ backgroundColor: '#22c55e', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>CÓ SẴN</span>
+                    )}
+                  </button>
                   <button onClick={() => setShowExportModal(true)} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
                     <Download size={16} /> 📄 Xuất File Word (NĐ 30)
                   </button>
@@ -1194,20 +1192,44 @@ export default function PublicSchedule() {
           {/* VIEW MODE 1: WEEK VIEW */}
           {scheduleViewMode === 'week' && (
             <div>
-              {/* WEEK SELECTOR DROPDOWN */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }} className="no-print">
-                <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tuần Học (Năm học 2026 - 2027):</span>
-                <select 
-                  value={selectedWeekNo} 
-                  onChange={e => handleSelectWeekNo(e.target.value)}
-                  style={{ ...styles.select, padding: '9px 16px', fontSize: '14px', border: '1.5px solid #0284c7', color: '#0369a1' }}
-                >
-                  {schoolWeeks.map(w => (
-                    <option key={w.week_number} value={w.week_number}>
-                      Tuần {String(w.week_number).padStart(2, '0')} ({w.date_range_str})
-                    </option>
-                  ))}
-                </select>
+              {/* WEEK SELECTOR DROPDOWN & PDF BANNER */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '10px', border: '1px solid #e2e8f0' }} className="no-print">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tuần Học (Năm học 2026 - 2027):</span>
+                  <select 
+                    value={selectedWeekNo} 
+                    onChange={e => handleSelectWeekNo(e.target.value)}
+                    style={{ ...styles.select, padding: '9px 16px', fontSize: '14px', border: '1.5px solid #0284c7', color: '#0369a1' }}
+                  >
+                    {schoolWeeks.map(w => (
+                      <option key={w.week_number} value={w.week_number}>
+                        Tuần {String(w.week_number).padStart(2, '0')} ({w.date_range_str})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {currentSched.attached_pdf_url && (
+                  <button
+                    onClick={() => setShowPdfModal(true)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: '#fff1f2',
+                      border: '1.5px solid #fecdd3',
+                      borderRadius: '8px',
+                      color: '#be123c',
+                      fontSize: '13px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(190, 18, 60, 0.15)'
+                    }}
+                  >
+                    <FileText size={15} /> 📑 Bản PDF Gốc Có Dấu Đỏ BGH
+                  </button>
+                )}
               </div>
 
               {/* OFFICIAL DECREE 30 HEADER */}
@@ -3642,6 +3664,90 @@ export default function PublicSchedule() {
               <button type="button" onClick={handleExecutePublicExport} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                 📥 Tải File Word (.doc)
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL XEM FILE PDF SCAN GỐC CÓ DẤU ĐỎ & CHỮ KÝ */}
+      {showPdfModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '1020px', width: '100%', height: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '8px', backgroundColor: '#ffe4e6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#be123c' }}>
+                  <FileText size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '16.5px', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📑 BẢN PDF LỊCH CÔNG TÁC GỐC (DẤU ĐỎ & CHỮ KÝ) - TUẦN {String(selectedWeekNo).padStart(2, '0')}
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    {currentSched.title} ({currentSched.date_range_str || currentSched.subtitle})
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {currentSched.attached_pdf_url && (
+                  <>
+                    <a
+                      href={currentSched.attached_pdf_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ padding: '7px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#0284c7', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <LinkIcon size={14} /> Mở Tab Mới
+                    </a>
+                    <a
+                      href={currentSched.attached_pdf_url}
+                      download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
+                      style={{ padding: '7px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <Download size={14} /> Tải PDF Về Máy
+                    </a>
+                  </>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPdfModal(false)}
+                  style={{ width: '34px', height: '34px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* MODAL BODY */}
+            <div style={{ flex: 1, backgroundColor: '#f1f5f9', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {currentSched.attached_pdf_url ? (
+                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <iframe
+                    src={currentSched.attached_pdf_url}
+                    title={`Bản PDF Lịch Tuần ${selectedWeekNo}`}
+                    style={{ width: '100%', height: '100%', border: 'none' }}
+                  />
+                </div>
+              ) : (
+                <div style={{ padding: '50px 20px', textAlign: 'center', margin: 'auto', maxWidth: '520px' }}>
+                  <div style={{ fontSize: '50px', marginBottom: '16px' }}>📂</div>
+                  <h4 style={{ margin: '0 0 10px 0', fontSize: '18px', color: '#0f172a' }}>
+                    Chưa đính kèm tệp PDF scan gốc cho Tuần {selectedWeekNo}
+                  </h4>
+                  <p style={{ margin: '0 0 24px 0', fontSize: '14px', color: '#64748b', lineHeight: '1.6' }}>
+                    Tuần này hiện đang hiển thị dưới dạng bảng số hóa chuẩn hành chính Nghị định 30. Ban Giám Hiệu có thể vào trang Quản trị Lịch để tải lên tệp PDF scan có dấu đỏ hoặc dán đường dẫn lưu trữ.
+                  </p>
+                  <button
+                    onClick={() => setShowPdfModal(false)}
+                    style={{ padding: '9px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#be123c', color: '#ffffff', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer' }}
+                  >
+                    Quay lại xem bảng số hóa
+                  </button>
+                </div>
+              )}
             </div>
 
           </div>

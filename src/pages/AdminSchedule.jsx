@@ -25,6 +25,7 @@ import {
   exportYearlyPlanToWordDecree30,
   ROMAN_NUMERALS 
 } from '../utils/decree30ScheduleWord';
+import { parseWeeklyScheduleText, SAMPLE_WEEK_5_TEXT } from '../utils/scheduleParser';
 import {
   DAYS,
   PERIODS_MORNING,
@@ -147,6 +148,11 @@ export default function AdminSchedule() {
   const [signerTitle, setSignerTitle] = useState('HIỆU TRƯỜNG');
   const [isActive, setIsActive] = useState(true);
   const [dayItems, setDayItems] = useState([]);
+  const [attachedPdfUrl, setAttachedPdfUrl] = useState('');
+  const [attachedPdfName, setAttachedPdfName] = useState('');
+  const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [showSmartImportModal, setShowSmartImportModal] = useState(false);
+  const [smartImportText, setSmartImportText] = useState('');
 
   // Excel TKB State
   const [excelPreview, setExcelPreview] = useState([]);
@@ -673,20 +679,28 @@ export default function AdminSchedule() {
 
     if (existing) {
       setEditingId(existing.id);
+      const rawItems = existing.day_items || existing.schedule_items || [];
+      const metaObj = Array.isArray(rawItems) ? (rawItems.find(i => i && i._is_meta) || {}) : (rawItems?.meta || {});
+      const cleanDayItems = Array.isArray(rawItems)
+        ? rawItems.filter(i => i && !i._is_meta && i.day_name)
+        : (rawItems?.items || getDefaultScheduleDays(targetWeek));
+
       setTitle(existing.title || targetWeek.title);
       setWeekNumber(wNum);
       setStartDate(existing.start_date || targetWeek.start_date);
       setEndDate(existing.end_date || targetWeek.end_date);
-      setDateRangeStr(existing.date_range_str || targetWeek.date_range_str);
-      setReleaseDateStr(existing.release_date_str || targetWeek.release_date_str);
-      setBghDuty(existing.bgh_duty || '');
-      setTeacherDuty(existing.teacher_duty || '');
-      setNote(existing.note || '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
-      setRecipients(existing.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
-      setSignerName(existing.signer_name || 'Lê Thị Thảo');
-      setSignerTitle(existing.signer_title || 'HIỆU TRƯỜNG');
+      setDateRangeStr(existing.date_range_str || metaObj.date_range_str || targetWeek.date_range_str);
+      setReleaseDateStr(existing.release_date_str || metaObj.release_date_str || (wNum === 5 ? 'Cư Kuin, ngày 04 tháng 10 năm 2026' : targetWeek.release_date_str));
+      setBghDuty(existing.bgh_duty || (wNum === 5 ? 'Thầy Lam & Cô Thảo (Trực chỉ đạo)' : ''));
+      setTeacherDuty(existing.teacher_duty || (wNum === 5 ? 'Đoàn Thanh niên & Tổ Văn phòng (Trực ban)' : ''));
+      setNote(existing.note || (wNum === 5 ? '*Lưu ý:\n- Đoàn trường phối hợp với Thư viện tổ chức hoạt động tuyên truyền Tuần lễ hưởng ứng học tập suốt đời năm 2026 trong giờ Chào cờ;\n- Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo Lãnh đạo trường để thực hiện./.' : '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.'));
+      setRecipients(existing.recipients || metaObj.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
+      setSignerName(existing.signer_name || metaObj.signer_name || 'Lê Thị Thảo');
+      setSignerTitle(existing.signer_title || metaObj.signer_title || 'HIỆU TRƯỜNG');
+      setAttachedPdfUrl(existing.attached_pdf_url || metaObj.attached_pdf_url || (wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
+      setAttachedPdfName(existing.attached_pdf_name || metaObj.attached_pdf_name || (wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
       setIsActive(existing.is_active ?? true);
-      setDayItems(existing.day_items || existing.schedule_items || getDefaultScheduleDays(targetWeek));
+      setDayItems(cleanDayItems.length > 0 ? cleanDayItems : getDefaultScheduleDays(targetWeek));
     } else {
       setEditingId(null);
       setTitle(targetWeek.title);
@@ -694,13 +708,15 @@ export default function AdminSchedule() {
       setStartDate(targetWeek.start_date);
       setEndDate(targetWeek.end_date);
       setDateRangeStr(targetWeek.date_range_str);
-      setReleaseDateStr(targetWeek.release_date_str);
-      setBghDuty('');
-      setTeacherDuty('');
-      setNote('*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
+      setReleaseDateStr(wNum === 5 ? 'Cư Kuin, ngày 04 tháng 10 năm 2026' : targetWeek.release_date_str);
+      setBghDuty(wNum === 5 ? 'Thầy Lam & Cô Thảo (Trực chỉ đạo)' : '');
+      setTeacherDuty(wNum === 5 ? 'Đoàn Thanh niên & Tổ Văn phòng (Trực ban)' : '');
+      setNote(wNum === 5 ? '*Lưu ý:\n- Đoàn trường phối hợp với Thư viện tổ chức hoạt động tuyên truyền Tuần lễ hưởng ứng học tập suốt đời năm 2026 trong giờ Chào cờ;\n- Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo Lãnh đạo trường để thực hiện./.' : '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.');
       setRecipients('Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.');
       setSignerName('Lê Thị Thảo');
       setSignerTitle('HIỆU TRƯỜNG');
+      setAttachedPdfUrl(wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
+      setAttachedPdfName(wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
       setIsActive(true);
       setDayItems(getDefaultScheduleDays(targetWeek));
     }
@@ -803,33 +819,116 @@ export default function AdminSchedule() {
     setShowExportModal(false);
   };
 
+  const handleUploadPdfFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert("⚠️ Vui lòng chọn tệp có định dạng .PDF!");
+      return;
+    }
+
+    setUploadingPdf(true);
+    try {
+      const client = supabaseAdmin || supabase2Admin || supabase;
+      const fileExt = 'pdf';
+      const fileName = `week_${selectedWeekNo}_lich_tuan_${Date.now()}.${fileExt}`;
+      const filePath = `schedules/${fileName}`;
+
+      const { data, error } = await client.storage
+        .from('documents')
+        .upload(filePath, file, {
+          contentType: 'application/pdf',
+          upsert: true
+        });
+
+      if (error) {
+        console.warn("Storage upload error, using local/base64 fallback:", error);
+        const reader = new FileReader();
+        reader.onload = (uploadEvt) => {
+          setAttachedPdfUrl(uploadEvt.target.result);
+          setAttachedPdfName(file.name);
+          alert(`✅ Đã đính kèm tệp PDF: "${file.name}"!\nVui lòng bấm nút 'Lưu Lịch Tuần Này' để hoàn tất.`);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        const { data: pubData } = client.storage.from('documents').getPublicUrl(filePath);
+        const publicUrl = pubData?.publicUrl || '';
+        setAttachedPdfUrl(publicUrl);
+        setAttachedPdfName(file.name);
+        alert(`🎉 Đã tải lên và đính kèm bản PDF scan gốc: "${file.name}" thành công!\nĐường dẫn công khai đã sẵn sàng. Vui lòng bấm 'Lưu Lịch Tuần Này' để hoàn tất.`);
+      }
+    } catch (err) {
+      alert("Lỗi khi tải file PDF: " + err.message);
+    } finally {
+      setUploadingPdf(false);
+    }
+  };
+
+  const handleApplySmartImport = () => {
+    if (!smartImportText || !smartImportText.trim()) {
+      alert("Vui lòng dán văn bản trích xuất từ file PDF lịch tuần!");
+      return;
+    }
+    const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+    const parsed = parseWeeklyScheduleText(smartImportText, targetWeek);
+    if (!parsed || !parsed.day_items || parsed.day_items.length === 0) {
+      alert("⚠️ Không thể trích xuất các ngày. Vui lòng kiểm tra lại văn bản hoặc bấm 'Dán Mẫu Tuần 5' để xem cú pháp chuẩn!");
+      return;
+    }
+
+    setDayItems(parsed.day_items);
+    if (parsed.title) setTitle(parsed.title);
+    if (parsed.date_range_str) setDateRangeStr(parsed.date_range_str);
+    if (parsed.release_date_str) setReleaseDateStr(parsed.release_date_str);
+    if (parsed.note) setNote(parsed.note);
+    if (parsed.recipients) setRecipients(parsed.recipients);
+    if (parsed.signer_name) setSignerName(parsed.signer_name);
+
+    setShowSmartImportModal(false);
+    alert(`🎉 ĐÃ BÓC TÁCH THÀNH CÔNG ${parsed.day_items.length} BUỔI LỊCH CHO TUẦN ${selectedWeekNo}!\nToàn bộ dữ liệu từ Thứ 2 đến Chủ Nhật đã được tự động điền vào bảng.`);
+  };
+
   const handleSubmitBghSchedule = async (e) => {
     if (e) e.preventDefault();
     setSaving(true);
     try {
       const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+      const metaObj = {
+        _is_meta: true,
+        date_range_str: dateRangeStr || targetWeek.date_range_str,
+        release_date_str: releaseDateStr || targetWeek.release_date_str,
+        recipients,
+        signer_name: signerName,
+        signer_title: signerTitle,
+        attached_pdf_url: attachedPdfUrl || '',
+        attached_pdf_name: attachedPdfName || ''
+      };
+
       const payload = {
         title: title || targetWeek.title,
         week_number: Number(selectedWeekNo) || 1,
         start_date: startDate || targetWeek.start_date,
         end_date: endDate || targetWeek.end_date,
-        date_range_str: dateRangeStr || targetWeek.date_range_str,
-        release_date_str: releaseDateStr || targetWeek.release_date_str,
         bgh_duty: bghDuty,
         teacher_duty: teacherDuty,
         note,
-        recipients,
-        signer_name: signerName,
-        signer_title: signerTitle,
-        day_items: dayItems,
-        schedule_items: dayItems,
+        schedule_items: [...dayItems, metaObj],
         is_active: isActive,
         updated_at: new Date().toISOString()
       };
 
-      if (editingId) {
-        const { error } = await supabase.from('cbq_schedules').update(payload).eq('id', editingId);
+      // Check if row exists by editingId or by week_number
+      let targetId = editingId;
+      if (!targetId) {
+        const existingRow = schedules.find(s => Number(s.week_number) === Number(selectedWeekNo));
+        if (existingRow) targetId = existingRow.id;
+      }
+
+      if (targetId) {
+        const { error } = await supabase.from('cbq_schedules').update(payload).eq('id', targetId);
         if (error) throw error;
+        setEditingId(targetId);
       } else {
         const { error, data } = await supabase.from('cbq_schedules').insert([payload]).select();
         if (error) throw error;
@@ -2656,6 +2755,15 @@ export default function AdminSchedule() {
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => setShowSmartImportModal(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)' }}
+                  title="Mở công cụ tự động bóc tách từ file PDF hoặc văn bản copy dán vào bảng trong 1 click"
+                >
+                  <Sparkles size={18} /> ✨ Nhập Nhanh Từ PDF / Copy Chữ
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => setShowExportModal(true)}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                 >
@@ -2739,6 +2847,87 @@ export default function AdminSchedule() {
               <div>
                 <label style={styles.label}>Ngày ban hành văn bản (*)</label>
                 <input type="text" value={releaseDateStr} onChange={e => setReleaseDateStr(e.target.value)} style={styles.input} />
+              </div>
+            </div>
+
+            {/* ATTACHED PDF SECTION */}
+            <div style={{ marginBottom: '20px', padding: '16px', background: '#fff1f2', borderRadius: '12px', border: '1.5px solid #fecdd3' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={18} color="#be123c" />
+                  <span style={{ fontWeight: 'bold', color: '#9f1239', fontSize: '14.5px' }}>
+                    📎 Tệp PDF Scan Gốc Có Dấu Đỏ & Chữ Ký (Hiển Thị Trực Tiếp Trên Web):
+                  </span>
+                </div>
+                {attachedPdfUrl && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <a
+                      href={attachedPdfUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ padding: '5px 12px', backgroundColor: '#ffffff', color: '#be123c', border: '1px solid #fda4af', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Eye size={13} /> Xem thử PDF
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => { setAttachedPdfUrl(''); setAttachedPdfName(''); }}
+                      style={{ padding: '5px 10px', backgroundColor: '#fee2e2', color: '#991b1b', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
+                    >
+                      Gỡ tệp
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 2fr', gap: '15px', alignItems: 'center' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
+                    1. Tải lên file PDF từ máy tính:
+                  </label>
+                  <label style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    backgroundColor: '#ffffff',
+                    color: '#be123c',
+                    border: '1.5px dashed #fda4af',
+                    borderRadius: '8px',
+                    cursor: uploadingPdf ? 'wait' : 'pointer',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}>
+                    <Upload size={16} />
+                    {uploadingPdf ? 'Đang tải lên Supabase Storage...' : 'Chọn Tệp PDF Cần Đính Kèm (.pdf)'}
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleUploadPdfFile}
+                      style={{ display: 'none' }}
+                      disabled={uploadingPdf}
+                    />
+                  </label>
+                  {attachedPdfName && (
+                    <div style={{ fontSize: '12px', color: '#166534', marginTop: '4px', fontWeight: '600' }}>
+                      ✅ Đã chọn: {attachedPdfName}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
+                    2. Hoặc dán trực tiếp đường dẫn URL file PDF (Google Drive / OneDrive / Storage):
+                  </label>
+                  <input
+                    type="text"
+                    value={attachedPdfUrl}
+                    onChange={e => setAttachedPdfUrl(e.target.value)}
+                    placeholder="https://.../lich_cong_tac_tuan_05.pdf"
+                    style={{ ...styles.input, backgroundColor: '#ffffff', fontSize: '13px' }}
+                  />
+                </div>
               </div>
             </div>
 
@@ -8105,6 +8294,99 @@ export default function AdminSchedule() {
               </button>
               <button type="button" onClick={handleExecuteExport} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                 📥 Tải File Word (.doc)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* SMART IMPORT MODAL - TỰ ĐỘNG TRÍCH XUẤT TỪ PDF HOẶC COPY VĂN BẢN */}
+      {showSmartImportModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15, 23, 42, 0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999, padding: '16px' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '850px', width: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 24px', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#f3e8ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#7c3aed' }}>
+                  <Sparkles size={22} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17.5px', fontWeight: 'bold', color: '#0f172a' }}>
+                    ✨ CÔNG CỤ NHẬP NHANH LỊCH TUẦN TỪ FILE PDF / COPY VĂN BẢN
+                  </h3>
+                  <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+                    Áp dụng cho Tuần {selectedWeekNo} ({dateRangeStr || `Năm học 2026 - 2027`})
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSmartImportModal(false)}
+                style={{ width: '34px', height: '34px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* MODAL BODY */}
+            <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* INSTRUCTION BOX */}
+              <div style={{ backgroundColor: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: '10px', padding: '12px 16px', fontSize: '13px', color: '#5b21b6', lineHeight: '1.5' }}>
+                <strong>💡 Hướng dẫn thao tác nhanh trong 3 bước:</strong>
+                <ol style={{ margin: '6px 0 0 0', paddingLeft: '20px' }}>
+                  <li>Mở file PDF Lịch công tác tuần của trường (trên trình duyệt hoặc Foxit Reader / Adobe Acrobat).</li>
+                  <li>Bôi đen văn bản bảng từ <strong>Thứ Hai đến Chủ Nhật</strong> → Nhấn <strong>Ctrl + C</strong> (Sao chép).</li>
+                  <li>Nhấn <strong>Ctrl + V</strong> dán vào khung bên dưới → Nhấn nút <strong>"⚡ Phân Tích & Điền Vào Lịch Tuần"</strong>!</li>
+                </ol>
+              </div>
+
+              {/* QUICK FILL TEMPLATE BUTTON */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '13.5px' }}>
+                  Dán nội dung chữ copy từ PDF hoặc Word vào đây:
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setSmartImportText(SAMPLE_WEEK_5_TEXT)}
+                  style={{ padding: '5px 12px', backgroundColor: '#e0e7ff', color: '#4338ca', border: '1px solid #c7d2fe', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                >
+                  📋 Dán Thử Mẫu Lịch Tuần 05 Chuẩn
+                </button>
+              </div>
+
+              {/* TEXTAREA */}
+              <textarea
+                rows={12}
+                value={smartImportText}
+                onChange={e => setSmartImportText(e.target.value)}
+                placeholder="Ví dụ dán vào:&#10;Thứ Hai (05/10/2026):&#10;- Sáng:&#10;  + 6h45: Chào cờ | Sân trường | Toàn trường&#10;  + 7h30: Tham dự Hội nghị | Hội trường TP | Đ/c Lam&#10;- Chiều:&#10;  + 14h00: Bồi dưỡng HSG | Phòng học | GV, HS&#10;&#10;Thứ Ba (06/10/2026):&#10;..."
+                style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', fontFamily: 'monospace', lineHeight: '1.5', boxSizing: 'border-box' }}
+              />
+
+              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                * Thuật toán tự động nhận diện các Thứ trong tuần (Thứ 2 đến Chủ Nhật), phân loại Sáng/Chiều, tự động chia cột theo dấu gạch đứng (|) hoặc phím Tab.
+              </div>
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', padding: '14px 24px', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setShowSmartImportModal(false)}
+                style={{ padding: '9px 18px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={handleApplySmartImport}
+                style={{ padding: '9px 24px', borderRadius: '8px', border: 'none', backgroundColor: '#7c3aed', color: '#ffffff', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Sparkles size={16} /> ⚡ Phân Tích & Điền Vào Lịch Tuần Này
               </button>
             </div>
 

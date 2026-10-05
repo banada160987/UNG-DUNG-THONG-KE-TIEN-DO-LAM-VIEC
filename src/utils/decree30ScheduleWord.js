@@ -107,6 +107,124 @@ export function getDefaultScheduleDays(weekObj) {
     { key: 'cn', name: 'Chủ Nhật', dateStr: getDayDateStr(6) }
   ];
 
+  // Dữ liệu thực tế Tuần 05 (05/10 - 11/10/2026) theo văn bản số hóa của trường
+  if (Number(weekObj.week_number) === 5) {
+    return [
+      {
+        day_name: 'Thứ 2',
+        date_str: '05/10',
+        session: 'Sáng',
+        content: "- 6h45: Chào cờ; Hoạt động tuyên truyền học tập suốt đời;\n- 7h30: Tham dự Hội nghị phòng, chống tội phạm và tệ nạn xã hội tại cơ quan, trường học\n- 8h00: Tham dự Hội nghị Tổng kết năm học 2025 - 2026 khối các trường THPT thuộc Cụm thi đua số 2\n- Dạy và học theo TKB",
+        location: "- Sân trường\n- Hội trường Thành phố Buôn Ma Thuột\n- Trường THPT Buôn Ma Thuột\n- Lớp học",
+        participants: "- Toàn trường\n- Đ/c Lam\n- Đ/c Thảo\n- GV, HS"
+      },
+      {
+        day_name: 'Thứ 2',
+        date_str: '05/10',
+        session: 'Chiều',
+        content: "- 14h00: Tham dự Hội nghị GDPT năm học 2026 - 2027\n- 14h30: Bồi dưỡng HSG\n- Dạy và học theo TKB",
+        location: "- Trực tuyến\n- Phòng học\n- Lớp học",
+        participants: "- Đ/c Lam\n- GV, HS\n- GV, HS"
+      },
+      {
+        day_name: 'Thứ Ba',
+        date_str: '06/10',
+        session: 'Sáng',
+        content: "- 7h30: Tham dự Hội nghị Báo cáo viên Tỉnh ủy tháng 10 năm 2026\n- Dạy và học theo TKB",
+        location: "- Hội trường Ban Thường vụ Tỉnh ủy\n- Lớp học",
+        participants: "- Đ/c Lam\n- GV, HS"
+      },
+      {
+        day_name: 'Thứ Ba',
+        date_str: '06/10',
+        session: 'Chiều',
+        content: "- 14h00: Tham dự Hội nghị sơ kết công tác Đảng bộ Khối CCQ&DN tỉnh 9 tháng đầu năm 2026\n- 14h30: Bồi dưỡng HSG\n- 15h30: Sinh hoạt chuyên môn theo nghiên cứu bài học (Tổ Sử - GDCD, Địa lí)",
+        location: "- Hội trường Trung tâm Văn hóa Tỉnh\n- Phòng học\n- Phòng học",
+        participants: "- Đ/c Thảo\n- GV, HS\n- GV trong tổ"
+      },
+      {
+        day_name: 'Thứ Tư',
+        date_str: '07/10',
+        session: 'Sáng',
+        content: "Dạy và học theo TKB",
+        location: "Lớp học",
+        participants: "GV, HS"
+      },
+      {
+        day_name: 'Thứ Tư',
+        date_str: '07/10',
+        session: 'Chiều',
+        content: "- 14h00: Họp kiểm điểm viên chức theo Công văn 1789/SGDĐT-TCCB ngày 28/9/2026 của Sở GD&ĐT\n- 15h30: Sinh hoạt CLB\n- Dạy và học theo TKB",
+        location: "- Phòng Hội đồng\n- Phòng học, sân trường\n- Lớp học",
+        participants: "- BGH, BCH CĐ, TTCM, Tổ trưởng Văn phòng\n- GV, HS\n- GV, HS"
+      },
+      {
+        day_name: 'Thứ Năm',
+        date_str: '08/10',
+        session: 'Sáng',
+        content: "Dạy và học theo TKB",
+        location: "Lớp học",
+        participants: "GV, HS"
+      },
+      {
+        day_name: 'Thứ Năm',
+        date_str: '08/10',
+        session: 'Chiều',
+        content: "Dạy và học theo TKB; Sinh hoạt CLB",
+        location: "Phòng học, sân trường",
+        participants: "GV, HS"
+      },
+      {
+        day_name: 'Thứ Sáu',
+        date_str: '09/10',
+        session: 'Sáng',
+        content: "Dạy và học theo TKB",
+        location: "Lớp học",
+        participants: "GV, HS"
+      },
+      {
+        day_name: 'Thứ Sáu',
+        date_str: '09/10',
+        session: 'Chiều',
+        content: "Dạy và học theo TKB; Sinh hoạt CLB",
+        location: "Phòng học, sân trường",
+        participants: "GV, HS"
+      },
+      {
+        day_name: 'Thứ Bảy',
+        date_str: '10/10',
+        session: 'Sáng',
+        content: "Nghỉ",
+        location: "-",
+        participants: "-"
+      },
+      {
+        day_name: 'Thứ Bảy',
+        date_str: '10/10',
+        session: 'Chiều',
+        content: "Nghỉ",
+        location: "-",
+        participants: "-"
+      },
+      {
+        day_name: 'Chủ Nhật',
+        date_str: '11/10',
+        session: 'Sáng',
+        content: "Nghỉ",
+        location: "-",
+        participants: "-"
+      },
+      {
+        day_name: 'Chủ Nhật',
+        date_str: '11/10',
+        session: 'Chiều',
+        content: "Nghỉ",
+        location: "-",
+        participants: "-"
+      }
+    ];
+  }
+
   return dayNames.flatMap((d, idx) => {
     if (idx === 0) { // Thứ 2
       return [
@@ -199,17 +317,28 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
     ? dbSchedules.find(s => Number(s.week_number) === Number(weekNo)) 
     : null;
 
-  if (dbMatch && dbMatch.day_items && dbMatch.day_items.length > 0) {
+  const rawItems = dbMatch?.day_items || dbMatch?.schedule_items;
+  const cleanItems = Array.isArray(rawItems) ? rawItems.filter(i => i && !i._is_meta && i.day_name) : [];
+  const metaObj = Array.isArray(rawItems) ? (rawItems.find(i => i && i._is_meta) || {}) : (rawItems?.meta || {});
+
+  const week5FallbackPdf = Number(weekNo) === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '';
+
+  if (dbMatch && cleanItems.length > 0) {
     return {
       week_number: Number(weekNo),
-      title: formatWeekTitle(dbMatch.title, weekNo),
-      subtitle: dbMatch.subtitle || `(${weekObj.date_range_str})`,
-      release_date_str: dbMatch.release_date_str || weekObj.release_date_str,
-      note: dbMatch.note || '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
-      recipients: dbMatch.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
-      signer_name: dbMatch.signer_name || 'Lê Thị Thảo',
-      signer_title: dbMatch.signer_title || 'HIỆU TRƯỜNG',
-      day_items: dbMatch.day_items
+      title: formatWeekTitle(dbMatch.title || weekObj.title, weekNo),
+      subtitle: dbMatch.subtitle || metaObj.date_range_str || `(${weekObj.date_range_str})`,
+      date_range_str: dbMatch.date_range_str || metaObj.date_range_str || weekObj.date_range_str,
+      release_date_str: dbMatch.release_date_str || metaObj.release_date_str || weekObj.release_date_str,
+      bgh_duty: dbMatch.bgh_duty || (Number(weekNo) === 5 ? 'Thầy Lam & Cô Thảo (Trực chỉ đạo)' : ''),
+      teacher_duty: dbMatch.teacher_duty || (Number(weekNo) === 5 ? 'Đoàn Thanh niên & Tổ Văn phòng (Trực ban)' : ''),
+      note: dbMatch.note || (Number(weekNo) === 5 ? '*Lưu ý:\n- Đoàn trường phối hợp với Thư viện tổ chức hoạt động tuyên truyền Tuần lễ hưởng ứng học tập suốt đời năm 2026 trong giờ Chào cờ;\n- Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo Lãnh đạo trường để thực hiện./.' : '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.'),
+      recipients: dbMatch.recipients || metaObj.recipients || 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
+      signer_name: dbMatch.signer_name || metaObj.signer_name || 'Lê Thị Thảo',
+      signer_title: dbMatch.signer_title || metaObj.signer_title || 'HIỆU TRƯỜNG',
+      day_items: cleanItems,
+      attached_pdf_url: dbMatch.attached_pdf_url || metaObj.attached_pdf_url || week5FallbackPdf,
+      attached_pdf_name: dbMatch.attached_pdf_name || metaObj.attached_pdf_name || (Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '')
     };
   }
 
@@ -218,12 +347,19 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
     week_number: Number(weekNo),
     title: formatWeekTitle(weekObj.title, weekNo),
     subtitle: `(${weekObj.date_range_str})`,
-    release_date_str: weekObj.release_date_str,
+    date_range_str: weekObj.date_range_str,
+    release_date_str: Number(weekNo) === 5 ? 'Cư Kuin, ngày 04 tháng 10 năm 2026' : weekObj.release_date_str,
+    bgh_duty: Number(weekNo) === 5 ? 'Thầy Lam & Cô Thảo (Trực chỉ đạo)' : '',
+    teacher_duty: Number(weekNo) === 5 ? 'Đoàn Thanh niên & Tổ Văn phòng (Trực ban)' : '',
     day_items: getDefaultScheduleDays(weekObj),
-    note: '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
+    note: Number(weekNo) === 5 
+      ? '*Lưu ý:\n- Đoàn trường phối hợp với Thư viện tổ chức hoạt động tuyên truyền Tuần lễ hưởng ứng học tập suốt đời năm 2026 trong giờ Chào cờ;\n- Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo Lãnh đạo trường để thực hiện./.'
+      : '*Lưu ý: - Văn phòng chuẩn bị phòng họp, thiết bị âm thanh, nước uống các cuộc họp;\n- Các tổ, các bộ phận, cá nhân có liên quan chủ động chuẩn bị các nội dung, báo cáo lãnh đạo trường để thực hiện./.',
     recipients: 'Nơi nhận:\n- GV, NV (để t/h);\n- Các Tổ chuyên môn thuộc trường;\n- HT, các PHT;\n- Đăng Web, Zalo;\n- Lưu: VT, TK.',
     signer_name: 'Lê Thị Thảo',
-    signer_title: 'HIỆU TRƯỜNG'
+    signer_title: 'HIỆU TRƯỜNG',
+    attached_pdf_url: week5FallbackPdf,
+    attached_pdf_name: Number(weekNo) === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''
   };
 }
 
