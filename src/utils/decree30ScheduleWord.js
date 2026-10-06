@@ -21,6 +21,19 @@ export function formatWeekTitle(title, weekNo) {
 }
 
 /**
+ * Normalizes and resolves PDF asset URLs across local, dev, and deployed base paths
+ */
+export function resolvePdfUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+  const clean = url.startsWith('/') ? url.slice(1) : url;
+  const base = (typeof import.meta !== 'undefined' && import.meta.env?.BASE_URL) || '/';
+  return base.endsWith('/') ? `${base}${clean}` : `${base}/${clean}`;
+}
+
+/**
  * Generates all 35 academic weeks for School Year 2026 - 2027
  * Starting Monday, September 7, 2026
  */

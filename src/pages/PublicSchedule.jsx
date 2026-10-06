@@ -21,7 +21,8 @@ import {
   exportYearlyPlanToWordDecree30,
   formatWeekTitle,
   getCurrentSchoolWeekNumber,
-  DEFAULT_WEEK5_APPENDIX
+  DEFAULT_WEEK5_APPENDIX,
+  resolvePdfUrl
 } from '../utils/decree30ScheduleWord';
 import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
 
@@ -325,16 +326,8 @@ export default function PublicSchedule() {
   const [fromWeek, setFromWeek] = useState(1);
   const [toWeek, setToWeek] = useState(35);
 
-  // Chế độ xem Lịch tuần: 'pdf' (Xem bản PDF gốc) | 'table' (Xem bản số hóa NĐ 30) | 'both' (Xem song song)
+  // Chế độ xem Lịch tuần: 'pdf' (Xem trực tiếp File PDF gốc) | 'table' (Xem bản số hóa NĐ 30)
   const [weekDisplayMode, setWeekDisplayMode] = useState('pdf');
-  // Chế độ hiển thị tệp PDF: 'scan' (2 trang scan có dấu đỏ nét căng, tối ưu điện thoại) | 'embed' (nhúng tệp PDF iframe)
-  const [pdfRenderMode, setPdfRenderMode] = useState('scan');
-  // Chọn trang hiển thị trong chế độ scan: 'all' | 0 | 1
-  const [activeScanPage, setActiveScanPage] = useState('all');
-  // Mức thu phóng: 100, 125, 150%
-  const [scanZoom, setScanZoom] = useState(100);
-  // Lightbox xem ảnh lớn: null hoặc url
-  const [previewImageUrl, setPreviewImageUrl] = useState(null);
 
   const [schedules, setSchedules] = useState([]);
   const [timetableData, setTimetableData] = useState([]);
@@ -1201,16 +1194,19 @@ export default function PublicSchedule() {
               {scheduleViewMode === 'week' && (
                 <>
                   <button 
-                    onClick={() => setShowPdfModal(true)} 
+                    onClick={() => {
+                      setWeekDisplayMode('pdf');
+                      document.getElementById('week-schedule-main-view')?.scrollIntoView({ behavior: 'smooth' });
+                    }} 
                     style={{ 
                       ...styles.printBtn, 
-                      backgroundColor: currentSched.attached_pdf_url ? '#be123c' : '#831843', 
+                      backgroundColor: weekDisplayMode === 'pdf' ? '#9f1239' : '#be123c', 
                       display: 'inline-flex', 
                       alignItems: 'center', 
                       gap: '6px',
                       boxShadow: currentSched.attached_pdf_url ? '0 2px 10px rgba(190, 18, 60, 0.4)' : 'none'
                     }}
-                    title={currentSched.attached_pdf_url ? 'Xem tệp PDF gốc có dấu đỏ và chữ ký của Hiệu trưởng' : 'Xem thông tin bản scan PDF gốc'}
+                    title="Xem trực tiếp bản văn bản PDF scan gốc có dấu đỏ và chữ ký"
                   >
                     <FileText size={16} /> 📑 Xem Bản PDF Gốc (Dấu Đỏ)
                     {currentSched.attached_pdf_url && (
@@ -1249,13 +1245,36 @@ export default function PublicSchedule() {
           {scheduleViewMode === 'week' && (
             <div>
               {/* WEEK SELECTOR DROPDOWN & VIEW MODE TOGGLE */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px', marginBottom: '16px', backgroundColor: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }} className="no-print">
+              {/* WEEK SELECTOR DROPDOWN & CLEAN VIEW SWITCHER */}
+              <div id="week-schedule-main-view" style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '12px',
+                marginBottom: '20px',
+                backgroundColor: '#ffffff',
+                padding: '12px 18px',
+                borderRadius: '14px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+              }} className="no-print">
+                {/* SELECT WEEK */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Chọn Tuần Học (Năm học 2026 - 2027):</span>
+                  <span style={{ fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>Tuần công tác:</span>
                   <select 
                     value={selectedWeekNo} 
                     onChange={e => handleSelectWeekNo(e.target.value)}
-                    style={{ ...styles.select, padding: '9px 16px', fontSize: '14px', border: '1.5px solid #0284c7', color: '#0369a1', fontWeight: 'bold' }}
+                    style={{
+                      ...styles.select,
+                      padding: '8px 14px',
+                      fontSize: '14px',
+                      border: '1.5px solid #0284c7',
+                      color: '#0369a1',
+                      fontWeight: 'bold',
+                      borderRadius: '8px',
+                      backgroundColor: '#f0f9ff'
+                    }}
                   >
                     {schoolWeeks.map(w => (
                       <option key={w.week_number} value={w.week_number}>
@@ -1265,72 +1284,8 @@ export default function PublicSchedule() {
                   </select>
                 </div>
 
-                {/* FAST ACTION BUTTONS */}
+                {/* 2 CLEAN TABS */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  {currentSched.attached_pdf_url && (
-                    <button
-                      type="button"
-                      onClick={() => setShowPdfModal(true)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 16px',
-                        backgroundColor: '#fff1f2',
-                        border: '1.5px solid #fecdd3',
-                        borderRadius: '8px',
-                        color: '#be123c',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 6px rgba(190, 18, 60, 0.15)'
-                      }}
-                      title="Mở hộp thoại xem PDF toàn màn hình"
-                    >
-                      <Maximize2 size={14} /> 🔍 Xem PDF Toàn Màn Hình
-                    </button>
-                  )}
-                  {Array.isArray(currentSched.appendix_items) && currentSched.appendix_items.length > 0 && (
-                    <a
-                      href="#section-appendix"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 14px',
-                        backgroundColor: '#fffbeb',
-                        border: '1.5px solid #fef08a',
-                        borderRadius: '8px',
-                        color: '#b45309',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      <Sparkles size={14} color="#d97706" /> 📌 Phụ Lục ({currentSched.appendix_items.length})
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* SEGMENTED SWITCHER: BẢN PDF GỐC / BẢN SỐ HÓA / XEM SONG SONG */}
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '12px',
-                marginBottom: '20px',
-                padding: '10px 14px',
-                backgroundColor: '#ffffff',
-                borderRadius: '12px',
-                border: '1px solid #cbd5e1',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
-              }} className="no-print">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Layers size={16} color="#0284c7" /> Chế độ xem:
-                  </span>
                   <div style={{ display: 'inline-flex', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '3px', border: '1px solid #e2e8f0' }}>
                     <button
                       type="button"
@@ -1340,24 +1295,19 @@ export default function PublicSchedule() {
                         borderRadius: '8px',
                         border: 'none',
                         backgroundColor: weekDisplayMode === 'pdf' ? '#be123c' : 'transparent',
-                        color: weekDisplayMode === 'pdf' ? '#ffffff' : '#334155',
+                        color: weekDisplayMode === 'pdf' ? '#ffffff' : '#475569',
                         fontWeight: 'bold',
                         fontSize: '13px',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: weekDisplayMode === 'pdf' ? '0 2px 6px rgba(190, 18, 60, 0.3)' : 'none',
+                        boxShadow: weekDisplayMode === 'pdf' ? '0 2px 6px rgba(190, 18, 60, 0.25)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
-                      title="Xem bản scan văn bản PDF gốc có dấu mộc đỏ và chữ ký của Hiệu trưởng"
+                      title="Xem trực tiếp bản văn bản PDF scan gốc có dấu đỏ và chữ ký"
                     >
-                      <FileText size={15} /> 📑 Bản PDF Gốc (Dấu Đỏ)
-                      {currentSched.attached_pdf_url && (
-                        <span style={{ backgroundColor: weekDisplayMode === 'pdf' ? 'rgba(255,255,255,0.25)' : '#be123c', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
-                          CÓ SẴN
-                        </span>
-                      )}
+                      <FileText size={15} /> 📑 Xem File PDF Trực Tiếp
                     </button>
 
                     <button
@@ -1368,68 +1318,61 @@ export default function PublicSchedule() {
                         borderRadius: '8px',
                         border: 'none',
                         backgroundColor: weekDisplayMode === 'table' ? '#0284c7' : 'transparent',
-                        color: weekDisplayMode === 'table' ? '#ffffff' : '#334155',
+                        color: weekDisplayMode === 'table' ? '#ffffff' : '#475569',
                         fontWeight: 'bold',
                         fontSize: '13px',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: weekDisplayMode === 'table' ? '0 2px 6px rgba(2, 132, 199, 0.3)' : 'none',
+                        boxShadow: weekDisplayMode === 'table' ? '0 2px 6px rgba(2, 132, 199, 0.25)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
-                      title="Xem bản số hóa dạng bảng chi tiết từng ngày theo chuẩn Nghị định 30"
+                      title="Xem lịch công tác dạng bảng chi tiết từng ngày theo chuẩn Nghị định 30"
                     >
                       <Calendar size={15} /> 📋 Bản Số Hóa NĐ 30
                     </button>
+                  </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setWeekDisplayMode('both')}
+                  {Array.isArray(currentSched.appendix_items) && currentSched.appendix_items.length > 0 && (
+                    <a
+                      href="#section-appendix"
                       style={{
-                        padding: '7px 16px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        backgroundColor: weekDisplayMode === 'both' ? '#0f766e' : 'transparent',
-                        color: weekDisplayMode === 'both' ? '#ffffff' : '#334155',
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                        cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: weekDisplayMode === 'both' ? '0 2px 6px rgba(15, 118, 110, 0.3)' : 'none',
-                        transition: 'all 0.15s ease'
+                        gap: '5px',
+                        padding: '7px 12px',
+                        backgroundColor: '#fffbeb',
+                        border: '1px solid #fef08a',
+                        borderRadius: '8px',
+                        color: '#b45309',
+                        fontSize: '12.5px',
+                        fontWeight: 'bold',
+                        textDecoration: 'none'
                       }}
-                      title="Xem đồng thời cả Bản PDF gốc và Bảng số hóa để tiện đối chiếu"
+                      title="Xem nhanh các công việc bổ sung phát sinh trong tuần"
                     >
-                      <Grid size={15} /> 🔄 Xem Song Song
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '12.5px', color: '#64748b', fontStyle: 'italic' }}>
-                  {weekDisplayMode === 'pdf' && "Đang hiển thị: Bản PDF gốc có dấu mộc đỏ & phụ lục bổ sung"}
-                  {weekDisplayMode === 'table' && "Đang hiển thị: Bản số hóa Nghị định 30 dạng bảng"}
-                  {weekDisplayMode === 'both' && "Đang hiển thị: Đối chiếu song song cả PDF và Bảng số hóa"}
+                      <Sparkles size={13} color="#d97706" /> Phụ Lục ({currentSched.appendix_items.length})
+                    </a>
+                  )}
                 </div>
               </div>
 
-              {/* KHỐI 1: INLINE PDF & SCAN VIEWER (Khi ở chế độ 'pdf' hoặc 'both') */}
-              {(weekDisplayMode === 'pdf' || weekDisplayMode === 'both') && (
+              {/* KHỐI 1: DIRECT PDF VIEWER (Khi ở chế độ 'pdf') */}
+              {weekDisplayMode === 'pdf' && (
                 <div style={{
-                  marginBottom: '35px',
+                  marginBottom: '30px',
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  border: '1.5px solid #fda4af',
-                  boxShadow: '0 4px 20px rgba(190, 18, 60, 0.08)',
+                  borderRadius: '14px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 16px rgba(0,0,0,0.06)',
                   overflow: 'hidden'
                 }}>
                   {/* VIEWER HEADER TOOLBAR */}
                   <div style={{
-                    padding: '14px 18px',
-                    backgroundColor: '#fff1f2',
-                    borderBottom: '1.5px solid #fecdd3',
+                    padding: '12px 18px',
+                    backgroundColor: '#f8fafc',
+                    borderBottom: '1px solid #e2e8f0',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -1437,348 +1380,168 @@ export default function PublicSchedule() {
                     gap: '12px'
                   }} className="no-print">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ width: '34px', height: '34px', borderRadius: '8px', backgroundColor: '#be123c', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#fee2e2', color: '#be123c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <FileText size={18} />
                       </div>
                       <div>
-                        <div style={{ fontSize: '15px', fontWeight: 'bold', color: '#9f1239' }}>
-                          BẢN VĂN BẢN PDF SCAN GỐC CÓ DẤU ĐỎ & CHỮ KÝ HIỆU TRƯỞNG
+                        <div style={{ fontSize: '14.5px', fontWeight: 'bold', color: '#0f172a' }}>
+                          Văn bản PDF Lịch Tuần {String(selectedWeekNo).padStart(2, '0')} (Bản gốc đóng dấu đỏ)
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          {formatWeekTitle(currentSched.title, selectedWeekNo)} • {currentSched.release_date_str}
+                          Trường THPT Cao Bá Quát • {currentSched.release_date_str || currentSched.date_range_str}
                         </div>
                       </div>
                     </div>
 
-                    {/* SOURCE & TOOL SWITCHER */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      {/* Chọn kiểu hiển thị: Scan nét hay nhúng PDF */}
-                      <div style={{ display: 'inline-flex', backgroundColor: '#ffffff', borderRadius: '8px', padding: '2px', border: '1px solid #fecdd3' }}>
-                        <button
-                          type="button"
-                          onClick={() => setPdfRenderMode('scan')}
+                    {/* ACTION BUTTONS */}
+                    {currentSched.attached_pdf_url && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <a
+                          href={resolvePdfUrl(currentSched.attached_pdf_url)}
+                          target="_blank"
+                          rel="noopener noreferrer"
                           style={{
-                            padding: '5px 12px',
-                            borderRadius: '6px',
-                            border: 'none',
-                            backgroundColor: pdfRenderMode === 'scan' ? '#be123c' : 'transparent',
-                            color: pdfRenderMode === 'scan' ? '#ffffff' : '#be123c',
+                            padding: '7px 14px',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #cbd5e1',
+                            borderRadius: '8px',
+                            color: '#0284c7',
+                            fontSize: '13px',
                             fontWeight: 'bold',
-                            fontSize: '12px',
-                            cursor: 'pointer'
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px'
                           }}
-                          title="Hiển thị ảnh scan 2 trang chất lượng cao (Tương thích 100% mọi điện thoại)"
+                          title="Mở file PDF trong tab mới hoặc toàn màn hình"
                         >
-                          🖼️ Bản Scan 2 Trang (Nét & Nhanh)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPdfRenderMode('embed')}
+                          <ExternalLink size={14} /> Mở Tab Mới
+                        </a>
+                        <a
+                          href={resolvePdfUrl(currentSched.attached_pdf_url)}
+                          download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
                           style={{
-                            padding: '5px 12px',
-                            borderRadius: '6px',
+                            padding: '7px 16px',
+                            backgroundColor: '#be123c',
                             border: 'none',
-                            backgroundColor: pdfRenderMode === 'embed' ? '#be123c' : 'transparent',
-                            color: pdfRenderMode === 'embed' ? '#ffffff' : '#be123c',
+                            borderRadius: '8px',
+                            color: '#ffffff',
+                            fontSize: '13px',
                             fontWeight: 'bold',
-                            fontSize: '12px',
-                            cursor: 'pointer'
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 6px rgba(190, 18, 60, 0.25)'
                           }}
-                          title="Trình xem nhúng tệp PDF trực tiếp"
+                          title="Tải tệp PDF về máy"
                         >
-                          📄 Tệp PDF Nhúng
-                        </button>
+                          <Download size={14} /> Tải PDF
+                        </a>
                       </div>
-
-                      {/* Phóng to / Thu nhỏ nếu ở chế độ Scan */}
-                      {pdfRenderMode === 'scan' && (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: '8px', border: '1px solid #fecdd3', padding: '2px' }}>
-                          <button
-                            type="button"
-                            onClick={() => setScanZoom(z => Math.max(75, z - 25))}
-                            style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#be123c' }}
-                            title="Thu nhỏ"
-                          >
-                            <ZoomOut size={15} />
-                          </button>
-                          <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#be123c', padding: '0 4px', minWidth: '38px', textAlign: 'center' }}>
-                            {scanZoom}%
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => setScanZoom(z => Math.min(175, z + 25))}
-                            style={{ padding: '4px 8px', border: 'none', background: 'transparent', cursor: 'pointer', color: '#be123c' }}
-                            title="Phóng to"
-                          >
-                            <ZoomIn size={15} />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* Tải về & Mở tab mới */}
-                      {currentSched.attached_pdf_url && (
-                        <>
-                          <a
-                            href={currentSched.attached_pdf_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              padding: '6px 12px',
-                              backgroundColor: '#ffffff',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '8px',
-                              color: '#0284c7',
-                              fontSize: '12.5px',
-                              fontWeight: 'bold',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px'
-                            }}
-                            title="Mở tệp PDF trong tab mới"
-                          >
-                            <ExternalLink size={14} /> Mở Tab Mới
-                          </a>
-                          <a
-                            href={currentSched.attached_pdf_url}
-                            download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
-                            style={{
-                              padding: '6px 14px',
-                              backgroundColor: '#be123c',
-                              border: 'none',
-                              borderRadius: '8px',
-                              color: '#ffffff',
-                              fontSize: '12.5px',
-                              fontWeight: 'bold',
-                              textDecoration: 'none',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              boxShadow: '0 2px 6px rgba(190, 18, 60, 0.25)'
-                            }}
-                            title="Tải tệp PDF về thiết bị"
-                          >
-                            <Download size={14} /> Tải PDF
-                          </a>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* VIEWER CONTENT BODY */}
-                  <div style={{ padding: '24px 16px', backgroundColor: '#f8fafc', minHeight: '400px' }}>
-                    {/* OPTION A: SCAN PAGES MODE (2 TRANG SCAN RÕ NÉT CÓ DẤU ĐỎ) */}
-                    {pdfRenderMode === 'scan' ? (
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '25px' }}>
-                        {/* Page selector bar */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }} className="no-print">
-                          <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#64748b' }}>Trang hiển thị:</span>
-                          <button
-                            type="button"
-                            onClick={() => setActiveScanPage('all')}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: '6px',
-                              border: activeScanPage === 'all' ? '1.5px solid #be123c' : '1px solid #cbd5e1',
-                              backgroundColor: activeScanPage === 'all' ? '#fff1f2' : '#ffffff',
-                              color: activeScanPage === 'all' ? '#be123c' : '#475569',
-                              fontWeight: 'bold',
-                              fontSize: '12px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            📄 Tất Cả 2 Trang
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveScanPage(0)}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: '6px',
-                              border: activeScanPage === 0 ? '1.5px solid #be123c' : '1px solid #cbd5e1',
-                              backgroundColor: activeScanPage === 0 ? '#fff1f2' : '#ffffff',
-                              color: activeScanPage === 0 ? '#be123c' : '#475569',
-                              fontWeight: 'bold',
-                              fontSize: '12px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Trang 1 (Thứ 2 - Thứ 6)
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setActiveScanPage(1)}
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: '6px',
-                              border: activeScanPage === 1 ? '1.5px solid #be123c' : '1px solid #cbd5e1',
-                              backgroundColor: activeScanPage === 1 ? '#fff1f2' : '#ffffff',
-                              color: activeScanPage === 1 ? '#be123c' : '#475569',
-                              fontWeight: 'bold',
-                              fontSize: '12px',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            Trang 2 (Dấu Đỏ BGH)
-                          </button>
-                        </div>
-
-                        {/* LIST OF SCAN PAGES */}
-                        <div style={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '30px',
-                          alignItems: 'center',
-                          width: '100%',
-                          overflowX: 'auto',
-                          padding: '10px 0'
-                        }}>
-                          {/* TRANG 1 */}
-                          {(activeScanPage === 'all' || activeScanPage === 0) && (
-                            <div style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              maxWidth: `${Math.round(850 * (scanZoom / 100))}px`,
-                              width: '100%',
-                              transition: 'max-width 0.2s ease'
-                            }}>
-                              <div style={{
-                                width: '100%',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '8px 14px',
-                                backgroundColor: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderBottom: 'none',
-                                borderRadius: '12px 12px 0 0',
-                                fontSize: '13px',
-                                fontWeight: 'bold',
-                                color: '#1e293b'
-                              }}>
-                                <span>📄 TRANG 1 / 2 — Lịch Công Tác (Thứ Hai đến Thứ Sáu)</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewImageUrl(currentSched.scan_pages?.[0] || '/schedules/lich_tuan_05_trang_1.png')}
-                                  style={{ padding: '3px 10px', fontSize: '11.5px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#0284c7', fontWeight: 'bold', cursor: 'pointer' }}
-                                >
-                                  🔍 Phóng to ảnh
-                                </button>
-                              </div>
-                              <div
-                                onClick={() => setPreviewImageUrl(currentSched.scan_pages?.[0] || '/schedules/lich_tuan_05_trang_1.png')}
-                                style={{
-                                  width: '100%',
-                                  backgroundColor: '#ffffff',
-                                  border: '1px solid #cbd5e1',
-                                  borderRadius: '0 0 12px 12px',
-                                  boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
-                                  overflow: 'hidden',
-                                  cursor: 'zoom-in',
-                                  textAlign: 'center'
-                                }}
-                              >
-                                <img
-                                  src={currentSched.scan_pages?.[0] || '/schedules/lich_tuan_05_trang_1.png'}
-                                  alt="Lịch công tác tuần - Trang 1"
-                                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                                  loading="lazy"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {/* TRANG 2 */}
-                          {(activeScanPage === 'all' || activeScanPage === 1) && (
-                            <div style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              alignItems: 'center',
-                              maxWidth: `${Math.round(850 * (scanZoom / 100))}px`,
-                              width: '100%',
-                              transition: 'max-width 0.2s ease'
-                            }}>
-                              <div style={{
-                                width: '100%',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                padding: '8px 14px',
-                                backgroundColor: '#ffffff',
-                                border: '1px solid #cbd5e1',
-                                borderBottom: 'none',
-                                borderRadius: '12px 12px 0 0',
-                                fontSize: '13px',
-                                fontWeight: 'bold',
-                                color: '#1e293b'
-                              }}>
-                                <span style={{ color: '#be123c' }}>🔴 TRANG 2 / 2 — Thứ Bảy, Chủ Nhật, Nơi Nhận & Dấu Đỏ BGH</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setPreviewImageUrl(currentSched.scan_pages?.[1] || '/schedules/lich_tuan_05_trang_2.png')}
-                                  style={{ padding: '3px 10px', fontSize: '11.5px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#f8fafc', color: '#be123c', fontWeight: 'bold', cursor: 'pointer' }}
-                                >
-                                  🔍 Phóng to ảnh
-                                </button>
-                              </div>
-                              <div
-                                onClick={() => setPreviewImageUrl(currentSched.scan_pages?.[1] || '/schedules/lich_tuan_05_trang_2.png')}
-                                style={{
-                                  width: '100%',
-                                  backgroundColor: '#ffffff',
-                                  border: '1.5px solid #fecdd3',
-                                  borderRadius: '0 0 12px 12px',
-                                  boxShadow: '0 8px 30px rgba(190, 18, 60, 0.12)',
-                                  overflow: 'hidden',
-                                  cursor: 'zoom-in',
-                                  textAlign: 'center'
-                                }}
-                              >
-                                <img
-                                  src={currentSched.scan_pages?.[1] || '/schedules/lich_tuan_05_trang_2.png'}
-                                  alt="Lịch công tác tuần - Trang 2 có dấu đỏ"
-                                  style={{ width: '100%', height: 'auto', display: 'block' }}
-                                  loading="lazy"
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      /* OPTION B: EMBEDDED PDF IFRAME */
-                      currentSched.attached_pdf_url ? (
-                        <div style={{ width: '100%', height: '850px', backgroundColor: '#ffffff', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-                          <iframe
-                            src={currentSched.attached_pdf_url}
-                            title={`Bản PDF Lịch Tuần ${selectedWeekNo}`}
-                            style={{ width: '100%', height: '100%', border: 'none' }}
-                          />
-                        </div>
-                      ) : (
-                        <div style={{ padding: '60px 20px', textAlign: 'center', backgroundColor: '#ffffff', borderRadius: '12px', maxWidth: '540px', margin: '0 auto', border: '1px dashed #cbd5e1' }}>
-                          <div style={{ fontSize: '48px', marginBottom: '12px' }}>📂</div>
-                          <h4 style={{ margin: '0 0 8px 0', fontSize: '17px', color: '#0f172a' }}>Chưa có tệp PDF scan gốc cho Tuần {selectedWeekNo}</h4>
-                          <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: '#64748b' }}>
-                            Ban Giám Hiệu có thể đăng tải tệp PDF scan có dấu đỏ trong trang Quản trị. Quý Thầy/Cô có thể chuyển sang chế độ <strong>Xem Bản Số Hóa NĐ 30</strong> để tra cứu lịch tuần này.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() => setWeekDisplayMode('table')}
-                            style={{ padding: '8px 20px', borderRadius: '8px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
-                          >
-                            Chuyển sang xem bản số hóa
-                          </button>
-                        </div>
-                      )
                     )}
                   </div>
+
+                  {/* DIRECT PDF VIEWER EMBED */}
+                  <div style={{ width: '100%', minHeight: '650px', backgroundColor: '#525659', position: 'relative' }}>
+                    {currentSched.attached_pdf_url ? (
+                      <object
+                        data={`${resolvePdfUrl(currentSched.attached_pdf_url)}#toolbar=1&navpanes=0&view=FitH`}
+                        type="application/pdf"
+                        style={{ width: '100%', height: '820px', border: 'none', display: 'block' }}
+                      >
+                        <iframe
+                          src={`${resolvePdfUrl(currentSched.attached_pdf_url)}#toolbar=1&navpanes=0&view=FitH`}
+                          title={`Lịch công tác tuần ${selectedWeekNo}`}
+                          style={{ width: '100%', height: '820px', border: 'none' }}
+                        >
+                          <div style={{ padding: '40px 20px', textAlign: 'center', backgroundColor: '#ffffff', height: '100%' }}>
+                            <p style={{ fontSize: '15px', color: '#334155', marginBottom: '14px' }}>
+                              Thiết bị của bạn không hỗ trợ xem trước tệp PDF trực tiếp trong khung.
+                            </p>
+                            <a
+                              href={resolvePdfUrl(currentSched.attached_pdf_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '10px 22px',
+                                backgroundColor: '#be123c',
+                                color: '#ffffff',
+                                borderRadius: '8px',
+                                fontWeight: 'bold',
+                                textDecoration: 'none',
+                                fontSize: '14px'
+                              }}
+                            >
+                              <ExternalLink size={16} /> Bấm Vào Đây Để Mở File PDF
+                            </a>
+                          </div>
+                        </iframe>
+                      </object>
+                    ) : (
+                      <div style={{ padding: '60px 20px', textAlign: 'center', backgroundColor: '#ffffff', minHeight: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ fontSize: '48px', marginBottom: '12px' }}>📂</div>
+                        <h4 style={{ margin: '0 0 8px 0', fontSize: '17px', color: '#0f172a' }}>
+                          Chưa có tệp PDF scan gốc cho Tuần {selectedWeekNo}
+                        </h4>
+                        <p style={{ margin: '0 0 16px 0', fontSize: '13.5px', color: '#64748b', maxWidth: '480px' }}>
+                          Ban Giám Hiệu có thể tải lên tệp PDF scan có dấu đỏ trong trang Quản trị. Quý Thầy/Cô có thể chuyển sang chế độ <strong>Bản Số Hóa NĐ 30</strong> để tra cứu lịch tuần này.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setWeekDisplayMode('table')}
+                          style={{
+                            padding: '8px 20px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            backgroundColor: '#0284c7',
+                            color: '#ffffff',
+                            fontWeight: 'bold',
+                            fontSize: '13px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Chuyển sang xem bản số hóa
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* MOBILE HELPER NOTE */}
+                  {currentSched.attached_pdf_url && (
+                    <div style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#f1f5f9',
+                      borderTop: '1px solid #e2e8f0',
+                      fontSize: '12.5px',
+                      color: '#64748b',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '8px'
+                    }} className="no-print">
+                      <span>
+                        💡 <em>Mẹo: Nếu đọc trên điện thoại, Thầy/Cô có thể bấm <strong>"Mở Tab Mới"</strong> hoặc <strong>"Tải PDF"</strong> để xem toàn màn hình rõ từng chi tiết.</em>
+                      </span>
+                      <a
+                        href={resolvePdfUrl(currentSched.attached_pdf_url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'none' }}
+                      >
+                        Mở toàn màn hình ↗
+                      </a>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* KHỐI 2: OFFICIAL DECREE 30 TABLE (Khi ở chế độ 'table' hoặc 'both') */}
-              {(weekDisplayMode === 'table' || weekDisplayMode === 'both') && (
+              {/* KHỐI 2: OFFICIAL DECREE 30 TABLE (Khi ở chế độ 'table') */}
+              {weekDisplayMode === 'table' && (
                 <div style={{
                   marginBottom: '35px',
                   backgroundColor: '#ffffff',
@@ -1787,24 +1550,6 @@ export default function PublicSchedule() {
                   border: '1.5px solid #cbd5e1',
                   boxShadow: '0 4px 20px rgba(0,0,0,0.04)'
                 }}>
-                  {/* BẢNG SỐ HÓA LABEL TRONG CHẾ ĐỘ SONG SONG */}
-                  {weekDisplayMode === 'both' && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      padding: '8px 14px',
-                      backgroundColor: '#f0fdf4',
-                      borderRadius: '8px',
-                      border: '1px solid #bbf7d0',
-                      color: '#166534',
-                      fontWeight: 'bold',
-                      fontSize: '13.5px',
-                      marginBottom: '20px'
-                    }} className="no-print">
-                      <Calendar size={16} /> BẢN SỐ HÓA HÀNH CHÍNH NGHỊ ĐỊNH 30 (CHI TIẾT TỪNG NGÀY TRONG TUẦN)
-                    </div>
-                  )}
 
                   {/* OFFICIAL DECREE 30 HEADER */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '15px' }}>
@@ -4406,15 +4151,15 @@ export default function PublicSchedule() {
                 {currentSched.attached_pdf_url && (
                   <>
                     <a
-                      href={currentSched.attached_pdf_url}
+                      href={resolvePdfUrl(currentSched.attached_pdf_url)}
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                       style={{ padding: '7px 14px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#0284c7', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                     >
                       <LinkIcon size={14} /> Mở Tab Mới
                     </a>
                     <a
-                      href={currentSched.attached_pdf_url}
+                      href={resolvePdfUrl(currentSched.attached_pdf_url)}
                       download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
                       style={{ padding: '7px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                     >
@@ -4437,7 +4182,7 @@ export default function PublicSchedule() {
               {currentSched.attached_pdf_url ? (
                 <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
                   <iframe
-                    src={currentSched.attached_pdf_url}
+                    src={`${resolvePdfUrl(currentSched.attached_pdf_url)}#toolbar=1&navpanes=0&view=FitH`}
                     title={`Bản PDF Lịch Tuần ${selectedWeekNo}`}
                     style={{ width: '100%', height: '100%', border: 'none' }}
                   />
@@ -4465,60 +4210,6 @@ export default function PublicSchedule() {
         </div>
       )}
 
-      {/* MODAL PHÓNG TO HÌNH ẢNH SCAN LIGHTBOX */}
-      {previewImageUrl && (
-        <div 
-          onClick={() => setPreviewImageUrl(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(15, 23, 42, 0.85)',
-            backdropFilter: 'blur(8px)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 999999,
-            padding: '20px',
-            cursor: 'zoom-out'
-          }}
-        >
-          <div 
-            onClick={e => e.stopPropagation()} 
-            style={{ 
-              position: 'relative', 
-              maxWidth: '95vw', 
-              maxHeight: '92vh', 
-              backgroundColor: '#ffffff', 
-              borderRadius: '12px', 
-              overflow: 'hidden', 
-              boxShadow: '0 25px 60px rgba(0,0,0,0.5)',
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', backgroundColor: '#0f172a', color: '#ffffff' }}>
-              <span style={{ fontSize: '13px', fontWeight: 'bold' }}>🔍 Xem Phóng To Chi Tiết Văn Bản Lịch Tuần</span>
-              <button
-                type="button"
-                onClick={() => setPreviewImageUrl(null)}
-                style={{ width: '28px', height: '28px', borderRadius: '50%', border: 'none', backgroundColor: '#334155', color: '#ffffff', fontSize: '16px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              >
-                ✕
-              </button>
-            </div>
-            <div style={{ overflow: 'auto', maxHeight: 'calc(92vh - 50px)', padding: '10px', textAlign: 'center', backgroundColor: '#1e293b' }}>
-              <img
-                src={previewImageUrl}
-                alt="Bản scan văn bản lịch tuần"
-                style={{ maxWidth: '100%', height: 'auto', borderRadius: '6px', display: 'inline-block', boxShadow: '0 10px 25px rgba(0,0,0,0.3)' }}
-              />
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL TRA CỨU KHUNG GIỜ TIẾT HỌC TOÀN TRƯỜNG */}
       {showPeriodTimingsModal && (
