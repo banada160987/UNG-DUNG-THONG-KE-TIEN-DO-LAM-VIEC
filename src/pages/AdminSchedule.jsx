@@ -936,7 +936,6 @@ export default function AdminSchedule() {
         teacher_duty: teacherDuty,
         note,
         schedule_items: [...dayItems, metaObj],
-        appendix_items: appendixItems || [],
         is_active: isActive,
         updated_at: new Date().toISOString()
       };
