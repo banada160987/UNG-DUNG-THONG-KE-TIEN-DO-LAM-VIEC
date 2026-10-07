@@ -938,7 +938,9 @@ export default function AdminRegistrations() {
       [2, "Số học sinh theo bộ lọc hiện tại", dataToExport.length, "Học sinh", isFiltered ? `Chiếm ${((dataToExport.length / results.length) * 100).toFixed(1)}% trên tổng số đăng ký` : "Toàn bộ danh sách đăng ký"],
       [3, "Số lớp học có học sinh tham gia", sortedClasses.length, "Lớp", "Phân bổ trên các khối lớp"],
       [4, "Trạng thái tiếp nhận hồ sơ", campaign?.is_active ? "ĐANG TIẾP NHẬN" : "ĐÃ KẾT THÚC / KHÓA", "Trạng thái", campaign?.end_date ? `Hạn chót: ${new Date(campaign.end_date).toLocaleDateString('vi-VN')}` : "Theo quy định nhà trường"],
-      [],
+      []
+    ];
+
     // II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ
     if (isTuitionCampaign(campaign)) {
       sheet1Rows.push(["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG MÔN HỌC THÊM KHỐI 12 (GDPT 2018)"]);
