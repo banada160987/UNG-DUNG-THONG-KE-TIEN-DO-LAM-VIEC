@@ -839,26 +839,41 @@ export default function AdminRegistrations() {
   };
 
   const exportToExcel = () => {
-    const dataToExport = filteredAndSortedResults.length > 0 ? filteredAndSortedResults : results;
-    if (dataToExport.length === 0) {
-      alert("Không có dữ liệu để xuất Excel!");
-      return;
-    }
-    
-    const campaign = campaigns.find(c => c.id === selectedCampaignId);
-    const schema = getSchemaFields(campaign);
-    const campaignTitle = campaign?.title || 'Đợt đăng ký';
-    const isFiltered = Boolean(selectedOptionFilter && selectedOptionFilter !== 'all');
-    const filterName = isFiltered ? selectedOptionFilter : 'Tất cả';
+    try {
+      const dataToExport = filteredAndSortedResults.length > 0 ? filteredAndSortedResults : results;
+      if (dataToExport.length === 0) {
+        alert("Không có dữ liệu để xuất Excel!");
+        return;
+      }
+      
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
+      const schema = getSchemaFields(campaign);
+      const campaignTitle = campaign?.title || 'Đợt đăng ký';
+      const isFiltered = Boolean(selectedOptionFilter && selectedOptionFilter !== 'all');
+      const filterName = isFiltered ? selectedOptionFilter : 'Tất cả';
 
-    const titleLower = campaignTitle.toLowerCase();
-    const isClub = titleLower.includes('câu lạc bộ') || titleLower.includes('clb') || Boolean(campaign?.prerequisite_club);
+      const titleLower = campaignTitle.toLowerCase();
+      const isClub = titleLower.includes('câu lạc bộ') || titleLower.includes('clb') || Boolean(campaign?.prerequisite_club);
 
-    const today = new Date();
-    const dayStr = today.getDate().toString().padStart(2, '0');
-    const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
-    const yearStr = today.getFullYear();
-    const dateStr = `${yearStr}${monthStr}${dayStr}`;
+      const today = new Date();
+      const dayStr = today.getDate().toString().padStart(2, '0');
+      const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+      const yearStr = today.getFullYear();
+      const dateStr = `${yearStr}${monthStr}${dayStr}`;
+
+      // Hàm làm sạch dữ liệu cell, ngăn chặn sập Excel do chuỗi base64 hoặc vượt quá 32,767 ký tự
+      const sanitizeCellValue = (val) => {
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'number' || typeof val === 'boolean') return val;
+        let str = Array.isArray(val) ? val.join(', ') : String(val);
+        if (str.startsWith('data:image/') || str.startsWith('data:application/')) {
+          return 'Đã nộp ảnh / file đơn ký (Tệp đính kèm)';
+        }
+        if (str.length > 32000) {
+          return str.substring(0, 32000) + '...';
+        }
+        return str;
+      };
 
     // Lấy các trường lựa chọn (select, radio, checkbox)
     const selectFields = schema.filter(f => ['select', 'radio', 'checkbox'].includes(f.type));
@@ -924,44 +939,88 @@ export default function AdminRegistrations() {
       [3, "Số lớp học có học sinh tham gia", sortedClasses.length, "Lớp", "Phân bổ trên các khối lớp"],
       [4, "Trạng thái tiếp nhận hồ sơ", campaign?.is_active ? "ĐANG TIẾP NHẬN" : "ĐÃ KẾT THÚC / KHÓA", "Trạng thái", campaign?.end_date ? `Hạn chót: ${new Date(campaign.end_date).toLocaleDateString('vi-VN')}` : "Theo quy định nhà trường"],
       [],
-      ["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG NỘI DUNG / MÔN HỌC / CLB"]
-    ];
+    // II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ
+    if (isTuitionCampaign(campaign)) {
+      sheet1Rows.push(["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG MÔN HỌC THÊM KHỐI 12 (GDPT 2018)"]);
+      sheet1Rows.push(["Toán & Ngữ Văn mở cho toàn bộ khối 12 • Các môn tự chọn được đối soát tự động theo đúng 02 môn tự chọn của học sinh"]);
+      sheet1Rows.push(["STT", "Môn Học", "Phân Loại Môn", "Số Lượng Đăng Ký", "Tỷ Lệ (%)", "Đánh Giá Nhu Cầu & Tổ Chức Lớp"]);
 
-    // Điền bảng thống kê options
-    selectFields.forEach((field, fIdx) => {
-      const { label, counts } = optionStatsMap[field.id];
-      sheet1Rows.push([`2.${fIdx + 1}. Thống kê: ${label}`]);
-      sheet1Rows.push(["STT", "Nội Dung / Môn Học / CLB", "Số Lượng Đăng Ký", "Tỷ Lệ (%)", "Đánh Giá & Phân Bổ"]);
+      const schemaFields = getSchemaFields(campaign);
+      const tuitionSubjFieldIds = schemaFields.filter(isTuitionSubjectField).map(f => f.id);
+      const getResponsesToCheck = (respObj) => {
+        if (tuitionSubjFieldIds.length > 0) {
+          return tuitionSubjFieldIds.map(fid => respObj[fid]).filter(Boolean);
+        }
+        return Object.values(respObj || {});
+      };
 
-      const totalFieldCount = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
-      const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+      const tuitionSubjectCounts = {};
+      ALL_TUITION_SUBJECTS.forEach(subj => {
+        const normTarget = normalizeSubjectName(subj);
+        tuitionSubjectCounts[subj] = results.filter(r => {
+          const respObj = r.responses || {};
+          return getResponsesToCheck(respObj).some(val => {
+            if (Array.isArray(val)) return val.some(item => normalizeSubjectName(item) === normTarget);
+            return normalizeSubjectName(String(val)) === normTarget;
+          });
+        }).length;
+      });
 
-      sortedEntries.forEach(([opt, count], idx) => {
-        const pct = ((count / totalFieldCount) * 100).toFixed(1);
-        const evalText = count >= (totalFieldCount / (sortedEntries.length || 1)) ? "Số lượng đăng ký cao" : "Số lượng đăng ký bình thường";
+      ALL_TUITION_SUBJECTS.forEach((subj, idx) => {
+        const isCore = isCoreSubject(subj);
+        const count = tuitionSubjectCounts[subj] || 0;
+        const pct = results.length > 0 ? ((count / results.length) * 100).toFixed(1) : '0.0';
+        const evalNote = count >= 30 
+          ? "Nhu cầu rất cao (Đủ điều kiện mở nhiều lớp học phần)" 
+          : (count >= 10 ? "Nhu cầu trung bình (Tổ chức lớp ghép hoặc nhóm môn)" : "Nhu cầu ít");
         sheet1Rows.push([
           idx + 1,
-          opt,
+          subj,
+          isCore ? "Bắt buộc" : "Tự chọn",
           count,
           `${pct}%`,
-          evalText
+          evalNote
         ]);
       });
 
-      // Dòng tổng
-      sheet1Rows.push([
-        "",
-        "TỔNG CỘNG LƯỢT CHỌN",
-        totalFieldCount,
-        "100%",
-        `Tổng số ${sortedEntries.length} phân loại`
-      ]);
       sheet1Rows.push([]);
-    });
+    } else {
+      sheet1Rows.push(["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG NỘI DUNG / MÔN HỌC / CLB"]);
+      selectFields.forEach((field, fIdx) => {
+        const { label, counts } = optionStatsMap[field.id];
+        sheet1Rows.push([`2.${fIdx + 1}. Thống kê: ${label}`]);
+        sheet1Rows.push(["STT", "Nội Dung / Môn Học / CLB", "Số Lượng Đăng Ký", "Tỷ Lệ (%)", "Đánh Giá & Phân Bổ"]);
 
-    if (selectFields.length === 0) {
-      sheet1Rows.push(["Không có câu hỏi phân loại trắc nghiệm trong biểu mẫu"]);
-      sheet1Rows.push([]);
+        const totalFieldCount = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+        const sortedEntries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+        sortedEntries.forEach(([opt, count], idx) => {
+          const pct = ((count / totalFieldCount) * 100).toFixed(1);
+          const evalText = count >= (totalFieldCount / (sortedEntries.length || 1)) ? "Số lượng đăng ký cao" : "Số lượng đăng ký bình thường";
+          sheet1Rows.push([
+            idx + 1,
+            opt,
+            count,
+            `${pct}%`,
+            evalText
+          ]);
+        });
+
+        // Dòng tổng
+        sheet1Rows.push([
+          "",
+          "TỔNG CỘNG LƯỢT CHỌN",
+          totalFieldCount,
+          "100%",
+          `Tổng số ${sortedEntries.length} phân loại`
+        ]);
+        sheet1Rows.push([]);
+      });
+
+      if (selectFields.length === 0) {
+        sheet1Rows.push(["Không có câu hỏi phân loại trắc nghiệm trong biểu mẫu"]);
+        sheet1Rows.push([]);
+      }
     }
 
     // Phần III: Ma trận phân bổ theo từng Lớp học
@@ -1042,7 +1101,8 @@ export default function AdminRegistrations() {
       "(Ký, đóng dấu)"
     ]);
 
-    const ws1 = XLSX.utils.aoa_to_sheet(sheet1Rows);
+    const cleanSheet1Rows = sheet1Rows.map(r => (Array.isArray(r) ? r.map(sanitizeCellValue) : []));
+    const ws1 = XLSX.utils.aoa_to_sheet(cleanSheet1Rows);
 
     // Cấu hình độ rộng cột cho Sheet 1
     ws1['!cols'] = [
@@ -1121,12 +1181,21 @@ export default function AdminRegistrations() {
       });
 
       // Cột Đơn có chữ ký (file upload hoặc Google Drive link)
-      const docProof = r.responses?.field_drive_link || r.responses?.field_signed_doc_url || 'Chưa nộp';
+      let docProof = 'Chưa nộp';
+      if (r.responses?.field_drive_link) {
+        docProof = r.responses.field_drive_link;
+      } else if (r.responses?.field_signed_doc_url) {
+        if (String(r.responses.field_signed_doc_url).startsWith('data:')) {
+          docProof = 'Đã nộp ảnh / file đơn ký (Tệp đính kèm)';
+        } else {
+          docProof = r.responses.field_signed_doc_url;
+        }
+      }
       const classFolderProof = r.responses?.field_class_folder_url || '';
       row.push(docProof);
       row.push(classFolderProof);
 
-      sheet2Rows.push(row);
+      sheet2Rows.push(row.map(sanitizeCellValue));
     });
 
     const ws2 = XLSX.utils.aoa_to_sheet(sheet2Rows);
@@ -1322,9 +1391,12 @@ export default function AdminRegistrations() {
           return registered ? 'X' : '';
         });
 
-        const docProof = r.responses?.field_signed_doc_url 
-          ? 'Đã nộp file đơn ký' 
-          : (r.responses?.field_drive_link ? `Link Drive: ${r.responses.field_drive_link}` : 'Chưa nộp đơn ký');
+        let docProof = 'Chưa nộp đơn ký';
+        if (r.responses?.field_drive_link) {
+          docProof = `Link Drive: ${r.responses.field_drive_link}`;
+        } else if (r.responses?.field_signed_doc_url) {
+          docProof = 'Đã nộp file / ảnh đơn ký';
+        }
 
         tuitionRows.push([
           idx + 1,
@@ -1337,7 +1409,7 @@ export default function AdminRegistrations() {
           docProof, // Đơn Ký / Chữ Ký Xác Nhận
           "", // Ký GVCN
           ""  // Ghi chú
-        ]);
+        ].map(sanitizeCellValue));
       });
 
       // Dòng Tổng cộng số HS đăng ký từng môn
@@ -1486,7 +1558,7 @@ export default function AdminRegistrations() {
           "", // Học sinh ký
           "", // GVCN ký
           ""  // Ghi chú
-        ]);
+        ].map(sanitizeCellValue));
       });
 
       // Khung chữ ký 3 bên
@@ -1514,7 +1586,8 @@ export default function AdminRegistrations() {
         ""
       ]);
 
-      const ws3 = XLSX.utils.aoa_to_sheet(handoverRows);
+      const cleanHandoverRows = handoverRows.map(r => (Array.isArray(r) ? r.map(sanitizeCellValue) : []));
+      const ws3 = XLSX.utils.aoa_to_sheet(cleanHandoverRows);
 
       ws3['!cols'] = [
         { wch: 6 },  // STT
@@ -1566,7 +1639,11 @@ export default function AdminRegistrations() {
 
     // Xuất file
     XLSX.writeFile(workbook, `${fileName}.xlsx`);
-  };
+  } catch (err) {
+    console.error("Lỗi khi xuất file Excel:", err);
+    alert("Có lỗi xảy ra khi xuất file Excel: " + (err?.message || err));
+  }
+};
 
   // 🟢 LỌC VÀ SẮP XẾP DANH SÁCH HỌC SINH ĐĂNG KÝ (DÙNG CHO BẢNG & BÁO CÁO)
   const filteredAndSortedResults = useMemo(() => {
@@ -2630,14 +2707,23 @@ export default function AdminRegistrations() {
                             Toán & Ngữ Văn mở cho toàn bộ khối 12 • Các môn tự chọn được đối soát tự động theo đúng 02 môn tự chọn của học sinh.
                           </p>
                         </div>
-                        {selectedOptionFilter !== 'all' && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <button 
-                            onClick={() => setSelectedOptionFilter('all')} 
-                            style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                            onClick={exportToExcel}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#166534', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 6px rgba(22,101,52,0.25)' }}
+                            title="Xuất Bảng Thống Kê và Ma Trận Học Thêm ra file Excel"
                           >
-                            <X size={14} /> Bỏ lọc ({selectedOptionFilter})
+                            <Download size={15} /> Xuất Thống Kê & Ma Trận (Excel)
                           </button>
-                        )}
+                          {selectedOptionFilter !== 'all' && (
+                            <button 
+                              onClick={() => setSelectedOptionFilter('all')} 
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px', background: '#fee2e2', color: '#b91c1c', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                            >
+                              <X size={14} /> Bỏ lọc ({selectedOptionFilter})
+                            </button>
+                          )}
+                        </div>
                       </div>
 
                       {/* LƯỚI THỐNG KÊ SĨ SỐ TỪNG MÔN */}
