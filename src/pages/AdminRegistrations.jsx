@@ -1647,6 +1647,166 @@ export default function AdminRegistrations() {
   }
 };
 
+  // 🟢 XUẤT RIÊNG BẢN BÁO CÁO TÓM TẮT THỐNG KÊ & MA TRẬN MÔN KHỐI 12 (1 SHEET GỌN NHẸ)
+  const exportTuitionSummaryOnly = () => {
+    try {
+      if (!results || results.length === 0) {
+        alert("Chưa có học sinh nào đăng ký để xuất thống kê!");
+        return;
+      }
+
+      const campaign = campaigns.find(c => c.id === selectedCampaignId);
+      const campaignTitle = campaign?.title || 'Đăng ký học thêm Khối 12';
+      const today = new Date();
+      const dayStr = today.getDate().toString().padStart(2, '0');
+      const monthStr = (today.getMonth() + 1).toString().padStart(2, '0');
+      const yearStr = today.getFullYear();
+      const dateStr = `${yearStr}${monthStr}${dayStr}`;
+
+      const schemaFields = getSchemaFields(campaign);
+      const tuitionSubjFieldIds = schemaFields.filter(isTuitionSubjectField).map(f => f.id);
+      const getResponsesToCheck = (respObj) => {
+        if (tuitionSubjFieldIds.length > 0) {
+          return tuitionSubjFieldIds.map(fid => respObj[fid]).filter(Boolean);
+        }
+        return Object.values(respObj || {});
+      };
+
+      // Đếm số lượng học sinh từng môn
+      const tuitionSubjectCounts = {};
+      ALL_TUITION_SUBJECTS.forEach(subj => {
+        const normTarget = normalizeSubjectName(subj);
+        tuitionSubjectCounts[subj] = results.filter(r => {
+          const respObj = r.responses || {};
+          return getResponsesToCheck(respObj).some(val => {
+            if (Array.isArray(val)) return val.some(item => normalizeSubjectName(item) === normTarget);
+            return normalizeSubjectName(String(val)) === normTarget;
+          });
+        }).length;
+      });
+
+      // Danh sách lớp Khối 12
+      const classList = Array.from(new Set(results.map(r => (r.student_class || '').trim()).filter(Boolean))).sort((a, b) => 
+        a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' })
+      );
+
+      const rows = [
+        ["SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", "", "", "", ""],
+        ["TRƯỜNG THPT CAO BÁ QUÁT", "", "", "", "Độc lập - Tự do - Hạnh phúc", "", "", "", ""],
+        [`Số: ... /BC-THPTCBQ`, "", "", "", `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`, "", "", "", ""],
+        [],
+        ["BÁO CÁO THỐNG KÊ VÀ MA TRẬN ĐĂNG KÝ HỌC THÊM KHỐI 12 (GDPT 2018)"],
+        [`Đợt: ${campaignTitle.toUpperCase()}`],
+        [`(Tổng số: ${results.length} học sinh đăng ký trên ${classList.length} lớp học - Thời gian xuất: ${today.toLocaleString('vi-VN')})`],
+        [],
+        ["I. CHỈ SỐ TỔNG QUAN"],
+        ["STT", "Chỉ Số Đánh Giá", "Số Lượng", "Đơn Vị Tính", "Ghi Chú"],
+        [1, "Tổng số học sinh đăng ký học thêm", results.length, "Học sinh", "Dữ liệu đăng ký hợp lệ"],
+        [2, "Số lớp học Khối 12 có học sinh tham gia", classList.length, "Lớp", "Bao gồm tất cả các lớp có đăng ký"],
+        [3, "Tổng số lượt chọn môn học thêm", Object.values(tuitionSubjectCounts).reduce((a, b) => a + b, 0), "Lượt môn", "Bao gồm 2 môn chung Toán, Văn & 2 môn tự chọn"],
+        [],
+        ["II. BẢNG THỐNG KÊ SỐ LƯỢNG & TỶ LỆ THEO TỪNG MÔN HỌC THÊM"],
+        ["STT", "Tên Môn Học", "Phân Loại Môn", "Số Lượng ĐK", "Tỷ Lệ (%)", "Đánh Giá Nhu Cầu Mở Lớp"]
+      ];
+
+      ALL_TUITION_SUBJECTS.forEach((subj, idx) => {
+        const isCore = isCoreSubject(subj);
+        const count = tuitionSubjectCounts[subj] || 0;
+        const pct = results.length > 0 ? ((count / results.length) * 100).toFixed(1) : '0.0';
+        const evalNote = count >= 30 
+          ? "Nhu cầu rất cao (Đủ điều kiện mở nhiều lớp)" 
+          : (count >= 10 ? "Nhu cầu trung bình (Tổ chức lớp ghép/nhóm môn)" : "Nhu cầu ít");
+        rows.push([
+          idx + 1,
+          subj,
+          isCore ? "Bắt buộc" : "Tự chọn",
+          count,
+          `${pct}%`,
+          evalNote
+        ]);
+      });
+
+      rows.push([]);
+      rows.push(["III. MA TRẬN SỐ LƯỢNG ĐĂNG KÝ HỌC THÊM THEO TỪNG LỚP KHỐI 12"]);
+      rows.push(["STT", "Lớp", "Khối", "Sĩ Số ĐK", ...ALL_TUITION_SUBJECTS]);
+
+      classList.forEach((cls, idx) => {
+        const classRegs = results.filter(r => (r.student_class || '').trim() === cls);
+        const row = [idx + 1, cls, 'Khối 12', classRegs.length];
+        ALL_TUITION_SUBJECTS.forEach(subj => {
+          const normSubj = normalizeSubjectName(subj);
+          const count = classRegs.filter(r => {
+            const respObj = r.responses || {};
+            return getResponsesToCheck(respObj).some(val => {
+              if (Array.isArray(val)) return val.some(i => normalizeSubjectName(i) === normSubj);
+              return normalizeSubjectName(String(val)) === normSubj;
+            });
+          }).length;
+          row.push(count);
+        });
+        rows.push(row);
+      });
+
+      // Dòng Tổng toàn trường
+      const summaryRow = ["", "TỔNG TOÀN TRƯỜNG", "", results.length];
+      ALL_TUITION_SUBJECTS.forEach(subj => {
+        summaryRow.push(tuitionSubjectCounts[subj] || 0);
+      });
+      rows.push(summaryRow);
+
+      // Ký tên cuối bảng
+      rows.push([]);
+      rows.push([
+        "", "", "", "", "",
+        `Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}`
+      ]);
+      rows.push([
+        "", "NGƯỜI LẬP BIỂU", "", "", "",
+        "HIỆU TRƯỞNG / BAN GIÁM HIỆU"
+      ]);
+      rows.push([
+        "", "(Ký, ghi rõ họ tên)", "", "", "",
+        "(Ký, đóng dấu)"
+      ]);
+
+      const workbook = XLSX.utils.book_new();
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+
+      // Cấu hình độ rộng cột
+      ws['!cols'] = [
+        { wch: 6 },  // STT
+        { wch: 20 }, // Lớp / Tên môn
+        { wch: 14 }, // Khối / Phân loại
+        { wch: 14 }, // Sĩ số ĐK
+        ...ALL_TUITION_SUBJECTS.map(s => ({ wch: Math.max(s.length + 3, 11) }))
+      ];
+
+      ws['!merges'] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 3 } },
+        { s: { r: 0, c: 4 }, e: { r: 0, c: 8 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: 3 } },
+        { s: { r: 1, c: 4 }, e: { r: 1, c: 8 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: 3 } },
+        { s: { r: 2, c: 4 }, e: { r: 2, c: 8 } },
+        { s: { r: 4, c: 0 }, e: { r: 4, c: 8 } },
+        { s: { r: 5, c: 0 }, e: { r: 5, c: 8 } },
+        { s: { r: 6, c: 0 }, e: { r: 6, c: 8 } }
+      ];
+
+      XLSX.utils.book_append_sheet(workbook, ws, "THONG_KE_MA_TRAN_K12");
+
+      const cleanTitle = (campaignTitle || 'Hoc_them_K12')
+        .replace(/[/\\?%*:|"<>]/g, '_')
+        .replace(/\s+/g, '_')
+        .trim();
+      const fileName = `Bao_cao_Thong_ke_va_Ma_tran_${cleanTitle}_${dateStr}`;
+      XLSX.writeFile(workbook, `${fileName}.xlsx`);
+    } catch (err) {
+      console.error("Lỗi khi xuất bảng thống kê tóm tắt:", err);
+      alert("Lỗi khi xuất file: " + (err?.message || err));
+    }
+  };
+
   // 🟢 LỌC VÀ SẮP XẾP DANH SÁCH HỌC SINH ĐĂNG KÝ (DÙNG CHO BẢNG & BÁO CÁO)
   const filteredAndSortedResults = useMemo(() => {
     let list = [...results];
@@ -2711,9 +2871,9 @@ export default function AdminRegistrations() {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                           <button 
-                            onClick={exportToExcel}
+                            onClick={exportTuitionSummaryOnly}
                             style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#166534', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 6px rgba(22,101,52,0.25)' }}
-                            title="Xuất Bảng Thống Kê và Ma Trận Học Thêm ra file Excel"
+                            title="Chỉ xuất riêng 1 trang Báo cáo tóm tắt (Bảng thống kê số lượng môn & Ma trận theo lớp) để nộp BGH / Tổ chuyên môn"
                           >
                             <Download size={15} /> Xuất Thống Kê & Ma Trận (Excel)
                           </button>
