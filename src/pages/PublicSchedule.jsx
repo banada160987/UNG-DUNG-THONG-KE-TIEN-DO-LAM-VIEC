@@ -1268,17 +1268,6 @@ export default function PublicSchedule() {
               <button onClick={handlePrint} style={styles.printBtn}>
                 <Printer size={16} /> In Văn Bản
               </button>
-
-              {canManageSchedule && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/admin/schedule?week=${selectedWeekNo}`)}
-                  style={{ ...styles.printBtn, backgroundColor: '#9f1239' }}
-                  title="Chuyển đến màn hình Quản trị Lịch để chỉnh sửa nội dung, phân công, phụ lục"
-                >
-                  <Settings size={16} /> ⚙️ Quản Trị Lịch (Admin)
-                </button>
-              )}
             </div>
           </div>
 
