@@ -160,6 +160,7 @@ export default function AdminSchedule() {
   
   // Phụ lục & Lịch bổ sung phát sinh trong tuần
   const [appendixItems, setAppendixItems] = useState([]);
+  const [editingAppendixIndex, setEditingAppendixIndex] = useState(null);
   const [showAddAppendixModal, setShowAddAppendixModal] = useState(false);
   const [newAppendixItem, setNewAppendixItem] = useState({
     time: '',
@@ -167,7 +168,7 @@ export default function AdminSchedule() {
     location: '',
     chair: '',
     participants: '',
-    tag: 'Bổ sung',
+    tag: 'Bổ sung khẩn',
     type: 'urgent',
     note: ''
   });
@@ -757,8 +758,9 @@ export default function AdminSchedule() {
       setSignerTitle(existing.signer_title || metaObj.signer_title || 'HIỆU TRƯỜNG');
       setAttachedPdfUrl(existing.attached_pdf_url || metaObj.attached_pdf_url || (wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
       setAttachedPdfName(existing.attached_pdf_name || metaObj.attached_pdf_name || (wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : ''));
-      const rawAppendix = existing.appendix_items || metaObj.appendix_items;
-      setAppendixItems(Array.isArray(rawAppendix) && rawAppendix.length > 0 ? rawAppendix : (wNum === 5 ? DEFAULT_WEEK5_APPENDIX : []));
+      const rawAppendix = existing.appendix_items !== undefined ? existing.appendix_items : metaObj.appendix_items;
+      setAppendixItems(Array.isArray(rawAppendix) ? rawAppendix : (wNum === 5 && !metaObj.appendix_configured ? DEFAULT_WEEK5_APPENDIX : []));
+      setEditingAppendixIndex(null);
       setIsActive(existing.is_active ?? true);
       setDayItems(cleanDayItems.length > 0 ? cleanDayItems : getDefaultScheduleDays(targetWeek));
     } else {
@@ -778,6 +780,7 @@ export default function AdminSchedule() {
       setAttachedPdfUrl(wNum === 5 ? '/schedules/Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
       setAttachedPdfName(wNum === 5 ? 'Lich_Cong_Tac_Tuan_05_THPT_Cao_Ba_Quat.pdf' : '');
       setAppendixItems(wNum === 5 ? DEFAULT_WEEK5_APPENDIX : []);
+      setEditingAppendixIndex(null);
       setIsActive(true);
       setDayItems(getDefaultScheduleDays(targetWeek));
     }
@@ -964,7 +967,8 @@ export default function AdminSchedule() {
         signer_title: signerTitle,
         attached_pdf_url: attachedPdfUrl || '',
         attached_pdf_name: attachedPdfName || '',
-        appendix_items: appendixItems || []
+        appendix_items: appendixItems || [],
+        appendix_configured: true
       };
 
       const payload = {
@@ -987,20 +991,88 @@ export default function AdminSchedule() {
         if (existingRow) targetId = existingRow.id;
       }
 
+      const supaClient = supabase2Admin || supabaseAdmin || supabase;
       if (targetId) {
-        const { error } = await supabase.from('cbq_schedules').update(payload).eq('id', targetId);
+        const { error } = await supaClient.from('cbq_schedules').update(payload).eq('id', targetId);
         if (error) throw error;
         setEditingId(targetId);
       } else {
-        const { error, data } = await supabase.from('cbq_schedules').insert([payload]).select();
+        const { error, data } = await supaClient.from('cbq_schedules').insert([payload]).select();
         if (error) throw error;
         if (data && data[0]) setEditingId(data[0].id);
       }
+
+      try {
+        localStorage.setItem(`cbq_schedule_appendix_w${selectedWeekNo}`, JSON.stringify(appendixItems || []));
+        sessionStorage.removeItem('cbq_cached_schedules');
+      } catch (e) {}
 
       alert(`🎉 ĐÃ LƯU THÀNH CÔNG LỊCH CÔNG TÁC TUẦN ${selectedWeekNo} (NĂM HỌC 2026 - 2027)!`);
       fetchSchedules();
     } catch (err) {
       alert("Lỗi khi lưu lịch: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Lưu nhanh riêng phụ lục bổ sung trực tiếp lên Supabase
+  const handleQuickSaveAppendix = async () => {
+    try {
+      setSaving(true);
+      const targetWeek = schoolWeeks[selectedWeekNo - 1] || schoolWeeks[0];
+      let targetId = editingId;
+      if (!targetId) {
+        const existingRow = schedules.find(s => Number(s.week_number) === Number(selectedWeekNo));
+        if (existingRow) targetId = existingRow.id;
+      }
+
+      const cleanDays = dayItems.filter(d => d && !d._is_meta);
+      const metaObj = {
+        _is_meta: true,
+        date_range_str: dateRangeStr || targetWeek.date_range_str,
+        release_date_str: releaseDateStr || targetWeek.release_date_str,
+        recipients,
+        signer_name: signerName,
+        signer_title: signerTitle,
+        attached_pdf_url: attachedPdfUrl || '',
+        attached_pdf_name: attachedPdfName || '',
+        appendix_items: appendixItems || [],
+        appendix_configured: true
+      };
+
+      const payload = {
+        title: title || targetWeek.title,
+        week_number: Number(selectedWeekNo) || 1,
+        start_date: startDate || targetWeek.start_date,
+        end_date: endDate || targetWeek.end_date,
+        bgh_duty: bghDuty,
+        teacher_duty: teacherDuty,
+        note,
+        schedule_items: [...cleanDays, metaObj],
+        is_active: isActive,
+        updated_at: new Date().toISOString()
+      };
+
+      const supaClient = supabase2Admin || supabaseAdmin || supabase;
+      if (targetId) {
+        const { error } = await supaClient.from('cbq_schedules').update(payload).eq('id', targetId);
+        if (error) throw error;
+      } else {
+        const { error, data } = await supaClient.from('cbq_schedules').insert([payload]).select();
+        if (error) throw error;
+        if (data && data[0]) setEditingId(data[0].id);
+      }
+
+      try {
+        localStorage.setItem(`cbq_schedule_appendix_w${selectedWeekNo}`, JSON.stringify(appendixItems || []));
+        sessionStorage.removeItem('cbq_cached_schedules');
+      } catch (e) {}
+
+      await fetchSchedules();
+      alert(`🎉 ĐÃ LƯU THÀNH CÔNG ${appendixItems.length} MỤC PHỤ LỤC TUẦN ${selectedWeekNo} VÀO CƠ SỞ DỮ LIỆU!`);
+    } catch (err) {
+      alert(`Lỗi khi lưu phụ lục: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -3096,26 +3168,64 @@ export default function AdminSchedule() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => setShowAddAppendixModal(true)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    backgroundColor: '#eab308',
-                    color: '#713f12',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(234, 179, 8, 0.3)'
-                  }}
-                >
-                  <Plus size={16} /> ➕ Thêm Mục Phụ Lục Phát Sinh
-                </button>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingAppendixIndex(null);
+                      setNewAppendixItem({
+                        time: '',
+                        content: '',
+                        location: '',
+                        chair: '',
+                        participants: '',
+                        tag: 'Bổ sung khẩn',
+                        type: 'urgent',
+                        note: ''
+                      });
+                      setShowAddAppendixModal(true);
+                    }}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: '#eab308',
+                      color: '#713f12',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(234, 179, 8, 0.3)'
+                    }}
+                  >
+                    <Plus size={16} /> ➕ Thêm Mục Bổ Sung Mới
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleQuickSaveAppendix}
+                    disabled={saving}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: '#166534',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(22, 101, 52, 0.3)'
+                    }}
+                    title="Lưu ngay toàn bộ danh sách phụ lục tuần này vào Supabase Database"
+                  >
+                    <Save size={16} /> 💾 Lưu Nhanh Phụ Lục ({appendixItems.length} mục)
+                  </button>
+                </div>
               </div>
 
               {/* BẢNG DANH SÁCH MỤC PHỤ LỤC */}
@@ -3128,8 +3238,8 @@ export default function AdminSchedule() {
                         <th style={{ padding: '8px', width: '22%', textAlign: 'left', border: '1px solid #fef08a' }}>Thời gian & Phân loại</th>
                         <th style={{ padding: '8px', width: '38%', textAlign: 'left', border: '1px solid #fef08a' }}>Nội dung công việc bổ sung</th>
                         <th style={{ padding: '8px', width: '15%', textAlign: 'left', border: '1px solid #fef08a' }}>Địa điểm</th>
-                        <th style={{ padding: '8px', width: '15%', textAlign: 'left', border: '1px solid #fef08a' }}>Chủ trì / Thành phần</th>
-                        <th style={{ padding: '8px', width: '5%', textAlign: 'center', border: '1px solid #fef08a' }}>Xóa</th>
+                        <th style={{ padding: '8px', width: '12%', textAlign: 'left', border: '1px solid #fef08a' }}>Chủ trì / Thành phần</th>
+                        <th style={{ padding: '8px', width: '8%', textAlign: 'center', border: '1px solid #fef08a' }}>Thao tác</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -3179,19 +3289,43 @@ export default function AdminSchedule() {
                               {app.participants && <div style={{ fontSize: '11.5px', color: '#64748b' }}>{app.participants}</div>}
                             </td>
 
-                            <td style={{ padding: '10px 6px', textAlign: 'center', border: '1px solid #fef08a', verticalAlign: 'top' }}>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (window.confirm(`Bạn có chắc muốn xóa mục phụ lục này?`)) {
-                                    setAppendixItems(prev => prev.filter((_, idx) => idx !== aIdx));
-                                  }
-                                }}
-                                style={{ padding: '4px 8px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                                title="Xóa mục này"
-                              >
-                                <Trash2 size={14} />
-                              </button>
+                            <td style={{ padding: '10px 6px', textAlign: 'center', border: '1px solid #fef08a', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingAppendixIndex(aIdx);
+                                    setNewAppendixItem({
+                                      id: app.id || 'app-' + aIdx,
+                                      time: app.time || '',
+                                      content: app.content || '',
+                                      location: app.location || '',
+                                      chair: app.chair || '',
+                                      participants: app.participants || '',
+                                      tag: app.tag || 'Bổ sung khẩn',
+                                      type: app.type || 'urgent',
+                                      note: app.note || ''
+                                    });
+                                    setShowAddAppendixModal(true);
+                                  }}
+                                  style={{ padding: '5px 8px', backgroundColor: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                  title="Chỉnh sửa mục này"
+                                >
+                                  <Edit3 size={14} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm(`Bạn có chắc muốn xóa mục phụ lục này?`)) {
+                                      setAppendixItems(prev => prev.filter((_, idx) => idx !== aIdx));
+                                    }
+                                  }}
+                                  style={{ padding: '5px 8px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                                  title="Xóa mục này"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -3201,11 +3335,11 @@ export default function AdminSchedule() {
                 </div>
               ) : (
                 <div style={{ padding: '20px', textAlign: 'center', color: '#854d0e', backgroundColor: '#fefce8', borderRadius: '8px', fontSize: '13px' }}>
-                  Chưa có mục phụ lục bổ sung nào cho tuần này. Bấm nút <strong>"➕ Thêm Mục Phụ Lục Phát Sinh"</strong> nếu có công việc mới phát sinh ngoài văn bản gốc.
+                  Chưa có mục phụ lục bổ sung nào cho tuần này. Bấm nút <strong>"➕ Thêm Mục Bổ Sung Mới"</strong> nếu có công việc mới phát sinh ngoài văn bản gốc.
                 </div>
               )}
 
-              {/* MODAL / FORM THÊM MỤC PHỤ LỤC MỚI */}
+              {/* MODAL / FORM THÊM & SỬA MỤC PHỤ LỤC */}
               {showAddAppendixModal && (
                 <div style={{
                   marginTop: '16px',
@@ -3214,8 +3348,15 @@ export default function AdminSchedule() {
                   borderRadius: '10px',
                   border: '1.5px dashed #eab308'
                 }}>
-                  <div style={{ fontWeight: 'bold', color: '#854d0e', marginBottom: '12px', fontSize: '14px' }}>
-                    📝 Thêm Mục Phụ Lục / Nhiệm Vụ Bổ Sung Mới:
+                  <div style={{ fontWeight: 'bold', color: '#854d0e', marginBottom: '12px', fontSize: '14px', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>
+                      {editingAppendixIndex !== null ? `✏️ Chỉnh Sửa Mục Phụ Lục #${editingAppendixIndex + 1}:` : '📝 Thêm Mục Phụ Lục / Nhiệm Vụ Bổ Sung Mới:'}
+                    </span>
+                    {editingAppendixIndex !== null && (
+                      <span style={{ fontSize: '12px', color: '#0369a1', fontWeight: 'normal' }}>
+                        (Đang ở chế độ chỉnh sửa)
+                      </span>
+                    )}
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
@@ -3310,7 +3451,10 @@ export default function AdminSchedule() {
                   <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                     <button
                       type="button"
-                      onClick={() => setShowAddAppendixModal(false)}
+                      onClick={() => {
+                        setShowAddAppendixModal(false);
+                        setEditingAppendixIndex(null);
+                      }}
                       style={{ padding: '7px 16px', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                     >
                       Hủy bỏ
@@ -3322,27 +3466,34 @@ export default function AdminSchedule() {
                           alert('Vui lòng nhập nội dung công việc bổ sung!');
                           return;
                         }
-                        const itemToAdd = {
+                        const itemToSave = {
                           ...newAppendixItem,
-                          id: 'app-' + Date.now(),
+                          id: newAppendixItem.id || 'app-' + Date.now(),
                           time: newAppendixItem.time.trim() || 'Trong tuần'
                         };
-                        setAppendixItems(prev => [...prev, itemToAdd]);
+
+                        if (editingAppendixIndex !== null) {
+                          setAppendixItems(prev => prev.map((item, idx) => idx === editingAppendixIndex ? itemToSave : item));
+                        } else {
+                          setAppendixItems(prev => [...prev, itemToSave]);
+                        }
+
                         setNewAppendixItem({
                           time: '',
                           content: '',
                           location: '',
                           chair: '',
                           participants: '',
-                          tag: 'Bổ sung',
+                          tag: 'Bổ sung khẩn',
                           type: 'urgent',
                           note: ''
                         });
+                        setEditingAppendixIndex(null);
                         setShowAddAppendixModal(false);
                       }}
                       style={{ padding: '7px 18px', borderRadius: '6px', border: 'none', backgroundColor: '#166534', color: '#ffffff', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                     >
-                      Thêm vào phụ lục
+                      {editingAppendixIndex !== null ? '💾 Cập nhật mục này' : '➕ Thêm vào phụ lục'}
                     </button>
                   </div>
                 </div>

@@ -395,10 +395,30 @@ export function getScheduleDataForWeek(weekNo, dbSchedules = []) {
     '/schedules/lich_tuan_05_trang_2.png'
   ] : [];
 
-  const rawAppendix = dbMatch?.appendix_items || metaObj.appendix_items;
-  const appendixItems = Array.isArray(rawAppendix) && rawAppendix.length > 0
-    ? rawAppendix
-    : (Number(weekNo) === 5 ? DEFAULT_WEEK5_APPENDIX : []);
+  // Check local cache backup first for instant responsiveness
+  let localAppendix = null;
+  try {
+    const rawLocal = typeof window !== 'undefined' ? localStorage.getItem(`cbq_schedule_appendix_w${weekNo}`) : null;
+    if (rawLocal) {
+      const parsed = JSON.parse(rawLocal);
+      if (Array.isArray(parsed)) localAppendix = parsed;
+    }
+  } catch (e) {}
+
+  const rawAppendix = localAppendix !== null 
+    ? localAppendix 
+    : (dbMatch?.appendix_items !== undefined ? dbMatch.appendix_items : metaObj.appendix_items);
+
+  let appendixItems = [];
+  if (Array.isArray(rawAppendix)) {
+    // If explicitly configured or saved in database/cache, respect the exact array (even if empty)
+    appendixItems = rawAppendix;
+  } else if (Number(weekNo) === 5) {
+    // Default initial mock items only if never configured yet
+    appendixItems = DEFAULT_WEEK5_APPENDIX;
+  } else {
+    appendixItems = [];
+  }
 
   const scanPages = dbMatch?.scan_pages || metaObj.scan_pages || week5ScanPages;
 

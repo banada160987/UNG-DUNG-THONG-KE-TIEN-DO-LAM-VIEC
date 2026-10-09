@@ -1,10 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase, supabase2 } from '../lib/supabase';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase, supabase2, supabase2Admin, supabaseAdmin } from '../lib/supabase';
 import {
   Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText,
   Sparkles, BookOpen, User, Users, Search, Filter, Flame, Info, CheckCircle2, X, Star, Bell,
-  Coffee, Sun, Moon, ArrowRight, Copy, Grid, ZoomIn, ZoomOut, Maximize2, ExternalLink, AlertTriangle, Layers
+  Coffee, Sun, Moon, ArrowRight, Copy, Grid, ZoomIn, ZoomOut, Maximize2, ExternalLink, AlertTriangle, Layers,
+  Plus, Trash2, Edit3, Save, ShieldCheck, Lock, Unlock, Settings
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import masterTimetableData from '../data/master_timetable.json';
@@ -312,6 +313,7 @@ export const DEFAULT_TKB_METADATA = {
 
 export default function PublicSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
   
   // 35-Week & Month/Year Plan Generators for 2026-2027
@@ -325,6 +327,30 @@ export default function PublicSchedule() {
   const [exportMode, setExportMode] = useState('single');
   const [fromWeek, setFromWeek] = useState(1);
   const [toWeek, setToWeek] = useState(35);
+
+  // Quản lý Phụ lục BGH trực tiếp trên Cổng tra cứu
+  const [showBghAppendixModal, setShowBghAppendixModal] = useState(false);
+  const [modalAppendixItems, setModalAppendixItems] = useState([]);
+  const [editingModalIndex, setEditingModalIndex] = useState(null);
+  const [modalAppendixForm, setModalAppendixForm] = useState({
+    time: '',
+    content: '',
+    location: '',
+    chair: '',
+    participants: '',
+    tag: 'Bổ sung khẩn',
+    type: 'urgent',
+    note: ''
+  });
+  const [bghPin, setBghPin] = useState('');
+  const [isBghAuthenticated, setIsBghAuthenticated] = useState(() => {
+    try {
+      return sessionStorage.getItem('cbq_bgh_auth') === '1' || localStorage.getItem('cbq_bgh_auth') === '1';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [savingAppendix, setSavingAppendix] = useState(false);
 
   // Chế độ xem Lịch tuần: 'pdf' (Xem trực tiếp File PDF gốc) | 'table' (Xem bản số hóa NĐ 30)
   const [weekDisplayMode, setWeekDisplayMode] = useState('pdf');
@@ -507,7 +533,7 @@ export default function PublicSchedule() {
   };
 
   const handleCopyAdminLink = () => {
-    const editUrl = `${window.location.origin}/nhap-lich-bgh?week=${selectedWeekNo}`;
+    const editUrl = `${window.location.origin}/admin/schedule?week=${selectedWeekNo}`;
     navigator.clipboard.writeText(editUrl).then(() => {
       setCopiedAdminLink(true);
       setTimeout(() => setCopiedAdminLink(false), 2500);
@@ -520,6 +546,105 @@ export default function PublicSchedule() {
       setCopiedPublicLink(true);
       setTimeout(() => setCopiedPublicLink(false), 2500);
     });
+  };
+
+  const handleOpenBghAppendixModal = () => {
+    const sched = getCurrentScheduleObj();
+    const currentList = Array.isArray(sched.appendix_items) ? JSON.parse(JSON.stringify(sched.appendix_items)) : [];
+    setModalAppendixItems(currentList);
+    setEditingModalIndex(null);
+    setModalAppendixForm({
+      time: '',
+      content: '',
+      location: '',
+      chair: '',
+      participants: '',
+      tag: 'Bổ sung khẩn',
+      type: 'urgent',
+      note: ''
+    });
+    setShowBghAppendixModal(true);
+  };
+
+  const handleSaveBghAppendix = async () => {
+    if (!isBghAuthenticated && bghPin.trim() !== 'cbq2026' && bghPin.trim() !== 'bgh123' && bghPin.trim() !== 'admin') {
+      alert('Vui lòng nhập đúng Mã PIN Ban Giám Hiệu (mặc định: cbq2026) để lưu thay đổi!');
+      return;
+    }
+
+    setIsBghAuthenticated(true);
+    try {
+      sessionStorage.setItem('cbq_bgh_auth', '1');
+    } catch (e) {}
+
+    setSavingAppendix(true);
+    try {
+      const wNum = Number(selectedWeekNo) || 1;
+      const targetWeek = schoolWeeks[wNum - 1] || schoolWeeks[0];
+      const supaClient = supabase2Admin || supabaseAdmin || supabase;
+
+      const { data: existingRows, error: fetchErr } = await supaClient
+        .from('cbq_schedules')
+        .select('*')
+        .eq('week_number', wNum);
+
+      if (fetchErr) throw fetchErr;
+
+      const existingRow = existingRows && existingRows[0] ? existingRows[0] : null;
+
+      let cleanDays = [];
+      let metaObj = { _is_meta: true };
+
+      if (existingRow && Array.isArray(existingRow.schedule_items)) {
+        cleanDays = existingRow.schedule_items.filter(i => i && !i._is_meta);
+        metaObj = existingRow.schedule_items.find(i => i && i._is_meta) || { _is_meta: true };
+      } else {
+        cleanDays = getDefaultScheduleDays(targetWeek);
+      }
+
+      metaObj.appendix_items = modalAppendixItems;
+      metaObj.appendix_configured = true;
+
+      const payload = {
+        title: existingRow?.title || targetWeek.title,
+        week_number: wNum,
+        start_date: existingRow?.start_date || targetWeek.start_date,
+        end_date: existingRow?.end_date || targetWeek.end_date,
+        bgh_duty: existingRow?.bgh_duty || (wNum === 5 ? 'Thầy Lam & Cô Thảo (Trực chỉ đạo)' : ''),
+        teacher_duty: existingRow?.teacher_duty || (wNum === 5 ? 'Đoàn Thanh niên & Tổ Văn phòng (Trực ban)' : ''),
+        note: existingRow?.note || '',
+        schedule_items: [...cleanDays, metaObj],
+        is_active: true,
+        updated_at: new Date().toISOString()
+      };
+
+      if (existingRow?.id) {
+        const { error: updErr } = await supaClient
+          .from('cbq_schedules')
+          .update(payload)
+          .eq('id', existingRow.id);
+        if (updErr) throw updErr;
+      } else {
+        const { error: insErr } = await supaClient
+          .from('cbq_schedules')
+          .insert([payload]);
+        if (insErr) throw insErr;
+      }
+
+      try {
+        localStorage.setItem(`cbq_schedule_appendix_w${wNum}`, JSON.stringify(modalAppendixItems));
+        sessionStorage.removeItem('cbq_cached_schedules');
+      } catch (e) {}
+
+      await fetchSchedules(true);
+      alert(`🎉 BAN GIÁM HIỆU ĐÃ CẬP NHẬT THÀNH CÔNG ${modalAppendixItems.length} MỤC PHỤ LỤC TUẦN ${wNum}!`);
+      setShowBghAppendixModal(false);
+    } catch (err) {
+      console.error('Lỗi lưu phụ lục BGH:', err);
+      alert('Có lỗi xảy ra khi lưu phụ lục: ' + err.message);
+    } finally {
+      setSavingAppendix(false);
+    }
   };
 
   // Get current active schedule object for selected week
@@ -1692,7 +1817,7 @@ export default function PublicSchedule() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     <span style={{
                       padding: '4px 12px',
                       backgroundColor: '#fef08a',
@@ -1704,6 +1829,29 @@ export default function PublicSchedule() {
                     }}>
                       ✨ {Array.isArray(currentSched.appendix_items) ? currentSched.appendix_items.length : 0} mục bổ sung
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenBghAppendixModal}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '6px 14px',
+                        backgroundColor: '#ca8a04',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '12.5px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(202, 138, 4, 0.35)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title="Ban Giám Hiệu cập nhật và cấu hình trực tiếp phụ lục lịch công tác tuần này"
+                    >
+                      <Edit3 size={14} /> ⚙️ BGH Cập Nhật Phụ Lục
+                    </button>
                   </div>
                 </div>
 
@@ -1784,9 +1932,29 @@ export default function PublicSchedule() {
                     <div style={{ padding: '30px 20px', textAlign: 'center', color: '#854d0e', backgroundColor: '#fefce8', borderRadius: '10px' }}>
                       <CheckCircle2 size={28} color="#16a34a" style={{ margin: '0 auto 8px auto' }} />
                       <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Hiện tại chưa có công việc bổ sung hoặc điều chỉnh phát sinh cho Tuần {selectedWeekNo}.</div>
-                      <div style={{ fontSize: '12.5px', color: '#a16207', marginTop: '4px' }}>
+                      <div style={{ fontSize: '12.5px', color: '#a16207', marginTop: '4px', marginBottom: '14px' }}>
                         Toàn thể Cán bộ Giáo viên và Học sinh thực hiện đúng theo các mốc công việc trong văn bản Lịch tuần gốc.
                       </div>
+                      <button
+                        type="button"
+                        onClick={handleOpenBghAppendixModal}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '7px 18px',
+                          backgroundColor: '#ca8a04',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(202, 138, 4, 0.3)'
+                        }}
+                      >
+                        <Plus size={15} /> ➕ BGH Thêm Công Việc Bổ Sung Cho Tuần Này
+                      </button>
                     </div>
                   )}
                 </div>
@@ -4508,6 +4676,514 @@ export default function PublicSchedule() {
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* MODAL BGH CẤU HÌNH & LƯU PHỤ LỤC LỊCH CÔNG TÁC TRỰC TIẾP */}
+      {showBghAppendixModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '880px',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            border: '2px solid #eab308',
+            overflow: 'hidden'
+          }}>
+            {/* MODAL HEADER */}
+            <div style={{
+              padding: '16px 20px',
+              backgroundColor: '#fefce8',
+              borderBottom: '1.5px solid #fef08a',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', backgroundColor: '#ca8a04', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>
+                  📌
+                </div>
+                <div>
+                  <div style={{ fontSize: '16px', fontWeight: '900', color: '#854d0e', textTransform: 'uppercase' }}>
+                    Cấu Hình & Cập Nhật Phụ Lục Lịch Tuần {selectedWeekNo}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#a16207' }}>
+                    Ban Giám Hiệu cập nhật trực tiếp các nhiệm vụ, cuộc họp phát sinh ngoài văn bản gốc
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBghAppendixModal(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                  display: 'flex'
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* MODAL BODY (SCROLLABLE) */}
+            <div style={{ padding: '20px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* KHỐI XÁC THỰC BGH */}
+              <div style={{
+                padding: '12px 16px',
+                backgroundColor: isBghAuthenticated ? '#f0fdf4' : '#fffbeb',
+                borderRadius: '10px',
+                border: isBghAuthenticated ? '1.5px solid #bbf7d0' : '1.5px solid #fde68a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {isBghAuthenticated ? (
+                    <>
+                      <ShieldCheck size={18} color="#16a34a" />
+                      <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534' }}>
+                        Xác thực Ban Giám Hiệu: Đã mở khóa quyền cập nhật trực tiếp ✅
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock size={18} color="#d97706" />
+                      <span style={{ fontSize: '13px', color: '#92400e', fontWeight: '600' }}>
+                        Nhập Mã PIN Ban Giám Hiệu (mặc định: <strong>cbq2026</strong>):
+                      </span>
+                    </>
+                  )}
+                </div>
+
+                {!isBghAuthenticated && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="password"
+                      value={bghPin}
+                      onChange={e => setBghPin(e.target.value)}
+                      placeholder="Mã PIN BGH..."
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '13px',
+                        width: '140px'
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (bghPin.trim() === 'cbq2026' || bghPin.trim() === 'bgh123' || bghPin.trim() === 'admin') {
+                          setIsBghAuthenticated(true);
+                          try { sessionStorage.setItem('cbq_bgh_auth', '1'); } catch (e) {}
+                          alert('✅ Xác thực Ban Giám Hiệu thành công!');
+                        } else {
+                          alert('Mã PIN không đúng! Vui lòng thử lại với mã: cbq2026');
+                        }
+                      }}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: '#d97706',
+                        color: '#ffffff',
+                        fontSize: '12.5px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Mở khóa
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* KHỐI 1: DANH SÁCH MỤC HIỆN TẠI */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#1e293b' }}>
+                    📋 Danh sách các mục phụ lục bổ sung ({modalAppendixItems.length} mục):
+                  </div>
+                  {Number(selectedWeekNo) === 5 && modalAppendixItems.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setModalAppendixItems(DEFAULT_WEEK5_APPENDIX)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        backgroundColor: '#fef3c7',
+                        color: '#92400e',
+                        border: '1px solid #fde047',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      🔄 Nạp 3 mục mẫu Tuần 05
+                    </button>
+                  )}
+                </div>
+
+                {modalAppendixItems.length > 0 ? (
+                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflowX: 'auto', maxHeight: '220px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px' }}>
+                      <thead style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                        <tr style={{ backgroundColor: '#f8fafc', color: '#475569', borderBottom: '1px solid #e2e8f0' }}>
+                          <th style={{ padding: '8px 10px', width: '5%', textAlign: 'center' }}>TT</th>
+                          <th style={{ padding: '8px 10px', width: '22%', textAlign: 'left' }}>Thời gian / Phân loại</th>
+                          <th style={{ padding: '8px 10px', width: '40%', textAlign: 'left' }}>Nội dung công việc</th>
+                          <th style={{ padding: '8px 10px', width: '21%', textAlign: 'left' }}>Địa điểm / Chủ trì</th>
+                          <th style={{ padding: '8px 10px', width: '12%', textAlign: 'center' }}>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {modalAppendixItems.map((item, idx) => (
+                          <tr key={item.id || idx} style={{ borderBottom: '1px solid #f1f5f9', backgroundColor: idx % 2 === 0 ? '#ffffff' : '#fcfcfc' }}>
+                            <td style={{ padding: '8px 10px', textAlign: 'center', fontWeight: 'bold', color: '#854d0e', verticalAlign: 'top' }}>
+                              {idx + 1}
+                            </td>
+                            <td style={{ padding: '8px 10px', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{item.time}</div>
+                              <div style={{ marginTop: '3px' }}>
+                                <span style={{
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                  fontSize: '10.5px',
+                                  fontWeight: 'bold',
+                                  backgroundColor: (item.tag || '').includes('khẩn') ? '#fee2e2' : (item.tag || '').includes('chỉnh') ? '#fef3c7' : '#dcfce7',
+                                  color: (item.tag || '').includes('khẩn') ? '#991b1b' : (item.tag || '').includes('chỉnh') ? '#92400e' : '#166534'
+                                }}>
+                                  {item.tag || 'Bổ sung'}
+                                </span>
+                              </div>
+                            </td>
+                            <td style={{ padding: '8px 10px', verticalAlign: 'top' }}>
+                              <div style={{ fontWeight: '600', color: '#1e293b' }}>{item.content}</div>
+                              {item.note && (
+                                <div style={{ fontSize: '11px', color: '#78350f', marginTop: '3px', fontStyle: 'italic', backgroundColor: '#fefce8', padding: '3px 6px', borderRadius: '4px' }}>
+                                  💡 Chỉ đạo: {item.note}
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ padding: '8px 10px', color: '#475569', verticalAlign: 'top' }}>
+                              <div>📍 {item.location || '-'}</div>
+                              <div style={{ fontWeight: '500', color: '#0f172a', marginTop: '3px' }}>👤 {item.chair || '-'}</div>
+                            </td>
+                            <td style={{ padding: '8px 10px', textAlign: 'center', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingModalIndex(idx);
+                                    setModalAppendixForm({
+                                      id: item.id || 'app-' + idx,
+                                      time: item.time || '',
+                                      content: item.content || '',
+                                      location: item.location || '',
+                                      chair: item.chair || '',
+                                      participants: item.participants || '',
+                                      tag: item.tag || 'Bổ sung khẩn',
+                                      type: item.type || 'urgent',
+                                      note: item.note || ''
+                                    });
+                                  }}
+                                  style={{ padding: '4px 8px', backgroundColor: '#e0f2fe', color: '#0284c7', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                  title="Chỉnh sửa mục này"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (window.confirm('Bạn có chắc muốn xóa mục này khỏi phụ lục?')) {
+                                      setModalAppendixItems(prev => prev.filter((_, i) => i !== idx));
+                                      if (editingModalIndex === idx) setEditingModalIndex(null);
+                                    }
+                                  }}
+                                  style={{ padding: '4px 8px', backgroundColor: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                                  title="Xóa mục này"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div style={{ padding: '16px', textAlign: 'center', backgroundColor: '#f8fafc', borderRadius: '8px', color: '#64748b', fontSize: '13px' }}>
+                    Chưa có mục phụ lục nào. Vui lòng nhập thông tin bên dưới để thêm mới!
+                  </div>
+                )}
+              </div>
+
+              {/* KHỐI 2: FORM THÊM / SỬA */}
+              <div style={{
+                padding: '16px',
+                backgroundColor: '#fefce8',
+                borderRadius: '12px',
+                border: '1.5px dashed #fde047'
+              }}>
+                <div style={{ fontWeight: 'bold', color: '#854d0e', marginBottom: '10px', fontSize: '13.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>
+                    {editingModalIndex !== null ? `✏️ Đang chỉnh sửa mục #${editingModalIndex + 1}:` : '➕ Thêm mục công việc bổ sung mới:'}
+                  </span>
+                  {editingModalIndex !== null && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingModalIndex(null);
+                        setModalAppendixForm({
+                          time: '',
+                          content: '',
+                          location: '',
+                          chair: '',
+                          participants: '',
+                          tag: 'Bổ sung khẩn',
+                          type: 'urgent',
+                          note: ''
+                        });
+                      }}
+                      style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontSize: '12px', textDecoration: 'underline' }}
+                    >
+                      Hủy sửa (chuyển sang thêm mới)
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                      Thời gian / Buổi (*):
+                    </label>
+                    <input
+                      type="text"
+                      value={modalAppendixForm.time}
+                      onChange={e => setModalAppendixForm(prev => ({ ...prev, time: e.target.value }))}
+                      placeholder="VD: Chiều Thứ Tư (07/10) - 15h00"
+                      style={{ ...styles.input, fontSize: '12.5px', padding: '7px 10px', width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                      Phân loại:
+                    </label>
+                    <select
+                      value={modalAppendixForm.tag}
+                      onChange={e => {
+                        const tag = e.target.value;
+                        const type = tag.includes('khẩn') ? 'urgent' : tag.includes('chỉnh') ? 'warning' : 'info';
+                        setModalAppendixForm(prev => ({ ...prev, tag, type }));
+                      }}
+                      style={{ ...styles.select, fontSize: '12.5px', padding: '7px 10px', width: '100%', boxSizing: 'border-box' }}
+                    >
+                      <option value="Bổ sung khẩn">🔴 Bổ sung khẩn</option>
+                      <option value="Điều chỉnh lịch">🟡 Điều chỉnh lịch</option>
+                      <option value="Bổ sung công tác">🟢 Bổ sung công tác</option>
+                      <option value="Thông báo chung">🔵 Thông báo chung</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                      Địa điểm:
+                    </label>
+                    <input
+                      type="text"
+                      value={modalAppendixForm.location}
+                      onChange={e => setModalAppendixForm(prev => ({ ...prev, location: e.target.value }))}
+                      placeholder="VD: Phòng Hội đồng / Trực tuyến"
+                      style={{ ...styles.input, fontSize: '12.5px', padding: '7px 10px', width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                    Nội dung công việc bổ sung (*):
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={modalAppendixForm.content}
+                    onChange={e => setModalAppendixForm(prev => ({ ...prev, content: e.target.value }))}
+                    placeholder="Nhập chi tiết nội dung công việc hoặc cuộc họp bổ sung..."
+                    style={{ width: '100%', padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                  ></textarea>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                      Chủ trì / Thành phần:
+                    </label>
+                    <input
+                      type="text"
+                      value={modalAppendixForm.chair}
+                      onChange={e => setModalAppendixForm(prev => ({ ...prev, chair: e.target.value }))}
+                      placeholder="VD: Cô Lê Thị Thảo - Hiệu trưởng, BGH..."
+                      style={{ ...styles.input, fontSize: '12.5px', padding: '7px 10px', width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '3px' }}>
+                      Ghi chú / Chỉ đạo của BGH:
+                    </label>
+                    <input
+                      type="text"
+                      value={modalAppendixForm.note}
+                      onChange={e => setModalAppendixForm(prev => ({ ...prev, note: e.target.value }))}
+                      placeholder="VD: Các bộ phận chuẩn bị báo cáo..."
+                      style={{ ...styles.input, fontSize: '12.5px', padding: '7px 10px', width: '100%', boxSizing: 'border-box' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!modalAppendixForm.content.trim()) {
+                        alert('Vui lòng nhập nội dung công việc bổ sung!');
+                        return;
+                      }
+                      const itemToSave = {
+                        ...modalAppendixForm,
+                        id: modalAppendixForm.id || 'app-' + Date.now(),
+                        time: modalAppendixForm.time.trim() || 'Trong tuần'
+                      };
+
+                      if (editingModalIndex !== null) {
+                        setModalAppendixItems(prev => prev.map((item, i) => i === editingModalIndex ? itemToSave : item));
+                      } else {
+                        setModalAppendixItems(prev => [...prev, itemToSave]);
+                      }
+
+                      setModalAppendixForm({
+                        time: '',
+                        content: '',
+                        location: '',
+                        chair: '',
+                        participants: '',
+                        tag: 'Bổ sung khẩn',
+                        type: 'urgent',
+                        note: ''
+                      });
+                      setEditingModalIndex(null);
+                    }}
+                    style={{
+                      padding: '7px 18px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#b45309',
+                      color: '#ffffff',
+                      fontWeight: 'bold',
+                      fontSize: '12.5px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {editingModalIndex !== null ? '💾 Cập nhật mục vào danh sách' : '➕ Thêm mục vào danh sách'}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* MODAL FOOTER */}
+            <div style={{
+              padding: '14px 20px',
+              backgroundColor: '#f8fafc',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              <button
+                type="button"
+                onClick={() => navigate(`/admin/schedule?week=${selectedWeekNo}`)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'none',
+                  border: 'none',
+                  color: '#0284c7',
+                  fontSize: '12.5px',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  textDecoration: 'underline'
+                }}
+              >
+                <Settings size={14} /> Mở Trang Quản Trị Chi Tiết (/admin/schedule)
+              </button>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowBghAppendixModal(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveBghAppendix}
+                  disabled={savingAppendix}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#166534',
+                    color: '#ffffff',
+                    fontSize: '13.5px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(22, 101, 52, 0.35)'
+                  }}
+                >
+                  <Save size={16} /> {savingAppendix ? 'Đang lưu vào hệ thống...' : `💾 LƯU & CẬP NHẬT LÊN CỔNG LỊCH (${modalAppendixItems.length} MỤC)`}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
