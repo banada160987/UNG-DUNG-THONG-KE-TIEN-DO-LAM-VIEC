@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 import { supabase, supabase2, supabase2Admin, supabaseAdmin } from '../lib/supabase';
 import {
   Calendar, Clock, MapPin, Printer, FileSpreadsheet, Share2, Check, Download, Link as LinkIcon, FileText,
@@ -26,6 +27,47 @@ import {
   resolvePdfUrl
 } from '../utils/decree30ScheduleWord';
 import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
+
+/**
+ * Trích xuất các sự kiện / nhiệm vụ trọng tâm thực tế của tuần học
+ * Thay thế cho việc đếm số lượng máy móc "X mục công việc chính"
+ */
+function getWeekFocusHighlights(w) {
+  if (!w || !Array.isArray(w.day_items) || w.day_items.length === 0) {
+    return 'Dạy học và sinh hoạt theo thời khóa biểu';
+  }
+  const activeItems = w.day_items.filter(i => i && i.content && !i.content.toLowerCase().includes('nghỉ'));
+  if (activeItems.length === 0) {
+    return 'Tuần nghỉ / Hoạt động ngoại khóa';
+  }
+
+  // Danh mục từ khóa trọng tâm sư phạm
+  const keyTerms = [
+    'khai giảng', 'họp', 'hội đồng', 'chuyên môn', 'kiểm tra', 'thi', 
+    'tập huấn', 'đại hội', 'sơ kết', 'tổng kết', 'lễ', 'tuyên truyền', 
+    'chào cờ', 'ngoại khóa', 'sinh hoạt', 'học sinh giỏi', 'hsg', 'phụ huynh', 
+    'thanh tra', 'bồi dưỡng', 'chuyển đổi số', 'y tế', 'an toàn', 'kỷ cương'
+  ];
+
+  const matched = [];
+  for (const item of activeItems) {
+    const text = item.content.trim();
+    const lower = text.toLowerCase();
+    if (keyTerms.some(term => lower.includes(term))) {
+      let clean = text.replace(/^[•\-\*]\s*/, '').split('.')[0];
+      if (clean.length > 70) clean = clean.substring(0, 67) + '...';
+      if (!matched.includes(clean)) matched.push(clean);
+    }
+    if (matched.length >= 2) break;
+  }
+
+  if (matched.length > 0) {
+    return matched.join('; ');
+  }
+
+  const first = activeItems[0]?.content?.trim()?.split('.')[0] || '';
+  return first ? (first.length > 70 ? first.substring(0, 67) + '...' : first) : 'Dạy học chính khóa theo Thời khóa biểu';
+}
 
 
 const DEFAULT_SCHEDULE = {
@@ -314,6 +356,13 @@ export const DEFAULT_TKB_METADATA = {
 export default function PublicSchedule() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { user, role, permissions = {} } = useAuth() || {};
+  
+  // Xác định thẩm quyền quản lý Lịch BGH (chỉ Admin, Thư ký, Hiệu trưởng, PHT)
+  const canManageSchedule = Boolean(
+    user && (role === 'admin' || role === 'secretary' || permissions?.canViewDocs || role === 'bgh')
+  );
+
   const [activeMainTab, setActiveMainTab] = useState('bgh_schedule');
   
   // 35-Week & Month/Year Plan Generators for 2026-2027
@@ -328,7 +377,7 @@ export default function PublicSchedule() {
   const [fromWeek, setFromWeek] = useState(1);
   const [toWeek, setToWeek] = useState(35);
 
-  // Quản lý Phụ lục BGH trực tiếp trên Cổng tra cứu
+  // Quản lý Phụ lục BGH (Chỉ dành cho cán bộ có thẩm quyền BGH)
   const [showBghAppendixModal, setShowBghAppendixModal] = useState(false);
   const [modalAppendixItems, setModalAppendixItems] = useState([]);
   const [editingModalIndex, setEditingModalIndex] = useState(null);
@@ -345,7 +394,7 @@ export default function PublicSchedule() {
   const [bghPin, setBghPin] = useState('');
   const [isBghAuthenticated, setIsBghAuthenticated] = useState(() => {
     try {
-      return sessionStorage.getItem('cbq_bgh_auth') === '1' || localStorage.getItem('cbq_bgh_auth') === '1';
+      return canManageSchedule || sessionStorage.getItem('cbq_bgh_auth') === '1' || localStorage.getItem('cbq_bgh_auth') === '1';
     } catch (e) {
       return false;
     }
@@ -1304,7 +1353,7 @@ export default function PublicSchedule() {
                 onClick={() => setScheduleViewMode('month')} 
                 style={{ ...styles.tabBtn, backgroundColor: scheduleViewMode === 'month' ? '#0284c7' : '#e0f2fe', color: scheduleViewMode === 'month' ? '#ffffff' : '#0369a1' }}
               >
-                🗓️ Kế Hoạch Tháng (Từ Tuần Suy Ra)
+                🗓️ Kế Hoạch Tháng
               </button>
               <button 
                 onClick={() => setScheduleViewMode('year')} 
@@ -1318,26 +1367,6 @@ export default function PublicSchedule() {
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {scheduleViewMode === 'week' && (
                 <>
-                  <button 
-                    onClick={() => {
-                      setWeekDisplayMode('pdf');
-                      document.getElementById('week-schedule-main-view')?.scrollIntoView({ behavior: 'smooth' });
-                    }} 
-                    style={{ 
-                      ...styles.printBtn, 
-                      backgroundColor: weekDisplayMode === 'pdf' ? '#9f1239' : '#be123c', 
-                      display: 'inline-flex', 
-                      alignItems: 'center', 
-                      gap: '6px',
-                      boxShadow: currentSched.attached_pdf_url ? '0 2px 10px rgba(190, 18, 60, 0.4)' : 'none'
-                    }}
-                    title="Xem trực tiếp bản văn bản PDF scan gốc có dấu đỏ và chữ ký"
-                  >
-                    <FileText size={16} /> 📑 Xem Bản PDF Gốc (Dấu Đỏ)
-                    {currentSched.attached_pdf_url && (
-                      <span style={{ backgroundColor: '#22c55e', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '10px', fontWeight: 'bold' }}>CÓ SẴN</span>
-                    )}
-                  </button>
                   <button onClick={() => setShowExportModal(true)} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
                     <Download size={16} /> 📄 Xuất File Word (NĐ 30)
                   </button>
@@ -1411,7 +1440,7 @@ export default function PublicSchedule() {
 
                 {/* 2 CLEAN TABS */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <div style={{ display: 'inline-flex', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '3px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'inline-flex', backgroundColor: '#f1f5f9', borderRadius: '10px', padding: '3px', border: '1px solid #cbd5e1' }}>
                     <button
                       type="button"
                       onClick={() => setWeekDisplayMode('pdf')}
@@ -1427,12 +1456,17 @@ export default function PublicSchedule() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: weekDisplayMode === 'pdf' ? '0 2px 6px rgba(190, 18, 60, 0.25)' : 'none',
+                        boxShadow: weekDisplayMode === 'pdf' ? '0 2px 8px rgba(190, 18, 60, 0.3)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
                       title="Xem trực tiếp bản văn bản PDF scan gốc có dấu đỏ và chữ ký"
                     >
-                      <FileText size={15} /> 📑 Xem File PDF Trực Tiếp
+                      <FileText size={15} /> 📑 Bản Scan PDF Gốc (Dấu Đỏ)
+                      {currentSched.attached_pdf_url && (
+                        <span style={{ backgroundColor: '#16a34a', color: '#ffffff', fontSize: '10px', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
+                          CÓ SẴN
+                        </span>
+                      )}
                     </button>
 
                     <button
@@ -1450,12 +1484,12 @@ export default function PublicSchedule() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px',
-                        boxShadow: weekDisplayMode === 'table' ? '0 2px 6px rgba(2, 132, 199, 0.25)' : 'none',
+                        boxShadow: weekDisplayMode === 'table' ? '0 2px 8px rgba(2, 132, 199, 0.3)' : 'none',
                         transition: 'all 0.15s ease'
                       }}
                       title="Xem lịch công tác dạng bảng chi tiết từng ngày theo chuẩn Nghị định 30"
                     >
-                      <Calendar size={15} /> 📋 Bản Số Hóa NĐ 30
+                      <Calendar size={15} /> 📋 Bản Số Hóa Nghị Định 30
                     </button>
                   </div>
 
@@ -1830,28 +1864,30 @@ export default function PublicSchedule() {
                       ✨ {Array.isArray(currentSched.appendix_items) ? currentSched.appendix_items.length : 0} mục bổ sung
                     </span>
 
-                    <button
-                      type="button"
-                      onClick={handleOpenBghAppendixModal}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 14px',
-                        backgroundColor: '#ca8a04',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '12.5px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 6px rgba(202, 138, 4, 0.35)',
-                        transition: 'all 0.15s ease'
-                      }}
-                      title="Ban Giám Hiệu cập nhật và cấu hình trực tiếp phụ lục lịch công tác tuần này"
-                    >
-                      <Edit3 size={14} /> ⚙️ BGH Cập Nhật Phụ Lục
-                    </button>
+                    {canManageSchedule && (
+                      <button
+                        type="button"
+                        onClick={handleOpenBghAppendixModal}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '6px 14px',
+                          backgroundColor: '#9f1239',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '12.5px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(159, 18, 57, 0.35)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title="Dành riêng cho Ban Giám Hiệu: Cập nhật và cấu hình trực tiếp phụ lục lịch tuần này"
+                      >
+                        <ShieldCheck size={14} /> 🛡️ BGH Điều Hành Phụ Lục
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -1928,8 +1964,8 @@ export default function PublicSchedule() {
                         </tbody>
                       </table>
                     </div>
-                  ) : (
-                    <div style={{ padding: '30px 20px', textAlign: 'center', color: '#854d0e', backgroundColor: '#fefce8', borderRadius: '10px' }}>
+                  ) : canManageSchedule ? (
+                    <div style={{ padding: '26px 20px', textAlign: 'center', color: '#854d0e', backgroundColor: '#fefce8', borderRadius: '10px', border: '1px dashed #fde047' }}>
                       <CheckCircle2 size={28} color="#16a34a" style={{ margin: '0 auto 8px auto' }} />
                       <div style={{ fontWeight: 'bold', fontSize: '14px' }}>Hiện tại chưa có công việc bổ sung hoặc điều chỉnh phát sinh cho Tuần {selectedWeekNo}.</div>
                       <div style={{ fontSize: '12.5px', color: '#a16207', marginTop: '4px', marginBottom: '14px' }}>
@@ -1954,6 +1990,40 @@ export default function PublicSchedule() {
                         }}
                       >
                         <Plus size={15} /> ➕ BGH Thêm Công Việc Bổ Sung Cho Tuần Này
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ padding: '24px 20px', textAlign: 'center', color: '#166534', backgroundColor: '#f0fdf4', borderRadius: '10px', border: '1px dashed #bbf7d0' }}>
+                      <CheckCircle2 size={26} color="#16a34a" style={{ margin: '0 auto 8px auto' }} />
+                      <div style={{ fontWeight: 'bold', fontSize: '14px', color: '#15803d' }}>
+                        Tuần {selectedWeekNo}: Không có nhiệm vụ phát sinh ngoài văn bản lịch gốc
+                      </div>
+                      <div style={{ fontSize: '12.5px', color: '#166534', marginTop: '4px', maxWidth: '620px', margin: '4px auto 0 auto', lineHeight: '1.5' }}>
+                        Toàn thể Cán bộ Giáo viên, Nhân viên và Học sinh thực hiện nghiêm túc, đúng tiến độ theo các mốc công việc đã ban hành trong văn bản lịch tuần.
+                      </div>
+                    </div>
+                  )}
+
+                  {!canManageSchedule && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '12px', paddingRight: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => navigate('/login')}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: 'none',
+                          border: 'none',
+                          color: '#94a3b8',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          textDecoration: 'none',
+                          padding: '2px 6px'
+                        }}
+                        title="Dành riêng cho Ban Giám Hiệu quản lý lịch"
+                      >
+                        <Lock size={11} /> Đăng nhập BGH điều hành
                       </button>
                     </div>
                   )}
@@ -2063,8 +2133,8 @@ export default function PublicSchedule() {
                     const weekRangeStr = weekCount > 0 ? `Tuần ${m.weeks[0].week_number} đến Tuần ${m.weeks[weekCount - 1].week_number}` : '';
 
                     const monthSummary = (m?.weeks || []).map(w => {
-                      const activeCount = (w?.day_items || []).filter(i => i.content && !i.content.includes('Nghỉ')).length;
-                      return `• Tuần ${String(w?.week_number || '').padStart(2, '0')}: ${activeCount} mục công việc chính`;
+                      const focus = getWeekFocusHighlights(w);
+                      return `• Tuần ${String(w?.week_number || '').padStart(2, '0')}: ${focus}`;
                     }).join('\n');
 
                     return (
