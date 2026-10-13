@@ -39,6 +39,8 @@ const PublicSportsRegister = lazy(() => import('./pages/PublicSportsRegister'));
 const AdminSports = lazy(() => import('./pages/AdminSports'));
 const PublicFeedbackSystem = lazy(() => import('./pages/PublicFeedbackSystem'));
 const AdminFeedbackSystem = lazy(() => import('./pages/AdminFeedbackSystem'));
+const StudentAspirationsPortal = lazy(() => import('./pages/StudentAspirationsPortal'));
+const AdminStudentAspirations = lazy(() => import('./pages/AdminStudentAspirations'));
 const PublicGuide = lazy(() => import('./pages/PublicGuide'));
 const PublicMagazine = lazy(() => import('./pages/PublicMagazine'));
 const AdminMagazine = lazy(() => import('./pages/AdminMagazine'));
@@ -143,6 +145,8 @@ function App() {
             <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
             <Route path="/gop-y" element={<PublicFeedbackSystem />} />
             <Route path="/gop-y-quy-hoc-bong" element={<Navigate to="/gop-y" replace />} />
+            <Route path="/hom-thu-hoc-sinh" element={<StudentAspirationsPortal />} />
+            <Route path="/tam-tu-hoc-sinh" element={<StudentAspirationsPortal />} />
             <Route path="/dang-ky-hoat-dong" element={<PublicRegistrations />} />
             <Route path="/dang-ky" element={<StudentRegister />} />
             <Route path="/dang-nhap-hoc-sinh" element={<StudentLogin />} />
@@ -226,6 +230,7 @@ function App() {
               <Route path="/admin/the-thao" element={permissions.canViewSports ? <AdminSports /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y" element={permissions.canViewFeedback ? <AdminFeedbackSystem /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gop-y-quy-hoc-bong" element={<Navigate to="/admin/gop-y" replace />} />
+              <Route path="/admin/hom-thu-hoc-sinh" element={(role === 'admin' || role === 'secretary' || permissions.canViewFeedback || permissions.canViewStudents) ? <AdminStudentAspirations /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/diem-danh-hop-online" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminMeetingAttendance /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/hop-online" element={<Navigate to="/admin/diem-danh-hop-online" replace />} />
               <Route path="/admin/truyen-lua-control" element={(role === 'admin' || role === 'secretary' || permissions.canViewPages) ? <AdminTorchControl /> : <Navigate to="/admin/committee" replace />} />

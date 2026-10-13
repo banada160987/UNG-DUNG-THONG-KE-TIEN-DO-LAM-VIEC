@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { supabase } from '../lib/supabase';
 import { 
@@ -100,9 +100,26 @@ const getSubDocsList = (topic) => {
   return [];
 };
 
+export const STUDENT_ASPIRATIONS_TOPIC_ID = 'e98a1000-cb00-4b9a-9000-00000000cb01';
+
+export const isStudentTopic = (topic) => {
+  if (!topic) return false;
+  if (topic.id === STUDENT_ASPIRATIONS_TOPIC_ID) return true;
+  const title = (topic.title || '').toLowerCase();
+  return title.includes('tâm tư') || title.includes('nguyện vọng') || (title.includes('học sinh') && title.includes('hòm thư'));
+};
+
 export default function PublicFeedbackSystem() {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const topicIdFromUrl = searchParams.get('topicId');
+
+  // Chuyển hướng ngay nếu truy cập link Hòm thư học sinh cũ
+  useEffect(() => {
+    if (topicIdFromUrl === STUDENT_ASPIRATIONS_TOPIC_ID) {
+      navigate('/hom-thu-hoc-sinh', { replace: true });
+    }
+  }, [topicIdFromUrl, navigate]);
 
   const [topics, setTopics] = useState([]);
   const [selectedTopic, setSelectedTopic] = useState(null);
@@ -215,10 +232,14 @@ export default function PublicFeedbackSystem() {
         }
       }
 
-      setTopics(activeTopics);
+      // Lọc bỏ 100% các chủ đề Hòm thư học sinh khỏi danh mục góp ý văn bản dự thảo
+      let filteredTopics = activeTopics.filter(t => !isStudentTopic(t));
+      if (filteredTopics.length === 0) filteredTopics = [SEED_TOPIC];
+
+      setTopics(filteredTopics);
 
       // Select Topic
-      const currentTopic = activeTopics.find(t => t.id === topicIdFromUrl) || activeTopics[0];
+      const currentTopic = filteredTopics.find(t => t.id === topicIdFromUrl) || filteredTopics[0];
       setSelectedTopic(currentTopic);
 
       // 2. Fetch Responses for selected topic
@@ -492,6 +513,45 @@ export default function PublicFeedbackSystem() {
         <p style={{ margin: 0, opacity: 0.9, fontSize: '14.5px', lineHeight: '1.5' }}>
           Trường THPT Cao Bá Quát - Cổng thông tin tiếp nhận đóng góp ý kiến đồng bộ, khoa học phục vụ tổng hợp tự động theo chuẩn Nghị định 30
         </p>
+      </div>
+
+      {/* BANNER PHÂN ĐỊNH VĂN BẢN HÀNH CHÍNH & HÒM THƯ HỌC SINH */}
+      <div style={{
+        backgroundColor: '#f0fdf4',
+        borderRadius: '14px',
+        border: '1.5px solid #86efac',
+        padding: '12px 18px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontSize: '13.5px' }}>
+          <span style={{ fontSize: '18px' }}>ℹ️</span>
+          <span>
+            <strong>Phân hệ chuyên môn:</strong> Cổng tiếp nhận ý kiến đóng góp dự thảo văn bản, quy chế của Cán bộ, Giáo viên & Nhân viên (NĐ 30).
+          </span>
+        </div>
+        <Link
+          to="/hom-thu-hoc-sinh"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '7px 15px',
+            backgroundColor: '#e11d48',
+            color: '#ffffff',
+            borderRadius: '8px',
+            fontSize: '13px',
+            fontWeight: 'bold',
+            textDecoration: 'none',
+            boxShadow: '0 2px 8px rgba(225, 29, 72, 0.25)'
+          }}
+        >
+          <span>💌 Hòm Thư Tâm Tư & Nguyện Vọng Học Sinh (Gửi BGH) →</span>
+        </Link>
       </div>
 
       {/* COMPONENT 1: CHỌN CÔNG VIỆC / DỰ THẢO CẦN GÓP Ý */}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -22,7 +22,7 @@ export default function Layout({ children, title }) {
     if (notif.task_id) {
       navigate(`/admin/committee?taskId=${notif.task_id}`);
     } else if (notif.title && (notif.title.includes('Tâm tư') || notif.title.includes('Hòm thư'))) {
-      navigate('/admin/gop-y?topicId=e98a1000-cb00-4b9a-9000-00000000cb01');
+      navigate('/admin/hom-thu-hoc-sinh');
     }
   };
 
@@ -84,6 +84,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/gop-y', icon: FileText, label: '✍️ Tiếp Nhận Phản Hồi & Góp Ý', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewFeedback },
 
     // 3. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
+    { path: '/admin/hom-thu-hoc-sinh', icon: Mail, label: '💌 Hòm Thư Tâm Tư & Nguyện Vọng HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || role === 'secretary' || !!permissions.canViewStudents || !!permissions.canViewFeedback },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Sổ Học Sinh & Chuyển Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
     { path: '/admin/digital-vault', icon: FileText, label: '📜 Kho Văn Bằng Số & Hồ Sơ HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin },
