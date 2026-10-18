@@ -4,7 +4,7 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart, Video
+  Compass, Heart, Video, Plus
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
@@ -893,29 +893,49 @@ export default function TeacherDashboard() {
                       Kho video bài giảng, kỹ năng ứng dụng AI trong dạy học, trạm tập trung Pomodoro tích hợp sóng não Alpha và máy tính điểm tốt nghiệp 2+2.
                     </p>
                   </div>
-                  <button
-                    onClick={() => navigate('/teacher-dashboard/eduhub')}
-                    style={{
-                      marginTop: '20px',
-                      width: '100%',
-                      padding: '11px 16px',
-                      backgroundColor: '#4f46e5',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '13.5px',
-                      fontWeight: '700',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    <Video size={16} /> Mở Trạm Học Liệu & Video
-                  </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => navigate('/teacher-dashboard/eduhub')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#4f46e5',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 3px 10px rgba(79,70,229,0.25)',
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      <Video size={15} /> Mở Trạm Học Liệu
+                    </button>
+                    <button
+                      onClick={() => navigate('/teacher-dashboard/eduhub?action=add')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#ffffff',
+                        color: '#4338ca',
+                        border: '1.5px solid #818cf8',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <Plus size={15} /> + Đóng Góp Video
+                    </button>
+                  </div>
                 </div>
 
               </div>

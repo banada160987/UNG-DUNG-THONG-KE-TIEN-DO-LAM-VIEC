@@ -6,10 +6,11 @@ import {
   Clock, Search, Bookmark, BookmarkCheck, ExternalLink, Download,
   CheckCircle2, AlertTriangle, ArrowLeft, Plus, Eye, Share2,
   Sliders, Music, CloudRain, Waves, Flame, Activity, X, ChevronRight,
-  Calculator, Award, FileText
+  Calculator, Award, FileText, Settings, ShieldCheck
 } from 'lucide-react';
 import { EDU_VIDEOS, VIDEO_CATEGORIES, AMBIENT_SOUNDS } from '../data/eduVideoHubData';
 import { ambientSound } from '../utils/ambientSoundEngine';
+import { getEduVideos, createEduVideo } from '../services/eduVideoService';
 
 export default function EduVideoHub() {
   // Navigation Tabs: 'videos' | 'pomodoro' | 'calculator' | 'saved'
@@ -23,11 +24,22 @@ export default function EduVideoHub() {
   const [activeVideo, setActiveVideo] = useState(null);
   const [savedVideoIds, setSavedVideoIds] = useState([]);
 
-  // Custom Video Modal State
+  // Custom Video Modal State (Hỗ trợ Giáo viên và Admin đóng góp)
   const [showAddModal, setShowAddModal] = useState(false);
   const [customUrl, setCustomUrl] = useState('');
   const [customTitle, setCustomTitle] = useState('');
-  const [customCategory, setCustomCategory] = useState('study_methods');
+  const [customChannel, setCustomChannel] = useState('');
+  const [customCategory, setCustomCategory] = useState('exam_prep');
+  const [customGrade, setCustomGrade] = useState('Khối 12');
+  const [customAudience, setCustomAudience] = useState('student');
+  const [customDuration, setCustomDuration] = useState('15:00');
+  const [customDescription, setCustomDescription] = useState('');
+  const [customTakeaways, setCustomTakeaways] = useState('');
+  const [submittingVideo, setSubmittingVideo] = useState(false);
+
+  // User / Teacher Session State
+  const [currentTeacher, setCurrentTeacher] = useState(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
 
   // Video Note State (gắn timestamp)
   const [userNotes, setUserNotes] = useState({});
@@ -57,18 +69,48 @@ export default function EduVideoHub() {
     priorityPoints: 0.25 // Điểm ưu tiên khu vực / đối tượng
   });
 
-  // Load Saved Videos and Notes from localStorage
+  // Load Saved Videos, Notes, and Video List
   useEffect(() => {
+    // 1. Detect teacher or admin session
+    try {
+      const teacherRaw = localStorage.getItem('cbq_current_teacher') || localStorage.getItem('cbq_teacher_session');
+      if (teacherRaw) {
+        const parsed = JSON.parse(teacherRaw);
+        parsed.name = parsed.name || parsed.full_name || parsed.username || 'Giáo viên';
+        setCurrentTeacher(parsed);
+        setCustomChannel(`Thầy/Cô ${parsed.name}${parsed.department ? ' - Tổ ' + parsed.department : ''}`);
+      }
+      const userRaw = localStorage.getItem('cbq_user');
+      if (userRaw) {
+        const parsed = JSON.parse(userRaw);
+        if (parsed.role === 'admin' || parsed.role === 'secretary') {
+          setIsAdminUser(true);
+        }
+      }
+    } catch (e) {}
+
+    // 2. Load Saved Videos and Notes
     try {
       const saved = JSON.parse(localStorage.getItem('cbq_saved_edu_videos') || '[]');
       setSavedVideoIds(saved);
       const notes = JSON.parse(localStorage.getItem('cbq_edu_video_notes') || '{}');
       setUserNotes(notes);
-      const customVids = JSON.parse(localStorage.getItem('cbq_custom_edu_videos') || '[]');
-      if (customVids.length > 0) {
-        setVideos([...customVids, ...EDU_VIDEOS]);
-      }
     } catch (e) {}
+
+    // 3. Load full videos from service (Cloud DB + LocalStorage + Defaults)
+    getEduVideos()
+      .then(list => {
+        if (Array.isArray(list) && list.length > 0) {
+          setVideos(list);
+        }
+      })
+      .catch(err => console.error('Error fetching videos:', err));
+
+    // 4. Check action query param (?action=add)
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.get('action') === 'add') {
+      setShowAddModal(true);
+    }
   }, []);
 
   // Save changes to localStorage
@@ -98,45 +140,47 @@ export default function EduVideoHub() {
     setNewNoteText('');
   };
 
-  // Add Custom Video from URL
-  const handleAddCustomVideo = (e) => {
+  // Add Video Bài Giảng (Hỗ trợ Giáo viên, Admin và Học sinh đóng góp)
+  const handleAddCustomVideo = async (e) => {
     e.preventDefault();
-    if (!customUrl.trim() || !customTitle.trim()) return;
-
-    let youtubeId = '';
-    const match = customUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
-    if (match) {
-      youtubeId = match[1];
-    } else {
-      alert('Vui lòng nhập đường link YouTube hợp lệ.');
+    if (!customUrl.trim() || !customTitle.trim()) {
+      alert('Vui lòng nhập đường link YouTube và tiêu đề bài giảng.');
       return;
     }
 
-    const newVid = {
-      id: 'custom_' + Date.now(),
-      youtubeId,
-      embedUrl: `https://www.youtube.com/embed/${youtubeId}`,
+    const keyTakeaways = customTakeaways
+      .split('\n')
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+
+    const payload = {
+      url: customUrl.trim(),
       title: customTitle.trim(),
-      channel: 'Người Dùng Tải Lên',
+      channel: (customChannel.trim() || (currentTeacher ? `Thầy/Cô ${currentTeacher.name}` : 'Ban Chuyên Môn THPT Cao Bá Quát')),
       category: customCategory,
-      targetAudience: 'all',
-      grade: 'Học Liệu Mở',
-      duration: 'Tùy Chỉnh',
-      views: 'Mới thêm',
-      thumbnail: `https://img.youtube.com/vi/${youtubeId}/hqdefault.jpg`,
-      description: 'Học liệu video số hóa do Thầy Cô hoặc Học sinh chia sẻ.',
-      keyTakeaways: ['Video tự chọn hỗ trợ mở rộng tri thức.'],
-      recommendedNotes: []
+      targetAudience: customAudience,
+      grade: customGrade,
+      duration: customDuration.trim() || 'Tự chọn',
+      description: customDescription.trim(),
+      keyTakeaways: keyTakeaways.length > 0 ? keyTakeaways : ['Theo dõi kỹ bài giảng và vận dụng vào bài tập thực hành.']
     };
 
-    const customVids = JSON.parse(localStorage.getItem('cbq_custom_edu_videos') || '[]');
-    const updatedCustom = [newVid, ...customVids];
-    localStorage.setItem('cbq_custom_edu_videos', JSON.stringify(updatedCustom));
-    setVideos([newVid, ...videos]);
-    setShowAddModal(false);
-    setCustomUrl('');
-    setCustomTitle('');
-    setActiveVideo(newVid);
+    setSubmittingVideo(true);
+    try {
+      const created = await createEduVideo(payload, currentTeacher || { name: 'Thành viên nhà trường' });
+      setVideos(prev => [created, ...prev]);
+      setShowAddModal(false);
+      setCustomUrl('');
+      setCustomTitle('');
+      setCustomDescription('');
+      setCustomTakeaways('');
+      setActiveVideo(created);
+      alert('🎉 Đóng góp bài giảng video thành công! Video đã được thêm vào kho học liệu toàn trường.');
+    } catch (err) {
+      alert(err.message || 'Lỗi khi lưu video.');
+    } finally {
+      setSubmittingVideo(false);
+    }
   };
 
   // Filtered Videos
@@ -325,9 +369,37 @@ export default function EduVideoHub() {
             <p style={{ margin: 0, fontSize: '14.5px', color: '#cbd5e1', maxWidth: '680px', lineHeight: '1.6' }}>
               Không gian số hóa bài giảng, chiến thuật ôn thi TN THPT, kỹ năng thế kỷ 21, trạm tập trung Pomodoro tích hợp sóng não Alpha và máy tính điểm tốt nghiệp 2+2.
             </p>
+
+            {currentTeacher && (
+              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', borderRadius: '20px', backgroundColor: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(74, 222, 128, 0.4)', fontSize: '13px', color: '#86efac' }}>
+                <span>👨‍🏫 Xin chào: <strong>{currentTeacher.name}</strong> • Chế độ đóng góp học liệu sư phạm nhà trường</span>
+              </div>
+            )}
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+            {isAdminUser && (
+              <Link
+                to="/admin/eduhub"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  backgroundColor: '#0284c7',
+                  color: '#ffffff',
+                  textDecoration: 'none',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  boxShadow: '0 4px 14px rgba(2,132,199,0.4)',
+                  transition: 'transform 0.2s'
+                }}
+              >
+                <Settings size={18} /> Quản Trị Video (Admin)
+              </Link>
+            )}
+
             <button
               onClick={() => setShowAddModal(true)}
               style={{
@@ -346,26 +418,48 @@ export default function EduVideoHub() {
                 transition: 'transform 0.2s'
               }}
             >
-              <Plus size={18} /> Thêm Video Tự Chọn
+              <Plus size={18} /> {currentTeacher ? '+ Đóng Góp Bài Giảng Mới' : '+ Thêm Video Tự Chọn'}
             </button>
-            <Link
-              to="/student-dashboard"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '12px 18px',
-                borderRadius: '12px',
-                backgroundColor: 'rgba(255,255,255,0.1)',
-                color: '#ffffff',
-                border: '1px solid rgba(255,255,255,0.2)',
-                textDecoration: 'none',
-                fontWeight: '700',
-                fontSize: '14px'
-              }}
-            >
-              <ArrowLeft size={16} /> Cổng Học Sinh
-            </Link>
+
+            {currentTeacher ? (
+              <Link
+                to="/teacher-dashboard"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  textDecoration: 'none',
+                  fontWeight: '700',
+                  fontSize: '14px'
+                }}
+              >
+                <ArrowLeft size={16} /> Cổng Giáo Viên
+              </Link>
+            ) : (
+              <Link
+                to="/student-dashboard"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '12px 18px',
+                  borderRadius: '12px',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  textDecoration: 'none',
+                  fontWeight: '700',
+                  fontSize: '14px'
+                }}
+              >
+                <ArrowLeft size={16} /> Cổng Học Sinh
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -1377,7 +1471,7 @@ export default function EduVideoHub() {
         </div>
       )}
 
-      {/* 8. MODAL THÊM VIDEO TỰ CHỌN */}
+      {/* 8. MODAL THÊM / ĐÓNG GÓP VIDEO BÀI GIẢNG */}
       {showAddModal && (
         <div style={{
           position: 'fixed',
@@ -1389,18 +1483,33 @@ export default function EduVideoHub() {
           zIndex: 99999,
           padding: '16px'
         }}>
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '800', margin: '0 0 6px 0', color: '#0f172a' }}>
-              Thêm Học Liệu Video Mới
-            </h3>
-            <p style={{ margin: '0 0 18px 0', fontSize: '13px', color: '#64748b' }}>
-              Dán đường dẫn YouTube bài giảng hoặc video kỹ năng bạn muốn lưu trữ vào trạm học tập.
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '20px', maxWidth: '580px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Video size={18} />
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: '800', margin: 0, color: '#0f172a' }}>
+                  {currentTeacher ? 'Thầy Cô Đóng Góp Bài Giảng Số' : 'Thêm Học Liệu Video Mới'}
+                </h3>
+              </div>
+              <button 
+                onClick={() => setShowAddModal(false)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: '#64748b' }}>
+              Dán đường dẫn YouTube bài giảng để chia sẻ và lưu trữ vào trạm học liệu toàn trường THPT Cao Bá Quát.
             </p>
 
             <form onSubmit={handleAddCustomVideo}>
+              {/* YouTube Link */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
-                  Link YouTube:
+                  Link YouTube (*):
                 </label>
                 <input
                   type="text"
@@ -1412,13 +1521,14 @@ export default function EduVideoHub() {
                 />
               </div>
 
+              {/* Title */}
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
-                  Tên bài giảng / Tiêu đề:
+                  Tiêu đề bài giảng / Kỹ năng (*):
                 </label>
                 <input
                   type="text"
-                  placeholder="Ví dụ: Ôn tập Hình học không gian Oxyz..."
+                  placeholder="Ví dụ: Phương Pháp Giải Câu Hỏi Trả Lời Ngắn Môn Toán 2025"
                   value={customTitle}
                   onChange={e => setCustomTitle(e.target.value)}
                   required
@@ -1426,21 +1536,114 @@ export default function EduVideoHub() {
                 />
               </div>
 
-              <div style={{ marginBottom: '20px' }}>
+              {/* Channel / Author */}
+              <div style={{ marginBottom: '14px' }}>
                 <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
-                  Chuyên mục:
+                  Thầy Cô / Tổ Chuyên Môn / Kênh phụ trách:
                 </label>
-                <select
-                  value={customCategory}
-                  onChange={e => setCustomCategory(e.target.value)}
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Thầy Nguyễn Văn A - Tổ Toán"
+                  value={customChannel}
+                  onChange={e => setCustomChannel(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box' }}
-                >
-                  <option value="exam_prep">Ôn Thi TN THPT 2025/2026</option>
-                  <option value="study_methods">Phương Pháp Học Tập Khoa Học</option>
-                  <option value="career_skills">Kỹ Năng Sống & Hướng Nghiệp</option>
-                  <option value="mental_health">Tâm Lý & Chữa Lành Học Đường</option>
-                  <option value="teacher_pd">Góc Sư Phạm & Ứng Dụng AI</option>
-                </select>
+                />
+              </div>
+
+              {/* Category & Grade */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Chuyên mục:
+                  </label>
+                  <select
+                    value={customCategory}
+                    onChange={e => setCustomCategory(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="exam_prep">Ôn Thi TN THPT 2025/2026</option>
+                    <option value="study_methods">Phương Pháp Học Tập Khoa Học</option>
+                    <option value="career_skills">Kỹ Năng Sống & Hướng Nghiệp</option>
+                    <option value="mental_health">Tâm Lý & Chữa Lành Học Đường</option>
+                    <option value="teacher_pd">Góc Sư Phạm & Ứng Dụng AI</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Khối lớp:
+                  </label>
+                  <select
+                    value={customGrade}
+                    onChange={e => setCustomGrade(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="Khối 10">Khối 10</option>
+                    <option value="Khối 11">Khối 11</option>
+                    <option value="Khối 12">Khối 12</option>
+                    <option value="Khối 10, 11, 12">Khối 10, 11, 12</option>
+                    <option value="Toàn trường">Toàn trường</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Target Audience & Duration */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Đối tượng áp dụng:
+                  </label>
+                  <select
+                    value={customAudience}
+                    onChange={e => setCustomAudience(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="student">Dành cho Học sinh</option>
+                    <option value="teacher">Dành cho Giáo viên</option>
+                    <option value="all">Toàn trường</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Thời lượng ước tính:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: 20:15"
+                    value={customDuration}
+                    onChange={e => setCustomDuration(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* Description */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Giới thiệu ngắn về bài giảng:
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Mô tả các nội dung chính của bài học giúp học sinh dễ dàng theo dõi..."
+                  value={customDescription}
+                  onChange={e => setCustomDescription(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', resize: 'vertical' }}
+                />
+              </div>
+
+              {/* Key Takeaways */}
+              <div style={{ marginBottom: '22px' }}>
+                <label style={{ fontSize: '13px', fontWeight: '700', color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  Ý chính trọng tâm (Mỗi dòng 1 ý):
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ý 1: Cấu trúc ma trận bài học&#10;Ý 2: Các lỗi sai thường gặp khi làm bài"
+                  value={customTakeaways}
+                  onChange={e => setCustomTakeaways(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', resize: 'vertical' }}
+                />
               </div>
 
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -1449,13 +1652,14 @@ export default function EduVideoHub() {
                   onClick={() => setShowAddModal(false)}
                   style={{ flex: 1, padding: '11px', borderRadius: '10px', backgroundColor: '#f1f5f9', color: '#475569', border: 'none', fontWeight: '700', cursor: 'pointer' }}
                 >
-                  Hủy
+                  Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  style={{ flex: 1, padding: '11px', borderRadius: '10px', backgroundColor: '#4f46e5', color: '#ffffff', border: 'none', fontWeight: '700', cursor: 'pointer' }}
+                  disabled={submittingVideo}
+                  style={{ flex: 1, padding: '11px', borderRadius: '10px', backgroundColor: '#4f46e5', color: '#ffffff', border: 'none', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79,70,229,0.3)' }}
                 >
-                  Thêm Vào Kho
+                  {submittingVideo ? 'Đang lưu...' : (currentTeacher ? 'Đóng Góp Bài Giảng' : 'Thêm Vào Kho')}
                 </button>
               </div>
             </form>

@@ -77,6 +77,7 @@ const EventAttendance = lazy(() => import('./pages/student_features/EventAttenda
 const StudentDigitalVault = lazy(() => import('./pages/student_features/StudentDigitalVault'));
 const StudentCareerAdvisor = lazy(() => import('./pages/student_features/StudentCareerAdvisor'));
 const EduVideoHub = lazy(() => import('./pages/EduVideoHub'));
+const AdminEduVideos = lazy(() => import('./pages/AdminEduVideos'));
 
 // Teacher Features
 const TeacherLogin = lazy(() => import('./pages/TeacherLogin'));
@@ -256,7 +257,8 @@ function App() {
               <Route path="/admin/so-dau-bai" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/class-journals" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/career-advisor" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <StudentCareerAdvisor /> : <Navigate to="/admin/committee" replace />} />
-              <Route path="/admin/eduhub" element={<EduVideoHub />} />
+              <Route path="/admin/eduhub" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/video-hoc-lieu" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />
