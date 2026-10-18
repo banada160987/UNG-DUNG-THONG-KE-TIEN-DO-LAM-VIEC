@@ -4,7 +4,7 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart
+  Compass, Heart, Video
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
@@ -845,6 +845,76 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <Compass size={16} /> Mở AI Cố Vấn Tuyển Sinh
+                  </button>
+                </div>
+
+                {/* CARD 7: TRẠM VIDEO & HỌC LIỆU SỐ 4.0 */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #c7d2fe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #eef2ff 100%)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#e0e7ff',
+                        color: '#4f46e5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Video size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#e0e7ff',
+                        color: '#4338ca',
+                        border: '1px solid #c7d2fe'
+                      }}>
+                        EduHub 4.0
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Trạm Video & Học Liệu Số 4.0
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Kho video bài giảng, kỹ năng ứng dụng AI trong dạy học, trạm tập trung Pomodoro tích hợp sóng não Alpha và máy tính điểm tốt nghiệp 2+2.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/teacher-dashboard/eduhub')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#4f46e5',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 10px rgba(79,70,229,0.3)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <Video size={16} /> Mở Trạm Học Liệu & Video
                   </button>
                 </div>
 

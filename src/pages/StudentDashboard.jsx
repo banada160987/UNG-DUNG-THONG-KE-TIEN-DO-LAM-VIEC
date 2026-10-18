@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers, ExternalLink, Compass, Brain } from 'lucide-react';
+import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers, ExternalLink, Compass, Brain, Video } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function StudentDashboard() {
@@ -423,6 +423,10 @@ export default function StudentDashboard() {
             <Link to="/hom-thu-hoc-sinh" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#fff1f2', borderRadius: '12px', textDecoration: 'none', color: '#9f1239', border: '1px solid #fecdd3' }}>
               <Heart size={26} color="#e11d48" />
               <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Tâm Lý & DASS-21</span>
+            </Link>
+            <Link to="/hoc-lieu-so" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#eef2ff', borderRadius: '12px', textDecoration: 'none', color: '#4338ca', border: '1px solid #c7d2fe' }}>
+              <Video size={26} color="#6366f1" />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Video & Kỹ Năng Số</span>
             </Link>
             <Link to="/binh-chon" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
               <CheckSquare size={26} color="#0284c7" />

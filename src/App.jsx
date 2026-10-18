@@ -76,6 +76,7 @@ const UnionFunds = lazy(() => import('./pages/student_features/UnionFunds'));
 const EventAttendance = lazy(() => import('./pages/student_features/EventAttendance'));
 const StudentDigitalVault = lazy(() => import('./pages/student_features/StudentDigitalVault'));
 const StudentCareerAdvisor = lazy(() => import('./pages/student_features/StudentCareerAdvisor'));
+const EduVideoHub = lazy(() => import('./pages/EduVideoHub'));
 
 // Teacher Features
 const TeacherLogin = lazy(() => import('./pages/TeacherLogin'));
@@ -204,6 +205,13 @@ function App() {
             <Route path="/so-dau-bai-dien-tu" element={<ClassJournal />} />
             <Route path="/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
             <Route path="/tu-van-nghe-nghiep" element={<StudentCareerAdvisor />} />
+            <Route path="/hoc-lieu-so" element={<EduVideoHub />} />
+            <Route path="/video-hoc-tap" element={<EduVideoHub />} />
+            <Route path="/eduhub" element={<EduVideoHub />} />
+            <Route path="/hoc-sinh/video-hoc-tap" element={<EduVideoHub />} />
+            <Route path="/giao-vien/hoc-lieu-so" element={<EduVideoHub />} />
+            <Route path="/teacher-dashboard/eduhub" element={<EduVideoHub />} />
+            <Route path="/teacher/eduhub" element={<EduVideoHub />} />
             <Route path="/hub" element={<AppHub />} />
           </Route>
           
@@ -248,6 +256,7 @@ function App() {
               <Route path="/admin/so-dau-bai" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/class-journals" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/career-advisor" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <StudentCareerAdvisor /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/eduhub" element={<EduVideoHub />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />
