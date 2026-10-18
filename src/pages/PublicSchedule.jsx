@@ -310,8 +310,15 @@ const TEACHER_FULL_MAP = {
 
 const getFullTeacherName = (name) => {
   if (!name) return '';
-  const trimmed = String(name).trim();
+  const trimmed = String(name).trim().normalize('NFC');
   return TEACHER_FULL_MAP[trimmed] || trimmed;
+};
+
+const isSameTeacher = (a, b) => {
+  if (!a || !b) return false;
+  const na = getFullTeacherName(a).trim().normalize('NFC').toLowerCase();
+  const nb = getFullTeacherName(b).trim().normalize('NFC').toLowerCase();
+  return na === nb;
 };
 
 const normalizeClassCode = (cls) => {
@@ -485,7 +492,12 @@ export default function PublicSchedule() {
       setSelectedClass(normalizeClassCode(classParam));
     }
     if (teacherParam) {
-      setSelectedTeacher(getFullTeacherName(teacherParam));
+      try {
+        const decoded = decodeURIComponent(String(teacherParam).replace(/\+/g, ' ')).trim().normalize('NFC');
+        setSelectedTeacher(getFullTeacherName(decoded));
+      } catch (e) {
+        setSelectedTeacher(getFullTeacherName(teacherParam));
+      }
     }
     if (weekParam && Number(weekParam) >= 1 && Number(weekParam) <= 35) {
       setSelectedWeekNo(Number(weekParam));
@@ -717,30 +729,47 @@ export default function PublicSchedule() {
     }));
   }
 
-  const availableClasses = Array.from(new Set(timetableData.map(t => t.student_class))).filter(Boolean).sort();
-  const availableTeachers = Array.from(new Set(timetableData.map(t => getFullTeacherName(t.teacher_name)))).filter(Boolean).sort();
+  const availableClasses = useMemo(() => {
+    if (!Array.isArray(timetableData)) return [];
+    return Array.from(new Set(timetableData.map(t => t?.student_class))).filter(Boolean).sort();
+  }, [timetableData]);
+
+  const availableTeachers = useMemo(() => {
+    if (!Array.isArray(timetableData)) return [];
+    return Array.from(new Set(timetableData.map(t => getFullTeacherName(t?.teacher_name))))
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [timetableData]);
 
   useEffect(() => {
-    if (availableClasses.length > 0 && !availableClasses.includes(selectedClass)) {
+    if (availableClasses.length > 0 && selectedClass && !availableClasses.includes(selectedClass)) {
       setSelectedClass(availableClasses[0]);
     }
   }, [availableClasses, selectedClass]);
 
   useEffect(() => {
-    if (availableTeachers.length > 0 && (!selectedTeacher || !availableTeachers.includes(selectedTeacher))) {
-      const full = getFullTeacherName(selectedTeacher);
-      if (availableTeachers.includes(full)) {
-        setSelectedTeacher(full);
-      } else if (!availableTeachers.includes(selectedTeacher)) {
+    if (availableTeachers.length > 0) {
+      if (!selectedTeacher) {
         setSelectedTeacher(availableTeachers[0]);
+      } else {
+        const full = getFullTeacherName(selectedTeacher);
+        const match = availableTeachers.find(t => isSameTeacher(t, full));
+        if (match && match !== selectedTeacher) {
+          setSelectedTeacher(match);
+        } else if (!match && !availableTeachers.includes(selectedTeacher)) {
+          setSelectedTeacher(availableTeachers[0]);
+        }
       }
     }
   }, [availableTeachers, selectedTeacher]);
 
   const handlePrint = () => window.print();
 
-  const getLessonForClass = (day, period) => timetableData.find(t => t.student_class === selectedClass && t.day_of_week === day && Number(t.period) === period);
-  const getLessonForTeacher = (day, period) => timetableData.find(t => getFullTeacherName(t.teacher_name) === selectedTeacher && t.day_of_week === day && Number(t.period) === period);
+  const getLessonForClass = (day, period) => 
+    Array.isArray(timetableData) ? timetableData.find(t => t?.student_class === selectedClass && t?.day_of_week === day && Number(t?.period) === Number(period)) : undefined;
+
+  const getLessonForTeacher = (day, period) => 
+    Array.isArray(timetableData) ? timetableData.find(t => isSameTeacher(t?.teacher_name, selectedTeacher) && t?.day_of_week === day && Number(t?.period) === Number(period)) : undefined;
 
   const handleExportClassTkbExcel = () => {
     const matrixData = [
@@ -1951,11 +1980,11 @@ export default function PublicSchedule() {
       {(activeMainTab === 'class_tkb' || activeMainTab === 'teacher_tkb') && (() => {
         // Calculate Subject Breakdown Stats
         const currentTargetLessons = activeMainTab === 'class_tkb'
-          ? timetableData.filter(t => t.student_class === selectedClass)
-          : timetableData.filter(t => getFullTeacherName(t.teacher_name) === selectedTeacher);
+          ? (Array.isArray(timetableData) ? timetableData.filter(t => t?.student_class === selectedClass) : [])
+          : (Array.isArray(timetableData) ? timetableData.filter(t => isSameTeacher(t?.teacher_name, selectedTeacher)) : []);
 
         const subjectCounts = currentTargetLessons.reduce((acc, t) => {
-          const s = t.subject || 'Khác';
+          const s = t?.subject || 'Khác';
           acc[s] = (acc[s] || 0) + 1;
           return acc;
         }, {});
@@ -1963,12 +1992,13 @@ export default function PublicSchedule() {
 
         // Today's lessons for selected target
         const todayLessons = currentTargetLessons
-          .filter(t => t.day_of_week === todayInfo.dayName)
-          .sort((a, b) => Number(a.period) - Number(b.period));
+          .filter(t => t?.day_of_week === todayInfo.dayName)
+          .sort((a, b) => Number(a?.period || 0) - Number(b?.period || 0));
 
         // Filtered teachers list for teacher tab
-        const filteredTeachersList = availableTeachers.filter(t => 
-          !teacherSearchInput || t.toLowerCase().includes(teacherSearchInput.toLowerCase())
+        const searchNorm = (teacherSearchInput || '').trim().normalize('NFC').toLowerCase();
+        const filteredTeachersList = (availableTeachers || []).filter(t => 
+          t && (!searchNorm || String(t).normalize('NFC').toLowerCase().includes(searchNorm))
         );
 
         // Grade classes for quick switcher

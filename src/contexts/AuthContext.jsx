@@ -97,15 +97,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
+    // Safety timeout: If auth check takes longer than 1.5s (slow connection / offline), 
+    // mark loading false so visitors can view public schedules and portals immediately.
+    const safetyTimer = setTimeout(() => {
+      if (isMounted) {
+        setLoading(false);
+      }
+    }, 1500);
+
     // Check active sessions and sets the user
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
-        if (session?.user) {
+        if (session?.user && isMounted) {
           setUser(session.user);
           await fetchUserRole(session.user.id, session.user.email);
-        } else {
+        } else if (isMounted) {
           setUser(null);
           setRole(null);
           setCommitteeId(null);
@@ -114,10 +124,15 @@ export const AuthProvider = ({ children }) => {
         }
       } catch (err) {
         console.error("Auth check failed:", err);
-        setUser(null);
-        setRole(null);
+        if (isMounted) {
+          setUser(null);
+          setRole(null);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          clearTimeout(safetyTimer);
+          setLoading(false);
+        }
       }
     };
 
@@ -125,6 +140,7 @@ export const AuthProvider = ({ children }) => {
 
     // Listen for changes on auth state (sign in, sign out, etc.)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
       if (session?.user) {
         setUser(session.user);
         await fetchUserRole(session.user.id, session.user.email);
@@ -138,7 +154,11 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const refetchRole = async () => {
@@ -163,7 +183,7 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider value={{ user, role, committeeId, committeeName, permissions, signIn, signOut, refetchRole, loading }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

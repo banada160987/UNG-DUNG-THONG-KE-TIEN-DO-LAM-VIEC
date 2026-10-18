@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, createElement } from 'react';
 
 /**
  * Smart lazy loader with automatic reload recovery for Vercel deployment chunk updates.
@@ -6,20 +6,57 @@ import { lazy } from 'react';
  */
 export const lazyWithRetry = (componentImport) =>
   lazy(async () => {
-    const pageHasBeenRefreshed = JSON.parse(
-      window.sessionStorage.getItem('cbq_page_refreshed_for_chunk') || 'false'
-    );
+    let pageHasBeenRefreshed = false;
+    try {
+      pageHasBeenRefreshed = window.sessionStorage?.getItem('cbq_page_refreshed_for_chunk') === 'true';
+    } catch (e) {
+      // Ignore sessionStorage access errors in incognito/restricted mode
+    }
 
     try {
       const component = await componentImport();
-      window.sessionStorage.setItem('cbq_page_refreshed_for_chunk', 'false');
+      try {
+        window.sessionStorage?.setItem('cbq_page_refreshed_for_chunk', 'false');
+      } catch (e) {}
       return component;
     } catch (error) {
       console.warn("Phát hiện phiên bản mới trên Vercel - Đang tự động làm mới trang...", error);
       if (!pageHasBeenRefreshed) {
-        window.sessionStorage.setItem('cbq_page_refreshed_for_chunk', 'true');
+        try {
+          window.sessionStorage?.setItem('cbq_page_refreshed_for_chunk', 'true');
+        } catch (e) {}
         window.location.reload();
-        return { default: () => null };
+        // Return a temporary placeholder while page reloads
+        return {
+          default: () => createElement(
+            'div',
+            {
+              style: {
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '60vh',
+                color: '#64748b',
+                fontFamily: 'Inter, sans-serif'
+              }
+            },
+            createElement('div', {
+              style: {
+                width: '36px',
+                height: '36px',
+                border: '3px solid #0284c7',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+                marginBottom: '12px'
+              }
+            }),
+            createElement('p', {
+              style: { fontSize: '14px', fontWeight: 'bold', color: '#0f172a' }
+            }, 'Đang nạp phiên bản mới nhất...')
+          )
+        };
       }
       throw error;
     }

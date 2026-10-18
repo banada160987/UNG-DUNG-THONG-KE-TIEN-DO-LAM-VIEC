@@ -23,19 +23,25 @@ export default class ErrorBoundary extends React.Component {
       error?.message?.includes('importing');
 
     if (isChunkError) {
-      const lastReload = sessionStorage.getItem('cbq_last_chunk_reload');
-      const now = Date.now();
-      if (!lastReload || now - Number(lastReload) > 8000) {
-        sessionStorage.setItem('cbq_last_chunk_reload', String(now));
-        console.warn("Hệ thống tự động nạp phiên bản mới nhất từ Vercel...");
-        window.location.reload();
+      try {
+        const lastReload = sessionStorage?.getItem('cbq_last_chunk_reload');
+        const now = Date.now();
+        if (!lastReload || now - Number(lastReload) > 8000) {
+          sessionStorage?.setItem('cbq_last_chunk_reload', String(now));
+          console.warn("Hệ thống tự động nạp phiên bản mới nhất từ Vercel...");
+          window.location.reload();
+        }
+      } catch (e) {
+        console.warn("SessionStorage unavailable:", e);
       }
     }
   }
 
   handleReload = () => {
-    sessionStorage.removeItem('cbq_page_refreshed_for_chunk');
-    sessionStorage.removeItem('cbq_last_chunk_reload');
+    try {
+      sessionStorage?.removeItem('cbq_page_refreshed_for_chunk');
+      sessionStorage?.removeItem('cbq_last_chunk_reload');
+    } catch (e) {}
     window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
   };
 

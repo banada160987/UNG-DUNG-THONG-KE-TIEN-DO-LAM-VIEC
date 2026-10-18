@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2 } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
+import ErrorBoundary from './ErrorBoundary';
 
 const DEFAULT_SCHOOL_MENUS = [
   { id: 'm1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác & Thời khóa biểu', path: '/lich-cong-tac', sort_order: 1, is_active: true },
@@ -81,10 +82,12 @@ export default function PublicLayout() {
     };
   }, []);
 
+  const safeMenus = Array.isArray(publicMenus) ? publicMenus : DEFAULT_SCHOOL_MENUS;
+
   const isGroupActive = (groupName) => {
-    return publicMenus
-      .filter(m => (m.parent_group === groupName || (!m.parent_group && groupName === 'school')) && m.is_active !== false)
-      .some(m => isActive(m.path));
+    return safeMenus
+      .filter(m => (m?.parent_group === groupName || (!m?.parent_group && groupName === 'school')) && m?.is_active !== false)
+      .some(m => isActive(m?.path));
   };
 
   return (
@@ -227,9 +230,9 @@ export default function PublicLayout() {
                 🏫 Vận Hành ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {publicMenus
-                  .filter(m => (m.parent_group === 'school' || !m.parent_group) && m.is_active !== false)
-                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+                {safeMenus
+                  .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active !== false)
+                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
@@ -247,9 +250,9 @@ export default function PublicLayout() {
                 📰 Hoạt Động ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {publicMenus
-                  .filter(m => m.parent_group === 'media' && m.is_active !== false)
-                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+                {safeMenus
+                  .filter(m => m?.parent_group === 'media' && m?.is_active !== false)
+                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
@@ -267,9 +270,9 @@ export default function PublicLayout() {
                 📁 Tư Liệu ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {publicMenus
-                  .filter(m => m.parent_group === 'anniversary' && m.is_active !== false)
-                  .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+                {safeMenus
+                  .filter(m => m?.parent_group === 'anniversary' && m?.is_active !== false)
+                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
                   .map(m => (
                     <Link key={m.id || m.path} to={m.path} className="nav-dropdown-item" onClick={() => setMobileMenuOpen(false)}>
                       {m.label}
@@ -327,7 +330,9 @@ export default function PublicLayout() {
 
       {/* Main Content Rendered Here */}
       <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '20px 12px 60px 12px' }}>
-        <Outlet />
+        <ErrorBoundary>
+          <Outlet />
+        </ErrorBoundary>
       </main>
       
       {/* Smart School AI Chatbot */}
