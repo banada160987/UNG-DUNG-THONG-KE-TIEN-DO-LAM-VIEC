@@ -192,7 +192,7 @@ export default function PublicLayout() {
           {/* Desktop & Mobile Menu Links */}
           <div className={`portal-nav-links ${mobileMenuOpen ? 'mobile-open' : ''}`}>
             <Link to="/" style={isActive('/') ? styles.navItemActive : styles.navItem} onClick={() => setMobileMenuOpen(false)}>
-              🏠 Trang Chủ Trường
+              🏠 Trang Chủ
             </Link>
             
             {/* MENU ĐỘC LẬP: THỜI KHÓA BIỂU & LỊCH TUẦN */}
@@ -203,7 +203,7 @@ export default function PublicLayout() {
               }}
               onClick={() => setMobileMenuOpen(false)}
             >
-              📅 THỜI KHÓA BIỂU & LỊCH TUẦN
+              📅 Lịch & TKB
             </Link>
 
             {/* MENU ĐỘC LẬP: TRẠM HỌC LIỆU SỐ & VIDEO */}
@@ -215,7 +215,7 @@ export default function PublicLayout() {
               }}
               onClick={() => setMobileMenuOpen(false)}
             >
-              📺 TRẠM VIDEO & HỌC LIỆU SỐ
+              📺 Học Liệu Số
             </Link>
             
             {/* DROPDOWN 1: QUẢN LÝ VẬN HÀNH NHÀ TRƯỜNG */}
@@ -224,7 +224,7 @@ export default function PublicLayout() {
                 onClick={() => toggleDropdown('school')}
                 style={isGroupActive('school') ? styles.navItemActive : styles.navItem}
               >
-                🏫 Quản lý Vận hành ▾
+                🏫 Vận Hành ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
                 {publicMenus
@@ -244,7 +244,7 @@ export default function PublicLayout() {
                 onClick={() => toggleDropdown('media')}
                 style={isGroupActive('media') ? styles.navItemActive : styles.navItem}
               >
-                📰 Tin tức & Hoạt động ▾
+                📰 Hoạt Động ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
                 {publicMenus
@@ -264,7 +264,7 @@ export default function PublicLayout() {
                 onClick={() => toggleDropdown('anniversary')}
                 style={isGroupActive('anniversary') ? styles.navItemActive : styles.navItem}
               >
-                📁 Tư liệu Truyền thống ▾
+                📁 Tư Liệu ▾
               </span>
               <div className="nav-dropdown-content" style={styles.dropdownContent}>
                 {publicMenus
@@ -298,15 +298,15 @@ export default function PublicLayout() {
           </div>
 
           {/* Desktop Quick Access Portals */}
-          <div className="desktop-portal-btns" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'nowrap' }}>
+          <div className="desktop-portal-btns">
             <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
-              <GraduationCap size={15} /> Cổng Học Sinh
+              <GraduationCap size={14} /> Học Sinh
             </Link>
             <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
-              <Briefcase size={15} /> Cổng Giáo Viên
+              <Briefcase size={14} /> Giáo Viên
             </Link>
             <Link to="/admin" className="premium-nav-btn admin" title="Trang Quản Lý & Bảng Điều Khiển Nhà Trường">
-              <ShieldCheck size={15} /> Trang Quản Lý
+              <ShieldCheck size={14} /> Quản Trị
             </Link>
           </div>
         </div>
@@ -326,7 +326,7 @@ export default function PublicLayout() {
       </div>
 
       {/* Main Content Rendered Here */}
-      <main style={{ maxWidth: '1240px', margin: '0 auto', padding: '20px 12px 60px 12px' }}>
+      <main style={{ maxWidth: '1280px', margin: '0 auto', padding: '20px 12px 60px 12px' }}>
         <Outlet />
       </main>
       
@@ -342,7 +342,9 @@ const styles = {
     background: '#f8fafc',
     minHeight: '100vh',
     paddingBottom: '40px',
-    color: '#0f172a'
+    color: '#0f172a',
+    overflowX: 'hidden',
+    width: '100%'
   },
   banner: {
     position: 'relative',
@@ -357,7 +359,7 @@ const styles = {
     padding: '18px 0'
   },
   bannerInner: {
-    maxWidth: '1240px',
+    maxWidth: '1280px',
     margin: '0 auto',
     padding: '0 16px',
     display: 'flex',
@@ -498,22 +500,25 @@ const styles = {
     boxShadow: '0 4px 15px rgba(20, 83, 45, 0.2)',
     position: 'sticky',
     top: 0,
-    zIndex: 900
+    zIndex: 900,
+    overflowX: 'clip'
   },
   navContainer: {
-    maxWidth: '1240px',
+    maxWidth: '1280px',
     margin: '0 auto',
     padding: '0 12px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    flexWrap: 'nowrap'
+    flexWrap: 'nowrap',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   navItem: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '12px 14px',
-    fontSize: '13.5px',
+    padding: '10px 11px',
+    fontSize: '13px',
     fontWeight: '700',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -526,8 +531,8 @@ const styles = {
   navItemActive: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '12px 14px',
-    fontSize: '13.5px',
+    padding: '10px 11px',
+    fontSize: '13px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -541,8 +546,8 @@ const styles = {
   navItemHighlight: {
     color: '#fef08a',
     textDecoration: 'none',
-    padding: '12px 14px',
-    fontSize: '13.5px',
+    padding: '10px 11px',
+    fontSize: '13px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -555,8 +560,8 @@ const styles = {
   navItemHighlightActive: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '12px 14px',
-    fontSize: '13.5px',
+    padding: '10px 11px',
+    fontSize: '13px',
     fontWeight: '900',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -573,7 +578,7 @@ const styles = {
     borderRadius: '0 0 10px 10px'
   },
   topBar: {
-    maxWidth: '1240px',
+    maxWidth: '1280px',
     margin: '0 auto',
     backgroundColor: '#ffffff',
     border: '1px solid #bbf7d0',
@@ -581,7 +586,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     fontSize: '13px',
-    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)'
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    overflow: 'hidden'
   },
   dateInfo: {
     padding: '7px 14px',
