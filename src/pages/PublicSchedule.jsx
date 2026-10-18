@@ -776,7 +776,7 @@ export default function PublicSchedule() {
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_Lop_${selectedClass}`);
-    XLSX.writeFile(wb, `ThoiKhoaBieu_Lop_${selectedClass}_2026_2027.xlsx`);
+    XLSX.writeFile(wb, `1-ThoiKhoaBieu_Lop_${selectedClass}_2026_2027.xlsx`);
   };
 
   const handleExportTeacherTkbExcel = () => {
@@ -813,7 +813,7 @@ export default function PublicSchedule() {
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_${selectedTeacher}`);
-    XLSX.writeFile(wb, `ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
+    XLSX.writeFile(wb, `1-ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
   };
 
   const getClassesForGrade = (grade) => {
@@ -881,7 +881,7 @@ export default function PublicSchedule() {
     const wb = XLSX.utils.book_new();
     const sheetName = selectedGrade === 'all' ? 'TKB_ToanTruong' : `TKB_Khoi_${selectedGrade}`;
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `ThoiKhoaBieu_${sheetName}_2026_2027.xlsx`);
+    XLSX.writeFile(wb, `1-ThoiKhoaBieu_${sheetName}_2026_2027.xlsx`);
   };
 
   // Comprehensive list of all teachers with lessons and subjects
@@ -1063,7 +1063,7 @@ export default function PublicSchedule() {
     const wb = XLSX.utils.book_new();
     const sheetName = `GV_Nghi_${freeDay.replace(/\s+/g, '_')}`;
     XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    XLSX.writeFile(wb, `Danh_Sach_GV_Nghi_Day_${freeDay.replace(/\s+/g, '_')}_2026_2027.xlsx`);
+    XLSX.writeFile(wb, `1-Danh_Sach_GV_Nghi_Day_${freeDay.replace(/\s+/g, '_')}_2026_2027.xlsx`);
   };
 
   const handleTabChange = (tab) => {
@@ -1454,7 +1454,7 @@ export default function PublicSchedule() {
                         </a>
                         <a
                           href={resolvePdfUrl(currentSched.attached_pdf_url)}
-                          download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
+                          download={currentSched.attached_pdf_name ? (currentSched.attached_pdf_name.startsWith('1-') ? currentSched.attached_pdf_name : `1-${currentSched.attached_pdf_name}`) : `1-Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
                           style={{
                             padding: '7px 16px',
                             backgroundColor: '#be123c',
@@ -4183,7 +4183,7 @@ export default function PublicSchedule() {
                     </a>
                     <a
                       href={resolvePdfUrl(currentSched.attached_pdf_url)}
-                      download={currentSched.attached_pdf_name || `Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
+                      download={currentSched.attached_pdf_name ? (currentSched.attached_pdf_name.startsWith('1-') ? currentSched.attached_pdf_name : `1-${currentSched.attached_pdf_name}`) : `1-Lich_Tuan_${selectedWeekNo}_THPT_Cao_Ba_Quat.pdf`}
                       style={{ padding: '7px 16px', borderRadius: '6px', border: 'none', backgroundColor: '#0284c7', color: '#ffffff', fontSize: '13px', fontWeight: 'bold', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                     >
                       <Download size={14} /> Tải PDF Về Máy

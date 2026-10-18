@@ -484,7 +484,7 @@ export default function TeacherExamMaker() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `De_Thi_${subject}_MaDe_${selectedCodeView}.doc`;
+    a.download = `1-De_Thi_${subject}_MaDe_${selectedCodeView}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

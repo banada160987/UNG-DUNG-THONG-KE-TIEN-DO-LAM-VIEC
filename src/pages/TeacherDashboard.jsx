@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
-  Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck
+  Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
+  Compass, Heart
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
@@ -16,22 +17,22 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     // Lấy thông tin tài khoản giáo viên đã đăng nhập
-    const saved = localStorage.getItem('cbq_teacher_session') || localStorage.getItem('cbq_user');
+    const saved = localStorage.getItem('cbq_current_teacher') || localStorage.getItem('cbq_teacher_session') || localStorage.getItem('cbq_user');
     if (saved) {
       try {
-        setTeacher(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        parsed.name = parsed.name || parsed.full_name || parsed.username || 'Giáo viên';
+        parsed.homeroomClass = parsed.homeroomClass || parsed.homeroom_class || '';
+        setTeacher(parsed);
       } catch (e) {
         console.error('Error parsing teacher session:', e);
+        navigate('/dang-nhap-giao-vien');
+        return;
       }
     } else {
-      // Fallback tài khoản mẫu nếu chưa lưu session
-      setTeacher({
-        name: 'Tam Bou Branh',
-        username: 'gv.tamboubranh',
-        role: 'gv_homeroom', // 'gv_homeroom' hoặc 'gv_bomon'
-        homeroomClass: '12A01',
-        subject: 'Ngữ Văn'
-      });
+      // Bắt buộc chuyển hướng đến trang đăng nhập nếu chưa có phiên
+      navigate('/dang-nhap-giao-vien');
+      return;
     }
 
     // Nạp danh sách đăng ký CLB
@@ -40,15 +41,16 @@ export default function TeacherDashboard() {
         if (res.data) setClubRegistrations(res.data);
       })
       .catch(err => console.error('Error fetching club registrations for teacher:', err));
-  }, []);
+  }, [navigate]);
 
   const handleLogout = () => {
+    localStorage.removeItem('cbq_current_teacher');
     localStorage.removeItem('cbq_teacher_session');
     localStorage.removeItem('cbq_user');
     navigate('/dang-nhap-giao-vien');
   };
 
-  const isHomeroomTeacher = teacher?.role === 'gv_homeroom' || teacher?.homeroomClass;
+  const isHomeroomTeacher = teacher?.role === 'gv_homeroom' || Boolean(teacher?.homeroomClass);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '32px 20px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1e293b' }}>
@@ -88,7 +90,7 @@ export default function TeacherDashboard() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <h1 style={{ fontSize: '20px', fontWeight: '700', margin: 0, color: '#ffffff' }}>
-                  Giáo viên: {teacher?.name || 'Tam Bou Branh'}
+                  Giáo viên: {teacher?.name || 'Thầy/Cô'}
                 </h1>
                 {isHomeroomTeacher ? (
                   <span style={{
@@ -103,7 +105,7 @@ export default function TeacherDashboard() {
                     alignItems: 'center',
                     gap: '5px'
                   }}>
-                    <UserCheck size={14} /> GVCN Lớp {teacher?.homeroomClass || '12A01'}
+                    <UserCheck size={14} /> GVCN Lớp {teacher?.homeroomClass}
                   </span>
                 ) : (
                   <span style={{
@@ -652,38 +654,59 @@ export default function TeacherDashboard() {
                         color: '#0369a1',
                         border: '1px solid #bae6fd'
                       }}>
-                        Sổ Điện Tử
+                        Sổ Điện Tử 4.0
                       </span>
                     </div>
                     <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
-                      Tình hình Học tập & Sổ Đầu Bài
+                      Sổ Đầu Bài & Báo Cáo Học Tập
                     </h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                      Kiểm tra Sổ đầu bài điện tử do Lớp trưởng ghi và Báo cáo thiếu bài tập về nhà hàng ngày từ Ban cán sự lớp.
+                      Sổ đầu bài điện tử tự động nạp TKB, ký duyệt môn học, xếp loại tiết A/B/C/D, tính điểm thi đua và theo dõi thiếu BTVN hàng ngày.
                     </p>
                   </div>
-                  <button
-                    onClick={() => navigate('/teacher-dashboard/academics')}
-                    style={{
-                      marginTop: '20px',
-                      width: '100%',
-                      padding: '11px 16px',
-                      backgroundColor: '#0284c7',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '13.5px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
-                    }}
-                  >
-                    <Search size={16} /> Xem Tình Hình Học Tập
-                  </button>
+                  <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <button
+                      onClick={() => navigate('/teacher-dashboard/class-journal')}
+                      style={{
+                        width: '100%',
+                        padding: '11px 16px',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '13.5px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                      }}
+                    >
+                      <BookOpen size={16} /> Mở Sổ Đầu Bài Điện Tử (TKB & Ký Số)
+                    </button>
+                    <button
+                      onClick={() => navigate('/teacher-dashboard/academics')}
+                      style={{
+                        width: '100%',
+                        padding: '9px 14px',
+                        backgroundColor: '#f8fafc',
+                        color: '#475569',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '10px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Search size={14} /> Xem Báo Cáo Chuyên Cần & BTVN
+                    </button>
+                  </div>
                 </div>
 
                 {/* CARD 5: KIỂM TRA HỒ SƠ THI TN THPT */}
@@ -752,6 +775,76 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <FileSpreadsheet size={16} /> Mở Tool Kiểm Tra Hồ Sơ
+                  </button>
+                </div>
+
+                {/* CARD 6: CỐ VẤN TUYỂN SINH & HƯỚNG NGHIỆP 2+2 */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #ddd6fe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #faf5ff 100%)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f3e8ff',
+                        color: '#7c3aed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Compass size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f3e8ff',
+                        color: '#6d28d9',
+                        border: '1px solid #ddd6fe'
+                      }}>
+                        Tổ Hợp & ĐH
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      AI Cố Vấn Tuyển Sinh & Nghề Nghiệp 2+2
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Cố vấn học sinh chọn 2 môn tự chọn GDPT 2018, phân tích ma trận tổ hợp đại học (A00, D01, D07...), gợi ý trường ĐH và xuất báo cáo Word chuẩn.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/teacher-dashboard/career-advisor')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#7c3aed',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 10px rgba(124,58,237,0.3)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <Compass size={16} /> Mở AI Cố Vấn Tuyển Sinh
                   </button>
                 </div>
 

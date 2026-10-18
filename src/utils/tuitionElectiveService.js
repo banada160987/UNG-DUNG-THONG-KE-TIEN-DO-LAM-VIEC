@@ -476,7 +476,7 @@ export function downloadTuitionApplicationDoc(params) {
   const htmlContent = generateTuitionApplicationDoc(params);
   const cleanName = (params.studentName || 'HocSinh').replace(/[/\\?%*:|"<>]/g, '_').replace(/\s+/g, '_');
   const cleanClass = (params.studentClass || '12').replace(/[^a-zA-Z0-9]/g, '');
-  const fileName = `Don_Dang_Ki_Hoc_Them_${cleanClass}_${cleanName}.doc`;
+  const fileName = `1-Don_Dang_Ki_Hoc_Them_${cleanClass}_${cleanName}.doc`;
   
   const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);

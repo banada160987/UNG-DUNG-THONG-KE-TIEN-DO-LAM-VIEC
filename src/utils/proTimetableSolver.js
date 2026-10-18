@@ -1386,7 +1386,8 @@ export function exportDraftTimetableToExcel(draftSchedule = [], title = 'ThoiKho
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "TKB_BanNhap_ToanTruong");
-  XLSX.writeFile(wb, `${title}_${new Date().getTime()}.xlsx`);
+  const prefixTitle = title.startsWith('1-') ? title : `1-${title}`;
+  XLSX.writeFile(wb, `${prefixTitle}_${new Date().getTime()}.xlsx`);
 }
 
 /**
@@ -1578,7 +1579,8 @@ export function exportWorkloadReportToExcel(workloadStats = [], title = 'BaoCao_
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "ThongKeTaiDay");
-  XLSX.writeFile(wb, `${title}_${Date.now()}.xlsx`);
+  const prefixTitle = title.startsWith('1-') ? title : `1-${title}`;
+  XLSX.writeFile(wb, `${prefixTitle}_${Date.now()}.xlsx`);
 }
 
 export const generateTeacherWorkloadStats = calculateTeacherWorkloadStatistics;

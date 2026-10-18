@@ -25,8 +25,9 @@ const PRESET_COMMENTS = {
     'Hoàn thành các yêu cầu cơ bản của môn học. Cần dành thêm thời gian ôn tập lý thuyết và luyện tập bài tập ở nhà.',
     'Có tiến bộ ở các tuần cuối kỳ. Cần tích cực tương tác hơn với giáo viên và các bạn trong nhóm.'
   ],
-  'Cần cố gắng': [
-    'Còn hổng kiến thức căn bản, chưa tập trung trong giờ học. Cần sự phối hợp chặt chẽ từ phía gia đình để đôn đốc việc học ở nhà.'
+  'Chưa đạt': [
+    'Còn hổng kiến thức căn bản, chưa tập trung trong giờ học. Cần giáo viên bộ môn phụ đạo thêm và sự phối hợp từ phía gia đình để đôn đốc việc học ở nhà.',
+    'Chưa hoàn thành đầy đủ nhiệm vụ học tập trên lớp. Cần chủ động nhờ thầy cô và bạn bè hỗ trợ để nhanh chóng tiến bộ.'
   ]
 };
 
@@ -163,7 +164,7 @@ export default function TeacherAssessmentTT22() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `Danh_Gia_TT22_${selectedClass}`);
-    XLSX.writeFile(wb, `Bang_Danh_Gia_TT22_Lop_${selectedClass}.xlsx`);
+    XLSX.writeFile(wb, `1-Bang_Danh_Gia_TT22_Lop_${selectedClass}.xlsx`);
   };
 
   if (!teacher) return null;
@@ -329,7 +330,7 @@ export default function TeacherAssessmentTT22() {
                   <option value="Tốt">🟢 Tốt (Nắm vững kiến thức, hoàn thành bài)</option>
                   <option value="Khá">🔵 Khá (Tiếp thu khá, cần rèn luyện thêm)</option>
                   <option value="Đạt">🟡 Đạt (Hoàn thành yêu cầu cơ bản)</option>
-                  <option value="Cần cố gắng">🔴 Cần cố gắng (Cần gia đình đôn đốc thêm)</option>
+                  <option value="Chưa đạt">🔴 Chưa đạt (Cần hỗ trợ & phụ đạo thêm)</option>
                 </select>
               </div>
 

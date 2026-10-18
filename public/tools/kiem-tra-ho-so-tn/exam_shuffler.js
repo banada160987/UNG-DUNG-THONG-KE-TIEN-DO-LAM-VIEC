@@ -1119,7 +1119,7 @@ const ExamShuffler = (() => {
         const url = window.URL.createObjectURL(content);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `Bo_De_Thi_Tron_${Date.now()}.zip`;
+        a.download = `1-Bo_De_Thi_Tron_${Date.now()}.zip`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

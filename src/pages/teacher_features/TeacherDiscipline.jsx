@@ -36,12 +36,14 @@ export default function TeacherDiscipline() {
         setHomeroomClass(cls);
       } catch (e) {
         console.error('Error parsing teacher session:', e);
+        navigate('/dang-nhap-giao-vien');
+        return;
       }
     } else {
-      setTeacher({ name: 'Tam Bou Branh', homeroomClass: '12A01' });
-      setHomeroomClass('12A01');
+      navigate('/dang-nhap-giao-vien');
+      return;
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     if (homeroomClass) {
@@ -292,7 +294,7 @@ export default function TeacherDiscipline() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `ThiDua_Tuan${selectedWeek}`);
-    XLSX.writeFile(wb, `BaoCao_ThiDua_NeNep_Lop_${homeroomClass}_Tuan_${selectedWeek}.xlsx`);
+    XLSX.writeFile(wb, `1-Bao_cao_thi_dua_ne_nep_Lop_${homeroomClass}_Tuan_${selectedWeek}.xlsx`);
   };
 
   return (

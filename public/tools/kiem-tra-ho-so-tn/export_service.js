@@ -40,7 +40,7 @@ async function exportErrorsToExcel() {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Bao_cao_loi_${activeFileName.split('.')[0]}.xlsx`;
+    link.download = `1-Bao_cao_loi_${activeFileName.split('.')[0]}.xlsx`;
     link.click();
 }
 
@@ -81,7 +81,7 @@ async function exportByClass() {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Danh_sach_tach_lop.xlsx`;
+    link.download = `1-Danh_sach_tach_lop.xlsx`;
     link.click();
 }
 
@@ -123,7 +123,7 @@ async function exportToExcel() {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Du_lieu_tong_hop_${new Date().getTime()}.xlsx`;
+    link.download = `1-Du_lieu_tong_hop_${new Date().getTime()}.xlsx`;
     link.click();
     showAlert("✅ Đã xuất dữ liệu thành công!", 'success');
 }

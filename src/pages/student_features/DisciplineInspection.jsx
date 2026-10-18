@@ -3,12 +3,22 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { ArrowLeft, Plus, Save, ShieldAlert, Camera, Search } from 'lucide-react';
 
+const SCHOOL_CLASSES = [
+  '10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12',
+  '11A01', '11A02', '11A03', '11A04', '11A05', '11A06', '11A07', '11A08', '11A09', '11A10', '11A11', '11A12',
+  '12A01', '12A02', '12A03', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10', '12A11', '12A12'
+];
+
 const VIOLATION_TYPES = [
-  { id: 'v1', name: 'Không đeo thẻ học sinh', points: 2 },
-  { id: 'v2', name: 'Xả rác không đúng quy định', points: 5 },
-  { id: 'v3', name: 'Nói chuyện ồn ào', points: 2 },
-  { id: 'v4', name: 'Trễ học / Bỏ tiết', points: 3 },
-  { id: 'v5', name: 'Đồng phục sai quy định', points: 2 },
+  { id: 'v1', name: 'Không đeo thẻ học sinh / Sai phù hiệu', points: 5 },
+  { id: 'v2', name: 'Đồng phục sai quy định / Trang phục không chuẩn', points: 5 },
+  { id: 'v3', name: 'Đi học muộn / Trễ giờ truy bài', points: 5 },
+  { id: 'v4', name: 'Bỏ tiết / Trốn học / Ra ngoài không phép', points: 10 },
+  { id: 'v5', name: 'Nói chuyện riêng / Mất trật tự trong giờ học', points: 3 },
+  { id: 'v6', name: 'Xả rác / Không vệ sinh phòng học', points: 5 },
+  { id: 'v7', name: 'Không tắt quạt, điện khi ra khỏi lớp', points: 5 },
+  { id: 'v8', name: 'Sử dụng điện thoại di động không phép', points: 5 },
+  { id: 'v9', name: 'Vi phạm nề nếp khác', points: 2 }
 ];
 
 export default function DisciplineInspection() {
@@ -20,8 +30,9 @@ export default function DisciplineInspection() {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     inspected_class: '',
+    week_number: 1,
     violation_type: '',
-    point_deduction: 0,
+    point_deduction: 5,
     notes: ''
   });
 
@@ -69,36 +80,47 @@ export default function DisciplineInspection() {
     setFormData({
       ...formData,
       violation_type: vName,
-      point_deduction: vItem ? vItem.points : 0
+      point_deduction: vItem ? vItem.points : 5
     });
+  };
+
+  const normalizeClassCode = (cls) => {
+    if (!cls) return '';
+    const clean = String(cls).trim().toUpperCase();
+    const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
+    if (match) {
+      const prefix = match[1];
+      const num = match[2].padStart(2, '0');
+      return `${prefix}${num}`;
+    }
+    return clean;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.inspected_class || !formData.violation_type) {
-      alert("Vui lòng điền đủ Tên Lớp và Loại vi phạm.");
+      alert("Vui lòng chọn đầy đủ Lớp vi phạm và Hành vi vi phạm.");
       return;
     }
 
-    const normalizeClassCode = (cls) => {
-      if (!cls) return '';
-      const clean = String(cls).trim().toUpperCase();
-      const match = clean.match(/^(\d{2}[A-Z]+)(\d{1,2})$/);
-      if (match) {
-        const prefix = match[1];
-        const num = match[2].padStart(2, '0');
-        return `${prefix}${num}`;
-      }
-      return clean;
-    };
+    const myClass = normalizeClassCode(student?.student_class || student?.class_name);
+    const targetClass = normalizeClassCode(formData.inspected_class);
+
+    // Chặn xung đột lợi ích: Đội cờ đỏ không được chấm điểm lớp của chính mình
+    if (myClass && targetClass && myClass === targetClass) {
+      alert(`⚠️ QUY TẮC CÔNG BẰNG ĐỘI CỜ ĐỎ:\n\nBạn thuộc chi đoàn lớp ${myClass}, do đó KHÔNG ĐƯỢC PHÉP tự chấm điểm hoặc trừ điểm lớp của chính mình nhằm đảm bảo tính khách quan.`);
+      return;
+    }
 
     const newRecord = {
-      inspected_class: normalizeClassCode(formData.inspected_class),
+      inspected_class: targetClass,
       inspection_date: new Date().toISOString().split('T')[0],
+      week_number: Number(formData.week_number) || 1,
       violation_type: formData.violation_type,
-      point_deduction: formData.point_deduction,
+      point_deduction: Number(formData.point_deduction) || 0,
       notes: formData.notes,
-      logged_by: student.username
+      logged_by: student.username,
+      reporter_name: student.full_name || student.username
     };
 
     try {
@@ -108,9 +130,9 @@ export default function DisciplineInspection() {
         
       if (error) throw error;
       
-      alert("Đã ghi nhận trừ điểm thành công!");
+      alert("🎉 Đã ghi nhận trừ điểm vi phạm nề nếp thành công!");
       setShowForm(false);
-      setFormData({ inspected_class: '', violation_type: '', point_deduction: 0, notes: '' });
+      setFormData({ inspected_class: '', week_number: 1, violation_type: '', point_deduction: 5, notes: '' });
       fetchRecords(student.username);
     } catch (err) {
       alert("Lỗi khi lưu: " + err.message);
@@ -145,35 +167,67 @@ export default function DisciplineInspection() {
           <h3 style={{ margin: '0 0 20px 0', color: '#991b1b', fontSize: '18px', textAlign: 'center' }}>Ghi nhận Vi phạm</h3>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
-              <label style={labelStyle}>Lớp vi phạm (*)</label>
-              <div style={{ position: 'relative' }}>
-                <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                <input type="text" required placeholder="VD: 10A01" value={formData.inspected_class} onChange={e => setFormData({...formData, inspected_class: e.target.value})} style={{...inputStyle, paddingLeft: '40px', fontSize: '18px', textTransform: 'uppercase'}} />
-              </div>
+              <label style={labelStyle}>Tuần thi đua (*)</label>
+              <select
+                required
+                value={formData.week_number}
+                onChange={e => setFormData({ ...formData, week_number: Number(e.target.value) })}
+                style={{ ...inputStyle, fontSize: '15px' }}
+              >
+                {Array.from({ length: 35 }, (_, i) => i + 1).map(w => (
+                  <option key={w} value={w}>Tuần {w}</option>
+                ))}
+              </select>
             </div>
+
+            <div>
+              <label style={labelStyle}>Lớp vi phạm (*)</label>
+              <select
+                required
+                value={formData.inspected_class}
+                onChange={e => setFormData({ ...formData, inspected_class: e.target.value })}
+                style={{ ...inputStyle, fontSize: '15px' }}
+              >
+                <option value="">-- Chọn lớp cần chấm điểm --</option>
+                {SCHOOL_CLASSES.map(cls => {
+                  const isMyClass = normalizeClassCode(cls) === normalizeClassCode(student?.student_class);
+                  return (
+                    <option key={cls} value={cls} disabled={isMyClass}>
+                      {cls} {isMyClass ? '(Lớp của bạn - Khóa chấm điểm)' : ''}
+                    </option>
+                  );
+                })}
+              </select>
+              {student?.student_class && (
+                <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#64748b' }}>
+                  ℹ️ Lớp của bạn: <strong>{student.student_class}</strong> (Tự động khóa để phòng ngừa xung đột lợi ích)
+                </p>
+              )}
+            </div>
+
             <div>
               <label style={labelStyle}>Hành vi vi phạm (*)</label>
-              <select required value={formData.violation_type} onChange={handleViolationSelect} style={{...inputStyle, fontSize: '16px'}}>
-                <option value="">-- Chọn lỗi --</option>
+              <select required value={formData.violation_type} onChange={handleViolationSelect} style={{ ...inputStyle, fontSize: '15px' }}>
+                <option value="">-- Chọn lỗi vi phạm --</option>
                 {VIOLATION_TYPES.map(v => <option key={v.id} value={v.name}>{v.name} (-{v.points}đ)</option>)}
               </select>
             </div>
+
             <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
-                <label style={labelStyle}>Điểm trừ</label>
+                <label style={labelStyle}>Mức điểm trừ</label>
                 <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#dc2626' }}>-{formData.point_deduction} điểm</div>
               </div>
-              <button type="button" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '12px', fontWeight: 'bold' }}>
-                <Camera size={20} /> Minh chứng
-              </button>
             </div>
+
             <div>
-              <label style={labelStyle}>Ghi chú thêm (Tên HS vi phạm)</label>
-              <textarea placeholder="VD: Em Nam tổ 1 không đeo thẻ" value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})} style={{...inputStyle, height: '80px', resize: 'vertical'}} />
+              <label style={labelStyle}>Ghi chú thêm (Tên HS vi phạm, địa điểm...)</label>
+              <textarea placeholder="VD: Em Nam tổ 1 không đeo thẻ, đi trễ tiết 1..." value={formData.notes} onChange={e => setFormData({ ...formData, notes: e.target.value })} style={{ ...inputStyle, height: '80px', resize: 'vertical' }} />
             </div>
+
             <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-              <button type="button" onClick={() => setShowForm(false)} style={{ flex: 1, padding: '14px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px' }}>Hủy</button>
-              <button type="submit" style={{ flex: 2, padding: '14px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px' }}>Ghi Nhận Vi Phạm</button>
+              <button type="button" onClick={() => setShowForm(false)} style={{ flex: 1, padding: '14px', background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>Hủy</button>
+              <button type="submit" style={{ flex: 2, padding: '14px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '15px', cursor: 'pointer' }}>Ghi Nhận Vi Phạm</button>
             </div>
           </form>
         </div>
@@ -191,8 +245,13 @@ export default function DisciplineInspection() {
             {records.map(r => (
               <div key={r.id} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '16px', background: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca' }}>
                 <div>
-                  <div style={{ fontWeight: '900', color: '#991b1b', fontSize: '18px', marginBottom: '4px' }}>
-                    LỚP {r.inspected_class}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <span style={{ fontWeight: '900', color: '#991b1b', fontSize: '17px' }}>
+                      LỚP {r.inspected_class}
+                    </span>
+                    <span style={{ fontSize: '12px', backgroundColor: '#fee2e2', color: '#991b1b', padding: '2px 8px', borderRadius: '6px', fontWeight: '700' }}>
+                      Tuần {r.week_number || 1}
+                    </span>
                   </div>
                   <div style={{ fontSize: '14px', color: '#7f1d1d', fontWeight: 'bold' }}>
                     {r.violation_type}

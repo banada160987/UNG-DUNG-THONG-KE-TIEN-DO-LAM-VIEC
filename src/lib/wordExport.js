@@ -334,7 +334,7 @@ export const generateWordReport = async (stats, quizConfig, submissions, student
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `Bao_Cao_Tong_Ket_Chi_Tiet_${Date.now()}.docx`;
+  link.download = `1-Bao_Cao_Tong_Ket_Chi_Tiet_${Date.now()}.docx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

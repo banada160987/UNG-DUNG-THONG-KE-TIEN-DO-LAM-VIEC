@@ -26,17 +26,35 @@ export default function StudentLogin() {
     try {
       const cleanUsername = formData.username.trim().toLowerCase();
 
-      // Check DB table
-      const { data: dbUsers } = await supabase
-        .from('cbq_student_users')
-        .select('*')
-        .eq('username', cleanUsername)
-        .eq('password', formData.password)
-        .limit(1);
+      // 1. Try secure RPC first
+      let foundUser = null;
+      try {
+        const { data: rpcUser, error: rpcErr } = await supabase.rpc('login_student', {
+          p_username: cleanUsername,
+          p_password: formData.password
+        });
+        if (!rpcErr && rpcUser && rpcUser.length > 0) {
+          foundUser = rpcUser[0];
+        }
+      } catch (e) {
+        // Fallback to table query if RPC not yet deployed
+      }
 
-      let foundUser = dbUsers && dbUsers.length > 0 ? dbUsers[0] : null;
+      // 2. Direct table check
+      if (!foundUser) {
+        const { data: dbUsers } = await supabase
+          .from('cbq_student_users')
+          .select('id, username, full_name, student_class, role, student_code, password')
+          .eq('username', cleanUsername)
+          .eq('password', formData.password)
+          .limit(1);
 
-      // Fallback check local storage
+        if (dbUsers && dbUsers.length > 0) {
+          foundUser = dbUsers[0];
+        }
+      }
+
+      // 3. Fallback check local storage
       if (!foundUser) {
         const localAccounts = JSON.parse(localStorage.getItem('cbq_student_accounts') || '[]');
         foundUser = localAccounts.find(u => u.username === cleanUsername && u.password === formData.password);
@@ -48,9 +66,13 @@ export default function StudentLogin() {
         return;
       }
 
-      // Save session
-      localStorage.setItem('cbq_current_student', JSON.stringify(foundUser));
-      alert(`👋 ĐĂNG NHẬP THÀNH CÔNG!\n\nChào mừng bạn ${foundUser.full_name} (${foundUser.student_class}).`);
+      // Sanitize user object: remove password before saving to session
+      const safeStudent = { ...foundUser };
+      delete safeStudent.password;
+
+      // Save sanitized session
+      localStorage.setItem('cbq_current_student', JSON.stringify(safeStudent));
+      alert(`👋 ĐĂNG NHẬP THÀNH CÔNG!\n\nChào mừng bạn ${safeStudent.full_name} (${safeStudent.student_class}).`);
       navigate('/student-dashboard');
 
     } catch (err) {

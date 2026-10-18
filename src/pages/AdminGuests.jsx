@@ -267,7 +267,7 @@ export default function AdminGuests() {
     XLSX.utils.book_append_sheet(wb, ws, "Khách mời");
 
     const categoryName = filterCategory !== 'All' ? `_${filterCategory.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-    XLSX.writeFile(wb, `DanhSachKhachMoi${categoryName}.xlsx`);
+    XLSX.writeFile(wb, `1-DanhSachKhachMoi${categoryName}.xlsx`);
   };
 
   const handleDownloadTemplate = () => {
@@ -280,7 +280,7 @@ export default function AdminGuests() {
     }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "Template_NhapKhachMoi.xlsx");
+    XLSX.writeFile(wb, "1-Template_NhapKhachMoi.xlsx");
   };
 
   const handleSendEmail = async (guest) => {
@@ -360,7 +360,7 @@ export default function AdminGuests() {
         const image = canvas.toDataURL("image/png", 1.0);
         const link = document.createElement("a");
         const safeName = (guest.name || 'KhachMoi').replace(/[^a-zA-Z0-9À-ỹ\s]/g, '_').trim();
-        link.download = `ThiepMoi_${safeName}.png`;
+        link.download = `1-ThiepMoi_${safeName}.png`;
         link.href = image;
         link.click();
       } catch (error) {

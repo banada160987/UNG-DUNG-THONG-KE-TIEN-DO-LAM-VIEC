@@ -75,6 +75,7 @@ const DisciplineInspection = lazy(() => import('./pages/student_features/Discipl
 const UnionFunds = lazy(() => import('./pages/student_features/UnionFunds'));
 const EventAttendance = lazy(() => import('./pages/student_features/EventAttendance'));
 const StudentDigitalVault = lazy(() => import('./pages/student_features/StudentDigitalVault'));
+const StudentCareerAdvisor = lazy(() => import('./pages/student_features/StudentCareerAdvisor'));
 
 // Teacher Features
 const TeacherLogin = lazy(() => import('./pages/TeacherLogin'));
@@ -88,6 +89,7 @@ const TeacherExamMaker = lazy(() => import('./pages/teacher_features/TeacherExam
 const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/TeacherAssessmentTT22'));
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
 const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
+const TeacherHomeroomStudents = lazy(() => import('./pages/teacher_features/TeacherHomeroomStudents'));
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
 
@@ -160,6 +162,8 @@ function App() {
             <Route path="/hoc-sinh/quy-doan" element={<UnionFunds />} />
             <Route path="/hoc-sinh/diem-danh-su-kien" element={<EventAttendance />} />
             <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
+            <Route path="/hoc-sinh/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
+            <Route path="/hoc-sinh/huong-nghiep" element={<StudentCareerAdvisor />} />
             <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
             <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
             <Route path="/hop-online" element={<PublicMeetingAttendance />} />
@@ -173,7 +177,7 @@ function App() {
             <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
             <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
-            <Route path="/teacher-dashboard/homeroom" element={<AdminStudents />} />
+            <Route path="/teacher-dashboard/homeroom" element={<TeacherHomeroomStudents />} />
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherLessonPlanBuilder />} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherExamMaker />} />
             <Route path="/giao-vien/danh-gia-tt22" element={<TeacherAssessmentTT22 />} />
@@ -188,11 +192,18 @@ function App() {
             <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
             <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
             <Route path="/teacher/academics" element={<TeacherAcademics />} />
-            <Route path="/teacher/homeroom" element={<AdminStudents />} />
+            <Route path="/teacher/homeroom" element={<TeacherHomeroomStudents />} />
             <Route path="/teacher/funds" element={<TeacherFundsManager />} />
             <Route path="/teacher/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher/department" element={<TeacherDepartmentManagement />} />
             <Route path="/teacher/kpi" element={<TeacherKPIEvaluation />} />
+            <Route path="/teacher-dashboard/class-journal" element={<ClassJournal />} />
+            <Route path="/teacher/class-journal" element={<ClassJournal />} />
+            <Route path="/teacher-dashboard/career-advisor" element={<StudentCareerAdvisor />} />
+            <Route path="/teacher/career-advisor" element={<StudentCareerAdvisor />} />
+            <Route path="/so-dau-bai-dien-tu" element={<ClassJournal />} />
+            <Route path="/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
+            <Route path="/tu-van-nghe-nghiep" element={<StudentCareerAdvisor />} />
             <Route path="/hub" element={<AppHub />} />
           </Route>
           
@@ -234,6 +245,9 @@ function App() {
               <Route path="/admin/diem-danh-hop-online" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminMeetingAttendance /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/hop-online" element={<Navigate to="/admin/diem-danh-hop-online" replace />} />
               <Route path="/admin/truyen-lua-control" element={(role === 'admin' || role === 'secretary' || permissions.canViewPages) ? <AdminTorchControl /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/so-dau-bai" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/class-journals" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/career-advisor" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <StudentCareerAdvisor /> : <Navigate to="/admin/committee" replace />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />

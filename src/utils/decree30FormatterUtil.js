@@ -1065,7 +1065,8 @@ export function exportDecree30ToWord(docData, elementId = 'decree30-preview-cont
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${cleanFileName}_ND30.doc`;
+  const filePrefix = /^\d+-/.test(cleanFileName) ? '' : '1-';
+  a.download = `${filePrefix}${cleanFileName}_ND30.doc`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

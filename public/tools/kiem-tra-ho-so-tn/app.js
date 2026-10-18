@@ -2706,7 +2706,7 @@ async function exportExamRoomsToExcel() {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `HO_SO_PHONG_THI_PRO_MAX_${new Date().getTime()}.xlsx`;
+        a.download = `1-HO_SO_PHONG_THI_PRO_MAX_${new Date().getTime()}.xlsx`;
         a.click();
         showAlert("✅ Đã xuất bộ hồ sơ phòng thi Pro Max đầy đủ nhất!", "success");
     } catch (err) {
@@ -2854,7 +2854,7 @@ async function exportGradingLists() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `DANH_SACH_CHAM_THI_THEO_MON_${new Date().getTime()}.xlsx`;
+    a.download = `1-DANH_SACH_CHAM_THI_THEO_MON_${new Date().getTime()}.xlsx`;
     a.click();
     showAlert("✅ Đã xuất danh sách chấm thi theo môn thành công!", "success");
 }
@@ -2937,7 +2937,7 @@ async function downloadSplitResult() {
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `Ket_qua_tach_ten.xlsx`;
+    link.download = `1-Ket_qua_tach_ten.xlsx`;
     link.click();
 }
 
@@ -3095,7 +3095,7 @@ PHÒNG THI SỐ: ${room.number}`, 8);
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `HO_SO_THI_TOAN_HOI_DONG.xlsx`;
+        link.download = `1-HO_SO_THI_TOAN_HOI_DONG.xlsx`;
         link.click();
         showAlert("✅ Đã xuất Hồ sơ tổng hợp thành công!", 'success');
     } catch (err) {
@@ -3211,7 +3211,7 @@ async function exportClassRoomSummaryExcel() {
         const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = `DANH_SACH_PHONG_THI_THEO_LOP_${new Date().getTime()}.xlsx`;
+        link.download = `1-DANH_SACH_PHONG_THI_THEO_LOP_${new Date().getTime()}.xlsx`;
         link.click();
         showAlert("✅ Đã xuất thông tin phòng thi (Excel/PDF) thành công!", 'success');
     } catch (err) {
@@ -3307,7 +3307,7 @@ async function downloadRoomSample() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `Mau_Nhap_Phong_Thi.xlsx`;
+        a.download = `1-Mau_Nhap_Phong_Thi.xlsx`;
         a.click();
         URL.revokeObjectURL(url);
     } catch (err) {
@@ -3695,7 +3695,7 @@ function exportExamBagLabels() {
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
-            link.download = `NHAN_TUI_DE_${new Date().getTime()}.xlsx`;
+            link.download = `1-NHAN_TUI_DE_${new Date().getTime()}.xlsx`;
             link.click();
             showAlert('Đã xuất nhãn túi đề thành công!', 'success');
         }).catch(err => {
@@ -3874,7 +3874,7 @@ async function exportToPDF() {
     try {
         const opt = {
             margin:       0,
-            filename:     `HO_SO_THI_${new Date().getTime()}.pdf`,
+            filename:     `1-HO_SO_THI_${new Date().getTime()}.pdf`,
             image:        { type: 'jpeg', quality: 0.98 },
             html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
             jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -6065,7 +6065,7 @@ async function exportDataToTemplate() {
             link.href = URL.createObjectURL(blob);
             // Chuẩn hóa tên file xuất
             const cleanName = sourceFile.replace(/\.[^/.]+$/, "");
-            link.download = `HO_SO_${cleanName}_MAU_IN.xlsx`;
+            link.download = `1-HO_SO_${cleanName}_MAU_IN.xlsx`;
             link.click();
             
             showAlert(`🎉 Đã xuất thành công ${students.length} học sinh vào file mẫu!`, 'success');
@@ -6110,7 +6110,7 @@ window.addEventListener('message', function(event) {
             return;
         }
 
-        const fileName = "CSDL_KHOI_12_TRUONG.xlsx";
+        const fileName = "1-CSDL_KHOI_12_TRUONG.xlsx";
         const standardColumns = [
             "STT", "Mã HS", "Họ và tên", "Lớp", "Số CCCD", "Ngày sinh", 
             "Giới tính", "Dân tộc", "Số điện thoại", "Địa chỉ", 

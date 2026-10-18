@@ -20,27 +20,42 @@ export default function TeacherLogin() {
       const cleanPassword = password.trim();
 
       let matchedUser = null;
-
-      // 1. Try querying Supabase cbq_teacher_users
+      
+      // 1. Try secure RPC first
       try {
-        const { data: users, error: dbError } = await supabase
-          .from('cbq_teacher_users')
-          .select('*')
-          .ilike('username', cleanUsername);
-
-        if (!dbError && users && users.length > 0) {
-          const found = users.find(u => 
-            (u.password_hash === cleanPassword || u.password === cleanPassword)
-          );
-          if (found) {
-            matchedUser = found;
-          }
+        const { data: rpcTeacher, error: rpcErr } = await supabase.rpc('login_teacher', {
+          p_username: cleanUsername,
+          p_password: cleanPassword
+        });
+        if (!rpcErr && rpcTeacher && rpcTeacher.length > 0) {
+          matchedUser = rpcTeacher[0];
         }
-      } catch (dbErr) {
-        console.warn("Lỗi tra cứu Supabase:", dbErr);
+      } catch (e) {
+        // Fallback to table query if RPC not yet deployed
       }
 
-      // 2. Fallback to local storage cbq_teacher_accounts if Supabase fails or not found
+      // 2. Direct table check
+      if (!matchedUser) {
+        try {
+          const { data: users, error: dbError } = await supabase
+            .from('cbq_teacher_users')
+            .select('*')
+            .ilike('username', cleanUsername);
+
+          if (!dbError && users && users.length > 0) {
+            const found = users.find(u => 
+              (u.password_hash === cleanPassword || u.password === cleanPassword)
+            );
+            if (found) {
+              matchedUser = found;
+            }
+          }
+        } catch (dbErr) {
+          console.warn("Lỗi tra cứu Supabase:", dbErr);
+        }
+      }
+
+      // 3. Fallback to local storage cbq_teacher_accounts if Supabase fails or not found
       if (!matchedUser) {
         const localAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
         const localMatch = localAccounts.find(u => 
@@ -58,8 +73,13 @@ export default function TeacherLogin() {
         return;
       }
 
+      // Sanitize teacher object before saving: strip password and hash
+      const safeTeacher = { ...matchedUser };
+      delete safeTeacher.password;
+      delete safeTeacher.password_hash;
+
       // Save logged-in teacher state
-      localStorage.setItem('cbq_current_teacher', JSON.stringify(matchedUser));
+      localStorage.setItem('cbq_current_teacher', JSON.stringify(safeTeacher));
       navigate('/teacher-dashboard');
       
     } catch (err) {

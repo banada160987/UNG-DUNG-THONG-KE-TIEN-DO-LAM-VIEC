@@ -120,21 +120,32 @@ export default function PublicMeetingAttendance() {
     }
   }, [selectedMeetingId]);
 
-  // Tự động nhận diện nếu giáo viên đã đăng nhập tài khoản trước đó
+  // Tự động nhận diện nếu giáo viên đã đăng nhập tài khoản trước đó hoặc đã điểm danh gần đây
   useEffect(() => {
-    const savedTeacherStr = localStorage.getItem('cbq_current_teacher');
-    if (savedTeacherStr) {
-      try {
-        const t = JSON.parse(savedTeacherStr);
-        if (t.department) {
-          setSelectedDept(t.department);
-          setTtcmDept(t.department);
+    try {
+      const prefStr = localStorage.getItem('cbq_attendance_teacher_pref');
+      const savedTeacherStr = localStorage.getItem('cbq_current_teacher');
+      let teacherData = null;
+
+      if (prefStr) {
+        teacherData = JSON.parse(prefStr);
+      } else if (savedTeacherStr) {
+        teacherData = JSON.parse(savedTeacherStr);
+      }
+
+      if (teacherData) {
+        if (teacherData.department) {
+          setSelectedDept(teacherData.department);
+          setTtcmDept(teacherData.department);
         }
-        if (t.name) {
-          setSelectedStaffName(t.name);
-          setTtcmReporterName(t.name);
+        const staffName = teacherData.name || teacherData.full_name;
+        if (staffName) {
+          setSelectedStaffName(staffName);
+          setTtcmReporterName(staffName);
         }
-      } catch (e) {}
+      }
+    } catch (e) {
+      console.warn('Lỗi đọc thông tin giáo viên điểm danh:', e);
     }
   }, []);
 
@@ -368,11 +379,23 @@ export default function PublicMeetingAttendance() {
         }
         setCheckinSuccessData(res.attendance);
         try {
-          localStorage.setItem('cbq_current_teacher', JSON.stringify({
+          localStorage.setItem('cbq_attendance_teacher_pref', JSON.stringify({
             name: selectedStaffName,
             department: selectedDept
           }));
           setSavedTeacherInfo({ name: selectedStaffName, department: selectedDept });
+
+          // Cập nhật an toàn vào cbq_current_teacher nếu cùng giáo viên, không ghi đè session
+          const mainTeacherStr = localStorage.getItem('cbq_current_teacher');
+          if (mainTeacherStr) {
+            const mainTeacher = JSON.parse(mainTeacherStr);
+            if (mainTeacher.full_name === selectedStaffName || mainTeacher.name === selectedStaffName) {
+              localStorage.setItem('cbq_current_teacher', JSON.stringify({
+                ...mainTeacher,
+                department: selectedDept
+              }));
+            }
+          }
         } catch (e) {}
         await loadMeetingData(res.meeting?.id || selectedMeetingId);
       }

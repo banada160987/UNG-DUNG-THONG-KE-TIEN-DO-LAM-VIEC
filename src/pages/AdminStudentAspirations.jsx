@@ -31,8 +31,8 @@ export default function AdminStudentAspirations() {
   useEffect(() => {
     fetchAspirations();
 
-    // Lắng nghe realtime từ Supabase
-    const channel = supabase.channel('realtime:cbq_student_aspirations')
+    // Lắng nghe realtime từ Supabase cho cả 2 bảng
+    const channel1 = supabase.channel('realtime:cbq_feedback_aspirations')
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
@@ -43,8 +43,19 @@ export default function AdminStudentAspirations() {
       })
       .subscribe();
 
+    const channel2 = supabase.channel('realtime:cbq_student_aspirations_table')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'cbq_student_aspirations'
+      }, () => {
+        fetchAspirations(true);
+      })
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channel1);
+      supabase.removeChannel(channel2);
     };
   }, []);
 
@@ -61,32 +72,56 @@ export default function AdminStudentAspirations() {
     if (!isBackground) setLoading(true);
     try {
       const dbClient = supabaseAdmin || supabase;
-      const { data, error } = await dbClient
-        .from('cbq_feedback_responses')
-        .select('*')
-        .eq('topic_id', STUDENT_ASPIRATIONS_TOPIC_ID)
-        .order('created_at', { ascending: false });
+      const combined = [];
 
-      if (error) {
-        console.warn('Lỗi tải hòm thư học sinh từ DB:', error);
-        loadLocalFallback();
-      } else {
-        // Hợp nhất dữ liệu local nếu có tin mới tạo offline
-        const localResKey = `cbq_local_feedback_res_${STUDENT_ASPIRATIONS_TOPIC_ID}`;
-        const localList = JSON.parse(localStorage.getItem(localResKey) || '[]');
-        const existingIds = new Set((data || []).map(d => d.id));
-        const merged = [...(data || [])];
-        
-        localList.forEach(l => {
-          if (!existingIds.has(l.id)) {
-            merged.push(l);
-          }
-        });
+      // 1. Thử lấy từ bảng chuyên biệt cbq_student_aspirations
+      try {
+        const { data: directData, error: directErr } = await dbClient
+          .from('cbq_student_aspirations')
+          .select('*')
+          .order('created_at', { ascending: false });
 
-        // Sắp xếp theo ngày giảm dần
-        merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        setAspirations(merged);
+        if (!directErr && directData) {
+          combined.push(...directData);
+        }
+      } catch (e) {
+        // Bỏ qua nếu bảng chưa tạo
       }
+
+      // 2. Lấy từ cbq_feedback_responses
+      try {
+        const { data: feedData, error: feedErr } = await dbClient
+          .from('cbq_feedback_responses')
+          .select('*')
+          .eq('topic_id', STUDENT_ASPIRATIONS_TOPIC_ID)
+          .order('created_at', { ascending: false });
+
+        if (!feedErr && feedData) {
+          const existingIds = new Set(combined.map(c => c.id));
+          feedData.forEach(item => {
+            if (!existingIds.has(item.id)) {
+              combined.push(item);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Lỗi tải từ cbq_feedback_responses:', err);
+      }
+
+      // Hợp nhất dữ liệu local nếu có tin mới tạo offline
+      const localResKey = `cbq_local_feedback_res_${STUDENT_ASPIRATIONS_TOPIC_ID}`;
+      const localList = JSON.parse(localStorage.getItem(localResKey) || '[]');
+      const existingIds = new Set(combined.map(d => d.id));
+      
+      localList.forEach(l => {
+        if (!existingIds.has(l.id)) {
+          combined.push(l);
+        }
+      });
+
+      // Sắp xếp theo ngày giảm dần
+      combined.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setAspirations(combined);
     } catch (err) {
       console.warn('Exception fetch aspirations:', err);
       loadLocalFallback();
@@ -106,23 +141,25 @@ export default function AdminStudentAspirations() {
     const meta = item.feedback_items?.[0] || {};
     const isAnonymous = (item.organization_unit || '').includes('Ẩn danh') || 
                         (item.representative_name || '').includes('Ẩn danh') ||
-                        meta.isAnonymous === true;
+                        meta.isAnonymous === true ||
+                        item.is_anonymous === true;
     
     const isUrgent = item.agreement_level === 'phan_anh_khan_cap' || 
-                     (item.feedback_content || '').toLowerCase().includes('khẩn cấp') || 
+                     item.urgency === 'Khẩn cấp' ||
+                     (item.content || item.feedback_content || '').toLowerCase().includes('khẩn cấp') || 
                      meta.urgency === 'Khẩn cấp';
     
-    const isConcern = meta.urgency === 'Cần quan tâm' || item.agreement_level === 'sua_doi';
+    const isConcern = meta.urgency === 'Cần quan tâm' || item.urgency === 'Cần quan tâm' || item.agreement_level === 'sua_doi';
 
-    const categoryId = meta.category || meta.categoryId || 'co_so_vat_chat';
+    const categoryId = item.category || meta.category || meta.categoryId || 'co_so_vat_chat';
     const categoryObj = ASPIRATION_CATEGORIES.find(c => c.id === categoryId);
     const categoryLabel = meta.categoryLabel || categoryObj?.label || 'Chung';
 
-    const studentName = !isAnonymous ? (item.representative_name || meta.studentName || 'Học sinh CBQ') : 'Ẩn danh';
-    const className = !isAnonymous ? (meta.className || item.organization_unit || '') : '';
+    const studentName = !isAnonymous ? (item.student_name || item.representative_name || meta.studentName || 'Học sinh CBQ') : 'Ẩn danh';
+    const className = !isAnonymous ? (item.class_name || meta.className || item.organization_unit || '') : '';
     const phone = !isAnonymous ? (item.phone || meta.phone || '') : '';
 
-    const isVerified = item.is_verified === true;
+    const isVerified = item.is_verified === true || item.status === 'verified';
 
     return {
       isAnonymous,
@@ -134,8 +171,8 @@ export default function AdminStudentAspirations() {
       className,
       phone,
       isVerified,
-      adminNote: meta.admin_note || '',
-      rawContent: item.feedback_content || ''
+      adminNote: item.admin_note || meta.admin_note || '',
+      rawContent: item.content || item.feedback_content || ''
     };
   };
 
@@ -145,13 +182,20 @@ export default function AdminStudentAspirations() {
     const newStatus = !(item.is_verified === true);
     
     // Cập nhật State tức thì
-    setAspirations(prev => prev.map(r => r.id === item.id ? { ...r, is_verified: newStatus } : r));
+    setAspirations(prev => prev.map(r => r.id === item.id ? { ...r, is_verified: newStatus, status: newStatus ? 'verified' : 'pending' } : r));
     if (selectedItem && selectedItem.id === item.id) {
-      setSelectedItem(prev => ({ ...prev, is_verified: newStatus }));
+      setSelectedItem(prev => ({ ...prev, is_verified: newStatus, status: newStatus ? 'verified' : 'pending' }));
     }
 
+    const dbClient = supabaseAdmin || supabase;
     try {
-      const dbClient = supabaseAdmin || supabase;
+      await dbClient
+        .from('cbq_student_aspirations')
+        .update({ is_verified: newStatus, status: newStatus ? 'verified' : 'pending' })
+        .eq('id', item.id);
+    } catch (e) {}
+
+    try {
       await dbClient
         .from('cbq_feedback_responses')
         .update({ is_verified: newStatus })
@@ -193,16 +237,30 @@ export default function AdminStudentAspirations() {
 
     const updatedItem = {
       ...selectedItem,
+      admin_note: adminNote.trim(),
       feedback_items: updatedItems,
-      is_verified: true // Ghi nhận BGH đã tiếp nhận và xử lý
+      is_verified: true,
+      status: 'verified'
     };
 
     // Cập nhật state UI
     setSelectedItem(updatedItem);
     setAspirations(prev => prev.map(r => r.id === selectedItem.id ? updatedItem : r));
 
+    const dbClient = supabaseAdmin || supabase;
     try {
-      const dbClient = supabaseAdmin || supabase;
+      await dbClient
+        .from('cbq_student_aspirations')
+        .update({
+          admin_note: adminNote.trim(),
+          feedback_items: updatedItems,
+          is_verified: true,
+          status: 'verified'
+        })
+        .eq('id', selectedItem.id);
+    } catch (e) {}
+
+    try {
       await dbClient
         .from('cbq_feedback_responses')
         .update({
@@ -240,8 +298,15 @@ export default function AdminStudentAspirations() {
       setSelectedItem(null);
     }
 
+    const dbClient = supabaseAdmin || supabase;
     try {
-      const dbClient = supabaseAdmin || supabase;
+      await dbClient
+        .from('cbq_student_aspirations')
+        .delete()
+        .eq('id', id);
+    } catch (e) {}
+
+    try {
       await dbClient
         .from('cbq_feedback_responses')
         .delete()

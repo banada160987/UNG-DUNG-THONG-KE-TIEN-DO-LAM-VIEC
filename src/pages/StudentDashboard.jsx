@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers } from 'lucide-react';
+import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers, ExternalLink, Compass, Brain } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 
 export default function StudentDashboard() {
@@ -340,7 +340,7 @@ export default function StudentDashboard() {
   return (
     <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', fontFamily: '"Inter", sans-serif' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: 'bold', margin: '0 0 8px 0', color: '#1e293b' }}>
             Không gian Học sinh
@@ -407,30 +407,38 @@ export default function StudentDashboard() {
         {/* Quick Links */}
         <div className="glass" style={{ padding: '24px', borderRadius: '16px', background: 'white' }}>
           <h2 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '16px', color: '#1e293b' }}>Tiện ích học đường</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <button onClick={openProfileModal} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f0f9ff', borderRadius: '12px', textDecoration: 'none', color: '#0369a1', transition: 'all 0.2s', border: '1px solid #bae6fd', cursor: 'pointer' }}>
-              <IdCard size={28} color="#0284c7" />
-              <span style={{ fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>Hồ Sơ SMAS & Nhân Thân</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+            <button onClick={openProfileModal} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f0f9ff', borderRadius: '12px', textDecoration: 'none', color: '#0369a1', border: '1px solid #bae6fd', cursor: 'pointer' }}>
+              <IdCard size={26} color="#0284c7" />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Hồ Sơ SMAS & CCCD</span>
             </button>
-            <Link to="/binh-chon" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', transition: 'all 0.2s', border: '1px solid #e2e8f0' }}>
-              <CheckSquare size={28} color="#0284c7" />
-              <span style={{ fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>Bình chọn & Đánh giá</span>
+            <Link to="/hoc-sinh/tu-van-to-hop-2-cong-2" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#faf5ff', borderRadius: '12px', textDecoration: 'none', color: '#6b21a8', border: '1px solid #e9d5ff' }}>
+              <Compass size={26} color="#7c3aed" />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Cố Vấn 2+2 & Ngành</span>
             </Link>
-            <Link to="/gop-y" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', transition: 'all 0.2s', border: '1px solid #e2e8f0' }}>
-              <MessageSquare size={28} color="#16a34a" />
-              <span style={{ fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>Góp ý 24/7</span>
+            <Link to="/hoc-sinh/so-dau-bai" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#fffbeb', borderRadius: '12px', textDecoration: 'none', color: '#92400e', border: '1px solid #fde68a' }}>
+              <BookOpen size={26} color="#d97706" />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Sổ Đầu Bài Điện Tử</span>
             </Link>
-            <Link to="/dang-ky-xe" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', transition: 'all 0.2s', border: '1px solid #e2e8f0' }}>
-              <Bike size={28} color="#ea580c" />
-              <span style={{ fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>Đăng ký Xe Máy</span>
+            <Link to="/hom-thu-hoc-sinh" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#fff1f2', borderRadius: '12px', textDecoration: 'none', color: '#9f1239', border: '1px solid #fecdd3' }}>
+              <Heart size={26} color="#e11d48" />
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Tâm Lý & DASS-21</span>
             </Link>
-            <Link to="/thi-truc-tuyen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', transition: 'all 0.2s', border: '1px solid #e2e8f0' }}>
-              <Award size={28} color="#9333ea" />
-              <span style={{ fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>Thi Trực Tuyến</span>
+            <Link to="/binh-chon" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
+              <CheckSquare size={26} color="#0284c7" />
+              <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Bình chọn & Đánh giá</span>
             </Link>
-            <Link to="/hoc-sinh/van-bang-so" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', transition: 'all 0.2s', border: '1px solid #e2e8f0' }}>
-              <FileBadge size={28} color="#3b82f6" />
-              <span style={{ fontSize: '14px', fontWeight: '500', textAlign: 'center' }}>Tủ Hồ Sơ Cá Nhân</span>
+            <Link to="/thi-truc-tuyen" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
+              <Award size={26} color="#9333ea" />
+              <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Thi Trực Tuyến</span>
+            </Link>
+            <Link to="/hoc-sinh/van-bang-so" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
+              <FileBadge size={26} color="#3b82f6" />
+              <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Tủ Hồ Sơ Cá Nhân</span>
+            </Link>
+            <Link to="/dang-ky-xe" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
+              <Bike size={26} color="#ea580c" />
+              <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Đăng ký Xe Máy</span>
             </Link>
           </div>
         </div>
@@ -495,7 +503,25 @@ export default function StudentDashboard() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <Link
+              to="/hoc-sinh/tu-van-to-hop-2-cong-2"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#7c3aed',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: '700',
+                fontSize: '13px',
+                boxShadow: '0 2px 8px rgba(124,58,237,0.3)'
+              }}
+            >
+              <Compass size={15} /> AI Cố Vấn Tuyển Sinh 2+2
+            </Link>
             <button
               onClick={() => setShowExamModal(true)}
               style={{

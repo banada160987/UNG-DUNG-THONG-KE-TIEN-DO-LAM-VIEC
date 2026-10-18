@@ -1094,7 +1094,7 @@ export default function AdminSchedule() {
     const ws = XLSX.utils.json_to_sheet(sampleData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Mau_TKB_Truong");
-    XLSX.writeFile(wb, "Mau_ThoiKhoaBieu_THPT_CaoBaQuat.xlsx");
+    XLSX.writeFile(wb, "1-Mau_ThoiKhoaBieu_THPT_CaoBaQuat.xlsx");
   };
 
   const SUBJECT_MAP = {
@@ -2417,7 +2417,7 @@ export default function AdminSchedule() {
       XLSX.utils.book_append_sheet(wb, ws3, 'CLB_Va_BoiDuong_HSG');
     }
 
-    XLSX.writeFile(wb, `Lich_Chieu_CLB_HocThem_K12_THPT_CaoBaQuat_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.writeFile(wb, `1-Lich_Chieu_CLB_HocThem_K12_THPT_CaoBaQuat_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   const handleAddOrUpdateAssignment = () => {
@@ -2549,7 +2549,7 @@ export default function AdminSchedule() {
     const ws3 = XLSX.utils.json_to_sheet(classData);
     XLSX.utils.book_append_sheet(wb, ws3, "3_ChiTiet_34_LopHoc");
 
-    XLSX.writeFile(wb, `Bao_Cao_Phan_Cong_Giang_Day_Chi_Tiet_THPT_CaoBaQuat_${Date.now()}.xlsx`);
+    XLSX.writeFile(wb, `1-Bao_Cao_Phan_Cong_Giang_Day_Chi_Tiet_THPT_CaoBaQuat_${Date.now()}.xlsx`);
   };
 
   const handleExportDraftExcel = () => {
@@ -2557,7 +2557,7 @@ export default function AdminSchedule() {
       alert("Chưa có bản nháp thời khóa biểu!");
       return;
     }
-    exportDraftTimetableToExcel(draftSchedule, 'ThoiKhoaBieu_BanNhap_AI_THPT_CaoBaQuat');
+    exportDraftTimetableToExcel(draftSchedule, '1-ThoiKhoaBieu_BanNhap_AI_THPT_CaoBaQuat');
   };
 
   const handleSaveCurrentScenario = () => {

@@ -775,7 +775,7 @@ export default function AdminRegistrations() {
     XLSX.utils.book_append_sheet(workbook, ws, "Chua_Dang_Ky");
 
     const cleanTitle = (zaloCampaign.title || 'Dot_Dang_Ky').replace(/[^a-zA-Z0-9]/g, '_');
-    XLSX.writeFile(workbook, `Danh_sach_CHUA_DANG_KY_${cleanTitle}_${dateStr}.xlsx`);
+    XLSX.writeFile(workbook, `1-Danh_sach_CHUA_DANG_KY_${cleanTitle}_${dateStr}.xlsx`);
   };
 
   const handleCopyZaloCampaignMessage = () => {
@@ -1634,9 +1634,9 @@ export default function AdminRegistrations() {
         .replace(/[/\\?%*:|"<>]/g, '_')
         .replace(/\s+/g, '_')
         .trim();
-      fileName = `Danh_sach_${cleanFilter}_${cleanCampaignTitle}_${dateStr}`;
+      fileName = `1-Danh_sach_${cleanFilter}_${cleanCampaignTitle}_${dateStr}`;
     } else {
-      fileName = `Bao_cao_dang_ky_${cleanCampaignTitle}_${dateStr}`;
+      fileName = `1-Bao_cao_dang_ky_${cleanCampaignTitle}_${dateStr}`;
     }
 
     // Xuất file
@@ -1799,7 +1799,7 @@ export default function AdminRegistrations() {
         .replace(/[/\\?%*:|"<>]/g, '_')
         .replace(/\s+/g, '_')
         .trim();
-      const fileName = `Bao_cao_Thong_ke_va_Ma_tran_${cleanTitle}_${dateStr}`;
+      const fileName = `1-Bao_cao_Thong_ke_va_Ma_tran_${cleanTitle}_${dateStr}`;
       XLSX.writeFile(workbook, `${fileName}.xlsx`);
     } catch (err) {
       console.error("Lỗi khi xuất bảng thống kê tóm tắt:", err);
@@ -1973,7 +1973,7 @@ export default function AdminRegistrations() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Bao_cao_Nghi_dinh_30_${cleanDocName}.doc`;
+    a.download = `1-Bao_cao_Nghi_dinh_30_${cleanDocName}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

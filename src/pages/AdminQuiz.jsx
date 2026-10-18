@@ -447,7 +447,7 @@ export default function AdminQuiz() {
       modalContent.style.overflowY = originalOverflow;
       
       const link = document.createElement('a');
-      link.download = `Bao_Cao_Thong_Ke_${Date.now()}.png`;
+      link.download = `1-Bao_Cao_Thong_Ke_${Date.now()}.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
     } catch (err) {
@@ -495,7 +495,7 @@ export default function AdminQuiz() {
         { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 45 }, { wch: 22 }
       ],
       sheetName: "Thống Kê Thí Sinh",
-      fileName: `Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`
+      fileName: `1-Danh_Sach_Ket_Qua_Cuoc_Thi_30_Nam_${Date.now()}.xlsx`
     });
   };
 

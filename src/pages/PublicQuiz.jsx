@@ -324,7 +324,7 @@ export default function PublicQuiz() {
       const image = canvas.toDataURL("image/png");
       const link = document.createElement('a');
       link.href = image;
-      link.download = `Giay_Chung_Nhan_${(studentName || 'Thi_Sinh').replace(/\s+/g, '_')}.png`;
+      link.download = `1-Giay_Chung_Nhan_${(studentName || 'Thi_Sinh').replace(/\s+/g, '_')}.png`;
       link.click();
     } catch (err) {
       alert("Lỗi khi tạo ảnh giấy chứng nhận: " + err.message);

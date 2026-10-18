@@ -52,13 +52,38 @@ export default function AdminEmulation() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [logsRes, critRes, studentRes] = await Promise.all([
+      const [logsRes, critRes, studentRes, discRes] = await Promise.all([
         supabase.from('cbq_emulation_logs').select('*').order('created_at', { ascending: false }),
         supabase.from('cbq_emulation_criteria').select('*').order('created_at', { ascending: true }),
-        supabase.from('cbq_students').select('student_class')
+        supabase.from('cbq_students').select('student_class'),
+        supabase.from('cbq_discipline_records').select('*').order('inspection_date', { ascending: false })
       ]);
 
-      if (!logsRes.error && logsRes.data) setAllLogs(logsRes.data);
+      let combinedLogs = [];
+      if (!logsRes.error && logsRes.data) {
+        combinedLogs = [...logsRes.data];
+      }
+
+      if (!discRes.error && discRes.data) {
+        discRes.data.forEach(d => {
+          combinedLogs.push({
+            id: 'disc_' + (d.id || Math.random().toString(36).substring(2, 9)),
+            week_number: Number(d.week_number) || 1,
+            log_date: d.inspection_date,
+            student_class: d.inspected_class,
+            grade_level: getGradeLevel(d.inspected_class),
+            criteria_title: d.violation_type,
+            category: 'Nếp sống & Đồng phục',
+            score_change: -Math.abs(Number(d.point_deduction || 5)),
+            reason_note: d.notes,
+            student_name: d.student_name || '',
+            student_code: d.student_code || '',
+            reporter_name: d.reporter_name || d.logged_by || 'Đội Cờ Đỏ'
+          });
+        });
+      }
+
+      setAllLogs(combinedLogs);
       if (!critRes.error && critRes.data && critRes.data.length > 0) setCriteriaList(critRes.data);
 
       let uniqueClasses = [];
@@ -261,7 +286,7 @@ export default function AdminEmulation() {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `ThiDua_Tuan_${selectedWeek}`);
-    XLSX.writeFile(wb, `Bang_Xep_Hang_Thi_Dua_Toan_Truong_Tuan_${selectedWeek}.xlsx`);
+    XLSX.writeFile(wb, `1-Bang_Xep_Hang_Thi_Dua_Toan_Truong_Tuan_${selectedWeek}.xlsx`);
   };
 
   const getClassificationBadgeStyle = (cls) => {

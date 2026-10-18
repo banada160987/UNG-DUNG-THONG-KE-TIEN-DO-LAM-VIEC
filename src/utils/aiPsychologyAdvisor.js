@@ -419,6 +419,37 @@ export async function submitStudentAspiration({
   let insertedRecord = null;
   let insertError = null;
 
+  // 1. Ghi vào bảng chuyên biệt cbq_student_aspirations (nếu đã tạo bảng)
+  try {
+    const directPayload = {
+      student_name: repName,
+      class_name: className.trim(),
+      phone: safePhone,
+      email: '',
+      category,
+      urgency,
+      is_anonymous: isAnonymous,
+      content: content.trim(),
+      feedback_content: content.trim(),
+      feedback_items: feedbackItems,
+      organization_unit: orgName,
+      representative_name: repName,
+      status: 'pending',
+      created_at: timestamp
+    };
+    const { data: directData, error: directErr } = await dbClient
+      .from('cbq_student_aspirations')
+      .insert([directPayload])
+      .select();
+
+    if (!directErr && directData && directData.length > 0) {
+      insertedRecord = directData[0];
+    }
+  } catch (e) {
+    // Bỏ qua nếu bảng cbq_student_aspirations chưa tạo
+  }
+
+  // 2. Luôn ghi vào cbq_feedback_responses để tương thích ngược hoàn hảo
   try {
     const { data, error } = await dbClient
       .from('cbq_feedback_responses')
@@ -426,14 +457,14 @@ export async function submitStudentAspiration({
       .select();
 
     if (error) {
-      console.warn('[StudentAspiration] Lỗi ghi DB chính:', error.message);
-      insertError = error;
+      console.warn('[StudentAspiration] Lỗi ghi DB cbq_feedback_responses:', error.message);
+      if (!insertedRecord) insertError = error;
     } else if (data && data.length > 0) {
-      insertedRecord = data[0];
+      if (!insertedRecord) insertedRecord = data[0];
     }
   } catch (err) {
     console.warn('[StudentAspiration] Exception ghi DB:', err.message);
-    insertError = err;
+    if (!insertedRecord) insertError = err;
   }
 
   // Bắn thông báo REALTIME vào cbq_notifications để chuông Admin/BGH reo

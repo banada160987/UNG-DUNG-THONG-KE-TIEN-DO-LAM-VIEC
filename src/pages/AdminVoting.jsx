@@ -289,7 +289,7 @@ export default function AdminVoting() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `BaoCao_ThongKe_TyLe_ThamGia_BinhChon_TheoLop_A4_Ngang.doc`;
+    a.download = `1-BaoCao_ThongKe_TyLe_ThamGia_BinhChon_TheoLop_A4_Ngang.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -443,7 +443,7 @@ export default function AdminVoting() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `BangVang_KetQua_BinhChon_TacPham_30Nam_A4_Ngang.doc`;
+    a.download = `1-BangVang_KetQua_BinhChon_TacPham_30Nam_A4_Ngang.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -462,7 +462,7 @@ export default function AdminVoting() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "KetQuaBinhChon");
-    XLSX.writeFile(wb, "BangVang_KetQua_BinhChon_30Nam.xlsx");
+    XLSX.writeFile(wb, "1-BangVang_KetQua_BinhChon_30Nam.xlsx");
   };
 
   const handleOpenNewModal = () => {

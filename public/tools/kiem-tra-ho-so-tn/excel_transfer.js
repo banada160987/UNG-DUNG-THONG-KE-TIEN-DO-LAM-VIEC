@@ -160,7 +160,7 @@ const ExcelTransfer = {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `Du_Lieu_Nguon_Da_Gop_${new Date().getTime()}.xlsx`;
+            a.download = `1-Du_Lieu_Nguon_Da_Gop_${new Date().getTime()}.xlsx`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);
@@ -1587,7 +1587,7 @@ const ExcelTransfer = {
             
             // 4. Download the ZIP file
             const zipContent = await zip.generateAsync({type:"blob"});
-            saveAs(zipContent, `TachFile_${sheetName}_${new Date().getTime()}.zip`);
+            saveAs(zipContent, `1-TachFile_${sheetName}_${new Date().getTime()}.zip`);
             
             alert(`Tách thành công ${Object.keys(groups).length} file! Đã tải về file ZIP.`);
             document.getElementById('et-split-modal').style.display = 'none';
@@ -1900,7 +1900,7 @@ const ExcelTransfer = {
         const ws = XLSX.utils.json_to_sheet(this.crosscheckReportData);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Bao_Cao_Sai_Lech");
-        XLSX.writeFile(wb, "Bao_Cao_Sai_Lech_Diem.xlsx");
+        XLSX.writeFile(wb, "1-Bao_Cao_Sai_Lech_Diem.xlsx");
         
         showAlert(`Đã tải xuống báo cáo lỗi (${this.crosscheckMismatchCount} dòng)`, 'success');
     },
@@ -2410,7 +2410,7 @@ const ExcelTransfer = {
         if (window.etFinalReportBlob) {
             const rLink = document.createElement('a');
             rLink.href = URL.createObjectURL(window.etFinalReportBlob);
-            rLink.download = `[Bao_Cao_Ghi_Nhan]_${new Date().getTime()}.xlsx`;
+            rLink.download = `1-[Bao_Cao_Ghi_Nhan]_${new Date().getTime()}.xlsx`;
             document.body.appendChild(rLink);
             setTimeout(() => rLink.click(), 1000);
             setTimeout(() => document.body.removeChild(rLink), 2000);

@@ -248,9 +248,20 @@ export default function TeacherLessonPlanBuilder() {
     let updatedList = [...savedPlans];
     const existingIdx = updatedList.findIndex(p => p.id === planObj.id);
     if (existingIdx >= 0) {
-      updatedList[existingIdx] = planObj;
+      const prev = updatedList[existingIdx];
+      updatedList[existingIdx] = {
+        ...planObj,
+        status: prev.status || 'PENDING',
+        reviewerNotes: prev.reviewerNotes || '',
+        approvedAt: prev.approvedAt || null
+      };
     } else {
-      updatedList.unshift(planObj);
+      updatedList.unshift({
+        ...planObj,
+        status: 'PENDING',
+        reviewerNotes: '',
+        approvedAt: null
+      });
     }
 
     setSavedPlans(updatedList);
@@ -309,7 +320,7 @@ export default function TeacherLessonPlanBuilder() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Giao_An_5512_${lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
+    a.download = `1-Giao_An_5512_${lessonTitle.replace(/[^a-zA-Z0-9]/g, '_')}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -543,9 +554,31 @@ export default function TeacherLessonPlanBuilder() {
                       transition: 'all 0.15s'
                     }}
                   >
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: activePlanId === p.id ? '#0369a1' : '#1e293b', marginBottom: '2px' }}>
-                      {p.lessonTitle}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '6px', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: activePlanId === p.id ? '#0369a1' : '#1e293b' }}>
+                        {p.lessonTitle}
+                      </div>
+                      {p.status === 'APPROVED' && (
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                          ✓ ĐÃ DUYỆT
+                        </span>
+                      )}
+                      {p.status === 'REJECTED' && (
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#fee2e2', color: '#b91c1c', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                          ! CẦN SỬA
+                        </span>
+                      )}
+                      {(!p.status || p.status === 'PENDING') && (
+                        <span style={{ fontSize: '10px', fontWeight: 'bold', backgroundColor: '#f1f5f9', color: '#64748b', padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                          CHỜ DUYỆT
+                        </span>
+                      )}
                     </div>
+                    {p.reviewerNotes && (
+                      <div style={{ fontSize: '11px', color: '#b91c1c', backgroundColor: '#fef2f2', padding: '4px 6px', borderRadius: '4px', marginBottom: '4px', borderLeft: '3px solid #ef4444' }}>
+                        💬 TTCM: {p.reviewerNotes}
+                      </div>
+                    )}
                     <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between' }}>
                       <span>{p.subject} - {p.grade}</span>
                       <span>{new Date(p.updatedAt).toLocaleDateString('vi-VN')}</span>

@@ -3,12 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import * as LucideIcons from 'lucide-react';
-
-// Common Icons
-const { 
-  ArrowLeft, Plus, Trash2, Edit2, ExternalLink, AppWindow
-} = LucideIcons;
+import {
+  ArrowLeft, Plus, Trash2, Edit2, ExternalLink, AppWindow,
+  Video, FileCheck, FileSpreadsheet, BookOpen, GraduationCap,
+  Users, Calendar, Globe, Database, Shield, Award, Sparkles,
+  Heart, FileText, CheckSquare, Settings, Link2, FolderOpen,
+  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers
+} from 'lucide-react';
 
 // Helpers to auto-generate colors
 const colorPresets = [
@@ -24,12 +25,17 @@ const colorPresets = [
 
 const getRandomColorPreset = () => colorPresets[Math.floor(Math.random() * colorPresets.length)];
 
+const ICON_MAP = {
+  ArrowLeft, Plus, Trash2, Edit2, ExternalLink, AppWindow,
+  Video, FileCheck, FileSpreadsheet, BookOpen, GraduationCap,
+  Users, Calendar, Globe, Database, Shield, Award, Sparkles,
+  Heart, FileText, CheckSquare, Settings, Link2, FolderOpen,
+  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers
+};
+
 // Dynamic Icon Component
 const DynamicIcon = ({ name, size = 32, color = "#000" }) => {
-  const IconComponent = LucideIcons[name];
-  if (!IconComponent) {
-    return <LucideIcons.AppWindow size={size} color={color} />;
-  }
+  const IconComponent = (name && ICON_MAP[name]) ? ICON_MAP[name] : AppWindow;
   return <IconComponent size={size} color={color} />;
 };
 

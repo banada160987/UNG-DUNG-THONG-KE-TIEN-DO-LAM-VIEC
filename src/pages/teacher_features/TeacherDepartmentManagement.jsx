@@ -60,31 +60,36 @@ export default function TeacherDepartmentManagement() {
     const tData = JSON.parse(currentTeacherStr);
     setTeacher(tData);
 
-    // Merge with local teacher lesson plans if any
+    // Merge with saved department plans and teacher lesson plans
+    const savedDeptPlans = JSON.parse(localStorage.getItem('cbq_department_plans') || '[]');
     const localPlans = JSON.parse(localStorage.getItem('cbq_teacher_lesson_plans') || '[]');
-    if (localPlans.length > 0) {
-      const formattedLocal = localPlans.map(p => ({
-        id: p.id,
-        teacherName: p.teacherName || tData.full_name,
-        subject: p.subject || 'Toán',
-        grade: p.grade || 'Khối 11',
-        lessonTitle: p.lessonTitle,
-        duration: p.duration || '2 tiết',
-        submittedAt: p.updatedAt || new Date().toISOString(),
-        status: p.status || 'PENDING',
-        reviewerNotes: p.reviewerNotes || '',
-        approvedAt: p.approvedAt || null
-      }));
+    
+    const mergedMap = new Map();
+    INITIAL_DEPARTMENT_PLANS.forEach(item => mergedMap.set(item.id, item));
+    savedDeptPlans.forEach(item => mergedMap.set(item.id, item));
 
-      // Merge uniqueness by ID
-      const mergedMap = new Map();
-      INITIAL_DEPARTMENT_PLANS.forEach(item => mergedMap.set(item.id, item));
-      formattedLocal.forEach(item => mergedMap.set(item.id, item));
-      setDepartmentPlans(Array.from(mergedMap.values()));
+    if (localPlans.length > 0) {
+      localPlans.forEach(p => {
+        const existing = mergedMap.get(p.id) || {};
+        mergedMap.set(p.id, {
+          ...existing,
+          id: p.id,
+          teacherName: p.teacherName || tData.full_name,
+          subject: p.subject || 'Toán',
+          grade: p.grade || 'Khối 11',
+          lessonTitle: p.lessonTitle,
+          duration: p.duration || '2 tiết',
+          submittedAt: p.updatedAt || new Date().toISOString(),
+          status: existing.status || p.status || 'PENDING',
+          reviewerNotes: existing.reviewerNotes || p.reviewerNotes || '',
+          approvedAt: existing.approvedAt || p.approvedAt || null
+        });
+      });
     }
+    setDepartmentPlans(Array.from(mergedMap.values()));
   }, [navigate]);
 
-  const handleApprovePlan = (planId, isApproved) => {
+  const handleApprovePlan = async (planId, isApproved) => {
     const updated = departmentPlans.map(p => {
       if (p.id === planId) {
         return {
@@ -98,6 +103,42 @@ export default function TeacherDepartmentManagement() {
     });
 
     setDepartmentPlans(updated);
+
+    // 1. Lưu vào bộ nhớ tổ chuyên môn
+    localStorage.setItem('cbq_department_plans', JSON.stringify(updated));
+
+    // 2. Đồng bộ ngược lại cho giáo viên soạn bài nhìn thấy
+    try {
+      const localTeacherPlans = JSON.parse(localStorage.getItem('cbq_teacher_lesson_plans') || '[]');
+      const teacherPlansUpdated = localTeacherPlans.map(tp => {
+        if (tp.id === planId) {
+          return {
+            ...tp,
+            status: isApproved ? 'APPROVED' : 'REJECTED',
+            reviewerNotes: reviewNoteInput,
+            approvedAt: isApproved ? new Date().toISOString() : null
+          };
+        }
+        return tp;
+      });
+      localStorage.setItem('cbq_teacher_lesson_plans', JSON.stringify(teacherPlansUpdated));
+    } catch (e) {
+      console.warn("Lỗi sync teacher lesson plans:", e);
+    }
+
+    // 3. Nếu có Supabase cbq_dossiers, đồng bộ trạng thái
+    try {
+      await supabase
+        .from('cbq_dossiers')
+        .update({
+          status: isApproved ? 'approved' : 'rejected',
+          reviewer_name: teacher?.full_name || 'Tổ trưởng Chuyên môn',
+          reviewer_note: reviewNoteInput,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', planId);
+    } catch (e) {}
+
     setSelectedPlanModal(null);
     setReviewNoteInput('');
     alert(isApproved ? "🎉 Đã duyệt Giáo án thành công!" : "🔴 Đã yêu cầu giáo viên chỉnh sửa bài soạn!");

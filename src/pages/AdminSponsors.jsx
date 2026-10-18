@@ -115,7 +115,7 @@ export default function AdminSponsors() {
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Tài trợ");
-    XLSX.writeFile(wb, "DanhSachTaiTro.xlsx");
+    XLSX.writeFile(wb, "1-DanhSachTaiTro.xlsx");
   };
 
   const handleDownloadTemplate = () => {
@@ -126,7 +126,7 @@ export default function AdminSponsors() {
     }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
-    XLSX.writeFile(wb, "Template_NhapTaiTro.xlsx");
+    XLSX.writeFile(wb, "1-Template_NhapTaiTro.xlsx");
   };
 
   return (

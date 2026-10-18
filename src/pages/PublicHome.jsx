@@ -257,8 +257,8 @@ export default function PublicHome() {
       await document.fonts.ready;
       const canvas = await html2canvas(inviteRef.current, { scale: 2, useCORS: true });
       const image = canvas.toDataURL("image/png", 1.0);
-      const link = document.createElement("a");
-      link.download = `ThiepMoi_${rsvpResult.guest.name}.png`;
+      const safeName = (rsvpResult?.guest?.name || 'Khach_Quy').replace(/\s+/g, '_');
+      link.download = `1-ThiepMoi_${safeName}.png`;
       link.href = image;
       link.click();
     } catch (error) {

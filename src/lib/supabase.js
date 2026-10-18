@@ -129,60 +129,63 @@ export const DualSupabaseService = {
   },
 
   /**
-   * Chèn dữ liệu đồng thời vào CẢ 2 Supabase (Dual-Write)
+   * Chèn dữ liệu an toàn vào Supabase Primary (tự động chuyển dự phòng nếu lỗi)
    */
   async insert(table, data) {
-    const promises = [];
-    const client1 = supabase1Admin || supabase1;
-    const client2 = supabase2Admin || supabase2;
-    if (client1) promises.push(client1.from(table).insert(data));
-    if (client2) promises.push(client2.from(table).insert(data));
+    const primaryClient = USE_SUPABASE_2_AS_PRIMARY ? (supabase2 || supabase) : (supabase1 || supabase);
+    const secondaryClient = USE_SUPABASE_2_AS_PRIMARY ? supabase1 : supabase2;
 
-    const results = await Promise.allSettled(promises);
-    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
-
-    if (okRes) return okRes.value;
-    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
-    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
-    throw new Error(`Cả 02 Supabase đều chèn dữ liệu thất bại!${detail}`);
+    try {
+      const res = await primaryClient.from(table).insert(data);
+      if (res.error) throw res.error;
+      return res;
+    } catch (err) {
+      console.warn(`[DualSupabase] Ghi Primary DB thất bại, chuyển sang Secondary DB:`, err);
+      if (secondaryClient && secondaryClient !== primaryClient) {
+        return await secondaryClient.from(table).insert(data);
+      }
+      throw err;
+    }
   },
 
   /**
-   * Cập nhật dữ liệu đồng thời trên CẢ 2 Supabase
+   * Cập nhật dữ liệu an toàn trên Supabase Primary
    */
   async update(table, data, matchColumn, matchValue) {
-    const promises = [];
-    const client1 = supabase1Admin || supabase1;
-    const client2 = supabase2Admin || supabase2;
-    if (client1) promises.push(client1.from(table).update(data).eq(matchColumn, matchValue));
-    if (client2) promises.push(client2.from(table).update(data).eq(matchColumn, matchValue));
+    const primaryClient = USE_SUPABASE_2_AS_PRIMARY ? (supabase2 || supabase) : (supabase1 || supabase);
+    const secondaryClient = USE_SUPABASE_2_AS_PRIMARY ? supabase1 : supabase2;
 
-    const results = await Promise.allSettled(promises);
-    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
-
-    if (okRes) return okRes.value;
-    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
-    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
-    throw new Error(`Cả 02 Supabase đều cập nhật thất bại!${detail}`);
+    try {
+      const res = await primaryClient.from(table).update(data).eq(matchColumn, matchValue);
+      if (res.error) throw res.error;
+      return res;
+    } catch (err) {
+      console.warn(`[DualSupabase] Cập nhật Primary DB thất bại, chuyển sang Secondary DB:`, err);
+      if (secondaryClient && secondaryClient !== primaryClient) {
+        return await secondaryClient.from(table).update(data).eq(matchColumn, matchValue);
+      }
+      throw err;
+    }
   },
 
   /**
-   * Xóa dữ liệu đồng thời trên CẢ 2 Supabase
+   * Xóa dữ liệu an toàn trên Supabase Primary
    */
   async delete(table, matchColumn, matchValue) {
-    const promises = [];
-    const client1 = supabase1Admin || supabase1;
-    const client2 = supabase2Admin || supabase2;
-    if (client1) promises.push(client1.from(table).delete().eq(matchColumn, matchValue));
-    if (client2) promises.push(client2.from(table).delete().eq(matchColumn, matchValue));
+    const primaryClient = USE_SUPABASE_2_AS_PRIMARY ? (supabase2 || supabase) : (supabase1 || supabase);
+    const secondaryClient = USE_SUPABASE_2_AS_PRIMARY ? supabase1 : supabase2;
 
-    const results = await Promise.allSettled(promises);
-    const okRes = results.find(r => r.status === 'fulfilled' && !r.value.error);
-
-    if (okRes) return okRes.value;
-    const errors = results.map(r => r.status === 'rejected' ? r.reason?.message : r.value?.error?.message).filter(Boolean);
-    const detail = errors.length > 0 ? ` (${errors.join(' | ')})` : '';
-    throw new Error(`Cả 02 Supabase đều xóa thất bại!${detail}`);
+    try {
+      const res = await primaryClient.from(table).delete().eq(matchColumn, matchValue);
+      if (res.error) throw res.error;
+      return res;
+    } catch (err) {
+      console.warn(`[DualSupabase] Xóa Primary DB thất bại, chuyển sang Secondary DB:`, err);
+      if (secondaryClient && secondaryClient !== primaryClient) {
+        return await secondaryClient.from(table).delete().eq(matchColumn, matchValue);
+      }
+      throw err;
+    }
   }
 };
 

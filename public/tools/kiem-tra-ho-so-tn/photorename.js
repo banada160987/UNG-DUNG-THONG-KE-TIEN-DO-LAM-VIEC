@@ -338,7 +338,7 @@ async function downloadRenamedZip() {
     const content = await zip.generateAsync({type: "blob"});
     const link = document.createElement('a');
     link.href = URL.createObjectURL(content);
-    link.download = `${baseName}_photos.zip`;
+    link.download = `1-${baseName}_photos.zip`;
     link.click();
     showAlert("✅ Đã tạo tệp Zip thành công!", 'success');
 }

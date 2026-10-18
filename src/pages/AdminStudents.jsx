@@ -455,7 +455,7 @@ export default function AdminStudents() {
 
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Mau_Hoc_Sinh_SMAS");
-    XLSX.writeFile(workbook, "Mau_Import_Danh_Sach_Hoc_Sinh_THPT_CBQ_SMAS.xlsx");
+    XLSX.writeFile(workbook, "1-Mau_Import_Danh_Sach_Hoc_Sinh_THPT_CBQ_SMAS.xlsx");
   };
 
   const handleExportExcel = () => {
@@ -475,7 +475,7 @@ export default function AdminStudents() {
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "DanhSachHocSinh_SMAS");
-    XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_SMAS_${new Date().toISOString().split('T')[0]}.xlsx`);
+    XLSX.writeFile(workbook, `1-Danh_Sach_Hoc_Sinh_SMAS_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   // Bulk Class Transfer State
@@ -735,7 +735,7 @@ export default function AdminStudents() {
     XLSX.utils.book_append_sheet(wb, wsSummary, "Tong_Hop_CSDL_Nganh");
     XLSX.utils.book_append_sheet(wb, wsDetail, "Chi_Tiet_Hoc_Sinh");
 
-    const fileName = `BaoCao_CSDL_Nganh_DeAn06_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `1-BaoCao_CSDL_Nganh_DeAn06_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -771,7 +771,7 @@ export default function AdminStudents() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "DS_Chua_Dang_Ky");
 
-    const fileName = `DS_HocSinh_Chua_Dang_Ky_${zaloTargetClass !== 'ALL' ? zaloTargetClass : 'ToanTruong'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const fileName = `1-DS_HocSinh_Chua_Dang_Ky_${zaloTargetClass !== 'ALL' ? zaloTargetClass : 'ToanTruong'}_${new Date().toISOString().slice(0, 10)}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 

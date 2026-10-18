@@ -805,7 +805,7 @@ const ExamConfig = (() => {
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [{ wch: 5 }, { wch: 25 }, { wch: 15 }, { wch: 20 }, { wch: 10 }, { wch: 20 }];
                 XLSX.utils.book_append_sheet(wb, ws, "DS_GIAM_THI");
-                XLSX.writeFile(wb, "Mau_Danh_Sach_Giam_Thi.xlsx");
+                XLSX.writeFile(wb, "1-Mau_Danh_Sach_Giam_Thi.xlsx");
             } catch (err) {
                 console.error(err);
                 UIUtils.showAlert("❌ Lỗi xuất file mẫu!", "danger");
@@ -823,7 +823,7 @@ const ExamConfig = (() => {
                 const ws = XLSX.utils.aoa_to_sheet(data);
                 ws['!cols'] = [{ wch: 5 }, { wch: 15 }, { wch: 30 }, { wch: 20 }];
                 XLSX.utils.book_append_sheet(wb, ws, "Mau_Phong_Thi");
-                XLSX.writeFile(wb, "Mau_Danh_Sach_Phong_Thi.xlsx");
+                XLSX.writeFile(wb, "1-Mau_Danh_Sach_Phong_Thi.xlsx");
             } catch (err) {
                 UIUtils.showAlert("❌ Lỗi xuất file mẫu!", "danger");
             }

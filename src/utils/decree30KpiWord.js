@@ -545,5 +545,5 @@ export function exportDepartmentSummaryToWordDecree30(summaryData = {}) {
   `;
 
   const mhtmlPackage = buildMhtmlPackage(html, imagesToEmbed);
-  triggerMhtmlWordDownload(mhtmlPackage, `Tong_Hop_Danh_Gia_${cleanDeptName.replace(/\s+/g, '_')}_Thang_${monthStr}_${yearStr}.doc`);
+  triggerMhtmlWordDownload(mhtmlPackage, `1-Tong_Hop_Danh_Gia_${cleanDeptName.replace(/\s+/g, '_')}_Thang_${monthStr}_${yearStr}.doc`);
 }

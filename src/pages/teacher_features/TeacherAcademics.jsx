@@ -64,9 +64,29 @@ export default function TeacherAcademics() {
         
         {/* Sổ Đầu Bài */}
         <div style={{ background: 'white', borderRadius: '16px', padding: '24px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
-          <h3 style={{ margin: '0 0 16px 0', color: '#854d0e', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <BookOpen size={20} /> Sổ Đầu Bài (Gần đây)
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <h3 style={{ margin: 0, color: '#854d0e', fontSize: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <BookOpen size={20} /> Sổ Đầu Bài Điện Tử (TKB & Ký Số)
+            </h3>
+            <Link
+              to="/teacher-dashboard/class-journal"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                backgroundColor: '#0284c7',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontWeight: '700',
+                fontSize: '13px',
+                boxShadow: '0 2px 8px rgba(2,132,199,0.25)'
+              }}
+            >
+              <BookOpen size={15} /> Mở Sổ Đầu Bài Chi Tiết Tuần
+            </Link>
+          </div>
           {loading ? <p>Đang tải...</p> : journals.length === 0 ? <p>Chưa có dữ liệu.</p> : (
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
