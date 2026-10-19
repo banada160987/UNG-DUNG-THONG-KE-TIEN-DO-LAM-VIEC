@@ -423,7 +423,7 @@ export default function AdminStudents() {
         "Lớp": "10A01",
         "Ngày Sinh": "2008-05-15",
         "Giới Tính": "Nam",
-        "Địa Chỉ Liên Lạc": "xã Phú Thị, huyện Gia Lâm, Hà Nội",
+        "Địa Chỉ Liên Lạc": "phường Tân An, TP. Buôn Ma Thuột, Đắk Lắk",
         "Họ Tên Phụ Huynh": "Nguyễn Văn Bình",
         "SĐT Phụ Huynh": "0912345678"
       },
@@ -434,7 +434,7 @@ export default function AdminStudents() {
         "Lớp": "11A02",
         "Ngày Sinh": "2007-08-20",
         "Giới Tính": "Nữ",
-        "Địa Chỉ Liên Lạc": "thị trấn Sài Đồng, huyện Gia Lâm, Hà Nội",
+        "Địa Chỉ Liên Lạc": "phường Tân Lập, TP. Buôn Ma Thuột, Đắk Lắk",
         "Họ Tên Phụ Huynh": "Trần Văn Cường",
         "SĐT Phụ Huynh": "0987654321"
       }

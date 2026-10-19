@@ -606,7 +606,7 @@ export default function PublicMeetingAttendance() {
             color: '#0369a1', padding: '5px 14px', borderRadius: '20px',
             fontSize: '12px', fontWeight: '800', letterSpacing: '0.5px', marginBottom: '8px'
           }}>
-            <Video size={15} /> TRƯỜNG THPT CAO BÁ QUÁT - QUỐC OAI
+            <Video size={15} /> TRƯỜNG THPT CAO BÁ QUÁT - TÂN AN - ĐẮK LẮK
           </div>
           
           <h1 style={{ fontSize: '22px', fontWeight: '900', color: '#0f172a', margin: '4px 0 10px', letterSpacing: '-0.3px' }}>
@@ -778,7 +778,7 @@ export default function PublicMeetingAttendance() {
                     borderBottom: '3px solid #facc15'
                   }}>
                     <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#bbf7d0', fontWeight: 'bold' }}>
-                      TRƯỜNG THPT CAO BÁ QUÁT - QUỐC OAI
+                      TRƯỜNG THPT CAO BÁ QUÁT - TÂN AN - ĐẮK LẮK
                     </div>
                     <div style={{ fontSize: '17px', fontWeight: '900', letterSpacing: '0.5px', marginTop: '3px' }}>
                       THẺ ĐẠI BIỂU DỰ HỌP ĐIỆN TỬ

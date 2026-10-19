@@ -325,7 +325,7 @@ export const generateParkingWordReport = async (allStudents, parkingData, busDat
                   new TableCell({
                     width: { size: 50, type: WidthType.PERCENTAGE },
                     children: [
-                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Hà Nội, ngày ... tháng ... năm 2026", font: "Times New Roman", size: 28, italics: true })] }),
+                      new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Buôn Ma Thuột, ngày ... tháng ... năm 2026", font: "Times New Roman", size: 28, italics: true })] }),
                       new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "NGƯỜI LẬP BÁO CÁO", font: "Times New Roman", size: 28, bold: true })] }),
                       new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "(Ký, ghi rõ họ tên)", font: "Times New Roman", size: 24, italics: true })] }),
                       new Paragraph({ text: "", spacing: { after: 1200 } }),

@@ -753,7 +753,7 @@ export default function AdminGuests() {
               </div>
               
               <div className="signature-box">
-                <div>Hà Nội, ngày 09 tháng 11 năm 2026</div>
+                <div>Buôn Ma Thuột, ngày 09 tháng 11 năm 2026</div>
                 <div style={{fontWeight: 'bold'}}>HIỆU TRƯỞNG</div>
                 <div className="signature-stamp-placeholder">
                   <div className="signature-handwriting">Lê Thị Thảo</div>
