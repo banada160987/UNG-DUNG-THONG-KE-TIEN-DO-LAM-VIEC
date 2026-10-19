@@ -58,7 +58,10 @@ body {
 /* Portal Navbar & Navigation Links */
 .cbq-navbar {
   width: 100%;
-  overflow-x: clip;
+  position: sticky;
+  top: 0;
+  z-index: 990;
+  overflow: visible !important;
 }
 
 .cbq-nav-container {
@@ -70,6 +73,8 @@ body {
   justify-content: space-between;
   align-items: center;
   box-sizing: border-box;
+  position: relative;
+  overflow: visible !important;
 }
 
 .portal-nav-links {
@@ -77,15 +82,8 @@ body {
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
-  overflow-x: auto;
   white-space: nowrap;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none !important;
-  -ms-overflow-style: none !important;
-}
-
-.portal-nav-links::-webkit-scrollbar {
-  display: none !important;
+  overflow: visible !important;
 }
 
 .desktop-portal-btns {
@@ -110,12 +108,18 @@ body {
     padding: 6px 10px !important;
     font-size: 12px !important;
   }
+  .portal-nav-links .nav-dropdown:last-of-type .nav-dropdown-content {
+    right: 0 !important;
+    left: auto !important;
+  }
 }
 
 /* Dropdown Menu Styles */
 .nav-dropdown {
   position: relative;
   display: inline-block;
+  cursor: pointer;
+  user-select: none;
 }
 
 .nav-dropdown-content {
@@ -123,38 +127,52 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  background-color: #14532d;
-  min-width: 230px;
-  box-shadow: 0px 10px 25px rgba(0, 0, 0, 0.3);
+  background-color: #064e3b;
+  min-width: 260px;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  border-radius: 0 0 10px 10px;
-  border: 1px solid #166534;
+  border-radius: 0 0 12px 12px;
+  border: 1.5px solid #10b981;
+  border-top: none;
   overflow: hidden;
+  animation: fadeIn 0.18s ease-in-out;
+}
+
+/* Invisible hover bridge to keep dropdown open when moving cursor */
+.nav-dropdown-content::before {
+  content: '';
+  position: absolute;
+  top: -12px;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background: transparent;
 }
 
 .nav-dropdown:hover .nav-dropdown-content,
 .nav-dropdown.active-touch .nav-dropdown-content {
   display: block;
-  animation: fadeIn 0.2s ease-in-out;
 }
 
 .nav-dropdown-item {
   color: #ffffff;
-  padding: 12px 18px;
+  padding: 10px 16px;
   text-decoration: none;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
+  white-space: normal;
+  line-height: 1.4;
 }
 
 .nav-dropdown-item:hover {
-  background-color: #be123c;
-  color: #ffffff;
-  padding-left: 24px;
+  background-color: #047857;
+  color: #fef08a;
+  padding-left: 20px;
 }
 
 /* Mobile & Tablet Responsive Navbar (<= 960px) */
@@ -207,6 +225,9 @@ body {
     background: #064e3b;
     border-top: 1px solid rgba(255,255,255,0.12);
     padding-bottom: 12px;
+    max-height: calc(100vh - 65px);
+    overflow-y: auto !important;
+    box-sizing: border-box;
   }
 
   .portal-nav-links.mobile-open {
@@ -214,13 +235,31 @@ body {
     animation: fadeIn 0.2s ease-in-out;
   }
 
-  .portal-nav-links > a,
-  .portal-nav-links .nav-dropdown > span {
+  .portal-nav-links > a {
     width: 100%;
     padding: 12px 16px !important;
     border-right: none !important;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     font-size: 14px !important;
+    box-sizing: border-box;
+  }
+
+  .portal-nav-links .nav-dropdown {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  .portal-nav-links .nav-dropdown > span {
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 12px 16px !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    font-size: 14px !important;
+    cursor: pointer !important;
+    box-sizing: border-box;
   }
 
   .nav-dropdown-content {
@@ -230,6 +269,19 @@ body {
     background: #043d2e !important;
     width: 100% !important;
     border-radius: 0 !important;
+    display: none;
+  }
+
+  .nav-dropdown.active-touch .nav-dropdown-content {
+    display: block !important;
+    animation: fadeIn 0.15s ease-in-out;
+  }
+
+  .nav-dropdown-item {
+    padding: 11px 20px 11px 28px !important;
+    font-size: 13.5px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    background: rgba(0, 0, 0, 0.15);
   }
 
   .mobile-drawer-portals {

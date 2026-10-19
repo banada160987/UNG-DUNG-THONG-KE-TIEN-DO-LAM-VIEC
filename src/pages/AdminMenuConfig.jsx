@@ -12,21 +12,24 @@ const DEFAULT_FULL_PUBLIC_MENUS = [
   { id: 'pub_anniv_5', target_type: 'public', parent_group: 'anniversary', label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', sort_order: 5, is_active: true },
   { id: 'pub_anniv_6', target_type: 'public', parent_group: 'anniversary', label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', sort_order: 6, is_active: true },
   { id: 'pub_anniv_7', target_type: 'public', parent_group: 'anniversary', label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', sort_order: 7, is_active: true },
-  { id: 'pub_anniv_8', target_type: 'public', parent_group: 'anniversary', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 8, is_active: true },
 
   // Group 2: Vận hành nhà trường
-  { id: 'pub_school_1', target_type: 'public', parent_group: 'school', label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', sort_order: 1, is_active: true },
-  { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
-  { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
-  { id: 'pub_school_3_1', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 4, is_active: true },
-  { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 5, is_active: true },
-  { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 6, is_active: true },
-  { id: 'pub_school_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 7, is_active: true },
+  { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
+  { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 2, is_active: true },
+  { id: 'pub_school_3_1', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: true },
+  { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
+  { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
+  { id: 'pub_school_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true },
+  { id: 'pub_school_7', target_type: 'public', parent_group: 'school', label: '💌 Hòm Thư Học Sinh & Tâm Tư', path: '/hom-thu-hoc-sinh', sort_order: 7, is_active: true },
+  { id: 'pub_school_8', target_type: 'public', parent_group: 'school', label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', sort_order: 8, is_active: true },
+  { id: 'pub_school_9', target_type: 'public', parent_group: 'school', label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/hoc-sinh/van-bang-so', sort_order: 9, is_active: true },
 
   // Group 3: Tin tức & Thư viện
   { id: 'pub_media_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },
-  { id: 'pub_media_2', target_type: 'public', parent_group: 'media', label: '📸 Thư viện ảnh 30 năm', path: '/thu-vien-anh', sort_order: 2, is_active: true },
-  { id: 'pub_media_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng kỷ niệm', path: '/bang-vang', sort_order: 3, is_active: true }
+  { id: 'pub_media_2', target_type: 'public', parent_group: 'media', label: '📸 Thư viện ảnh nhà trường', path: '/thu-vien-anh', sort_order: 2, is_active: true },
+  { id: 'pub_media_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng tài trợ & vinh danh', path: '/bang-vang', sort_order: 3, is_active: true },
+  { id: 'pub_media_4', target_type: 'public', parent_group: 'media', label: '📺 Trạm Video & Học Liệu Số 4.0', path: '/hoc-lieu-so', sort_order: 4, is_active: true },
+  { id: 'pub_media_5', target_type: 'public', parent_group: 'media', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 5, is_active: true }
 ];
 
 const DEFAULT_FULL_ADMIN_MENUS = [
@@ -77,6 +80,7 @@ const PRESET_SYSTEM_PAGES = [
   { label: '📜 Văn bản - Thông báo', path: '/van-ban', group: 'school' },
   { label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/hoc-sinh/van-bang-so', group: 'school' },
   { label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', group: 'school' },
+  { label: '💌 Hòm Thư Học Sinh & Tâm Tư', path: '/hom-thu-hoc-sinh', group: 'school' },
   { label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', group: 'school' },
   { label: 'ℹ️ Giới thiệu lịch sử 30 năm', path: '/gioi-thieu', group: 'anniversary' },
   { label: '📖 Tập san 30 năm 3D', path: '/tap-san', group: 'anniversary' },
@@ -85,10 +89,11 @@ const PRESET_SYSTEM_PAGES = [
   { label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', group: 'anniversary' },
   { label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', group: 'anniversary' },
   { label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', group: 'anniversary' },
-  { label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', group: 'anniversary' },
   { label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', group: 'media' },
   { label: '📸 Thư viện ảnh 30 năm', path: '/thu-vien-anh', group: 'media' },
   { label: '🎖️ Bảng vàng kỷ niệm', path: '/bang-vang', group: 'media' },
+  { label: '📺 Trạm Video & Học Liệu Số 4.0', path: '/hoc-lieu-so', group: 'media' },
+  { label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', group: 'media' },
 
   // Admin Pages
   { label: '👨‍🎓 Quản lý Học sinh & Chuyển lớp', path: '/admin/students', group: 'school' },
@@ -134,6 +139,15 @@ export default function AdminMenuConfig() {
   const [icon, setIcon] = useState('Link2');
   const [sortOrder, setSortOrder] = useState(1);
 
+  const updateLocalCache = (type, data) => {
+    if (type === 'public') {
+      localStorage.setItem('cbq_menus_public_v2', JSON.stringify(data));
+      localStorage.setItem('cbq_menus_public', JSON.stringify(data));
+    } else {
+      localStorage.setItem(`cbq_menus_${type}`, JSON.stringify(data));
+    }
+  };
+
   const fetchMenus = useCallback(async () => {
     setLoading(true);
     try {
@@ -145,15 +159,17 @@ export default function AdminMenuConfig() {
 
       if (!error && data && data.length > 0) {
         setMenus(data);
+        updateLocalCache(targetType, data);
       } else {
-        const local = localStorage.getItem(`cbq_menus_${targetType}`);
+        const localKey = targetType === 'public' ? 'cbq_menus_public_v2' : `cbq_menus_${targetType}`;
+        const local = localStorage.getItem(localKey) || (targetType === 'public' ? localStorage.getItem('cbq_menus_public') : null);
         if (local) {
           setMenus(JSON.parse(local));
         } else {
           // Load default full list
           const defaultList = targetType === 'public' ? DEFAULT_FULL_PUBLIC_MENUS : DEFAULT_FULL_ADMIN_MENUS;
           setMenus(defaultList);
-          localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(defaultList));
+          updateLocalCache(targetType, defaultList);
         }
       }
     } catch (err) {
@@ -206,7 +222,7 @@ export default function AdminMenuConfig() {
   const handleToggleActive = async (item) => {
     const updated = menus.map(m => m.id === item.id ? { ...m, is_active: !m.is_active } : m);
     setMenus(updated);
-    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
+    updateLocalCache(targetType, updated);
 
     try {
       await supabase.from('cbq_navigation_menus').update({ is_active: !item.is_active }).eq('id', item.id);
@@ -229,7 +245,7 @@ export default function AdminMenuConfig() {
     if (!window.confirm("Bạn có chắc chắn muốn xóa mục menu này?")) return;
     const updated = menus.filter(m => m.id !== id);
     setMenus(updated);
-    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
+    updateLocalCache(targetType, updated);
 
     try {
       await supabase.from('cbq_navigation_menus').delete().eq('id', id);
@@ -246,7 +262,7 @@ export default function AdminMenuConfig() {
     updated.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
 
     setMenus(updated);
-    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
+    updateLocalCache(targetType, updated);
 
     try {
       await supabase.from('cbq_navigation_menus').update({ sort_order: newOrder }).eq('id', item.id);
@@ -282,7 +298,7 @@ export default function AdminMenuConfig() {
     updated.sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
 
     setMenus(updated);
-    localStorage.setItem(`cbq_menus_${targetType}`, JSON.stringify(updated));
+    updateLocalCache(targetType, updated);
 
     try {
       if (editingId) {
