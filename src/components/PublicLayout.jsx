@@ -123,17 +123,8 @@ export default function PublicLayout() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  useEffect(() => {
-    const channel = supabase.channel('public:cbq_navigation_menus')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_navigation_menus' }, () => {
-        fetchPublicMenus(true);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  // Menu đã được tự động đồng bộ khi chuyển trang (location.pathname) và qua storage event
+  // Không cần mở 1.500 kết nối WebSocket thường trực vào Supabase Realtime để tiết kiệm tài nguyên kết nối
 
   const safeMenus = Array.isArray(publicMenus) && publicMenus.length > 0 ? publicMenus : DEFAULT_FULL_MENUS;
 
