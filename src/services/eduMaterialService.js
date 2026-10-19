@@ -106,16 +106,28 @@ export function getClassesTaughtByTeacher(teacherName) {
   return classes.sort();
 }
 
+import { CacheManager } from '../utils/cacheManager';
+
+const CACHE_KEY_MATERIALS = 'cbq_cached_edu_materials';
+
 /**
- * Lấy danh sách toàn bộ học liệu số (kết hợp Cloud Supabase + Local Storage)
+ * Lấy danh sách toàn bộ học liệu số (kết hợp Smart Edge Cache + Cloud Supabase + Local Storage)
+ * @param {boolean} forceRefresh Cưỡng bức tải mới bỏ qua cache
  */
-export async function getAllEduMaterials() {
+export async function getAllEduMaterials(forceRefresh = false) {
+  if (!forceRefresh) {
+    const cached = CacheManager.get(CACHE_KEY_MATERIALS, 15);
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      return cached;
+    }
+  }
+
   let materials = [];
 
   try {
     const { data, error } = await supabase
       .from('cbq_edu_materials')
-      .select('*')
+      .select('id, teacher_name, teacher_id, subject, grade, target_classes, title, description, material_type, content_url, file_size, is_free_for_target_classes, is_monetized, price, bank_info, created_at')
       .order('created_at', { ascending: false });
 
     if (!error && Array.isArray(data) && data.length > 0) {
@@ -135,19 +147,24 @@ export async function getAllEduMaterials() {
   } catch (e) {}
 
   const merged = [...localCustom, ...materials];
+  let finalResult = merged;
   if (merged.length === 0) {
-    return INITIAL_MATERIALS;
+    finalResult = INITIAL_MATERIALS;
+  } else {
+    // Lọc trùng theo id
+    const map = new Map();
+    merged.forEach(item => {
+      if (item && item.id && !map.has(item.id)) {
+        map.set(item.id, item);
+      }
+    });
+    finalResult = Array.from(map.values());
   }
 
-  // Lọc trùng theo id
-  const map = new Map();
-  merged.forEach(item => {
-    if (item && item.id && !map.has(item.id)) {
-      map.set(item.id, item);
-    }
-  });
+  // Lưu vào Smart Edge Cache 15 phút
+  CacheManager.set(CACHE_KEY_MATERIALS, finalResult);
 
-  return Array.from(map.values());
+  return finalResult;
 }
 
 /**
@@ -175,6 +192,9 @@ export async function createEduMaterial(materialData) {
   } catch (e) {
     console.error('Lỗi ghi local storage:', e);
   }
+
+  // 3. Làm mới cache
+  CacheManager.remove(CACHE_KEY_MATERIALS);
 
   return newMaterial;
 }

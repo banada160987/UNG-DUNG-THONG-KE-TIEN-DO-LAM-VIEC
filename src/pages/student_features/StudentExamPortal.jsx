@@ -4,7 +4,7 @@ import {
   Clock, CheckCircle2, AlertTriangle, ArrowLeft, Send, Sparkles, 
   HelpCircle, CheckSquare, Award, BookOpen, User, Lock, RotateCcw 
 } from 'lucide-react';
-import { getPublishedExams, submitStudentExam } from '../../services/smartAssessmentService';
+import { getPublishedExams, getExamDetail, submitStudentExam } from '../../services/smartAssessmentService';
 
 export default function StudentExamPortal() {
   const navigate = useNavigate();
@@ -21,19 +21,22 @@ export default function StudentExamPortal() {
   const [examSubmitted, setExamSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [restoredProgress, setRestoredProgress] = useState(false);
 
   useEffect(() => {
+    let currentStudent = null;
     try {
       const studentStr = localStorage.getItem('cbq_current_student');
       if (studentStr) {
-        setStudent(JSON.parse(studentStr));
+        currentStudent = JSON.parse(studentStr);
+        setStudent(currentStudent);
       }
     } catch (_) {}
 
-    loadExam();
+    loadExam(currentStudent);
   }, [examId]);
 
-  const loadExam = async () => {
+  const loadExam = async (currentStudent) => {
     setLoading(true);
     try {
       const allExams = await getPublishedExams();
@@ -44,10 +47,37 @@ export default function StudentExamPortal() {
         found = allExams[0];
       }
 
-      setExam(found || null);
+      if (found) {
+        // Tải chi tiết câu hỏi (Lazy load tiết kiệm băng thông)
+        const detailedExam = await getExamDetail(found.id);
+        const activeExam = detailedExam || found;
+        setExam(activeExam);
 
-      if (found && found.duration_minutes) {
-        setTimeLeft(found.duration_minutes * 60);
+        if (activeExam.duration_minutes) {
+          setTimeLeft(activeExam.duration_minutes * 60);
+        }
+
+        // Tự động khôi phục tiến độ làm bài nếu từng bị gián đoạn mạng/F5
+        const stuKey = currentStudent?.student_code || currentStudent?.username;
+        if (stuKey) {
+          const progressKey = `cbq_exam_progress_${activeExam.id}_${stuKey}`;
+          const savedProgress = localStorage.getItem(progressKey);
+          if (savedProgress) {
+            try {
+              const parsed = JSON.parse(savedProgress);
+              if (parsed.answers && Object.keys(parsed.answers).length > 0) {
+                setAnswers(parsed.answers);
+                if (parsed.timeLeft && parsed.timeLeft > 0) {
+                  setTimeLeft(parsed.timeLeft);
+                }
+                setExamStarted(true);
+                setRestoredProgress(true);
+              }
+            } catch (_) {}
+          }
+        }
+      } else {
+        setExam(null);
       }
     } catch (err) {
       console.error(err);
@@ -73,6 +103,22 @@ export default function StudentExamPortal() {
 
     return () => clearInterval(timer);
   }, [examStarted, examSubmitted, timeLeft]);
+
+  // Tự động lưu tiến độ làm bài vào LocalStorage (Client-Side Edge Resilience)
+  useEffect(() => {
+    if (!examStarted || examSubmitted || !exam || !student) return;
+    const stuKey = student.student_code || student.username;
+    if (!stuKey) return;
+
+    try {
+      const progressKey = `cbq_exam_progress_${exam.id}_${stuKey}`;
+      localStorage.setItem(progressKey, JSON.stringify({
+        answers,
+        timeLeft,
+        savedAt: Date.now()
+      }));
+    } catch (_) {}
+  }, [answers, timeLeft, examStarted, examSubmitted, exam, student]);
 
   const handleStartExam = () => {
     if (!student) {
@@ -130,6 +176,12 @@ export default function StudentExamPortal() {
 
       setSubmissionResult(res);
       setExamSubmitted(true);
+
+      // Xóa tiến độ nháp sau khi đã nộp bài thành công
+      const stuKey = student?.student_code || student?.username;
+      if (stuKey && exam?.id) {
+        localStorage.removeItem(`cbq_exam_progress_${exam.id}_${stuKey}`);
+      }
     } catch (err) {
       alert("Lỗi khi nộp bài: " + err.message);
     } finally {
@@ -141,6 +193,21 @@ export default function StudentExamPortal() {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const renderCleanMathText = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/\$(.*?)\$/g, '$1')
+      .replace(/\\cdot/g, '·')
+      .replace(/\\Leftrightarrow/g, '⇔')
+      .replace(/\\Rightarrow/g, '⇒')
+      .replace(/\\ge/g, '≥')
+      .replace(/\\le/g, '≤')
+      .replace(/\\pm/g, '±')
+      .replace(/\\infty/g, '∞')
+      .replace(/\\sqrt\{(.*?)\}/g, '√($1)')
+      .replace(/\\frac\{(.*?)\}\{(.*?)\}/g, '($1)/($2)');
   };
 
   if (loading) {
@@ -285,6 +352,14 @@ export default function StudentExamPortal() {
         </div>
       </div>
 
+      {/* Auto-save & Restored Progress notification */}
+      {restoredProgress && (
+        <div style={{ background: '#dcfce7', border: '1px solid #86efac', color: '#166534', padding: '10px 16px', borderRadius: '12px', marginBottom: '16px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <CheckCircle2 size={16} color="#16a34a" />
+          <span>Hệ thống đã tự động khôi phục câu trả lời của bạn từ phiên làm việc trước. Tiến độ làm bài được lưu an toàn liên tục tại máy.</span>
+        </div>
+      )}
+
       {/* Questions list */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         {questions.map((q, idx) => {
@@ -300,9 +375,25 @@ export default function StudentExamPortal() {
                 <span style={{ fontSize: '12px', color: '#94a3b8' }}>Mức: {q.level || 'Thông hiểu'}</span>
               </div>
 
-              <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: '600', lineHeight: 1.6, marginBottom: '16px' }}>
-                {q.content}
+              <div style={{ fontSize: '15px', color: '#0f172a', fontWeight: '600', lineHeight: 1.6, marginBottom: '12px' }}>
+                {renderCleanMathText(q.content)}
               </div>
+
+              {/* Question Image / Diagram for Math, Physics, Chemistry */}
+              {q.image_url && (
+                <div style={{ textAlign: 'center', margin: '14px 0 20px 0' }}>
+                  <div style={{ display: 'inline-block', background: '#f8fafc', padding: '8px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+                    <img 
+                      src={q.image_url} 
+                      alt="Hình vẽ / Đồ thị câu hỏi" 
+                      style={{ maxWidth: '100%', maxHeight: '280px', objectFit: 'contain', display: 'block', borderRadius: '8px', cursor: 'zoom-in' }} 
+                      onClick={() => window.open(q.image_url, '_blank')}
+                      title="Bấm để mở xem ảnh ở kích thước đầy đủ"
+                    />
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px' }}>🔍 Bấm vào hình để mở ảnh lớn</div>
+                  </div>
+                </div>
+              )}
 
               {/* PHẦN 1: 4 Options */}
               {q.part === 'part1' && (
@@ -333,7 +424,7 @@ export default function StudentExamPortal() {
                         <span style={{ width: '26px', height: '26px', borderRadius: '50%', background: isSelected ? '#0284c7' : '#e2e8f0', color: isSelected ? 'white' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12.5px', fontWeight: 'bold', flexShrink: 0 }}>
                           {letter}
                         </span>
-                        <span>{opt}</span>
+                        <span>{renderCleanMathText(opt)}</span>
                       </button>
                     );
                   })}
@@ -348,7 +439,7 @@ export default function StudentExamPortal() {
                     return (
                       <div key={sub.key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', gap: '12px', flexWrap: 'wrap' }}>
                         <div style={{ fontSize: '14px', color: '#334155', flex: 1 }}>
-                          <strong>{sub.key})</strong> {sub.text}
+                          <strong>{sub.key})</strong> {renderCleanMathText(sub.text)}
                         </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button

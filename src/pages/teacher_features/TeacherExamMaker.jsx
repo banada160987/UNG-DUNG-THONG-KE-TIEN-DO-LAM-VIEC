@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
   FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
-  CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload 
+  CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image 
 } from 'lucide-react';
 import { 
   savePublishedExam, 
@@ -11,6 +11,12 @@ import {
   HIGH_SCHOOL_SUBJECTS 
 } from '../../services/smartAssessmentService';
 import ExcelGradeSyncModal from '../../components/ExcelGradeSyncModal';
+
+// Đồ thị hàm số bậc 3 y = x^3 - 3x + 2 minh họa chuẩn giáo khoa GDPT 2018
+export const CUBIC_GRAPH_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" style="background:%23ffffff;border-radius:8px;"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="%23334155"/></marker></defs><line x1="20" y1="120" x2="300" y2="120" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="302" y="125" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">x</text><line x1="160" y1="200" x2="160" y2="20" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="165" y="22" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">y</text><text x="145" y="135" font-family="Times New Roman, serif" font-size="13" font-style="italic" fill="%2364748b">O</text><line x1="110" y1="117" x2="110" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="102" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">-1</text><line x1="210" y1="117" x2="210" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="207" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">1</text><line x1="157" y1="60" x2="163" y2="60" stroke="%23334155" stroke-width="1.5"/><text x="145" y="64" font-family="Times New Roman, serif" font-size="12" fill="%23334155">4</text><line x1="110" y1="120" x2="110" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><line x1="110" y1="60" x2="160" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><path d="M 70 200 C 95 120, 95 60, 110 60 C 130 60, 140 100, 160 100 C 180 100, 195 120, 210 120 C 230 120, 245 40, 260 20" fill="none" stroke="%23dc2626" stroke-width="2.5"/><circle cx="110" cy="60" r="3.5" fill="%23dc2626"/><circle cx="210" cy="120" r="3.5" fill="%23dc2626"/><circle cx="160" cy="100" r="3" fill="%23334155"/><text x="165" y="98" font-family="Times New Roman, serif" font-size="12" fill="%23334155">2</text></svg>`;
+
+// Hình học không gian: Hình chóp S.ABCD SA vuông góc đáy chuẩn SGK
+export const PYRAMID_GEOMETRY_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 220" width="280" height="220" style="background:%23ffffff;border-radius:8px;"><line x1="100" y1="30" x2="50" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="200" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="230" y2="140" stroke="%230f172a" stroke-width="1.8"/><line x1="50" y1="180" x2="200" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="200" y1="180" x2="230" y2="140" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="100" y2="140" stroke="%230284c7" stroke-width="1.8" stroke-dasharray="4,4"/><line x1="100" y1="140" x2="50" y2="180" stroke="%230f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="100" y1="140" x2="230" y2="140" stroke="%230f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="50" y1="180" x2="230" y2="140" stroke="%2394a3b8" stroke-width="1.2" stroke-dasharray="3,3"/><polyline points="100,128 112,128 112,140" fill="none" stroke="%230284c7" stroke-width="1.2"/><text x="95" y="22" font-family="Times New Roman, serif" font-size="15" font-weight="bold" fill="%230f172a">S</text><text x="82" y="142" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">A</text><text x="35" y="190" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">B</text><text x="205" y="195" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">C</text><text x="238" y="145" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">D</text></svg>`;
 
 // Pre-built Exam Database for GDPT 2018 (Toán 11 / 12 - Cấu trúc Mới 2025 theo Bộ GD&ĐT)
 const INITIAL_QUESTIONS = [
@@ -62,7 +68,8 @@ const INITIAL_QUESTIONS = [
     part: 'part2',
     title: 'Câu 1 (Phần II - Trắc nghiệm Đúng/Sai)',
     level: 'Thông hiểu',
-    content: 'Cho hàm số y = f(x) = x^3 - 3x + 2. Xét tính Đúng/Sai của các mệnh đề sau:',
+    content: 'Cho hàm số y = f(x) = x^3 - 3x + 2 có đồ thị (C) như hình vẽ bên dưới. Xét tính Đúng/Sai của các mệnh đề sau:',
+    image_url: CUBIC_GRAPH_SVG,
     subItems: [
       { key: 'a', text: 'Hàm số đã cho đồng biến trên khoảng (1; +∞).', isTrue: true },
       { key: 'b', text: 'Hàm số đã cho có 2 điểm cực trị.', isTrue: true },
@@ -76,7 +83,8 @@ const INITIAL_QUESTIONS = [
     part: 'part2',
     title: 'Câu 2 (Phần II - Trắc nghiệm Đúng/Sai)',
     level: 'Vận dụng',
-    content: 'Một hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA ⊥ (ABCD) và SA = a√2.',
+    content: 'Một hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA ⊥ (ABCD) và SA = a√2 (tham khảo hình vẽ bên dưới).',
+    image_url: PYRAMID_GEOMETRY_SVG,
     subItems: [
       { key: 'a', text: 'Thể tích khối chóp S.ABCD bằng (a^3 √2) / 3.', isTrue: true },
       { key: 'b', text: 'Góc giữa đường thẳng SB và mặt phẳng (ABCD) bằng 45°.', isTrue: false }, // tan = SA/AB = √2 -> arctan(√2)
@@ -140,6 +148,7 @@ export default function TeacherExamMaker() {
   ]);
   const [newShortAnswer, setNewShortAnswer] = useState('');
   const [newExplanation, setNewExplanation] = useState('');
+  const [newImageUrl, setNewImageUrl] = useState('');
 
   // Smart Word / PDF / Text Import States
   const [showImportModal, setShowImportModal] = useState(false);
@@ -434,6 +443,7 @@ export default function TeacherExamMaker() {
       title: newPart === 'part1' ? `Câu ${questions.length + 1} (Phần I - Trắc nghiệm)` : newPart === 'part2' ? `Câu ${questions.length + 1} (Phần II - Đúng/Sai)` : `Câu ${questions.length + 1} (Phần III - Trả lời ngắn)`,
       level: newLevel,
       content: newContent,
+      image_url: newImageUrl || '',
       options: newPart === 'part1' ? newOptions : [],
       correctAnswerIndex: newPart === 'part1' ? newCorrectIdx : 0,
       subItems: newPart === 'part2' ? newSubItems : [],
@@ -445,6 +455,7 @@ export default function TeacherExamMaker() {
     setShowAddModal(false);
     setNewContent('');
     setNewExplanation('');
+    setNewImageUrl('');
     alert("✅ Đã thêm câu hỏi thành công vào ngân hàng đề!");
   };
 
@@ -671,9 +682,47 @@ export default function TeacherExamMaker() {
                 </div>
 
                 {/* Content with clean Math format */}
-                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', marginBottom: '10px' }}>
+                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', marginBottom: '8px' }}>
                   {renderCleanMathText(q.content)}
                 </div>
+
+                {/* Question Image / Diagram for Math, Physics, Chemistry, Biology */}
+                {q.image_url ? (
+                  <div style={{ margin: '10px 0 14px 0', textAlign: 'center' }}>
+                    <div style={{ display: 'inline-block', position: 'relative', background: '#fff', padding: '8px', borderRadius: '10px', border: '1px solid #cbd5e1', boxShadow: '0 2px 4px rgba(0,0,0,0.04)' }}>
+                      <img src={q.image_url} alt="Hình vẽ / Đồ thị câu hỏi" style={{ maxWidth: '340px', maxHeight: '200px', objectFit: 'contain', display: 'block', borderRadius: '6px' }} />
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', fontSize: '11px', color: '#64748b' }}>
+                        <span>🖼️ Hình vẽ / Đồ thị minh họa</span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (window.confirm("Gỡ hình vẽ này khỏi câu hỏi?")) {
+                              setQuestions(questions.map(item => item.id === q.id ? { ...item, image_url: '' } : item));
+                            }
+                          }}
+                          style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                          ✕ Gỡ ảnh
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ marginBottom: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = prompt("Nhập đường dẫn URL ảnh hoặc dán Data URI ảnh đồ thị / hình vẽ:", "");
+                        if (url && url.trim()) {
+                          setQuestions(questions.map(item => item.id === q.id ? { ...item, image_url: url.trim() } : item));
+                        }
+                      }}
+                      style={{ fontSize: '12px', color: '#0284c7', background: '#f0f9ff', border: '1px dashed #7dd3fc', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Image size={13} /> + Đính kèm ảnh đồ thị / hình học cho câu này
+                    </button>
+                  </div>
+                )}
 
                 {/* Part 1 options */}
                 {q.part === 'part1' && (
@@ -846,8 +895,13 @@ export default function TeacherExamMaker() {
               {activeCodeObj.part1.map((q, idx) => {
                 const opts = q.shuffledOptions || q.options;
                 return (
-                  <div key={q.id || idx} style={{ marginBottom: '12px' }}>
+                  <div key={q.id || idx} style={{ marginBottom: '14px' }}>
                     <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                    {q.image_url && (
+                      <div style={{ textAlign: 'center', margin: '8px 0' }}>
+                        <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+                      </div>
+                    )}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', marginTop: '4px', marginLeft: '15px' }}>
                       {opts.map((opt, i) => (
                         <span key={i}><strong>{['A.', 'B.', 'C.', 'D.'][i]}</strong> {renderCleanMathText(opt)}</span>
@@ -864,8 +918,13 @@ export default function TeacherExamMaker() {
               {activeCodeObj.part2.map((q, idx) => {
                 const subs = q.shuffledSubItems || q.subItems;
                 return (
-                  <div key={q.id || idx} style={{ marginBottom: '12px' }}>
+                  <div key={q.id || idx} style={{ marginBottom: '14px' }}>
                     <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                    {q.image_url && (
+                      <div style={{ textAlign: 'center', margin: '8px 0' }}>
+                        <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+                      </div>
+                    )}
                     <div style={{ marginLeft: '15px', marginTop: '4px' }}>
                       {subs.map((sub, i) => (
                         <div key={i}><strong>{['a)', 'b)', 'c)', 'd)'][i]}</strong> {renderCleanMathText(sub.text)}</div>
@@ -880,8 +939,13 @@ export default function TeacherExamMaker() {
                 PHẦN III. CÂU HỎI TRẮC NGHIỆM TRẢ LỜI NGẮN (Thí sinh trả lời từ câu 1 đến câu {activeCodeObj.part3.length}. Điền kết quả vào phiếu trả lời).
               </div>
               {activeCodeObj.part3.map((q, idx) => (
-                <div key={q.id || idx} style={{ marginBottom: '12px' }}>
+                <div key={q.id || idx} style={{ marginBottom: '14px' }}>
                   <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                  {q.image_url && (
+                    <div style={{ textAlign: 'center', margin: '8px 0' }}>
+                      <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+                    </div>
+                  )}
                 </div>
               ))}
 
@@ -1099,6 +1163,70 @@ export default function TeacherExamMaker() {
               <div>
                 <label style={styles.label}>Nội dung câu hỏi (*)</label>
                 <textarea rows={3} value={newContent} onChange={e => setNewContent(e.target.value)} style={{ ...styles.input, resize: 'vertical' }} placeholder="Nhập nội dung câu hỏi (hỗ trợ nhập công thức u_1 = 3, d = 2)..." required />
+              </div>
+
+              {/* Đính kèm hình ảnh / Đồ thị cho các môn Tự nhiên */}
+              <div 
+                style={{ border: '1px dashed #0284c7', padding: '14px', borderRadius: '12px', background: '#f0f9ff' }}
+                onPaste={(e) => {
+                  const items = e.clipboardData?.items;
+                  if (!items) return;
+                  for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                      const file = items[i].getAsFile();
+                      const reader = new FileReader();
+                      reader.onload = (evt) => setNewImageUrl(evt.target.result);
+                      reader.readAsDataURL(file);
+                      break;
+                    }
+                  }
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <label style={{ ...styles.label, margin: 0, display: 'flex', alignItems: 'center', gap: '6px', color: '#0369a1' }}>
+                    <Image size={16} color="#0284c7" /> 🖼️ Đính Kèm Hình Ảnh / Đồ Thị (Môn Tự Nhiên: Toán, Lý, Hóa, Sinh)
+                  </label>
+                  <span style={{ fontSize: '11px', color: '#0284c7', background: '#e0f2fe', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                    💡 Hỗ trợ dán ảnh trực tiếp (Ctrl + V)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <label style={{ padding: '6px 14px', background: '#0284c7', color: 'white', borderRadius: '6px', fontSize: '12.5px', cursor: 'pointer', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    <Upload size={14} /> Tải ảnh từ máy tính
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (evt) => setNewImageUrl(evt.target.result);
+                        reader.readAsDataURL(file);
+                      }} 
+                      style={{ display: 'none' }} 
+                    />
+                  </label>
+                  <input 
+                    type="text" 
+                    value={newImageUrl} 
+                    onChange={e => setNewImageUrl(e.target.value)} 
+                    placeholder="Hoặc dán URL ảnh / Click vào đây rồi nhấn Ctrl+V để dán ảnh chụp màn hình" 
+                    style={{ ...styles.input, flex: 1, minWidth: '220px', fontSize: '12.5px' }} 
+                  />
+                  {newImageUrl && (
+                    <button type="button" onClick={() => setNewImageUrl('')} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontSize: '12.5px', fontWeight: 'bold' }}>
+                      ✕ Xóa ảnh
+                    </button>
+                  )}
+                </div>
+
+                {newImageUrl && (
+                  <div style={{ marginTop: '10px', textAlign: 'center', background: '#fff', padding: '8px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <img src={newImageUrl} alt="Xem trước hình vẽ" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', display: 'block', margin: '0 auto', borderRadius: '4px' }} />
+                    <span style={{ fontSize: '11px', color: '#16a34a', display: 'block', marginTop: '4px', fontWeight: 'bold' }}>✓ Đã đính kèm ảnh thành công (hiển thị tốt trên đề thi & phiếu làm bài)</span>
+                  </div>
+                )}
               </div>
 
               {/* Part 1 input */}
