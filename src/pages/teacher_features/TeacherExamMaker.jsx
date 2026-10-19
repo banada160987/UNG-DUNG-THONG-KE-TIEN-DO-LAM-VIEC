@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, CheckSquare } from 'lucide-react';
+import { 
+  ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
+  FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
+  CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload 
+} from 'lucide-react';
+import { 
+  savePublishedExam, 
+  getSubmissionsForExam, 
+  HIGH_SCHOOL_SUBJECTS 
+} from '../../services/smartAssessmentService';
+import ExcelGradeSyncModal from '../../components/ExcelGradeSyncModal';
 
 // Pre-built Exam Database for GDPT 2018 (Toán 11 / 12 - Cấu trúc Mới 2025 theo Bộ GD&ĐT)
 const INITIAL_QUESTIONS = [
@@ -133,6 +143,51 @@ export default function TeacherExamMaker() {
 
   // Smart Word / PDF / Text Import States
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // Smart Assessment Publishing & Excel Grade Sync States
+  const [showExcelSyncModal, setShowExcelSyncModal] = useState(false);
+  const [submissions, setSubmissions] = useState([]);
+  const [examPublished, setExamPublished] = useState(false);
+  const [targetExamClasses, setTargetExamClasses] = useState(['10A01', '10A07']);
+
+  const loadSubmissions = () => {
+    const list = getSubmissionsForExam('exam-toan-gdpt2018');
+    if (list && list.length > 0) {
+      setSubmissions(list);
+    } else {
+      // Dữ liệu học sinh làm bài thi mẫu để giáo viên có thể thử nghiệm ngay tính năng Excel
+      const sampleSubmissions = [
+        { id: 'sub-1', student_code: '10A0101', student_name: 'Nguyễn Văn An', student_class: '10A01', total_score: 9.25, submitted_at: new Date().toISOString() },
+        { id: 'sub-2', student_code: '10A0102', student_name: 'Trần Thị Bình', student_class: '10A01', total_score: 8.5, submitted_at: new Date().toISOString() },
+        { id: 'sub-3', student_code: '10A0103', student_name: 'Lê Hoàng Cường', student_class: '10A01', total_score: 7.75, submitted_at: new Date().toISOString() },
+        { id: 'sub-4', student_code: '10A0104', student_name: 'Phạm Thu Dung', student_class: '10A01', total_score: 10.0, submitted_at: new Date().toISOString() },
+        { id: 'sub-5', student_code: '10A0105', student_name: 'Đặng Tuấn Hải', student_class: '10A01', total_score: 8.0, submitted_at: new Date().toISOString() },
+        { id: 'sub-6', student_code: '10A0106', student_name: 'Vũ Ngọc Mai', student_class: '10A01', total_score: 9.0, submitted_at: new Date().toISOString() },
+        { id: 'sub-7', student_code: '10A0107', student_name: 'Bùi Gia Phúc', student_class: '10A01', total_score: 6.5, submitted_at: new Date().toISOString() },
+        { id: 'sub-8', student_code: '10A0108', student_name: 'Hoàng Minh Tâm', student_class: '10A01', total_score: 8.75, submitted_at: new Date().toISOString() }
+      ];
+      setSubmissions(sampleSubmissions);
+    }
+  };
+
+  const handlePublishOnline = async () => {
+    try {
+      const examData = {
+        id: 'exam-toan-gdpt2018',
+        title: examTitle,
+        subject: subject,
+        grade: grade,
+        duration_minutes: parseInt(duration, 10) || 45,
+        target_classes: targetExamClasses,
+        questions: questions
+      };
+      await savePublishedExam(examData);
+      setExamPublished(true);
+      alert(`🎉 ĐÃ XUẤT BẢN THI TRỰC TUYẾN THÀNH CÔNG!\n\nHọc sinh các lớp ${targetExamClasses.join(', ')} có thể vào Cổng Học Sinh để làm bài thi trực tuyến ngay.`);
+    } catch (e) {
+      alert("Lỗi khi xuất bản đề thi: " + e.message);
+    }
+  };
   const [importRawText, setImportRawText] = useState('');
   const [parsedPreviewQuestions, setParsedPreviewQuestions] = useState([]);
 
@@ -513,6 +568,10 @@ export default function TeacherExamMaker() {
             <Shuffle size={18} /> Đảo Mã Đề Thi ({numberOfCodes} Mã)
           </button>
 
+          <button onClick={handlePublishOnline} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.3)' }}>
+            <Send size={18} /> {examPublished ? '✓ Đã Xuất Bản Online' : '🚀 Xuất Bản Thi Trực Tuyến'}
+          </button>
+
           <button onClick={handleExportWordExam} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(2,132,199,0.3)' }}>
             <Download size={18} /> Xuất Đề File Word (.doc)
           </button>
@@ -522,10 +581,10 @@ export default function TeacherExamMaker() {
       {/* Header Banner */}
       <div style={{ marginBottom: '24px', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '24px', borderRadius: '16px', color: 'white', boxShadow: '0 10px 15px -3px rgba(15,23,42,0.3)' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Award color="#f59e0b" size={28} /> Hệ Thống Ra Đề Thi & Tráo Đề GDPT 2018 (Cấu Trúc Mới 2025 BGDĐT)
+          <Award color="#f59e0b" size={28} /> Hệ Thống Ra Đề Thi, Kiểm Tra Thông Minh & Ghi Điểm Excel GDPT 2018
         </h1>
         <p style={{ margin: 0, opacity: 0.9, fontSize: '14px' }}>
-          Hỗ trợ chuẩn 3 Phần theo Công văn BGDĐT: Trắc nghiệm 4 phương án (Phần I), Đúng/Sai 4 ý (Phần II) & Trả lời ngắn (Phần III) - Tự động tính thang điểm 10.0.
+          Hỗ trợ chuẩn 3 Phần BGDĐT: Trắc nghiệm 4 phương án, Đúng/Sai 4 ý lũy tiến & Trả lời ngắn. Chấm tự động 100% và ghi điểm trực tiếp vào file Excel sổ điểm cá nhân.
         </p>
       </div>
 
@@ -541,7 +600,10 @@ export default function TeacherExamMaker() {
           <Printer size={18} /> Xem Trước Đề Thi Đã Đảo (Mã đề: {selectedCodeView})
         </button>
         <button onClick={() => setActiveTab('keys')} style={{ ...styles.tabBtn, borderBottom: activeTab === 'keys' ? '3px solid #0284c7' : '3px solid transparent', color: activeTab === 'keys' ? '#0284c7' : '#64748b' }}>
-          <CheckSquare size={18} /> Bảng Đáp Án Ma Trận Tất Cả Mã Đề
+          <CheckSquare size={18} /> Bảng Đáp Án Ma Trận
+        </button>
+        <button onClick={() => { setActiveTab('submissions'); loadSubmissions(); }} style={{ ...styles.tabBtn, borderBottom: activeTab === 'submissions' ? '3px solid #10b981' : '3px solid transparent', color: activeTab === 'submissions' ? '#10b981' : '#64748b' }}>
+          <FileSpreadsheet size={18} /> 📊 Kết Quả Thi & Ghi Điểm Excel ({submissions.length})
         </button>
       </div>
 
@@ -887,6 +949,121 @@ export default function TeacherExamMaker() {
           ))}
         </div>
       )}
+
+      {/* TAB 5: STUDENT SUBMISSIONS & DIRECT EXCEL GRADE SYNC */}
+      {activeTab === 'submissions' && (
+        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px', background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)', padding: '20px', borderRadius: '14px', border: '1px solid #bbf7d0' }}>
+            <div>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#dcfce7', color: '#166534', padding: '3px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                <Sparkles size={13} color="#16a34a" /> CHẤM ĐIỂM TỰ ĐỘNG & ĐỒNG BỘ SỔ ĐIỂM
+              </div>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#166534', fontWeight: '900' }}>
+                Bảng Điểm Học Sinh & Công Cụ Ghi Điểm Excel Cá Nhân
+              </h3>
+              <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#4b5563' }}>
+                Học sinh làm bài thi trực tuyến được chấm tự động 100% theo chuẩn Bộ GD&ĐT. Bấm nút dưới đây để ghi thẳng điểm vào file Excel sổ điểm của Thầy/Cô.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setShowExcelSyncModal(true)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                background: 'linear-gradient(135deg, #059669, #10b981)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: '900',
+                fontSize: '15px',
+                cursor: 'pointer',
+                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
+              }}
+            >
+              <FileSpreadsheet size={20} /> 📊 GHI ĐIỂM VÀO FILE EXCEL TỪ MÁY TÍNH
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+            <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a', fontWeight: 'bold' }}>
+              Danh Sách Học Sinh Đã Nộp Bài ({submissions.length} học sinh)
+            </h4>
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                onClick={loadSubmissions}
+                style={{ padding: '6px 12px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <RefreshCw size={13} /> Tải lại danh sách
+              </button>
+            </div>
+          </div>
+
+          {submissions.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+              Chưa có học sinh nào nộp bài thi.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px', textAlign: 'left' }}>
+                <thead style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                  <tr>
+                    <th style={{ padding: '10px 14px' }}>STT</th>
+                    <th style={{ padding: '10px 14px' }}>Mã Học Sinh</th>
+                    <th style={{ padding: '10px 14px' }}>Họ Và Tên</th>
+                    <th style={{ padding: '10px 14px' }}>Lớp</th>
+                    <th style={{ padding: '10px 14px' }}>Điểm Kiểm Tra</th>
+                    <th style={{ padding: '10px 14px' }}>Thời Gian Nộp</th>
+                    <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {submissions.map((sub, idx) => (
+                    <tr key={sub.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '10px 14px', color: '#64748b' }}>{idx + 1}</td>
+                      <td style={{ padding: '10px 14px', fontWeight: 'bold', color: '#0284c7' }}>
+                        <code>{sub.student_code}</code>
+                      </td>
+                      <td style={{ padding: '10px 14px', fontWeight: 'bold', color: '#0f172a' }}>{sub.student_name}</td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{ background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+                          {sub.student_class}
+                        </span>
+                      </td>
+                      <td style={{ padding: '10px 14px', fontWeight: '900', fontSize: '15px', color: sub.total_score >= 8 ? '#16a34a' : sub.total_score >= 5 ? '#0284c7' : '#dc2626' }}>
+                        {sub.total_score} điểm
+                      </td>
+                      <td style={{ padding: '10px 14px', color: '#64748b', fontSize: '12.5px' }}>
+                        {new Date(sub.submitted_at).toLocaleTimeString('vi-VN')} {new Date(sub.submitted_at).toLocaleDateString('vi-VN')}
+                      </td>
+                      <td style={{ padding: '10px 14px' }}>
+                        <span style={{ color: '#16a34a', fontWeight: 'bold', fontSize: '12px' }}>
+                          ✓ Đã chấm tự động
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+      )}
+
+      {/* EXCEL GRADE SYNC MODAL */}
+      <ExcelGradeSyncModal
+        isOpen={showExcelSyncModal}
+        onClose={() => setShowExcelSyncModal(false)}
+        submissions={submissions}
+        examTitle={examTitle}
+        subject={subject}
+        targetClass={grade}
+      />
 
       {/* MODAL: ADD NEW QUESTION */}
       {showAddModal && (

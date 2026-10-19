@@ -111,13 +111,16 @@ export default function TeacherLogin() {
           </div>
         )}
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Tên đăng nhập</label>
+            <label style={{ display: 'block', fontSize: '14px', fontWeight: 'bold', color: '#334155', marginBottom: '8px' }}>Tên đăng nhập (Tài khoản Giáo viên)</label>
             <div style={{ position: 'relative' }}>
               <User size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 type="text" 
+                name="cbq_teacher_account_input"
+                id="cbq_teacher_account_input"
+                autoComplete="off"
                 required 
                 placeholder="VD: gv.nguyenvana" 
                 value={username} 
@@ -133,6 +136,9 @@ export default function TeacherLogin() {
               <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input 
                 type="password" 
+                name="cbq_teacher_secret_input"
+                id="cbq_teacher_secret_input"
+                autoComplete="new-password"
                 required 
                 placeholder="••••••••" 
                 value={password} 
@@ -147,14 +153,21 @@ export default function TeacherLogin() {
             disabled={loading}
             style={{ marginTop: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '16px', background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '16px', cursor: loading ? 'not-allowed' : 'pointer', boxShadow: '0 10px 15px -3px rgba(22, 163, 74, 0.3)' }}
           >
-            {loading ? 'Đang xác thực...' : <><LogIn size={20} /> ĐĂNG NHẬP</>}
+            {loading ? 'Đang xác thực...' : <><LogIn size={20} /> ĐĂNG NHẬP GIÁO VIÊN</>}
           </button>
         </form>
         
-        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '14px', color: '#64748b' }}>
+        <div style={{ textAlign: 'center', marginTop: '20px', fontSize: '13.5px', color: '#64748b' }}>
           Chưa có tài khoản Giáo viên?{' '}
           <Link to="/dang-ky-giao-vien" style={{ color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}>
             Đăng ký ngay 📝
+          </Link>
+        </div>
+
+        <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '20px', paddingTop: '16px', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+          Em là Học sinh?{' '}
+          <Link to="/dang-nhap-hoc-sinh" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'none' }}>
+            Chuyển sang Cổng Học Sinh 🎓
           </Link>
         </div>
       </div>

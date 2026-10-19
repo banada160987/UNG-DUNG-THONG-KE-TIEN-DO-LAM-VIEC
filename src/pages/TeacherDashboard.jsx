@@ -484,7 +484,75 @@ export default function TeacherDashboard() {
                   </button>
                 </div>
 
-                {/* CARD 2: RA ĐỀ THI 2025 */}
+                {/* CARD 1.5: HỌC LIỆU SỐ PHÂN QUYỀN & VIETQR */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #bfdbfe',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#eff6ff',
+                        color: '#0284c7',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <BookOpen size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#dbeafe',
+                        color: '#1e40af',
+                        border: '1px solid #93c5fd'
+                      }}>
+                        Phân Quyền & VietQR
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Học Liệu Số & Bài Giảng Trực Tuyến
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Cung cấp bài giảng theo lớp giảng dạy. Tự động cấp quyền theo TKB, duyệt học sinh ngoài lớp hoặc mở khóa trả phí VietQR.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/hoc-lieu-so')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                    }}
+                  >
+                    <BookOpen size={16} /> Quản Lý Học Liệu Số
+                  </button>
+                </div>
+
+                {/* CARD 2: RA ĐỀ THI 2025 & GHI ĐIỂM EXCEL */}
                 <div style={{
                   backgroundColor: '#ffffff',
                   borderRadius: '16px',
@@ -518,14 +586,14 @@ export default function TeacherDashboard() {
                         color: '#b45309',
                         border: '1px solid #fde68a'
                       }}>
-                        Đề Thi THPT 2025
+                        GDPT 2018 • Ghi Điểm Excel
                       </span>
                     </div>
                     <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
-                      Ra Đề Thi & Đảo Đề 2025
+                      Kiểm Tra Thông Minh & Ghi Điểm Excel
                     </h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                      Hỗ trợ 4 dạng câu hỏi chuẩn THPT 2025 (Đúng/Sai, trả lời ngắn). Tự động đảo mã đề (101, 102...), xuất ma trận & đáp án.
+                      Ra đề chuẩn cấu trúc BGDĐT 2025, tổ chức thi trực tuyến, tự động chấm và ghi điểm thẳng vào file Excel sổ điểm từ máy tính.
                     </p>
                   </div>
                   <button
@@ -548,7 +616,7 @@ export default function TeacherDashboard() {
                       boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
                     }}
                   >
-                    <Zap size={16} /> Ra Đề Thi & Đảo Đề
+                    <Zap size={16} /> Ra Đề & Ghi Điểm Excel
                   </button>
                 </div>
 

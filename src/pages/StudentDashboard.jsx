@@ -436,6 +436,14 @@ export default function StudentDashboard() {
               <Award size={26} color="#9333ea" />
               <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Thi Trực Tuyến</span>
             </Link>
+            <Link to="/hoc-sinh/hoc-lieu-so" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#eff6ff', borderRadius: '12px', textDecoration: 'none', color: '#1e40af', border: '1px solid #bfdbfe', fontWeight: 'bold' }}>
+              <BookOpen size={26} color="#0284c7" />
+              <span style={{ fontSize: '13px', textAlign: 'center' }}>Học Liệu Số Lớp Em</span>
+            </Link>
+            <Link to="/hoc-sinh/lam-bai-thi" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f0fdf4', borderRadius: '12px', textDecoration: 'none', color: '#166534', border: '1px solid #bbf7d0', fontWeight: 'bold' }}>
+              <Award size={26} color="#16a34a" />
+              <span style={{ fontSize: '13px', textAlign: 'center' }}>Phòng Thi GDPT 2018</span>
+            </Link>
             <Link to="/hoc-sinh/van-bang-so" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f8fafc', borderRadius: '12px', textDecoration: 'none', color: '#0f172a', border: '1px solid #e2e8f0' }}>
               <FileBadge size={26} color="#3b82f6" />
               <span style={{ fontSize: '13px', fontWeight: '500', textAlign: 'center' }}>Tủ Hồ Sơ Cá Nhân</span>

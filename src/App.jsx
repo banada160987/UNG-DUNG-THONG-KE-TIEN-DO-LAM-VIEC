@@ -76,6 +76,8 @@ const UnionFunds = lazy(() => import('./pages/student_features/UnionFunds'));
 const EventAttendance = lazy(() => import('./pages/student_features/EventAttendance'));
 const StudentDigitalVault = lazy(() => import('./pages/student_features/StudentDigitalVault'));
 const StudentCareerAdvisor = lazy(() => import('./pages/student_features/StudentCareerAdvisor'));
+const StudentMaterialsHub = lazy(() => import('./pages/student_features/StudentMaterialsHub'));
+const StudentExamPortal = lazy(() => import('./pages/student_features/StudentExamPortal'));
 const EduVideoHub = lazy(() => import('./pages/EduVideoHub'));
 const AdminEduVideos = lazy(() => import('./pages/AdminEduVideos'));
 
@@ -83,6 +85,7 @@ const AdminEduVideos = lazy(() => import('./pages/AdminEduVideos'));
 const TeacherLogin = lazy(() => import('./pages/TeacherLogin'));
 const TeacherRegister = lazy(() => import('./pages/TeacherRegister'));
 const TeacherDashboard = lazy(() => import('./pages/TeacherDashboard'));
+const TeacherEduMaterials = lazy(() => import('./pages/teacher_features/TeacherEduMaterials'));
 const TeacherFundsManager = lazy(() => import('./pages/teacher_features/TeacherFundsManager'));
 const TeacherDiscipline = lazy(() => import('./pages/teacher_features/TeacherDiscipline'));
 const TeacherAcademics = lazy(() => import('./pages/teacher_features/TeacherAcademics'));
@@ -166,6 +169,11 @@ function App() {
             <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
             <Route path="/hoc-sinh/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
             <Route path="/hoc-sinh/huong-nghiep" element={<StudentCareerAdvisor />} />
+            <Route path="/hoc-sinh/hoc-lieu-so" element={<StudentMaterialsHub />} />
+            <Route path="/hoc-sinh/bai-giang-so" element={<StudentMaterialsHub />} />
+            <Route path="/hoc-sinh/lam-bai-thi" element={<StudentExamPortal />} />
+            <Route path="/hoc-sinh/lam-bai-thi/:examId" element={<StudentExamPortal />} />
+            <Route path="/hoc-sinh/kiem-tra-danh-gia" element={<StudentExamPortal />} />
             <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
             <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
             <Route path="/hop-online" element={<PublicMeetingAttendance />} />
@@ -180,8 +188,11 @@ function App() {
             <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
             <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
             <Route path="/teacher-dashboard/homeroom" element={<TeacherHomeroomStudents />} />
+            <Route path="/teacher-dashboard/materials" element={<TeacherEduMaterials />} />
+            <Route path="/giao-vien/hoc-lieu-so" element={<TeacherEduMaterials />} />
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherLessonPlanBuilder />} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherExamMaker />} />
+            <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherExamMaker />} />
             <Route path="/giao-vien/danh-gia-tt22" element={<TeacherAssessmentTT22 />} />
             <Route path="/giao-vien/quan-ly-to-chuyen-mon" element={<TeacherDepartmentManagement />} />
             <Route path="/giao-vien/danh-gia-kpi-to-chuyen-mon" element={<TeacherKPIEvaluation />} />
