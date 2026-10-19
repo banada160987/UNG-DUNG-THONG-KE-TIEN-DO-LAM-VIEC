@@ -118,9 +118,9 @@ const PRESET_SYSTEM_PAGES = [
 ];
 
 const GROUP_METADATA = {
-  anniversary: { title: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM (1996 - 2026)', color: '#be123c', bg: '#fff1f2', border: '#fca5a5' },
   school: { title: '🏫 VẬN HÀNH NHÀ TRƯỜNG', color: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
-  media: { title: '📰 TIN TỨC & THƯ VIỆN MEDIA', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  media: { title: '📰 TIN TỨC & HOẠT ĐỘNG MEDIA', color: '#166534', bg: '#f0fdf4', border: '#bbf7d0' },
+  anniversary: { title: '🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU)', color: '#be123c', bg: '#fff1f2', border: '#fca5a5' },
   system: { title: '⚙️ HỆ THỐNG QUẢN TRỊ ADMIN', color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' }
 };
 
@@ -314,10 +314,10 @@ export default function AdminMenuConfig() {
     }
   };
 
-  // Group menus by parent_group for organized layout
+  // Group menus by parent_group for organized layout: school -> media -> anniversary
   const availableGroups = targetType === 'public' 
-    ? ['anniversary', 'school', 'media'] 
-    : ['anniversary', 'school', 'media', 'system'];
+    ? ['school', 'media', 'anniversary'] 
+    : ['school', 'media', 'anniversary', 'system'];
 
   return (
     <Layout title="Cấu hình Menu Động">
@@ -395,10 +395,10 @@ export default function AdminMenuConfig() {
             <div>
               <label style={styles.label}>Nhóm Menu (*)</label>
               <select value={parentGroup} onChange={e => setParentGroup(e.target.value)} style={styles.input}>
-                <option value="anniversary">🎉 Đại Lễ Kỷ Niệm 30 Năm</option>
                 <option value="school">🏫 Vận hành Nhà trường</option>
-                <option value="media">📰 Tin tức & Thư viện</option>
-                <option value="system">⚙️ Hệ thống Admin</option>
+                <option value="media">📰 Tin tức & Hoạt động Media</option>
+                <option value="anniversary">🎉 Đại Lễ Kỷ Niệm 30 Năm (Tư Liệu)</option>
+                {targetType === 'admin' && <option value="system">⚙️ Hệ thống Admin</option>}
               </select>
             </div>
             <div>

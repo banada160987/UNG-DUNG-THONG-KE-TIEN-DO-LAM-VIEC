@@ -8,21 +8,21 @@ import ErrorBoundary from './ErrorBoundary';
 const DEFAULT_FULL_MENUS = [
   // Nhóm 1: Vận hành nhà trường (school)
   { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
-  { id: 'm_sc_2', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 2, is_active: true },
-  { id: 'm_sc_3', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: true },
+  { id: 'm_sc_2', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 2, is_active: false },
+  { id: 'm_sc_3', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: false },
   { id: 'm_sc_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
   { id: 'm_sc_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
   { id: 'm_sc_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true },
   { id: 'm_sc_7', target_type: 'public', parent_group: 'school', label: '💌 Hòm Thư Học Sinh & Tâm Tư', path: '/hom-thu-hoc-sinh', sort_order: 7, is_active: true },
-  { id: 'm_sc_8', target_type: 'public', parent_group: 'school', label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', sort_order: 8, is_active: true },
+  { id: 'm_sc_8', target_type: 'public', parent_group: 'school', label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', sort_order: 8, is_active: false },
   { id: 'm_sc_9', target_type: 'public', parent_group: 'school', label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/hoc-sinh/van-bang-so', sort_order: 9, is_active: true },
 
   // Nhóm 2: Tin tức & Hoạt động (media)
   { id: 'm_md_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },
   { id: 'm_md_2', target_type: 'public', parent_group: 'media', label: '📸 Thư viện ảnh nhà trường', path: '/thu-vien-anh', sort_order: 2, is_active: true },
-  { id: 'm_md_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng tài trợ & vinh danh', path: '/bang-vang', sort_order: 3, is_active: true },
+  { id: 'm_md_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng tài trợ & vinh danh', path: '/bang-vang', sort_order: 3, is_active: false },
   { id: 'm_md_4', target_type: 'public', parent_group: 'media', label: '📺 Trạm Video & Học Liệu Số 4.0', path: '/hoc-lieu-so', sort_order: 4, is_active: true },
-  { id: 'm_md_5', target_type: 'public', parent_group: 'media', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 5, is_active: true },
+  { id: 'm_md_5', target_type: 'public', parent_group: 'media', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 5, is_active: false },
 
   // Nhóm 3: Tư liệu 30 năm (anniversary)
   { id: 'm_an_1', target_type: 'public', parent_group: 'anniversary', label: 'ℹ️ Giới thiệu lịch sử 30 năm', path: '/gioi-thieu', sort_order: 1, is_active: true },
@@ -80,13 +80,10 @@ export default function PublicLayout() {
   async function fetchPublicMenus(force = false) {
     try {
       if (!force) {
-        const cached = localStorage.getItem('cbq_menus_public_v2');
+        const cached = localStorage.getItem('cbq_menus_public_v2') || localStorage.getItem('cbq_menus_public');
         if (cached) {
           const parsed = JSON.parse(cached);
-          const hasAllGroups = ['school', 'media', 'anniversary'].every(grp =>
-            parsed.some(m => m.parent_group === grp && m.is_active !== false)
-          );
-          if (Array.isArray(parsed) && parsed.length >= 18 && hasAllGroups) {
+          if (Array.isArray(parsed) && parsed.length > 0) {
             setPublicMenus(parsed);
           }
         }
@@ -96,18 +93,35 @@ export default function PublicLayout() {
         .from('cbq_navigation_menus')
         .select('*')
         .eq('target_type', 'public')
-        .eq('is_active', true)
         .order('sort_order', { ascending: true });
 
       if (!error && data && data.length > 0) {
         setPublicMenus(data);
         localStorage.setItem('cbq_menus_public_v2', JSON.stringify(data));
-        localStorage.removeItem('cbq_menus_public');
+        localStorage.setItem('cbq_menus_public', JSON.stringify(data));
       }
     } catch (err) {
       console.warn("Dùng menu công khai mặc định:", err);
     }
   }
+
+  // Lắng nghe sự kiện đồng bộ menu từ tab Admin hoặc cửa sổ khác
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'cbq_menus_public_v2' || e.key === 'cbq_menus_public') {
+        try {
+          if (e.newValue) {
+            const parsed = JSON.parse(e.newValue);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              setPublicMenus(parsed);
+            }
+          }
+        } catch (_) {}
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const channel = supabase.channel('public:cbq_navigation_menus')
@@ -125,7 +139,7 @@ export default function PublicLayout() {
 
   const isGroupActive = (groupName) => {
     return safeMenus
-      .filter(m => (m?.parent_group === groupName || (!m?.parent_group && groupName === 'school')) && m?.is_active !== false)
+      .filter(m => (m?.parent_group === groupName || (!m?.parent_group && groupName === 'school')) && m?.is_active === true)
       .some(m => isActive(m?.path));
   };
 
@@ -249,109 +263,117 @@ export default function PublicLayout() {
             </Link>
 
             {/* MENU ĐỘC LẬP: TRẠM HỌC LIỆU SỐ & VIDEO */}
-            <Link 
-              to="/hoc-lieu-so" 
-              style={{
-                ...(isActive('/hoc-lieu-so') || isActive('/video-hoc-tap') ? styles.navItemActive : styles.navItem),
-                fontWeight: '700'
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              📺 Học Liệu Số
-            </Link>
+            {safeMenus.some(m => (m?.path === '/hoc-lieu-so' || m?.path === '/video-hoc-tap') && m?.is_active === true) && (
+              <Link 
+                to="/hoc-lieu-so" 
+                style={{
+                  ...(isActive('/hoc-lieu-so') || isActive('/video-hoc-tap') ? styles.navItemActive : styles.navItem),
+                  fontWeight: '700'
+                }}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                📺 Học Liệu Số
+              </Link>
+            )}
             
             {/* DROPDOWN 1: QUẢN LÝ VẬN HÀNH NHÀ TRƯỜNG */}
-            <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
-              <span 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleDropdown('school');
-                }}
-                style={isGroupActive('school') ? styles.navItemActive : styles.navItem}
-              >
-                🏫 Vận Hành {activeDropdown === 'school' ? '▴' : '▾'}
-              </span>
-              <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {safeMenus
-                  .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active !== false)
-                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
-                  .map(m => (
-                    <Link 
-                      key={m.id || m.path} 
-                      to={m.path} 
-                      className="nav-dropdown-item" 
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setActiveDropdown(null);
-                      }}
-                    >
-                      {m.label}
-                    </Link>
-                  ))}
+            {safeMenus.some(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active === true) && (
+              <div className={`nav-dropdown ${activeDropdown === 'school' ? 'active-touch' : ''}`}>
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown('school');
+                  }}
+                  style={isGroupActive('school') ? styles.navItemActive : styles.navItem}
+                >
+                  🏫 Vận Hành {activeDropdown === 'school' ? '▴' : '▾'}
+                </span>
+                <div className="nav-dropdown-content" style={styles.dropdownContent}>
+                  {safeMenus
+                    .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active === true)
+                    .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
+                    .map(m => (
+                      <Link 
+                        key={m.id || m.path} 
+                        to={m.path} 
+                        className="nav-dropdown-item" 
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        {m.label}
+                      </Link>
+                    ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* DROPDOWN 2: TIN TỨC & HOẠT ĐỘNG */}
-            <div className={`nav-dropdown ${activeDropdown === 'media' ? 'active-touch' : ''}`}>
-              <span 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleDropdown('media');
-                }}
-                style={isGroupActive('media') ? styles.navItemActive : styles.navItem}
-              >
-                📰 Hoạt Động {activeDropdown === 'media' ? '▴' : '▾'}
-              </span>
-              <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {safeMenus
-                  .filter(m => m?.parent_group === 'media' && m?.is_active !== false)
-                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
-                  .map(m => (
-                    <Link 
-                      key={m.id || m.path} 
-                      to={m.path} 
-                      className="nav-dropdown-item" 
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setActiveDropdown(null);
-                      }}
-                    >
-                      {m.label}
-                    </Link>
-                  ))}
+            {/* DROPDOWN 2: TIN TỨC & HOẠT ĐỘNG MEDIA */}
+            {safeMenus.some(m => m?.parent_group === 'media' && m?.is_active === true) && (
+              <div className={`nav-dropdown ${activeDropdown === 'media' ? 'active-touch' : ''}`}>
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown('media');
+                  }}
+                  style={isGroupActive('media') ? styles.navItemActive : styles.navItem}
+                >
+                  📰 Hoạt Động & Media {activeDropdown === 'media' ? '▴' : '▾'}
+                </span>
+                <div className="nav-dropdown-content" style={styles.dropdownContent}>
+                  {safeMenus
+                    .filter(m => m?.parent_group === 'media' && m?.is_active === true)
+                    .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
+                    .map(m => (
+                      <Link 
+                        key={m.id || m.path} 
+                        to={m.path} 
+                        className="nav-dropdown-item" 
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        {m.label}
+                      </Link>
+                    ))}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* DROPDOWN 3: TƯ LIỆU TRUYỀN THỐNG 30 NĂM */}
-            <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
-              <span 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleDropdown('anniversary');
-                }}
-                style={isGroupActive('anniversary') ? styles.navItemActive : styles.navItem}
-              >
-                📁 Tư Liệu {activeDropdown === 'anniversary' ? '▴' : '▾'}
-              </span>
-              <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                {safeMenus
-                  .filter(m => m?.parent_group === 'anniversary' && m?.is_active !== false)
-                  .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
-                  .map(m => (
-                    <Link 
-                      key={m.id || m.path} 
-                      to={m.path} 
-                      className="nav-dropdown-item" 
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        setActiveDropdown(null);
-                      }}
-                    >
-                      {m.label}
-                    </Link>
-                  ))}
+            {/* DROPDOWN 3: ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU) */}
+            {safeMenus.some(m => m?.parent_group === 'anniversary' && m?.is_active === true) && (
+              <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown('anniversary');
+                  }}
+                  style={isGroupActive('anniversary') ? styles.navItemActive : styles.navItem}
+                >
+                  🎉 Kỷ Niệm 30 Năm {activeDropdown === 'anniversary' ? '▴' : '▾'}
+                </span>
+                <div className="nav-dropdown-content" style={styles.dropdownContent}>
+                  {safeMenus
+                    .filter(m => m?.parent_group === 'anniversary' && m?.is_active === true)
+                    .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
+                    .map(m => (
+                      <Link 
+                        key={m.id || m.path} 
+                        to={m.path} 
+                        className="nav-dropdown-item" 
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        {m.label}
+                      </Link>
+                    ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* In mobile drawer: show large login cards */}
             <div className="mobile-drawer-portals">
