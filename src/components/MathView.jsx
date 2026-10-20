@@ -1,6 +1,18 @@
 import React, { useMemo } from 'react';
 import katex from 'katex';
-import 'katex/dist/katex.min.css';
+
+/**
+ * Safely get KaTeX instance from npm module or global window
+ */
+function getKatexInstance() {
+  if (typeof katex !== 'undefined' && katex && typeof katex.renderToString === 'function') {
+    return katex;
+  }
+  if (typeof window !== 'undefined' && window.katex && typeof window.katex.renderToString === 'function') {
+    return window.katex;
+  }
+  return null;
+}
 
 /**
  * Escape plain HTML text to prevent XSS
@@ -23,11 +35,16 @@ export function renderLatexToHtml(rawText, forceDisplayMode = false) {
   const text = String(rawText);
   if (!text.trim()) return '';
 
+  const kInstance = getKatexInstance();
+  if (!kInstance) {
+    return escapeHtml(text).replace(/\n/g, '<br/>');
+  }
+
   // Check if text is completely wrapped in display math or requested forceDisplayMode
   if (forceDisplayMode) {
     try {
       const cleanMath = text.replace(/^\$\$|\$\$$|^\\\[|\\\]$/g, '').trim();
-      return katex.renderToString(cleanMath, {
+      return kInstance.renderToString(cleanMath, {
         displayMode: true,
         throwOnError: false,
         output: 'htmlAndMathml'
@@ -59,28 +76,28 @@ export function renderLatexToHtml(rawText, forceDisplayMode = false) {
     try {
       if (token.startsWith('$$') && token.endsWith('$$')) {
         const math = token.slice(2, -2).trim();
-        htmlResult += katex.renderToString(math, {
+        htmlResult += kInstance.renderToString(math, {
           displayMode: true,
           throwOnError: false,
           output: 'htmlAndMathml'
         });
       } else if (token.startsWith('\\[') && token.endsWith('\\]')) {
         const math = token.slice(2, -2).trim();
-        htmlResult += katex.renderToString(math, {
+        htmlResult += kInstance.renderToString(math, {
           displayMode: true,
           throwOnError: false,
           output: 'htmlAndMathml'
         });
       } else if (token.startsWith('$') && token.endsWith('$')) {
         const math = token.slice(1, -1).trim();
-        htmlResult += katex.renderToString(math, {
+        htmlResult += kInstance.renderToString(math, {
           displayMode: false,
           throwOnError: false,
           output: 'htmlAndMathml'
         });
       } else if (token.startsWith('\\(') && token.endsWith('\\)')) {
         const math = token.slice(2, -2).trim();
-        htmlResult += katex.renderToString(math, {
+        htmlResult += kInstance.renderToString(math, {
           displayMode: false,
           throwOnError: false,
           output: 'htmlAndMathml'
@@ -109,7 +126,7 @@ export function renderLatexToHtml(rawText, forceDisplayMode = false) {
       trailing.includes('_')
     )) {
       try {
-        return katex.renderToString(trailing.trim(), {
+        return kInstance.renderToString(trailing.trim(), {
           displayMode: false,
           throwOnError: false,
           output: 'htmlAndMathml'

@@ -120,7 +120,16 @@ const INITIAL_QUESTIONS = [
 
 export default function TeacherExamMaker() {
   const navigate = useNavigate();
-  const [teacher, setTeacher] = useState(null);
+  const [teacher, setTeacher] = useState(() => {
+    try {
+      const currentTeacherStr = localStorage.getItem('cbq_current_teacher') || 
+                                localStorage.getItem('cbq_teacher_session') || 
+                                localStorage.getItem('cbq_user');
+      return currentTeacherStr ? JSON.parse(currentTeacherStr) : { full_name: 'Giáo viên THPT Cao Bá Quát', username: 'giaovien' };
+    } catch (_) {
+      return { full_name: 'Giáo viên THPT Cao Bá Quát', username: 'giaovien' };
+    }
+  });
 
   // Meta info
   const [examTitle, setExamTitle] = useState('ĐỀ KIỂM TRA ĐỊNH KỲ MÔN TOÁN LỚP 11');
@@ -353,12 +362,14 @@ export default function TeacherExamMaker() {
   };
 
   useEffect(() => {
-    const currentTeacherStr = localStorage.getItem('cbq_current_teacher');
-    if (!currentTeacherStr) {
-      navigate('/dang-nhap-giao-vien');
-      return;
+    const currentTeacherStr = localStorage.getItem('cbq_current_teacher') || 
+                              localStorage.getItem('cbq_teacher_session') || 
+                              localStorage.getItem('cbq_user');
+    if (currentTeacherStr) {
+      try {
+        setTeacher(JSON.parse(currentTeacherStr));
+      } catch (_) {}
     }
-    setTeacher(JSON.parse(currentTeacherStr));
   }, [navigate]);
 
   // Helper format clean Math content without raw dollar signs
@@ -682,8 +693,6 @@ export default function TeacherExamMaker() {
     a.click();
     document.body.removeChild(a);
   };
-
-  if (!teacher) return null;
 
   const activeCodeObj = mixedExamCodes.find(c => c.code === selectedCodeView) || {
     code: '101',
