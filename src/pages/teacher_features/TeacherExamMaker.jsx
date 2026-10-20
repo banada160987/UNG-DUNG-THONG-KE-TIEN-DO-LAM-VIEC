@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { 
   ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
   FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
-  CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image 
+  CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image,
+  Copy, Search, Filter, Database
 } from 'lucide-react';
+import MathView, { MathToolbar } from '../../components/MathView';
 import { 
   savePublishedExam, 
   getSubmissionsForExam, 
@@ -18,7 +21,7 @@ export const CUBIC_GRAPH_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w
 // Hình học không gian: Hình chóp S.ABCD SA vuông góc đáy chuẩn SGK
 export const PYRAMID_GEOMETRY_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 220" width="280" height="220" style="background:%23ffffff;border-radius:8px;"><line x1="100" y1="30" x2="50" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="200" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="230" y2="140" stroke="%230f172a" stroke-width="1.8"/><line x1="50" y1="180" x2="200" y2="180" stroke="%230f172a" stroke-width="1.8"/><line x1="200" y1="180" x2="230" y2="140" stroke="%230f172a" stroke-width="1.8"/><line x1="100" y1="30" x2="100" y2="140" stroke="%230284c7" stroke-width="1.8" stroke-dasharray="4,4"/><line x1="100" y1="140" x2="50" y2="180" stroke="%230f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="100" y1="140" x2="230" y2="140" stroke="%230f172a" stroke-width="1.5" stroke-dasharray="4,4"/><line x1="50" y1="180" x2="230" y2="140" stroke="%2394a3b8" stroke-width="1.2" stroke-dasharray="3,3"/><polyline points="100,128 112,128 112,140" fill="none" stroke="%230284c7" stroke-width="1.2"/><text x="95" y="22" font-family="Times New Roman, serif" font-size="15" font-weight="bold" fill="%230f172a">S</text><text x="82" y="142" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">A</text><text x="35" y="190" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">B</text><text x="205" y="195" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">C</text><text x="238" y="145" font-family="Times New Roman, serif" font-size="14" font-weight="bold" fill="%230f172a">D</text></svg>`;
 
-// Pre-built Exam Database for GDPT 2018 (Toán 11 / 12 - Cấu trúc Mới 2025 theo Bộ GD&ĐT)
+// Pre-built Exam Database for GDPT 2018 (Toán 11 / 12 - Cấu trúc Mới 2025 theo Bộ GD&ĐT với chuẩn LaTeX KaTeX)
 const INITIAL_QUESTIONS = [
   // PHẦN I: Trắc nghiệm 4 lựa chọn (12 câu chuẩn)
   {
@@ -26,40 +29,40 @@ const INITIAL_QUESTIONS = [
     part: 'part1',
     title: 'Câu 1 (Phần I - Trắc nghiệm 4 phương án)',
     level: 'Nhận biết',
-    content: 'Cho cấp số cộng (u_n) có số hạng đầu u_1 = 3 và công sai d = 2. Giá trị của u_2 bằng:',
-    options: ['5', '6', '1', '-1'],
+    content: 'Cho cấp số cộng $(u_n)$ có số hạng đầu $u_1 = 3$ và công sai $d = 2$. Giá trị của $u_2$ bằng:',
+    options: ['$5$', '$6$', '$1$', '$-1$'],
     correctAnswerIndex: 0, // Option A: 5
-    explanation: 'Ta có u_2 = u_1 + d = 3 + 2 = 5.'
+    explanation: 'Ta có $u_2 = u_1 + d = 3 + 2 = 5$.'
   },
   {
     id: 'q2',
     part: 'part1',
     title: 'Câu 2 (Phần I - Trắc nghiệm 4 phương án)',
     level: 'Thông hiểu',
-    content: 'Cho cấp số nhân (v_n) có v_1 = 2 và công bội q = 3. Số hạng thứ 4 của cấp số nhân là:',
-    options: ['54', '162', '18', '24'],
+    content: 'Cho cấp số nhân $(v_n)$ có $v_1 = 2$ và công bội $q = 3$. Số hạng thứ 4 của cấp số nhân là:',
+    options: ['$54$', '$162$', '$18$', '$24$'],
     correctAnswerIndex: 0, // Option A: 54
-    explanation: 'Ta có v_4 = v_1 · q^3 = 2 · 3^3 = 2 · 27 = 54.'
+    explanation: 'Ta có $v_4 = v_1 \\cdot q^3 = 2 \\cdot 3^3 = 2 \\cdot 27 = 54$.'
   },
   {
     id: 'q3',
     part: 'part1',
     title: 'Câu 3 (Phần I - Trắc nghiệm 4 phương án)',
     level: 'Nhận biết',
-    content: 'Tập xác định D của hàm số y = log_2(x - 1) là:',
-    options: ['D = (1; +∞)', 'D = [1; +∞)', 'D = R \\ {1}', 'D = (0; +∞)'],
+    content: 'Tập xác định $D$ của hàm số $y = \\log_2(x - 1)$ là:',
+    options: ['$D = (1; +\\infty)$', '$D = [1; +\\infty)$', '$D = \\mathbb{R} \\setminus \\{1\\}$', '$D = (0; +\\infty)$'],
     correctAnswerIndex: 0,
-    explanation: 'Điều kiện xác định x - 1 > 0 ⇔ x > 1. Vậy D = (1; +∞).'
+    explanation: 'Điều kiện xác định $x - 1 > 0 \\Leftrightarrow x > 1$. Vậy $D = (1; +\\infty)$.'
   },
   {
     id: 'q4',
     part: 'part1',
     title: 'Câu 4 (Phần I - Trắc nghiệm 4 phương án)',
     level: 'Nhận biết',
-    content: 'Trong không gian Oxyz, tọa độ vectơ u = 2i - 3j + k là:',
-    options: ['(2; -3; 1)', '(2; 3; 1)', '(-2; 3; -1)', '(2; -3; 0)'],
+    content: 'Trong không gian $Oxyz$, tọa độ vectơ $\\vec{u} = 2\\vec{i} - 3\\vec{j} + \\vec{k}$ là:',
+    options: ['$(2; -3; 1)$', '$(2; 3; 1)$', '$(-2; 3; -1)$', '$(2; -3; 0)$'],
     correctAnswerIndex: 0,
-    explanation: 'Vectơ u = 2i - 3j + 1k có tọa độ là (2; -3; 1).'
+    explanation: 'Vectơ $\\vec{u} = 2\\vec{i} - 3\\vec{j} + 1\\vec{k}$ có tọa độ là $(2; -3; 1)$.'
   },
 
   // PHẦN II: Trắc nghiệm Đúng / Sai (4 ý a, b, c, d)
@@ -68,30 +71,30 @@ const INITIAL_QUESTIONS = [
     part: 'part2',
     title: 'Câu 1 (Phần II - Trắc nghiệm Đúng/Sai)',
     level: 'Thông hiểu',
-    content: 'Cho hàm số y = f(x) = x^3 - 3x + 2 có đồ thị (C) như hình vẽ bên dưới. Xét tính Đúng/Sai của các mệnh đề sau:',
+    content: 'Cho hàm số $y = f(x) = x^3 - 3x + 2$ có đồ thị $(C)$ như hình vẽ bên dưới. Xét tính Đúng/Sai của các mệnh đề sau:',
     image_url: CUBIC_GRAPH_SVG,
     subItems: [
-      { key: 'a', text: 'Hàm số đã cho đồng biến trên khoảng (1; +∞).', isTrue: true },
-      { key: 'b', text: 'Hàm số đã cho có 2 điểm cực trị.', isTrue: true },
-      { key: 'c', text: 'Giá trị cực đại của hàm số bằng 0.', isTrue: false },
-      { key: 'd', text: 'Đồ thị hàm số cắt trục tung tại điểm có tung độ bằng 2.', isTrue: true }
+      { key: 'a', text: 'Hàm số đã cho đồng biến trên khoảng $(1; +\\infty)$.', isTrue: true },
+      { key: 'b', text: 'Hàm số đã cho có $2$ điểm cực trị.', isTrue: true },
+      { key: 'c', text: 'Giá trị cực đại của hàm số bằng $0$.', isTrue: false },
+      { key: 'd', text: 'Đồ thị hàm số cắt trục tung tại điểm có tung độ bằng $2$.', isTrue: true }
     ],
-    explanation: 'f\'(x) = 3x^2 - 3 = 0 ⇔ x = ±1. f(-1) = 4 (Cực đại), f(1) = 0 (Cực tiểu).'
+    explanation: '$f\'(x) = 3x^2 - 3 = 0 \\Leftrightarrow x = \\pm 1$. Ta có $f(-1) = 4$ (Cực đại), $f(1) = 0$ (Cực tiểu).'
   },
   {
     id: 'q6',
     part: 'part2',
     title: 'Câu 2 (Phần II - Trắc nghiệm Đúng/Sai)',
     level: 'Vận dụng',
-    content: 'Một hình chóp S.ABCD có đáy ABCD là hình vuông cạnh a, SA ⊥ (ABCD) và SA = a√2 (tham khảo hình vẽ bên dưới).',
+    content: 'Một hình chóp $S.ABCD$ có đáy $ABCD$ là hình vuông cạnh $a$, $SA \\perp (ABCD)$ và $SA = a\\sqrt{2}$ (tham khảo hình vẽ bên dưới).',
     image_url: PYRAMID_GEOMETRY_SVG,
     subItems: [
-      { key: 'a', text: 'Thể tích khối chóp S.ABCD bằng (a^3 √2) / 3.', isTrue: true },
-      { key: 'b', text: 'Góc giữa đường thẳng SB và mặt phẳng (ABCD) bằng 45°.', isTrue: false }, // tan = SA/AB = √2 -> arctan(√2)
-      { key: 'c', text: 'BD ⊥ SC.', isTrue: true },
-      { key: 'd', text: 'Khoảng cách từ A đến mặt phẳng (SBD) bằng (a√2) / 2.', isTrue: false }
+      { key: 'a', text: 'Thể tích khối chóp $S.ABCD$ bằng $\\frac{a^3 \\sqrt{2}}{3}$.', isTrue: true },
+      { key: 'b', text: 'Góc giữa đường thẳng $SB$ và mặt phẳng $(ABCD)$ bằng $45^\\circ$.', isTrue: false },
+      { key: 'c', text: '$BD \\perp SC$.', isTrue: true },
+      { key: 'd', text: 'Khoảng cách từ điểm $A$ đến mặt phẳng $(SBD)$ bằng $\\frac{a\\sqrt{2}}{2}$.', isTrue: false }
     ],
-    explanation: 'V = (1/3) S_ABCD · SA = (1/3) a^2 · a√2 = (a^3 √2)/3.'
+    explanation: '$V = \\frac{1}{3} S_{ABCD} \\cdot SA = \\frac{1}{3} a^2 \\cdot a\\sqrt{2} = \\frac{a^3 \\sqrt{2}}{3}$.'
   },
 
   // PHẦN III: Trả lời ngắn (Short answer)
@@ -100,18 +103,18 @@ const INITIAL_QUESTIONS = [
     part: 'part3',
     title: 'Câu 1 (Phần III - Trắc nghiệm Trả lời ngắn)',
     level: 'Vận dụng',
-    content: 'Một doanh nghiệp sản xuất sản phẩm có hàm chi phí C(x) = 2x^2 + 500x + 5000 (ngàn đồng). Tìm số sản phẩm x để chi phí trung bình C̄(x) đạt giá trị nhỏ nhất.',
+    content: 'Một doanh nghiệp sản xuất sản phẩm có hàm chi phí $C(x) = 2x^2 + 500x + 5000$ (ngàn đồng). Tìm số sản phẩm $x$ để chi phí trung bình $\\bar{C}(x)$ đạt giá trị nhỏ nhất.',
     shortAnswer: '50',
-    explanation: 'C̄(x) = 2x + 500 + 5000/x ≥ 500 + 2√(2x · 5000/x) = 700. Dấu = xảy ra khi 2x = 5000/x ⇔ x^2 = 2500 ⇔ x = 50.'
+    explanation: '$\\bar{C}(x) = 2x + 500 + \\frac{5000}{x} \\ge 500 + 2\\sqrt{2x \\cdot \\frac{5000}{x}} = 700$. Dấu bằng xảy ra khi $2x = \\frac{5000}{x} \\Leftrightarrow x^2 = 2500 \\Leftrightarrow x = 50$.'
   },
   {
     id: 'q8',
     part: 'part3',
     title: 'Câu 2 (Phần III - Trắc nghiệm Trả lời ngắn)',
     level: 'Vận dụng cao',
-    content: 'Cho phương trình 4^x - m · 2^(x+1) + 2m = 0. Tìm số các giá trị nguyên của tham số m ∈ [-10; 10] để phương trình có 2 nghiệm phân biệt.',
+    content: 'Cho phương trình $4^x - m \\cdot 2^{x+1} + 2m = 0$. Tìm số các giá trị nguyên của tham số $m \\in [-10; 10]$ để phương trình có $2$ nghiệm phân biệt.',
     shortAnswer: '8',
-    explanation: 'Đặt t = 2^x (t > 0). Phương trình trở thành t^2 - 2mt + 2m = 0 có 2 nghiệm t_1 > t_2 > 0. Điều kiện Δ\' > 0, S > 0, P > 0 ⇔ m > 2.'
+    explanation: 'Đặt $t = 2^x$ ($t > 0$). Phương trình trở thành $t^2 - 2mt + 2m = 0$ có 2 nghiệm $t_1 > t_2 > 0$. Điều kiện $\\Delta\' > 0, S > 0, P > 0 \\Leftrightarrow m > 2$. Vì $m \\in [-10; 10], m \\in \\mathbb{Z} \\Rightarrow m \\in \\{3, 4, 5, 6, 7, 8, 9, 10\\}$ (có 8 giá trị).'
   }
 ];
 
@@ -129,9 +132,15 @@ export default function TeacherExamMaker() {
   // Questions & Mixed Exams
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
   const [numberOfCodes, setNumberOfCodes] = useState(4);
+  const [baseCodeNum, setBaseCodeNum] = useState(101);
   const [mixedExamCodes, setMixedExamCodes] = useState([]);
   const [selectedCodeView, setSelectedCodeView] = useState('101');
   const [activeTab, setActiveTab] = useState('questions'); // 'questions' | 'matrix' | 'preview' | 'keys'
+
+  // Question Bank Search & Filter states
+  const [filterPart, setFilterPart] = useState('all');
+  const [filterLevel, setFilterLevel] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Modal / Form state to add new question
   const [showAddModal, setShowAddModal] = useState(false);
@@ -149,6 +158,10 @@ export default function TeacherExamMaker() {
   const [newShortAnswer, setNewShortAnswer] = useState('');
   const [newExplanation, setNewExplanation] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
+
+  // Edit Question Modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
 
   // Smart Word / PDF / Text Import States
   const [showImportModal, setShowImportModal] = useState(false);
@@ -188,7 +201,8 @@ export default function TeacherExamMaker() {
         grade: grade,
         duration_minutes: parseInt(duration, 10) || 45,
         target_classes: targetExamClasses,
-        questions: questions
+        questions: questions,
+        mixedExamCodes: mixedExamCodes.length > 0 ? mixedExamCodes : null
       };
       await savePublishedExam(examData);
       setExamPublished(true);
@@ -373,13 +387,13 @@ export default function TeacherExamMaker() {
     return array;
   };
 
-  // Generator: Đảo Đề Thi theo Chuẩn BGDĐT 2025
+  // Generator: Đảo Đề Thi theo Chuẩn BGDĐT 2025 (Hỗ trợ tùy chọn mã gốc 101, 201, 301...)
   const handleGenerateMixedExams = () => {
     const codes = [];
-    const baseCodeNum = 101;
+    const startNum = parseInt(baseCodeNum, 10) || 101;
 
     for (let i = 0; i < numberOfCodes; i++) {
-      const codeStr = String(baseCodeNum + i);
+      const codeStr = String(startNum + i);
       
       const part1Questions = questions.filter(q => q.part === 'part1');
       const part2Questions = questions.filter(q => q.part === 'part2');
@@ -387,7 +401,7 @@ export default function TeacherExamMaker() {
 
       // 1. Shuffle Part 1: Questions & Options (with clean A, B, C, D re-indexing)
       const shuffledPart1 = shuffleArray(part1Questions).map(q => {
-        const originalOptionsObj = q.options.map((optText, idx) => ({
+        const originalOptionsObj = (q.options || []).map((optText, idx) => ({
           text: optText,
           isCorrect: idx === q.correctAnswerIndex
         }));
@@ -402,7 +416,7 @@ export default function TeacherExamMaker() {
 
       // 2. Shuffle Part 2: Questions & Sub-items (re-indexing a, b, c, d)
       const shuffledPart2 = shuffleArray(part2Questions).map(q => {
-        const shuffledSubs = shuffleArray(q.subItems).map((sub, idx) => ({
+        const shuffledSubs = shuffleArray(q.subItems || []).map((sub, idx) => ({
           ...sub,
           newKey: ['a', 'b', 'c', 'd'][idx]
         }));
@@ -424,9 +438,122 @@ export default function TeacherExamMaker() {
     }
 
     setMixedExamCodes(codes);
-    setSelectedCodeView(codes[0]?.code || '101');
+    setSelectedCodeView(codes[0]?.code || String(startNum));
     setActiveTab('preview');
-    alert(`🎉 Đã tráo thành công ${numberOfCodes} mã đề thi chuẩn BGDĐT (${codes.map(c => c.code).join(', ')})!`);
+    alert(`🎉 ĐÃ TRÁO THÀNH CÔNG ${numberOfCodes} MÃ ĐỀ THI CHUẨN BGDĐT (${codes.map(c => c.code).join(', ')})!\n\nHệ thống đã tự động tính toán lại đáp án chuẩn xác 100% cho từng mã đề.`);
+  };
+
+  // Duplicate Question
+  const handleDuplicateQuestion = (q) => {
+    const duplicated = {
+      ...q,
+      id: `q-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      title: `${q.title} (Bản sao)`
+    };
+    setQuestions([...questions, duplicated]);
+    alert("✓ Đã nhân bản câu hỏi thành công!");
+  };
+
+  // Start Edit Question
+  const handleStartEdit = (q) => {
+    setEditingQuestion({
+      ...q,
+      options: q.options ? [...q.options] : ['', '', '', ''],
+      subItems: q.subItems ? q.subItems.map(s => ({ ...s })) : [
+        { key: 'a', text: '', isTrue: true },
+        { key: 'b', text: '', isTrue: true },
+        { key: 'c', text: '', isTrue: false },
+        { key: 'd', text: '', isTrue: false }
+      ]
+    });
+    setShowEditModal(true);
+  };
+
+  // Save Edit Question
+  const handleSaveEdit = (e) => {
+    e.preventDefault();
+    if (!editingQuestion || !editingQuestion.content.trim()) {
+      alert("Vui lòng nhập nội dung câu hỏi!");
+      return;
+    }
+    setQuestions(questions.map(q => q.id === editingQuestion.id ? editingQuestion : q));
+    setShowEditModal(false);
+    setEditingQuestion(null);
+    alert("✓ Đã cập nhật câu hỏi thành công!");
+  };
+
+  // Export Master Key Matrix to Excel (.xlsx) complying with GEMINI.md naming rule
+  const handleExportMasterKeysExcel = () => {
+    const activeCodes = mixedExamCodes.length > 0 ? mixedExamCodes : [activeCodeObj];
+    if (activeCodes.length === 0) {
+      alert("Chưa có mã đề thi nào để xuất bảng đáp án!");
+      return;
+    }
+
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // 1. Sheet Part 1: Trắc nghiệm 4 lựa chọn
+      const part1Rows = [];
+      const maxPart1 = Math.max(...activeCodes.map(c => (c.part1 || []).length), 1);
+      for (let i = 0; i < maxPart1; i++) {
+        const row = { "Câu hỏi": `Câu ${i + 1}` };
+        activeCodes.forEach(codeObj => {
+          const q = (codeObj.part1 || [])[i];
+          if (q) {
+            const correctIndex = q.shuffledCorrectIndex !== undefined ? q.shuffledCorrectIndex : q.correctAnswerIndex;
+            row[`Mã ${codeObj.code}`] = ['A', 'B', 'C', 'D'][correctIndex] || '-';
+          } else {
+            row[`Mã ${codeObj.code}`] = '-';
+          }
+        });
+        part1Rows.push(row);
+      }
+      const wsPart1 = XLSX.utils.json_to_sheet(part1Rows);
+      XLSX.utils.book_append_sheet(wb, wsPart1, "Phần I - 4 Lựa chọn");
+
+      // 2. Sheet Part 2: Đúng / Sai
+      const part2Rows = [];
+      const maxPart2 = Math.max(...activeCodes.map(c => (c.part2 || []).length), 1);
+      for (let i = 0; i < maxPart2; i++) {
+        ['a', 'b', 'c', 'd'].forEach((subKey, subIdx) => {
+          const row = { "Câu & Lệnh ý": `Câu ${i + 1} - Ý ${subKey})` };
+          activeCodes.forEach(codeObj => {
+            const q = (codeObj.part2 || [])[i];
+            if (q) {
+              const subs = q.shuffledSubItems || q.subItems || [];
+              const subItem = subs[subIdx];
+              row[`Mã ${codeObj.code}`] = subItem ? (subItem.isTrue ? 'Đ' : 'S') : '-';
+            } else {
+              row[`Mã ${codeObj.code}`] = '-';
+            }
+          });
+          part2Rows.push(row);
+        });
+      }
+      const wsPart2 = XLSX.utils.json_to_sheet(part2Rows);
+      XLSX.utils.book_append_sheet(wb, wsPart2, "Phần II - Đúng Sai");
+
+      // 3. Sheet Part 3: Trả lời ngắn
+      const part3Rows = [];
+      const maxPart3 = Math.max(...activeCodes.map(c => (c.part3 || []).length), 1);
+      for (let i = 0; i < maxPart3; i++) {
+        const row = { "Câu hỏi": `Câu ${i + 1}` };
+        activeCodes.forEach(codeObj => {
+          const q = (codeObj.part3 || [])[i];
+          row[`Mã ${codeObj.code}`] = q ? (q.shortAnswer || '') : '-';
+        });
+        part3Rows.push(row);
+      }
+      const wsPart3 = XLSX.utils.json_to_sheet(part3Rows);
+      XLSX.utils.book_append_sheet(wb, wsPart3, "Phần III - Trả lời ngắn");
+
+      // GEMINI.md naming rule: Prefix sequence number 1-...
+      const fileName = `1-Bang_dap_an_tong_hop_tron_de_CBQ_${subject || 'Mon'}_${grade || 'Khoi'}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+    } catch (err) {
+      alert("Lỗi khi xuất bảng đáp án Excel: " + err.message);
+    }
   };
 
   // Add new question handler
@@ -623,7 +750,7 @@ export default function TeacherExamMaker() {
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
           
           {/* Exam Header Setting Form */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px', marginBottom: '24px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
             <div>
               <label style={styles.label}>Tên Kỳ Thi / Tiêu Đề Đề Thi (*)</label>
               <input type="text" value={examTitle} onChange={e => setExamTitle(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }} />
@@ -642,48 +769,130 @@ export default function TeacherExamMaker() {
             </div>
           </div>
 
+          {/* Question Bank Controls & Shuffler Config */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              📋 Danh Sách Câu Hỏi Trong Đề ({questions.length} câu)
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Database size={18} color="#0284c7" /> Ngân Hàng Câu Hỏi ({questions.length} câu)
+              </h3>
+              <span style={{ fontSize: '12px', background: '#dcfce7', color: '#166534', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                ✓ Đã kích hoạt KaTeX LaTeX Pro
+              </span>
+            </div>
             
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button onClick={() => setShowImportModal(true)} style={{ padding: '8px 16px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Download size={18} /> Nạp Đề Từ Word / PDF / Copy-Paste
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button onClick={() => setShowImportModal(true)} style={{ padding: '8px 14px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <Download size={16} /> Nạp Đề Word / Text
               </button>
 
-              <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 16px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={18} /> Thêm Câu Hỏi Mới
+              <button onClick={() => setShowAddModal(true)} style={{ padding: '8px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
+                <Plus size={16} /> Thêm Câu Hỏi Mới
               </button>
 
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'bold' }}>Số lượng mã đề:</span>
-                <select value={numberOfCodes} onChange={e => setNumberOfCodes(Number(e.target.value))} style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold' }}>
-                  <option value={2}>2 Mã đề (101, 102)</option>
-                  <option value={4}>4 Mã đề (101, 102, 103, 104)</option>
-                  <option value={8}>8 Mã đề (101 - 108)</option>
+              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', background: '#f1f5f9', padding: '4px 10px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                <span style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold' }}>Số mã đề:</span>
+                <select value={numberOfCodes} onChange={e => setNumberOfCodes(Number(e.target.value))} style={{ padding: '4px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold', fontSize: '12.5px' }}>
+                  <option value={2}>2 Mã (101, 102)</option>
+                  <option value={4}>4 Mã (101 - 104)</option>
+                  <option value={8}>8 Mã (101 - 108)</option>
+                  <option value={12}>12 Mã (101 - 112)</option>
+                  <option value={24}>24 Mã (101 - 124)</option>
                 </select>
+                <span style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold', marginLeft: '4px' }}>Mã gốc:</span>
+                <input 
+                  type="number" 
+                  value={baseCodeNum} 
+                  onChange={e => setBaseCodeNum(parseInt(e.target.value, 10) || 101)} 
+                  style={{ width: '60px', padding: '3px 6px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold' }} 
+                  title="Số bắt đầu của mã đề (VD: 101, 201, 301...)"
+                />
               </div>
+            </div>
+          </div>
+
+          {/* Search & Filter Bar */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: '220px' }}>
+              <Search size={16} color="#64748b" />
+              <input 
+                type="text" 
+                value={searchQuery} 
+                onChange={e => setSearchQuery(e.target.value)} 
+                placeholder="Tìm kiếm nội dung câu hỏi, công thức hoặc từ khóa..." 
+                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }} 
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>Phần:</span>
+              <select value={filterPart} onChange={e => setFilterPart(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px' }}>
+                <option value="all">Tất cả phần</option>
+                <option value="part1">Phần I: 4 Lựa chọn</option>
+                <option value="part2">Phần II: Đúng / Sai</option>
+                <option value="part3">Phần III: Trả lời ngắn</option>
+              </select>
+
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>Mức độ:</span>
+              <select value={filterLevel} onChange={e => setFilterLevel(e.target.value)} style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px' }}>
+                <option value="all">Tất cả mức độ</option>
+                <option value="Nhận biết">Nhận biết</option>
+                <option value="Thông hiểu">Thông hiểu</option>
+                <option value="Vận dụng">Vận dụng</option>
+                <option value="Vận dụng cao">Vận dụng cao</option>
+              </select>
             </div>
           </div>
 
           {/* Question List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            {questions.map((q, idx) => (
+            {questions
+              .filter(q => {
+                if (filterPart !== 'all' && q.part !== filterPart) return false;
+                if (filterLevel !== 'all' && q.level !== filterLevel) return false;
+                if (searchQuery.trim()) {
+                  const query = searchQuery.toLowerCase();
+                  const matchContent = (q.content || '').toLowerCase().includes(query);
+                  const matchTitle = (q.title || '').toLowerCase().includes(query);
+                  const matchOpt = (q.options || []).some(o => (o || '').toLowerCase().includes(query));
+                  if (!matchContent && !matchTitle && !matchOpt) return false;
+                }
+                return true;
+              })
+              .map((q, idx) => (
               <div key={q.id} style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #cbd5e1', position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span style={{ fontWeight: 'bold', color: '#0284c7', fontSize: '14.5px' }}>
                     {q.title} <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', marginLeft: '8px' }}>{q.level}</span>
                   </span>
                   
-                  <button onClick={() => handleDeleteQuestion(q.id)} style={{ color: '#ef4444', border: 'none', background: 'none', cursor: 'pointer', padding: '4px' }} title="Xóa câu hỏi">
-                    <Trash2 size={18} />
-                  </button>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <button 
+                      onClick={() => handleStartEdit(q)} 
+                      style={{ color: '#0284c7', border: '1px solid #bae6fd', background: '#f0f9ff', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' }} 
+                      title="Chỉnh sửa câu hỏi & công thức LaTeX"
+                    >
+                      <Edit3 size={14} /> Sửa
+                    </button>
+                    <button 
+                      onClick={() => handleDuplicateQuestion(q)} 
+                      style={{ color: '#059669', border: '1px solid #a7f3d0', background: '#ecfdf5', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' }} 
+                      title="Nhân bản câu hỏi này"
+                    >
+                      <Copy size={14} /> Nhân bản
+                    </button>
+                    <button 
+                      onClick={() => handleDeleteQuestion(q.id)} 
+                      style={{ color: '#ef4444', border: '1px solid #fecaca', background: '#fef2f2', cursor: 'pointer', padding: '4px 8px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px' }} 
+                      title="Xóa câu hỏi khỏi đề thi"
+                    >
+                      <Trash2 size={14} /> Xóa
+                    </button>
+                  </div>
                 </div>
 
-                {/* Content with clean Math format */}
-                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600', marginBottom: '8px' }}>
-                  {renderCleanMathText(q.content)}
+                {/* Content rendered with crisp KaTeX LaTeX */}
+                <div style={{ fontSize: '14.5px', color: '#0f172a', fontWeight: '600', marginBottom: '10px', lineHeight: 1.6 }}>
+                  <MathView text={q.content} />
                 </div>
 
                 {/* Question Image / Diagram for Math, Physics, Chemistry, Biology */}
@@ -724,23 +933,28 @@ export default function TeacherExamMaker() {
                   </div>
                 )}
 
-                {/* Part 1 options */}
+                {/* Part 1 options with KaTeX */}
                 {q.part === 'part1' && (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '10px' }}>
-                    {q.options.map((opt, i) => (
-                      <div key={i} style={{ fontSize: '13.5px', color: i === q.correctAnswerIndex ? '#16a34a' : '#334155', fontWeight: i === q.correctAnswerIndex ? 'bold' : 'normal', background: i === q.correctAnswerIndex ? '#f0fdf4' : '#fff', padding: '6px 12px', borderRadius: '6px', border: i === q.correctAnswerIndex ? '1px solid #86efac' : '1px solid #e2e8f0' }}>
-                        {['A.', 'B.', 'C.', 'D.'][i]} {renderCleanMathText(opt)} {i === q.correctAnswerIndex && ' ✅ (Đáp án đúng)'}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                    {(q.options || []).map((opt, i) => (
+                      <div key={i} style={{ fontSize: '13.5px', color: i === q.correctAnswerIndex ? '#16a34a' : '#334155', fontWeight: i === q.correctAnswerIndex ? 'bold' : 'normal', background: i === q.correctAnswerIndex ? '#f0fdf4' : '#fff', padding: '6px 12px', borderRadius: '6px', border: i === q.correctAnswerIndex ? '1px solid #86efac' : '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontWeight: 'bold' }}>{['A.', 'B.', 'C.', 'D.'][i]}</span>
+                        <MathView inline text={opt} />
+                        {i === q.correctAnswerIndex && <span style={{ marginLeft: 'auto', fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>✅ Đáp án đúng</span>}
                       </div>
                     ))}
                   </div>
                 )}
 
-                {/* Part 2 True/False */}
+                {/* Part 2 True/False with KaTeX */}
                 {q.part === 'part2' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px', background: '#fff', padding: '12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                    {q.subItems.map(sub => (
-                      <div key={sub.key} style={{ fontSize: '13.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span><strong>{sub.key})</strong> {renderCleanMathText(sub.text)}</span>
+                    {(q.subItems || []).map(sub => (
+                      <div key={sub.key} style={{ fontSize: '13.5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                          <strong>{sub.key})</strong> 
+                          <MathView inline text={sub.text} />
+                        </div>
                         <span style={{ fontWeight: 'bold', fontSize: '12px', padding: '2px 8px', borderRadius: '4px', background: sub.isTrue ? '#dcfce7' : '#fee2e2', color: sub.isTrue ? '#15803d' : '#b91c1c' }}>
                           [{sub.isTrue ? 'ĐÚNG' : 'SAI'}]
                         </span>
@@ -749,16 +963,16 @@ export default function TeacherExamMaker() {
                   </div>
                 )}
 
-                {/* Part 3 Short answer */}
+                {/* Part 3 Short answer with KaTeX */}
                 {q.part === 'part3' && (
                   <div style={{ fontSize: '13.5px', color: '#0284c7', fontWeight: 'bold', marginBottom: '10px', background: '#e0f2fe', padding: '8px 12px', borderRadius: '6px', display: 'inline-block' }}>
-                    👉 Đáp số ghi phiếu: <span style={{ color: '#16a34a', fontSize: '15px' }}>{q.shortAnswer}</span>
+                    👉 Đáp số ghi phiếu: <span style={{ color: '#16a34a', fontSize: '15px' }}><MathView inline text={q.shortAnswer} /></span>
                   </div>
                 )}
 
                 {q.explanation && (
                   <div style={{ fontSize: '12.5px', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px 12px', borderRadius: '6px', marginTop: '6px' }}>
-                    💡 <strong>Lời giải chi tiết:</strong> {renderCleanMathText(q.explanation)}
+                    💡 <strong>Lời giải chi tiết:</strong> <MathView text={q.explanation} />
                   </div>
                 )}
               </div>
@@ -841,10 +1055,10 @@ export default function TeacherExamMaker() {
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
           
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ fontWeight: 'bold', fontSize: '14px', color: '#334155' }}>Chọn Mã Đề Thi Để Xem Bản In:</span>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                {(mixedExamCodes.length > 0 ? mixedExamCodes : [{ code: '101' }]).map(c => (
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                {(mixedExamCodes.length > 0 ? mixedExamCodes : [{ code: String(baseCodeNum) }]).map(c => (
                   <button 
                     key={c.code} 
                     onClick={() => setSelectedCodeView(c.code)}
@@ -856,9 +1070,19 @@ export default function TeacherExamMaker() {
               </div>
             </div>
 
-            <button onClick={handleExportWordExam} style={{ padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Download size={16} /> Tải File Word Mã Đề {selectedCodeView} (.doc)
-            </button>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                onClick={() => window.print()} 
+                style={{ padding: '8px 16px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="In đề thi ra máy in hoặc lưu PDF chuẩn A4"
+              >
+                <Printer size={16} /> 🖨️ In Đề Thi Này
+              </button>
+
+              <button onClick={handleExportWordExam} style={{ padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Download size={16} /> Tải File Word Mã Đề {selectedCodeView} (.doc)
+              </button>
+            </div>
           </div>
 
           {/* Printable Exam Paper Document Container */}
@@ -896,15 +1120,21 @@ export default function TeacherExamMaker() {
                 const opts = q.shuffledOptions || q.options;
                 return (
                   <div key={q.id || idx} style={{ marginBottom: '14px' }}>
-                    <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                      <strong>Câu {idx + 1}:</strong> 
+                      <MathView inline text={q.content} />
+                    </div>
                     {q.image_url && (
                       <div style={{ textAlign: 'center', margin: '8px 0' }}>
                         <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
                       </div>
                     )}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', marginTop: '4px', marginLeft: '15px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', marginTop: '6px', marginLeft: '15px', gap: '6px' }}>
                       {opts.map((opt, i) => (
-                        <span key={i}><strong>{['A.', 'B.', 'C.', 'D.'][i]}</strong> {renderCleanMathText(opt)}</span>
+                        <span key={i} style={{ display: 'inline-flex', gap: '4px', alignItems: 'baseline' }}>
+                          <strong>{['A.', 'B.', 'C.', 'D.'][i]}</strong> 
+                          <MathView inline text={opt} />
+                        </span>
                       ))}
                     </div>
                   </div>
@@ -919,15 +1149,21 @@ export default function TeacherExamMaker() {
                 const subs = q.shuffledSubItems || q.subItems;
                 return (
                   <div key={q.id || idx} style={{ marginBottom: '14px' }}>
-                    <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                      <strong>Câu {idx + 1}:</strong> 
+                      <MathView inline text={q.content} />
+                    </div>
                     {q.image_url && (
                       <div style={{ textAlign: 'center', margin: '8px 0' }}>
                         <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
                       </div>
                     )}
-                    <div style={{ marginLeft: '15px', marginTop: '4px' }}>
+                    <div style={{ marginLeft: '15px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {subs.map((sub, i) => (
-                        <div key={i}><strong>{['a)', 'b)', 'c)', 'd)'][i]}</strong> {renderCleanMathText(sub.text)}</div>
+                        <div key={i} style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                          <strong>{['a)', 'b)', 'c)', 'd)'][i]}</strong> 
+                          <MathView inline text={sub.text} />
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -940,7 +1176,10 @@ export default function TeacherExamMaker() {
               </div>
               {activeCodeObj.part3.map((q, idx) => (
                 <div key={q.id || idx} style={{ marginBottom: '14px' }}>
-                  <div><strong>Câu {idx + 1}:</strong> {renderCleanMathText(q.content)}</div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                    <strong>Câu {idx + 1}:</strong> 
+                    <MathView inline text={q.content} />
+                  </div>
                   {q.image_url && (
                     <div style={{ textAlign: 'center', margin: '8px 0' }}>
                       <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
@@ -962,9 +1201,36 @@ export default function TeacherExamMaker() {
       {/* TAB 4: TEACHER ANSWER KEYS & MATRIX */}
       {activeTab === 'keys' && (
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '17px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            🎯 Bảng Đáp Án Ma Trận Tất Cả Mã Đề Thi ({mixedExamCodes.length || 1} Mã Đề)
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🎯 Bảng Đáp Án Ma Trận Tất Cả Mã Đề Thi ({mixedExamCodes.length || 1} Mã Đề)
+              </h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                Đáp án chuẩn xác 100% tự động cập nhật theo thuật toán hoán vị câu hỏi và phương án A, B, C, D
+              </p>
+            </div>
+
+            <button
+              onClick={handleExportMasterKeysExcel}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: 'linear-gradient(135deg, #16a34a, #15803d)',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(22,163,74,0.3)',
+                fontSize: '13.5px'
+              }}
+            >
+              <FileSpreadsheet size={18} /> 📊 Xuất Bảng Đáp Án Sang Excel (.xlsx)
+            </button>
+          </div>
 
           {(mixedExamCodes.length > 0 ? mixedExamCodes : [activeCodeObj]).map(codeObj => (
             <div key={codeObj.code} style={{ marginBottom: '24px', background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
@@ -1161,8 +1427,25 @@ export default function TeacherExamMaker() {
               </div>
 
               <div>
-                <label style={styles.label}>Nội dung câu hỏi (*)</label>
-                <textarea rows={3} value={newContent} onChange={e => setNewContent(e.target.value)} style={{ ...styles.input, resize: 'vertical' }} placeholder="Nhập nội dung câu hỏi (hỗ trợ nhập công thức u_1 = 3, d = 2)..." required />
+                <label style={styles.label}>Nội dung câu hỏi (*):</label>
+                {/* Quick Math & LaTeX Palette */}
+                <MathToolbar onInsert={(latex) => setNewContent(prev => prev ? prev + ' ' + latex : latex)} />
+                <textarea 
+                  rows={3} 
+                  value={newContent} 
+                  onChange={e => setNewContent(e.target.value)} 
+                  style={{ ...styles.input, resize: 'vertical', fontFamily: 'monospace' }} 
+                  placeholder="Nhập nội dung câu hỏi (gõ công thức giữa 2 dấu $...$ ví dụ: $u_1 = 3, d = 2$)..." 
+                  required 
+                />
+                {newContent.trim() && (
+                  <div style={{ marginTop: '8px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0369a1', marginBottom: '4px' }}>
+                      👁️ Xem trước công thức hiển thị thực tế (Live KaTeX Preview):
+                    </div>
+                    <MathView text={newContent} />
+                  </div>
+                )}
               </div>
 
               {/* Đính kèm hình ảnh / Đồ thị cho các môn Tự nhiên */}
@@ -1232,7 +1515,7 @@ export default function TeacherExamMaker() {
               {/* Part 1 input */}
               {newPart === 'part1' && (
                 <div>
-                  <label style={styles.label}>Các phương án lựa chọn & Chọn đáp án đúng:</label>
+                  <label style={styles.label}>Các phương án lựa chọn & Chọn đáp án đúng (hỗ trợ gõ $công_thức$):</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {['A', 'B', 'C', 'D'].map((label, idx) => (
                       <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1242,7 +1525,7 @@ export default function TeacherExamMaker() {
                           const opts = [...newOptions];
                           opts[idx] = e.target.value;
                           setNewOptions(opts);
-                        }} style={styles.input} placeholder={`Phương án ${label}`} required />
+                        }} style={styles.input} placeholder={`Phương án ${label} (VD: $x = 5$)`} required />
                       </div>
                     ))}
                   </div>
@@ -1252,7 +1535,7 @@ export default function TeacherExamMaker() {
               {/* Part 2 input */}
               {newPart === 'part2' && (
                 <div>
-                  <label style={styles.label}>Các mệnh đề Đúng / Sai:</label>
+                  <label style={styles.label}>Các mệnh đề Đúng / Sai (hỗ trợ gõ $công_thức$):</label>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     {newSubItems.map((sub, idx) => (
                       <div key={sub.key} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1286,8 +1569,14 @@ export default function TeacherExamMaker() {
               )}
 
               <div>
-                <label style={styles.label}>Lời giải chi tiết (Hướng dẫn chấm)</label>
-                <textarea rows={2} value={newExplanation} onChange={e => setNewExplanation(e.target.value)} style={{ ...styles.input, resize: 'vertical' }} placeholder="Nhập hướng dẫn giải chi tiết cho câu hỏi..." />
+                <label style={styles.label}>Lời giải chi tiết (Hướng dẫn chấm & công thức giải):</label>
+                <textarea rows={2} value={newExplanation} onChange={e => setNewExplanation(e.target.value)} style={{ ...styles.input, resize: 'vertical' }} placeholder="Nhập hướng dẫn giải chi tiết cho câu hỏi (hỗ trợ $...$)..." />
+                {newExplanation.trim() && (
+                  <div style={{ marginTop: '6px', padding: '8px 12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>👁️ Xem trước lời giải:</div>
+                    <MathView text={newExplanation} />
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
@@ -1295,6 +1584,189 @@ export default function TeacherExamMaker() {
                 <button type="submit" style={{ padding: '8px 20px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Thêm Vào Đề Thi</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: EDIT QUESTION WITH LATEX TOOLBAR & LIVE PREVIEW */}
+      {showEditModal && editingQuestion && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: 'white', width: '100%', maxWidth: '700px', borderRadius: '16px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '17px', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Edit3 size={18} /> Chỉnh Sửa Câu Hỏi & Công Thức LaTeX
+              </h3>
+              <button onClick={() => { setShowEditModal(false); setEditingQuestion(null); }} style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={styles.label}>Loại Câu Hỏi / Phần</label>
+                  <select 
+                    value={editingQuestion.part} 
+                    onChange={e => setEditingQuestion({ ...editingQuestion, part: e.target.value })} 
+                    style={styles.input}
+                  >
+                    <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn</option>
+                    <option value="part2">Phần II: Trắc nghiệm Đúng / Sai</option>
+                    <option value="part3">Phần III: Trắc nghiệm Trả lời ngắn</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={styles.label}>Mức Độ Tư Duy</label>
+                  <select 
+                    value={editingQuestion.level || 'Thông hiểu'} 
+                    onChange={e => setEditingQuestion({ ...editingQuestion, level: e.target.value })} 
+                    style={styles.input}
+                  >
+                    <option value="Nhận biết">Nhận biết</option>
+                    <option value="Thông hiểu">Thông hiểu</option>
+                    <option value="Vận dụng">Vận dụng</option>
+                    <option value="Vận dụng cao">Vận dụng cao</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={styles.label}>Nội dung câu hỏi (*):</label>
+                <MathToolbar onInsert={(latex) => setEditingQuestion({ ...editingQuestion, content: (editingQuestion.content ? editingQuestion.content + ' ' : '') + latex })} />
+                <textarea 
+                  rows={3} 
+                  value={editingQuestion.content || ''} 
+                  onChange={e => setEditingQuestion({ ...editingQuestion, content: e.target.value })} 
+                  style={{ ...styles.input, resize: 'vertical', fontFamily: 'monospace' }} 
+                  required 
+                />
+                {editingQuestion.content && (
+                  <div style={{ marginTop: '8px', padding: '10px 14px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#0369a1', marginBottom: '4px' }}>
+                      👁️ Xem trước công thức hiển thị thực tế:
+                    </div>
+                    <MathView text={editingQuestion.content} />
+                  </div>
+                )}
+              </div>
+
+              {/* Edit Image Attachment */}
+              <div style={{ border: '1px dashed #0284c7', padding: '12px', borderRadius: '10px', background: '#f0f9ff' }}>
+                <label style={{ ...styles.label, color: '#0369a1' }}>🖼️ Ảnh Đồ Thị / Hình Vẽ Minh Họa:</label>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input 
+                    type="text" 
+                    value={editingQuestion.image_url || ''} 
+                    onChange={e => setEditingQuestion({ ...editingQuestion, image_url: e.target.value })} 
+                    placeholder="URL ảnh hoặc data URI" 
+                    style={{ ...styles.input, flex: 1, fontSize: '12.5px' }} 
+                  />
+                  {editingQuestion.image_url && (
+                    <button type="button" onClick={() => setEditingQuestion({ ...editingQuestion, image_url: '' })} style={{ color: '#ef4444', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>
+                      ✕ Gỡ ảnh
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Part 1 Options */}
+              {editingQuestion.part === 'part1' && (
+                <div>
+                  <label style={styles.label}>Các phương án và đáp án đúng:</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {['A', 'B', 'C', 'D'].map((label, idx) => (
+                      <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <input 
+                          type="radio" 
+                          name="editCorrectOpt" 
+                          checked={editingQuestion.correctAnswerIndex === idx} 
+                          onChange={() => setEditingQuestion({ ...editingQuestion, correctAnswerIndex: idx })} 
+                        />
+                        <span style={{ fontWeight: 'bold', width: '20px' }}>{label}.</span>
+                        <input 
+                          type="text" 
+                          value={(editingQuestion.options || [])[idx] || ''} 
+                          onChange={e => {
+                            const opts = [...(editingQuestion.options || ['', '', '', ''])];
+                            opts[idx] = e.target.value;
+                            setEditingQuestion({ ...editingQuestion, options: opts });
+                          }} 
+                          style={styles.input} 
+                          placeholder={`Phương án ${label}`} 
+                          required 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Part 2 Sub-items */}
+              {editingQuestion.part === 'part2' && (
+                <div>
+                  <label style={styles.label}>Các mệnh đề Đúng / Sai:</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {(editingQuestion.subItems || []).map((sub, idx) => (
+                      <div key={sub.key || idx} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 'bold', width: '20px' }}>{sub.key})</span>
+                        <input 
+                          type="text" 
+                          value={sub.text || ''} 
+                          onChange={e => {
+                            const subs = [...(editingQuestion.subItems || [])];
+                            subs[idx].text = e.target.value;
+                            setEditingQuestion({ ...editingQuestion, subItems: subs });
+                          }} 
+                          style={{ ...styles.input, flex: 1 }} 
+                          required 
+                        />
+                        <select 
+                          value={sub.isTrue ? 'true' : 'false'} 
+                          onChange={e => {
+                            const subs = [...(editingQuestion.subItems || [])];
+                            subs[idx].isTrue = e.target.value === 'true';
+                            setEditingQuestion({ ...editingQuestion, subItems: subs });
+                          }} 
+                          style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontWeight: 'bold', color: sub.isTrue ? '#16a34a' : '#ef4444' }}
+                        >
+                          <option value="true">ĐÚNG</option>
+                          <option value="false">SAI</option>
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Part 3 Short Answer */}
+              {editingQuestion.part === 'part3' && (
+                <div>
+                  <label style={styles.label}>Đáp số câu trả lời ngắn:</label>
+                  <input 
+                    type="text" 
+                    value={editingQuestion.shortAnswer || ''} 
+                    onChange={e => setEditingQuestion({ ...editingQuestion, shortAnswer: e.target.value })} 
+                    style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7' }} 
+                    required 
+                  />
+                </div>
+              )}
+
+              <div>
+                <label style={styles.label}>Lời giải chi tiết (Hướng dẫn chấm):</label>
+                <textarea 
+                  rows={2} 
+                  value={editingQuestion.explanation || ''} 
+                  onChange={e => setEditingQuestion({ ...editingQuestion, explanation: e.target.value })} 
+                  style={{ ...styles.input, resize: 'vertical' }} 
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+                <button type="button" onClick={() => { setShowEditModal(false); setEditingQuestion(null); }} style={{ padding: '8px 16px', background: '#f1f5f9', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}>Hủy</button>
+                <button type="submit" style={{ padding: '8px 20px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Lưu Thay Đổi</button>
+              </div>
+            </form>
+
           </div>
         </div>
       )}

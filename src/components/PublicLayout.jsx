@@ -15,7 +15,7 @@ const DEFAULT_FULL_MENUS = [
   { id: 'm_sc_6', target_type: 'public', parent_group: 'school', label: '✍️ Góp ý Công việc & Đề án', path: '/gop-y', sort_order: 6, is_active: true },
   { id: 'm_sc_7', target_type: 'public', parent_group: 'school', label: '💌 Hòm Thư Học Sinh & Tâm Tư', path: '/hom-thu-hoc-sinh', sort_order: 7, is_active: true },
   { id: 'm_sc_8', target_type: 'public', parent_group: 'school', label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', sort_order: 8, is_active: false },
-  { id: 'm_sc_9', target_type: 'public', parent_group: 'school', label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/hoc-sinh/van-bang-so', sort_order: 9, is_active: true },
+  { id: 'm_sc_9', target_type: 'public', parent_group: 'school', label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/tra-cuu-van-bang', sort_order: 9, is_active: true },
 
   // Nhóm 2: Tin tức & Hoạt động (media)
   { id: 'm_md_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },

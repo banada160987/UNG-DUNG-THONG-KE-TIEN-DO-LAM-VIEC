@@ -3,6 +3,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import PublicLayout from './components/PublicLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import StudentRoute from './components/StudentRoute';
+import TeacherRoute from './components/TeacherRoute';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
 
 // Lazy loaded pages with auto-retry on Vercel build chunk updates
@@ -157,71 +159,73 @@ function App() {
             <Route path="/dang-ky-hoat-dong" element={<PublicRegistrations />} />
             <Route path="/dang-ky" element={<StudentRegister />} />
             <Route path="/dang-nhap-hoc-sinh" element={<StudentLogin />} />
-            <Route path="/student-dashboard" element={<StudentDashboard />} />
-            
-            {/* Role-based Student Features */}
-            <Route path="/hoc-sinh/so-dau-bai" element={<ClassJournal />} />
-            <Route path="/hoc-sinh/truc-nhat" element={<DutyRoster />} />
-            <Route path="/hoc-sinh/bao-cao-hoc-tap" element={<AcademicReport />} />
-            <Route path="/hoc-sinh/cham-diem-ne-nep" element={<DisciplineInspection />} />
-            <Route path="/hoc-sinh/quy-doan" element={<UnionFunds />} />
-            <Route path="/hoc-sinh/diem-danh-su-kien" element={<EventAttendance />} />
-            <Route path="/hoc-sinh/van-bang-so" element={<StudentDigitalVault />} />
-            <Route path="/hoc-sinh/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
-            <Route path="/hoc-sinh/huong-nghiep" element={<StudentCareerAdvisor />} />
-            <Route path="/hoc-sinh/hoc-lieu-so" element={<StudentMaterialsHub />} />
-            <Route path="/hoc-sinh/bai-giang-so" element={<StudentMaterialsHub />} />
-            <Route path="/hoc-sinh/lam-bai-thi" element={<StudentExamPortal />} />
-            <Route path="/hoc-sinh/lam-bai-thi/:examId" element={<StudentExamPortal />} />
-            <Route path="/hoc-sinh/kiem-tra-danh-gia" element={<StudentExamPortal />} />
+            <Route path="/tra-cuu-van-bang" element={<StudentDigitalVault />} />
+
+            {/* Role-based Student Features (Bảo vệ bởi StudentRoute - Bắt buộc đăng nhập học sinh) */}
+            <Route path="/student-dashboard" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+            <Route path="/hoc-sinh/so-dau-bai" element={<StudentRoute><ClassJournal /></StudentRoute>} />
+            <Route path="/hoc-sinh/truc-nhat" element={<StudentRoute><DutyRoster /></StudentRoute>} />
+            <Route path="/hoc-sinh/bao-cao-hoc-tap" element={<StudentRoute><AcademicReport /></StudentRoute>} />
+            <Route path="/hoc-sinh/cham-diem-ne-nep" element={<StudentRoute><DisciplineInspection /></StudentRoute>} />
+            <Route path="/hoc-sinh/quy-doan" element={<StudentRoute><UnionFunds /></StudentRoute>} />
+            <Route path="/hoc-sinh/diem-danh-su-kien" element={<StudentRoute><EventAttendance /></StudentRoute>} />
+            <Route path="/hoc-sinh/van-bang-so" element={<StudentRoute><StudentDigitalVault /></StudentRoute>} />
+            <Route path="/hoc-sinh/tu-van-to-hop-2-cong-2" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
+            <Route path="/hoc-sinh/huong-nghiep" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
+            <Route path="/hoc-sinh/hoc-lieu-so" element={<StudentRoute><StudentMaterialsHub /></StudentRoute>} />
+            <Route path="/hoc-sinh/bai-giang-so" element={<StudentRoute><StudentMaterialsHub /></StudentRoute>} />
+            <Route path="/hoc-sinh/lam-bai-thi" element={<StudentRoute><StudentExamPortal /></StudentRoute>} />
+            <Route path="/hoc-sinh/lam-bai-thi/:examId" element={<StudentRoute><StudentExamPortal /></StudentRoute>} />
+            <Route path="/hoc-sinh/kiem-tra-danh-gia" element={<StudentRoute><StudentExamPortal /></StudentRoute>} />
             <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
             <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
             <Route path="/hop-online" element={<PublicMeetingAttendance />} />
             <Route path="/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
             <Route path="/giao-vien/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
             
-            {/* Teacher Portal */}
+            {/* Teacher Portal (Bảo vệ bởi TeacherRoute - Bắt buộc đăng nhập giáo viên) */}
             <Route path="/dang-nhap-giao-vien" element={<TeacherLogin />} />
             <Route path="/dang-ky-giao-vien" element={<TeacherRegister />} />
-            <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
-            <Route path="/teacher-dashboard/funds" element={<TeacherFundsManager />} />
-            <Route path="/teacher-dashboard/discipline" element={<TeacherDiscipline />} />
-            <Route path="/teacher-dashboard/academics" element={<TeacherAcademics />} />
-            <Route path="/teacher-dashboard/homeroom" element={<TeacherHomeroomStudents />} />
-            <Route path="/teacher-dashboard/materials" element={<TeacherEduMaterials />} />
-            <Route path="/giao-vien/hoc-lieu-so" element={<TeacherEduMaterials />} />
-            <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherLessonPlanBuilder />} />
-            <Route path="/giao-vien/ra-de-thi" element={<TeacherExamMaker />} />
-            <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherExamMaker />} />
-            <Route path="/giao-vien/danh-gia-tt22" element={<TeacherAssessmentTT22 />} />
-            <Route path="/giao-vien/quan-ly-to-chuyen-mon" element={<TeacherDepartmentManagement />} />
-            <Route path="/giao-vien/danh-gia-kpi-to-chuyen-mon" element={<TeacherKPIEvaluation />} />
-            <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherKPIEvaluation />} />
-            <Route path="/teacher-dashboard/app-hub" element={<AppHub />} />
-            <Route path="/teacher-dashboard/department-drive" element={<DepartmentDrive />} />
+            <Route path="/teacher-dashboard" element={<TeacherRoute><TeacherDashboard /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/funds" element={<TeacherRoute><TeacherFundsManager /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/discipline" element={<TeacherRoute><TeacherDiscipline /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/academics" element={<TeacherRoute><TeacherAcademics /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/homeroom" element={<TeacherRoute><TeacherHomeroomStudents /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/materials" element={<TeacherRoute><TeacherEduMaterials /></TeacherRoute>} />
+            <Route path="/giao-vien/hoc-lieu-so" element={<TeacherRoute><TeacherEduMaterials /></TeacherRoute>} />
+            <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
+            <Route path="/giao-vien/ra-de-thi" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/giao-vien/danh-gia-tt22" element={<TeacherRoute><TeacherAssessmentTT22 /></TeacherRoute>} />
+            <Route path="/giao-vien/quan-ly-to-chuyen-mon" element={<TeacherRoute><TeacherDepartmentManagement /></TeacherRoute>} />
+            <Route path="/giao-vien/danh-gia-kpi-to-chuyen-mon" element={<TeacherRoute><TeacherKPIEvaluation /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherRoute><TeacherKPIEvaluation /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/app-hub" element={<TeacherRoute><AppHub /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/department-drive" element={<TeacherRoute><DepartmentDrive /></TeacherRoute>} />
 
             {/* Teacher Route Aliases */}
-            <Route path="/teacher/lesson-plans" element={<TeacherLessonPlanBuilder />} />
-            <Route path="/teacher/exam-maker" element={<TeacherExamMaker />} />
-            <Route path="/teacher/assessment-tt22" element={<TeacherAssessmentTT22 />} />
-            <Route path="/teacher/academics" element={<TeacherAcademics />} />
-            <Route path="/teacher/homeroom" element={<TeacherHomeroomStudents />} />
-            <Route path="/teacher/funds" element={<TeacherFundsManager />} />
-            <Route path="/teacher/discipline" element={<TeacherDiscipline />} />
-            <Route path="/teacher/department" element={<TeacherDepartmentManagement />} />
-            <Route path="/teacher/kpi" element={<TeacherKPIEvaluation />} />
-            <Route path="/teacher-dashboard/class-journal" element={<ClassJournal />} />
-            <Route path="/teacher/class-journal" element={<ClassJournal />} />
-            <Route path="/teacher-dashboard/career-advisor" element={<StudentCareerAdvisor />} />
-            <Route path="/teacher/career-advisor" element={<StudentCareerAdvisor />} />
-            <Route path="/so-dau-bai-dien-tu" element={<ClassJournal />} />
-            <Route path="/tu-van-to-hop-2-cong-2" element={<StudentCareerAdvisor />} />
-            <Route path="/tu-van-nghe-nghiep" element={<StudentCareerAdvisor />} />
+            <Route path="/teacher/lesson-plans" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
+            <Route path="/teacher/exam-maker" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/teacher/assessment-tt22" element={<TeacherRoute><TeacherAssessmentTT22 /></TeacherRoute>} />
+            <Route path="/teacher/academics" element={<TeacherRoute><TeacherAcademics /></TeacherRoute>} />
+            <Route path="/teacher/homeroom" element={<TeacherRoute><TeacherHomeroomStudents /></TeacherRoute>} />
+            <Route path="/teacher/funds" element={<TeacherRoute><TeacherFundsManager /></TeacherRoute>} />
+            <Route path="/teacher/discipline" element={<TeacherRoute><TeacherDiscipline /></TeacherRoute>} />
+            <Route path="/teacher/department" element={<TeacherRoute><TeacherDepartmentManagement /></TeacherRoute>} />
+            <Route path="/teacher/kpi" element={<TeacherRoute><TeacherKPIEvaluation /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/class-journal" element={<TeacherRoute><ClassJournal /></TeacherRoute>} />
+            <Route path="/teacher/class-journal" element={<TeacherRoute><ClassJournal /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
+            <Route path="/teacher/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
+            <Route path="/so-dau-bai-dien-tu" element={<StudentRoute><ClassJournal /></StudentRoute>} />
+            <Route path="/tu-van-to-hop-2-cong-2" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
+            <Route path="/tu-van-nghe-nghiep" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
+            
+            {/* Public Educational Video & Hub */}
             <Route path="/hoc-lieu-so" element={<EduVideoHub />} />
             <Route path="/video-hoc-tap" element={<EduVideoHub />} />
             <Route path="/eduhub" element={<EduVideoHub />} />
             <Route path="/hoc-sinh/video-hoc-tap" element={<EduVideoHub />} />
-            <Route path="/giao-vien/hoc-lieu-so" element={<EduVideoHub />} />
             <Route path="/teacher-dashboard/eduhub" element={<EduVideoHub />} />
             <Route path="/teacher/eduhub" element={<EduVideoHub />} />
             <Route path="/hub" element={<AppHub />} />

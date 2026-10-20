@@ -34,17 +34,35 @@ export function normalizeKey(str) {
 
 /**
  * Thuật toán chấm điểm chuẩn GDPT 2018 theo thông tư của Bộ GD&ĐT
- * @param {object} exam Đề thi mẫu kèm đáp án đúng
+ * Hỗ trợ tự động phân tích và chấm theo từng mã đề thi (Trộn đề/Hoán vị)
+ * @param {object} exam Đề thi mẫu kèm đáp án đúng hoặc danh sách mã đề đảo
  * @param {object} studentAnswers Câu trả lời của học sinh
+ * @param {string} [examCode] Mã đề thi cụ thể (VD: '101', '102') nếu đề có đảo mã
  * @returns { totalScore: number, part1Score: number, part2Score: number, part3Score: number, details: array }
  */
-export function gradeStudentExam(exam, studentAnswers) {
+export function gradeStudentExam(exam, studentAnswers, examCode = null) {
   let part1Score = 0;
   let part2Score = 0;
   let part3Score = 0;
   const details = [];
 
-  const questions = exam.questions || [];
+  // Xác định danh sách câu hỏi cần chấm (ưu tiên theo mã đề đã đảo nếu có)
+  let questions = exam.questions || [];
+  if (examCode && exam.mixedExamCodes && Array.isArray(exam.mixedExamCodes)) {
+    const codeObj = exam.mixedExamCodes.find(c => String(c.code) === String(examCode));
+    if (codeObj) {
+      const p1 = (codeObj.part1 || []).map(q => ({
+        ...q,
+        correctAnswerIndex: q.shuffledCorrectIndex !== undefined ? q.shuffledCorrectIndex : q.correctAnswerIndex
+      }));
+      const p2 = (codeObj.part2 || []).map(q => ({
+        ...q,
+        subItems: q.shuffledSubItems || q.subItems
+      }));
+      const p3 = codeObj.part3 || [];
+      questions = [...p1, ...p2, ...p3];
+    }
+  }
 
   questions.forEach((q, idx) => {
     const qAnswer = studentAnswers[q.id];
@@ -265,7 +283,7 @@ export async function savePublishedExam(examData) {
  * - Jitter Smoothing: Thêm độ trễ ngẫu nhiên 0-1.5s trước khi ghi Supabase để chống nghẽn connection pool.
  * - Resilience Queue: Lưu trước vào LocalStorage, nếu mạng bận thì lưu hàng đợi chờ đồng bộ.
  */
-export async function submitStudentExam({ examId, student, answers, timeSpentSeconds }) {
+export async function submitStudentExam({ examId, student, answers, timeSpentSeconds, examCode = null }) {
   let exam = await getExamDetail(examId);
   if (!exam) {
     const exams = await getPublishedExams();
@@ -273,11 +291,12 @@ export async function submitStudentExam({ examId, student, answers, timeSpentSec
   }
   if (!exam) throw new Error("Không tìm thấy bài kiểm tra.");
 
-  const gradeResult = gradeStudentExam(exam, answers);
+  const gradeResult = gradeStudentExam(exam, answers, examCode);
 
   const submission = {
     id: `sub-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
     exam_id: examId,
+    exam_code: examCode || '101',
     exam_title: exam.title,
     subject: exam.subject,
     student_code: student.student_code || student.username,
