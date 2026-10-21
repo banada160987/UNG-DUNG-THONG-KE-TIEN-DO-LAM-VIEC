@@ -5,13 +5,16 @@ import { supabase } from '../lib/supabase';
 import { 
   FolderOpen, Award, Users, Calendar, FileText, LayoutDashboard, 
   Bike, Bus, QrCode, MessageSquare, Download, Trophy, Sparkles, 
-  BookOpen, CheckCircle, Clock, AlertTriangle, Plus, ChevronRight, ShieldCheck
+  BookOpen, CheckCircle, Clock, AlertTriangle, Plus, ChevronRight, ShieldCheck,
+  GitBranch, Activity
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import TaskModal from '../components/TaskModal';
+import ExecutiveDailyBriefing from '../components/ExecutiveDailyBriefing';
+import DepartmentOrganizationalTree from '../components/DepartmentOrganizationalTree';
 
 export default function Dashboard() {
-  const [activeTab, setActiveTab] = useState('teaching'); // 'teaching' | 'student' | 'archive'
+  const [activeTab, setActiveTab] = useState('briefing'); // 'briefing' | 'org-tree' | 'teaching' | 'student' | 'archive'
   const [tasks, setTasks] = useState([]);
   const [committees, setCommittees] = useState([]);
   const [parkingCount, setParkingCount] = useState(0);
@@ -271,26 +274,54 @@ export default function Dashboard() {
           <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', padding: '16px 20px' }}>
             <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
               <button 
+                onClick={() => setActiveTab('briefing')}
+                style={styles.tabBtn(activeTab === 'briefing', '#0f766e')}
+              >
+                <Activity size={16} /> 📊 BÁO CÁO ĐIỀU HÀNH NGÀY (BGH & THƯ KÝ)
+              </button>
+
+              <button 
+                onClick={() => setActiveTab('org-tree')}
+                style={styles.tabBtn(activeTab === 'org-tree', '#1e293b')}
+              >
+                <GitBranch size={16} /> 🌳 CÂY PHÂN CẤP 4 TẦNG & HOẠT ĐỘNG TỔ
+              </button>
+
+              <button 
                 onClick={() => setActiveTab('teaching')}
                 style={styles.tabBtn(activeTab === 'teaching', '#0284c7')}
               >
-                <BookOpen size={16} /> 📚 PHÂN HỆ TỔ CHUYÊN MÔN & GIẢNG DẠY
+                <BookOpen size={16} /> 📚 HỒ SƠ TỔ CHUYÊN MÔN
               </button>
 
               <button 
                 onClick={() => setActiveTab('student')}
                 style={styles.tabBtn(activeTab === 'student', '#166534')}
               >
-                <Users size={16} /> 👨‍🎓 PHÂN HỆ SỔ SÁCH HỌC SINH & NỀ NẾP
+                <Users size={16} /> 👨‍🎓 SỔ SÁCH HỌC SINH
               </button>
 
               <button 
                 onClick={() => setActiveTab('archive')}
                 style={styles.tabBtn(activeTab === 'archive', '#b45309')}
               >
-                <FileText size={16} /> 📄 VĂN BẢN & TƯ LIỆU NỘI BỘ
+                <FileText size={16} /> 📄 VĂN BẢN NỘI BỘ
               </button>
             </div>
+
+            {/* TAB: EXECUTIVE BRIEFING (BÁO CÁO ĐIỀU HÀNH BGH HÀNG NGÀY) */}
+            {activeTab === 'briefing' && (
+              <div style={{ marginTop: '20px' }}>
+                <ExecutiveDailyBriefing />
+              </div>
+            )}
+
+            {/* TAB: DEPARTMENT ORGANIZATIONAL TREE (CÂY PHÂN CẤP & HOẠT ĐỘNG TỔ) */}
+            {activeTab === 'org-tree' && (
+              <div style={{ marginTop: '20px' }}>
+                <DepartmentOrganizationalTree />
+              </div>
+            )}
 
             {/* TAB 1: TEACHING & DEPARTMENT MANAGEMENT */}
             {activeTab === 'teaching' && (
