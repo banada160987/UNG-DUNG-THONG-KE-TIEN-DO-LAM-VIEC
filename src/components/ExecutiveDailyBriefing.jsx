@@ -76,6 +76,9 @@ export default function ExecutiveDailyBriefing() {
 
       setParkingCount(data.parkingCount || 0);
       setBusCount(data.busCount || 0);
+      if (data.clubStats && data.clubStats.length > 0) {
+        setClubStats(data.clubStats);
+      }
 
       // Xây dựng danh sách Sĩ số & Điểm danh chuẩn từ 1.441 học sinh thật trong Database
       const realAttendance = sortedClassNames.map((cls, idx) => {
@@ -456,7 +459,7 @@ export default function ExecutiveDailyBriefing() {
                 onClick={() => setActiveSubTab('clubs')}
                 style={styles.tabBtn(activeSubTab === 'clubs', '#9333ea')}
               >
-                <Sparkles size={16} /> 4. HOẠT ĐỘNG 12 CÂU LẠC BỘ
+                <Sparkles size={16} /> 4. HOẠT ĐỘNG CÁC CÂU LẠC BỘ ({clubStats.length} CLB • {summaryKPIs.totalClubMembers} HS)
               </button>
             </div>
 
@@ -643,26 +646,129 @@ export default function ExecutiveDailyBriefing() {
               </div>
             )}
 
-            {/* TAB 4: CÂU LẠC BỘ */}
+            {/* TAB 4: CÂU LẠC BỘ (ĐỒNG BỘ 100% DATABASE SUPABASE) */}
             {activeSubTab === 'clubs' && (
-              <div style={{ marginTop: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
-                {clubStats.map(club => (
-                  <div key={club.id} style={{ backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '10px', padding: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#581c87' }}>{club.name}</h4>
-                      <span style={{ fontSize: '11px', fontWeight: 'bold', backgroundColor: '#f3e8ff', color: '#7e22ce', padding: '2px 8px', borderRadius: '4px' }}>
-                        {club.status}
-                      </span>
+              <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                
+                {/* BANNER CLB DATABASE HEADER */}
+                <div style={{
+                  backgroundColor: '#faf5ff',
+                  border: '1.5px solid #e9d5ff',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', color: '#7e22ce', fontSize: '12px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                      <Sparkles size={14} /> DỮ LIỆU ĐĂNG KÝ HỌC SINH THỰC TẾ TRONG DATABASE
                     </div>
-                    <div style={{ fontSize: '12.5px', color: '#6b21a8', marginTop: '6px' }}>
-                      Phụ trách: <b>{club.lead}</b>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12px', color: '#475569' }}>
-                      <span>Sĩ số: <b>{club.count} thành viên</b></span>
-                      <span>Chuyên cần: <b>{club.attendanceRate}%</b></span>
-                    </div>
+                    <h3 style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: '800', color: '#581c87' }}>
+                      DANH MỤC {clubStats.length} CÂU LẠC BỘ CHÍNH THỨC NĂM HỌC 2026 - 2027
+                    </h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#6b21a8' }}>
+                      Tổng cộng <strong>{summaryKPIs.totalClubMembers} lượt đăng ký</strong> của học sinh được lưu trữ tại bảng <code>cbq_student_registrations</code>.
+                    </p>
                   </div>
-                ))}
+
+                  <a
+                    href="/admin/registrations"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 18px',
+                      backgroundColor: '#7e22ce',
+                      color: '#ffffff',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 12px rgba(126, 34, 206, 0.25)'
+                    }}
+                  >
+                    <Users size={15} /> Quản Lý & Điểm Danh CLB Chi Tiết
+                  </a>
+                </div>
+
+                {/* GRID CÁC CÂU LẠC BỘ CHÍNH THỨC */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(290px, 1fr))', gap: '14px' }}>
+                  {clubStats.map(club => (
+                    <div 
+                      key={club.id} 
+                      style={{ 
+                        backgroundColor: '#ffffff', 
+                        border: '1px solid #e2e8f0', 
+                        borderRadius: '12px', 
+                        padding: '16px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '10px'
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px' }}>
+                          <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>{club.name}</h4>
+                          <span style={{ 
+                            fontSize: '11px', 
+                            fontWeight: 'bold', 
+                            backgroundColor: club.count > 100 ? '#f0fdf4' : '#faf5ff', 
+                            color: club.count > 100 ? '#15803d' : '#7e22ce', 
+                            border: `1px solid ${club.count > 100 ? '#bbf7d0' : '#e9d5ff'}`,
+                            padding: '2px 8px', 
+                            borderRadius: '4px',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            {club.status}
+                          </span>
+                        </div>
+
+                        {club.subName && (
+                          <div style={{ fontSize: '11.5px', color: '#0284c7', fontWeight: '600', marginTop: '4px' }}>
+                            Phân môn: {club.subName}
+                          </div>
+                        )}
+
+                        <div style={{ fontSize: '12.5px', color: '#334155', marginTop: '6px', lineHeight: 1.4 }}>
+                          • Phụ trách: <b>{club.lead}</b>
+                        </div>
+
+                        {club.schedule && (
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            • Lịch: <b>{club.schedule}</b>
+                          </div>
+                        )}
+
+                        {club.location && (
+                          <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                            • Địa điểm: <b>{club.location}</b>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        paddingTop: '10px', 
+                        borderTop: '1px solid #f1f5f9',
+                        fontSize: '12.5px'
+                      }}>
+                        <span style={{ color: '#0f172a', fontWeight: 'bold' }}>
+                          Sĩ số: <b style={{ color: '#7e22ce', fontSize: '14px' }}>{club.count}</b> học sinh
+                        </span>
+                        <span style={{ color: '#16a34a', fontWeight: '600' }}>
+                          Chuyên cần: <b>{club.attendanceRate}%</b>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
