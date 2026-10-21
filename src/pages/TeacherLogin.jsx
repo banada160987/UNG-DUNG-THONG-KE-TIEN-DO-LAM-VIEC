@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { BookOpen, User, Lock, LogIn, ArrowLeft } from 'lucide-react';
+import { saveTeacherSession } from '../services/authSessionManager';
 
 export default function TeacherLogin() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -78,8 +80,8 @@ export default function TeacherLogin() {
       delete safeTeacher.password;
       delete safeTeacher.password_hash;
 
-      // Save logged-in teacher state
-      localStorage.setItem('cbq_current_teacher', JSON.stringify(safeTeacher));
+      // Save logged-in teacher state with smart expiration
+      saveTeacherSession(safeTeacher, rememberMe);
       navigate('/teacher-dashboard');
       
     } catch (err) {
@@ -145,6 +147,23 @@ export default function TeacherLogin() {
                 onChange={(e) => setPassword(e.target.value)}
                 style={{ width: '100%', padding: '14px 14px 14px 40px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '16px', boxSizing: 'border-box' }}
               />
+            </div>
+          </div>
+
+          {/* Hạn phiên & Tùy chọn thiết bị cá nhân */}
+          <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                id="cbq_remember_teacher"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#16a34a' }}
+              />
+              <span style={{ fontWeight: '600' }}>Ghi nhớ phiên 24h trên thiết bị cá nhân</span>
+            </label>
+            <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', lineHeight: 1.4 }}>
+              🔒 <em>Nếu đang dùng máy tính dùng chung tại trường, vui lòng không tích mục này (hệ thống sẽ tự động đăng xuất sau 3 giờ hoặc 45 phút không thao tác).</em>
             </div>
           </div>
 

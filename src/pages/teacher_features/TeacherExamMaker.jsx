@@ -14,6 +14,7 @@ import {
   HIGH_SCHOOL_SUBJECTS 
 } from '../../services/smartAssessmentService';
 import ExcelGradeSyncModal from '../../components/ExcelGradeSyncModal';
+import { getTeacherSession } from '../../services/authSessionManager';
 
 // Đồ thị hàm số bậc 3 y = x^3 - 3x + 2 minh họa chuẩn giáo khoa GDPT 2018
 export const CUBIC_GRAPH_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" style="background:%23ffffff;border-radius:8px;"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="%23334155"/></marker></defs><line x1="20" y1="120" x2="300" y2="120" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="302" y="125" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">x</text><line x1="160" y1="200" x2="160" y2="20" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="165" y="22" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">y</text><text x="145" y="135" font-family="Times New Roman, serif" font-size="13" font-style="italic" fill="%2364748b">O</text><line x1="110" y1="117" x2="110" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="102" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">-1</text><line x1="210" y1="117" x2="210" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="207" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">1</text><line x1="157" y1="60" x2="163" y2="60" stroke="%23334155" stroke-width="1.5"/><text x="145" y="64" font-family="Times New Roman, serif" font-size="12" fill="%23334155">4</text><line x1="110" y1="120" x2="110" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><line x1="110" y1="60" x2="160" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><path d="M 70 200 C 95 120, 95 60, 110 60 C 130 60, 140 100, 160 100 C 180 100, 195 120, 210 120 C 230 120, 245 40, 260 20" fill="none" stroke="%23dc2626" stroke-width="2.5"/><circle cx="110" cy="60" r="3.5" fill="%23dc2626"/><circle cx="210" cy="120" r="3.5" fill="%23dc2626"/><circle cx="160" cy="100" r="3" fill="%23334155"/><text x="165" y="98" font-family="Times New Roman, serif" font-size="12" fill="%23334155">2</text></svg>`;
@@ -121,14 +122,7 @@ const INITIAL_QUESTIONS = [
 export default function TeacherExamMaker() {
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState(() => {
-    try {
-      const currentTeacherStr = localStorage.getItem('cbq_current_teacher') || 
-                                localStorage.getItem('cbq_teacher_session') || 
-                                localStorage.getItem('cbq_user');
-      return currentTeacherStr ? JSON.parse(currentTeacherStr) : { full_name: 'Giáo viên THPT Cao Bá Quát', username: 'giaovien' };
-    } catch (_) {
-      return { full_name: 'Giáo viên THPT Cao Bá Quát', username: 'giaovien' };
-    }
+    return getTeacherSession() || { full_name: 'Giáo viên THPT Cao Bá Quát', username: 'giaovien' };
   });
 
   // Meta info
@@ -362,13 +356,9 @@ export default function TeacherExamMaker() {
   };
 
   useEffect(() => {
-    const currentTeacherStr = localStorage.getItem('cbq_current_teacher') || 
-                              localStorage.getItem('cbq_teacher_session') || 
-                              localStorage.getItem('cbq_user');
-    if (currentTeacherStr) {
-      try {
-        setTeacher(JSON.parse(currentTeacherStr));
-      } catch (_) {}
+    const active = getTeacherSession();
+    if (active) {
+      setTeacher(active);
     }
   }, [navigate]);
 

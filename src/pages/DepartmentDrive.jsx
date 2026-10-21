@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import FileUpload from '../components/FileUpload';
 import GoogleDriveConfigModal from '../components/GoogleDriveConfigModal';
+import { getTeacherSession } from '../services/authSessionManager';
 
 export default function DepartmentDrive() {
   const location = useLocation();
@@ -136,9 +137,8 @@ export default function DepartmentDrive() {
         setLoading(false);
       }
     } else if (isTeacherPortal) {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      if (teacherStr) {
-        const teacher = JSON.parse(teacherStr);
+      const teacher = getTeacherSession();
+      if (teacher) {
         setCurrentTeacher(teacher);
         const staffMatch = staffData?.find(s => s.name === teacher.full_name);
         if (staffMatch) {

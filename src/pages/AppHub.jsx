@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { getTeacherSession } from '../services/authSessionManager';
 import {
   ArrowLeft, Plus, Trash2, Edit2, ExternalLink, AppWindow,
   Video, FileCheck, FileSpreadsheet, BookOpen, GraduationCap,
@@ -57,24 +58,16 @@ export default function AppHub() {
   const [formData, setFormData] = useState({ id: null, title: '', url: '', category: 'Tiện ích Cá nhân', description: '', type: 'hub_personal' });
 
   useEffect(() => {
-    let currentTeacher = null;
+    let currentTeacher = getTeacherSession();
     if (location.pathname.includes('/teacher-dashboard')) {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      if (teacherStr) {
-        currentTeacher = JSON.parse(teacherStr);
+      if (currentTeacher) {
         setTeacher(currentTeacher);
       } else {
         navigate('/dang-nhap-giao-vien');
         return;
       }
-    } else {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      if (teacherStr) {
-        try {
-          currentTeacher = JSON.parse(teacherStr);
-          setTeacher(currentTeacher);
-        } catch(e) {}
-      }
+    } else if (currentTeacher) {
+      setTeacher(currentTeacher);
     }
     
     fetchApps(currentTeacher);

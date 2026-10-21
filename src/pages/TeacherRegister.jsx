@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { BookOpen, Sparkles, Lock, User, GraduationCap, Phone, IdCard, AlertCircle, ShieldAlert, CheckCircle2, Mail, Award } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { saveTeacherSession } from '../services/authSessionManager';
 
 export default function TeacherRegister() {
   const navigate = useNavigate();
@@ -268,8 +269,8 @@ export default function TeacherRegister() {
         localStorage.setItem('cbq_teacher_accounts', JSON.stringify(localTeacherAccounts));
       }
 
-      // Auto login newly registered teacher
-      localStorage.setItem('cbq_current_teacher', JSON.stringify(newTeacherUser));
+      // Auto login newly registered teacher with smart session expiration
+      saveTeacherSession(newTeacherUser);
       setSuccessMsg('🎉 Đăng ký tài khoản Giáo viên thành công! Đang chuyển hướng đến Cổng Giáo Viên...');
 
       setTimeout(() => {

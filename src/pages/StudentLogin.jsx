@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { LogIn, Sparkles, User, Lock, GraduationCap, Briefcase, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { getTeacherSession, clearTeacherSession, saveStudentSession } from '../services/authSessionManager';
 
 export default function StudentLogin() {
   const navigate = useNavigate();
@@ -14,12 +15,14 @@ export default function StudentLogin() {
   const [errorMsg, setErrorMsg] = useState('');
   const [currentTeacher, setCurrentTeacher] = useState(null);
 
-  // Kiểm tra nếu trên máy đang có tài khoản Giáo viên để nhắc nhở tránh nhầm lẫn
+  // Kiểm tra nếu trên máy đang có tài khoản Giáo viên hợp lệ để nhắc nhở tránh nhầm lẫn
   useEffect(() => {
     try {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      if (teacherStr) {
-        setCurrentTeacher(JSON.parse(teacherStr));
+      const activeTeacher = getTeacherSession();
+      if (activeTeacher) {
+        setCurrentTeacher(activeTeacher);
+      } else {
+        setCurrentTeacher(null);
       }
     } catch (_) {}
   }, []);
@@ -88,8 +91,8 @@ export default function StudentLogin() {
       const safeStudent = { ...foundUser };
       delete safeStudent.password;
 
-      // Save sanitized session
-      localStorage.setItem('cbq_current_student', JSON.stringify(safeStudent));
+      // Save sanitized session with smart expiration
+      saveStudentSession(safeStudent);
       alert(`👋 ĐĂNG NHẬP THÀNH CÔNG!\n\nChào mừng em ${safeStudent.full_name} (${safeStudent.student_class}) đến với Cổng Học Sinh.`);
       navigate('/student-dashboard');
 
@@ -125,7 +128,7 @@ export default function StudentLogin() {
                 <button
                   type="button"
                   onClick={() => {
-                    localStorage.removeItem('cbq_current_teacher');
+                    clearTeacherSession();
                     setCurrentTeacher(null);
                   }}
                   style={{ background: 'transparent', border: '1px solid #bbf7d0', color: '#15803d', padding: '5px 10px', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}

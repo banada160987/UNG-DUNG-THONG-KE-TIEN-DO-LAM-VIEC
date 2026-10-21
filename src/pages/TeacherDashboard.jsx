@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import { DualSupabaseService } from '../lib/supabase';
+import { getTeacherSession, clearTeacherSession } from '../services/authSessionManager';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -16,23 +17,28 @@ export default function TeacherDashboard() {
   const [clubRegistrations, setClubRegistrations] = useState([]);
 
   useEffect(() => {
-    // Lấy thông tin tài khoản giáo viên đã đăng nhập
-    const saved = localStorage.getItem('cbq_current_teacher') || localStorage.getItem('cbq_teacher_session') || localStorage.getItem('cbq_user');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        parsed.name = parsed.name || parsed.full_name || parsed.username || 'Giáo viên';
-        parsed.homeroomClass = parsed.homeroomClass || parsed.homeroom_class || '';
-        setTeacher(parsed);
-      } catch (e) {
-        console.error('Error parsing teacher session:', e);
+    // Lấy thông tin tài khoản giáo viên đã đăng nhập (kiểm tra hạn phiên an toàn)
+    const activeTeacher = getTeacherSession();
+    if (activeTeacher) {
+      activeTeacher.name = activeTeacher.name || activeTeacher.full_name || activeTeacher.username || 'Giáo viên';
+      activeTeacher.homeroomClass = activeTeacher.homeroomClass || activeTeacher.homeroom_class || '';
+      setTeacher(activeTeacher);
+    } else {
+      // Hỗ trợ phiên quản trị viên nếu có
+      const adminStr = localStorage.getItem('cbq_user');
+      if (adminStr) {
+        try {
+          const parsed = JSON.parse(adminStr);
+          parsed.name = parsed.name || parsed.username || 'Quản trị viên';
+          setTeacher(parsed);
+        } catch (_) {
+          navigate('/dang-nhap-giao-vien');
+          return;
+        }
+      } else {
         navigate('/dang-nhap-giao-vien');
         return;
       }
-    } else {
-      // Bắt buộc chuyển hướng đến trang đăng nhập nếu chưa có phiên
-      navigate('/dang-nhap-giao-vien');
-      return;
     }
 
     // Nạp danh sách đăng ký CLB
@@ -44,8 +50,7 @@ export default function TeacherDashboard() {
   }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem('cbq_current_teacher');
-    localStorage.removeItem('cbq_teacher_session');
+    clearTeacherSession();
     localStorage.removeItem('cbq_user');
     navigate('/dang-nhap-giao-vien');
   };

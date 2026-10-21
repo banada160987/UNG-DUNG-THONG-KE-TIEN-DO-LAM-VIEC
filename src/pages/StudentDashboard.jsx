@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers, ExternalLink, Compass, Brain, Video } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { getStudentSession, clearStudentSession } from '../services/authSessionManager';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -57,12 +58,11 @@ export default function StudentDashboard() {
   const [profileErrorMsg, setProfileErrorMsg] = useState('');
 
   useEffect(() => {
-    const currentStudentStr = localStorage.getItem('cbq_current_student');
-    if (!currentStudentStr) {
+    const currentStudent = getStudentSession();
+    if (!currentStudent) {
       navigate('/dang-nhap-hoc-sinh');
       return;
     }
-    const currentStudent = JSON.parse(currentStudentStr);
     setStudent(currentStudent);
 
     // Initialize Profile Form from current student session
@@ -331,7 +331,7 @@ export default function StudentDashboard() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('cbq_current_student');
+    clearStudentSession();
     navigate('/dang-nhap-hoc-sinh');
   };
 

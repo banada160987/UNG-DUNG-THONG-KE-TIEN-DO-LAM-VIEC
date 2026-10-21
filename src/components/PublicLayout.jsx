@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2 } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 import ErrorBoundary from './ErrorBoundary';
+import { getTeacherSession, clearTeacherSession, getStudentSession, clearStudentSession } from '../services/authSessionManager';
 
 const DEFAULT_FULL_MENUS = [
   // Nhóm 1: Vận hành nhà trường (school)
@@ -42,6 +43,19 @@ export default function PublicLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [publicMenus, setPublicMenus] = useState(DEFAULT_FULL_MENUS);
+  const [loggedTeacher, setLoggedTeacher] = useState(() => getTeacherSession());
+  const [loggedStudent, setLoggedStudent] = useState(() => getStudentSession());
+
+  useEffect(() => {
+    const handleTeacherChange = (e) => setLoggedTeacher(e.detail);
+    const handleStudentChange = (e) => setLoggedStudent(e.detail);
+    window.addEventListener('cbq-teacher-auth-change', handleTeacherChange);
+    window.addEventListener('cbq-student-auth-change', handleStudentChange);
+    return () => {
+      window.removeEventListener('cbq-teacher-auth-change', handleTeacherChange);
+      window.removeEventListener('cbq-student-auth-change', handleStudentChange);
+    };
+  }, []);
 
   const isActive = (path) => location.pathname === path;
 
@@ -385,14 +399,56 @@ export default function PublicLayout() {
             </div>
           </div>
 
-          {/* Desktop Quick Access Portals */}
-          <div className="desktop-portal-btns">
-            <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
-              <GraduationCap size={14} /> Học Sinh
-            </Link>
-            <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
-              <Briefcase size={14} /> Giáo Viên
-            </Link>
+          {/* Desktop Quick Access Portals with Auto Session Detection */}
+          <div className="desktop-portal-btns" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {loggedStudent ? (
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #0284c7, #0369a1)', borderRadius: '10px', padding: '3px 8px', gap: '6px', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)' }}>
+                <Link to="/student-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <GraduationCap size={13} /> {loggedStudent.full_name || 'Học Sinh'}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm("Em có muốn đăng xuất khỏi Cổng Học Sinh?")) {
+                      clearStudentSession();
+                    }
+                  }}
+                  title="Đăng xuất tài khoản học sinh khỏi máy này"
+                  style={{ background: 'rgba(0,0,0,0.25)', border: 'none', color: '#f0f9ff', borderRadius: '6px', cursor: 'pointer', padding: '1px 5px', fontSize: '11px', fontWeight: 'bold' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
+                <GraduationCap size={14} /> Học Sinh
+              </Link>
+            )}
+
+            {loggedTeacher ? (
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #16a34a, #15803d)', borderRadius: '10px', padding: '3px 8px', gap: '6px', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)' }}>
+                <Link to="/teacher-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Briefcase size={13} /> {loggedTeacher.full_name || loggedTeacher.name || 'Giáo Viên'}
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Thầy/Cô ${loggedTeacher.full_name || loggedTeacher.name || ''} có muốn đăng xuất khỏi Cổng Giáo Viên?`)) {
+                      clearTeacherSession();
+                    }
+                  }}
+                  title="Đăng xuất tài khoản giáo viên khỏi máy này"
+                  style={{ background: 'rgba(0,0,0,0.25)', border: 'none', color: '#f0fdf4', borderRadius: '6px', cursor: 'pointer', padding: '1px 5px', fontSize: '11px', fontWeight: 'bold' }}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
+                <Briefcase size={14} /> Giáo Viên
+              </Link>
+            )}
+
             <Link to="/admin" className="premium-nav-btn admin" title="Trang Quản Lý & Bảng Điều Khiển Nhà Trường">
               <ShieldCheck size={14} /> Quản Trị
             </Link>

@@ -6,11 +6,12 @@ import {
   Clock, Search, Bookmark, BookmarkCheck, ExternalLink, Download,
   CheckCircle2, AlertTriangle, ArrowLeft, Plus, Eye, Share2,
   Sliders, Music, CloudRain, Waves, Flame, Activity, X, ChevronRight,
-  Calculator, Award, FileText, Settings, ShieldCheck
+  Calculator, Award, FileText, Settings, ShieldCheck, LogOut
 } from 'lucide-react';
 import { EDU_VIDEOS, VIDEO_CATEGORIES, AMBIENT_SOUNDS } from '../data/eduVideoHubData';
 import { ambientSound } from '../utils/ambientSoundEngine';
 import { getEduVideos, createEduVideo } from '../services/eduVideoService';
+import { getTeacherSession, clearTeacherSession } from '../services/authSessionManager';
 
 export default function EduVideoHub() {
   // Navigation Tabs: 'videos' | 'pomodoro' | 'calculator' | 'saved'
@@ -71,14 +72,15 @@ export default function EduVideoHub() {
 
   // Load Saved Videos, Notes, and Video List
   useEffect(() => {
-    // 1. Detect teacher or admin session
+    // 1. Detect teacher or admin session with smart TTL expiry
     try {
-      const teacherRaw = localStorage.getItem('cbq_current_teacher') || localStorage.getItem('cbq_teacher_session');
-      if (teacherRaw) {
-        const parsed = JSON.parse(teacherRaw);
-        parsed.name = parsed.name || parsed.full_name || parsed.username || 'Giáo viên';
-        setCurrentTeacher(parsed);
-        setCustomChannel(`Thầy/Cô ${parsed.name}${parsed.department ? ' - Tổ ' + parsed.department : ''}`);
+      const activeTeacher = getTeacherSession();
+      if (activeTeacher) {
+        activeTeacher.name = activeTeacher.name || activeTeacher.full_name || activeTeacher.username || 'Giáo viên';
+        setCurrentTeacher(activeTeacher);
+        setCustomChannel(`Thầy/Cô ${activeTeacher.name}${activeTeacher.department ? ' - Tổ ' + activeTeacher.department : ''}`);
+      } else {
+        setCurrentTeacher(null);
       }
       const userRaw = localStorage.getItem('cbq_user');
       if (userRaw) {
@@ -88,6 +90,18 @@ export default function EduVideoHub() {
         }
       }
     } catch (e) {}
+
+    // Lắng nghe sự kiện đăng xuất/đăng nhập giáo viên theo thời gian thực
+    const handleAuthChange = (e) => {
+      const updatedTeacher = e.detail;
+      if (updatedTeacher) {
+        updatedTeacher.name = updatedTeacher.name || updatedTeacher.full_name || updatedTeacher.username || 'Giáo viên';
+        setCurrentTeacher(updatedTeacher);
+      } else {
+        setCurrentTeacher(null);
+      }
+    };
+    window.addEventListener('cbq-teacher-auth-change', handleAuthChange);
 
     // 2. Load Saved Videos and Notes
     try {
@@ -111,6 +125,10 @@ export default function EduVideoHub() {
     if (searchParams.get('action') === 'add') {
       setShowAddModal(true);
     }
+
+    return () => {
+      window.removeEventListener('cbq-teacher-auth-change', handleAuthChange);
+    };
   }, []);
 
   // Save changes to localStorage
@@ -371,8 +389,36 @@ export default function EduVideoHub() {
             </p>
 
             {currentTeacher && (
-              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '5px 14px', borderRadius: '20px', backgroundColor: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(74, 222, 128, 0.4)', fontSize: '13px', color: '#86efac' }}>
+              <div style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '6px 14px', borderRadius: '20px', backgroundColor: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(74, 222, 128, 0.4)', fontSize: '13px', color: '#86efac', flexWrap: 'wrap' }}>
                 <span>👨‍🏫 Xin chào: <strong>{currentTeacher.name}</strong> • Chế độ đóng góp học liệu sư phạm nhà trường</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm(`Thầy/Cô ${currentTeacher.name} có muốn đăng xuất khỏi trình duyệt này không?`)) {
+                      clearTeacherSession();
+                      setCurrentTeacher(null);
+                    }
+                  }}
+                  title="Đăng xuất tài khoản giáo viên này khỏi trình duyệt"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '3px 10px',
+                    backgroundColor: 'rgba(239, 68, 68, 0.25)',
+                    border: '1px solid rgba(248, 113, 113, 0.5)',
+                    borderRadius: '12px',
+                    color: '#fecaca',
+                    fontSize: '11.5px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.45)'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)'}
+                >
+                  <LogOut size={12} /> Đăng xuất
+                </button>
               </div>
             )}
           </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { getTeacherSession } from '../services/authSessionManager';
 import { 
   ArrowLeft, ExternalLink, RefreshCw, Maximize2, Minimize2, 
   CheckCircle2, ShieldAlert, Sparkles, FileSpreadsheet, Home, 
@@ -15,23 +16,10 @@ export default function ExamDossierChecker() {
   const iframeRef = useRef(null);
   const { user, role } = useAuth();
 
-  const [currentTeacher, setCurrentTeacher] = useState(() => {
-    try {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      return teacherStr ? JSON.parse(teacherStr) : null;
-    } catch (e) {
-      return null;
-    }
-  });
+  const [currentTeacher, setCurrentTeacher] = useState(() => getTeacherSession());
   const [selectedClass, setSelectedClass] = useState(() => {
-    try {
-      const teacherStr = localStorage.getItem('cbq_current_teacher');
-      if (teacherStr) {
-        const parsed = JSON.parse(teacherStr);
-        if (parsed.homeroom_class) return parsed.homeroom_class;
-      }
-    } catch (e) {}
-    return '12A01';
+    const teacher = getTeacherSession();
+    return teacher?.homeroom_class || '12A01';
   });
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [iframeKey, setIframeKey] = useState(Date.now());
@@ -60,17 +48,12 @@ export default function ExamDossierChecker() {
 
   // Re-sync if localStorage updates
   useEffect(() => {
-    const teacherStr = localStorage.getItem('cbq_current_teacher');
-    if (teacherStr) {
-      try {
-        const parsed = JSON.parse(teacherStr);
-        setCurrentTeacher(parsed);
-        if (parsed.homeroom_class) {
-          setSelectedClass(parsed.homeroom_class);
-          setSelectedClassZalo(parsed.homeroom_class);
-        }
-      } catch (e) {
-        console.warn(e);
+    const teacher = getTeacherSession();
+    if (teacher) {
+      setCurrentTeacher(teacher);
+      if (teacher.homeroom_class) {
+        setSelectedClass(teacher.homeroom_class);
+        setSelectedClassZalo(teacher.homeroom_class);
       }
     }
   }, []);
