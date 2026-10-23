@@ -450,6 +450,16 @@ export default function PublicSchedule() {
   const [teacherSearchInput, setTeacherSearchInput] = useState('');
   const [todayViewFocus, setTodayViewFocus] = useState(false);
 
+  // Mobile Ergonomic Display Modes for Timetable
+  // 'today': Tiêu điểm hôm nay (siêu gọn) | 'by_day': Xem theo từng thứ | 'week': Ma trận cả tuần
+  const [mobileTkbMode, setMobileTkbMode] = useState('today');
+  const [selectedMobileDay, setSelectedMobileDay] = useState(() => {
+    const dayNames = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    const cur = dayNames[new Date().getDay()];
+    return DAYS.includes(cur) ? cur : 'Thứ 2';
+  });
+  const [isSubjectStatsExpanded, setIsSubjectStatsExpanded] = useState(false);
+
   // Live Real-Time Clock Heartbeat Ticker (Tự động cập nhật theo thời gian thực không cần reload)
   const [currentClockTick, setCurrentClockTick] = useState(() => Date.now());
 
@@ -1148,7 +1158,7 @@ export default function PublicSchedule() {
       `}</style>
 
       {/* HEADER TOP CARD */}
-      <div style={styles.headerCard} className="no-print">
+      <div style={styles.headerCard} className="no-print cbq-schedule-header-card">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Calendar size={32} color="#be123c" />
@@ -2043,8 +2053,8 @@ export default function PublicSchedule() {
             {/* CONTROL TOOLBAR (NO-PRINT) */}
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px 20px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
               
-              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
-              <div style={{
+              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB (ẨN TRÊN MOBILE VÌ ĐÃ CÓ Ở HEADER) */}
+              <div className="hide-on-mobile" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -2073,18 +2083,18 @@ export default function PublicSchedule() {
               
               {/* ROW 1: QUICK TARGET SELECTOR */}
               {activeMainTab === 'class_tkb' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Users size={18} color="#be123c" /> Chọn Khối Lớp:
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: '800', color: '#0f172a', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Users size={16} color="#be123c" /> Khối:
                       </span>
                       {['10', '11', '12'].map(g => (
                         <button
                           key={g}
                           onClick={() => setClassGradeFilterTab(g)}
                           style={{
-                            padding: '5px 14px',
+                            padding: '4px 12px',
                             borderRadius: '8px',
                             fontSize: '12.5px',
                             fontWeight: '700',
@@ -2098,9 +2108,31 @@ export default function PublicSchedule() {
                           Khối {g}
                         </button>
                       ))}
+
+                      {/* Dropdown chọn trực tiếp trên Mobile */}
+                      <div className="show-on-mobile" style={{ marginLeft: '4px' }}>
+                        <select
+                          value={selectedClass}
+                          onChange={e => handleClassChange(e.target.value)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            border: '1.5px solid #0284c7',
+                            backgroundColor: '#f0f9ff',
+                            color: '#0369a1',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            outline: 'none'
+                          }}
+                        >
+                          {currentGradeClasses.map(cls => (
+                            <option key={cls} value={cls}>Lớp {cls}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
-                    <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="mobile-tab-scroll hide-on-mobile" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
                         onClick={handleExportClassTkbExcel}
                         style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
@@ -2113,19 +2145,37 @@ export default function PublicSchedule() {
                     </div>
                   </div>
 
-                  {/* QUICK CLASS CHIPS */}
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', backgroundColor: '#ffffff', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', marginRight: '4px' }}>Lớp nhanh:</span>
+                  {/* QUICK CLASS CHIPS (CUỘN NGANG 1 DÒNG TRÊN MOBILE) */}
+                  <div 
+                    className="mobile-tab-scroll"
+                    style={{ 
+                      display: 'flex', 
+                      gap: '6px', 
+                      flexWrap: 'nowrap', 
+                      overflowX: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      alignItems: 'center', 
+                      backgroundColor: '#ffffff', 
+                      padding: '8px 10px', 
+                      borderRadius: '12px', 
+                      border: '1px solid #e2e8f0' 
+                    }}
+                  >
+                    <span style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#64748b', flexShrink: 0, marginRight: '2px' }}>
+                      Lớp {classGradeFilterTab}:
+                    </span>
                     {currentGradeClasses.map(cls => (
                       <button
                         key={cls}
                         onClick={() => handleClassChange(cls)}
                         style={{
-                          padding: '6px 12px',
+                          padding: '5px 12px',
                           borderRadius: '8px',
-                          fontSize: '13px',
+                          fontSize: '12.5px',
                           fontWeight: '800',
                           cursor: 'pointer',
+                          flexShrink: 0,
+                          whiteSpace: 'nowrap',
                           border: selectedClass === cls ? '2px solid #0284c7' : '1px solid #e2e8f0',
                           backgroundColor: selectedClass === cls ? '#e0f2fe' : '#f8fafc',
                           color: selectedClass === cls ? '#0369a1' : '#334155',
@@ -2242,13 +2292,91 @@ export default function PublicSchedule() {
 
             </div>
 
-            {/* TODAY HERO WIDGET (EXCITING FOR STUDENTS & TEACHERS) */}
-            <div className="no-print" style={{
+            {/* MOBILE VIEW MODE CONTROLLER (CHỈ HIỂN THỊ TRÊN MÀN HÌNH DI ĐỘNG <= 960px) */}
+            <div className="show-on-mobile no-print" style={{
+              display: 'flex',
+              backgroundColor: '#f1f5f9',
+              padding: '4px',
+              borderRadius: '12px',
+              marginBottom: '14px',
+              gap: '4px',
+              border: '1px solid #cbd5e1'
+            }}>
+              <button
+                type="button"
+                onClick={() => setMobileTkbMode('today')}
+                style={{
+                  flex: 1,
+                  padding: '8px 4px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: mobileTkbMode === 'today' ? '#0284c7' : 'transparent',
+                  color: mobileTkbMode === 'today' ? '#ffffff' : '#334155',
+                  fontWeight: '800',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: mobileTkbMode === 'today' ? '0 2px 6px rgba(2, 132, 199, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}
+              >
+                ⚡ Hôm Nay ({todayLessons.length} tiết)
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTkbMode('by_day')}
+                style={{
+                  flex: 1,
+                  padding: '8px 4px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: mobileTkbMode === 'by_day' ? '#0284c7' : 'transparent',
+                  color: mobileTkbMode === 'by_day' ? '#ffffff' : '#334155',
+                  fontWeight: '800',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: mobileTkbMode === 'by_day' ? '0 2px 6px rgba(2, 132, 199, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}
+              >
+                📅 Theo Thứ
+              </button>
+              <button
+                type="button"
+                onClick={() => setMobileTkbMode('week')}
+                style={{
+                  flex: 1,
+                  padding: '8px 4px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: mobileTkbMode === 'week' ? '#0284c7' : 'transparent',
+                  color: mobileTkbMode === 'week' ? '#ffffff' : '#334155',
+                  fontWeight: '800',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  boxShadow: mobileTkbMode === 'week' ? '0 2px 6px rgba(2, 132, 199, 0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '4px'
+                }}
+              >
+                🌐 Cả Tuần
+              </button>
+            </div>
+
+            {/* CHẾ ĐỘ 1: TODAY HERO WIDGET (TRÊN MOBILE CHỈ HIỆN KHI Ở CHẾ ĐỘ 'today') */}
+            <div className={`no-print ${mobileTkbMode !== 'today' ? 'hide-on-mobile' : ''}`} style={{
               background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0369a1 100%)',
               borderRadius: '16px',
-              padding: '20px 24px',
+              padding: '16px 18px',
               color: '#ffffff',
-              marginBottom: '24px',
+              marginBottom: '20px',
               boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.25)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               position: 'relative',
@@ -2257,50 +2385,39 @@ export default function PublicSchedule() {
               {/* Decorative Orb */}
               <div style={{ position: 'absolute', right: '-40px', top: '-40px', width: '180px', height: '180px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(0,0,0,0) 70%)', pointerEvents: 'none' }} />
               
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '12px',
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
                     backgroundColor: 'rgba(56, 189, 248, 0.15)',
                     border: '1px solid rgba(56, 189, 248, 0.4)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    fontSize: '22px'
+                    fontSize: '20px'
                   }}>
                     {activeMainTab === 'class_tkb' ? '🎒' : '👨‍🏫'}
                   </div>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', color: '#38bdf8' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '11.5px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#38bdf8' }}>
                         {activeMainTab === 'class_tkb' ? 'TIÊU ĐIỂM HỌC TẬP HÔM NAY' : 'LỊCH GIẢNG DẠY HÔM NAY'}
                       </span>
                       <span style={{
-                        fontSize: '10px',
+                        fontSize: '9.5px',
                         fontWeight: '800',
-                        padding: '2px 8px',
+                        padding: '1.5px 7px',
                         borderRadius: '20px',
                         backgroundColor: todayInfo.isSchoolDay ? '#10b981' : '#64748b',
                         color: '#ffffff'
                       }}>
-                        {todayInfo.isSchoolDay ? '🔥 ĐANG TRONG TUẦN HỌC' : '🏖️ NGÀY NGHỈ'}
-                      </span>
-                      <span style={{
-                        fontSize: '10.5px',
-                        fontWeight: '700',
-                        padding: '2px 8px',
-                        borderRadius: '20px',
-                        backgroundColor: 'rgba(56, 189, 248, 0.2)',
-                        border: '1px solid rgba(56, 189, 248, 0.4)',
-                        color: '#bae6fd'
-                      }}>
-                        📅 TKB {tkbMetadata.version || 'Số 01'} • Áp dụng: {tkbMetadata.applyDate || '01/09/2026'}
+                        {todayInfo.isSchoolDay ? '🔥 ĐANG HỌC' : '🏖️ NGHỈ'}
                       </span>
                     </div>
-                    <h3 style={{ margin: '3px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff' }}>
-                      {todayInfo.dayName} • Ngày {todayInfo.dateStr} — {activeMainTab === 'class_tkb' ? `Lớp ${selectedClass}` : `Thầy/Cô ${selectedTeacher}`}
+                    <h3 style={{ margin: '2px 0 0 0', fontSize: '16px', fontWeight: '900', color: '#ffffff' }}>
+                      {todayInfo.dayName} • {todayInfo.dateStr} — {activeMainTab === 'class_tkb' ? `Lớp ${selectedClass}` : `Thầy/Cô ${selectedTeacher}`}
                     </h3>
                   </div>
                 </div>
@@ -2310,14 +2427,14 @@ export default function PublicSchedule() {
                   backgroundColor: 'rgba(15, 23, 42, 0.6)',
                   border: '1px solid rgba(56, 189, 248, 0.3)',
                   borderRadius: '10px',
-                  padding: '8px 14px',
-                  fontSize: '12.5px',
+                  padding: '6px 12px',
+                  fontSize: '11.5px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '6px',
                   color: '#e2e8f0'
                 }}>
-                  <Clock size={15} color="#38bdf8" />
+                  <Clock size={14} color="#38bdf8" />
                   <span>Trạng thái: <strong style={{ color: '#38bdf8' }}>{todayInfo.statusText}</strong></span>
                 </div>
               </div>
@@ -2325,10 +2442,10 @@ export default function PublicSchedule() {
               {/* TODAY'S LESSONS ROW */}
               {todayLessons.length > 0 ? (
                 <div>
-                  <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '10px', fontWeight: '600' }}>
+                  <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '8px', fontWeight: '600' }}>
                     Lộ trình {todayLessons.length} tiết hôm nay ({todayInfo.dayName}):
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
                     {todayLessons.map((l, idx) => {
                       const lTheme = getSubjectTheme(l.subject);
                       const isCurrent = todayInfo.currentPeriod === Number(l.period);
@@ -2341,8 +2458,8 @@ export default function PublicSchedule() {
                           style={{
                             backgroundColor: isCurrent ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.12)',
                             border: isCurrent ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.15)',
-                            borderRadius: '12px',
-                            padding: '10px 12px',
+                            borderRadius: '10px',
+                            padding: '8px 10px',
                             color: isCurrent ? '#0f172a' : '#ffffff',
                             cursor: 'pointer',
                             transition: 'all 0.2s',
@@ -2350,26 +2467,46 @@ export default function PublicSchedule() {
                             boxShadow: isCurrent ? '0 0 15px rgba(56, 189, 248, 0.5)' : 'none'
                           }}
                         >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '11px', fontWeight: '800', color: isCurrent ? '#0284c7' : '#38bdf8' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                            <span style={{ fontSize: '10.5px', fontWeight: '800', color: isCurrent ? '#0284c7' : '#38bdf8' }}>
                               Tiết {l.period} • {timing?.start || ''}
                             </span>
                             {isCurrent && (
-                              <span style={{ fontSize: '9px', fontWeight: '900', padding: '1px 5px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#fff' }}>
+                              <span style={{ fontSize: '8.5px', fontWeight: '900', padding: '1px 4px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#fff' }}>
                                 LIVE
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ fontSize: '13.5px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '5px' }}>
                             <span>{lTheme.icon}</span>
                             <span style={{ color: isCurrent ? lTheme.text : '#ffffff' }}>{l.subject}</span>
                           </div>
-                          <div style={{ fontSize: '11.5px', marginTop: '4px', opacity: 0.85 }}>
+                          <div style={{ fontSize: '11px', marginTop: '3px', opacity: 0.85 }}>
                             {activeMainTab === 'class_tkb' ? `GV: ${l.teacher_name}` : `Lớp: ${l.student_class}`}
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+
+                  {/* Nút chuyển nhanh sang xem các thứ khác trên Mobile */}
+                  <div className="show-on-mobile" style={{ marginTop: '12px', textAlign: 'center' }}>
+                    <button
+                      type="button"
+                      onClick={() => setMobileTkbMode('by_day')}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '20px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                        border: '1px solid rgba(255, 255, 255, 0.35)',
+                        color: '#ffffff',
+                        fontSize: '11.5px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📅 Xem lịch các ngày khác trong tuần ➔
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -2379,20 +2516,196 @@ export default function PublicSchedule() {
               )}
             </div>
 
-            {/* SUBJECT BREAKDOWN & HIGHLIGHT STRIP (NO-PRINT) */}
+            {/* CHẾ ĐỘ 2: DAY VIEW THEO THỨ (DÀNH RIÊNG CHO MOBILE KHI CHỌN 'by_day') */}
+            {mobileTkbMode === 'by_day' && (
+              <div className="show-on-mobile no-print" style={{ marginBottom: '18px' }}>
+                {/* HÀNG TAB CHỌN THỨ 2 -> THỨ 7 */}
+                <div 
+                  className="mobile-tab-scroll" 
+                  style={{ 
+                    display: 'flex', 
+                    gap: '6px', 
+                    overflowX: 'auto', 
+                    WebkitOverflowScrolling: 'touch', 
+                    paddingBottom: '6px', 
+                    marginBottom: '10px' 
+                  }}
+                >
+                  {DAYS.map(day => {
+                    const isSelected = selectedMobileDay === day;
+                    const isToday = day === todayInfo.dayName;
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => setSelectedMobileDay(day)}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '800',
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          whiteSpace: 'nowrap',
+                          border: isSelected ? 'none' : (isToday ? '1.5px solid #38bdf8' : '1px solid #cbd5e1'),
+                          backgroundColor: isSelected ? '#be123c' : (isToday ? '#f0f9ff' : '#ffffff'),
+                          color: isSelected ? '#ffffff' : (isToday ? '#0284c7' : '#475569'),
+                          boxShadow: isSelected ? '0 2px 6px rgba(190, 18, 60, 0.3)' : 'none'
+                        }}
+                      >
+                        {day} {isToday ? '🌟' : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* DANH SÁCH CÁC TIẾT CỦA THỨ ĐƯỢC CHỌN */}
+                {(() => {
+                  const lessonsForDay = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => {
+                    const item = activeMainTab === 'class_tkb'
+                      ? getLessonForClass(selectedMobileDay, p)
+                      : getLessonForTeacher(selectedMobileDay, p);
+                    const timing = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === p);
+                    return { period: p, item, timing };
+                  }).filter(x => Boolean(x.item));
+
+                  if (lessonsForDay.length === 0) {
+                    return (
+                      <div style={{
+                        backgroundColor: '#f8fafc',
+                        border: '1.5px dashed #cbd5e1',
+                        borderRadius: '12px',
+                        padding: '24px 16px',
+                        textAlign: 'center',
+                        color: '#64748b'
+                      }}>
+                        <div style={{ fontSize: '24px', marginBottom: '6px' }}>🏖️</div>
+                        <div style={{ fontWeight: 'bold', fontSize: '13.5px' }}>{selectedMobileDay} không có tiết học</div>
+                        <div style={{ fontSize: '12px', marginTop: '2px' }}>Không có lịch xếp cho {activeMainTab === 'class_tkb' ? `lớp ${selectedClass}` : `giáo viên ${selectedTeacher}`}.</div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 4px', fontSize: '12px', fontWeight: 'bold', color: '#64748b' }}>
+                        <span>Lịch {lessonsForDay.length} tiết ngày {selectedMobileDay}:</span>
+                        <span style={{ color: '#0284c7' }}>{activeMainTab === 'class_tkb' ? `Lớp ${selectedClass}` : selectedTeacher}</span>
+                      </div>
+
+                      {lessonsForDay.map(({ period, item, timing }) => {
+                        const theme = getSubjectTheme(item.subject);
+                        const isToday = selectedMobileDay === todayInfo.dayName;
+                        const isCurrent = isToday && todayInfo.currentPeriod === period;
+
+                        return (
+                          <div
+                            key={period}
+                            onClick={() => setSelectedLessonDetail({ ...item, day: selectedMobileDay, period })}
+                            style={{
+                              backgroundColor: isCurrent ? '#fef2f2' : theme.bg,
+                              border: isCurrent ? '2px solid #ef4444' : `1.5px solid ${theme.border}`,
+                              borderLeft: `5px solid ${isCurrent ? '#ef4444' : theme.text}`,
+                              borderRadius: '10px',
+                              padding: '10px 14px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              boxShadow: isCurrent ? '0 0 10px rgba(239,68,68,0.25)' : '0 1px 3px rgba(0,0,0,0.03)',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <div style={{
+                                width: '38px',
+                                height: '38px',
+                                borderRadius: '8px',
+                                backgroundColor: isCurrent ? '#fee2e2' : theme.badgeBg,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0
+                              }}>
+                                <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#64748b' }}>Tiết</span>
+                                <span style={{ fontSize: '14px', fontWeight: '900', color: isCurrent ? '#ef4444' : theme.text, lineHeight: 1 }}>{period}</span>
+                              </div>
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ fontSize: '14px', fontWeight: '900', color: theme.text }}>
+                                    {theme.icon} {item.subject}
+                                  </span>
+                                  {isCurrent && (
+                                    <span style={{ fontSize: '9px', fontWeight: '900', padding: '1px 5px', borderRadius: '4px', backgroundColor: '#ef4444', color: '#fff' }}>
+                                      LIVE
+                                    </span>
+                                  )}
+                                </div>
+                                <div style={{ fontSize: '11.5px', color: '#475569', marginTop: '2px' }}>
+                                  {activeMainTab === 'class_tkb' ? `👨‍🏫 GV: ${item.teacher_name}` : `🏫 Lớp: ${item.student_class}`}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                              <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#0f172a' }}>
+                                {timing?.start}
+                              </div>
+                              <div style={{ fontSize: '10.5px', color: '#64748b' }}>
+                                {timing?.end}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* SUBJECT BREAKDOWN & HIGHLIGHT STRIP (NO-PRINT - THU GỌN TRÊN MOBILE) */}
             <div className="no-print" style={{
               backgroundColor: '#ffffff',
               borderRadius: '14px',
-              padding: '14px 18px',
+              padding: '12px 16px',
               border: '1px solid #e2e8f0',
-              marginBottom: '20px',
+              marginBottom: '16px',
               boxShadow: '0 2px 6px rgba(0,0,0,0.02)'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '10px' }}>
+              <div 
+                onClick={() => setIsSubjectStatsExpanded(!isSubjectStatsExpanded)}
+                style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  cursor: 'pointer',
+                  padding: '2px 0'
+                }}
+              >
                 <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <Sparkles size={16} color="#f59e0b" />
-                  <span>Phân bổ môn học trong tuần (Tổng: {currentTargetLessons.length} tiết):</span>
+                  <span>Phân bổ môn học ({sortedSubjectBreakdown.length} môn • {currentTargetLessons.length} tiết/tuần):</span>
                 </div>
+                <button
+                  type="button"
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    color: '#0284c7',
+                    backgroundColor: '#f0f9ff',
+                    border: '1px solid #bae6fd',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {isSubjectStatsExpanded ? '▲ Thu gọn' : '▼ Chi tiết'}
+                </button>
+              </div>
+
+              {/* Danh sách tag môn: Desktop luôn hiện, Mobile chỉ hiện khi mở rộng */}
+              <div className={!isSubjectStatsExpanded ? 'hide-on-mobile' : ''} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center', marginTop: '10px' }}>
                 {selectedHighlightSubject && (
                   <button
                     onClick={() => setSelectedHighlightSubject(null)}
@@ -2410,9 +2723,6 @@ export default function PublicSchedule() {
                     ✕ Xoá làm nổi bật môn
                   </button>
                 )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 {sortedSubjectBreakdown.map(([subName, count]) => {
                   const sTheme = getSubjectTheme(subName);
                   const isSelected = selectedHighlightSubject === subName;
@@ -2423,9 +2733,9 @@ export default function PublicSchedule() {
                       onClick={() => setSelectedHighlightSubject(isSelected ? null : subName)}
                       className="tkb-badge-pill"
                       style={{
-                        padding: '5px 10px',
+                        padding: '4px 10px',
                         borderRadius: '20px',
-                        fontSize: '12px',
+                        fontSize: '11.5px',
                         fontWeight: '700',
                         cursor: 'pointer',
                         border: isSelected ? `2px solid ${sTheme.text}` : `1px solid ${sTheme.border}`,
@@ -2433,18 +2743,18 @@ export default function PublicSchedule() {
                         color: sTheme.text,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '5px',
+                        gap: '4px',
                         boxShadow: isSelected ? '0 0 0 2px #f59e0b' : 'none'
                       }}
                     >
                       <span>{sTheme.icon}</span>
                       <span>{subName}:</span>
                       <span style={{
-                        padding: '1px 6px',
+                        padding: '1px 5px',
                         borderRadius: '10px',
                         backgroundColor: isSelected ? sTheme.text : 'rgba(0,0,0,0.06)',
                         color: isSelected ? '#ffffff' : sTheme.text,
-                        fontSize: '11px',
+                        fontSize: '10.5px',
                         fontWeight: '800'
                       }}>
                         {count}
@@ -2455,8 +2765,8 @@ export default function PublicSchedule() {
               </div>
             </div>
 
-            {/* VIBRANT TIMETABLE MATRIX */}
-            <div style={{ overflowX: 'auto' }}>
+            {/* VIBRANT TIMETABLE MATRIX (TRÊN MOBILE CHỈ HIỂN THỊ KHI CHỌN 'week') */}
+            <div className={mobileTkbMode !== 'week' ? 'hide-on-mobile' : ''} style={{ overflowX: 'auto' }}>
               <table style={{ ...styles.table, borderCollapse: 'separate', borderSpacing: '6px' }}>
                 <thead>
                   <tr style={styles.tableHeadRow}>

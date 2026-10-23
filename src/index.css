@@ -1160,6 +1160,14 @@ input, select, textarea, button {
     height: 56px !important;
   }
 
+  /* Compact Schedule & Hub Cards on Mobile */
+  .cbq-schedule-header-card,
+  .print-full {
+    padding: 14px 14px !important;
+    border-radius: 12px !important;
+    margin-bottom: 12px !important;
+  }
+
   /* Admin Layout on Mobile */
   .layout-sidebar {
     width: 290px !important;
