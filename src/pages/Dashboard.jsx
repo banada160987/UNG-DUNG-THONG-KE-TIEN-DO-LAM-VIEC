@@ -272,7 +272,7 @@ export default function Dashboard() {
 
           {/* ACADEMIC MODULE TABS HEADER */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', padding: '16px 20px' }}>
-            <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
+            <div className="mobile-tab-scroll" style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => setActiveTab('briefing')}
                 style={styles.tabBtn(activeTab === 'briefing', '#0f766e')}

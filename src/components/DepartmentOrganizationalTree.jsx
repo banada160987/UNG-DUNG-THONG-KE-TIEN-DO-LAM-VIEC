@@ -463,7 +463,7 @@ export default function DepartmentOrganizationalTree() {
 
               {/* TABS HOẠT ĐỘNG CHUYÊN MÔN CỦA TỔ */}
               <div style={{ marginTop: '16px' }}>
-                <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
+                <div className="mobile-tab-scroll" style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setActiveActivityTab('lessonPlan')}
                     style={styles.activityTabBtn(activeActivityTab === 'lessonPlan', activeDept.theme.color)}
@@ -586,7 +586,8 @@ export default function DepartmentOrganizationalTree() {
                   <span style={{ fontSize: '12px', color: '#64748b' }}>Đồng bộ bảng <code>cbq_staff</code></span>
                 </div>
 
-                <div style={{ overflowX: 'auto' }}>
+                {/* TEACHER TABLE (DESKTOP) */}
+                <div className="hide-on-mobile" style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
@@ -670,6 +671,92 @@ export default function DepartmentOrganizationalTree() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* TEACHER CARDS VIEW (MOBILE ONLY <= 960px) */}
+                <div className="show-on-mobile" style={{ marginTop: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {activeDept.teachers.map((teacher, index) => (
+                      <div 
+                        key={teacher.id || index}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '12px',
+                          border: `1px solid ${activeDept.theme.border || '#e2e8f0'}`,
+                          padding: '12px 14px',
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              backgroundColor: activeDept.theme.bg,
+                              color: activeDept.theme.color,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '12px',
+                              fontWeight: 'bold',
+                              border: `1px solid ${activeDept.theme.border}`
+                            }}>
+                              {teacher.name.split(' ').slice(-1)[0]?.charAt(0) || 'G'}
+                            </div>
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>{teacher.name}</div>
+                              <div style={{ fontSize: '11.5px', color: '#64748b' }}>{teacher.parsedSubject || activeDept.name} • {teacher.parsedPeriods} tiết/tuần</div>
+                            </div>
+                          </div>
+
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            backgroundColor: teacher.title?.toLowerCase().includes('tổ trưởng') ? '#dbeafe' : teacher.title?.toLowerCase().includes('tổ phó') ? '#e0e7ff' : '#f1f5f9',
+                            color: teacher.title?.toLowerCase().includes('tổ trưởng') ? '#1d4ed8' : teacher.title?.toLowerCase().includes('tổ phó') ? '#4338ca' : '#475569'
+                          }}>
+                            {teacher.title || 'Giáo viên'}
+                          </span>
+                        </div>
+
+                        {/* Lớp phụ trách */}
+                        <div style={{ backgroundColor: '#f8fafc', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold', marginBottom: '4px' }}>Lớp phụ trách:</div>
+                          {teacher.parsedClasses && teacher.parsedClasses.length > 0 ? (
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {teacher.parsedClasses.map(cls => {
+                                const classInfo = classMap[cls];
+                                const studentCount = classInfo ? classInfo.totalStudents : null;
+                                return (
+                                  <span key={cls} style={{
+                                    backgroundColor: '#ffffff',
+                                    border: '1px solid #cbd5e1',
+                                    borderRadius: '4px',
+                                    padding: '2px 6px',
+                                    fontSize: '11px',
+                                    color: '#1e293b',
+                                    fontWeight: '600'
+                                  }}>
+                                    {cls} {studentCount ? `(${studentCount} HS)` : ''}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>Theo phân công công tác của tổ</span>
+                          )}
+                        </div>
+
+                        <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>✉️ {teacher.email || 'thptcaobaquat.edu.vn'}</span>
+                          <span style={{ color: activeDept.theme.color, fontWeight: '700' }}>{activeDept.name}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

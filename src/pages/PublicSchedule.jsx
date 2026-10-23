@@ -1226,7 +1226,7 @@ export default function PublicSchedule() {
             </button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
+        <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '15px' }}>
           {[
             { id: 'bgh_schedule', label: '📅 Lịch Công Tác BGH' },
             { id: 'class_tkb', label: '🎓 TKB Lớp' },
@@ -1247,7 +1247,7 @@ export default function PublicSchedule() {
           
           {/* VIEW MODE SWITCHER BAR */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', marginBottom: '20px', paddingBottom: '15px', borderBottom: '2px solid #f1f5f9' }} className="no-print">
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => setScheduleViewMode('week')} 
                 style={{ ...styles.tabBtn, backgroundColor: scheduleViewMode === 'week' ? '#0284c7' : '#e0f2fe', color: scheduleViewMode === 'week' ? '#ffffff' : '#0369a1' }}
@@ -1269,7 +1269,7 @@ export default function PublicSchedule() {
             </div>
 
             {/* ACTION BUTTONS ACCORDING TO VIEW MODE */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
               {scheduleViewMode === 'week' && (
                 <>
                   <button onClick={() => setShowExportModal(true)} style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}>
@@ -2100,7 +2100,7 @@ export default function PublicSchedule() {
                       ))}
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
                         onClick={handleExportClassTkbExcel}
                         style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
@@ -2197,7 +2197,7 @@ export default function PublicSchedule() {
                       </select>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
                         onClick={handleExportTeacherTkbExcel}
                         style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
@@ -2809,7 +2809,7 @@ export default function PublicSchedule() {
                 </div>
 
                 {/* ACTION BUTTONS */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => {
                       const targetDay = selectedGradeDay === 'all' ? (todayInfo.isSchoolDay ? todayInfo.dayName : 'Thứ 2') : selectedGradeDay;

@@ -286,7 +286,7 @@ export default function PublicHome() {
       `}</style>
 
         {/* LEFT COLUMN */}
-        <div style={styles.leftCol}>
+        <div className="portal-left-col" style={styles.leftCol}>
           {/* ACADEMIC & PROFESSIONAL GUIDANCE NOTICE FOR TEACHERS, STUDENTS & PARENTS */}
           <PortalBlock title="📌 THÔNG BÁO CHUYÊN MÔN" color="#166534" icon="📢">
             <div style={{ marginBottom: '12px' }}>
@@ -439,7 +439,7 @@ export default function PublicHome() {
         </div>
 
         {/* CENTER COLUMN */}
-        <div style={styles.centerCol}>
+        <div className="portal-center-col" style={styles.centerCol}>
 
           {/* ACADEMIC OPERATION & SCHOOL SERVICES QUICK ACCESS */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1.5px solid #bbf7d0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '20px' }}>
@@ -955,7 +955,7 @@ export default function PublicHome() {
         </div>
 
         {/* RIGHT COLUMN */}
-        <div style={styles.rightCol}>
+        <div className="portal-right-col" style={styles.rightCol}>
           {homeConfig.show_notifications && (
           <PortalBlock title="THÔNG BÁO MỚI" color="#d32f2f" icon="📢">
             <div style={styles.marqueeVertical}>

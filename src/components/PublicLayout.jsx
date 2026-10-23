@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2 } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
+import MobileBottomNav from './MobileBottomNav';
 import ErrorBoundary from './ErrorBoundary';
 import { getTeacherSession, clearTeacherSession, getStudentSession, clearStudentSession } from '../services/authSessionManager';
 
@@ -478,6 +479,9 @@ export default function PublicLayout() {
       
       {/* Smart School AI Chatbot */}
       <ChatbotWidget />
+
+      {/* Native Mobile Bottom Navigation Bar */}
+      <MobileBottomNav />
     </div>
   );
 }

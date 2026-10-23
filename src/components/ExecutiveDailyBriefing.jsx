@@ -433,7 +433,7 @@ export default function ExecutiveDailyBriefing() {
             boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
             padding: '16px 20px'
           }}>
-            <div style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
+            <div className="mobile-tab-scroll" style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
               <button 
                 onClick={() => setActiveSubTab('attendance')}
                 style={styles.tabBtn(activeSubTab === 'attendance', '#0f766e')}
@@ -509,8 +509,8 @@ export default function ExecutiveDailyBriefing() {
                   </div>
                 </div>
 
-                {/* ATTENDANCE TABLE */}
-                <div style={{ overflowX: 'auto' }}>
+                {/* ATTENDANCE TABLE (DESKTOP VIEW) */}
+                <div className="hide-on-mobile" style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ backgroundColor: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
@@ -559,6 +559,72 @@ export default function ExecutiveDailyBriefing() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* ATTENDANCE CARD VIEW (MOBILE ONLY <= 960px) */}
+                <div className="show-on-mobile" style={{ marginTop: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {filteredAttendance.map((item) => (
+                      <div 
+                        key={item.className}
+                        style={{
+                          backgroundColor: '#ffffff',
+                          borderRadius: '12px',
+                          border: item.unexcused > 0 ? '1.5px solid #fca5a5' : item.absentStudents > 0 ? '1.5px solid #fed7aa' : '1px solid #e2e8f0',
+                          padding: '12px 14px',
+                          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>{item.className}</span>
+                            <span style={{ fontSize: '11px', color: '#64748b', backgroundColor: '#f1f5f9', padding: '2px 7px', borderRadius: '4px', fontWeight: '600' }}>Khối {item.grade}</span>
+                          </div>
+                          {item.unexcused > 0 ? (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#ef4444', backgroundColor: '#fef2f2', border: '1px solid #fecaca', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                              <AlertTriangle size={12} /> Cần theo dõi
+                            </span>
+                          ) : (
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', color: '#16a34a', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold' }}>
+                              <CheckCircle2 size={12} /> Ổn định
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '12px', backgroundColor: '#f8fafc', padding: '8px 10px', borderRadius: '8px', marginBottom: '8px' }}>
+                          <div>
+                            <div style={{ color: '#64748b', fontSize: '11px' }}>Có mặt / Sĩ số:</div>
+                            <div style={{ fontWeight: '800', color: '#0f172a', marginTop: '2px' }}>
+                              <span style={{ color: '#15803d' }}>{item.presentStudents}</span> / {item.totalStudents} HS
+                            </div>
+                          </div>
+                          <div>
+                            <div style={{ color: '#64748b', fontSize: '11px' }}>Vắng hôm nay:</div>
+                            <div style={{ fontWeight: '800', marginTop: '2px' }}>
+                              {item.absentStudents > 0 ? (
+                                <span style={{ color: '#b91c1c' }}>
+                                  {item.absentStudents} vắng {item.unexcused > 0 ? `(${item.unexcused} KP)` : '(CP)'}
+                                </span>
+                              ) : (
+                                <span style={{ color: '#16a34a' }}>0 (Đi đủ)</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {item.absentStudents > 0 && (
+                          <div style={{ fontSize: '11.5px', color: '#991b1b', backgroundColor: '#fef2f2', padding: '6px 10px', borderRadius: '6px', marginBottom: '8px', lineHeight: 1.4 }}>
+                            <b>Chi tiết vắng:</b> {item.details}
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', color: '#64748b', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
+                          <span>GVCN: <strong style={{ color: '#334155' }}>{item.homeroomTeacher}</strong></span>
+                          <span style={{ color: '#0f766e', fontWeight: '700' }}>Tỷ lệ: {((item.presentStudents / (item.totalStudents || 1)) * 100).toFixed(0)}%</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}

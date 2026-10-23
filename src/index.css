@@ -564,7 +564,18 @@ input, select, textarea {
 @media (max-width: 1024px) {
   .portal-main-grid {
     grid-template-columns: 1fr;
-    gap: 18px;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px;
+  }
+  .portal-center-col {
+    order: 1 !important;
+  }
+  .portal-left-col {
+    order: 2 !important;
+  }
+  .portal-right-col {
+    order: 3 !important;
   }
 }
 
@@ -1020,4 +1031,118 @@ input, select, textarea, button {
   transform: translateY(-1px);
   box-shadow: 0 3px 8px rgba(0,0,0,0.1);
 }
+
+/* ==========================================================================
+   DEDICATED NATIVE MOBILE UI & RESPONSIVE EXPERIENCE (SMARTPHONE OPTIMIZED)
+   ========================================================================== */
+
+/* 1. Mobile Bottom Navigation Bar Visibility */
+@media (min-width: 961px) {
+  .cbq-mobile-bottom-nav {
+    display: none !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .cbq-mobile-bottom-nav {
+    display: flex !important;
+  }
+
+  /* Padding at the bottom of the page to avoid overlapping bottom bar */
+  body, 
+  main, 
+  .layout-main-area,
+  .public-main-content {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom, 12px)) !important;
+  }
+
+  /* Touch ergonomics */
+  button, a, input, select, textarea {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Compact banner on smartphones */
+  .cbq-banner-container {
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+  }
+
+  .cbq-banner-title {
+    font-size: 17.5px !important;
+    line-height: 1.35 !important;
+    letter-spacing: -0.2px !important;
+  }
+
+  .cbq-banner-sub {
+    font-size: 11.5px !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Mobile Horizontal Scrollable Tab Bar (like Shopee / App Store / YouTube) */
+  .mobile-tab-scroll {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    gap: 8px !important;
+    padding-bottom: 6px !important;
+    width: 100% !important;
+    margin-bottom: 12px !important;
+  }
+
+  .mobile-tab-scroll::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .mobile-tab-scroll > button,
+  .mobile-tab-scroll > a {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    padding: 8px 14px !important;
+  }
+
+  /* Responsive Grid Adjustments */
+  .mobile-1col {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .mobile-2col {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  /* Mobile Card view for complex tables */
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .show-on-mobile {
+    display: block !important;
+  }
+
+  /* Admin Layout on Mobile */
+  .layout-sidebar {
+    width: 290px !important;
+  }
+
+  .layout-main-area {
+    padding: 12px 10px !important;
+  }
+
+  .layout-header-title {
+    font-size: 15px !important;
+  }
+}
+
+@media (min-width: 961px) {
+  .show-on-mobile {
+    display: none !important;
+  }
+}
+
 

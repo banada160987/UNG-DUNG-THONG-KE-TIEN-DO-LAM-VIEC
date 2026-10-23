@@ -4,6 +4,7 @@ import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Imag
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
+import MobileBottomNav from './MobileBottomNav';
 
 export default function Layout({ children, title }) {
   const { user, role, permissions = {}, signOut } = useAuth();
@@ -249,10 +250,13 @@ export default function Layout({ children, title }) {
           </div>
         </header>
         
-        <main className="main-content-area" style={styles.mainContent}>
+        <main className="main-content-area layout-main-area" style={styles.mainContent}>
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav />
     </div>
   );
 }

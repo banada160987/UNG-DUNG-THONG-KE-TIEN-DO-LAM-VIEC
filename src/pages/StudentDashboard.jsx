@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { User, LogOut, FileText, CheckSquare, Bus, Bike, MessageSquare, Award, Clock, BookOpen, ClipboardList, ShieldAlert, Wallet, Shield, AlertTriangle, Users, ClipboardCheck, FileBadge, Edit3, Save, X, IdCard, Home, Phone, Heart, Users2, ShieldCheck, Sparkles, QrCode, CheckCircle, Calendar, GraduationCap, CheckCircle2, Layers, ExternalLink, Compass, Brain, Video } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { getStudentSession, clearStudentSession } from '../services/authSessionManager';
+import MobileBottomNav from '../components/MobileBottomNav';
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
@@ -1507,6 +1508,8 @@ export default function StudentDashboard() {
         </div>
       )}
 
+      {/* Native Mobile Bottom Navigation Bar */}
+      <MobileBottomNav />
     </div>
   );
 }

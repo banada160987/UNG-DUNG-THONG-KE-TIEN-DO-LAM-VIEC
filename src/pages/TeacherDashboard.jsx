@@ -7,6 +7,7 @@ import {
   Compass, Heart, Video, Plus
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
+import MobileBottomNav from '../components/MobileBottomNav';
 import { DualSupabaseService } from '../lib/supabase';
 import { getTeacherSession, clearTeacherSession } from '../services/authSessionManager';
 
@@ -176,7 +177,7 @@ export default function TeacherDashboard() {
         </div>
 
         {/* 2. THANH CHUYỂN TAB PHÂN NHÓM NGHIỆP VỤ */}
-        <div style={{
+        <div className="mobile-tab-scroll" style={{
           display: 'flex',
           gap: '10px',
           marginBottom: '28px',
@@ -1684,6 +1685,9 @@ export default function TeacherDashboard() {
         </div>
 
       </div>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <MobileBottomNav />
     </div>
   );
 }
