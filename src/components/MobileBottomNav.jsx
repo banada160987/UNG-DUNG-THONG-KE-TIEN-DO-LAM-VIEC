@@ -29,9 +29,13 @@ export default function MobileBottomNav() {
     window.addEventListener('cbq-teacher-auth-change', handleTeacherChange);
     window.addEventListener('cbq-student-auth-change', handleStudentChange);
 
+    const handleOpenAuth = () => setShowAuthChoiceModal(true);
+    window.addEventListener('cbq-open-auth-choice', handleOpenAuth);
+
     return () => {
       window.removeEventListener('cbq-teacher-auth-change', handleTeacherChange);
       window.removeEventListener('cbq-student-auth-change', handleStudentChange);
+      window.removeEventListener('cbq-open-auth-choice', handleOpenAuth);
     };
   }, []);
 
@@ -47,46 +51,64 @@ export default function MobileBottomNav() {
     return false;
   };
 
-  // Các nút bấm chính theo vai trò
+  // Các nút bấm chính theo vai trò (Đúng 5 nút chuẩn Mobile Ergonomics)
   let mainNavItems = [];
 
   if (student) {
     mainNavItems = [
       { id: 'home', label: 'Trang chủ', path: '/', icon: Home },
-      { id: 'schedule', label: 'Lịch & TKB', path: '/lich-cong-tac', icon: Calendar },
+      { id: 'schedule', label: 'TKB Lớp', path: '/lich-cong-tac?tab=class_tkb', icon: Calendar },
       { id: 'exam', label: 'Làm bài thi', path: '/hoc-sinh/kiem-tra-danh-gia', icon: CheckSquare },
-      { id: 'eduhub', label: 'Học liệu số', path: '/hoc-lieu-so', icon: Video },
+      { id: 'utilities', label: 'Tiện ích', action: () => setShowMoreDrawer(true), icon: LayoutDashboard },
       { id: 'profile', label: 'Cổng Em', path: '/student-dashboard', icon: GraduationCap, badge: student.student_class || 'HS' }
     ];
   } else if (teacher) {
     mainNavItems = [
       { id: 'home', label: 'Trang chủ', path: '/', icon: Home },
-      { id: 'schedule', label: 'Báo giảng', path: '/lich-cong-tac', icon: Calendar },
+      { id: 'schedule', label: 'Báo giảng', path: '/lich-cong-tac?tab=teacher_tkb', icon: Calendar },
       { id: 'exam_maker', label: 'Ra đề thi', path: '/giao-vien/ra-de-thi', icon: FileText },
-      { id: 'hub', label: 'Tiện ích Hub', path: '/teacher-dashboard/app-hub', icon: LayoutDashboard },
-      { id: 'profile', label: 'Cổng Thầy/Cô', path: '/teacher-dashboard', icon: Briefcase, badge: 'GV' }
+      { id: 'utilities', label: 'Tiện ích', action: () => setShowMoreDrawer(true), icon: LayoutDashboard },
+      { id: 'profile', label: 'Thầy/Cô', path: '/teacher-dashboard', icon: Briefcase, badge: 'GV' }
     ];
   } else {
     // Khách / Phụ huynh / Chưa đăng nhập
     mainNavItems = [
       { id: 'home', label: 'Trang chủ', path: '/', icon: Home },
-      { id: 'schedule', label: 'Lịch công tác', path: '/lich-cong-tac', icon: Calendar },
-      { id: 'eduhub', label: 'Học liệu 4.0', path: '/hoc-lieu-so', icon: Video },
-      { id: 'hub', label: 'Cổng tiện ích', path: '/hub', icon: LayoutDashboard },
+      { id: 'schedule', label: 'Lịch & TKB', path: '/lich-cong-tac', icon: Calendar },
+      { id: 'eduhub', label: 'Học liệu số', path: '/hoc-lieu-so', icon: Video },
+      { id: 'utilities', label: 'Tiện ích', action: () => setShowMoreDrawer(true), icon: LayoutDashboard },
       { id: 'auth', label: 'Đăng nhập', action: () => setShowAuthChoiceModal(true), icon: User }
     ];
   }
 
-  // Danh mục tiện ích nhanh cho Bottom Sheet
-  const quickActions = [
-    { title: 'Tra Cứu Học Bạ & Bằng Số', path: '/tra-cuu-van-bang', icon: '📜', desc: 'Bằng tốt nghiệp THPT & học bạ điện tử' },
-    { title: 'Sổ Chấm Điểm Thi Đua Tuần', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Xếp hạng nề nếp thi đua 34 lớp' },
-    { title: 'Hòm Thư Học Sinh & Tâm Tư', path: '/hom-thu-hoc-sinh', icon: '💌', desc: 'Gửi ý kiến đóng góp, phản ánh bảo mật' },
-    { title: 'Đội Ngũ & 8 Tổ Chuyên Môn', path: '/to-chuyen-mon', icon: '👨‍🏫', desc: 'Danh mục Hội đồng Sư phạm nhà trường' },
+  // Danh mục tiện ích nhanh cho Bottom Sheet - Phân quyền chuẩn xác theo vai trò
+  const quickActions = student ? [
+    { title: 'Sổ Đầu Bài Lớp Em', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Theo dõi tiến độ học tập và ghi sổ lớp' },
+    { title: 'Phòng Thi GDPT 2018', path: '/hoc-sinh/kiem-tra-danh-gia', icon: '📝', desc: 'Làm bài kiểm tra & thi thử chuẩn cấu trúc mới' },
+    { title: 'Điểm Danh Câu Lạc Bộ', path: '/admin/registrations', icon: '🎯', desc: 'Kiểm tra lịch sinh hoạt & điểm danh CLB' },
+    { title: 'Hòm Thư Tâm Lý & DASS-21', path: '/hom-thu-hoc-sinh', icon: '💌', desc: 'Tư vấn tâm lý, gửi tâm tư bảo mật tới Thầy Cô' },
+    { title: 'Đăng Ký & Vé Xe Máy HS', path: '/dang-ky-xe-may', icon: '🛵', desc: 'Quản lý vé xe và phương tiện của em' },
+    { title: 'Tra Cứu Bằng Tốt Nghiệp & Học Bạ', path: '/tra-cuu-van-bang', icon: '📜', desc: 'Tra cứu văn bằng số và học bạ điện tử' },
+    { title: 'Cố Vấn Tổ Hợp 2+2 & Ngành', path: '/hoc-sinh/tu-van-to-hop-2-cong-2', icon: '🧭', desc: 'Định hướng tổ hợp môn thi & nghề nghiệp' },
+    { title: 'Trạm Video Kỹ Năng Số', path: '/hoc-lieu-so', icon: '📺', desc: 'Kho học liệu số, video thí nghiệm & kỹ năng' }
+  ] : teacher ? [
+    { title: 'Ghi Sổ Đầu Bài Hôm Nay', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Ký số và ghi nhận đánh giá tiết dạy' },
+    { title: 'Kế Hoạch Bài Dạy (CV 5512)', path: '/admin/department-drives', icon: '📂', desc: 'Nộp và duyệt giáo án chuẩn chuyên môn' },
+    { title: 'Ngân Hàng Đề Thi & Trộn Đề', path: '/giao-vien/ra-de-thi', icon: '✏️', desc: 'Hỗ trợ công thức LaTeX, tạo mã đề đa dạng' },
+    { title: 'Sổ Chấm Điểm Thi Đua Tuần', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Đánh giá nề nếp thi đua 34 lớp học' },
     { title: 'Căn Chỉnh Nghị Định 30', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Chuẩn hóa thể thức văn bản hành chính' },
-    { title: 'Kiểm Tra Hồ Sơ Tốt Nghiệp', path: '/kiem-tra-ho-so-tn', icon: '🎓', desc: 'Rà soát thông tin thi tốt nghiệp THPT' },
-    { title: 'Đăng Ký Xe Máy Học Sinh', path: '/dang-ky-xe-may', icon: '🛵', desc: 'Quản lý vé xe và phương tiện học sinh' },
-    { title: 'Góp Ý Công Việc & Đề Án', path: '/gop-y', icon: '✍️', desc: 'Tiếp nhận giải pháp nâng cao chất lượng' }
+    { title: 'Hồ Sơ Tổ Chuyên Môn', path: '/to-chuyen-mon', icon: '🌳', desc: 'Cây phân cấp 4 tầng & hoạt động chuyên môn' },
+    { title: 'Quản Lý Điểm Danh CLB', path: '/admin/registrations', icon: '🎯', desc: 'Theo dõi học sinh đăng ký các câu lạc bộ' },
+    { title: 'Quản Lý Xe Máy Học Sinh', path: '/admin/parking', icon: '🛵', desc: 'Duyệt vé xe và kiểm tra phương tiện học sinh' }
+  ] : [
+    { title: 'Tra Cứu Bằng Tốt Nghiệp & Học Bạ', path: '/tra-cuu-van-bang', icon: '📜', desc: 'Bằng tốt nghiệp THPT & học bạ điện tử' },
+    { title: 'Lịch Công Tác BGH Nhà Trường', path: '/lich-cong-tac', icon: '📅', desc: 'Lịch tuần, kế hoạch tháng & năm học chính thức' },
+    { title: 'Sổ Chấm Điểm Thi Đua 34 Lớp', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Bảng xếp hạng nề nếp thi đua các lớp' },
+    { title: 'Hòm Thư Đóng Góp Ý Kiến', path: '/hom-thu-hoc-sinh', icon: '💌', desc: 'Tiếp nhận phản ánh, đóng góp xây dựng trường' },
+    { title: 'Đội Ngũ Cán Bộ & 8 Tổ Chuyên Môn', path: '/to-chuyen-mon', icon: '👨‍🏫', desc: 'Danh mục Hội đồng Sư phạm nhà trường' },
+    { title: 'Tin Tức & Sự Kiện Nổi Bật', path: '/tin-tuc', icon: '📰', desc: 'Hoạt động giáo dục và phong trào nhà trường' },
+    { title: 'Thư Viện Ảnh Nhà Trường', path: '/thu-vien-anh', icon: '📸', desc: 'Hình ảnh hoạt động, kỷ niệm và sự kiện' },
+    { title: 'Đăng Ký Xe Máy Học Sinh', path: '/dang-ky-xe-may', icon: '🛵', desc: 'Thủ tục đăng ký gửi xe dành cho phụ huynh' }
   ];
 
   return (
@@ -217,39 +239,6 @@ export default function MobileBottomNav() {
             </Link>
           );
         })}
-
-        {/* Nút Khám Phá Thêm (More Drawer Toggle) */}
-        <button
-          onClick={() => setShowMoreDrawer(true)}
-          style={{
-            background: 'none',
-            border: 'none',
-            flex: 0.85,
-            height: '100%',
-            padding: '6px 0',
-            cursor: 'pointer',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '3px'
-          }}
-          title="Tất cả tiện ích nhà trường"
-        >
-          <div style={{
-            width: '26px',
-            height: '26px',
-            borderRadius: '50%',
-            backgroundColor: '#ecfdf5',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid #a7f3d0'
-          }}>
-            <Sparkles size={14} color="#047857" />
-          </div>
-          <span style={{ fontSize: '10px', fontWeight: '700', color: '#047857' }}>Khám phá</span>
-        </button>
       </nav>
 
       {/* 2. BOTTOM SHEET ACTION DRAWER (KHÁM PHÁ TIỆN ÍCH DÀNH CHO MOBILE) */}

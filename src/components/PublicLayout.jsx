@@ -151,8 +151,115 @@ export default function PublicLayout() {
 
   return (
     <div style={styles.portalContainer}>
-      {/* 1. Bright & Prestigious School Header Banner */}
-      <header style={styles.banner}>
+      {/* 0. NATIVE MOBILE COMPACT APP TOPBAR (<= 960px ONLY) */}
+      <header className="cbq-mobile-topbar show-on-mobile" style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 1000,
+        height: '56px',
+        backgroundColor: '#064e3b',
+        background: 'linear-gradient(135deg, #064e3b 0%, #047857 100%)',
+        borderBottom: '1.5px solid #10b981',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.15)',
+        padding: '0 14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxSizing: 'border-box'
+      }}>
+        {/* Left: School Identity */}
+        <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+          <img 
+            src="/logo.jpg" 
+            alt="THPT Cao Bá Quát" 
+            style={{ 
+              width: '36px', 
+              height: '36px', 
+              borderRadius: '8px', 
+              objectFit: 'contain', 
+              backgroundColor: '#ffffff',
+              padding: '2px',
+              border: '1px solid #34d399',
+              flexShrink: 0
+            }} 
+          />
+          <div>
+            <div style={{ fontSize: '13px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.3px', lineHeight: 1.15 }}>
+              THPT CAO BÁ QUÁT
+            </div>
+            <div style={{ fontSize: '10px', color: '#a7f3d0', fontWeight: '700', letterSpacing: '0.2px' }}>
+              Cổng Thông Tin Số 4.0
+            </div>
+          </div>
+        </Link>
+
+        {/* Right: Active Role Portal Button */}
+        <div>
+          {loggedStudent ? (
+            <Link 
+              to="/student-dashboard" 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '5px', 
+                padding: '6px 12px', 
+                backgroundColor: '#0284c7', 
+                color: '#ffffff', 
+                borderRadius: '16px', 
+                fontSize: '11.5px', 
+                fontWeight: 'bold', 
+                textDecoration: 'none',
+                boxShadow: '0 2px 6px rgba(2, 132, 199, 0.35)'
+              }}
+            >
+              <GraduationCap size={13} /> {loggedStudent.full_name?.split(' ').slice(-1)[0] || 'HS'} ({loggedStudent.student_class || 'Lớp'})
+            </Link>
+          ) : loggedTeacher ? (
+            <Link 
+              to="/teacher-dashboard" 
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '5px', 
+                padding: '6px 12px', 
+                backgroundColor: '#15803d', 
+                color: '#ffffff', 
+                borderRadius: '16px', 
+                fontSize: '11.5px', 
+                fontWeight: 'bold', 
+                textDecoration: 'none',
+                boxShadow: '0 2px 6px rgba(21, 128, 61, 0.35)'
+              }}
+            >
+              <Briefcase size={13} /> {loggedTeacher.full_name?.split(' ').slice(-1)[0] || loggedTeacher.name?.split(' ').slice(-1)[0] || 'Thầy/Cô'}
+            </Link>
+          ) : (
+            <button 
+              type="button"
+              onClick={() => window.dispatchEvent(new CustomEvent('cbq-open-auth-choice'))}
+              style={{ 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                gap: '5px', 
+                padding: '6px 12px', 
+                background: 'linear-gradient(135deg, #0284c7, #0369a1)', 
+                color: '#ffffff', 
+                border: '1px solid rgba(255, 255, 255, 0.3)', 
+                borderRadius: '18px', 
+                fontSize: '11.5px', 
+                fontWeight: 'bold', 
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.2)'
+              }}
+            >
+              <User size={13} /> Đăng Nhập
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* 1. Desktop School Header Banner */}
+      <header style={styles.banner} className="hide-on-mobile">
         <div style={styles.bannerOverlay}>
           <div className="portal-banner-content" style={styles.bannerInner}>
             
@@ -223,8 +330,8 @@ export default function PublicLayout() {
         </div>
       </header>
 
-      {/* 2. Navigation Bar */}
-      <nav style={styles.navbar} className="cbq-navbar">
+      {/* 2. Navigation Bar (Desktop) */}
+      <nav style={styles.navbar} className="cbq-navbar hide-on-mobile">
         <div style={styles.navContainer} className="cbq-nav-container">
           {/* Mobile Top Bar inside Nav: Hamburger Button + Quick Portals */}
           <div className="mobile-nav-header">
@@ -457,8 +564,8 @@ export default function PublicLayout() {
         </div>
       </nav>
 
-      {/* 3. Bright High-Contrast Ticker & Status Bar */}
-      <div style={styles.topBar} className="cbq-topbar">
+      {/* 3. Bright High-Contrast Ticker & Status Bar (Desktop) */}
+      <div style={styles.topBar} className="cbq-topbar hide-on-mobile">
         <div style={styles.dateInfo} className="cbq-date-info">
           <Radio size={14} color="#15803d" style={{ animation: 'beacon-pulse 2s infinite' }} />
           <span>{currentDate}</span>

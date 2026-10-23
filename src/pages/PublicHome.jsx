@@ -1,9 +1,21 @@
 import { useEffect, useState, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Search, MapPin, Clock, ChevronRight, Download } from 'lucide-react';
+import { 
+  Search, MapPin, Clock, ChevronRight, Download,
+  GraduationCap, Briefcase, Users, Calendar, BookOpen,
+  FileText, Award, Bike, Heart, CheckCircle2, ShieldCheck,
+  Sparkles, ExternalLink, ArrowRight, UserCheck, Key, Lock,
+  FileBadge, Compass, Video, LayoutDashboard, ChevronDown
+} from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
+import { 
+  getTeacherSession, 
+  getStudentSession, 
+  clearTeacherSession, 
+  clearStudentSession 
+} from '../services/authSessionManager';
 
 const removeAccents = (str) => {
   if (!str) return '';
@@ -59,6 +71,21 @@ export default function PublicHome() {
     show_rsvp_search: false,
     show_gold_board: false
   });
+
+  const [loggedTeacher, setLoggedTeacher] = useState(() => getTeacherSession());
+  const [loggedStudent, setLoggedStudent] = useState(() => getStudentSession());
+  const [activeGuestTab, setActiveGuestTab] = useState('parents'); // 'parents' | 'student' | 'teacher'
+
+  useEffect(() => {
+    const handleTeacherChange = (e) => setLoggedTeacher(e.detail);
+    const handleStudentChange = (e) => setLoggedStudent(e.detail);
+    window.addEventListener('cbq-teacher-auth-change', handleTeacherChange);
+    window.addEventListener('cbq-student-auth-change', handleStudentChange);
+    return () => {
+      window.removeEventListener('cbq-teacher-auth-change', handleTeacherChange);
+      window.removeEventListener('cbq-student-auth-change', handleStudentChange);
+    };
+  }, []);
   
   const calculateTimeLeft = (targetDateString) => {
     const target = targetDateString ? new Date(targetDateString) : new Date("2026-09-03T07:30:00");
@@ -287,29 +314,26 @@ export default function PublicHome() {
 
         {/* LEFT COLUMN */}
         <div className="portal-left-col" style={styles.leftCol}>
-          {/* ACADEMIC & PROFESSIONAL GUIDANCE NOTICE FOR TEACHERS, STUDENTS & PARENTS */}
-          <PortalBlock title="📌 THÔNG BÁO CHUYÊN MÔN" color="#166534" icon="📢">
-            <div style={{ marginBottom: '12px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                📖 KẾ HOẠCH GIẢNG DẠY & HỌC TẬP
+          {/* GIỚI THIỆU & THÔNG TIN CHÍNH THỨC NHÀ TRƯỜNG */}
+          <PortalBlock title="🏛️ TRƯỜNG THPT CAO BÁ QUÁT" color="#166534" icon="🌟">
+            <div style={{ marginBottom: '10px' }}>
+              <div style={{ fontSize: '13px', fontWeight: '800', color: '#166534', marginBottom: '6px' }}>
+                HỆ THỐNG ĐIỀU HÀNH & KHÔNG GIAN SỐ 4.0
               </div>
-              <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', padding: '10px 12px', backgroundColor: '#f0fdf4', borderRadius: '10px', border: '1px solid #bbf7d0', lineHeight: '1.5' }}>
-                Cổng thông tin chuyên môn tổng hợp dành cho Giáo viên, Học sinh và Phụ huynh trường THPT Cao Bá Quát.
-              </div>
+              <p style={{ margin: 0, fontSize: '12.5px', color: '#334155', lineHeight: '1.6' }}>
+                Trường THPT Cao Bá Quát — Tiên phong chuyển đổi số toàn diện trong quản lý chuyên môn, giảng dạy và phục vụ phụ huynh, học sinh.
+              </p>
             </div>
             
-            <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
-                <div><strong>Giáo viên:</strong> Nộp Kế hoạch bài dạy & Cập nhật Sổ đầu bài điện tử tuần mới.</div>
+            <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
+                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> 100% Hồ sơ & Sổ sách giáo dục số hóa
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
-                <div><strong>Học sinh:</strong> Tra cứu Thời khóa biểu, lịch thi đua & đăng ký dịch vụ trường.</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
+                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Tra cứu Thời khóa biểu & Học bạ trực tuyến
               </div>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155' }}>
-                <span style={{ color: '#166534', fontWeight: 'bold' }}>•</span>
-                <div><strong>Phụ huynh:</strong> Theo dõi lịch công tác BGH & văn bản thông báo chính thức.</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
+                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Kênh tiếp nhận ý kiến phụ huynh & HS 24/7
               </div>
             </div>
           </PortalBlock>
@@ -441,47 +465,512 @@ export default function PublicHome() {
         {/* CENTER COLUMN */}
         <div className="portal-center-col" style={styles.centerCol}>
 
-          {/* ACADEMIC OPERATION & SCHOOL SERVICES QUICK ACCESS */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1.5px solid #bbf7d0', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflow: 'hidden', marginBottom: '20px' }}>
-            <div style={{ backgroundColor: '#166534', color: '#ffffff', padding: '12px 18px', fontWeight: 'bold', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>🏫</span> CỔNG DỊCH VỤ GIÁO DỤC & VẬN HÀNH NHÀ TRƯỜNG
-            </div>
-            
-            <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
-              <a href="/lich-cong-tac" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#f0fdf4', border: '1.5px solid #22c55e', textDecoration: 'none', color: '#15803d', fontWeight: '900', fontSize: '13px', boxShadow: '0 2px 6px rgba(34, 197, 94, 0.12)' }}>
-                <span style={{ fontSize: '20px' }}>📅</span>
-                <div>
-                  <div style={{ lineHeight: '1.2' }}>Thời Khóa Biểu & Lịch Tuần</div>
-                  <div style={{ fontSize: '10px', color: '#16a34a', fontWeight: 'normal', marginTop: '2px' }}>Tra cứu Lớp & GV</div>
+          {/* ROLE-BASED SMART WORKSPACE HUB (PHÂN ĐỊNH RÕ RÀNG THEO VAI TRÒ) */}
+          {loggedStudent ? (
+            /* 1. DÀNH RIÊNG CHO HỌC SINH ĐÃ ĐĂNG NHẬP */
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #bae6fd',
+              boxShadow: '0 4px 20px rgba(2, 132, 199, 0.08)',
+              overflow: 'hidden',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 100%)',
+                color: '#ffffff',
+                padding: '14px 18px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <GraduationCap size={22} color="#ffffff" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: '900', color: '#ffffff' }}>
+                      Chào em, {loggedStudent.full_name}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#e0f2fe' }}>
+                      Học sinh lớp <strong>{loggedStudent.student_class || 'CBQ'}</strong> • Năm học 2025 - 2026
+                    </div>
+                  </div>
                 </div>
-              </a>
 
-              <a href="/to-chuyen-mon" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', textDecoration: 'none', color: '#1d4ed8', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>👨‍🏫</span>
-                <span>Đội Ngũ & Chuyên Môn</span>
-              </a>
+                <Link
+                  to="/student-dashboard"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    backgroundColor: '#ffffff',
+                    color: '#0369a1',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  Cổng Em <ArrowRight size={13} />
+                </Link>
+              </div>
 
-              <a href="/van-ban" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#faf5ff', border: '1px solid #e9d5ff', textDecoration: 'none', color: '#7e22ce', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>📜</span>
-                <span>Văn Bản - Thông Báo</span>
-              </a>
+              <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '10px' }}>
+                <Link to="/lich-cong-tac?tab=class_tkb" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
+                  <span style={{ fontSize: '22px' }}>📅</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>TKB Lớp Em</div>
+                    <div style={{ fontSize: '10.5px', color: '#16a34a' }}>Tiết học & Phòng học</div>
+                  </div>
+                </Link>
 
-              <a href="/cham-diem-thi-dua" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#fffbebfb', border: '1px solid #fef08a', textDecoration: 'none', color: '#b45309', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>📋</span>
-                <span>Thi Đua Trực Tuần</span>
-              </a>
+                <Link to="/hoc-sinh/so-dau-bai" style={styles.actionCard('#fffbeb', '#f59e0b', '#b45309')}>
+                  <span style={{ fontSize: '22px' }}>📖</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Sổ Đầu Bài Lớp</div>
+                    <div style={{ fontSize: '10.5px', color: '#d97706' }}>Tiến độ ghi sổ</div>
+                  </div>
+                </Link>
 
-              <a href="/dang-ky-xe-may" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#fff1f2', border: '1px solid #fecdd3', textDecoration: 'none', color: '#be123c', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>🛵</span>
-                <span>Đăng Ký Xe Máy HS</span>
-              </a>
+                <Link to="/hoc-sinh/kiem-tra-danh-gia" style={styles.actionCard('#eff6ff', '#3b82f6', '#1d4ed8')}>
+                  <span style={{ fontSize: '22px' }}>📝</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Phòng Thi 2018</div>
+                    <div style={{ fontSize: '10.5px', color: '#3b82f6' }}>Làm bài kiểm tra</div>
+                  </div>
+                </Link>
 
-              <a href="/gop-y" style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '10px', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', textDecoration: 'none', color: '#0f766e', fontWeight: 'bold', fontSize: '13px' }}>
-                <span style={{ fontSize: '20px' }}>✍️</span>
-                <span>Góp Ý & Đề Án</span>
-              </a>
+                <Link to="/hoc-lieu-so" style={styles.actionCard('#faf5ff', '#a855f7', '#7e22ce')}>
+                  <span style={{ fontSize: '22px' }}>📺</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Học Liệu & Video</div>
+                    <div style={{ fontSize: '10.5px', color: '#9333ea' }}>Bài giảng số 4.0</div>
+                  </div>
+                </Link>
+
+                <Link to="/cham-diem-thi-dua" style={styles.actionCard('#f0fdf4', '#16a34a', '#14532d')}>
+                  <span style={{ fontSize: '22px' }}>🏆</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Thi Đua Tuần</div>
+                    <div style={{ fontSize: '10.5px', color: '#16a34a' }}>Xếp hạng nề nếp</div>
+                  </div>
+                </Link>
+
+                <Link to="/hom-thu-hoc-sinh" style={styles.actionCard('#fff1f2', '#f43f5e', '#be123c')}>
+                  <span style={{ fontSize: '22px' }}>💌</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Tâm Lý & DASS-21</div>
+                    <div style={{ fontSize: '10.5px', color: '#e11d48' }}>Cố vấn học đường</div>
+                  </div>
+                </Link>
+
+                <Link to="/dang-ky-xe" style={styles.actionCard('#fff7ed', '#ea580c', '#c2410c')}>
+                  <span style={{ fontSize: '22px' }}>🛵</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Vé Xe Của Em</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Quản lý vé xe</div>
+                  </div>
+                </Link>
+
+                <Link to="/tra-cuu-van-bang" style={styles.actionCard('#ecfeff', '#06b6d4', '#0e7490')}>
+                  <span style={{ fontSize: '22px' }}>📜</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Học Bạ & Bằng Số</div>
+                    <div style={{ fontSize: '10.5px', color: '#0891b2' }}>Tra cứu hồ sơ cá nhân</div>
+                  </div>
+                </Link>
+              </div>
             </div>
-          </div>
+          ) : loggedTeacher ? (
+            /* 2. DÀNH RIÊNG CHO GIÁO VIÊN ĐÃ ĐĂNG NHẬP */
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #bbf7d0',
+              boxShadow: '0 4px 20px rgba(22, 101, 52, 0.08)',
+              overflow: 'hidden',
+              marginBottom: '20px'
+            }}>
+              <div style={{
+                background: 'linear-gradient(135deg, #14532d 0%, #166534 100%)',
+                color: '#ffffff',
+                padding: '14px 18px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '10px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <Briefcase size={22} color="#ffffff" />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: '900', color: '#ffffff' }}>
+                      Kính chào Thầy/Cô {loggedTeacher.full_name || loggedTeacher.name}
+                    </div>
+                    <div style={{ fontSize: '11.5px', color: '#bbf7d0' }}>
+                      {loggedTeacher.department || 'Tổ Chuyên Môn'} • Năm học 2025 - 2026
+                    </div>
+                  </div>
+                </div>
+
+                <Link
+                  to="/teacher-dashboard"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '6px 12px',
+                    backgroundColor: '#ffffff',
+                    color: '#15803d',
+                    borderRadius: '20px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
+                  }}
+                >
+                  Cổng Thầy/Cô <ArrowRight size={13} />
+                </Link>
+              </div>
+
+              <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '10px' }}>
+                <Link to="/lich-cong-tac?tab=teacher_tkb" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
+                  <span style={{ fontSize: '22px' }}>📅</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Báo Giảng Của Tôi</div>
+                    <div style={{ fontSize: '10.5px', color: '#16a34a' }}>Lịch dạy tuần này</div>
+                  </div>
+                </Link>
+
+                <Link to="/hoc-sinh/so-dau-bai" style={styles.actionCard('#eff6ff', '#3b82f6', '#1d4ed8')}>
+                  <span style={{ fontSize: '22px' }}>📖</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Sổ Đầu Bài Hôm Nay</div>
+                    <div style={{ fontSize: '10.5px', color: '#3b82f6' }}>Ký số & ghi sổ điện tử</div>
+                  </div>
+                </Link>
+
+                <Link to="/admin/department-drives" style={styles.actionCard('#faf5ff', '#a855f7', '#7e22ce')}>
+                  <span style={{ fontSize: '22px' }}>📂</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Kế Hoạch 5512</div>
+                    <div style={{ fontSize: '10.5px', color: '#9333ea' }}>Kho giáo án của tổ</div>
+                  </div>
+                </Link>
+
+                <Link to="/giao-vien/ra-de-thi" style={styles.actionCard('#fff1f2', '#f43f5e', '#be123c')}>
+                  <span style={{ fontSize: '22px' }}>✏️</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Ra Đề & Trộn Đề</div>
+                    <div style={{ fontSize: '10.5px', color: '#e11d48' }}>Ngân hàng đề thi</div>
+                  </div>
+                </Link>
+
+                <Link to="/cham-diem-thi-dua" style={styles.actionCard('#fffbeb', '#f59e0b', '#b45309')}>
+                  <span style={{ fontSize: '22px' }}>📋</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Chấm Thi Đua Tuần</div>
+                    <div style={{ fontSize: '10.5px', color: '#d97706' }}>Theo dõi nề nếp lớp</div>
+                  </div>
+                </Link>
+
+                <Link to="/to-chuyen-mon" style={styles.actionCard('#ecfeff', '#06b6d4', '#0e7490')}>
+                  <span style={{ fontSize: '22px' }}>🌳</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Tổ Chuyên Môn</div>
+                    <div style={{ fontSize: '10.5px', color: '#0891b2' }}>Cây phân cấp 4 tầng</div>
+                  </div>
+                </Link>
+
+                <Link to="/can-chinh-nghi-dinh-30" style={styles.actionCard('#f8fafc', '#64748b', '#334155')}>
+                  <span style={{ fontSize: '22px' }}>📑</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Nghị Định 30</div>
+                    <div style={{ fontSize: '10.5px', color: '#64748b' }}>Chuẩn hóa thể thức</div>
+                  </div>
+                </Link>
+
+                <Link to="/admin/registrations" style={styles.actionCard('#f0fdfa', '#14b8a6', '#0f766e')}>
+                  <span style={{ fontSize: '22px' }}>🎯</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Điểm Danh CLB</div>
+                    <div style={{ fontSize: '10.5px', color: '#0f766e' }}>Theo dõi học sinh</div>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            /* 3. DÀNH CHO PHỤ HUYNH & CỘNG ĐỒNG (CHƯA ĐĂNG NHẬP) - PHÂN TÁCH 3 CỔNG */
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #cbd5e1',
+              boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+              overflow: 'hidden',
+              marginBottom: '20px'
+            }}>
+              {/* Role Switcher Tabs */}
+              <div style={{
+                display: 'flex',
+                backgroundColor: '#f1f5f9',
+                borderBottom: '2px solid #e2e8f0',
+                padding: '4px',
+                gap: '4px'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => setActiveGuestTab('parents')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: activeGuestTab === 'parents' ? '#ffffff' : 'transparent',
+                    color: activeGuestTab === 'parents' ? '#15803d' : '#64748b',
+                    fontWeight: activeGuestTab === 'parents' ? '900' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: activeGuestTab === 'parents' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>👨‍👩‍👧</span> Phụ Huynh & Cộng Đồng
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveGuestTab('student')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: activeGuestTab === 'student' ? '#ffffff' : 'transparent',
+                    color: activeGuestTab === 'student' ? '#0284c7' : '#64748b',
+                    fontWeight: activeGuestTab === 'student' ? '900' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: activeGuestTab === 'student' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>🧑‍🎓</span> Học Sinh
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveGuestTab('teacher')}
+                  style={{
+                    flex: 1,
+                    padding: '10px 8px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    backgroundColor: activeGuestTab === 'teacher' ? '#ffffff' : 'transparent',
+                    color: activeGuestTab === 'teacher' ? '#7e22ce' : '#64748b',
+                    fontWeight: activeGuestTab === 'teacher' ? '900' : '600',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: activeGuestTab === 'teacher' ? '0 2px 8px rgba(0,0,0,0.08)' : 'none',
+                    transition: 'all 0.2s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>👨‍🏫</span> Giáo Viên
+                </button>
+              </div>
+
+              {/* Tab Content 1: Phụ Huynh & Cộng Đồng */}
+              {activeGuestTab === 'parents' && (
+                <div style={{ padding: '14px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                    <Link to="/tra-cuu-van-bang" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
+                      <span style={{ fontSize: '22px' }}>📜</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Tra Cứu Bằng Số</div>
+                        <div style={{ fontSize: '10.5px', color: '#16a34a' }}>Bằng tốt nghiệp & học bạ</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/lich-cong-tac" style={styles.actionCard('#eff6ff', '#3b82f6', '#1d4ed8')}>
+                      <span style={{ fontSize: '22px' }}>📅</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Lịch Công Tác BGH</div>
+                        <div style={{ fontSize: '10.5px', color: '#3b82f6' }}>Kế hoạch tuần & tháng</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/cham-diem-thi-dua" style={styles.actionCard('#fffbeb', '#f59e0b', '#b45309')}>
+                      <span style={{ fontSize: '22px' }}>📋</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Thi Đua 34 Lớp</div>
+                        <div style={{ fontSize: '10.5px', color: '#d97706' }}>Nề nếp học sinh</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/van-ban" style={styles.actionCard('#faf5ff', '#a855f7', '#7e22ce')}>
+                      <span style={{ fontSize: '22px' }}>📜</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Văn Bản - Thông Báo</div>
+                        <div style={{ fontSize: '10.5px', color: '#9333ea' }}>Thông báo từ nhà trường</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/to-chuyen-mon" style={styles.actionCard('#ecfeff', '#06b6d4', '#0e7490')}>
+                      <span style={{ fontSize: '22px' }}>👨‍🏫</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>8 Tổ Chuyên Môn</div>
+                        <div style={{ fontSize: '10.5px', color: '#0891b2' }}>Đội ngũ sư phạm</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/hom-thu-hoc-sinh" style={styles.actionCard('#fff1f2', '#f43f5e', '#be123c')}>
+                      <span style={{ fontSize: '22px' }}>💌</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Hòm Thư Góp Ý</div>
+                        <div style={{ fontSize: '10.5px', color: '#e11d48' }}>Gửi phản ánh tới BGH</div>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content 2: Học Sinh */}
+              {activeGuestTab === 'student' && (
+                <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                  <div style={{ maxWidth: '420px', margin: '0 auto' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '6px' }}>🧑‍🎓</div>
+                    <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '900', color: '#0369a1' }}>
+                      CỔNG KHÔNG GIAN SỐ DÀNH CHO HỌC SINH
+                    </h3>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#64748b' }}>
+                      Đăng nhập bằng mã học sinh hoặc CCCD để xem Thời khóa biểu riêng của lớp, làm bài kiểm tra và điểm danh câu lạc bộ.
+                    </p>
+
+                    <Link
+                      to="/dang-nhap-hoc-sinh"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '12px 20px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: '#ffffff',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                        marginBottom: '14px'
+                      }}
+                    >
+                      <Key size={16} /> Đăng Nhập Cổng Học Sinh
+                    </Link>
+
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <Link to="/lich-cong-tac?tab=class_tkb" style={{ fontSize: '12px', color: '#0284c7', textDecoration: 'none', fontWeight: '600' }}>
+                        📅 Xem TKB Lớp
+                      </Link>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <Link to="/hoc-lieu-so" style={{ fontSize: '12px', color: '#0284c7', textDecoration: 'none', fontWeight: '600' }}>
+                        📺 Trạm Học Liệu Số
+                      </Link>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <Link to="/dang-ky-xe-may" style={{ fontSize: '12px', color: '#0284c7', textDecoration: 'none', fontWeight: '600' }}>
+                        🛵 Đăng Ký Xe Máy
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Tab Content 3: Giáo Viên */}
+              {activeGuestTab === 'teacher' && (
+                <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+                  <div style={{ maxWidth: '420px', margin: '0 auto' }}>
+                    <div style={{ fontSize: '32px', marginBottom: '6px' }}>👨‍🏫</div>
+                    <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: '900', color: '#15803d' }}>
+                      CỔNG QUẢN LÝ NGHIỆP VỤ & SƯ PHẠM
+                    </h3>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '12.5px', color: '#64748b' }}>
+                      Dành cho Cán bộ, Giáo viên & Nhân viên nhà trường quản lý lịch báo giảng, sổ đầu bài điện tử, duyệt giáo án và ra đề thi.
+                    </p>
+
+                    <Link
+                      to="/dang-nhap-giao-vien"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        padding: '12px 20px',
+                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        color: '#ffffff',
+                        borderRadius: '12px',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                        textDecoration: 'none',
+                        boxShadow: '0 4px 14px rgba(22, 163, 74, 0.35)',
+                        marginBottom: '14px'
+                      }}
+                    >
+                      <Key size={16} /> Đăng Nhập Cổng Giáo Viên
+                    </Link>
+
+                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                      <Link to="/lich-cong-tac?tab=teacher_tkb" style={{ fontSize: '12px', color: '#15803d', textDecoration: 'none', fontWeight: '600' }}>
+                        📅 Lịch Báo Giảng
+                      </Link>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <Link to="/to-chuyen-mon" style={{ fontSize: '12px', color: '#15803d', textDecoration: 'none', fontWeight: '600' }}>
+                        🌳 8 Tổ Chuyên Môn
+                      </Link>
+                      <span style={{ color: '#cbd5e1' }}>•</span>
+                      <Link to="/admin" style={{ fontSize: '12px', color: '#e11d48', textDecoration: 'none', fontWeight: '600' }}>
+                        🛡️ Cổng Quản Trị BGH
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
 
           {/* WIDGET LỊCH CÔNG TÁC & THỜI KHÓA BIỂU TUẦN TRỰC TUYẾN */}
@@ -1125,6 +1614,21 @@ function PortalBlock({ title, color = '#166534', icon, children }) {
 }
 
 const styles = {
+  // Card Helper
+  actionCard: (bg, border, color) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '12px 14px',
+    borderRadius: '12px',
+    backgroundColor: bg,
+    border: `1.5px solid ${border}`,
+    textDecoration: 'none',
+    color: color,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+    transition: 'all 0.15s ease'
+  }),
+
   // Columns
   leftCol: { display: 'flex', flexDirection: 'column', gap: '15px' },
   centerCol: { display: 'flex', flexDirection: 'column', gap: '15px' },

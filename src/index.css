@@ -1043,7 +1043,34 @@ input, select, textarea, button {
   }
 }
 
+/* Chatbot Trigger Position */
+.cbq-chatbot-trigger {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+}
+
 @media (max-width: 960px) {
+  .cbq-chatbot-trigger {
+    bottom: calc(76px + env(safe-area-inset-bottom, 12px)) !important;
+    right: 14px !important;
+  }
+  .cbq-chatbot-trigger button {
+    width: 50px !important;
+    height: 50px !important;
+  }
+  .cbq-chatbot-window {
+    bottom: calc(70px + env(safe-area-inset-bottom, 10px)) !important;
+    right: 10px !important;
+    left: 10px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    height: calc(85vh - 70px) !important;
+    max-height: calc(85vh - 70px) !important;
+    border-radius: 16px !important;
+  }
+
   .cbq-mobile-bottom-nav {
     display: flex !important;
   }
@@ -1123,6 +1150,14 @@ input, select, textarea, button {
 
   .show-on-mobile {
     display: block !important;
+  }
+
+  .cbq-mobile-topbar,
+  .show-on-mobile.cbq-mobile-topbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    height: 56px !important;
   }
 
   /* Admin Layout on Mobile */

@@ -333,14 +333,14 @@ export default function ChatbotWidget() {
   // Nút tròn nổi khi đóng widget
   if (!isOpen) {
     return (
-      <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999 }}>
+      <div className="cbq-chatbot-trigger">
         <button 
           onClick={() => setIsOpen(true)}
           title="Mở Trợ lý AI & Cố vấn Tâm lý Học đường CBQ"
           style={{
             position: 'relative',
-            width: '62px',
-            height: '62px',
+            width: '56px',
+            height: '56px',
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #8b5cf6 100%)',
             color: 'white',
@@ -359,14 +359,14 @@ export default function ChatbotWidget() {
             e.currentTarget.style.transform = 'scale(1) translateY(0)';
           }}
         >
-          <Brain size={28} style={{ color: '#ffffff' }} />
+          <Brain size={26} style={{ color: '#ffffff' }} />
           <span style={{
             position: 'absolute',
             top: '-2px',
             right: '-2px',
             backgroundColor: '#10b981',
-            width: '14px',
-            height: '14px',
+            width: '13px',
+            height: '13px',
             borderRadius: '50%',
             border: '2px solid white',
             boxShadow: '0 0 8px rgba(16, 185, 129, 0.6)'
@@ -381,7 +381,7 @@ export default function ChatbotWidget() {
   const currentPrompts = QUICK_PROMPTS.filter(p => p.topic === selectedTopic);
 
   return (
-    <div style={{
+    <div className="cbq-chatbot-window" style={{
       position: 'fixed',
       bottom: '24px',
       right: '24px',
