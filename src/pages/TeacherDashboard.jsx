@@ -4,7 +4,7 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart, Video, Plus
+  Compass, Heart, Video, Plus, Trophy, Gamepad2
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -1008,6 +1008,95 @@ export default function TeacherDashboard() {
                       }}
                     >
                       <Plus size={15} /> + Đóng Góp Video
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARD 8: 🎮 ĐẤU TRƯỜNG & TRÒ CHƠI LỚP HỌC (INTERACTIVE CLASSROOM GAMES) */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1.5px solid #fde047',
+                  boxShadow: '0 6px 16px rgba(245,158,11,0.08)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #fefce8 100%)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fef3c7',
+                        color: '#b45309',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Trophy size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fef08a',
+                        color: '#854d0e',
+                        border: '1px solid #fde047'
+                      }}>
+                        Gamification • CSDL Live
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Đấu Trường & Trò Chơi Giảng Dạy
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      4 Chế độ tương tác lớp học: Đấu trường tri thức, Vòng quay may mắn (bốc thăm HS lớp), Đại chiến 4 tổ & Lật mảnh ghép bí mật. Dữ liệu nạp trực tiếp từ Ngân hàng đề & Danh sách HS.
+                    </p>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => navigate('/giao-vien/tro-choi-lop-hoc')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#ea580c',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 3px 10px rgba(234,88,12,0.25)',
+                        transition: 'background 0.2s'
+                      }}
+                    >
+                      <Trophy size={15} /> Mở Đấu Trường
+                    </button>
+                    <button
+                      onClick={() => navigate('/giao-vien/tro-choi-lop-hoc')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#ffffff',
+                        color: '#c2410c',
+                        border: '1.5px solid #fdba74',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Sparkles size={15} /> Vòng Quay HS
                     </button>
                   </div>
                 </div>

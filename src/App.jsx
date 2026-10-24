@@ -99,6 +99,7 @@ const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/Teacher
 const TeacherHomeroomStudents = lazy(() => import('./pages/teacher_features/TeacherHomeroomStudents'));
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
+const ClassroomInteractiveGames = lazy(() => import('./pages/teacher_features/ClassroomInteractiveGames'));
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -196,6 +197,9 @@ function App() {
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
             <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/giao-vien/tro-choi-lop-hoc" element={<TeacherRoute><ClassroomInteractiveGames /></TeacherRoute>} />
+            <Route path="/tro-choi-hoc-tap" element={<ClassroomInteractiveGames />} />
+            <Route path="/teacher/games" element={<TeacherRoute><ClassroomInteractiveGames /></TeacherRoute>} />
             <Route path="/giao-vien/danh-gia-tt22" element={<TeacherRoute><TeacherAssessmentTT22 /></TeacherRoute>} />
             <Route path="/giao-vien/quan-ly-to-chuyen-mon" element={<TeacherRoute><TeacherDepartmentManagement /></TeacherRoute>} />
             <Route path="/giao-vien/danh-gia-kpi-to-chuyen-mon" element={<TeacherRoute><TeacherKPIEvaluation /></TeacherRoute>} />
