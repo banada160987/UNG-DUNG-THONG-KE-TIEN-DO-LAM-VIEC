@@ -680,10 +680,10 @@ export default function PublicFeedbackSystem() {
       )}
 
       {/* GRID LAYOUT: FORM & LIST OF SUBMITTED FEEDBACK */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '25px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '20px', alignItems: 'start' }}>
         
         {/* COL 1: FORM NỘP GÓP Ý CHUẨN */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1.5px solid #cbd5e1', boxShadow: '0 6px 18px rgba(0,0,0,0.04)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '2px solid #f1f5f9', paddingBottom: '12px', marginBottom: '20px' }}>
             <FileEditIcon size={22} color="#166534" />
             <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#166534' }}>
@@ -728,7 +728,7 @@ export default function PublicFeedbackSystem() {
                 />
               </div>
 
-              <div style={{ gridTemplateColumns: '1fr 1fr', display: 'grid', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', display: 'grid', gap: '12px', marginBottom: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
                     3. Số Điện Thoại *
@@ -881,7 +881,7 @@ export default function PublicFeedbackSystem() {
                       </div>
 
                       {/* 🌟 CHỌN NHANH VĂN BẢN CON TỪ DROPDOWN HOẶC NHẬP TỰ DO */}
-                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '10px', marginBottom: '10px' }}>
                         <div>
                           <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#166534', marginBottom: '4px' }}>
                             Tên dự thảo văn bản con cần góp ý: *

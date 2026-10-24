@@ -461,7 +461,7 @@ export default function ClassJournal() {
       </div>
 
       {/* FILTER TABS BY DAY */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
+      <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', marginBottom: '16px', overflowX: 'auto', paddingBottom: '4px' }}>
         <button
           onClick={() => setSelectedDayFilter('ALL')}
           style={{

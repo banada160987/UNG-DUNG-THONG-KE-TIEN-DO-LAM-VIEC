@@ -101,78 +101,80 @@ export default function PublicDocs() {
       </div>
       
       {loading ? <p>Đang tải danh sách văn bản...</p> : (
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th style={styles.th}>STT</th>
-              <th style={styles.th}>Ngày ban hành</th>
-              <th style={styles.th}>Tên văn bản / Thông báo</th>
-              <th style={styles.th}>Tệp đính kèm</th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* THÊM DÒNG QUYẾT ĐỊNH QUY TẮC AI (CHỈ HIỂN THỊ KHI ĐÃ BAN HÀNH) */}
-            {aiRulesPublished && (
-              <tr style={{ background: '#f0f9ff' }}>
-                <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#0284c7' }}>📌</td>
-                <td style={{ ...styles.td, fontWeight: 'bold', color: '#0284c7' }}>10/09/2026</td>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%', borderRadius: '10px' }}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>STT</th>
+                <th style={styles.th}>Ngày ban hành</th>
+                <th style={styles.th}>Tên văn bản / Thông báo</th>
+                <th style={styles.th}>Tệp đính kèm</th>
+              </tr>
+            </thead>
+            <tbody>
+              {/* THÊM DÒNG QUYẾT ĐỊNH QUY TẮC AI (CHỈ HIỂN THỊ KHI ĐÃ BAN HÀNH) */}
+              {aiRulesPublished && (
+                <tr style={{ background: '#f0f9ff' }}>
+                  <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#0284c7' }}>📌</td>
+                  <td style={{ ...styles.td, fontWeight: 'bold', color: '#0284c7' }}>10/09/2026</td>
+                  <td style={styles.td}>
+                    <strong style={{ color: '#0369a1' }}>Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường năm học 2026 - 2027</strong>
+                    <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                      Ban hành theo hướng dẫn của Bộ GD&ĐT (12 tiết cốt lõi/năm), Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân & Quy tắc trung thực học thuật.
+                    </div>
+                  </td>
+                  <td style={styles.td}>
+                    <button 
+                      onClick={() => exportAiRulesToWordDecree30()}
+                      style={{ color: '#0284c7', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
+                    >
+                      📥 Tải Word (NĐ 30)
+                    </button>
+                  </td>
+                </tr>
+              )}
+
+              {/* THÊM DÒNG NỔI BẬT CÔNG VĂN QUỸ HỌC BỔNG */}
+              <tr style={{ background: '#f0fdf4' }}>
+                <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#166534' }}>📌</td>
+                <td style={{ ...styles.td, fontWeight: 'bold', color: '#166534' }}>12/03/2026</td>
                 <td style={styles.td}>
-                  <strong style={{ color: '#0369a1' }}>Quyết định số 158/QĐ-THPTCBQ: Ban hành Quy tắc sử dụng Trí tuệ Nhân tạo (AI) trong nhà trường năm học 2026 - 2027</strong>
+                  <strong style={{ color: '#166534' }}>Công văn số 409/SGDĐT-VP & Kế hoạch 53/KH-TrTHPTCBQ: Lấy ý kiến góp ý dự thảo Đề án Thành lập Quỹ Học bổng "Chắp cánh ước mơ tuổi học trò"</strong>
                   <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                    Ban hành theo hướng dẫn của Bộ GD&ĐT (12 tiết cốt lõi/năm), Nghị định 13/2023/NĐ-CP về bảo vệ dữ liệu cá nhân & Quy tắc trung thực học thuật.
+                    Đơn vị nhận: BCH Đảng ủy, BTV Đoàn trường, Các Tổ chuyên môn & Tổ Văn phòng (Hạn chót: 19/8/2026).
                   </div>
                 </td>
                 <td style={styles.td}>
-                  <button 
-                    onClick={() => exportAiRulesToWordDecree30()}
-                    style={{ color: '#0284c7', background: 'none', border: 'none', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', padding: 0, fontSize: '13px' }}
-                  >
-                    📥 Tải Word (NĐ 30)
-                  </button>
+                  <Link to="/gop-y-quy-hoc-bong" style={{ color: '#166534', fontWeight: 'bold', textDecoration: 'none' }}>
+                    ✍️ Gửi Góp Ý
+                  </Link>
                 </td>
               </tr>
-            )}
 
-            {/* THÊM DÒNG NỔI BẬT CÔNG VĂN QUỸ HỌC BỔNG */}
-            <tr style={{ background: '#f0fdf4' }}>
-              <td style={{ ...styles.td, textAlign: 'center', fontWeight: 'bold', color: '#166534' }}>📌</td>
-              <td style={{ ...styles.td, fontWeight: 'bold', color: '#166534' }}>12/03/2026</td>
-              <td style={styles.td}>
-                <strong style={{ color: '#166534' }}>Công văn số 409/SGDĐT-VP & Kế hoạch 53/KH-TrTHPTCBQ: Lấy ý kiến góp ý dự thảo Đề án Thành lập Quỹ Học bổng "Chắp cánh ước mơ tuổi học trò"</strong>
-                <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
-                  Đơn vị nhận: BCH Đảng ủy, BTV Đoàn trường, Các Tổ chuyên môn & Tổ Văn phòng (Hạn chót: 19/8/2026).
-                </div>
-              </td>
-              <td style={styles.td}>
-                <Link to="/gop-y-quy-hoc-bong" style={{ color: '#166534', fontWeight: 'bold', textDecoration: 'none' }}>
-                  ✍️ Gửi Góp Ý
-                </Link>
-              </td>
-            </tr>
-
-            {docs.map((d, index) => (
-              <tr key={d.id}>
-                <td style={{ ...styles.td, textAlign: 'center' }}>{index + 2}</td>
-                <td style={styles.td}>{new Date(d.published_date).toLocaleDateString('vi-VN')}</td>
-                <td style={styles.td}><strong>{d.title}</strong></td>
-                <td style={styles.td}>
-                  {d.file_url ? (
-                    <a href={d.file_url} target="_blank" rel="noreferrer" style={{color: '#166534', fontWeight: 'bold', textDecoration: 'none'}}>
-                      Tải về / Xem
-                    </a>
-                  ) : '-'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+              {docs.map((d, index) => (
+                <tr key={d.id}>
+                  <td style={{ ...styles.td, textAlign: 'center' }}>{index + 2}</td>
+                  <td style={styles.td}>{new Date(d.published_date).toLocaleDateString('vi-VN')}</td>
+                  <td style={styles.td}><strong>{d.title}</strong></td>
+                  <td style={styles.td}>
+                    {d.file_url ? (
+                      <a href={d.file_url} target="_blank" rel="noreferrer" style={{color: '#166534', fontWeight: 'bold', textDecoration: 'none'}}>
+                        Tải về / Xem
+                      </a>
+                    ) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
 }
 
 const styles = {
-  container: { maxWidth: '1050px', margin: '30px auto', padding: '25px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
+  container: { maxWidth: '1050px', margin: '16px auto', padding: '16px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #166534', paddingBottom: '10px', marginBottom: '20px' },
   title: { color: '#166534', margin: 0, fontSize: '22px' },
   table: { width: '100%', borderCollapse: 'collapse' },

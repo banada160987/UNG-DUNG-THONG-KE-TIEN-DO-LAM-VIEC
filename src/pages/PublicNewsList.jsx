@@ -124,10 +124,10 @@ export default function PublicNewsList() {
 }
 
 const styles = {
-  container: { maxWidth: '1000px', margin: '40px auto', padding: '30px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' },
+  container: { maxWidth: '1000px', margin: '16px auto', padding: '16px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #166534', paddingBottom: '10px', marginBottom: '20px' },
-  title: { color: '#166534', margin: 0, fontSize: '24px' },
-  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '20px' },
+  title: { color: '#166534', margin: 0, fontSize: '22px' },
+  grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' },
   card: { border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', transition: 'all 0.2s ease', background: 'white' },
   img: { width: '100%', height: '160px', objectFit: 'cover' },
   cardTitle: { padding: '12px 12px 6px', margin: 0, fontSize: '15px', color: '#1e293b', fontWeight: 'bold', lineHeight: '1.4' },

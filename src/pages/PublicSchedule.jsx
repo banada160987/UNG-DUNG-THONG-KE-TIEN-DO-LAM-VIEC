@@ -1659,6 +1659,7 @@ export default function PublicSchedule() {
                   )}
 
                   {/* SCHEDULE TABLE */}
+                  <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch', width: '100%' }}>
                   <table style={styles.table}>
                     <thead>
                       <tr style={styles.tableHeadRow}>
@@ -1712,6 +1713,7 @@ export default function PublicSchedule() {
                       )}
                     </tbody>
                   </table>
+                  </div>
 
                   {/* NOTE & FOOTER */}
                   <div style={styles.noteBox}>
@@ -3045,8 +3047,8 @@ export default function PublicSchedule() {
             {/* CONTROL TOOLBAR (NO-PRINT) */}
             <div className="no-print" style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '20px', backgroundColor: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
               
-              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
-              <div style={{
+              {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB (ẨN TRÊN MOBILE) */}
+              <div className="hide-on-mobile" style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -3614,8 +3616,8 @@ export default function PublicSchedule() {
               </div>
             </div>
 
-            {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB */}
-            <div className="no-print" style={{
+            {/* THẺ THÔNG TIN NGÀY ÁP DỤNG TKB (ẨN TRÊN MOBILE) */}
+            <div className="no-print hide-on-mobile" style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',

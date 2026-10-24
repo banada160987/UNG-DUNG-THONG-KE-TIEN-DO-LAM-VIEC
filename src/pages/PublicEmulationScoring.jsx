@@ -255,7 +255,7 @@ export default function PublicEmulationScoring() {
         </div>
 
         {/* 2. BỐ CỤC CHÍNH (2 CỘT: FORM CHẤM ĐIỂM & NHẬT KÝ HÔM NAY) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 350px), 1fr))', gap: '20px' }}>
           
           {/* CỘT TRÁI: FORM GHI NHẬN */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '18px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 4px 16px rgba(0,0,0,0.03)' }}>
