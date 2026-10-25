@@ -28,6 +28,8 @@ import {
 } from '../utils/decree30ScheduleWord';
 import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
 import { downloadTeacherScheduleIcs } from '../utils/icalExporter';
+import AiStatusBadge from '../components/AiStatusBadge';
+import AiSettingsModal from '../components/AiSettingsModal';
 
 /**
  * Trích xuất các sự kiện / nhiệm vụ trọng tâm thực tế của tuần học
@@ -475,6 +477,7 @@ export default function PublicSchedule() {
   const [loading, setLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState('10A01');
   const [selectedTeacher, setSelectedTeacher] = useState('');
+  const [showAiSettingsModal, setShowAiSettingsModal] = useState(false);
 
   // Metadata Thông Tin Ngày Áp Dụng TKB
   const [tkbMetadata, setTkbMetadata] = useState(() => {
@@ -2375,7 +2378,8 @@ export default function PublicSchedule() {
                       </select>
                     </div>
 
-                    <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <AiStatusBadge onOpenSettings={() => setShowAiSettingsModal(true)} />
                       <button
                         onClick={handleExportTeacherIcs}
                         style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}
@@ -2493,6 +2497,7 @@ export default function PublicSchedule() {
                       Tiện ích trợ giảng mới khi tra cứu Thời khóa biểu
                     </div>
                     <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.5' }}>
+                      • <strong>Trợ giảng AI & Soạn đề tự động:</strong> Bấm nút <code>AI</code> trên thanh công cụ để gắn khóa cá nhân miễn phí và tự động tạo câu hỏi khởi động theo bài dạy.<br />
                       • <strong>Vào nhanh tiết dạy (1 lần bấm):</strong> Bấm vào bất kỳ ô tiết học nào trên bảng để mở phòng Trò chơi lớp học, Ký sổ đầu bài hoặc xem học liệu.<br />
                       • <strong>Tìm đồng nghiệp đổi giờ:</strong> Tìm nhanh Thầy/Cô cùng tổ đang trống tiết khi cần báo dạy thay.<br />
                       • <strong>Lưu lịch vào điện thoại:</strong> Tải tệp lịch có chuông báo tự động trước 15 phút trước mỗi tiết học (Sáng 07:00–11:05, Chiều 13:00–17:05).
@@ -5399,6 +5404,9 @@ export default function PublicSchedule() {
           </div>
         </div>
       )}
+
+      {/* AI BYOK Settings Modal */}
+      <AiSettingsModal isOpen={showAiSettingsModal} onClose={() => setShowAiSettingsModal(false)} />
 
     </div>
   );

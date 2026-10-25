@@ -15,6 +15,13 @@ import {
 } from '../../services/smartAssessmentService';
 import ExcelGradeSyncModal from '../../components/ExcelGradeSyncModal';
 import { getTeacherSession } from '../../services/authSessionManager';
+import AiStatusBadge from '../../components/AiStatusBadge';
+import AiSettingsModal from '../../components/AiSettingsModal';
+import { 
+  generate2025ExamQuestionsAi, 
+  parseRawExamQuestionsAi, 
+  getStoredAiKey 
+} from '../../services/aiAssistantService';
 
 // Đồ thị hàm số bậc 3 y = x^3 - 3x + 2 minh họa chuẩn giáo khoa GDPT 2018
 export const CUBIC_GRAPH_SVG = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 220" width="320" height="220" style="background:%23ffffff;border-radius:8px;"><defs><marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="%23334155"/></marker></defs><line x1="20" y1="120" x2="300" y2="120" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="302" y="125" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">x</text><line x1="160" y1="200" x2="160" y2="20" stroke="%23334155" stroke-width="1.5" marker-end="url(%23arrow)"/><text x="165" y="22" font-family="Times New Roman, serif" font-size="14" font-style="italic" fill="%23334155">y</text><text x="145" y="135" font-family="Times New Roman, serif" font-size="13" font-style="italic" fill="%2364748b">O</text><line x1="110" y1="117" x2="110" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="102" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">-1</text><line x1="210" y1="117" x2="210" y2="123" stroke="%23334155" stroke-width="1.5"/><text x="207" y="136" font-family="Times New Roman, serif" font-size="12" fill="%23334155">1</text><line x1="157" y1="60" x2="163" y2="60" stroke="%23334155" stroke-width="1.5"/><text x="145" y="64" font-family="Times New Roman, serif" font-size="12" fill="%23334155">4</text><line x1="110" y1="120" x2="110" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><line x1="110" y1="60" x2="160" y2="60" stroke="%2394a3b8" stroke-dasharray="3,3"/><path d="M 70 200 C 95 120, 95 60, 110 60 C 130 60, 140 100, 160 100 C 180 100, 195 120, 210 120 C 230 120, 245 40, 260 20" fill="none" stroke="%23dc2626" stroke-width="2.5"/><circle cx="110" cy="60" r="3.5" fill="%23dc2626"/><circle cx="210" cy="120" r="3.5" fill="%23dc2626"/><circle cx="160" cy="100" r="3" fill="%23334155"/><text x="165" y="98" font-family="Times New Roman, serif" font-size="12" fill="%23334155">2</text></svg>`;
@@ -168,6 +175,19 @@ export default function TeacherExamMaker() {
 
   // Smart Word / PDF / Text Import States
   const [showImportModal, setShowImportModal] = useState(false);
+
+  // AI Assistant States (BYOK & Soạn đề chuẩn 2025)
+  const [showAiSettings, setShowAiSettings] = useState(false);
+  const [showAiGenModal, setShowAiGenModal] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiParsingLoading, setAiParsingLoading] = useState(false);
+  const [aiPart, setAiPart] = useState('mixed'); // 'part1', 'part2', 'part3', 'mixed'
+  const [aiTopic, setAiTopic] = useState('Chuyên đề ôn tập kiến thức trọng tâm');
+  const [aiLevel, setAiLevel] = useState('Thông hiểu');
+  const [aiCount, setAiCount] = useState(4);
+  const [aiRawContext, setAiRawContext] = useState('');
+  const [aiGeneratedPreview, setAiGeneratedPreview] = useState([]);
+  const [aiError, setAiError] = useState('');
 
   // Smart Assessment Publishing & Excel Grade Sync States
   const [showExcelSyncModal, setShowExcelSyncModal] = useState(false);
@@ -353,6 +373,60 @@ export default function TeacherExamMaker() {
     setImportRawText('');
     setParsedPreviewQuestions([]);
     alert(`🎉 Đã nạp thành công ${parsedPreviewQuestions.length} câu hỏi mới vào ngân hàng đề thi!`);
+  };
+
+  // AI Question Generation Handler
+  const handleGenerateAiExamQuestions = async () => {
+    setAiGenerating(true);
+    setAiError('');
+    try {
+      const generated = await generate2025ExamQuestionsAi({
+        subject: subject || 'Toán',
+        grade: grade || '12',
+        topic: aiTopic || 'Khảo sát và ứng dụng',
+        part: aiPart,
+        count: Number(aiCount) || 4,
+        level: aiLevel,
+        rawContext: aiRawContext
+      });
+      setAiGeneratedPreview(generated);
+    } catch (err) {
+      setAiError(err.message || 'Lỗi khi gọi Trợ lý AI tạo câu hỏi.');
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const handleConfirmInsertAiQuestions = () => {
+    if (!aiGeneratedPreview || aiGeneratedPreview.length === 0) return;
+    setQuestions(prev => [...prev, ...aiGeneratedPreview]);
+    setShowAiGenModal(false);
+    setAiGeneratedPreview([]);
+    alert(`🎉 Đã thêm thành công ${aiGeneratedPreview.length} câu hỏi AI vào ngân hàng đề thi!`);
+  };
+
+  // AI Parse Import Text
+  const handleAiParseImportText = async () => {
+    if (!importRawText || importRawText.trim().length < 10) {
+      alert('Vui lòng dán nội dung văn bản đề thi để AI nhận diện.');
+      return;
+    }
+    setAiParsingLoading(true);
+    try {
+      const parsed = await parseRawExamQuestionsAi(importRawText, subject, grade);
+      if (parsed && parsed.length > 0) {
+        setParsedPreviewQuestions(parsed);
+      } else {
+        const fallback = parseRawExamText(importRawText);
+        setParsedPreviewQuestions(fallback);
+      }
+    } catch (e) {
+      console.warn('AI parse fallback:', e);
+      const fallback = parseRawExamText(importRawText);
+      setParsedPreviewQuestions(fallback);
+    } finally {
+      setAiParsingLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -700,7 +774,9 @@ export default function TeacherExamMaker() {
           <ArrowLeft size={20} /> Bảng điều khiển Giáo viên
         </Link>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
+
           <button onClick={handleGenerateMixedExams} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(217,119,6,0.3)' }}>
             <Shuffle size={18} /> Đảo Mã Đề Thi ({numberOfCodes} Mã)
           </button>
@@ -780,6 +856,27 @@ export default function TeacherExamMaker() {
             </div>
             
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setShowAiGenModal(true)}
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  boxShadow: '0 2px 8px rgba(79,70,229,0.3)'
+                }}
+              >
+                <Sparkles size={16} /> ✨ Soạn Đề Bằng AI
+              </button>
+
               <button onClick={() => setShowImportModal(true)} style={{ padding: '8px 14px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}>
                 <Download size={16} /> Nạp Đề Word / Text
               </button>
@@ -1797,7 +1894,31 @@ export default function TeacherExamMaker() {
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={styles.label}>Cách 2: Hoặc Dán (Paste) Trực Tiếp Nội Dung Đề Thi Từ Word / PDF Vào Đây:</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                <label style={{ ...styles.label, margin: 0 }}>Cách 2: Hoặc Dán (Paste) Trực Tiếp Nội Dung Đề Thi Từ Word / PDF Vào Đây:</label>
+                <button
+                  type="button"
+                  onClick={handleAiParseImportText}
+                  disabled={aiParsingLoading || !importRawText.trim()}
+                  style={{
+                    padding: '5px 14px',
+                    background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: aiParsingLoading || !importRawText.trim() ? 'not-allowed' : 'pointer',
+                    color: '#ffffff',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    boxShadow: '0 2px 6px rgba(79,70,229,0.25)'
+                  }}
+                  title="Sử dụng trí tuệ nhân tạo Gemini để tự động chuẩn hóa đáp án và công thức"
+                >
+                  <Sparkles size={13} /> {aiParsingLoading ? 'Đang trích xuất AI...' : '✨ Dùng AI Tự Động Bóc Tách'}
+                </button>
+              </div>
               <textarea 
                 rows={10} 
                 value={importRawText} 
@@ -1806,7 +1927,7 @@ export default function TeacherExamMaker() {
                   setParsedPreviewQuestions(parseRawExamText(e.target.value));
                 }} 
                 style={{ ...styles.input, fontFamily: 'monospace', fontSize: '12.5px', resize: 'vertical' }} 
-                placeholder="Dán nội dung đề thi từ Word/PDF tại đây... System sẽ tự động bóc tách thành các câu hỏi!"
+                placeholder="Dán nội dung đề thi từ Word/PDF tại đây... Thầy/Cô có thể bấm 'Dùng AI Tự Động Bóc Tách' để trợ lý tự phân loại Phần I, II, III và công thức LaTeX!"
               />
             </div>
 
@@ -1833,6 +1954,429 @@ export default function TeacherExamMaker() {
           </div>
         </div>
       )}
+
+      {/* MODAL: ✨ TRỢ LÝ AI SOẠN CÂU HỎI THI CHUẨN 2025 */}
+      {showAiGenModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '920px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '20px 24px',
+              background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
+              color: '#ffffff',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: '12px',
+              flexWrap: 'wrap'
+            }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Sparkles size={22} color="#a855f7" />
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800' }}>
+                    Trợ Lý AI: Soạn Câu Hỏi Chuẩn Đề Thi Mới 2025
+                  </h3>
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#cbd5e1' }}>
+                  Tự động sinh câu hỏi theo 3 định dạng Bộ GD&ĐT: Trắc nghiệm 4 lựa chọn, Đúng/Sai & Trả lời ngắn kèm công thức LaTeX.
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
+                <button
+                  type="button"
+                  onClick={() => setShowAiGenModal(false)}
+                  style={{
+                    background: 'rgba(255,255,255,0.15)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    width: '32px',
+                    height: '32px',
+                    color: '#ffffff',
+                    cursor: 'pointer',
+                    fontSize: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {/* Form Config */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '14px',
+                marginBottom: '18px',
+                background: '#f8fafc',
+                padding: '16px',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div>
+                  <label style={styles.label}>Môn Học:</label>
+                  <input
+                    type="text"
+                    value={subject}
+                    onChange={e => setSubject(e.target.value)}
+                    style={styles.input}
+                    placeholder="VD: Toán, Vật lí, Hóa học..."
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>Khối Lớp:</label>
+                  <select
+                    value={grade}
+                    onChange={e => setGrade(e.target.value)}
+                    style={{ ...styles.input, fontWeight: 'bold' }}
+                  >
+                    <option value="10">Khối 10 (GDPT 2018)</option>
+                    <option value="11">Khối 11 (GDPT 2018)</option>
+                    <option value="12">Khối 12 (GDPT 2018)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>Định Dạng Phần Thi:</label>
+                  <select
+                    value={aiPart}
+                    onChange={e => setAiPart(e.target.value)}
+                    style={{ ...styles.input, fontWeight: 'bold', color: '#4338ca' }}
+                  >
+                    <option value="mixed">Hỗ hợp cả 3 Phần (Chuẩn 2025)</option>
+                    <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn (A,B,C,D)</option>
+                    <option value="part2">Phần II: Đúng / Sai (4 ý độc lập)</option>
+                    <option value="part3">Phần III: Trả lời ngắn (Short answer)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>Mức Độ Nhận Thức:</label>
+                  <select
+                    value={aiLevel}
+                    onChange={e => setAiLevel(e.target.value)}
+                    style={{ ...styles.input, fontWeight: 'bold' }}
+                  >
+                    <option value="Nhận biết">1. Nhận biết (Cơ bản)</option>
+                    <option value="Thông hiểu">2. Thông hiểu (Chuẩn kiến thức)</option>
+                    <option value="Vận dụng">3. Vận dụng (Tình huống thực tế)</option>
+                    <option value="Vận dụng cao">4. Vận dụng cao (Phân hóa sâu)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>Số Lượng Câu Hỏi:</label>
+                  <select
+                    value={aiCount}
+                    onChange={e => setAiCount(Number(e.target.value))}
+                    style={{ ...styles.input, fontWeight: 'bold' }}
+                  >
+                    <option value={2}>2 Câu</option>
+                    <option value={4}>4 Câu (Khuyên dùng)</option>
+                    <option value={6}>6 Câu</option>
+                    <option value={8}>8 Câu</option>
+                    <option value={12}>12 Câu (Trọn vẹn Phần I)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '16px' }}>
+                <label style={styles.label}>Chủ Đề / Bài Học Cần Soạn Đề (*):</label>
+                <input
+                  type="text"
+                  value={aiTopic}
+                  onChange={e => setAiTopic(e.target.value)}
+                  style={{ ...styles.input, fontWeight: 'bold', fontSize: '13.5px' }}
+                  placeholder="VD: Cực trị của hàm số bậc ba, Khối lăng trụ đứng, Dao động điều hòa con lắc đơn..."
+                />
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label style={styles.label}>Tài Liệu / Đề Cương / Ghi Chú Riêng Của Giáo Viên (Không bắt buộc):</label>
+                <textarea
+                  rows={3}
+                  value={aiRawContext}
+                  onChange={e => setAiRawContext(e.target.value)}
+                  style={{ ...styles.input, fontSize: '12.5px', resize: 'vertical' }}
+                  placeholder="Dán đoạn văn bản hoặc đề cương ôn tập nếu Thầy/Cô muốn AI bám sát dữ liệu này..."
+                />
+              </div>
+
+              {/* Action Button */}
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleGenerateAiExamQuestions}
+                  disabled={aiGenerating || !aiTopic.trim()}
+                  style={{
+                    padding: '12px 24px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: aiGenerating || !aiTopic.trim() ? '#94a3b8' : 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                    color: '#ffffff',
+                    fontWeight: '800',
+                    fontSize: '14px',
+                    cursor: aiGenerating || !aiTopic.trim() ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(79, 70, 229, 0.35)'
+                  }}
+                >
+                  <Sparkles size={18} />
+                  {aiGenerating ? 'AI Đang Biên Soạn Câu Hỏi & Giải Thích...' : '✨ Bắt Đầu Soạn Câu Hỏi Bằng AI'}
+                </button>
+
+                <span style={{ fontSize: '12.5px', color: '#64748b' }}>
+                  💡 Công thức toán tự động chuyển đổi sang mã LaTeX KaTeX ($...$).
+                </span>
+              </div>
+
+              {/* Error Message */}
+              {aiError && (
+                <div style={{
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  color: '#b91c1c',
+                  fontSize: '13px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  ⚠️ {aiError}
+                </div>
+              )}
+
+              {/* Preview Generated Questions */}
+              {aiGeneratedPreview.length > 0 && (
+                <div style={{
+                  backgroundColor: '#f8fafc',
+                  border: '1.5px solid #c7d2fe',
+                  borderRadius: '14px',
+                  padding: '18px',
+                  marginTop: '10px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                    <h4 style={{ margin: 0, color: '#312e81', fontSize: '15px', fontWeight: '800' }}>
+                      🎉 Đã Tạo Xong {aiGeneratedPreview.length} Câu Hỏi Chuẩn:
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={handleConfirmInsertAiQuestions}
+                      style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: '#16a34a',
+                        color: '#ffffff',
+                        fontWeight: '800',
+                        fontSize: '13.5px',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)'
+                      }}
+                    >
+                      ✓ Nạp {aiGeneratedPreview.length} Câu Hỏi Này Vào Đề Thi
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {aiGeneratedPreview.map((q, idx) => (
+                      <div key={q.id || idx} style={{
+                        backgroundColor: '#ffffff',
+                        padding: '16px',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 1px 4px rgba(0,0,0,0.04)'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <span style={{ fontWeight: '800', color: '#1e293b', fontSize: '13.5px' }}>
+                            {q.title || `Câu ${idx + 1}`}
+                          </span>
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: '700',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            backgroundColor: q.part === 'part2' ? '#fef3c7' : (q.part === 'part3' ? '#f3e8ff' : '#e0e7ff'),
+                            color: q.part === 'part2' ? '#92400e' : (q.part === 'part3' ? '#6b21a8' : '#3730a3')
+                          }}>
+                            {q.part === 'part2' ? 'Phần II (Đúng/Sai)' : (q.part === 'part3' ? 'Phần III (Trả lời ngắn)' : 'Phần I (Trắc nghiệm)')} • {q.level || 'Thông hiểu'}
+                          </span>
+                        </div>
+
+                        {/* Content */}
+                        <div style={{ fontSize: '13.5px', color: '#334155', lineHeight: '1.6', marginBottom: '10px' }}>
+                          <MathView text={q.content} />
+                        </div>
+
+                        {/* Options / SubItems / ShortAnswer */}
+                        {q.part === 'part1' && Array.isArray(q.options) && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginBottom: '10px' }}>
+                            {q.options.map((opt, oIdx) => (
+                              <div key={oIdx} style={{
+                                padding: '8px 12px',
+                                borderRadius: '6px',
+                                border: oIdx === q.correctAnswerIndex ? '1.5px solid #16a34a' : '1px solid #e2e8f0',
+                                backgroundColor: oIdx === q.correctAnswerIndex ? '#f0fdf4' : '#ffffff',
+                                fontSize: '13px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                              }}>
+                                <strong>{['A', 'B', 'C', 'D'][oIdx]}.</strong>
+                                <MathView text={opt} />
+                                {oIdx === q.correctAnswerIndex && <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {q.part === 'part2' && Array.isArray(q.subItems) && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '10px' }}>
+                            {q.subItems.map(sub => (
+                              <div key={sub.key} style={{
+                                padding: '6px 12px',
+                                borderRadius: '6px',
+                                border: '1px solid #e2e8f0',
+                                backgroundColor: sub.isTrue ? '#f0fdf4' : '#fff1f2',
+                                fontSize: '13px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                              }}>
+                                <div>
+                                  <strong>{sub.key})</strong> <MathView text={sub.text} />
+                                </div>
+                                <span style={{
+                                  fontWeight: '800',
+                                  fontSize: '11px',
+                                  padding: '2px 8px',
+                                  borderRadius: '6px',
+                                  backgroundColor: sub.isTrue ? '#dcfce7' : '#fee2e2',
+                                  color: sub.isTrue ? '#166534' : '#991b1b'
+                                }}>
+                                  {sub.isTrue ? 'ĐÚNG' : 'SAI'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {q.part === 'part3' && (
+                          <div style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            backgroundColor: '#faf5ff',
+                            border: '1px solid #e9d5ff',
+                            fontSize: '13px',
+                            marginBottom: '10px'
+                          }}>
+                            <strong>Đáp số:</strong> <span style={{ color: '#7e22ce', fontWeight: 'bold' }}>{q.shortAnswer}</span>
+                          </div>
+                        )}
+
+                        {/* Explanation */}
+                        {q.explanation && (
+                          <div style={{ fontSize: '12.5px', color: '#64748b', backgroundColor: '#f8fafc', padding: '8px 10px', borderRadius: '6px', borderLeft: '3px solid #6366f1' }}>
+                            <strong>Lời giải:</strong> <MathView text={q.explanation} />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding: '16px 24px',
+              borderTop: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'flex-end',
+              gap: '12px',
+              backgroundColor: '#f8fafc'
+            }}>
+              <button
+                type="button"
+                onClick={() => setShowAiGenModal(false)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  fontWeight: '600',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Đóng
+              </button>
+
+              {aiGeneratedPreview.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleConfirmInsertAiQuestions}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(22,163,74,0.3)'
+                  }}
+                >
+                  ✓ Nạp Tất Cả Vào Đề Thi
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CẤU HÌNH KHÓA GEMINI AI CÁ NHÂN (BYOK) */}
+      <AiSettingsModal isOpen={showAiSettings} onClose={() => setShowAiSettings(false)} />
 
     </div>
   );

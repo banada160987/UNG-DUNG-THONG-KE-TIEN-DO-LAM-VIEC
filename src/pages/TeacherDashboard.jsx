@@ -8,6 +8,8 @@ import {
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
+import AiStatusBadge from '../components/AiStatusBadge';
+import AiSettingsModal from '../components/AiSettingsModal';
 import { DualSupabaseService } from '../lib/supabase';
 import { getTeacherSession, clearTeacherSession } from '../services/authSessionManager';
 
@@ -16,6 +18,7 @@ export default function TeacherDashboard() {
   const [teacher, setTeacher] = useState(null);
   const [activeTab, setActiveTab] = useState('all'); // 'all', 'teaching', 'homeroom', 'department', 'utilities', 'club_management'
   const [clubRegistrations, setClubRegistrations] = useState([]);
+  const [showAiSettings, setShowAiSettings] = useState(false);
 
   useEffect(() => {
     // Lấy thông tin tài khoản giáo viên đã đăng nhập (kiểm tra hạn phiên an toàn)
@@ -134,6 +137,8 @@ export default function TeacherDashboard() {
           </div>
 
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
+
             <button
               onClick={() => navigate('/')}
               style={{
@@ -1777,6 +1782,9 @@ export default function TeacherDashboard() {
 
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav />
+
+      {/* AI BYOK Settings Modal */}
+      <AiSettingsModal isOpen={showAiSettings} onClose={() => setShowAiSettings(false)} />
     </div>
   );
 }

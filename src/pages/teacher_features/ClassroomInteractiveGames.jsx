@@ -17,6 +17,12 @@ import { gameAudio } from '../../utils/gameAudio';
 import { HIGH_SCHOOL_SUBJECTS } from '../../services/smartAssessmentService';
 import { getTeacherSession } from '../../services/authSessionManager';
 import MobileBottomNav from '../../components/MobileBottomNav';
+import AiStatusBadge from '../../components/AiStatusBadge';
+import { 
+  generateClassroomQuestionsAi, 
+  explainQuestionAi, 
+  getStoredAiKey 
+} from '../../services/aiAssistantService';
 
 // BỘ NHẬN DIỆN THẺ ĐÁP ÁN CHUẨN QUỐC TẾ (KAHOOT! / QUIZIZZ / GIMKIT PRO)
 export const KAHOOT_THEME = [
@@ -187,6 +193,20 @@ export default function ClassroomInteractiveGames() {
   const [newQCorrect, setNewQCorrect] = useState(0);
   const [newQExplanation, setNewQExplanation] = useState('');
   const [savingNewQ, setSavingNewQ] = useState(false);
+
+  // Trợ lý AI Soạn Câu Hỏi & Giải Thích Sư Phạm
+  const [showAiGenModal, setShowAiGenModal] = useState(false);
+  const [aiSubject, setAiSubject] = useState('Toán');
+  const [aiGrade, setAiGrade] = useState('10');
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiQuestionCount, setAiQuestionCount] = useState(5);
+  const [aiDifficulty, setAiDifficulty] = useState('Vừa sức (Khởi động)');
+  const [aiRawContext, setAiRawContext] = useState('');
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+  const [aiGeneratedQuestions, setAiGeneratedQuestions] = useState([]);
+  const [aiGenError, setAiGenError] = useState(null);
+  const [aiExplaining, setAiExplaining] = useState(false);
+  const [aiExplanationText, setAiExplanationText] = useState(null);
 
   // ==========================================
   // NẠP DỮ LIỆU TỪ SUPABASE
@@ -957,6 +977,104 @@ export default function ClassroomInteractiveGames() {
     }
   };
 
+  // ==========================================
+  // TRỢ GIẢNG AI: TẠO CÂU HỎI & GIẢI THÍCH
+  // ==========================================
+  const handleGenerateQuestionsWithAi = async (e) => {
+    e.preventDefault();
+    if (!aiTopic.trim() && !aiRawContext.trim()) {
+      setAiGenError('Vui lòng nhập Chủ đề bài học hoặc dán đoạn tài liệu tham khảo.');
+      return;
+    }
+    setIsGeneratingAi(true);
+    setAiGenError(null);
+    try {
+      const generated = await generateClassroomQuestionsAi({
+        subject: aiSubject,
+        grade: aiGrade,
+        topic: aiTopic || 'Khởi động tiết học',
+        count: Number(aiQuestionCount) || 5,
+        difficulty: aiDifficulty,
+        rawContext: aiRawContext
+      });
+      setAiGeneratedQuestions(generated);
+      gameAudio.playVictory();
+    } catch (err) {
+      console.error('Lỗi sinh câu hỏi AI:', err);
+      setAiGenError(err?.message || 'Có lỗi phát sinh khi sinh câu hỏi từ AI. Vui lòng kiểm tra lại Key Gemini.');
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
+  const handleApplyAiQuestionsToGame = async (saveToDb = false) => {
+    if (!aiGeneratedQuestions || aiGeneratedQuestions.length === 0) return;
+
+    // 1. Thêm vào danh sách câu hỏi đang chơi ngay
+    const tagged = aiGeneratedQuestions.map(q => ({
+      ...q,
+      subject: aiSubject,
+      grade: aiGrade,
+      packTitle: `[AI] ${aiTopic || 'Soạn bằng AI'}`
+    }));
+    setQuestions(prev => [...tagged, ...prev]);
+    setSelectedSubject(aiSubject);
+    setCurrentQIndex(0);
+
+    // 2. Tùy chọn lưu vào Database của trường
+    if (saveToDb) {
+      try {
+        const teacherSess = getTeacherSession();
+        const packTitle = `[AI] ${aiSubject} ${aiGrade} - ${aiTopic || 'Chủ đề khởi động'}`;
+        const newPack = {
+          title: packTitle,
+          subject: aiSubject,
+          grade: aiGrade,
+          teacher_name: teacherSess?.fullName || 'Giáo viên bộ môn',
+          duration_minutes: 15,
+          status: 'active',
+          questions: tagged
+        };
+
+        const { error } = await supabase.from('cbq_smart_assessments').insert([newPack]);
+        if (!error) {
+          setAssessments(prev => [newPack, ...prev]);
+          alert(`🎉 Đã nạp ${aiGeneratedQuestions.length} câu hỏi vào trò chơi và LƯU THÀNH CÔNG vào Ngân hàng đề của trường!`);
+        } else {
+          alert(`🎉 Đã nạp ${aiGeneratedQuestions.length} câu hỏi vào trò chơi để học sinh chơi ngay!`);
+        }
+      } catch (e) {
+        alert(`🎉 Đã nạp ${aiGeneratedQuestions.length} câu hỏi vào trò chơi để học sinh chơi ngay!`);
+      }
+    } else {
+      alert(`🎉 Đã nạp thành công ${aiGeneratedQuestions.length} câu hỏi AI vào trò chơi! Thầy/Cô có thể bắt đầu cho học sinh chơi ngay.`);
+    }
+
+    setShowAiGenModal(false);
+    setAiGeneratedQuestions([]);
+    setAiTopic('');
+    setAiRawContext('');
+  };
+
+  const handleAskAiExplanation = async () => {
+    if (!currentQuestion) return;
+    setAiExplaining(true);
+    setAiExplanationText(null);
+    try {
+      const res = await explainQuestionAi({
+        questionText: currentQuestion.content || currentQuestion.title,
+        options: currentQuestion.options || ['A', 'B', 'C', 'D'],
+        correctIndex: currentQuestion.correctAnswerIndex ?? 0,
+        subject: currentQuestion.subject || selectedSubject || 'Toán học'
+      });
+      setAiExplanationText(res);
+    } catch (err) {
+      alert('Không thể gọi trợ giảng AI: ' + (err?.message || err));
+    } finally {
+      setAiExplaining(false);
+    }
+  };
+
   // Bật/tắt Fullscreen
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -1319,7 +1437,7 @@ export default function ClassroomInteractiveGames() {
           })}
         </div>
 
-        {/* LỜI GIẢI CHI TIẾT */}
+        {/* LỜI GIẢI CHI TIẾT & TRỢ GIẢNG AI */}
         {showExplanation && currentQuestion?.explanation && (
           <div style={{
             background: 'rgba(16, 185, 129, 0.12)',
@@ -1334,6 +1452,62 @@ export default function ClassroomInteractiveGames() {
             </div>
             <div style={{ fontSize: '16px', lineHeight: '1.6' }}>
               <MathView text={currentQuestion.explanation} />
+            </div>
+          </div>
+        )}
+
+        {/* NÚT TRỢ GIẢNG AI GIẢI THÍCH CHUYÊN SÂU KHI CÔNG BỐ ĐÁP ÁN */}
+        {showAnswer && !aiExplanationText && (
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              type="button"
+              onClick={handleAskAiExplanation}
+              disabled={aiExplaining}
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                border: 'none',
+                color: '#ffffff',
+                padding: '9px 18px',
+                borderRadius: '12px',
+                fontWeight: '800',
+                fontSize: '13.5px',
+                cursor: aiExplaining ? 'not-allowed' : 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+              }}
+            >
+              <Sparkles size={16} />
+              {aiExplaining ? 'Trợ lý AI đang phân tích sư phạm...' : '💡 AI Sư Phạm: Giải thích bản chất & Mẹo nhớ cho học sinh'}
+            </button>
+          </div>
+        )}
+
+        {/* BẢNG GIẢI THÍCH SƯ PHẠM CỦA GEMINI AI */}
+        {showAnswer && aiExplanationText && (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+            border: '2px solid #818cf8',
+            borderRadius: '18px',
+            padding: '18px 22px',
+            color: '#e0e7ff',
+            boxShadow: '0 8px 25px rgba(99, 102, 241, 0.25)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '900', fontSize: '15px' }}>
+                <Sparkles size={19} color="#c084fc" /> 🤖 TRỢ GIẢNG AI SƯ PHẠM (GOOGLE GEMINI):
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiExplanationText(null)}
+                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '14px', fontWeight: 'bold' }}
+              >
+                ✕ Đóng
+              </button>
+            </div>
+            <div style={{ fontSize: '15px', lineHeight: '1.7', whiteSpace: 'pre-line' }}>
+              {aiExplanationText}
             </div>
           </div>
         )}
@@ -1799,6 +1973,33 @@ export default function ClassroomInteractiveGames() {
                 >
                   <Plus size={16} /> Thêm Câu Hỏi CSDL
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAiSubject(selectedSubject !== 'Tất cả môn' ? selectedSubject : 'Toán');
+                    setShowAiGenModal(true);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                    border: 'none',
+                    color: '#ffffff',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+                  }}
+                  title="Dùng Google Gemini AI soạn tự động câu hỏi theo chủ đề bài học"
+                >
+                  <Sparkles size={16} /> Soạn Đề Bằng AI
+                </button>
+
+                <AiStatusBadge />
               </div>
             </div>
           </header>
@@ -2612,6 +2813,278 @@ export default function ClassroomInteractiveGames() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL TRỢ GIẢNG AI: SOẠN CÂU HỎI TRẮC NGHIỆM TỰ ĐỘNG (GOOGLE GEMINI) */}
+      {showAiGenModal && (
+        <div style={{
+          position: 'fixed', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px'
+        }}>
+          <div style={{ background: '#1e293b', borderRadius: '24px', maxWidth: '750px', width: '100%', maxHeight: '92vh', overflowY: 'auto', padding: '28px', border: '1.5px solid #6366f1', boxShadow: '0 25px 50px -12px rgba(99, 102, 241, 0.35)' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                  🤖
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    TRỢ GIẢNG AI: SOẠN BỘ CÂU HỎI TRẮC NGHIỆM
+                  </h3>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                    Google Gemini AI • Soạn theo bài học, chuẩn kiến thức GDPT 2018
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AiStatusBadge />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowAiGenModal(false);
+                    setAiGeneratedQuestions([]);
+                    setAiGenError(null);
+                  }}
+                  style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '20px', cursor: 'pointer', padding: '4px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* BƯỚC 1: FORM CẤU HÌNH YÊU CẦU NỘI DUNG */}
+            {aiGeneratedQuestions.length === 0 ? (
+              <form onSubmit={handleGenerateQuestionsWithAi}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                  {/* BỘ MÔN */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '6px' }}>Môn học:</label>
+                    <select
+                      value={aiSubject}
+                      onChange={e => setAiSubject(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', background: '#0f172a', border: '1px solid #475569', color: '#ffffff', fontSize: '13px' }}
+                    >
+                      {HIGH_SCHOOL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                      <option value="Truyền thống nhà trường">Truyền thống THPT Cao Bá Quát</option>
+                    </select>
+                  </div>
+
+                  {/* KHỐI LỚP */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '6px' }}>Khối lớp:</label>
+                    <select
+                      value={aiGrade}
+                      onChange={e => setAiGrade(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', background: '#0f172a', border: '1px solid #475569', color: '#ffffff', fontSize: '13px' }}
+                    >
+                      <option value="10">Khối 10</option>
+                      <option value="11">Khối 11</option>
+                      <option value="12">Khối 12</option>
+                      <option value="Tất cả khối">Tất cả khối</option>
+                    </select>
+                  </div>
+
+                  {/* SỐ LƯỢNG */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '6px' }}>Số lượng câu hỏi:</label>
+                    <select
+                      value={aiQuestionCount}
+                      onChange={e => setAiQuestionCount(Number(e.target.value))}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', background: '#0f172a', border: '1px solid #475569', color: '#ffffff', fontSize: '13px' }}
+                    >
+                      <option value={3}>3 câu (Khởi động siêu nhanh 2p)</option>
+                      <option value={5}>5 câu (Chuẩn tiết học 5p)</option>
+                      <option value={10}>10 câu (Đầy đủ củng cố bài học)</option>
+                    </select>
+                  </div>
+
+                  {/* MỨC ĐỘ NHẬN THỨC */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '6px' }}>Mức độ nhận thức:</label>
+                    <select
+                      value={aiDifficulty}
+                      onChange={e => setAiDifficulty(e.target.value)}
+                      style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', background: '#0f172a', border: '1px solid #475569', color: '#ffffff', fontSize: '13px' }}
+                    >
+                      <option value="Vừa sức (Khởi động lớp học)">Vừa sức (Khởi động)</option>
+                      <option value="Nhận biết - Thông hiểu (Cơ bản)">Nhận biết - Thông hiểu</option>
+                      <option value="Vận dụng - Vận dụng cao (Nâng cao)">Vận dụng - Vận dụng cao</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* TÊN BÀI HỌC / CHỦ ĐỀ */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#e2e8f0', marginBottom: '6px' }}>
+                    Tên bài học hoặc Chủ đề trọng tâm: *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Định luật II Newton, Vợ chồng A Phủ, Bảng tuần hoàn hóa học, Khảo sát hàm số..."
+                    value={aiTopic}
+                    onChange={e => setAiTopic(e.target.value)}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', background: '#0f172a', border: '1px solid #475569', color: '#ffffff', fontSize: '13.5px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* ĐOẠN TÀI LIỆU HOẶC VĂN BẢN ĐỀ THI DÁN THÔ (TÙY CHỌN) */}
+                <div style={{ marginBottom: '18px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#94a3b8', marginBottom: '6px' }}>
+                    Đoạn tài liệu / Ghi chú bài giảng / Đề bài mẫu (Tùy chọn - để AI bám sát):
+                  </label>
+                  <textarea
+                    rows={4}
+                    placeholder="Dán đoạn văn bản SGK, công thức hoặc ghi chú tóm tắt bài học nếu Thầy/Cô muốn AI soạn chính xác theo ngữ liệu này..."
+                    value={aiRawContext}
+                    onChange={e => setAiRawContext(e.target.value)}
+                    style={{ width: '100%', padding: '10px', borderRadius: '8px', background: '#0f172a', border: '1px solid #334155', color: '#e2e8f0', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                {/* THÔNG BÁO LỖI NẾU CÓ */}
+                {aiGenError && (
+                  <div style={{ backgroundColor: '#451a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '10px 14px', marginBottom: '16px', color: '#fca5a5', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={18} color="#ef4444" />
+                    <span>{aiGenError}</span>
+                  </div>
+                )}
+
+                {/* NÚT SUBMIT */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAiGenModal(false)}
+                    style={{ background: '#475569', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isGeneratingAi}
+                    style={{
+                      background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '10px 24px',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                      cursor: isGeneratingAi ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 15px rgba(99, 102, 241, 0.4)'
+                    }}
+                  >
+                    <Sparkles size={18} className={isGeneratingAi ? 'spin' : ''} />
+                    {isGeneratingAi ? 'AI đang biên soạn câu hỏi...' : `🚀 Bắt Đầu Soạn ${aiQuestionCount} Câu Hỏi AI`}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              /* BƯỚC 2: DUYỆT CÂU HỎI AI VỪA SINH & NẠP VÀO GAME */
+              <div>
+                <div style={{ backgroundColor: '#0f172a', borderRadius: '14px', padding: '14px 18px', marginBottom: '18px', border: '1px solid #334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '13px', color: '#94a3b8' }}>Đã sinh thành công:</span>
+                    <strong style={{ fontSize: '15px', color: '#4ade80', marginLeft: '6px' }}>{aiGeneratedQuestions.length} câu hỏi môn {aiSubject}</strong>
+                    <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>Chủ đề: "{aiTopic || 'Bài học'}"</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAiGeneratedQuestions([])}
+                    style={{ background: '#334155', color: '#e2e8f0', border: 'none', padding: '6px 12px', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}
+                  >
+                    🔄 Soạn Lại
+                  </button>
+                </div>
+
+                {/* DANH SÁCH PREVIEW CÂU HỎI */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '420px', overflowY: 'auto', marginBottom: '20px', paddingRight: '6px' }}>
+                  {aiGeneratedQuestions.map((q, qIdx) => (
+                    <div key={q.id || qIdx} style={{ backgroundColor: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '14px' }}>
+                      <div style={{ fontWeight: 'bold', color: '#38bdf8', marginBottom: '8px', fontSize: '14px' }}>
+                        Câu {qIdx + 1}: {q.content}
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+                        {q.options.map((opt, oIdx) => {
+                          const isCorrect = oIdx === q.correctAnswerIndex;
+                          return (
+                            <div
+                              key={oIdx}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: '8px',
+                                fontSize: '12.5px',
+                                backgroundColor: isCorrect ? 'rgba(34, 197, 94, 0.2)' : 'rgba(255, 255, 255, 0.04)',
+                                border: isCorrect ? '1px solid #22c55e' : '1px solid rgba(255, 255, 255, 0.1)',
+                                color: isCorrect ? '#4ade80' : '#cbd5e1'
+                              }}
+                            >
+                              <strong>{['A', 'B', 'C', 'D'][oIdx]}:</strong> {opt}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {q.explanation && (
+                        <div style={{ fontSize: '11.5px', color: '#94a3b8', fontStyle: 'italic', borderTop: '1px dashed #334155', paddingTop: '6px' }}>
+                          💡 Giải thích: {q.explanation}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* HÀNH ĐỘNG NẠP VÀO GAME HOẶC LƯU VÀO DATABASE */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiQuestionsToGame(false)}
+                    style={{
+                      background: '#0284c7',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '10px 18px',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    🎮 Nạp Vào Trò Chơi Ngay (Chơi Luôn)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleApplyAiQuestionsToGame(true)}
+                    style={{
+                      background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '10px 20px',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
+                    }}
+                  >
+                    💾 Nạp & Lưu Vào CSDL Ngân Hàng Đề Trường
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
