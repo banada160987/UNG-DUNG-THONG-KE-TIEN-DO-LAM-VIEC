@@ -40,6 +40,8 @@ export default function AdminMeetingAttendance() {
   const [formFormat, setFormFormat] = useState('OFFLINE'); // 'OFFLINE' | 'ONLINE' | 'HYBRID'
   const [formLocation, setFormLocation] = useState('Hội trường lớn - Trường THPT Cao Bá Quát');
   const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formStartTime, setFormStartTime] = useState('08:00');
+  const [formEndTime, setFormEndTime] = useState('11:00');
   const [formLink, setFormLink] = useState('');
   const [formPollQuestion, setFormPollQuestion] = useState('');
   const [formPollOptions, setFormPollOptions] = useState('Nhất trí 100%, Có ý kiến đề xuất khác');
@@ -258,6 +260,9 @@ export default function AdminMeetingAttendance() {
       setFormFormat(meeting.meeting_format || (meeting.meeting_link ? 'ONLINE' : 'OFFLINE'));
       setFormLocation(meeting.location || (meeting.meeting_link ? 'Trực tuyến (Meet/Zoom)' : 'Hội trường lớn - Trường THPT Cao Bá Quát'));
       setFormDate(meeting.meeting_date || new Date().toISOString().split('T')[0]);
+      const timeData = JSON.parse(localStorage.getItem(`cbq_meeting_time_${meeting.id}`) || '{}');
+      setFormStartTime(timeData.startTime || '08:00');
+      setFormEndTime(timeData.endTime || '11:00');
       setFormLink(meeting.meeting_link || '');
       setFormPollQuestion(meeting.poll_question || '');
       setFormPollOptions(meeting.poll_options ? meeting.poll_options.join(', ') : '');
@@ -268,6 +273,8 @@ export default function AdminMeetingAttendance() {
       setFormFormat('OFFLINE');
       setFormLocation('Hội trường lớn - Trường THPT Cao Bá Quát');
       setFormDate(new Date().toISOString().split('T')[0]);
+      setFormStartTime('08:00');
+      setFormEndTime('11:00');
       setFormLink('');
       setFormPollQuestion('');
       setFormPollOptions('Nhất trí 100%, Có ý kiến đề xuất khác');
@@ -301,6 +308,10 @@ export default function AdminMeetingAttendance() {
 
     try {
       const saved = await OnlineMeetingService.saveMeeting(payload);
+      localStorage.setItem(`cbq_meeting_time_${saved.id}`, JSON.stringify({
+        startTime: formStartTime,
+        endTime: formEndTime
+      }));
       setShowMeetingModal(false);
       await loadInitialData();
       setSelectedMeetingId(saved.id);
@@ -1898,12 +1909,33 @@ export default function AdminMeetingAttendance() {
                     />
                   </div>
 
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Ngày họp</label>
                     <input 
                       type="date"
                       value={formDate}
                       onChange={e => setFormDate(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Giờ bắt đầu</label>
+                    <input 
+                      type="time"
+                      value={formStartTime}
+                      onChange={e => setFormStartTime(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', marginBottom: '4px' }}>Giờ kết thúc (dự kiến)</label>
+                    <input 
+                      type="time"
+                      value={formEndTime}
+                      onChange={e => setFormEndTime(e.target.value)}
                       style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '14px' }}
                     />
                   </div>

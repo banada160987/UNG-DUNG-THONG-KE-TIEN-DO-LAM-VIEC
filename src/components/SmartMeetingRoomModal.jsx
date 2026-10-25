@@ -5,7 +5,7 @@ import {
   Radio, Shield, Sparkles, Settings, RefreshCw, CheckCircle2,
   AlertCircle, ChevronRight, ChevronLeft, Volume2, MessageSquare,
   Copy, Check, Clock, UserCheck, UserX, ShieldCheck, ShieldAlert,
-  Bell, Lock, Unlock, Play
+  Bell, Lock, Unlock, Play, Server, Info, Headphones, User, HelpCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OnlineMeetingService } from '../services/onlineMeetingService';
@@ -54,6 +54,45 @@ export default function SmartMeetingRoomModal({
   const [activeSideTab, setActiveSideTab] = useState('attendance'); // 'attendance' | 'poll' | 'lobby' | 'minutes'
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedLinkToast, setCopiedLinkToast] = useState(false);
+
+  // Máy chủ Jitsi được chọn: 'meet.ffrn.de' (Mặc định mở 100%, không cần login) hoặc 'meet.jit.si' (Cloud 8x8)
+  const [jitsiServer, setJitsiServer] = useState(() => {
+    return localStorage.getItem('cbq_jitsi_server') || 'meet.ffrn.de';
+  });
+  const [jitsiReloadKey, setJitsiReloadKey] = useState(0);
+
+  // Hộp thoại Hướng dẫn cấp quyền Camera & Micro trên trình duyệt
+  const [showPermissionGuide, setShowPermissionGuide] = useState(false);
+
+  // =========================================================================
+  // CẤU HÌNH THỜI GIAN & ĐỒNG HỒ ĐO THỜI LƯỢNG HỌP TRỰC TUYẾN
+  // =========================================================================
+  const timeConfig = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`cbq_meeting_time_${meeting.id}`) || '{}');
+    } catch {
+      return {};
+    }
+  }, [meeting.id]);
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsedSeconds(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatElapsed = (sec) => {
+    const hrs = Math.floor(sec / 3600);
+    const mins = Math.floor((sec % 3600) / 60);
+    const s = sec % 60;
+    if (hrs > 0) {
+      return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+    return `${String(mins).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  };
 
   // =========================================================================
   // CHẾ ĐỘ PHÊ DUYỆT (LOBBY / WAITING ROOM)
@@ -301,6 +340,47 @@ export default function SmartMeetingRoomModal({
   const [remotePeers, setRemotePeers] = useState({});
   const peerConnections = useRef({});
 
+  // Hàm yêu cầu cấp lại quyền Mic / Webcam chủ động từ người dùng
+  const requestMediaAgain = async () => {
+    try {
+      setMediaError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } },
+        audio: true
+      });
+      setLocalStream(stream);
+      localStreamRef.current = stream;
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+      }
+      setIsMicMuted(false);
+      setIsVideoMuted(false);
+
+      // Cập nhật lại đường truyền cho các đồng nghiệp đang kết nối
+      Object.values(peerConnections.current).forEach(pc => {
+        stream.getTracks().forEach(track => {
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === track.kind);
+          if (sender) {
+            sender.replaceTrack(track);
+          } else {
+            pc.addTrack(track, stream);
+          }
+        });
+      });
+    } catch (camErr) {
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        setLocalStream(audioStream);
+        localStreamRef.current = audioStream;
+        setMediaError('⚠️ Đã bật Mic thành công! Máy tính không tìm thấy Webcam.');
+        setIsMicMuted(false);
+      } catch (micErr) {
+        setMediaError('⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.');
+        setShowPermissionGuide(true);
+      }
+    }
+  };
+
   useEffect(() => {
     if (activeEngine !== 'webrtc' || myAdmissionStatus !== 'admitted') {
       cleanupWebRTC();
@@ -324,7 +404,7 @@ export default function SmartMeetingRoomModal({
             stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             setMediaError('⚠️ Máy tính không tìm thấy Webcam. Đang chạy chế độ Chỉ Mic (Audio).');
           } catch (micErr) {
-            setMediaError('⚠️ Không tìm thấy Mic/Webcam. Bạn đang ở chế độ Chỉ lắng nghe.');
+            setMediaError('⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt chưa cấp quyền. Đang ở chế độ Chỉ lắng nghe.');
           }
         }
 
@@ -496,8 +576,11 @@ export default function SmartMeetingRoomModal({
 
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
+      if (localStreamRef.current) {
+        localStreamRef.current.getVideoTracks().forEach(t => t.stop());
+      }
       try {
-        const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: !isMicMuted });
         const newVideoTrack = camStream.getVideoTracks()[0];
         Object.values(peerConnections.current).forEach(pc => {
           const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
@@ -506,20 +589,30 @@ export default function SmartMeetingRoomModal({
         if (localVideoRef.current) localVideoRef.current.srcObject = camStream;
         setLocalStream(camStream);
         localStreamRef.current = camStream;
-        setIsScreenSharing(false);
-      } catch (e) {}
+      } catch {
+        // Nếu không có webcam thì hoàn tất tắt chia sẻ màn hình
+      }
+      setIsScreenSharing(false);
     } else {
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         const screenTrack = screenStream.getVideoTracks()[0];
-        screenTrack.onended = () => toggleScreenShare();
+        screenTrack.onended = () => {
+          setIsScreenSharing(false);
+        };
         Object.values(peerConnections.current).forEach(pc => {
           const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
-          if (sender) sender.replaceTrack(screenTrack);
+          if (sender) {
+            sender.replaceTrack(screenTrack);
+          } else {
+            pc.addTrack(screenTrack, screenStream);
+          }
         });
         if (localVideoRef.current) localVideoRef.current.srcObject = screenStream;
         setIsScreenSharing(true);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('Đã hủy chia sẻ màn hình hoặc không cấp quyền', e);
+      }
     }
   };
 
@@ -546,29 +639,37 @@ export default function SmartMeetingRoomModal({
     setJitsiLoading(true);
     let isCancelled = false;
 
-    const loadJitsiScript = () => {
+    const loadJitsiScript = (domain) => {
       return new Promise((resolve, reject) => {
         if (window.JitsiMeetExternalAPI) {
           resolve(window.JitsiMeetExternalAPI);
           return;
         }
         const script = document.createElement('script');
-        script.src = 'https://meet.jit.si/external_api.js';
+        script.src = `https://${domain}/external_api.js`;
         script.async = true;
         script.onload = () => resolve(window.JitsiMeetExternalAPI);
-        script.onerror = () => reject(new Error('Không thể tải Jitsi API'));
+        script.onerror = () => {
+          // Dự phòng tải script chính thức meet.jit.si
+          const fbScript = document.createElement('script');
+          fbScript.src = 'https://meet.jit.si/external_api.js';
+          fbScript.async = true;
+          fbScript.onload = () => resolve(window.JitsiMeetExternalAPI);
+          fbScript.onerror = () => reject(new Error('Không thể tải Jitsi API'));
+          document.body.appendChild(fbScript);
+        };
         document.body.appendChild(script);
       });
     };
 
-    loadJitsiScript()
+    loadJitsiScript(jitsiServer)
       .then(JitsiAPI => {
         if (isCancelled || !jitsiContainerRef.current) return;
         if (jitsiApiRef.current) {
           try { jitsiApiRef.current.dispose(); } catch (e) {}
         }
 
-        const domain = 'meet.jit.si';
+        const domain = jitsiServer;
         const options = {
           roomName: cleanRoomName,
           parentNode: jitsiContainerRef.current,
@@ -578,7 +679,7 @@ export default function SmartMeetingRoomModal({
             displayName: `${userDisplayName} (${userDepartment})`
           },
           configOverwrite: {
-            startWithAudioMuted: true,
+            startWithAudioMuted: false,
             startWithVideoMuted: false,
             prejoinPageEnabled: false,
             defaultLanguage: 'vi',
@@ -616,7 +717,7 @@ export default function SmartMeetingRoomModal({
         jitsiApiRef.current = null;
       }
     };
-  }, [activeEngine, myAdmissionStatus, cleanRoomName, userDisplayName, userDepartment, onClose]);
+  }, [activeEngine, myAdmissionStatus, cleanRoomName, userDisplayName, userDepartment, onClose, jitsiServer, jitsiReloadKey]);
 
   // =========================================================================
   // 4. ĐIỂM DANH TỰ ĐỘNG & BIỂU QUYẾT TỨC THÌ
@@ -822,7 +923,13 @@ export default function SmartMeetingRoomModal({
                 )}
               </div>
               <span style={styles.headerSubtitle}>
-                Tham gia: <strong>{userDisplayName}</strong> ({userDepartment})
+                Tham gia: <strong>{userDisplayName}</strong> ({userDepartment}) • 
+                <span style={{ color: '#38bdf8', marginLeft: '6px' }}>
+                  ⏰ {timeConfig.startTime ? `${timeConfig.startTime} - ${timeConfig.endTime || ''}` : 'Giờ họp chuẩn'} ({new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')})
+                </span> • 
+                <span style={{ color: '#4ade80', fontWeight: 'bold', marginLeft: '6px' }}>
+                  ⏱️ Đã họp: {formatElapsed(elapsedSeconds)}
+                </span>
               </span>
             </div>
           </div>
@@ -952,9 +1059,15 @@ export default function SmartMeetingRoomModal({
                     <span style={{ color: '#64748b', fontSize: '13px' }}>Đơn vị:</span>
                     <strong style={{ color: '#0369a1', fontSize: '13px' }}>Tổ {userDepartment}</strong>
                   </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Khung giờ họp:</span>
+                    <strong style={{ color: '#0f172a', fontSize: '13px' }}>
+                      {timeConfig.startTime ? `${timeConfig.startTime} - ${timeConfig.endTime || ''}` : 'Theo lịch BGH'} ({new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')})
+                    </strong>
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span style={{ color: '#64748b', fontSize: '13px' }}>Trạng thái:</span>
-                    <span style={{ color: '#d97706', fontSize: '13px', fontWeight: 'bold' }}>⏳ Đang chờ phê duyệt...</span>
+                    <span style={{ color: '#d97706', fontSize: '13px', fontWeight: 'bold' }}>⏳ Đang chờ BGH phê duyệt...</span>
                   </div>
                 </div>
 
@@ -1009,94 +1122,250 @@ export default function SmartMeetingRoomModal({
               {/* ĐỘNG CƠ 1: JITSI MEET NHÚNG */}
               {activeEngine === 'jitsi' && (
                 <div style={styles.jitsiWrapper}>
+                  {/* THANH ĐIỀU KHIỂN MÁY CHỦ & HƯỚNG DẪN BẢO MẬT JITSI */}
+                  <div style={styles.jitsiTopToolbar}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Server size={14} color="#38bdf8" /> Máy chủ Jitsi:
+                      </span>
+                      <select
+                        value={jitsiServer}
+                        onChange={(e) => {
+                          const nextServer = e.target.value;
+                          setJitsiServer(nextServer);
+                          localStorage.setItem('cbq_jitsi_server', nextServer);
+                        }}
+                        style={styles.serverSelect}
+                        title="Chọn máy chủ hội nghị truyền hình"
+                      >
+                        <option value="meet.ffrn.de">🚀 meet.ffrn.de (Máy Chủ Mở - Vào Ngay 100% Không Cần Đăng Nhập)</option>
+                        <option value="meet.jit.si">🌐 meet.jit.si (Máy Chủ Jitsi Cloud - BGH Mở Phòng 1 Lần)</option>
+                      </select>
+
+                      <button
+                        onClick={() => setJitsiReloadKey(k => k + 1)}
+                        style={styles.btnSmallGhost}
+                        title="Tải lại kết nối Jitsi nếu gặp sự cố mạng"
+                      >
+                        <RefreshCw size={13} /> Tải lại
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => setShowPermissionGuide(true)}
+                        style={styles.btnGuideHighlight}
+                        title="Xem hướng dẫn cấp quyền Camera và Micro trên trình duyệt"
+                      >
+                        <Lock size={13} /> Hướng Dẫn Mở Quyền Cam/Mic
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* BANNER HƯỚNG DẪN DÀNH CHO BGH VÀ GIÁO VIÊN */}
+                  {jitsiServer === 'meet.jit.si' ? (
+                    <div style={styles.jitsiHostNoticeBanner}>
+                      <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+                      <div style={{ fontSize: '12.5px', color: '#e0f2fe', lineHeight: 1.5 }}>
+                        <strong>💡 Dành Cho Ban Giám Hiệu / Chủ Tọa:</strong> Nếu màn hình báo <em>"The conference has not yet started because no moderators have yet arrived..."</em> (do chính sách bảo mật chống spam của Jitsi Cloud), Thầy/Cô hãy click nút <strong>"Mình là quản trị viên" (I am the host)</strong> trên màn hình và đăng nhập Google 1 lần. Toàn bộ giáo viên vào sau sẽ được vào thẳng 100% không cần đăng nhập!<br />
+                        👉 Hoặc Thầy/Cô chỉ cần chọn máy chủ <strong>"meet.ffrn.de (Máy Chủ Mở)"</strong> ở menu trên để vào họp ngay lập tức mà không cần bất kỳ tài khoản nào.
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={styles.jitsiFfrnNoticeBanner}>
+                      <CheckCircle2 size={15} color="#4ade80" style={{ flexShrink: 0 }} />
+                      <span style={{ fontSize: '12px', color: '#f0fdf4' }}>
+                        Đang kết nối qua Máy Chủ Mở <strong>meet.ffrn.de</strong>: Thầy/Cô được vào họp trực tiếp 100%, không yêu cầu tài khoản quản trị viên.
+                      </span>
+                    </div>
+                  )}
+
                   {jitsiLoading && (
                     <div style={styles.centerLoading}>
                       <RefreshCw size={36} color="#38bdf8" className="animate-spin" />
                       <p style={{ marginTop: '12px', color: '#cbd5e1', fontSize: '14px' }}>
-                        Đang kết nối vào phòng họp Hội Đồng Sư Phạm (Jitsi Meet)...
+                        Đang kết nối vào phòng họp Hội Đồng Sư Phạm ({jitsiServer})...
                       </p>
                     </div>
                   )}
-                  <div ref={jitsiContainerRef} style={{ width: '100%', height: '100%' }} />
+                  <div ref={jitsiContainerRef} style={{ width: '100%', height: '100%', flex: 1 }} />
                 </div>
               )}
 
               {/* ĐỘNG CƠ 2: WEBRTC P2P NỘI BỘ */}
-              {activeEngine === 'webrtc' && (
-                <div style={styles.webrtcWrapper}>
-                  {mediaError && (
-                    <div style={styles.mediaWarningBanner}>
-                      <AlertCircle size={16} /> {mediaError}
-                    </div>
-                  )}
+              {activeEngine === 'webrtc' && (() => {
+                const hasLocalVideo = Boolean(localStream && localStream.getVideoTracks().length > 0 && localStream.getVideoTracks().some(t => t.enabled && t.readyState === 'live') && !isVideoMuted);
+                const hasLocalAudio = Boolean(localStream && localStream.getAudioTracks().length > 0 && localStream.getAudioTracks().some(t => t.enabled && t.readyState === 'live') && !isMicMuted);
 
-                  <div style={styles.videoGrid(Object.keys(remotePeers).length + 1)}>
-                    {/* Video của chính mình */}
-                    <div style={styles.videoCard}>
-                      <video
-                        ref={localVideoRef}
-                        autoPlay
-                        playsInline
-                        muted
-                        style={styles.videoElement(true)}
-                      />
-                      <div style={styles.videoOverlay}>
-                        <span style={styles.videoNameBadge}>
-                          👤 Bạn ({userDisplayName}) {isScreenSharing && '🖥️ (Đang chia sẻ màn hình)'}
-                        </span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                          {isMicMuted && <span style={styles.badgeMuted}><MicOff size={12} /></span>}
-                          {isVideoMuted && <span style={styles.badgeMuted}><VideoOff size={12} /></span>}
-                        </div>
+                return (
+                  <div style={styles.webrtcWrapper}>
+                    {mediaError && (
+                      <div style={styles.mediaWarningBanner}>
+                        <AlertCircle size={16} />
+                        <span style={{ flex: 1 }}>{mediaError}</span>
+                        <button
+                          onClick={() => setShowPermissionGuide(true)}
+                          style={{ background: 'none', border: 'none', color: '#b45309', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontSize: '12px' }}
+                        >
+                          Xem Hướng Dẫn Mở Quyền
+                        </button>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Video của các đồng chí từ xa */}
-                    {Object.entries(remotePeers).map(([peerId, peer]) => (
-                      <div key={peerId} style={styles.videoCard}>
-                        <video
-                          autoPlay
-                          playsInline
-                          ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }}
-                          style={styles.videoElement(false)}
-                        />
+                    <div style={styles.videoGrid(Object.keys(remotePeers).length + 1)}>
+                      {/* Video hoặc Thẻ Đại Biểu của chính mình */}
+                      <div style={styles.videoCard}>
+                        {hasLocalVideo || isScreenSharing ? (
+                          <video
+                            ref={localVideoRef}
+                            autoPlay
+                            playsInline
+                            muted
+                            style={styles.videoElement(true)}
+                          />
+                        ) : (
+                          <div style={styles.delegateCardInner}>
+                            <div style={styles.delegateAvatarRing}>
+                              <div style={styles.delegateAvatarCircle}>
+                                {userDisplayName.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase() || 'CBQ'}
+                              </div>
+                            </div>
+                            <div style={styles.delegateNameText}>{userDisplayName}</div>
+                            <div style={styles.delegateDeptText}>Tổ {userDepartment}</div>
+
+                            <div style={styles.delegateStatusPill}>
+                              {hasLocalAudio ? (
+                                <span style={{ color: '#4ade80', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Mic size={13} /> Mic Đang Bật
+                                </span>
+                              ) : isMicMuted ? (
+                                <span style={{ color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <MicOff size={13} /> Đang Tắt Mic
+                                </span>
+                              ) : (
+                                <span style={{ color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <Headphones size={13} /> Chế Độ Chỉ Lắng Nghe
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Các nút thao tác nhanh ngay trên thẻ */}
+                            <div style={styles.delegateActionsRow}>
+                              <button
+                                onClick={requestMediaAgain}
+                                style={styles.delegateActionBtn}
+                                title="Bật lại Mic / Camera hoặc xin cấp quyền từ trình duyệt"
+                              >
+                                <RefreshCw size={12} /> Cấp Quyền Mic / Cam
+                              </button>
+                              <button
+                                onClick={toggleScreenShare}
+                                style={styles.delegateActionBtnAccent}
+                                title="Chia sẻ slide bài giảng / tài liệu màn hình (hoạt động tốt ngay cả khi không có webcam)"
+                              >
+                                <MonitorUp size={12} /> Chia Sẻ Màn Hình
+                              </button>
+                              <button
+                                onClick={() => setShowPermissionGuide(true)}
+                                style={styles.delegateActionBtnGhost}
+                                title="Xem hướng dẫn bấm biểu tượng ổ khóa 🔒 trên thanh URL để cho phép Mic/Cam"
+                              >
+                                <Lock size={12} /> Hướng Dẫn Mở Quyền
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
                         <div style={styles.videoOverlay}>
                           <span style={styles.videoNameBadge}>
-                            👤 {peer.peerName}
+                            👤 Bạn ({userDisplayName}) {isScreenSharing && '🖥️ (Đang phát màn hình)'}
                           </span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            {isMicMuted && <span style={styles.badgeMuted}><MicOff size={12} /></span>}
+                            {(!hasLocalVideo && !isScreenSharing) && <span style={styles.badgeMuted}><VideoOff size={12} /></span>}
+                          </div>
                         </div>
                       </div>
-                    ))}
+
+                      {/* Video hoặc Thẻ Đại Biểu của các đồng chí từ xa */}
+                      {Object.entries(remotePeers).map(([peerId, peer]) => {
+                        const hasRemoteVid = Boolean(peer.stream && peer.stream.getVideoTracks().length > 0 && peer.stream.getVideoTracks().some(t => t.enabled && t.readyState === 'live'));
+                        return (
+                          <div key={peerId} style={styles.videoCard}>
+                            {/* Audio stream để luôn nghe được tiếng */}
+                            <audio
+                              autoPlay
+                              ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }}
+                            />
+                            {hasRemoteVid ? (
+                              <video
+                                autoPlay
+                                playsInline
+                                ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }}
+                                style={styles.videoElement(false)}
+                              />
+                            ) : (
+                              <div style={styles.delegateCardInner}>
+                                <div style={styles.delegateAvatarRing}>
+                                  <div style={styles.delegateAvatarCircle}>
+                                    {(peer.peerName || 'CBQ').split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase() || 'GV'}
+                                  </div>
+                                </div>
+                                <div style={styles.delegateNameText}>{peer.peerName}</div>
+                                <div style={styles.delegateStatusPill}>
+                                  <span style={{ color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Volume2 size={13} color="#38bdf8" /> Đại Biểu Trực Tuyến
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                            <div style={styles.videoOverlay}>
+                              <span style={styles.videoNameBadge}>
+                                👤 {peer.peerName}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* THANH ĐIỀU KHIỂN NỔI CỦA WEBRTC */}
+                    <div style={styles.webrtcToolbar}>
+                      <button
+                        onClick={toggleMic}
+                        style={styles.controlBtn(!isMicMuted, '#0284c7', '#ef4444')}
+                        title={isMicMuted ? "Bật Micro" : "Tắt Micro"}
+                      >
+                        {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                      </button>
+
+                      <button
+                        onClick={toggleCamera}
+                        style={styles.controlBtn(!isVideoMuted, '#0284c7', '#ef4444')}
+                        title={isVideoMuted ? "Bật Camera" : "Tắt Camera"}
+                      >
+                        {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
+                      </button>
+
+                      <button
+                        onClick={toggleScreenShare}
+                        style={styles.controlBtn(isScreenSharing, '#10b981', '#334155')}
+                        title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
+                      >
+                        <MonitorUp size={20} />
+                      </button>
+
+                      <button
+                        onClick={() => setShowPermissionGuide(true)}
+                        style={styles.controlBtn(false, '#0284c7', '#334155')}
+                        title="Xem hướng dẫn cấp quyền Micro / Camera"
+                      >
+                        <Lock size={18} />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* THANH ĐIỀU KHIỂN NỔI CỦA WEBRTC */}
-                  <div style={styles.webrtcToolbar}>
-                    <button
-                      onClick={toggleMic}
-                      style={styles.controlBtn(!isMicMuted, '#0284c7', '#ef4444')}
-                      title={isMicMuted ? "Bật Micro" : "Tắt Micro"}
-                    >
-                      {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
-                    </button>
-
-                    <button
-                      onClick={toggleCamera}
-                      style={styles.controlBtn(!isVideoMuted, '#0284c7', '#ef4444')}
-                      title={isVideoMuted ? "Bật Camera" : "Tắt Camera"}
-                    >
-                      {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
-                    </button>
-
-                    <button
-                      onClick={toggleScreenShare}
-                      style={styles.controlBtn(isScreenSharing, '#10b981', '#334155')}
-                      title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
-                    >
-                      <MonitorUp size={20} />
-                    </button>
-                  </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* ĐỘNG CƠ 3: CẦU NỐI NGOÀI (GOOGLE MEET / ZOOM) */}
               {activeEngine === 'external' && (
@@ -1391,6 +1660,91 @@ export default function SmartMeetingRoomModal({
           )}
 
         </div>
+
+        {/* MODAL HƯỚNG DẪN CẤP QUYỀN CAMERA & MICRO */}
+        {showPermissionGuide && (
+          <div style={styles.guideModalBackdrop} onClick={() => setShowPermissionGuide(false)}>
+            <div style={styles.guideModalCard} onClick={e => e.stopPropagation()}>
+              <div style={styles.guideModalHeader}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldCheck size={22} color="#0284c7" />
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: 0 }}>
+                    Hướng Dẫn Bật Camera & Micro Cho Trình Duyệt
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setShowPermissionGuide(false)}
+                  style={styles.guideModalCloseBtn}
+                  title="Đóng hướng dẫn"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={styles.guideModalBody}>
+                <p style={{ fontSize: '13px', color: '#475569', marginBottom: '14px', lineHeight: 1.5 }}>
+                  Để phát biểu hoặc bật hình ảnh trong phòng họp trực tuyến, trình duyệt Chrome / Cốc Cốc / Edge cần được cấp quyền sử dụng Micro và Camera:
+                </p>
+
+                {/* 3 BƯỚC HƯỚNG DẪN TRỰC QUAN */}
+                <div style={styles.guideStepBox}>
+                  <div style={styles.guideStepNumber}>1</div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={styles.guideStepTitle}>Bấm vào biểu tượng Ổ Khóa 🔒 trên thanh địa chỉ</h4>
+                    <p style={styles.guideStepDesc}>
+                      Nhìn lên góc trên cùng bên trái của trình duyệt (ngay bên trái chữ <code>localhost</code> hoặc tên miền web trường), Thầy/Cô click vào biểu tượng <strong>Ổ khóa 🔒</strong> hoặc nút <strong>Thông tin trang web</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={styles.guideStepBox}>
+                  <div style={styles.guideStepNumber}>2</div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={styles.guideStepTitle}>Chuyển Máy ảnh & Micrô sang "Cho phép" (Allow)</h4>
+                    <p style={styles.guideStepDesc}>
+                      Tại bảng menu thả xuống, tìm 2 mục: <strong>Máy ảnh (Camera)</strong> và <strong>Micrô (Microphone)</strong>, gạt công tắc sang màu xanh hoặc chọn <strong>"Cho phép"</strong>. (Nếu không thấy, click chọn dòng <em>"Cài đặt trang web / Site settings"</em>).
+                    </p>
+                  </div>
+                </div>
+
+                <div style={styles.guideStepBox}>
+                  <div style={styles.guideStepNumber}>3</div>
+                  <div style={{ flex: 1 }}>
+                    <h4 style={styles.guideStepTitle}>Tải lại trang hoặc Bấm "Thử lại kết nối"</h4>
+                    <p style={styles.guideStepDesc}>
+                      Sau khi cấp quyền, Thầy/Cô bấm phím <strong>F5</strong> để tải lại hoặc bấm nút <strong>"Thử Lại Ngay"</strong> bên dưới để hệ thống nhận diện thiết bị ngay!
+                    </p>
+                  </div>
+                </div>
+
+                {/* LƯU Ý DÀNH CHO MÁY TÍNH BÀN PC */}
+                <div style={styles.guideNoteBox}>
+                  <strong>💡 Lưu ý quan trọng cho Máy tính bàn (PC) không có Webcam/Mic:</strong>
+                  <div style={{ marginTop: '4px', fontSize: '12px', color: '#1e40af', lineHeight: 1.5 }}>
+                    Thầy/Cô vẫn tham gia cuộc họp bình thường ở chế độ <strong>"Chỉ lắng nghe"</strong>. Khi cần báo cáo, Thầy/Cô có thể bấm nút <strong>"🖥️ Chia Sẻ Màn Hình"</strong> để trình chiếu slide PowerPoint, file Word hoặc báo cáo tài liệu cho toàn trường xem mà không cần phải có camera!
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.guideModalFooter}>
+                <button
+                  onClick={() => {
+                    setShowPermissionGuide(false);
+                    if (activeEngine === 'webrtc') {
+                      requestMediaAgain();
+                    } else if (activeEngine === 'jitsi') {
+                      setJitsiReloadKey(k => k + 1);
+                    }
+                  }}
+                  style={styles.guideModalPrimaryBtn}
+                >
+                  <RefreshCw size={14} /> Tôi Đã Cấp Quyền - Thử Lại Ngay
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
@@ -1926,5 +2280,279 @@ const styles = {
     fontWeight: 'bold',
     fontSize: '13px',
     cursor: 'pointer'
+  },
+  jitsiTopToolbar: {
+    padding: '8px 16px',
+    backgroundColor: '#0f172a',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: '8px',
+    flexShrink: 0
+  },
+  serverSelect: {
+    padding: '6px 10px',
+    backgroundColor: '#1e293b',
+    color: '#e2e8f0',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderRadius: '6px',
+    fontSize: '12px',
+    outline: 'none',
+    cursor: 'pointer'
+  },
+  btnSmallGhost: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 10px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    color: '#94a3b8',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    cursor: 'pointer'
+  },
+  btnGuideHighlight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '6px 12px',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    color: '#fbbf24',
+    border: '1px solid #f59e0b',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  jitsiHostNoticeBanner: {
+    padding: '10px 16px',
+    backgroundColor: 'rgba(2, 132, 199, 0.12)',
+    borderBottom: '1px solid rgba(2, 132, 199, 0.25)',
+    display: 'flex',
+    gap: '10px',
+    alignItems: 'flex-start'
+  },
+  jitsiFfrnNoticeBanner: {
+    padding: '8px 16px',
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'center'
+  },
+  delegateCardInner: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '24px',
+    background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+    textAlign: 'center',
+    boxSizing: 'border-box'
+  },
+  delegateAvatarRing: {
+    width: '84px',
+    height: '84px',
+    borderRadius: '50%',
+    background: 'linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)',
+    padding: '3px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    boxShadow: '0 0 20px rgba(56, 189, 248, 0.35)',
+    marginBottom: '12px'
+  },
+  delegateAvatarCircle: {
+    width: '100%',
+    height: '100%',
+    borderRadius: '50%',
+    backgroundColor: '#0f172a',
+    color: '#38bdf8',
+    fontSize: '22px',
+    fontWeight: 'bold',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  delegateNameText: {
+    fontSize: '15px',
+    fontWeight: 'bold',
+    color: '#ffffff',
+    maxWidth: '260px',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  },
+  delegateDeptText: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    marginTop: '3px'
+  },
+  delegateStatusPill: {
+    marginTop: '8px',
+    padding: '4px 12px',
+    borderRadius: '20px',
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    fontSize: '11.5px',
+    fontWeight: '500'
+  },
+  delegateActionsRow: {
+    marginTop: '16px',
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+    justifyContent: 'center'
+  },
+  delegateActionBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    backgroundColor: 'rgba(56, 189, 248, 0.15)',
+    color: '#38bdf8',
+    border: '1px solid rgba(56, 189, 248, 0.3)',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  delegateActionBtnAccent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    backgroundColor: '#059669',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  delegateActionBtnGhost: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    color: '#cbd5e1',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    cursor: 'pointer'
+  },
+  guideModalBackdrop: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    backdropFilter: 'blur(5px)',
+    zIndex: 10005,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px'
+  },
+  guideModalCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '16px',
+    maxWidth: '560px',
+    width: '100%',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+    overflow: 'hidden',
+    display: 'flex',
+    flexDirection: 'column'
+  },
+  guideModalHeader: {
+    padding: '14px 20px',
+    borderBottom: '1px solid #e2e8f0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8fafc'
+  },
+  guideModalCloseBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: '18px',
+    color: '#64748b',
+    cursor: 'pointer',
+    padding: '4px 8px'
+  },
+  guideModalBody: {
+    padding: '20px',
+    maxHeight: '70vh',
+    overflowY: 'auto'
+  },
+  guideStepBox: {
+    display: 'flex',
+    gap: '12px',
+    marginBottom: '12px',
+    padding: '12px 14px',
+    backgroundColor: '#f8fafc',
+    borderRadius: '10px',
+    border: '1px solid #e2e8f0'
+  },
+  guideStepNumber: {
+    width: '26px',
+    height: '26px',
+    borderRadius: '50%',
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: '13px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0
+  },
+  guideStepTitle: {
+    fontSize: '13.5px',
+    fontWeight: 'bold',
+    color: '#0f172a',
+    margin: '0 0 4px 0'
+  },
+  guideStepDesc: {
+    fontSize: '12.5px',
+    color: '#64748b',
+    margin: 0,
+    lineHeight: 1.5
+  },
+  guideNoteBox: {
+    padding: '12px 14px',
+    backgroundColor: '#eff6ff',
+    borderRadius: '10px',
+    border: '1px solid #bfdbfe',
+    fontSize: '13px',
+    color: '#1e40af',
+    marginTop: '6px'
+  },
+  guideModalFooter: {
+    padding: '12px 20px',
+    borderTop: '1px solid #e2e8f0',
+    backgroundColor: '#f8fafc',
+    display: 'flex',
+    justifyContent: 'flex-end'
+  },
+  guideModalPrimaryBtn: {
+    padding: '9px 18px',
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 'bold',
+    fontSize: '13px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
   }
 };
