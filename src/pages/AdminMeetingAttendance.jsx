@@ -1151,7 +1151,9 @@ export default function AdminMeetingAttendance() {
                     if (!currentMeeting) return;
                     const origin = window.location.origin;
                     const directUrl = `${origin}/diem-danh-hop?id=${currentMeeting.id}&join=1`;
-                    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${currentMeeting.title}\n⏰ Thời gian: ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+                    const cleanRoom = `CBQ_THPT_Meeting_${currentMeeting.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
+                    const jitsiDirectUrl = `https://meet.jit.si/${cleanRoom}`;
+                    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${currentMeeting.title}\n⏰ Thời gian: ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n\n🔗 Link vào họp & Điểm danh trường:\n${directUrl}\n\n🚀 Link vào thẳng Video (Không giới hạn thời gian):\n${jitsiDirectUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
                     navigator.clipboard.writeText(message);
                     setCopiedToast('📋 Đã sao chép link mời họp trực tiếp! Thầy/Cô có thể dán gửi Zalo.');
                     setTimeout(() => setCopiedToast(''), 4000);
@@ -1609,7 +1611,9 @@ export default function AdminMeetingAttendance() {
                       onClick={() => {
                         const origin = window.location.origin;
                         const directUrl = `${origin}/diem-danh-hop?id=${m.id}&join=1`;
-                        const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${m.title}\n⏰ Thời gian: ${new Date(m.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+                        const cleanRoom = `CBQ_THPT_Meeting_${m.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
+                        const jitsiDirectUrl = `https://meet.jit.si/${cleanRoom}`;
+                        const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${m.title}\n⏰ Thời gian: ${new Date(m.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n\n🔗 Link vào họp & Điểm danh trường:\n${directUrl}\n\n🚀 Link vào thẳng Video (Không giới hạn thời gian):\n${jitsiDirectUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
                         navigator.clipboard.writeText(message);
                         setCopiedToast(`📋 Đã sao chép link mời họp "${m.title}"!`);
                         setTimeout(() => setCopiedToast(''), 4000);

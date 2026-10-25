@@ -320,7 +320,8 @@ export default function SmartMeetingRoomModal({
   const handleCopyDirectLink = () => {
     const origin = window.location.origin;
     const directUrl = `${origin}/diem-danh-hop?id=${meeting.id}&join=1`;
-    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${meeting.title}\n⏰ Thời gian: ${new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+    const jitsiDirectUrl = `https://meet.jit.si/${cleanRoomName}`;
+    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${meeting.title}\n⏰ Thời gian: ${new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n\n🔗 Link vào phòng họp & Tự động điểm danh:\n${directUrl}\n\n🚀 Link vào thẳng phòng họp Video (Không giới hạn thời gian):\n${jitsiDirectUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
 
     navigator.clipboard.writeText(message);
     setCopiedLinkToast(true);
@@ -1228,11 +1229,18 @@ export default function SmartMeetingRoomModal({
                   <div style={styles.jitsiTopToolbar}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <Server size={14} color="#38bdf8" /> Máy chủ Jitsi:
+                        <Server size={14} color="#38bdf8" /> Máy chủ: <strong>meet.jit.si</strong> (Jitsi Cloud 8x8)
                       </span>
-                      <span style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'bold', backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
-                        🌐 meet.jit.si (Jitsi Cloud 8x8 Toàn Cầu)
-                      </span>
+
+                      <a
+                        href={`https://meet.jit.si/${cleanRoomName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={styles.btnOpenNewTabHighlight}
+                        title="Mở phòng họp trong tab mới - Không giới hạn 5 phút, miễn phí 100%, chạy mượt như Google Meet"
+                      >
+                        <ExternalLink size={14} /> 🚀 Mở Trong Tab Mới (Không Giới Hạn Thời Gian)
+                      </a>
 
                       <button
                         onClick={() => setJitsiReloadKey(k => k + 1)}
@@ -1241,16 +1249,6 @@ export default function SmartMeetingRoomModal({
                       >
                         <RefreshCw size={13} /> Tải lại phòng
                       </button>
-
-                      <a
-                        href={`https://meet.jit.si/${cleanRoomName}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        style={styles.btnOpenNewTab}
-                        title="Mở phòng họp trong tab mới riêng biệt (hoạt động độc lập như Google Meet)"
-                      >
-                        <ExternalLink size={13} /> Mở Trong Tab Mới
-                      </a>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1268,8 +1266,8 @@ export default function SmartMeetingRoomModal({
                   <div style={styles.jitsiHostNoticeBanner}>
                     <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
                     <div style={{ fontSize: '12.5px', color: '#e0f2fe', lineHeight: 1.5 }}>
-                      <strong>💡 Dành Cho Ban Giám Hiệu / Chủ Tọa Mở Phòng:</strong> Khi phòng họp mới tạo, nếu màn hình Jitsi bên dưới hiển thị thông báo <em>"The conference has not yet started because no moderators have yet arrived..."</em> (chính sách bảo vệ của Jitsi), Thầy/Cô chỉ cần click nút <strong>"Mình là quản trị viên" (I am the host)</strong> và đăng nhập tài khoản Google 1 lần duy nhất để mở phòng. Toàn bộ giáo viên vào sau sẽ được vào thẳng 100% không cần đăng nhập!<br />
-                      👉 <em>Mẹo hay:</em> Thầy/Cô có thể bấm nút <strong>"Mở Trong Tab Mới"</strong> ở thanh trên để họp trên một tab trình duyệt riêng biệt mượt mà như Google Meet.
+                      <strong>💡 Họp Hội Đồng Sư Phạm Không Giới Hạn Thời Gian:</strong> Do chính sách thương mại của Jitsi 8x8 hiển thị thông báo giới hạn 5 phút khi nhúng iframe trên web, Thầy/Cô hãy click ngay nút <strong>"🚀 Mở Trong Tab Mới (Không Giới Hạn Thời Gian)"</strong> màu xanh phía trên. Khi mở trên tab riêng, cuộc họp được <strong>HOÀN TOÀN MIỄN PHÍ, KHÔNG BỊ GIỚI HẠN 5 PHÚT</strong> và chạy cực kỳ mượt mà như Google Meet!<br />
+                      👉 <em>Mẹo thêm:</em> Tab quản trị này vẫn giữ mở song song để hệ thống tự động ghi nhận điểm danh, biểu quyết và xuất biên bản Word cho Thầy/Cô.
                     </div>
                   </div>
 
@@ -2472,6 +2470,21 @@ const styles = {
     fontWeight: 'bold',
     textDecoration: 'none',
     cursor: 'pointer'
+  },
+  btnOpenNewTabHighlight: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 14px',
+    backgroundColor: '#16a34a',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    textDecoration: 'none',
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(22, 163, 74, 0.35)'
   },
   btnGuideHighlight: {
     display: 'flex',

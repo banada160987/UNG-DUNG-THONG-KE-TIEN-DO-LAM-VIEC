@@ -181,6 +181,8 @@ function App() {
             <Route path="/dang-ky-xe" element={<PublicParkingRegister />} />
             <Route path="/thi-truc-tuyen" element={<PublicQuiz />} />
             <Route path="/hop-online" element={<PublicMeetingAttendance />} />
+            <Route path="/diem-danh-hop" element={<PublicMeetingAttendance />} />
+            <Route path="/hop-truc-tuyen" element={<PublicMeetingAttendance />} />
             <Route path="/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
             <Route path="/giao-vien/diem-danh-hop-online" element={<PublicMeetingAttendance />} />
             
