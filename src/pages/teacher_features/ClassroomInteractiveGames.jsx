@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import Confetti from 'react-confetti';
 import {
@@ -60,6 +60,7 @@ export const KAHOOT_THEME = [
 
 export default function ClassroomInteractiveGames() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // 1. DATA STATE (NẠP TRỰC TIẾP TỪ DATABASE)
   const [loading, setLoading] = useState(true);
@@ -309,16 +310,32 @@ export default function ClassroomInteractiveGames() {
         const classes = [...new Set(normalizedStudents.map(s => s.student_class).filter(Boolean))].sort();
         setClassesList(classes);
 
-        // Ưu tiên chọn lớp chủ nhiệm của giáo viên nếu có trong phiên
+        // 1. Ưu tiên lớp được truyền từ Thời khóa biểu (location.state.classId)
+        // 2. Tiếp theo là lớp chủ nhiệm của giáo viên
+        // 3. Mặc định là lớp đầu tiên
         const teacherSess = getTeacherSession();
-        const preferredClass = teacherSess?.homeroomClass && classes.includes(teacherSess.homeroomClass)
-          ? teacherSess.homeroomClass
-          : classes[0];
+        const incomingClass = location.state?.classId;
+        const preferredClass = (incomingClass && classes.includes(incomingClass))
+          ? incomingClass
+          : (teacherSess?.homeroomClass && classes.includes(teacherSess.homeroomClass)
+              ? teacherSess.homeroomClass
+              : classes[0]);
 
         if (classes.length > 0) {
           setSelectedClass(preferredClass);
           const initialClassStudents = normalizedStudents.filter(s => s.student_class === preferredClass);
           setClassStudents(initialClassStudents);
+        }
+
+        // Tự động nhận môn học từ Thời khóa biểu nếu có
+        if (location.state?.subject) {
+          const incSub = String(location.state.subject).trim();
+          const matchedSub = HIGH_SCHOOL_SUBJECTS.find(s => 
+            s.toLowerCase().includes(incSub.toLowerCase()) || incSub.toLowerCase().includes(s.toLowerCase())
+          );
+          if (matchedSub) {
+            setSelectedSubject(matchedSub);
+          }
         }
       }
     } catch (err) {

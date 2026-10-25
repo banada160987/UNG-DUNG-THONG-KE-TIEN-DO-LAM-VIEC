@@ -306,7 +306,18 @@ export function getTeacherSmartNotification(todayLessons = [], currentClockMinut
     const endMin = eh * 60 + em;
 
     // 1. Đang trong giờ dạy
-    if (currentClockMinutes >= startMin && currentClockMinutes <= endMin) {
+    // Nếu trùng phút giao giữa 2 tiết liên tiếp, ưu tiên chuyển ngay sang tiết mới
+    const isExactEndMinute = currentClockMinutes === endMin;
+    const isNextLessonStartingNow = isExactEndMinute && sortedLessons.some(nl => {
+      const np = periodTimings.find(pt => pt.period === Number(nl.period));
+      if (!np?.start) return false;
+      const [nsh, nsm] = np.start.split(':').map(Number);
+      return (nsh * 60 + nsm) === currentClockMinutes;
+    });
+
+    const className = lesson.student_class || lesson.class || '';
+
+    if (currentClockMinutes >= startMin && currentClockMinutes <= endMin && !isNextLessonStartingNow) {
       const minutesRemaining = endMin - currentClockMinutes;
       return {
         type: 'current',
@@ -319,7 +330,7 @@ export function getTeacherSmartNotification(todayLessons = [], currentClockMinut
         badgeColor: '#15803d',
         borderColor: '#86efac',
         cardBg: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-        title: `Tiết ${periodNum}: Lớp ${lesson.student_class} (Môn ${lesson.subject})`,
+        title: `Tiết ${periodNum}: ${className ? `Lớp ${className}` : ''} (${lesson.subject || 'Môn học'})`,
         subtitle: `Khung giờ: ${timing.start} – ${timing.end} (Còn ${minutesRemaining} phút nữa hết tiết)`,
         actionLabel: 'Mở Trò Chơi Lớp Học',
         actionType: 'game'
@@ -340,7 +351,7 @@ export function getTeacherSmartNotification(todayLessons = [], currentClockMinut
         badgeColor: '#b45309',
         borderColor: '#fde68a',
         cardBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
-        title: `Chuẩn bị Tiết ${periodNum}: Lớp ${lesson.student_class} (Môn ${lesson.subject})`,
+        title: `Chuẩn bị Tiết ${periodNum}: ${className ? `Lớp ${className}` : ''} (${lesson.subject || 'Môn học'})`,
         subtitle: `Bắt đầu lúc ${timing.start} (Còn ${minutesToStart} phút nữa)`,
         actionLabel: 'Vào Lớp Ngay',
         actionType: 'start'

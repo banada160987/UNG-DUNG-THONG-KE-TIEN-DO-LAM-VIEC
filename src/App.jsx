@@ -221,7 +221,7 @@ function App() {
             <Route path="/teacher/class-journal" element={<TeacherRoute><ClassJournal /></TeacherRoute>} />
             <Route path="/teacher-dashboard/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
             <Route path="/teacher/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
-            <Route path="/so-dau-bai-dien-tu" element={<StudentRoute><ClassJournal /></StudentRoute>} />
+            <Route path="/so-dau-bai-dien-tu" element={<ClassJournal />} />
             <Route path="/tu-van-to-hop-2-cong-2" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
             <Route path="/tu-van-nghe-nghiep" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
             

@@ -100,7 +100,8 @@ export function generateTeacherIcsContent(teacherName, lessons = [], periodTimin
   ];
 
   lessons.forEach((l, idx) => {
-    const dayKey = String(l.day || '').trim().toLowerCase();
+    const rawDay = l.day || l.day_of_week || '';
+    const dayKey = String(rawDay).trim().toLowerCase();
     const dayMeta = DAY_MAP[dayKey];
     if (!dayMeta) return;
 
@@ -108,6 +109,7 @@ export function generateTeacherIcsContent(teacherName, lessons = [], periodTimin
     const timing = periodTimings.find(pt => pt.period === periodNum);
     const startTime = timing?.start || (periodNum <= 5 ? '07:00' : '13:00');
     const endTime = timing?.end || (periodNum <= 5 ? '07:45' : '13:45');
+    const className = l.student_class || l.class || '';
 
     // Tính ngày cụ thể của tiết đầu tiên trong tuần
     const eventDate = new Date(mondayDate);
@@ -117,9 +119,9 @@ export function generateTeacherIcsContent(teacherName, lessons = [], periodTimin
     const dtEnd = formatIcsDateTime(eventDate, endTime);
     const uid = `cbq-gv-${toSafeFilename(teacherName)}-p${periodNum}-${dayMeta.byDay}-${idx}@cbq.edu.vn`;
 
-    const summary = `Tiết ${periodNum}: ${l.class || 'Lớp'} - Môn ${l.subject || 'Học'}`;
-    const description = `Giờ giảng dạy tại Trường THPT Cao Bá Quát\\n- Thầy/Cô: ${teacherName}\\n- Lớp: ${l.class || 'Không rõ'}\\n- Môn học: ${l.subject || 'Chưa xếp'}\\n- Tiết: ${periodNum} (${startTime} - ${endTime})\\n- Điểm danh & Trò chơi lớp học đã sẵn sàng trên hệ thống.`;
-    const location = `Phòng học ${l.class || ''} - Trường THPT Cao Bá Quát`;
+    const summary = `Tiết ${periodNum}: ${className ? `Lớp ${className}` : ''} - Môn ${l.subject || 'Học'}`.trim();
+    const description = `Giờ giảng dạy tại Trường THPT Cao Bá Quát\\n- Thầy/Cô: ${teacherName}\\n- Lớp: ${className || 'Chưa rõ'}\\n- Môn học: ${l.subject || 'Chưa xếp'}\\n- Tiết: ${periodNum} (${startTime} - ${endTime})\\n- Điểm danh & Trò chơi lớp học đã sẵn sàng trên hệ thống.`;
+    const location = `Phòng học ${className || ''} - Trường THPT Cao Bá Quát`;
 
     calendarLines.push(
       'BEGIN:VEVENT',
