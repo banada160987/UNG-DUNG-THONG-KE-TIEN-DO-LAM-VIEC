@@ -1658,14 +1658,14 @@ export default function TeacherDashboard() {
                       </span>
                     </div>
                     <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
-                      TKB & Lịch Tuần BGH
+                      Thời Khóa Biểu & Lịch Giảng Dạy
                     </h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                      Tra cứu Thời khóa biểu cá nhân, lịch dạy theo lớp, lịch công tác BGH và lịch trực ban toàn trường.
+                      Tra cứu TKB cá nhân, mở nhanh tiết dạy 1 lần bấm, tìm đồng nghiệp trống tiết đổi giờ và lưu lịch nhắc chuông vào điện thoại.
                     </p>
                   </div>
                   <button
-                    onClick={() => navigate('/lich-cong-tac')}
+                    onClick={() => navigate('/lich-cong-tac?tab=teacher_tkb')}
                     style={{
                       marginTop: '20px',
                       width: '100%',
@@ -1684,7 +1684,7 @@ export default function TeacherDashboard() {
                       boxShadow: '0 3px 8px rgba(124,58,237,0.3)'
                     }}
                   >
-                    <Calendar size={16} /> Tra Cứu TKB Toàn Trường
+                    <Calendar size={16} /> Tra Cứu TKB & Mở Nhanh Tiết Dạy
                   </button>
                 </div>
 

@@ -70,15 +70,15 @@ import { saveTimetableConfigToCloud, fetchTimetableConfigFromCloud } from '../ut
 
 export const PRESET_TIMINGS_STANDARD = [
   { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
-  { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
-  { period: 3, session: 'Sáng', start: '08:50', end: '09:35', label: 'Tiết 3 (08:50 - 09:35)' },
-  { period: 4, session: 'Sáng', start: '09:35', end: '10:20', label: 'Tiết 4 (09:35 - 10:20)' },
+  { period: 2, session: 'Sáng', start: '07:45', end: '08:30', label: 'Tiết 2 (07:45 - 08:30)' },
+  { period: 3, session: 'Sáng', start: '08:45', end: '09:30', label: 'Tiết 3 (08:45 - 09:30)' },
+  { period: 4, session: 'Sáng', start: '09:30', end: '10:15', label: 'Tiết 4 (09:30 - 10:15)' },
   { period: 5, session: 'Sáng', start: '10:20', end: '11:05', label: 'Tiết 5 (10:20 - 11:05)' },
-  { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
-  { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
-  { period: 8, session: 'Chiều', start: '15:20', end: '16:05', label: 'Tiết 8 (15:20 - 16:05)' },
-  { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
-  { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
+  { period: 6, session: 'Chiều', start: '13:00', end: '13:45', label: 'Tiết 6 (13:00 - 13:45)' },
+  { period: 7, session: 'Chiều', start: '13:45', end: '14:30', label: 'Tiết 7 (13:45 - 14:30)' },
+  { period: 8, session: 'Chiều', start: '14:30', end: '15:15', label: 'Tiết 8 (14:30 - 15:15)' },
+  { period: 9, session: 'Chiều', start: '15:30', end: '16:15', label: 'Tiết 9 (15:30 - 16:15)' },
+  { period: 10, session: 'Chiều', start: '16:20', end: '17:05', label: 'Tiết 10 (16:20 - 17:05)' }
 ];
 
 export const PRESET_TIMINGS_WINTER = [
@@ -8498,7 +8498,7 @@ export default function AdminSchedule() {
                   onClick={() => setEditingPeriodTimings(PRESET_TIMINGS_STANDARD)}
                   style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #0284c7', backgroundColor: '#e0f2fe', color: '#0369a1', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                 >
-                  ⚡ Chuẩn THPT (07:00 / 13:30 - 45p)
+                  ⚡ Chuẩn THPT (07:00 / 13:00 - 45p)
                 </button>
                 <button
                   type="button"

@@ -27,6 +27,7 @@ import {
   resolvePdfUrl
 } from '../utils/decree30ScheduleWord';
 import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
+import { downloadTeacherScheduleIcs } from '../utils/icalExporter';
 
 /**
  * Trích xuất các sự kiện / nhiệm vụ trọng tâm thực tế của tuần học
@@ -89,15 +90,15 @@ const DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
 
 export const DEFAULT_PERIOD_TIMINGS = [
   { period: 1, session: 'Sáng', start: '07:00', end: '07:45', label: 'Tiết 1 (07:00 - 07:45)' },
-  { period: 2, session: 'Sáng', start: '07:50', end: '08:35', label: 'Tiết 2 (07:50 - 08:35)' },
-  { period: 3, session: 'Sáng', start: '08:50', end: '09:35', label: 'Tiết 3 (08:50 - 09:35)' },
-  { period: 4, session: 'Sáng', start: '09:35', end: '10:20', label: 'Tiết 4 (09:35 - 10:20)' },
+  { period: 2, session: 'Sáng', start: '07:45', end: '08:30', label: 'Tiết 2 (07:45 - 08:30)' },
+  { period: 3, session: 'Sáng', start: '08:45', end: '09:30', label: 'Tiết 3 (08:45 - 09:30)' },
+  { period: 4, session: 'Sáng', start: '09:30', end: '10:15', label: 'Tiết 4 (09:30 - 10:15)' },
   { period: 5, session: 'Sáng', start: '10:20', end: '11:05', label: 'Tiết 5 (10:20 - 11:05)' },
-  { period: 6, session: 'Chiều', start: '13:30', end: '14:15', label: 'Tiết 6 (13:30 - 14:15)' },
-  { period: 7, session: 'Chiều', start: '14:20', end: '15:05', label: 'Tiết 7 (14:20 - 15:05)' },
-  { period: 8, session: 'Chiều', start: '15:20', end: '16:05', label: 'Tiết 8 (15:20 - 16:05)' },
-  { period: 9, session: 'Chiều', start: '16:10', end: '16:55', label: 'Tiết 9 (16:10 - 16:55)' },
-  { period: 10, session: 'Chiều', start: '17:00', end: '17:45', label: 'Tiết 10 (17:00 - 17:45)' }
+  { period: 6, session: 'Chiều', start: '13:00', end: '13:45', label: 'Tiết 6 (13:00 - 13:45)' },
+  { period: 7, session: 'Chiều', start: '13:45', end: '14:30', label: 'Tiết 7 (13:45 - 14:30)' },
+  { period: 8, session: 'Chiều', start: '14:30', end: '15:15', label: 'Tiết 8 (14:30 - 15:15)' },
+  { period: 9, session: 'Chiều', start: '15:30', end: '16:15', label: 'Tiết 9 (15:30 - 16:15)' },
+  { period: 10, session: 'Chiều', start: '16:20', end: '17:05', label: 'Tiết 10 (16:20 - 17:05)' }
 ];
 
 export const getStoredPeriodTimings = () => {
@@ -234,8 +235,8 @@ export const getTodayVN = (customTimings = null, customDate = null) => {
 
     const mStartMin = mP1 ? Number(mP1.start.split(':')[0]) * 60 + Number(mP1.start.split(':')[1]) : 7 * 60;
     const mEndMin = mP5 ? Number(mP5.end.split(':')[0]) * 60 + Number(mP5.end.split(':')[1]) : 11 * 60 + 5;
-    const aStartMin = aP6 ? Number(aP6.start.split(':')[0]) * 60 + Number(aP6.start.split(':')[1]) : 13 * 60 + 30;
-    const aEndMin = aP10 ? Number(aP10.end.split(':')[0]) * 60 + Number(aP10.end.split(':')[1]) : 17 * 60 + 45;
+    const aStartMin = aP6 ? Number(aP6.start.split(':')[0]) * 60 + Number(aP6.start.split(':')[1]) : 13 * 60;
+    const aEndMin = aP10 ? Number(aP10.end.split(':')[0]) * 60 + Number(aP10.end.split(':')[1]) : 17 * 60 + 5;
 
     if (currentMinutes < mStartMin) {
       statusText = `Sắp bắt đầu Ca Sáng (Vào học lúc ${mP1?.start || '07:00'})`;
@@ -248,7 +249,7 @@ export const getTodayVN = (customTimings = null, customDate = null) => {
       statusText = nextP ? `Giờ ra chơi / Chuẩn bị vào Tiết ${nextP.period} (${nextP.start})` : 'Giờ giải lao ca sáng';
       sessionName = 'Giải lao Ca Sáng';
     } else if (currentMinutes >= mEndMin && currentMinutes < aStartMin) {
-      statusText = `Nghỉ trưa bán trú • Vào ca chiều lúc ${aP6?.start || '13:30'}`;
+      statusText = `Nghỉ trưa bán trú • Vào ca chiều lúc ${aP6?.start || '13:00'}`;
       sessionName = 'Nghỉ trưa';
     } else if (currentMinutes >= aStartMin && currentMinutes < aEndMin) {
       const nextP = timings.find(pt => {
@@ -279,6 +280,77 @@ export const getTodayVN = (customTimings = null, customDate = null) => {
     minutesLeftInPeriod
   };
 };
+
+/**
+ * Xác định thông báo nhắc giờ giảng dạy cho giáo viên theo thời gian thực
+ * Chỉ hiện khi:
+ * 1. Cách giờ bắt đầu tiết dạy từ 1 đến 20 phút (sắp vào lớp)
+ * 2. Đang trong giờ dạy (tiết đang diễn ra)
+ * Ngoài ra: trả về null để hoàn toàn ẩn thông báo, giữ màn hình gọn gàng
+ */
+export function getTeacherSmartNotification(todayLessons = [], currentClockMinutes = 0, isSchoolDay = true, periodTimings = DEFAULT_PERIOD_TIMINGS) {
+  if (!isSchoolDay || !Array.isArray(todayLessons) || todayLessons.length === 0) {
+    return null;
+  }
+
+  const sortedLessons = [...todayLessons].sort((a, b) => Number(a?.period || 0) - Number(b?.period || 0));
+
+  for (const lesson of sortedLessons) {
+    const periodNum = Number(lesson.period);
+    const timing = periodTimings.find(pt => pt.period === periodNum);
+    if (!timing || !timing.start || !timing.end) continue;
+
+    const [sh, sm] = timing.start.split(':').map(Number);
+    const [eh, em] = timing.end.split(':').map(Number);
+    const startMin = sh * 60 + sm;
+    const endMin = eh * 60 + em;
+
+    // 1. Đang trong giờ dạy
+    if (currentClockMinutes >= startMin && currentClockMinutes <= endMin) {
+      const minutesRemaining = endMin - currentClockMinutes;
+      return {
+        type: 'current',
+        lesson,
+        timing,
+        period: periodNum,
+        minutesRemaining,
+        badgeText: '🟢 Đang Trong Giờ Dạy',
+        badgeBg: '#dcfce7',
+        badgeColor: '#15803d',
+        borderColor: '#86efac',
+        cardBg: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+        title: `Tiết ${periodNum}: Lớp ${lesson.student_class} (Môn ${lesson.subject})`,
+        subtitle: `Khung giờ: ${timing.start} – ${timing.end} (Còn ${minutesRemaining} phút nữa hết tiết)`,
+        actionLabel: 'Mở Trò Chơi Lớp Học',
+        actionType: 'game'
+      };
+    }
+
+    // 2. Sắp đến giờ lên lớp (trước từ 1 đến 20 phút)
+    const minutesToStart = startMin - currentClockMinutes;
+    if (minutesToStart > 0 && minutesToStart <= 20) {
+      return {
+        type: 'upcoming',
+        lesson,
+        timing,
+        period: periodNum,
+        minutesToStart,
+        badgeText: '⏰ Sắp Đến Giờ Lên Lớp',
+        badgeBg: '#fef3c7',
+        badgeColor: '#b45309',
+        borderColor: '#fde68a',
+        cardBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+        title: `Chuẩn bị Tiết ${periodNum}: Lớp ${lesson.student_class} (Môn ${lesson.subject})`,
+        subtitle: `Bắt đầu lúc ${timing.start} (Còn ${minutesToStart} phút nữa)`,
+        actionLabel: 'Vào Lớp Ngay',
+        actionType: 'start'
+      };
+    }
+  }
+
+  // Ngoài khung giờ trên: ẩn hoàn toàn
+  return null;
+}
 
 const TEACHER_FULL_MAP = {
   "Thảo": "Lê Thị Thảo", "Thơ": "Phạm Thị Nguyệt Thơ", "Lam (T)": "Nguyễn Hữu Lam",
@@ -481,6 +553,16 @@ export default function PublicSchedule() {
   const [freeSubjectFilter, setFreeSubjectFilter] = useState('all'); // 'all' | subject name
   const [freeSearchQuery, setFreeSearchQuery] = useState('');
   const [freeViewMode, setFreeViewMode] = useState('cards'); // 'cards' | 'matrix'
+
+  // Tiện ích mới: Ghi nhớ đóng bảng giới thiệu & thông báo xuất file .ics
+  const [hideTeacherIntro, setHideTeacherIntro] = useState(() => {
+    try {
+      return localStorage.getItem('cbq_hide_teacher_schedule_intro') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+  const [exportIcsSuccessMsg, setExportIcsSuccessMsg] = useState(null);
 
   const [copiedAdminLink, setCopiedAdminLink] = useState(false);
   const [copiedPublicLink, setCopiedPublicLink] = useState(false);
@@ -853,6 +935,39 @@ export default function PublicSchedule() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `TKB_${selectedTeacher}`);
     XLSX.writeFile(wb, `1-ThoiKhoaBieu_GV_${selectedTeacher.replace(/\s+/g, '_')}_2026_2027.xlsx`);
+  };
+
+  const handleExportTeacherIcs = () => {
+    try {
+      if (!selectedTeacher) {
+        alert('Vui lòng chọn giáo viên trước khi xuất lịch.');
+        return;
+      }
+      const teacherLessons = Array.isArray(timetableData)
+        ? timetableData.filter(t => isSameTeacher(t?.teacher_name, selectedTeacher))
+        : [];
+      if (teacherLessons.length === 0) {
+        alert(`Không tìm thấy tiết dạy nào của Thầy/Cô ${selectedTeacher} trong thời khóa biểu hiện tại.`);
+        return;
+      }
+      const filename = downloadTeacherScheduleIcs(
+        selectedTeacher,
+        teacherLessons,
+        periodTimings || DEFAULT_PERIOD_TIMINGS
+      );
+      setExportIcsSuccessMsg(`Đã tải về máy: ${filename}. Thầy/Cô hãy mở tệp này để tự động nạp lịch dạy vào điện thoại (có chuông báo trước 15 phút mỗi tiết)!`);
+      setTimeout(() => setExportIcsSuccessMsg(null), 10000);
+    } catch (err) {
+      console.error('Lỗi xuất tệp ICS:', err);
+      alert('Có lỗi xảy ra khi tạo tệp lịch điện thoại: ' + (err?.message || err));
+    }
+  };
+
+  const handleDismissTeacherIntro = () => {
+    try {
+      localStorage.setItem('cbq_hide_teacher_schedule_intro', 'true');
+    } catch (e) {}
+    setHideTeacherIntro(true);
   };
 
   const getClassesForGrade = (grade) => {
@@ -2251,6 +2366,13 @@ export default function PublicSchedule() {
 
                     <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       <button
+                        onClick={handleExportTeacherIcs}
+                        style={{ ...styles.printBtn, backgroundColor: '#0284c7' }}
+                        title="Tải tệp lịch (.ics) có chuông báo trước 15 phút về điện thoại"
+                      >
+                        <Calendar size={16} /> Lưu Lịch Điện Thoại (.ics)
+                      </button>
+                      <button
                         onClick={handleExportTeacherTkbExcel}
                         style={{ ...styles.printBtn, backgroundColor: '#15803d' }}
                       >
@@ -2293,6 +2415,294 @@ export default function PublicSchedule() {
               )}
 
             </div>
+
+            {/* THÔNG BÁO TẢI FILE ICS THÀNH CÔNG */}
+            {exportIcsSuccessMsg && (
+              <div className="no-print" style={{
+                backgroundColor: '#ecfdf5',
+                border: '1.5px solid #6ee7b7',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                marginBottom: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '10px',
+                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.1)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <CheckCircle2 size={20} color="#059669" />
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: '#065f46' }}>
+                    {exportIcsSuccessMsg}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setExportIcsSuccessMsg(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#059669', fontSize: '16px', padding: '4px' }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* BẢNG GIỚI THIỆU TIỆN ÍCH MỚI DÀNH CHO GIÁO VIÊN (CÓ NÚT ĐÓNG GHI NHỚ) */}
+            {activeMainTab === 'teacher_tkb' && !hideTeacherIntro && (
+              <div className="no-print" style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%)',
+                border: '1.5px solid #7dd3fc',
+                borderRadius: '16px',
+                padding: '16px 20px',
+                marginBottom: '18px',
+                boxShadow: '0 4px 14px rgba(2, 132, 199, 0.08)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', flex: 1, minWidth: '280px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '12px',
+                    backgroundColor: '#ffffff',
+                    border: '1px solid #bae6fd',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '22px',
+                    flexShrink: 0,
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)'
+                  }}>
+                    💡
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '14.5px', fontWeight: '900', color: '#0369a1', marginBottom: '4px' }}>
+                      Tiện ích trợ giảng mới khi tra cứu Thời khóa biểu
+                    </div>
+                    <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.5' }}>
+                      • <strong>Vào nhanh tiết dạy (1 lần bấm):</strong> Bấm vào bất kỳ ô tiết học nào trên bảng để mở phòng Trò chơi lớp học, Ký sổ đầu bài hoặc xem học liệu.<br />
+                      • <strong>Tìm đồng nghiệp đổi giờ:</strong> Tìm nhanh Thầy/Cô cùng tổ đang trống tiết khi cần báo dạy thay.<br />
+                      • <strong>Lưu lịch vào điện thoại:</strong> Tải tệp lịch có chuông báo tự động trước 15 phút trước mỗi tiết học (Sáng 07:00–11:05, Chiều 13:00–17:05).
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDismissTeacherIntro}
+                  style={{
+                    padding: '7px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #0284c7',
+                    backgroundColor: '#ffffff',
+                    color: '#0284c7',
+                    fontWeight: 'bold',
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    alignSelf: 'center',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                  title="Đóng bảng hướng dẫn và ghi nhớ vào máy"
+                >
+                  ✓ Đã hiểu & Đóng lại
+                </button>
+              </div>
+            )}
+
+            {/* THÔNG BÁO NHẮC GIỜ LÊN LỚP THÔNG MINH (CHỈ HIỆN KHI CÒN 15-20 PHÚT HOẶC ĐANG TRONG TIẾT) */}
+            {activeMainTab === 'teacher_tkb' && (() => {
+              const smartAlert = getTeacherSmartNotification(
+                todayLessons,
+                todayInfo.currentMinutes,
+                todayInfo.isSchoolDay,
+                periodTimings || DEFAULT_PERIOD_TIMINGS
+              );
+              if (!smartAlert) return null; // HOÀN TOÀN ẨN NGOÀI KHUNG GIỜ NÀY!
+
+              return (
+                <div className="no-print" style={{
+                  background: smartAlert.cardBg,
+                  border: `2px solid ${smartAlert.borderColor}`,
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  marginBottom: '18px',
+                  boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: '16px',
+                  flexWrap: 'wrap'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '280px' }}>
+                    <div style={{ fontSize: '28px' }}>
+                      {smartAlert.type === 'current' ? '🟢' : '⏰'}
+                    </div>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: '800',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor: smartAlert.badgeBg,
+                          color: smartAlert.badgeColor
+                        }}>
+                          {smartAlert.badgeText}
+                        </span>
+                        <span style={{ fontSize: '14.5px', fontWeight: '900', color: '#0f172a' }}>
+                          {smartAlert.title}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#475569' }}>
+                        {smartAlert.subtitle}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigate('/tro-choi-hoc-tap', {
+                          state: {
+                            classId: smartAlert.lesson.student_class,
+                            subject: smartAlert.lesson.subject,
+                            autoSelect: true
+                          }
+                        });
+                      }}
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        fontWeight: '800',
+                        fontSize: '13px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(2, 132, 199, 0.35)'
+                      }}
+                    >
+                      🎮 Mở Trò Chơi Lớp Học
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedLessonDetail({
+                          ...smartAlert.lesson,
+                          day: todayInfo.dayName
+                        });
+                      }}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        color: '#334155',
+                        fontWeight: '700',
+                        fontSize: '13px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📋 Chi Tiết Tiết Học
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* BẢNG ĐẾM SỐ TIẾT DẠY & LỊCH NGHỈ CỦA THẦY/CÔ */}
+            {activeMainTab === 'teacher_tkb' && (() => {
+              const totalPeriods = currentTargetLessons.length;
+              const morningPeriods = currentTargetLessons.filter(t => Number(t?.period || 0) <= 5).length;
+              const afternoonPeriods = currentTargetLessons.filter(t => Number(t?.period || 0) >= 6).length;
+
+              const dayStats = DAYS.map(d => ({
+                day: d,
+                count: currentTargetLessons.filter(t => t?.day_of_week === d).length
+              }));
+              const daysOff = dayStats.filter(ds => ds.count === 0).map(ds => ds.day);
+              const maxDay = [...dayStats].sort((a, b) => b.count - a.count)[0];
+
+              return (
+                <div className="no-print" style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: '12px',
+                  marginBottom: '18px'
+                }}>
+                  {/* Ô 1: Tổng số tiết */}
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #bae6fd',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.05)'
+                  }}>
+                    <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#0369a1', textTransform: 'uppercase' }}>
+                      Tổng số tiết dạy trong tuần
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px', marginTop: '3px' }}>
+                      <span style={{ fontSize: '24px', fontWeight: '900', color: '#0284c7' }}>{totalPeriods}</span>
+                      <span style={{ fontSize: '12.5px', color: '#64748b' }}>tiết / tuần</span>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                      Định mức THPT chuẩn: 17 tiết
+                    </div>
+                  </div>
+
+                  {/* Ô 2: Phân bổ Sáng / Chiều */}
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #fed7aa',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    boxShadow: '0 2px 6px rgba(217, 119, 6, 0.05)'
+                  }}>
+                    <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#c2410c', textTransform: 'uppercase' }}>
+                      Phân bổ Sáng • Chiều
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginTop: '5px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>🌅</span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#0369a1' }}>Sáng: {morningPeriods} tiết</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>🌇</span>
+                        <span style={{ fontSize: '13px', fontWeight: '800', color: '#d97706' }}>Chiều: {afternoonPeriods} tiết</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
+                      Sáng (Tiết 1-5: 07:00–11:05) • Chiều (Tiết 6-10: 13:00–17:05)
+                    </div>
+                  </div>
+
+                  {/* Ô 3: Lịch nghỉ ngơi */}
+                  <div style={{
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    borderRadius: '14px',
+                    padding: '12px 16px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.03)'
+                  }}>
+                    <div style={{ fontSize: '11.5px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>
+                      Lịch giảng dạy & Nghỉ ngơi
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginTop: '3px' }}>
+                      {maxDay && maxDay.count > 0 ? `Dạy nhiều nhất: ${maxDay.day} (${maxDay.count} tiết)` : 'Chưa có lịch dạy'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: daysOff.length > 0 ? '#15803d' : '#64748b', marginTop: '2px', fontWeight: '600' }}>
+                      {daysOff.length > 0 ? `🏖️ Trống tiết cả ngày: ${daysOff.join(', ')}` : 'Dạy đều các ngày trong tuần'}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* MOBILE VIEW MODE CONTROLLER (CHỈ HIỂN THỊ TRÊN MÀN HÌNH DI ĐỘNG <= 960px) */}
             <div className="show-on-mobile no-print" style={{
@@ -2807,7 +3217,7 @@ export default function PublicSchedule() {
                     },
                     1, 2, 3, 4, 5,
                     {
-                      label: `🌇 BUỔI CHIỀU (${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:30'} - ${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:45'})`,
+                      label: `🌇 BUỔI CHIỀU (${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:00'} - ${(periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:05'})`,
                       isHeader: true,
                       session: 'afternoon'
                     },
@@ -3257,8 +3667,8 @@ export default function PublicSchedule() {
               {daysToRender.map(day => {
                 const mStart = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 1)?.start || '07:00';
                 const mEnd = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 5)?.end || '11:05';
-                const aStart = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:30';
-                const aEnd = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:45';
+                const aStart = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 6)?.start || '13:00';
+                const aEnd = (periodTimings || PERIOD_TIMINGS).find(pt => pt.period === 10)?.end || '17:05';
 
                 const periodsToRender = [
                   ...(selectedGradeSession === 'afternoon' ? [] : [
@@ -3553,9 +3963,111 @@ export default function PublicSchedule() {
                   </div>
                 </div>
 
+                {/* 4 NÚT TIỆN ÍCH TRỢ GIẢNG DÀNH CHO THẦY/CÔ */}
+                <div style={{
+                  backgroundColor: '#f0f9ff',
+                  border: '1.5px solid #bae6fd',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px'
+                }}>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#0369a1', textTransform: 'uppercase', marginBottom: '2px' }}>
+                    🚀 Tiện ích trợ giảng nhanh cho tiết học này:
+                  </div>
+
+                  {/* Nút 1: Mở trò chơi lớp học */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLessonDetail(null);
+                      navigate('/tro-choi-hoc-tap', {
+                        state: {
+                          classId: selectedLessonDetail.student_class,
+                          subject: selectedLessonDetail.subject,
+                          autoSelect: true
+                        }
+                      });
+                    }}
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      backgroundColor: '#0284c7',
+                      color: '#ffffff',
+                      fontWeight: '800',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      boxShadow: '0 2px 6px rgba(2, 132, 199, 0.25)'
+                    }}
+                  >
+                    <span>🎮 Mở Trò Chơi Lớp Học & Điểm Danh</span>
+                    <span style={{ fontSize: '11px', opacity: 0.9 }}>Lớp {selectedLessonDetail.student_class} →</span>
+                  </button>
+
+                  {/* Nút 2: Ký sổ đầu bài */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedLessonDetail(null);
+                      navigate('/so-dau-bai-dien-tu');
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      backgroundColor: '#ffffff',
+                      color: '#0f172a',
+                      fontWeight: '700',
+                      fontSize: '12.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <span>📖 Ký Sổ Đầu Bài Điện Tử</span>
+                    <span style={{ fontSize: '11px', color: '#64748b' }}>Tiết {selectedLessonDetail.period} →</span>
+                  </button>
+
+                  {/* Nút 3: Tìm đồng nghiệp trống tiết này */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const lessonDay = selectedLessonDetail.day || selectedLessonDetail.day_of_week || 'Thứ 2';
+                      const lessonPeriod = Number(selectedLessonDetail.period) || 1;
+                      setSelectedLessonDetail(null);
+                      setFreeDay(lessonDay);
+                      setFreeSessionFilter('specific_period');
+                      setFreeSpecificPeriod(lessonPeriod);
+                      handleTabChange('free_teachers');
+                    }}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: '10px',
+                      border: '1px solid #fed7aa',
+                      backgroundColor: '#fff7ed',
+                      color: '#c2410c',
+                      fontWeight: '700',
+                      fontSize: '12.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <span>🔍 Tìm Thầy/Cô Trống Tiết Này (Báo Dạy Thay)</span>
+                    <span style={{ fontSize: '11px', color: '#ea580c' }}>Lọc tự động →</span>
+                  </button>
+                </div>
+
                 {/* HELPFUL NOTE */}
-                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px', fontSize: '12.5px', color: '#92400e', lineHeight: '1.4' }}>
-                  💡 <strong>Gợi ý học sinh:</strong> Chuẩn bị đầy đủ SGK, vở ghi môn <strong>{selectedLessonDetail.subject}</strong> và đồ dùng học tập trước giờ vào lớp!
+                <div style={{ backgroundColor: '#fffbeb', border: '1px solid #fde68a', borderRadius: '10px', padding: '10px 12px', fontSize: '12px', color: '#92400e', lineHeight: '1.4' }}>
+                  💡 <strong>Gợi ý:</strong> Chuẩn bị SGK, bài giảng và đồ dùng học tập trước giờ vào lớp môn <strong>{selectedLessonDetail.subject}</strong>!
                 </div>
               </div>
 
