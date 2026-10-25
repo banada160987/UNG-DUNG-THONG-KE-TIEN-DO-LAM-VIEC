@@ -8,7 +8,8 @@ import {
   CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image,
   Copy, Search, Filter, Database, Play, Pause, RotateCcw, Volume2, VolumeX,
   Maximize2, Minimize2, Trophy, Users, Flame, Star, Flag, Clock, Zap,
-  Gift, Mic, MicOff, AlertTriangle, UserCheck, Heart, ThumbsUp, MessageSquare
+  Gift, Mic, MicOff, AlertTriangle, UserCheck, Heart, ThumbsUp, MessageSquare,
+  Monitor, Tv, Settings, X, ChevronRight, ChevronLeft, Sliders
 } from 'lucide-react';
 import MathView from '../../components/MathView';
 import { supabase, DualSupabaseService } from '../../lib/supabase';
@@ -16,6 +17,46 @@ import { gameAudio } from '../../utils/gameAudio';
 import { HIGH_SCHOOL_SUBJECTS } from '../../services/smartAssessmentService';
 import { getTeacherSession } from '../../services/authSessionManager';
 import MobileBottomNav from '../../components/MobileBottomNav';
+
+// BỘ NHẬN DIỆN THẺ ĐÁP ÁN CHUẨN QUỐC TẾ (KAHOOT! / QUIZIZZ / GIMKIT PRO)
+export const KAHOOT_THEME = [
+  {
+    label: 'A',
+    shape: '▲',
+    shapeName: 'Tam giác',
+    color: '#ef4444',
+    bg: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)',
+    shadow: '0 8px 24px rgba(239, 68, 68, 0.4)',
+    border: '#f87171'
+  },
+  {
+    label: 'B',
+    shape: '◆',
+    shapeName: 'Hình thoi',
+    color: '#3b82f6',
+    bg: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+    shadow: '0 8px 24px rgba(59, 130, 246, 0.4)',
+    border: '#60a5fa'
+  },
+  {
+    label: 'C',
+    shape: '●',
+    shapeName: 'Hình tròn',
+    color: '#f59e0b',
+    bg: 'linear-gradient(135deg, #f59e0b 0%, #b45309 100%)',
+    shadow: '0 8px 24px rgba(245, 158, 11, 0.4)',
+    border: '#fbbf24'
+  },
+  {
+    label: 'D',
+    shape: '■',
+    shapeName: 'Hình vuông',
+    color: '#10b981',
+    bg: 'linear-gradient(135deg, #10b981 0%, #047857 100%)',
+    shadow: '0 8px 24px rgba(16, 185, 129, 0.4)',
+    border: '#34d399'
+  }
+];
 
 export default function ClassroomInteractiveGames() {
   const navigate = useNavigate();
@@ -51,6 +92,10 @@ export default function ClassroomInteractiveGames() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // CHẾ ĐỘ SÂN KHẤU TRÌNH CHIẾU PRO (KAHOOT / QUIZIZZ STADIUM PRESENTATION MODE)
+  const [isStageMode, setIsStageMode] = useState(false);
+  const [showQuickSettings, setShowQuickSettings] = useState(false);
 
   // Timer State chung
   const [timerDuration, setTimerDuration] = useState(20);
@@ -338,6 +383,43 @@ export default function ClassroomInteractiveGames() {
   const pauseTimer = () => {
     setIsTimerRunning(false);
   };
+
+  // PHÍM TẮT BÀN PHÍM & BÚT TRÌNH CHIẾU (CLICKER) CHUYÊN NGHIỆP CHO GIÁO VIÊN
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target?.tagName)) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsTimerRunning(prev => {
+          if (prev) {
+            gameAudio.playTick();
+            return false;
+          } else {
+            gameAudio.init();
+            return true;
+          }
+        });
+      } else if (e.key === 'ArrowRight' || e.code === 'PageDown') {
+        e.preventDefault();
+        handleNextQuestion();
+      } else if (e.key === 'ArrowLeft' || e.code === 'PageUp') {
+        e.preventDefault();
+        handlePrevQuestion();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        handleRevealAnswer();
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (e.key === 'Escape' && isStageMode) {
+        setIsStageMode(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isStageMode, currentQIndex, filteredQuestions.length]);
 
   // Chuyển câu hỏi
   const handleNextQuestion = () => {
@@ -871,6 +953,505 @@ export default function ClassroomInteractiveGames() {
     }
   };
 
+  // ==========================================
+  // HÀM RENDER SÂN KHẤU CÂU HỎI CHUẨN QUỐC TẾ (KAHOOT / QUIZIZZ PRO)
+  // ==========================================
+  const renderArenaContent = (isStage = false) => {
+    return (
+      <div style={{
+        maxWidth: isStage ? '1350px' : '100%',
+        margin: '0 auto',
+        width: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isStage ? '20px' : '16px'
+      }}>
+        {/* THANH ĐIỀU KHIỂN & ĐỒNG HỒ ĐẾM NGƯỢC */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '14px',
+          background: isStage ? 'rgba(30, 41, 59, 0.75)' : '#1e293b',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '18px',
+          padding: isStage ? '14px 22px' : '12px 18px',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          {/* TIẾN TRÌNH CÂU HỎI */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span style={{
+              background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+              color: '#ffffff',
+              padding: '6px 16px',
+              borderRadius: '20px',
+              fontSize: isStage ? '15px' : '13px',
+              fontWeight: '900',
+              letterSpacing: '0.5px',
+              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.35)'
+            }}>
+              CÂU {currentQIndex + 1} / {filteredQuestions.length}
+            </span>
+            <span style={{ color: '#94a3b8', fontSize: isStage ? '14px' : '13px' }}>
+              Môn: <strong style={{ color: '#f8fafc' }}>{currentQuestion?.subject || selectedSubject}</strong>
+            </span>
+          </div>
+
+          {/* BỘ ĐẾM THỜI GIAN ĐẬP NHỊP SINH ĐỘNG */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: timeLeft <= 5
+                ? 'linear-gradient(135deg, #dc2626, #b91c1c)'
+                : (timeLeft <= 10 ? 'linear-gradient(135deg, #d97706, #b45309)' : 'linear-gradient(135deg, #059669, #047857)'),
+              color: '#ffffff',
+              padding: isStage ? '8px 22px' : '6px 16px',
+              borderRadius: '24px',
+              fontSize: isStage ? '22px' : '17px',
+              fontWeight: '900',
+              boxShadow: timeLeft <= 5 ? '0 0 24px rgba(239, 68, 68, 0.8)' : '0 4px 12px rgba(0,0,0,0.3)',
+              transition: 'all 0.3s ease',
+              transform: timeLeft <= 5 ? 'scale(1.08)' : 'scale(1)'
+            }}>
+              <Clock size={isStage ? 22 : 18} />
+              <span>{timeLeft}s</span>
+            </div>
+
+            {isTimerRunning ? (
+              <button
+                onClick={pauseTimer}
+                style={{
+                  background: '#f59e0b',
+                  color: '#0f172a',
+                  border: 'none',
+                  padding: isStage ? '8px 18px' : '7px 14px',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px'
+                }}
+              >
+                <Pause size={15} /> Tạm Dừng
+              </button>
+            ) : (
+              <button
+                onClick={startTimer}
+                style={{
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: isStage ? '8px 18px' : '7px 14px',
+                  borderRadius: '10px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  boxShadow: '0 4px 12px rgba(16, 185, 129, 0.4)'
+                }}
+              >
+                <Play size={15} /> Bắt Đầu
+              </button>
+            )}
+
+            <button
+              onClick={() => resetTimer()}
+              title="Đặt lại thời gian"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid #475569',
+                color: '#e2e8f0',
+                padding: '7px 11px',
+                borderRadius: '10px',
+                cursor: 'pointer'
+              }}
+            >
+              <RotateCcw size={15} />
+            </button>
+
+            <select
+              value={timerDuration}
+              onChange={e => { const val = Number(e.target.value); setTimerDuration(val); resetTimer(val); }}
+              style={{
+                background: '#0f172a',
+                color: '#e2e8f0',
+                border: '1px solid #475569',
+                borderRadius: '10px',
+                padding: '7px 10px',
+                fontSize: '13px',
+                fontWeight: '600'
+              }}
+            >
+              <option value={10}>10 giây</option>
+              <option value={15}>15 giây</option>
+              <option value={20}>20 giây</option>
+              <option value={30}>30 giây</option>
+              <option value={45}>45 giây</option>
+              <option value={60}>60 giây</option>
+            </select>
+          </div>
+
+          {/* QUYỀN TRỢ GIÚP 50:50 & BIỂU QUYẾT KHÁN GIẢ */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={handle5050}
+              disabled={eliminatedOptions.length > 0}
+              style={{
+                background: eliminatedOptions.length > 0 ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: '800',
+                cursor: eliminatedOptions.length > 0 ? 'not-allowed' : 'pointer',
+                opacity: eliminatedOptions.length > 0 ? 0.5 : 1,
+                boxShadow: eliminatedOptions.length > 0 ? 'none' : '0 4px 12px rgba(139, 92, 246, 0.4)'
+              }}
+            >
+              ⚡ 50:50
+            </button>
+
+            <button
+              onClick={handleAudienceHelp}
+              disabled={Boolean(audienceVotes)}
+              style={{
+                background: audienceVotes ? '#334155' : 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '8px 16px',
+                borderRadius: '10px',
+                fontSize: '13px',
+                fontWeight: '800',
+                cursor: audienceVotes ? 'not-allowed' : 'pointer',
+                opacity: audienceVotes ? 0.5 : 1,
+                boxShadow: audienceVotes ? 'none' : '0 4px 12px rgba(6, 182, 212, 0.4)'
+              }}
+            >
+              📊 Biểu Quyết
+            </button>
+          </div>
+        </div>
+
+        {/* HỘP CÂU HỎI KHỔNG LỒ RÕ NÉT */}
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.98) 100%)',
+          borderRadius: '24px',
+          border: '2px solid rgba(59, 130, 246, 0.5)',
+          padding: isStage ? '32px 36px' : '24px 26px',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.45)',
+          position: 'relative'
+        }}>
+          <div style={{
+            display: 'inline-block',
+            fontSize: isStage ? '13px' : '11.5px',
+            fontWeight: '800',
+            color: '#38bdf8',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            background: 'rgba(56, 189, 248, 0.12)',
+            padding: '4px 12px',
+            borderRadius: '8px',
+            marginBottom: '12px'
+          }}>
+            {currentQuestion?.title || `CÂU HỎI THI ĐẤU #${currentQIndex + 1}`}
+          </div>
+
+          <div style={{
+            fontSize: isStage ? '28px' : '22px',
+            fontWeight: '800',
+            lineHeight: '1.5',
+            color: '#ffffff',
+            textAlign: isStage ? 'center' : 'left',
+            padding: isStage ? '6px 12px 14px 12px' : '0'
+          }}>
+            <MathView text={currentQuestion?.content || ''} />
+          </div>
+        </div>
+
+        {/* 4 THẺ ĐÁP ÁN CHUẨN KAHOOT! / QUIZIZZ PRO */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 460px), 1fr))',
+          gap: isStage ? '18px' : '14px'
+        }}>
+          {(currentQuestion?.options || ['A', 'B', 'C', 'D']).map((option, idx) => {
+            const theme = KAHOOT_THEME[idx % 4];
+            const isCorrect = idx === (currentQuestion.correctAnswerIndex ?? 0);
+            const isEliminated = eliminatedOptions.includes(idx);
+            const votePct = audienceVotes ? audienceVotes[idx] : null;
+
+            let cardBg = theme.bg;
+            let cardBorder = `2px solid ${theme.border}`;
+            let cardOpacity = 1;
+            let cardShadow = theme.shadow;
+            let cardTransform = 'scale(1)';
+
+            if (showAnswer) {
+              if (isCorrect) {
+                cardBg = 'linear-gradient(135deg, #15803d 0%, #166534 100%)';
+                cardBorder = '3.5px solid #4ade80';
+                cardShadow = '0 0 35px rgba(74, 222, 128, 0.8), 0 8px 25px rgba(0,0,0,0.5)';
+                cardTransform = 'scale(1.02)';
+              } else {
+                cardOpacity = 0.25;
+                cardShadow = 'none';
+              }
+            } else if (isEliminated) {
+              cardOpacity = 0.2;
+              cardBg = '#1e293b';
+              cardBorder = '1.5px dashed #475569';
+              cardShadow = 'none';
+            }
+
+            return (
+              <div
+                key={idx}
+                style={{
+                  background: cardBg,
+                  border: cardBorder,
+                  borderRadius: '20px',
+                  padding: isStage ? '20px 24px' : '16px 20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  opacity: cardOpacity,
+                  boxShadow: cardShadow,
+                  transform: cardTransform,
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  minHeight: isStage ? '96px' : '76px',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+              >
+                {/* Huy hiệu A, B, C, D kèm Shape Tam giác/Hình thoi/Tròn/Vuông */}
+                <div style={{
+                  width: isStage ? '52px' : '44px',
+                  height: isStage ? '52px' : '44px',
+                  borderRadius: '16px',
+                  background: 'rgba(255, 255, 255, 0.25)',
+                  backdropFilter: 'blur(6px)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                  border: '1.5px solid rgba(255, 255, 255, 0.45)'
+                }}>
+                  <span style={{ fontSize: isStage ? '13px' : '11px', lineHeight: 1, opacity: 0.9 }}>
+                    {theme.shape}
+                  </span>
+                  <span style={{ fontSize: isStage ? '22px' : '18px', fontWeight: '900', color: '#ffffff', lineHeight: 1, marginTop: '2px' }}>
+                    {theme.label}
+                  </span>
+                </div>
+
+                {/* Nội dung đáp án */}
+                <div style={{
+                  flex: 1,
+                  fontSize: isStage ? '21px' : '17px',
+                  fontWeight: '700',
+                  color: '#ffffff',
+                  lineHeight: '1.4'
+                }}>
+                  <MathView text={String(option)} />
+                </div>
+
+                {/* Biểu quyết phần trăm */}
+                {votePct !== null && !isEliminated && (
+                  <div style={{
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    padding: '6px 14px',
+                    borderRadius: '14px',
+                    fontSize: isStage ? '16px' : '13px',
+                    fontWeight: '900',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.5)'
+                  }}>
+                    {votePct}%
+                  </div>
+                )}
+
+                {/* Huy hiệu đáp án đúng khi công bố */}
+                {showAnswer && isCorrect && (
+                  <div style={{
+                    background: '#22c55e',
+                    color: '#ffffff',
+                    padding: '6px 12px',
+                    borderRadius: '12px',
+                    fontWeight: '900',
+                    fontSize: isStage ? '14px' : '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+                  }}>
+                    <CheckCircle2 size={isStage ? 20 : 16} />
+                    <span>CHÍNH XÁC</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* LỜI GIẢI CHI TIẾT */}
+        {showExplanation && currentQuestion?.explanation && (
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '2px solid #10b981',
+            borderRadius: '18px',
+            padding: '16px 22px',
+            color: '#d1fae5',
+            boxShadow: '0 6px 20px rgba(16, 185, 129, 0.2)'
+          }}>
+            <div style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', fontWeight: '900', fontSize: '15px' }}>
+              <CheckCircle2 size={19} /> HƯỚNG DẪN GIẢI SƯ PHẠM CHI TIẾT:
+            </div>
+            <div style={{ fontSize: '16px', lineHeight: '1.6' }}>
+              <MathView text={currentQuestion.explanation} />
+            </div>
+          </div>
+        )}
+
+        {/* THANH ĐIỀU KHIỂN CỦA GIÁO VIÊN */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '14px',
+          background: isStage ? 'rgba(30, 41, 59, 0.85)' : '#1e293b',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '18px',
+          padding: '12px 20px',
+          border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={handlePrevQuestion}
+              style={{
+                background: '#334155',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: '12px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13.5px'
+              }}
+            >
+              <ChevronLeft size={17} /> Câu Trước (←)
+            </button>
+
+            <button
+              onClick={handleNextQuestion}
+              style={{
+                background: 'linear-gradient(135deg, #2563eb, #1d4ed8)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 22px',
+                borderRadius: '12px',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13.5px',
+                boxShadow: '0 4px 14px rgba(37, 99, 235, 0.4)'
+              }}
+            >
+              Câu Kế Tiếp (→) <ChevronRight size={17} />
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleRevealAnswer}
+              style={{
+                background: showAnswer ? '#15803d' : 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 20px',
+                borderRadius: '12px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13.5px',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.4)'
+              }}
+            >
+              <CheckCircle2 size={17} />
+              <span>{showAnswer ? '✓ Đã Hiện Đáp Án' : 'Hiện Đáp Án Đúng (Enter)'}</span>
+            </button>
+
+            <button
+              onClick={() => setShowExplanation(!showExplanation)}
+              style={{
+                background: showExplanation ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.08)',
+                border: `1.5px solid ${showExplanation ? '#38bdf8' : '#475569'}`,
+                color: showExplanation ? '#38bdf8' : '#e2e8f0',
+                padding: '10px 16px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                fontWeight: '700',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13px'
+              }}
+            >
+              {showExplanation ? <EyeOff size={15} /> : <Eye size={15} />}
+              <span>Lời Giải</span>
+            </button>
+
+            {/* NÚT BẬT/TẮT SÂN KHẤU TRÌNH CHIẾU PRO */}
+            <button
+              onClick={() => {
+                const nextVal = !isStageMode;
+                setIsStageMode(nextVal);
+                if (nextVal && !document.fullscreenElement) {
+                  toggleFullscreen();
+                }
+              }}
+              style={{
+                background: isStageMode
+                  ? 'linear-gradient(135deg, #ef4444, #dc2626)'
+                  : 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '10px 18px',
+                borderRadius: '12px',
+                fontWeight: '900',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '13.5px',
+                boxShadow: '0 4px 16px rgba(139, 92, 246, 0.5)'
+              }}
+            >
+              {isStageMode ? <Minimize2 size={17} /> : <Tv size={17} />}
+              <span>{isStageMode ? 'Thu Nhỏ Sân Khấu (Esc)' : '🎬 Bật Sân Khấu Pro'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -888,120 +1469,322 @@ export default function ClassroomInteractiveGames() {
         />
       )}
 
-      {/* TOP HEADER & CONTROL BAR */}
-      <header style={{
-        background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-        borderBottom: '1.5px solid #334155',
-        padding: '16px 20px',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
-      }}>
-        <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <button
-              onClick={() => navigate('/giao-vien/dashboard')}
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid #475569',
-                color: '#e2e8f0',
-                padding: '8px 12px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: '600'
-              }}
-            >
-              <ArrowLeft size={16} /> Bàn Làm Việc
-            </button>
+      {/* ========================================================
+          CHẾ ĐỘ SÂN KHẤU TRÌNH CHIẾU PRO (KAHOOT / QUIZIZZ STAGE MODE)
+          ======================================================== */}
+      {isStageMode ? (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          backgroundColor: '#090d16',
+          backgroundImage: 'radial-gradient(ellipse at 50% 15%, rgba(37, 99, 235, 0.18) 0%, rgba(9, 13, 22, 0.98) 75%)',
+          color: '#ffffff',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          paddingBottom: '30px'
+        }}>
+          {/* TOP STATUS BAR SÂN KHẤU KÍNH MỜ (CAO 54px) */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '10px 24px',
+            background: 'rgba(15, 23, 42, 0.88)',
+            backdropFilter: 'blur(16px)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.12)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50
+          }}>
+            {/* THÔNG TIN VÒNG THI & LỚP */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <span style={{ fontSize: '20px' }}>🏆</span>
+              <div>
+                <div style={{ fontSize: '15px', fontWeight: '900', color: '#f8fafc', letterSpacing: '-0.2px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span>{gameMode === 'arena' ? 'ĐẤU TRƯỜNG TRI THỨC' : 'SÂN KHẤU TRÌNH CHIẾU'}</span>
+                  <span style={{ background: '#16a34a', color: '#ffffff', fontSize: '10px', fontWeight: '900', padding: '1px 8px', borderRadius: '10px', textTransform: 'uppercase' }}>
+                    PRO STAGE
+                  </span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                  Lớp: <strong style={{ color: '#fef08a' }}>{selectedClass || 'CBQ'}</strong> ({classStudents.length} HS) • Môn: <strong style={{ color: '#e2e8f0' }}>{currentQuestion?.subject || selectedSubject}</strong>
+                </div>
+              </div>
+            </div>
 
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '20px' }}>🎮</span>
-                <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#f8fafc', letterSpacing: '-0.3px' }}>
-                  HỆ THỐNG TRÒ CHƠI & TIỆN ÍCH TRỢ GIẢNG 4.0
-                </h1>
-                <span style={{ background: '#16a34a', color: '#ffffff', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' }}>
-                  Live Database
-                </span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                Trường THPT Cao Bá Quát • Đồng bộ trực tiếp CSDL Đề thi, Câu hỏi & Danh sách 1.441 Học sinh
-              </div>
+            {/* BỘ ĐẾM TIẾN TRÌNH CÂU HỎI TRUNG TÂM */}
+            <div style={{
+              background: 'rgba(37, 99, 235, 0.25)',
+              border: '1.5px solid #3b82f6',
+              color: '#93c5fd',
+              padding: '6px 20px',
+              borderRadius: '24px',
+              fontSize: '14.5px',
+              fontWeight: '900',
+              letterSpacing: '0.5px',
+              boxShadow: '0 0 15px rgba(59, 130, 246, 0.35)'
+            }}>
+              CÂU HỎI {currentQIndex + 1} / {filteredQuestions.length}
+            </div>
+
+            {/* CÁC NÚT ĐIỀU KHIỂN SÂN KHẤU */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button
+                onClick={() => {
+                  const muted = gameAudio.toggleMute();
+                  setIsMuted(muted);
+                }}
+                title={isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid #475569', color: '#e2e8f0', padding: '7px 12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+              >
+                {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+              </button>
+
+              <button
+                onClick={() => setShowQuickSettings(!showQuickSettings)}
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid #475569', color: '#e2e8f0', padding: '7px 14px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 'bold' }}
+              >
+                <Settings size={15} /> <span>Đổi Môn/Lớp</span>
+              </button>
+
+              <button
+                onClick={toggleFullscreen}
+                title="Bật/Tắt Toàn màn hình"
+                style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid #475569', color: '#e2e8f0', padding: '7px 12px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+
+              <button
+                onClick={() => setIsStageMode(false)}
+                style={{ background: '#dc2626', border: 'none', color: '#ffffff', padding: '7px 16px', borderRadius: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '900', boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)' }}
+              >
+                <X size={16} /> <span>Thoát Sân Khấu</span>
+              </button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => {
-                const muted = gameAudio.toggleMute();
-                setIsMuted(muted);
-              }}
-              style={{
-                background: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)',
-                border: `1px solid ${isMuted ? '#ef4444' : '#3b82f6'}`,
-                color: isMuted ? '#f87171' : '#60a5fa',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: 'bold'
-              }}
-            >
-              {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              <span>{isMuted ? 'Tắt Âm' : 'Bật Âm'}</span>
-            </button>
+          {/* POPOVER CÀI ĐẶT NHANH (NẾU MỞ) */}
+          {showQuickSettings && (
+            <div style={{
+              background: '#1e293b',
+              borderBottom: '2px solid #3b82f6',
+              padding: '14px 24px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              flexWrap: 'wrap',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#94a3b8' }}>Môn:</span>
+                <select
+                  value={selectedSubject}
+                  onChange={e => { setSelectedSubject(e.target.value); setCurrentQIndex(0); }}
+                  style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #475569', borderRadius: '8px', padding: '6px 12px', fontSize: '13px' }}
+                >
+                  <option value="Tất cả môn">📚 Tất cả môn</option>
+                  {HIGH_SCHOOL_SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  <option value="Truyền thống nhà trường">🏛️ Truyền thống THPT Cao Bá Quát</option>
+                </select>
+              </div>
 
-            <button
-              onClick={toggleFullscreen}
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid #475569',
-                color: '#e2e8f0',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: '600'
-              }}
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              <span>{isFullscreen ? 'Thu Nhỏ' : 'Toàn Màn Hình'}</span>
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#94a3b8' }}>Bộ đề:</span>
+                <select
+                  value={selectedAssessmentId}
+                  onChange={e => { setSelectedAssessmentId(e.target.value); setCurrentQIndex(0); }}
+                  style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #475569', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', maxWidth: '300px' }}
+                >
+                  <option value="all">🎯 Tất cả ({filteredQuestions.length} câu)</option>
+                  {assessments.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                </select>
+              </div>
 
-            <button
-              onClick={() => setShowAddModal(true)}
-              style={{
-                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                border: 'none',
-                color: '#ffffff',
-                padding: '8px 14px',
-                borderRadius: '10px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
-              }}
-            >
-              <Plus size={16} /> Thêm Câu Hỏi CSDL
-            </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '13px', color: '#f59e0b' }}>Lớp:</span>
+                <select
+                  value={selectedClass}
+                  onChange={e => setSelectedClass(e.target.value)}
+                  style={{ background: '#0f172a', color: '#fef08a', border: '1.5px solid #f59e0b', borderRadius: '8px', padding: '6px 12px', fontSize: '13px', fontWeight: 'bold' }}
+                >
+                  {classesList.map(c => <option key={c} value={c}>Lớp {c} ({allStudents.filter(s => s.student_class === c).length} HS)</option>)}
+                </select>
+              </div>
+
+              <div style={{ marginLeft: 'auto' }}>
+                <button
+                  onClick={() => setShowQuickSettings(false)}
+                  style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '7px 16px', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Áp Dụng & Đóng
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* VÙNG SÂN KHẤU TRÌNH CHIẾU CHÍNH */}
+          <div style={{ maxWidth: '1400px', width: '100%', margin: '0 auto', padding: '24px 20px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            {renderArenaContent(true)}
+          </div>
+
+          {/* GỢI Ý PHÍM TẮT DƯỚI ĐÁY */}
+          <div style={{
+            textAlign: 'center',
+            padding: '10px 16px',
+            fontSize: '12.5px',
+            color: '#64748b',
+            background: 'rgba(15, 23, 42, 0.95)',
+            borderTop: '1px solid rgba(255,255,255,0.08)'
+          }}>
+            💡 <strong>Phím tắt giáo viên & bút Clicker:</strong> [Phím Space]: Bắt đầu/Tạm dừng giờ • [Mũi tên →]: Câu tiếp theo • [Mũi tên ←]: Câu trước • [Phím Enter]: Hiện đáp án • [Phím F]: Toàn màn hình • [Phím Esc]: Thoát sân khấu
           </div>
         </div>
-      </header>
+      ) : (
+        /* GIAO DIỆN CHUẨN CỦA GIÁO VIÊN (STANDARD MODE) */
+        <>
+          {/* TOP HEADER & CONTROL BAR */}
+          <header style={{
+            background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            borderBottom: '1.5px solid #334155',
+            padding: '16px 20px',
+            position: 'sticky',
+            top: 0,
+            zIndex: 50,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)'
+          }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '14px' }}>
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={() => navigate('/giao-vien/dashboard')}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid #475569',
+                    color: '#e2e8f0',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                  }}
+                >
+                  <ArrowLeft size={16} /> Bàn Làm Việc
+                </button>
+
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>🎮</span>
+                    <h1 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#f8fafc', letterSpacing: '-0.3px' }}>
+                      HỆ THỐNG TRÒ CHƠI & TIỆN ÍCH TRỢ GIẢNG 4.0
+                    </h1>
+                    <span style={{ background: '#16a34a', color: '#ffffff', fontSize: '11px', fontWeight: 'bold', padding: '2px 8px', borderRadius: '12px' }}>
+                      Live Database
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
+                    Trường THPT Cao Bá Quát • Đồng bộ trực tiếp CSDL Đề thi, Câu hỏi & Danh sách 1.441 Học sinh
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                {/* NÚT BẬT SÂN KHẤU TRÌNH CHIẾU PRO NGAY TRÊN HEADER */}
+                <button
+                  onClick={() => {
+                    setIsStageMode(true);
+                    if (!document.fullscreenElement) {
+                      toggleFullscreen();
+                    }
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%)',
+                    border: 'none',
+                    color: '#ffffff',
+                    padding: '8px 18px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    fontSize: '13.5px',
+                    fontWeight: '900',
+                    boxShadow: '0 4px 16px rgba(139, 92, 246, 0.45)'
+                  }}
+                >
+                  <Tv size={17} /> <span>🎬 Bật Sân Khấu Pro</span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    const muted = gameAudio.toggleMute();
+                    setIsMuted(muted);
+                  }}
+                  style={{
+                    background: isMuted ? 'rgba(239,68,68,0.2)' : 'rgba(59,130,246,0.2)',
+                    border: `1px solid ${isMuted ? '#ef4444' : '#3b82f6'}`,
+                    color: isMuted ? '#f87171' : '#60a5fa',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                  <span>{isMuted ? 'Tắt Âm' : 'Bật Âm'}</span>
+                </button>
+
+                <button
+                  onClick={toggleFullscreen}
+                  style={{
+                    background: 'rgba(255,255,255,0.08)',
+                    border: '1px solid #475569',
+                    color: '#e2e8f0',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: '600'
+                  }}
+                >
+                  {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+                  <span>{isFullscreen ? 'Thu Nhỏ' : 'Toàn Màn Hình'}</span>
+                </button>
+
+                <button
+                  onClick={() => setShowAddModal(true)}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    border: 'none',
+                    color: '#ffffff',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 4px 12px rgba(16,185,129,0.3)'
+                  }}
+                >
+                  <Plus size={16} /> Thêm Câu Hỏi CSDL
+                </button>
+              </div>
+            </div>
+          </header>
 
       {/* THANH LỌC NGUỒN CSDL: MÔN HỌC, ĐỀ THI & LỚP */}
       <div style={{
@@ -1256,125 +2039,8 @@ export default function ClassroomInteractiveGames() {
              TAB 1: TRÒ CHƠI LỚP HỌC (6 THỂ LOẠI)
              ======================================================== */
           gameMode === 'arena' ? (
-            /* 1. ĐẤU TRƯỜNG TRI THỨC */
-            <div>
-              <div style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px',
-                marginBottom: '20px', background: '#1e293b', padding: '14px 20px', borderRadius: '16px', border: '1px solid #334155'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <span style={{ background: '#2563eb', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontSize: '14px', fontWeight: '800' }}>
-                    CÂU {currentQIndex + 1} / {filteredQuestions.length}
-                  </span>
-                  <span style={{ color: '#94a3b8', fontSize: '13px' }}>Bộ môn: <strong style={{ color: '#e2e8f0' }}>{currentQuestion?.subject || 'Chung'}</strong></span>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: '8px',
-                    background: timeLeft <= 5 ? '#dc2626' : (timeLeft <= 10 ? '#d97706' : '#047857'),
-                    color: '#ffffff', padding: '6px 16px', borderRadius: '20px', fontSize: '18px', fontWeight: '900'
-                  }}>
-                    <Clock size={20} /> <span>{timeLeft}s</span>
-                  </div>
-
-                  {isTimerRunning ? (
-                    <button onClick={pauseTimer} style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '7px 14px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px' }}>
-                      <Pause size={14} /> Tạm Dừng
-                    </button>
-                  ) : (
-                    <button onClick={startTimer} style={{ background: '#22c55e', color: '#0f172a', border: 'none', padding: '7px 14px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12.5px' }}>
-                      <Play size={14} /> Bắt Đầu
-                    </button>
-                  )}
-
-                  <button onClick={() => resetTimer()} style={{ background: '#475569', color: '#ffffff', border: 'none', padding: '7px 12px', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}><RotateCcw size={14} /></button>
-                  
-                  <select
-                    value={timerDuration}
-                    onChange={e => { const val = Number(e.target.value); setTimerDuration(val); resetTimer(val); }}
-                    style={{ background: '#0f172a', color: '#e2e8f0', border: '1px solid #475569', borderRadius: '8px', padding: '6px 10px', fontSize: '12.5px' }}
-                  >
-                    <option value={10}>10 giây</option>
-                    <option value={15}>15 giây</option>
-                    <option value={20}>20 giây</option>
-                    <option value={30}>30 giây</option>
-                  </select>
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button onClick={handle5050} disabled={eliminatedOptions.length > 0} style={{ background: eliminatedOptions.length > 0 ? '#334155' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    ⚡ 50:50
-                  </button>
-                  <button onClick={handleAudienceHelp} disabled={Boolean(audienceVotes)} style={{ background: audienceVotes ? '#334155' : 'linear-gradient(135deg, #06b6d4, #0891b2)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}>
-                    📊 Biểu Quyết
-                  </button>
-                </div>
-              </div>
-
-              {/* KHỐI CÂU HỎI */}
-              <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', borderRadius: '24px', border: '2px solid #3b82f6', padding: '36px 32px', marginBottom: '24px' }}>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#60a5fa', textTransform: 'uppercase', marginBottom: '8px' }}>
-                  {currentQuestion?.title || `Câu hỏi số ${currentQIndex + 1}`}
-                </div>
-                <div style={{ fontSize: '22px', fontWeight: '700', lineHeight: '1.6', color: '#f8fafc', marginBottom: '20px' }}>
-                  <MathView text={currentQuestion?.content || ''} />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '16px' }}>
-                  {(currentQuestion?.options || ['A', 'B', 'C', 'D']).map((option, idx) => {
-                    const isCorrect = idx === (currentQuestion.correctAnswerIndex ?? 0);
-                    const isEliminated = eliminatedOptions.includes(idx);
-                    const votePct = audienceVotes ? audienceVotes[idx] : null;
-                    const optionLabels = ['A', 'B', 'C', 'D'];
-                    const optionColors = ['#2563eb', '#dc2626', '#d97706', '#16a34a'];
-
-                    return (
-                      <div
-                        key={idx}
-                        style={{
-                          background: showAnswer && isCorrect ? 'linear-gradient(135deg, #15803d 0%, #166534 100%)' : '#1e293b',
-                          border: showAnswer && isCorrect ? '3px solid #4ade80' : (isEliminated ? '1px dashed #475569' : '1.5px solid #334155'),
-                          borderRadius: '16px', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '14px',
-                          opacity: isEliminated ? 0.25 : 1, transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: showAnswer && isCorrect ? '#22c55e' : optionColors[idx % 4], color: '#ffffff', fontSize: '18px', fontWeight: '900', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          {optionLabels[idx]}
-                        </div>
-                        <div style={{ flex: 1, fontSize: '17px', fontWeight: '600', color: showAnswer && isCorrect ? '#ffffff' : '#f1f5f9' }}>
-                          <MathView text={String(option)} />
-                        </div>
-                        {votePct !== null && !isEliminated && <div style={{ background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold', color: '#38bdf8' }}>{votePct}%</div>}
-                        {showAnswer && isCorrect && <CheckCircle2 size={24} color="#4ade80" />}
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {showExplanation && currentQuestion?.explanation && (
-                  <div style={{ marginTop: '20px', background: 'rgba(16, 185, 129, 0.1)', border: '1.5px solid #10b981', borderRadius: '14px', padding: '16px 20px', color: '#a7f3d0' }}>
-                    <strong style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}><CheckCircle2 size={18} /> HƯỚNG DẪN GIẢI SƯ PHẠM:</strong>
-                    <MathView text={currentQuestion.explanation} />
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handlePrevQuestion} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>◀ Câu Trước</button>
-                  <button onClick={handleNextQuestion} style={{ background: '#2563eb', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer' }}>Câu Kế Tiếp ▶</button>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button onClick={handleRevealAnswer} style={{ background: showAnswer ? '#15803d' : '#10b981', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <CheckCircle2 size={18} /> <span>{showAnswer ? '✓ Đã Hiện Đáp Án' : 'Hiện Đáp Án Đúng'}</span>
-                  </button>
-                  <button onClick={() => setShowExplanation(!showExplanation)} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid #475569', color: '#e2e8f0', padding: '10px 16px', borderRadius: '12px', cursor: 'pointer' }}>
-                    {showExplanation ? <EyeOff size={16} /> : <Eye size={16} />} Lời Giải Chi Tiết
-                  </button>
-                </div>
-              </div>
-            </div>
+            /* 1. ĐẤU TRƯỜNG TRI THỨC (GIAO DIỆN CHUẨN QUỐC TẾ KAHOOT! / QUIZIZZ PRO) */
+            renderArenaContent(false)
           ) : gameMode === 'wheel' ? (
             /* 2. VÒNG QUAY MAY MẮN */
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 450px), 1fr))', gap: '28px', alignItems: 'start' }}>
@@ -1875,6 +2541,8 @@ export default function ClassroomInteractiveGames() {
           )
         )}
       </main>
+      </>
+      )}
 
       {/* MODAL THÊM CÂU HỎI MỚI VÀO DATABASE */}
       {showAddModal && (
