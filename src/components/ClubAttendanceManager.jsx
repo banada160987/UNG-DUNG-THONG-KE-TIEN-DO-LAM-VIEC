@@ -8,6 +8,11 @@ import { DualSupabaseService, supabase, supabase2Admin, supabase2 } from '../lib
 const adminClient = supabase2Admin || supabase2;
 import * as XLSX from 'xlsx';
 import { CLUB_SUB_DISCIPLINES, getSubDisciplinesForClub } from '../data/clubSubDisciplines';
+import { 
+  getClubAssignments, 
+  getAssignedClubsForTeacher 
+} from '../services/clubPermissionService';
+import AdminClubAssignModal from './AdminClubAssignModal';
 
 // Helper so khớp tên CLB hoặc môn phụ (Hỗ trợ cả tên ngắn gọn như "Cầu lông" và tên đầy đủ kèm HLV như "6. Cầu lông (Thầy...)")
 export const isOptionMatch = (optName, studentAns) => {
@@ -177,8 +182,8 @@ export default function ClubAttendanceManager({
     return allCampaigns.find(c => c.id === selectedCampaignId) || null;
   }, [allCampaigns, selectedCampaignId]);
 
-  // Trích xuất danh sách CLB thật từ form_schema (các field select, radio, checkbox)
-  const availableClubOptions = useMemo(() => {
+  // 1. Trích xuất toàn bộ danh sách CLB thật từ form_schema (các field select, radio, checkbox)
+  const allClubOptions = useMemo(() => {
     if (!activeCampaign || !activeCampaign.form_schema) return [];
     const fields = Array.isArray(activeCampaign.form_schema) ? activeCampaign.form_schema : (activeCampaign.form_schema?.fields || []);
     
@@ -206,12 +211,45 @@ export default function ClubAttendanceManager({
     });
   }, [activeCampaign, campaignRegistrations]);
 
-  // Tự động chọn CLB đầu tiên có thành viên khi nạp xong
+  // Quản lý cấu hình phân quyền Admin & Giáo viên chủ nhiệm CLB
+  const [clubAssignments, setClubAssignments] = useState(getClubAssignments());
+  const [showAssignModal, setShowAssignModal] = useState(false);
+
   useEffect(() => {
-    if (availableClubOptions.length > 0 && selectedClub === 'ALL') {
-      setSelectedClub(availableClubOptions[0].name);
+    const handleAssignmentsUpdate = (e) => {
+      if (e.detail) {
+        setClubAssignments({ ...e.detail });
+      } else {
+        setClubAssignments(getClubAssignments());
+      }
+    };
+    window.addEventListener('cbq_club_assignments_updated', handleAssignmentsUpdate);
+    return () => window.removeEventListener('cbq_club_assignments_updated', handleAssignmentsUpdate);
+  }, []);
+
+  const isAdmin = userRole === 'admin' || teacherInfo?.role === 'admin' || teacherInfo?.username === 'admin' || teacherInfo?.role === 'quan_tri';
+
+  // 2. DANH SÁCH CÂU LẠC BỘ HIỂN THỊ (LỌC THEO PHÂN QUYỀN):
+  // - Admin: nhìn thấy và quản trị TOÀN BỘ câu lạc bộ
+  // - Giáo viên: CHỈ NHÌN THẤY các câu lạc bộ được gán quyền Chủ nhiệm / Huấn luyện viên
+  const availableClubOptions = useMemo(() => {
+    if (isAdmin) {
+      return allClubOptions;
     }
-  }, [availableClubOptions]);
+    return getAssignedClubsForTeacher(teacherInfo, allClubOptions);
+  }, [isAdmin, teacherInfo, allClubOptions, clubAssignments]);
+
+  // Tự động chọn CLB đầu tiên có thành viên trong danh sách được cấp quyền
+  useEffect(() => {
+    if (availableClubOptions.length > 0) {
+      const isCurrentSelectedValid = availableClubOptions.some(c => c.name === selectedClub);
+      if (!isCurrentSelectedValid || selectedClub === 'ALL') {
+        setSelectedClub(availableClubOptions[0].name);
+      }
+    } else if (!isAdmin) {
+      setSelectedClub('');
+    }
+  }, [availableClubOptions, isAdmin, selectedClub]);
 
   // LỌC THÀNH VIÊN THỰC TẾ THEO CÂU LẠC BỘ ĐƯỢC CHỌN
   const clubMembers = useMemo(() => {
@@ -833,61 +871,141 @@ export default function ClubAttendanceManager({
         </div>
       </div>
 
-      {/* 2. THANH CHỌN CÂU LẠC BỘ (ĐỌC ĐỘNG TỪ DỮ LIỆU ĐĂNG KÝ THẬT KÈM SỐ LƯỢNG) */}
+      {/* 2. THANH CHỌN CÂU LẠC BỘ (LỌC THEO PHÂN QUYỀN CHỦ NHIỆM) */}
       <div style={{ marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-          <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>
-            🏷️ Chọn Câu lạc bộ để theo dõi điểm danh (Số lượng thành viên thực tế):
-          </span>
-          {loadingRegs && <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Đang nạp dữ liệu đăng ký...</span>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '13px', fontWeight: '700', color: '#334155' }}>
+              {isAdmin 
+                ? '🏷️ Chọn Câu lạc bộ để theo dõi điểm danh (Toàn trường):'
+                : `🏷️ Câu lạc bộ Thầy/Cô được phân công phụ trách điểm danh (${availableClubOptions.length}):`}
+            </span>
+            {!isAdmin && availableClubOptions.length > 0 && (
+              <span style={{
+                fontSize: '11.5px',
+                fontWeight: '800',
+                padding: '2px 8px',
+                borderRadius: '12px',
+                backgroundColor: '#dcfce7',
+                color: '#166534',
+                border: '1px solid #bbf7d0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <ShieldCheck size={13} /> Phân quyền Chủ nhiệm
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={() => setShowAssignModal(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  borderRadius: '10px',
+                  border: '1px solid #0284c7',
+                  backgroundColor: '#f0f9ff',
+                  color: '#0369a1',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 1px 3px rgba(2, 132, 199, 0.1)'
+                }}
+              >
+                <ShieldCheck size={15} /> ⚙️ Phân Quyền Chủ Nhiệm CLB
+              </button>
+            )}
+            {loadingRegs && <span style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>Đang nạp dữ liệu đăng ký...</span>}
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', flexWrap: 'wrap' }}>
-          {availableClubOptions.length === 0 ? (
-            <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', padding: '8px' }}>
-              Đợt đăng ký này chưa có câu hỏi lựa chọn câu lạc bộ nào.
+        {!isAdmin && availableClubOptions.length === 0 ? (
+          <div style={{
+            backgroundColor: '#fffbeb',
+            border: '1.5px solid #fde68a',
+            borderRadius: '16px',
+            padding: '32px 20px',
+            textAlign: 'center',
+            margin: '12px 0'
+          }}>
+            <div style={{
+              width: '52px',
+              height: '52px',
+              borderRadius: '50%',
+              backgroundColor: '#fef3c7',
+              color: '#d97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 12px auto'
+            }}>
+              <ShieldCheck size={30} />
             </div>
-          ) : (
-            availableClubOptions.map(club => {
-              const isSelected = selectedClub === club.name;
-              return (
-                <button
-                  key={club.name}
-                  onClick={() => setSelectedClub(club.name)}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '9px 16px',
-                    borderRadius: '12px',
-                    border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
-                    backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
-                    color: isSelected ? '#1d4ed8' : '#334155',
-                    fontWeight: isSelected ? '800' : '600',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                    whiteSpace: 'nowrap',
-                    boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.2)' : 'none',
-                    transition: 'all 0.15s'
-                  }}
-                >
-                  <span>{club.name}</span>
-                  <span style={{
-                    padding: '2px 8px',
-                    borderRadius: '12px',
-                    fontSize: '11.5px',
-                    fontWeight: '800',
-                    backgroundColor: isSelected ? '#2563eb' : '#e2e8f0',
-                    color: isSelected ? '#ffffff' : '#475569'
-                  }}>
-                    {club.count} HS
-                  </span>
-                </button>
-              );
-            })
-          )}
-        </div>
+            <h4 style={{ margin: '0 0 6px 0', fontSize: '16px', color: '#92400e', fontWeight: '800' }}>
+              Tài Khoản Chưa Được Phân Quyền Chủ Nhiệm Câu Lạc Bộ
+            </h4>
+            <p style={{ margin: 0, fontSize: '13px', color: '#78350f', maxWidth: '580px', margin: '0 auto', lineHeight: '1.6' }}>
+              Thầy/Cô ({teacherInfo?.name || teacherInfo?.username || 'hiện tại'}) chưa được phân công làm Chủ nhiệm / Phụ trách cho Câu lạc bộ nào trong đợt này. Hệ thống chỉ cho phép điểm danh các câu lạc bộ được Admin cấp quyền. Vui lòng liên hệ Quản trị viên để được phân quyền.
+            </p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px', flexWrap: 'wrap' }}>
+            {availableClubOptions.length === 0 ? (
+              <div style={{ fontSize: '13px', color: '#64748b', fontStyle: 'italic', padding: '8px' }}>
+                Đợt đăng ký này chưa có câu hỏi lựa chọn câu lạc bộ nào.
+              </div>
+            ) : (
+              availableClubOptions.map(club => {
+                const isSelected = selectedClub === club.name;
+                return (
+                  <button
+                    key={club.name}
+                    onClick={() => setSelectedClub(club.name)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '9px 16px',
+                      borderRadius: '12px',
+                      border: isSelected ? '2px solid #2563eb' : '1px solid #e2e8f0',
+                      backgroundColor: isSelected ? '#eff6ff' : '#ffffff',
+                      color: isSelected ? '#1d4ed8' : '#334155',
+                      fontWeight: isSelected ? '800' : '600',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      boxShadow: isSelected ? '0 2px 8px rgba(37,99,235,0.2)' : 'none',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <span>{club.name}</span>
+                    <span style={{
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '11.5px',
+                      fontWeight: '800',
+                      backgroundColor: isSelected ? '#2563eb' : '#e2e8f0',
+                      color: isSelected ? '#ffffff' : '#475569'
+                    }}>
+                      {club.count} HS
+                    </span>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
+
+      {/* CHỈ HIỂN THỊ CÁC BUỔI & DANH SÁCH ĐIỂM DANH KHI CÓ QUYỀN TRUY CẬP */}
+      {(isAdmin || availableClubOptions.length > 0) && (
+        <>
 
       {/* 3. CHỌN BUỔI SINH HOẠT & THẺ THỐNG KÊ SĨ SỐ */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }}>
@@ -1906,6 +2024,19 @@ export default function ClubAttendanceManager({
             </div>
           </div>
         </div>
+      )}
+
+        </>
+      )}
+
+      {/* 8. MODAL PHÂN QUYỀN CHỦ NHIỆM CLB DÀNH CHO ADMIN */}
+      {isAdmin && (
+        <AdminClubAssignModal 
+          isOpen={showAssignModal}
+          onClose={() => setShowAssignModal(false)}
+          clubOptions={allClubOptions}
+          onAssignmentsUpdated={(newA) => setClubAssignments(newA)}
+        />
       )}
 
     </div>

@@ -12,6 +12,7 @@ import AiStatusBadge from '../components/AiStatusBadge';
 import AiSettingsModal from '../components/AiSettingsModal';
 import { DualSupabaseService } from '../lib/supabase';
 import { getTeacherSession, clearTeacherSession } from '../services/authSessionManager';
+import { isTeacherClubManager } from '../services/clubPermissionService';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -60,6 +61,16 @@ export default function TeacherDashboard() {
   };
 
   const isHomeroomTeacher = teacher?.role === 'gv_homeroom' || Boolean(teacher?.homeroomClass);
+  const isAdmin = teacher?.role === 'admin' || teacher?.username === 'admin' || teacher?.role === 'quan_tri';
+
+  const [clubAssignmentsVer, setClubAssignmentsVer] = useState(0);
+  useEffect(() => {
+    const handleUpdate = () => setClubAssignmentsVer(v => v + 1);
+    window.addEventListener('cbq_club_assignments_updated', handleUpdate);
+    return () => window.removeEventListener('cbq_club_assignments_updated', handleUpdate);
+  }, []);
+
+  const isClubManager = isTeacherClubManager(teacher);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f8fafc', padding: '32px 20px', fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif', color: '#1e293b' }}>
@@ -298,26 +309,28 @@ export default function TeacherDashboard() {
             <Calendar size={16} /> 4. Tra Cứu & Tiện Ích
           </button>
 
-          <button
-            onClick={() => setActiveTab('club_management')}
-            style={{
-              padding: '10px 18px',
-              borderRadius: '12px',
-              fontSize: '13.5px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '8px',
-              border: 'none',
-              backgroundColor: activeTab === 'club_management' ? '#be123c' : '#ffffff',
-              color: activeTab === 'club_management' ? '#ffffff' : '#64748b',
-              boxShadow: activeTab === 'club_management' ? '0 4px 12px rgba(190,18,60,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <CalendarCheck size={16} /> 5. Điểm Danh & Hoạt Động CLB
-          </button>
+          {(isAdmin || isClubManager) && (
+            <button
+              onClick={() => setActiveTab('club_management')}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '12px',
+                fontSize: '13.5px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                border: 'none',
+                backgroundColor: activeTab === 'club_management' ? '#be123c' : '#ffffff',
+                color: activeTab === 'club_management' ? '#ffffff' : '#64748b',
+                boxShadow: activeTab === 'club_management' ? '0 4px 12px rgba(190,18,60,0.3)' : '0 1px 3px rgba(0,0,0,0.05)',
+                transition: 'all 0.2s'
+              }}
+            >
+              <CalendarCheck size={16} /> 5. Điểm Danh & Hoạt Động CLB
+            </button>
+          )}
         </div>
 
         {/* 3. KHỐI NỘI DUNG CHỨC NĂNG DẠNG GROUPED CARDS */}
@@ -1765,11 +1778,11 @@ export default function TeacherDashboard() {
             </section>
           )}
 
-          {/* KHỐI 5: 🎯 ĐIỂM DANH & HOẠT ĐỘNG CLB THÔNG MINH */}
-          {(activeTab === 'all' || activeTab === 'club_management') && (
+          {/* KHỐI 5: 🎯 ĐIỂM DANH & HOẠT ĐỘNG CLB THÔNG MINH (CHỈ HIỂN THỊ KHI ĐƯỢC ADMIN PHÂN QUYỀN CHỦ NHIỆM) */}
+          {(isAdmin || isClubManager) && (activeTab === 'all' || activeTab === 'club_management') && (
             <section style={{ marginBottom: '20px' }}>
               <ClubAttendanceManager 
-                userRole="teacher"
+                userRole={isAdmin ? 'admin' : 'teacher'}
                 teacherInfo={teacher}
                 registrations={clubRegistrations}
               />
