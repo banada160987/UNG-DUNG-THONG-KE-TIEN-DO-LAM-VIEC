@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
+import SmartMeetingRoomModal from '../components/SmartMeetingRoomModal';
 
 export default function AdminMeetingAttendance() {
   const [meetings, setMeetings] = useState([]);
@@ -28,6 +29,7 @@ export default function AdminMeetingAttendance() {
 
   // OTP Projector Modal State
   const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showSmartRoomModal, setShowSmartRoomModal] = useState(false);
   const [countdownSeconds, setCountdownSeconds] = useState(0);
 
   // Meeting Form Modal State
@@ -1119,6 +1121,19 @@ export default function AdminMeetingAttendance() {
                 </button>
 
                 <button
+                  onClick={() => setShowSmartRoomModal(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px',
+                    backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px',
+                    fontWeight: 'bold', fontSize: '13px', cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(124, 58, 237, 0.3)'
+                  }}
+                  title="Mở phòng họp trực tuyến thông minh (3-in-1: Jitsi Hội đồng / WebRTC P2P / Meet)"
+                >
+                  <Video size={16} /> 🎥 Mở Phòng Họp Ảo (3-in-1)
+                </button>
+
+                <button
                   onClick={exportDecree30Word}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
@@ -1546,6 +1561,16 @@ export default function AdminMeetingAttendance() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setSelectedMeetingId(m.id);
+                        setShowSmartRoomModal(true);
+                      }}
+                      style={{ padding: '6px 12px', backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Mở phòng họp trực tuyến cho cuộc họp này"
+                    >
+                      <Video size={14} /> Vào Họp
+                    </button>
                     <button
                       onClick={() => {
                         setSelectedMeetingId(m.id);
@@ -2309,6 +2334,19 @@ export default function AdminMeetingAttendance() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* MODAL PHÒNG HỌP TRỰC TUYẾN THÔNG MINH (3-IN-1 SMART MEETING ROOM) */}
+        {showSmartRoomModal && currentMeeting && (
+          <SmartMeetingRoomModal
+            isOpen={showSmartRoomModal}
+            onClose={() => setShowSmartRoomModal(false)}
+            meeting={currentMeeting}
+            currentUser={{ name: 'Ban Giám Hiệu / Quản Trị Viên', department: 'Ban Giám Hiệu' }}
+            attendances={attendances}
+            onRefreshAttendances={() => loadMeetingDetails(selectedMeetingId, false)}
+            isAdmin={true}
+          />
         )}
 
       </div>

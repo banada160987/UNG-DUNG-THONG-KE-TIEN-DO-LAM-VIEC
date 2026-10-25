@@ -7,6 +7,7 @@ import {
   Sparkles, Award, Printer, CheckCheck, Filter, FileText, ChevronRight
 } from 'lucide-react';
 import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
+import SmartMeetingRoomModal from '../components/SmartMeetingRoomModal';
 
 const ABSENT_REASONS = [
   'Nghỉ ốm / Khám bệnh',
@@ -76,6 +77,7 @@ export default function PublicMeetingAttendance() {
   const [checkinSuccessData, setCheckinSuccessData] = useState(null);
   const [checkinError, setCheckinError] = useState('');
   const [savedTeacherInfo, setSavedTeacherInfo] = useState(null);
+  const [showSmartRoomModal, setShowSmartRoomModal] = useState(false);
 
   // Tự động điền mã khi quét QR có param ?code=...
   useEffect(() => {
@@ -665,6 +667,18 @@ export default function PublicMeetingAttendance() {
                 </span>
               )}
 
+              <button
+                onClick={() => setShowSmartRoomModal(true)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px',
+                  fontSize: '12px', color: '#ffffff', fontWeight: 'bold',
+                  backgroundColor: '#7c3aed', padding: '6px 14px', borderRadius: '12px',
+                  border: 'none', cursor: 'pointer', boxShadow: '0 2px 6px rgba(124, 58, 237, 0.3)'
+                }}
+              >
+                <Video size={14} /> 🎥 Vào Phòng Họp Trực Tuyến (3-in-1)
+              </button>
+
               {currentMeeting.meeting_link && (
                 <a
                   href={currentMeeting.meeting_link}
@@ -860,6 +874,18 @@ export default function PublicMeetingAttendance() {
 
                 {/* HÀNG NÚT BẤM TIỆN ÍCH */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => setShowSmartRoomModal(true)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: '6px',
+                      padding: '10px 20px', backgroundColor: '#7c3aed', color: '#fff',
+                      borderRadius: '8px', border: 'none', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(124, 58, 237, 0.3)'
+                    }}
+                  >
+                    <Video size={16} /> 🎥 Vào Ngay Phòng Họp Trực Tuyến (3-in-1)
+                  </button>
+
                   <button
                     onClick={() => window.print()}
                     style={{
@@ -1589,6 +1615,22 @@ export default function PublicMeetingAttendance() {
               )}
             </form>
           </div>
+        )}
+
+        {/* MODAL PHÒNG HỌP TRỰC TUYẾN THÔNG MINH (3-IN-1 SMART MEETING ROOM) */}
+        {showSmartRoomModal && currentMeeting && (
+          <SmartMeetingRoomModal
+            isOpen={showSmartRoomModal}
+            onClose={() => setShowSmartRoomModal(false)}
+            meeting={currentMeeting}
+            currentUser={{
+              name: selectedStaffName || savedTeacherInfo?.name || 'Giáo viên THPT Cao Bá Quát',
+              department: selectedDept || savedTeacherInfo?.department || 'Tổ Chuyên môn'
+            }}
+            attendances={attendances}
+            onRefreshAttendances={fetchAttendances}
+            isAdmin={false}
+          />
         )}
 
       </div>
