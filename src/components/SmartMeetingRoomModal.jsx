@@ -55,9 +55,10 @@ export default function SmartMeetingRoomModal({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedLinkToast, setCopiedLinkToast] = useState(false);
 
-  // Máy chủ Jitsi được chọn: 'meet.ffrn.de' (Mặc định mở 100%, không cần login) hoặc 'meet.jit.si' (Cloud 8x8)
+  // Máy chủ Jitsi chính thức: meet.jit.si (Tốc độ cao toàn cầu, CDN Singapore/VN, hỗ trợ nhúng 100%)
   const [jitsiServer, setJitsiServer] = useState(() => {
-    return localStorage.getItem('cbq_jitsi_server') || 'meet.ffrn.de';
+    localStorage.setItem('cbq_jitsi_server', 'meet.jit.si');
+    return 'meet.jit.si';
   });
   const [jitsiReloadKey, setJitsiReloadKey] = useState(0);
 
@@ -1229,27 +1230,27 @@ export default function SmartMeetingRoomModal({
                       <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <Server size={14} color="#38bdf8" /> Máy chủ Jitsi:
                       </span>
-                      <select
-                        value={jitsiServer}
-                        onChange={(e) => {
-                          const nextServer = e.target.value;
-                          setJitsiServer(nextServer);
-                          localStorage.setItem('cbq_jitsi_server', nextServer);
-                        }}
-                        style={styles.serverSelect}
-                        title="Chọn máy chủ hội nghị truyền hình"
-                      >
-                        <option value="meet.ffrn.de">🚀 meet.ffrn.de (Máy Chủ Mở - Vào Ngay 100% Không Cần Đăng Nhập)</option>
-                        <option value="meet.jit.si">🌐 meet.jit.si (Máy Chủ Jitsi Cloud - BGH Mở Phòng 1 Lần)</option>
-                      </select>
+                      <span style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'bold', backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                        🌐 meet.jit.si (Jitsi Cloud 8x8 Toàn Cầu)
+                      </span>
 
                       <button
                         onClick={() => setJitsiReloadKey(k => k + 1)}
                         style={styles.btnSmallGhost}
                         title="Tải lại kết nối Jitsi nếu gặp sự cố mạng"
                       >
-                        <RefreshCw size={13} /> Tải lại
+                        <RefreshCw size={13} /> Tải lại phòng
                       </button>
+
+                      <a
+                        href={`https://meet.jit.si/${cleanRoomName}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={styles.btnOpenNewTab}
+                        title="Mở phòng họp trong tab mới riêng biệt (hoạt động độc lập như Google Meet)"
+                      >
+                        <ExternalLink size={13} /> Mở Trong Tab Mới
+                      </a>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1264,22 +1265,13 @@ export default function SmartMeetingRoomModal({
                   </div>
 
                   {/* BANNER HƯỚNG DẪN DÀNH CHO BGH VÀ GIÁO VIÊN */}
-                  {jitsiServer === 'meet.jit.si' ? (
-                    <div style={styles.jitsiHostNoticeBanner}>
-                      <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
-                      <div style={{ fontSize: '12.5px', color: '#e0f2fe', lineHeight: 1.5 }}>
-                        <strong>💡 Dành Cho Ban Giám Hiệu / Chủ Tọa:</strong> Nếu màn hình báo <em>"The conference has not yet started because no moderators have yet arrived..."</em> (do chính sách bảo mật chống spam của Jitsi Cloud), Thầy/Cô hãy click nút <strong>"Mình là quản trị viên" (I am the host)</strong> trên màn hình và đăng nhập Google 1 lần. Toàn bộ giáo viên vào sau sẽ được vào thẳng 100% không cần đăng nhập!<br />
-                        👉 Hoặc Thầy/Cô chỉ cần chọn máy chủ <strong>"meet.ffrn.de (Máy Chủ Mở)"</strong> ở menu trên để vào họp ngay lập tức mà không cần bất kỳ tài khoản nào.
-                      </div>
+                  <div style={styles.jitsiHostNoticeBanner}>
+                    <Info size={16} color="#38bdf8" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div style={{ fontSize: '12.5px', color: '#e0f2fe', lineHeight: 1.5 }}>
+                      <strong>💡 Dành Cho Ban Giám Hiệu / Chủ Tọa Mở Phòng:</strong> Khi phòng họp mới tạo, nếu màn hình Jitsi bên dưới hiển thị thông báo <em>"The conference has not yet started because no moderators have yet arrived..."</em> (chính sách bảo vệ của Jitsi), Thầy/Cô chỉ cần click nút <strong>"Mình là quản trị viên" (I am the host)</strong> và đăng nhập tài khoản Google 1 lần duy nhất để mở phòng. Toàn bộ giáo viên vào sau sẽ được vào thẳng 100% không cần đăng nhập!<br />
+                      👉 <em>Mẹo hay:</em> Thầy/Cô có thể bấm nút <strong>"Mở Trong Tab Mới"</strong> ở thanh trên để họp trên một tab trình duyệt riêng biệt mượt mà như Google Meet.
                     </div>
-                  ) : (
-                    <div style={styles.jitsiFfrnNoticeBanner}>
-                      <CheckCircle2 size={15} color="#4ade80" style={{ flexShrink: 0 }} />
-                      <span style={{ fontSize: '12px', color: '#f0fdf4' }}>
-                        Đang kết nối qua Máy Chủ Mở <strong>meet.ffrn.de</strong>: Thầy/Cô được vào họp trực tiếp 100%, không yêu cầu tài khoản quản trị viên.
-                      </span>
-                    </div>
-                  )}
+                  </div>
 
                   {jitsiLoading && (
                     <div style={styles.centerLoading}>
@@ -2465,6 +2457,20 @@ const styles = {
     border: '1px solid rgba(255, 255, 255, 0.1)',
     borderRadius: '6px',
     fontSize: '11.5px',
+    cursor: 'pointer'
+  },
+  btnOpenNewTab: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 12px',
+    backgroundColor: '#0284c7',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    fontWeight: 'bold',
+    textDecoration: 'none',
     cursor: 'pointer'
   },
   btnGuideHighlight: {
