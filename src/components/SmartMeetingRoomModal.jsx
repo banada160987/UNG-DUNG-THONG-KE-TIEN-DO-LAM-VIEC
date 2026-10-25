@@ -336,6 +336,7 @@ export default function SmartMeetingRoomModal({
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [mediaError, setMediaError] = useState(null);
+  const [dismissedMediaWarning, setDismissedMediaWarning] = useState(false);
 
   const [remotePeers, setRemotePeers] = useState({});
   const peerConnections = useRef({});
@@ -344,6 +345,7 @@ export default function SmartMeetingRoomModal({
   const requestMediaAgain = async () => {
     try {
       setMediaError(null);
+      setDismissedMediaWarning(false);
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } },
         audio: true
@@ -372,10 +374,31 @@ export default function SmartMeetingRoomModal({
         const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         setLocalStream(audioStream);
         localStreamRef.current = audioStream;
-        setMediaError('⚠️ Đã bật Mic thành công! Máy tính không tìm thấy Webcam.');
+        setMediaError({
+          type: 'info',
+          text: '🎙️ Đã bật Mic thành công! Máy tính không tìm thấy Webcam rời.'
+        });
         setIsMicMuted(false);
       } catch (micErr) {
-        setMediaError('⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.');
+        let hardwareFound = false;
+        try {
+          if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            hardwareFound = devices.some(d => d.kind === 'audioinput' || d.kind === 'videoinput');
+          }
+        } catch (e) {}
+
+        if (!hardwareFound) {
+          setMediaError({
+            type: 'info',
+            text: '🎧 Bạn đang ở chế độ Chỉ Lắng Nghe (Máy tính chưa cắm Mic/Webcam). Thầy/Cô vẫn xem và chia sẻ màn hình bình thường.'
+          });
+        } else {
+          setMediaError({
+            type: 'warning',
+            text: '⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.'
+          });
+        }
         setShowPermissionGuide(true);
       }
     }
@@ -402,9 +425,30 @@ export default function SmartMeetingRoomModal({
         } catch (camErr) {
           try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-            setMediaError('⚠️ Máy tính không tìm thấy Webcam. Đang chạy chế độ Chỉ Mic (Audio).');
+            setMediaError({
+              type: 'info',
+              text: '🎙️ Máy tính không tìm thấy Webcam. Đang chạy chế độ Chỉ Mic (Audio).'
+            });
           } catch (micErr) {
-            setMediaError('⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt chưa cấp quyền. Đang ở chế độ Chỉ lắng nghe.');
+            let hardwareFound = false;
+            try {
+              if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                hardwareFound = devices.some(d => d.kind === 'audioinput' || d.kind === 'videoinput');
+              }
+            } catch (e) {}
+
+            if (!hardwareFound) {
+              setMediaError({
+                type: 'info',
+                text: '🎧 Bạn đang ở chế độ Chỉ Lắng Nghe (Máy tính chưa cắm Mic/Webcam). Thầy/Cô vẫn theo dõi và chia sẻ màn hình bình thường.'
+              });
+            } else {
+              setMediaError({
+                type: 'warning',
+                text: '⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.'
+              });
+            }
           }
         }
 
@@ -1199,15 +1243,43 @@ export default function SmartMeetingRoomModal({
 
                 return (
                   <div style={styles.webrtcWrapper}>
-                    {mediaError && (
-                      <div style={styles.mediaWarningBanner}>
-                        <AlertCircle size={16} />
-                        <span style={{ flex: 1 }}>{mediaError}</span>
+                    {mediaError && !dismissedMediaWarning && (
+                      <div style={mediaError?.type === 'info' ? styles.mediaInfoBanner : styles.mediaWarningBanner}>
+                        <AlertCircle size={16} style={{ flexShrink: 0 }} />
+                        <span style={{ flex: 1, fontSize: '12.5px' }}>
+                          {typeof mediaError === 'string' ? mediaError : mediaError.text}
+                        </span>
                         <button
                           onClick={() => setShowPermissionGuide(true)}
-                          style={{ background: 'none', border: 'none', color: '#b45309', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', fontSize: '12px' }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: mediaError?.type === 'info' ? '#0369a1' : '#b45309',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            textDecoration: 'underline',
+                            fontSize: '12px',
+                            padding: '2px 8px'
+                          }}
                         >
                           Xem Hướng Dẫn Mở Quyền
+                        </button>
+                        <button
+                          onClick={() => setDismissedMediaWarning(true)}
+                          style={{
+                            background: 'rgba(0, 0, 0, 0.08)',
+                            border: 'none',
+                            borderRadius: '4px',
+                            color: mediaError?.type === 'info' ? '#0369a1' : '#78350f',
+                            cursor: 'pointer',
+                            padding: '3px 8px',
+                            fontSize: '11px',
+                            fontWeight: 'bold',
+                            marginLeft: '4px'
+                          }}
+                          title="Đóng thông báo này"
+                        >
+                          ✕ Đóng
                         </button>
                       </div>
                     )}
@@ -1988,13 +2060,28 @@ const styles = {
   mediaWarningBanner: {
     backgroundColor: '#fef3c7',
     color: '#92400e',
-    padding: '8px 12px',
+    border: '1px solid #fcd34d',
+    padding: '8px 14px',
     borderRadius: '8px',
     fontSize: '12px',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
-    marginBottom: '10px'
+    gap: '8px',
+    marginBottom: '10px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+  },
+  mediaInfoBanner: {
+    backgroundColor: '#eff6ff',
+    color: '#1e40af',
+    border: '1px solid #bfdbfe',
+    padding: '8px 14px',
+    borderRadius: '8px',
+    fontSize: '12px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '10px',
+    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
   },
   videoGrid: count => ({
     flex: 1,
