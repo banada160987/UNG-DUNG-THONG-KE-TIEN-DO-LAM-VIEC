@@ -3,18 +3,26 @@ import {
   Video, VideoOff, Mic, MicOff, MonitorUp, PhoneOff,
   Maximize2, Minimize2, Users, Vote, FileText, ExternalLink,
   Radio, Shield, Sparkles, Settings, RefreshCw, CheckCircle2,
-  AlertCircle, ChevronRight, ChevronLeft, Volume2, MessageSquare
+  AlertCircle, ChevronRight, ChevronLeft, Volume2, MessageSquare,
+  Copy, Check, Clock, UserCheck, UserX, ShieldCheck, ShieldAlert,
+  Bell, Lock, Unlock, Play
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { OnlineMeetingService } from '../services/onlineMeetingService';
 
 /**
  * PHÒNG HỌP TRỰC TUYẾN THÔNG MINH ĐA ĐỘNG CƠ (3-IN-1 SMART MEETING ROOM)
- * THPT CAO BÁ QUÁT
+ * TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK
  * 
- * Động cơ 1: Jitsi Meet nhúng trực tiếp (Hội đồng Sư phạm, họp toàn trường 50-100 người, miễn phí 100%)
- * Động cơ 2: WebRTC P2P Nội bộ (Giao ban BGH, Họp Tổ CM 2-8 người, siêu bảo mật, không qua server ngoài)
- * Động cơ 3: Cầu nối ngoài (Google Meet / Zoom / MS Teams liên kết Sở GD&ĐT)
+ * 1. Chế độ gửi link vào họp trực tiếp: https://domain/diem-danh-hop?id=...&join=1
+ * 2. Chế độ Phê duyệt người tham gia (Host Approval / Waiting Room / Lobby):
+ *    - Chủ tọa (Admin/BGH) có thể BẬT / TẮT phê duyệt bất cứ lúc nào.
+ *    - Duyệt từng người (Admit) hoặc Duyệt tất cả (Admit All) chỉ bằng 1-Click.
+ *    - Người tham gia chưa được duyệt sẽ ở màn hình Phòng Chờ sang trọng, kiểm tra trước Cam/Mic.
+ * 3. Ba động cơ phòng họp:
+ *    - Động cơ 1: Jitsi Meet nhúng (Hội đồng Sư phạm 50-100 người, miễn phí 100%).
+ *    - Động cơ 2: WebRTC P2P Nội bộ (BGH, Tổ chuyên môn 2-8 người, siêu bảo mật).
+ *    - Động cơ 3: Cầu nối ngoài (Google Meet / Zoom / MS Teams liên kết Sở GD&ĐT).
  */
 
 const ICE_SERVERS = {
@@ -43,8 +51,28 @@ export default function SmartMeetingRoomModal({
 
   const [activeEngine, setActiveEngine] = useState(defaultEngine);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
-  const [activeSideTab, setActiveSideTab] = useState('attendance'); // 'attendance' | 'poll' | 'minutes'
+  const [activeSideTab, setActiveSideTab] = useState('attendance'); // 'attendance' | 'poll' | 'lobby' | 'minutes'
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [copiedLinkToast, setCopiedLinkToast] = useState(false);
+
+  // =========================================================================
+  // CHẾ ĐỘ PHÊ DUYỆT (LOBBY / WAITING ROOM)
+  // =========================================================================
+  // Chủ tọa (Admin) có thể bật/tắt chế độ phòng chờ
+  const [isLobbyEnabled, setIsLobbyEnabled] = useState(() => {
+    return localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
+  });
+
+  // Trạng thái phê duyệt của người dùng hiện tại:
+  // 'admitted' (được vào phòng), 'waiting' (đang ở phòng chờ), 'rejected' (bị từ chối)
+  const [myAdmissionStatus, setMyAdmissionStatus] = useState(() => {
+    if (isAdmin) return 'admitted';
+    const lobbyOn = localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
+    return lobbyOn ? 'waiting' : 'admitted';
+  });
+
+  // Danh sách các giáo viên đang chờ duyệt ở phòng chờ: [{ peerId, peerName, department, timestamp }]
+  const [waitingList, setWaitingList] = useState([]);
 
   // Thông tin người tham gia
   const userDisplayName = useMemo(() => {
@@ -74,25 +102,207 @@ export default function SmartMeetingRoomModal({
     return localStorage.getItem(`cbq_meeting_notes_${meeting.id}`) || '';
   });
 
+  // Unique peer id
+  const myPeerId = useRef('peer_' + Math.random().toString(36).substring(2, 9));
+  const channelRef = useRef(null);
+
   // =========================================================================
-  // 1. WEBRTC P2P NỘI BỘ (CHO NHÓM NHỎ 2 - 8 NGƯỜI)
+  // 1. KÊNH BROADCAST DÙNG CHUNG (SIGNALING & LOBBY SYNC)
+  // =========================================================================
+  useEffect(() => {
+    const channelName = `meeting-broadcast-${meeting.id.slice(0, 20)}`;
+    const ch = supabase.channel(channelName, {
+      config: { broadcast: { self: false } }
+    });
+    channelRef.current = ch;
+
+    ch.on('broadcast', { event: 'signal' }, async ({ payload }) => {
+      if (!payload) return;
+      const { type, from, to, sdp, candidate, peerName, department, isLobby, targetPeerId } = payload;
+
+      // --- SỰ KIỆN PHÒNG CHỜ (LOBBY) ---
+      // 1. Khi có người mới "gõ cửa" xin vào phòng chờ
+      if (type === 'lobby-knock') {
+        if (isAdmin) {
+          setWaitingList(prev => {
+            if (prev.some(p => p.peerId === from)) return prev;
+            return [...prev, { peerId: from, peerName, department, timestamp: Date.now() }];
+          });
+        }
+      }
+
+      // 2. Chủ tọa duyệt 1 người vào
+      else if (type === 'lobby-admit') {
+        if (targetPeerId === myPeerId.current) {
+          setMyAdmissionStatus('admitted');
+        }
+        if (isAdmin) {
+          setWaitingList(prev => prev.filter(p => p.peerId !== targetPeerId));
+        }
+      }
+
+      // 3. Chủ tọa duyệt tất cả người đang chờ
+      else if (type === 'lobby-admit-all') {
+        if (!isAdmin) {
+          setMyAdmissionStatus('admitted');
+        } else {
+          setWaitingList([]);
+        }
+      }
+
+      // 4. Chủ tọa từ chối 1 người
+      else if (type === 'lobby-reject') {
+        if (targetPeerId === myPeerId.current) {
+          setMyAdmissionStatus('rejected');
+        }
+        if (isAdmin) {
+          setWaitingList(prev => prev.filter(p => p.peerId !== targetPeerId));
+        }
+      }
+
+      // 5. Thay đổi trạng thái Bật/Tắt phòng chờ từ Chủ tọa
+      else if (type === 'lobby-toggle') {
+        setIsLobbyEnabled(isLobby);
+        localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(isLobby));
+        if (!isLobby && !isAdmin) {
+          setMyAdmissionStatus('admitted');
+        }
+      }
+
+      // --- SỰ KIỆN WEBRTC P2P (KHI ĐÃ ĐƯỢC DUYỆT) ---
+      if (activeEngine === 'webrtc' && myAdmissionStatus === 'admitted') {
+        if (type === 'peer-join') {
+          createAndSendOffer(from, peerName, localStreamRef.current);
+        } else if (type === 'offer' && to === myPeerId.current) {
+          handleReceiveOffer(from, peerName, sdp, localStreamRef.current);
+        } else if (type === 'answer' && to === myPeerId.current) {
+          const pc = peerConnections.current[from];
+          if (pc) await pc.setRemoteDescription(new RTCSessionDescription(sdp));
+        } else if (type === 'ice-candidate' && to === myPeerId.current) {
+          const pc = peerConnections.current[from];
+          if (pc && candidate) {
+            try { await pc.addIceCandidate(new RTCIceCandidate(candidate)); } catch (e) {}
+          }
+        } else if (type === 'peer-leave') {
+          closePeerConnection(from);
+        }
+      }
+    });
+
+    ch.subscribe(status => {
+      if (status === 'SUBSCRIBED') {
+        // Nếu không phải admin và đang ở trạng thái chờ: Gõ cửa xin vào phòng
+        if (!isAdmin && myAdmissionStatus === 'waiting') {
+          ch.send({
+            type: 'broadcast',
+            event: 'signal',
+            payload: {
+              type: 'lobby-knock',
+              from: myPeerId.current,
+              peerName: userDisplayName,
+              department: userDepartment
+            }
+          });
+        }
+      }
+    });
+
+    return () => {
+      ch.unsubscribe();
+      channelRef.current = null;
+    };
+  }, [meeting.id, isAdmin, activeEngine, myAdmissionStatus, userDisplayName, userDepartment]);
+
+  // Host toggle Bật/Tắt chế độ phê duyệt
+  const handleToggleLobby = (newVal) => {
+    setIsLobbyEnabled(newVal);
+    localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(newVal));
+
+    // Phát tín hiệu cho các máy khác
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'signal',
+      payload: {
+        type: 'lobby-toggle',
+        from: myPeerId.current,
+        isLobby: newVal
+      }
+    });
+
+    // Nếu vừa tắt chế độ phê duyệt: Duyệt luôn tất cả mọi người đang đợi
+    if (!newVal && waitingList.length > 0) {
+      handleAdmitAll();
+    }
+  };
+
+  // Host duyệt 1 người
+  const handleAdmitOne = (targetPeerId) => {
+    setWaitingList(prev => prev.filter(p => p.peerId !== targetPeerId));
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'signal',
+      payload: {
+        type: 'lobby-admit',
+        from: myPeerId.current,
+        targetPeerId
+      }
+    });
+  };
+
+  // Host từ chối 1 người
+  const handleRejectOne = (targetPeerId) => {
+    setWaitingList(prev => prev.filter(p => p.peerId !== targetPeerId));
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'signal',
+      payload: {
+        type: 'lobby-reject',
+        from: myPeerId.current,
+        targetPeerId
+      }
+    });
+  };
+
+  // Host duyệt tất cả mọi người trong phòng chờ
+  const handleAdmitAll = () => {
+    setWaitingList([]);
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'signal',
+      payload: {
+        type: 'lobby-admit-all',
+        from: myPeerId.current
+      }
+    });
+  };
+
+  // Sao chép link mời họp trực tiếp kèm lời mời chuẩn mực
+  const handleCopyDirectLink = () => {
+    const origin = window.location.origin;
+    const directUrl = `${origin}/diem-danh-hop?id=${meeting.id}&join=1`;
+    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${meeting.title}\n⏰ Thời gian: ${new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+
+    navigator.clipboard.writeText(message);
+    setCopiedLinkToast(true);
+    setTimeout(() => setCopiedLinkToast(false), 3500);
+  };
+
+  // =========================================================================
+  // 2. WEBRTC P2P NỘI BỘ (CHO NHÓM NHỎ 2 - 8 NGƯỜI)
   // =========================================================================
   const localVideoRef = useRef(null);
   const [localStream, setLocalStream] = useState(null);
+  const localStreamRef = useRef(null);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [isVideoMuted, setIsVideoMuted] = useState(false);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [mediaError, setMediaError] = useState(null);
 
-  // Danh sách các peer từ xa: { [peerId]: { peerName, stream, isMuted, isVideoOff } }
   const [remotePeers, setRemotePeers] = useState({});
-  const peerConnections = useRef({}); // { [peerId]: RTCPeerConnection }
-  const myPeerId = useRef('peer_' + Math.random().toString(36).substring(2, 9));
-  const channelRef = useRef(null);
+  const peerConnections = useRef({});
 
-  // Khởi tạo hoặc dọn dẹp WebRTC khi chuyển đổi sang/từ chế độ 'webrtc'
   useEffect(() => {
-    if (activeEngine !== 'webrtc') {
+    if (activeEngine !== 'webrtc' || myAdmissionStatus !== 'admitted') {
       cleanupWebRTC();
       return;
     }
@@ -104,20 +314,16 @@ export default function SmartMeetingRoomModal({
         setMediaError(null);
         let stream = null;
 
-        // Thử lấy cả Cam và Mic
         try {
           stream = await navigator.mediaDevices.getUserMedia({
             video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } },
             audio: true
           });
         } catch (camErr) {
-          console.warn('[WebRTC] Không thể mở Camera, thử chế độ chỉ Mic:', camErr);
-          // Fallback sang chỉ Audio nếu máy bàn không có Webcam
           try {
             stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
             setMediaError('⚠️ Máy tính không tìm thấy Webcam. Đang chạy chế độ Chỉ Mic (Audio).');
           } catch (micErr) {
-            console.warn('[WebRTC] Không thể mở Mic:', micErr);
             setMediaError('⚠️ Không tìm thấy Mic/Webcam. Bạn đang ở chế độ Chỉ lắng nghe.');
           }
         }
@@ -129,82 +335,25 @@ export default function SmartMeetingRoomModal({
 
         if (stream) {
           setLocalStream(stream);
+          localStreamRef.current = stream;
           if (localVideoRef.current) {
             localVideoRef.current.srcObject = stream;
           }
         }
 
-        // Tạo Supabase Realtime Broadcast Channel để Signaling
-        const channelName = `meeting-webrtc-${meeting.id.slice(0, 20)}`;
-        const ch = supabase.channel(channelName, {
-          config: { broadcast: { self: false } }
-        });
-        channelRef.current = ch;
-
-        // Lắng nghe tín hiệu WebRTC từ các máy khác
-        ch.on('broadcast', { event: 'signal' }, async ({ payload }) => {
-          if (!payload) return;
-          const { type, from, to, sdp, candidate, peerName } = payload;
-
-          // 1. Khi có bạn mới tham gia phòng
-          if (type === 'peer-join') {
-            console.log(`[WebRTC] Nhận được peer-join từ: ${peerName} (${from})`);
-            // Tạo WebRTC Offer gửi lại cho người mới
-            createAndSendOffer(from, peerName, stream);
-          }
-
-          // 2. Nhận Offer từ peer khác
-          else if (type === 'offer' && to === myPeerId.current) {
-            console.log(`[WebRTC] Nhận được Offer từ ${from}`);
-            handleReceiveOffer(from, peerName, sdp, stream);
-          }
-
-          // 3. Nhận Answer
-          else if (type === 'answer' && to === myPeerId.current) {
-            console.log(`[WebRTC] Nhận được Answer từ ${from}`);
-            const pc = peerConnections.current[from];
-            if (pc) {
-              await pc.setRemoteDescription(new RTCSessionDescription(sdp));
-            }
-          }
-
-          // 4. Nhận ICE Candidate
-          else if (type === 'ice-candidate' && to === myPeerId.current) {
-            const pc = peerConnections.current[from];
-            if (pc && candidate) {
-              try {
-                await pc.addIceCandidate(new RTCIceCandidate(candidate));
-              } catch (e) {
-                console.warn('[WebRTC] Lỗi thêm ICE candidate:', e);
-              }
-            }
-          }
-
-          // 5. Khi peer rời phòng
-          else if (type === 'peer-leave') {
-            closePeerConnection(from);
-          }
-        });
-
-        ch.subscribe(status => {
-          if (status === 'SUBSCRIBED') {
-            console.log('[WebRTC] Đã kết nối kênh Broadcast Signaling.');
-            // Thông báo mình đã vào phòng
-            ch.send({
-              type: 'broadcast',
-              event: 'signal',
-              payload: {
-                type: 'peer-join',
-                from: myPeerId.current,
-                peerName: userDisplayName
-              }
-            });
+        // Báo cho các bạn họp mình đã vào
+        channelRef.current?.send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: {
+            type: 'peer-join',
+            from: myPeerId.current,
+            peerName: userDisplayName
           }
         });
 
       } catch (err) {
-        console.error('[WebRTC] Lỗi khởi tạo phòng họp P2P:', err);
-        setMediaError('Không thể khởi động WebRTC: ' + (err.message || err));
+        console.error('[WebRTC] Lỗi khởi tạo P2P:', err);
       }
     }
 
@@ -214,9 +363,8 @@ export default function SmartMeetingRoomModal({
       isMounted = false;
       cleanupWebRTC();
     };
-  }, [activeEngine, meeting.id]);
+  }, [activeEngine, myAdmissionStatus]);
 
-  // Tạo Offer và gửi cho peer khác
   const createAndSendOffer = async (targetPeerId, targetName, stream) => {
     try {
       const pc = createPeerConnection(targetPeerId, targetName, stream);
@@ -234,12 +382,9 @@ export default function SmartMeetingRoomModal({
           sdp: offer
         }
       });
-    } catch (e) {
-      console.error('[WebRTC] Lỗi tạo offer:', e);
-    }
+    } catch (e) {}
   };
 
-  // Nhận Offer và tạo Answer trả lại
   const handleReceiveOffer = async (fromPeerId, fromName, sdp, stream) => {
     try {
       const pc = createPeerConnection(fromPeerId, fromName, stream);
@@ -258,12 +403,9 @@ export default function SmartMeetingRoomModal({
           sdp: answer
         }
       });
-    } catch (e) {
-      console.error('[WebRTC] Lỗi xử lý offer:', e);
-    }
+    } catch (e) {}
   };
 
-  // Tạo kết nối RTCPeerConnection chuẩn
   const createPeerConnection = (targetPeerId, targetName, stream) => {
     if (peerConnections.current[targetPeerId]) {
       return peerConnections.current[targetPeerId];
@@ -272,12 +414,10 @@ export default function SmartMeetingRoomModal({
     const pc = new RTCPeerConnection(ICE_SERVERS);
     peerConnections.current[targetPeerId] = pc;
 
-    // Gắn local audio/video tracks vào kết nối
     if (stream) {
       stream.getTracks().forEach(track => pc.addTrack(track, stream));
     }
 
-    // Trao đổi ICE Candidates
     pc.onicecandidate = event => {
       if (event.candidate) {
         channelRef.current?.send({
@@ -293,21 +433,16 @@ export default function SmartMeetingRoomModal({
       }
     };
 
-    // Khi nhận được luồng Video/Audio từ xa
     pc.ontrack = event => {
-      console.log(`[WebRTC] Nhận được luồng media từ ${targetName}`);
       const remoteStream = event.streams[0];
       setRemotePeers(prev => ({
         ...prev,
-        [targetPeerId]: {
-          peerName: targetName,
-          stream: remoteStream
-        }
+        [targetPeerId]: { peerName: targetName, stream: remoteStream }
       }));
     };
 
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed' || pc.connectionState === 'closed') {
+      if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
         closePeerConnection(targetPeerId);
       }
     };
@@ -315,7 +450,6 @@ export default function SmartMeetingRoomModal({
     return pc;
   };
 
-  // Đóng kết nối của 1 peer
   const closePeerConnection = peerId => {
     if (peerConnections.current[peerId]) {
       peerConnections.current[peerId].close();
@@ -328,39 +462,20 @@ export default function SmartMeetingRoomModal({
     });
   };
 
-  // Dọn dẹp hoàn toàn tài nguyên WebRTC khi rời phòng
   const cleanupWebRTC = () => {
-    // Thông báo cho các peer khác mình đã rời
-    if (channelRef.current) {
-      try {
-        channelRef.current.send({
-          type: 'broadcast',
-          event: 'signal',
-          payload: { type: 'peer-leave', from: myPeerId.current }
-        });
-        channelRef.current.unsubscribe();
-      } catch (e) {}
-      channelRef.current = null;
-    }
-
-    // Tắt camera và mic
     if (localStream) {
       localStream.getTracks().forEach(t => t.stop());
       setLocalStream(null);
+      localStreamRef.current = null;
     }
-
-    // Đóng tất cả Peer Connections
     Object.keys(peerConnections.current).forEach(id => {
-      try {
-        peerConnections.current[id].close();
-      } catch (e) {}
+      try { peerConnections.current[id].close(); } catch (e) {}
     });
     peerConnections.current = {};
     setRemotePeers({});
     setIsScreenSharing(false);
   };
 
-  // Bật/tắt Micro
   const toggleMic = () => {
     if (!localStream) return;
     const audioTrack = localStream.getAudioTracks()[0];
@@ -370,7 +485,6 @@ export default function SmartMeetingRoomModal({
     }
   };
 
-  // Bật/tắt Camera
   const toggleCamera = () => {
     if (!localStream) return;
     const videoTrack = localStream.getVideoTracks()[0];
@@ -380,66 +494,48 @@ export default function SmartMeetingRoomModal({
     }
   };
 
-  // Chia sẻ màn hình (Screen Share)
   const toggleScreenShare = async () => {
     if (isScreenSharing) {
-      // Dừng chia sẻ màn hình, khôi phục lại camera
       try {
         const camStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         const newVideoTrack = camStream.getVideoTracks()[0];
-        
-        // Thay thế track trong tất cả peer connections
         Object.values(peerConnections.current).forEach(pc => {
           const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
           if (sender && newVideoTrack) sender.replaceTrack(newVideoTrack);
         });
-
         if (localVideoRef.current) localVideoRef.current.srcObject = camStream;
         setLocalStream(camStream);
+        localStreamRef.current = camStream;
         setIsScreenSharing(false);
-      } catch (e) {
-        console.warn('Lỗi khôi phục camera:', e);
-      }
+      } catch (e) {}
     } else {
-      // Bắt đầu chia sẻ màn hình
       try {
         const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
         const screenTrack = screenStream.getVideoTracks()[0];
-
-        // Khi người dùng bấm "Stop sharing" trên thanh của trình duyệt
-        screenTrack.onended = () => {
-          toggleScreenShare();
-        };
-
-        // Thay thế track video gửi đi cho các bạn họp
+        screenTrack.onended = () => toggleScreenShare();
         Object.values(peerConnections.current).forEach(pc => {
           const sender = pc.getSenders().find(s => s.track && s.track.kind === 'video');
           if (sender) sender.replaceTrack(screenTrack);
         });
-
         if (localVideoRef.current) localVideoRef.current.srcObject = screenStream;
         setIsScreenSharing(true);
-      } catch (e) {
-        console.warn('Hủy chia sẻ màn hình:', e);
-      }
+      } catch (e) {}
     }
   };
 
   // =========================================================================
-  // 2. JITSI MEET NHÚNG TRỰC TIẾP (TOÀN TRƯỜNG 50 - 100 NGƯỜI)
+  // 3. JITSI MEET NHÚNG (TOÀN TRƯỜNG 50 - 100 NGƯỜI)
   // =========================================================================
   const jitsiContainerRef = useRef(null);
   const jitsiApiRef = useRef(null);
   const [jitsiLoading, setJitsiLoading] = useState(true);
 
-  // Sinh tên phòng Jitsi duy nhất chuẩn hóa
   const cleanRoomName = useMemo(() => {
-    const raw = `CBQ_THPT_Meeting_${meeting.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
-    return raw;
+    return `CBQ_THPT_Meeting_${meeting.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
   }, [meeting.id]);
 
   useEffect(() => {
-    if (activeEngine !== 'jitsi') {
+    if (activeEngine !== 'jitsi' || myAdmissionStatus !== 'admitted') {
       if (jitsiApiRef.current) {
         try { jitsiApiRef.current.dispose(); } catch (e) {}
         jitsiApiRef.current = null;
@@ -450,7 +546,6 @@ export default function SmartMeetingRoomModal({
     setJitsiLoading(true);
     let isCancelled = false;
 
-    // Nạp Jitsi External API Script nếu chưa có
     const loadJitsiScript = () => {
       return new Promise((resolve, reject) => {
         if (window.JitsiMeetExternalAPI) {
@@ -461,7 +556,7 @@ export default function SmartMeetingRoomModal({
         script.src = 'https://meet.jit.si/external_api.js';
         script.async = true;
         script.onload = () => resolve(window.JitsiMeetExternalAPI);
-        script.onerror = () => reject(new Error('Không thể tải Jitsi External API'));
+        script.onerror = () => reject(new Error('Không thể tải Jitsi API'));
         document.body.appendChild(script);
       });
     };
@@ -469,8 +564,6 @@ export default function SmartMeetingRoomModal({
     loadJitsiScript()
       .then(JitsiAPI => {
         if (isCancelled || !jitsiContainerRef.current) return;
-
-        // Dọn dẹp instance cũ nếu có
         if (jitsiApiRef.current) {
           try { jitsiApiRef.current.dispose(); } catch (e) {}
         }
@@ -507,13 +600,12 @@ export default function SmartMeetingRoomModal({
         jitsiApiRef.current = api;
         setJitsiLoading(false);
 
-        // Tự động đóng phòng khi bấm gác máy
         api.addEventListener('readyToClose', () => {
           onClose();
         });
       })
       .catch(err => {
-        console.warn('[Jitsi] Lỗi nạp script, chuyển sang fallback iframe:', err);
+        console.warn('[Jitsi] Fallback:', err);
         setJitsiLoading(false);
       });
 
@@ -524,10 +616,10 @@ export default function SmartMeetingRoomModal({
         jitsiApiRef.current = null;
       }
     };
-  }, [activeEngine, cleanRoomName, userDisplayName, userDepartment, onClose]);
+  }, [activeEngine, myAdmissionStatus, cleanRoomName, userDisplayName, userDepartment, onClose]);
 
   // =========================================================================
-  // 3. ĐIỂM DANH TỰ ĐỘNG & BIỂU QUYẾT TỨC THÌ
+  // 4. ĐIỂM DANH TỰ ĐỘNG & BIỂU QUYẾT TỨC THÌ
   // =========================================================================
   const handleAutoCheckin = async () => {
     setCheckingIn(true);
@@ -539,11 +631,11 @@ export default function SmartMeetingRoomModal({
         department: userDepartment,
         checkinCode: meeting.checkin_code || '',
         pollAnswer: selectedPollOption || null,
-        deviceInfo: `${navigator.userAgent.slice(0, 50)} | Phòng họp 3-in-1 CBQ`
+        deviceInfo: `${navigator.userAgent.slice(0, 50)} | Phòng họp trực tuyến CBQ`
       });
 
       if (res.success) {
-        setCheckinMessage({ type: 'success', text: '✅ Bạn đã điểm danh thành công vào phòng họp!' });
+        setCheckinMessage({ type: 'success', text: '✅ Đã ghi nhận điểm danh có mặt tại phòng họp!' });
         onRefreshAttendances();
       } else {
         setCheckinMessage({ type: 'error', text: res.message || 'Điểm danh không thành công.' });
@@ -574,7 +666,6 @@ export default function SmartMeetingRoomModal({
     }
   };
 
-  // Thống kê kết quả biểu quyết
   const pollStats = useMemo(() => {
     if (!meeting.poll_options || meeting.poll_options.length === 0) return [];
     const counts = {};
@@ -596,7 +687,7 @@ export default function SmartMeetingRoomModal({
   }, [meeting.poll_options, attendances]);
 
   // =========================================================================
-  // 4. XUẤT BIÊN BẢN HỌP NGHỊ ĐỊNH 30/2020/NĐ-CP
+  // 5. XUẤT BIÊN BẢN HỌP NGHỊ ĐỊNH 30/2020/NĐ-CP
   // =========================================================================
   const handleExportWordMinutes = () => {
     const dateObj = new Date();
@@ -614,10 +705,7 @@ export default function SmartMeetingRoomModal({
         <meta charset='utf-8'>
         <title>Biên bản cuộc họp - ${meeting.title}</title>
         <style>
-          @page Section1 {
-            size: 21.0cm 29.7cm;
-            margin: 2.0cm 1.5cm 2.0cm 3.0cm;
-          }
+          @page Section1 { size: 21.0cm 29.7cm; margin: 2.0cm 1.5cm 2.0cm 3.0cm; }
           div.Section1 { page: Section1; }
           body { font-family: 'Times New Roman', serif; font-size: 13pt; line-height: 1.35; color: #000; }
           .header-table { width: 100%; border: none; margin-bottom: 15px; }
@@ -654,7 +742,7 @@ export default function SmartMeetingRoomModal({
           <div class="subtitle">NỘI DUNG: ${meeting.title.toUpperCase()}</div>
 
           <p><strong>I. THỜI GIAN, ĐỊA ĐIỂM VÀ THÀNH PHẦN</strong></p>
-          <p>- <strong>Thời gian bắt đầu:</strong> ${new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')}.</p>
+          <p>- <strong>Thời gian:</strong> ${new Date(meeting.meeting_date || Date.now()).toLocaleDateString('vi-VN')}.</p>
           <p>- <strong>Hình thức họp:</strong> Phòng họp trực tuyến thông minh (Hệ thống THPT Cao Bá Quát).</p>
           <p>- <strong>Tổng số triệu tập:</strong> ${attendances.length} đồng chí.</p>
           <p>- <strong>Số lượng có mặt:</strong> ${presentList.length} đồng chí (${Math.round((presentList.length / (attendances.length || 1)) * 100)}%).</p>
@@ -670,7 +758,7 @@ export default function SmartMeetingRoomModal({
               <thead>
                 <tr>
                   <th style="width: 10%;">STT</th>
-                  <th style="width: 50%;">Ý Kiến / Phương Án Biểu Quyết</th>
+                  <th style="width: 50%;">Phương Án Biểu Quyết</th>
                   <th style="width: 20%;">Số Phiếu</th>
                   <th style="width: 20%;">Tỷ Lệ %</th>
                 </tr>
@@ -729,48 +817,93 @@ export default function SmartMeetingRoomModal({
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h3 style={styles.headerTitle}>{meeting.title}</h3>
                 <span style={styles.badgeLive}>ĐANG DIỄN RA</span>
+                {isAdmin && (
+                  <span style={styles.badgeHost}>👑 BGH CHỦ TỌA</span>
+                )}
               </div>
               <span style={styles.headerSubtitle}>
-                Chủ tọa: BGH THPT Cao Bá Quát • Tham gia với tư cách: <strong>{userDisplayName}</strong> ({userDepartment})
+                Tham gia: <strong>{userDisplayName}</strong> ({userDepartment})
               </span>
             </div>
           </div>
 
           {/* CHỌN ĐỘNG CƠ PHÒNG HỌP (3-IN-1 ENGINE SELECTOR) */}
-          <div style={styles.engineTabs}>
-            <button
-              onClick={() => setActiveEngine('jitsi')}
-              style={styles.engineBtn(activeEngine === 'jitsi')}
-              title="Phòng họp Hội đồng Sư phạm toàn trường (50-100 người, Jitsi Meet nhúng)"
-            >
-              <Users size={15} /> 1. Jitsi Hội Đồng
-            </button>
-            <button
-              onClick={() => setActiveEngine('webrtc')}
-              style={styles.engineBtn(activeEngine === 'webrtc')}
-              title="Phòng họp P2P Nội bộ (BGH, Tổ chuyên môn 2-8 người, siêu bảo mật)"
-            >
-              <Radio size={15} /> 2. WebRTC P2P Nội Bộ
-            </button>
-            <button
-              onClick={() => setActiveEngine('external')}
-              style={styles.engineBtn(activeEngine === 'external')}
-              title="Cầu nối Google Meet / Zoom / MS Teams ngoài"
-            >
-              <ExternalLink size={15} /> 3. Google Meet / Zoom
-            </button>
-          </div>
+          {myAdmissionStatus === 'admitted' && (
+            <div style={styles.engineTabs}>
+              <button
+                onClick={() => setActiveEngine('jitsi')}
+                style={styles.engineBtn(activeEngine === 'jitsi')}
+                title="Hội đồng Sư phạm toàn trường (50-100 người, Jitsi Meet nhúng)"
+              >
+                <Users size={14} /> 1. Jitsi Hội Đồng
+              </button>
+              <button
+                onClick={() => setActiveEngine('webrtc')}
+                style={styles.engineBtn(activeEngine === 'webrtc')}
+                title="WebRTC P2P Nội bộ (BGH, Tổ CM 2-8 người, siêu bảo mật)"
+              >
+                <Radio size={14} /> 2. WebRTC P2P
+              </button>
+              <button
+                onClick={() => setActiveEngine('external')}
+                style={styles.engineBtn(activeEngine === 'external')}
+                title="Cầu nối Google Meet / Zoom / MS Teams ngoài"
+              >
+                <ExternalLink size={14} /> 3. Meet / Zoom
+              </button>
+            </div>
+          )}
 
-          {/* CÁC NÚT PHỤ TRỢ (PANEL TOGGLE, FULLSCREEN, CLOSE) */}
+          {/* NÚT THAO TÁC & PHÂN QUYỀN CHỦ TỌA */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            
+            {/* Nút sao chép link gửi giáo viên */}
             <button
-              onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-              style={styles.iconBtn(isSidePanelOpen)}
-              title={isSidePanelOpen ? "Thu gọn bảng điều hành" : "Mở bảng điểm danh & biểu quyết"}
+              onClick={handleCopyDirectLink}
+              style={styles.btnShareLink}
+              title="Sao chép thư mời kèm đường link gửi qua Zalo để giáo viên bấm vào họp ngay"
             >
-              {isSidePanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-              <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Bảng Hội Nghị</span>
+              {copiedLinkToast ? <Check size={15} color="#22c55e" /> : <Copy size={15} />}
+              <span>{copiedLinkToast ? 'Đã Sao Chép Link!' : '📋 Link Mời Họp'}</span>
             </button>
+
+            {/* Chủ tọa: Bật/Tắt chế độ Phê duyệt người tham gia */}
+            {isAdmin && (
+              <button
+                onClick={() => handleToggleLobby(!isLobbyEnabled)}
+                style={styles.lobbyToggleBtn(isLobbyEnabled)}
+                title={isLobbyEnabled ? "Đang bật chế độ Phê duyệt (Người vào phải qua phòng chờ). Click để Tắt." : "Đang tắt chế độ Phê duyệt (Vào tự do). Click để Bật."}
+              >
+                {isLobbyEnabled ? <Lock size={15} color="#f59e0b" /> : <Unlock size={15} color="#10b981" />}
+                <span>{isLobbyEnabled ? '🛡️ Phê Duyệt: BẬT' : '🔓 Vào Tự Do'}</span>
+              </button>
+            )}
+
+            {/* Huy hiệu thông báo số người đang chờ duyệt (Dành cho Chủ tọa) */}
+            {isAdmin && waitingList.length > 0 && (
+              <button
+                onClick={() => {
+                  setIsSidePanelOpen(true);
+                  setActiveSideTab('lobby');
+                }}
+                style={styles.waitingBadgeBtn}
+                title="Có người đang chờ duyệt ở phòng chờ"
+              >
+                <Bell size={15} />
+                <span>Chờ Duyệt ({waitingList.length})</span>
+              </button>
+            )}
+
+            {myAdmissionStatus === 'admitted' && (
+              <button
+                onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+                style={styles.iconBtn(isSidePanelOpen)}
+                title={isSidePanelOpen ? "Thu gọn bảng điều hành" : "Mở bảng hội nghị"}
+              >
+                {isSidePanelOpen ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                <span style={{ fontSize: '12px', fontWeight: 'bold' }}>Bảng Hội Nghị</span>
+              </button>
+            )}
 
             <button
               onClick={() => setIsFullscreen(!isFullscreen)}
@@ -785,148 +918,222 @@ export default function SmartMeetingRoomModal({
               style={styles.closeBtn}
               title="Rời khỏi phòng họp"
             >
-              <PhoneOff size={16} /> Rời Phòng
+              <PhoneOff size={15} /> Rời Phòng
             </button>
           </div>
         </div>
 
-        {/* NỘI DUNG CHÍNH (BODY: VIDEO AREA + SIDE PANEL) */}
+        {/* NỘI DUNG CHÍNH (BODY) */}
         <div style={styles.mainLayout}>
 
-          {/* KHUNG VIDEO / TRÌNH DIỄN CHÍNH */}
-          <div style={styles.videoStage}>
+          {/* TRƯỜNG HỢP 1: NGƯỜI DÙNG ĐANG Ở PHÒNG CHỜ (CHƯA ĐƯỢC DUYỆT) */}
+          {myAdmissionStatus === 'waiting' ? (
+            <div style={styles.waitingRoomContainer}>
+              <div style={styles.waitingRoomCard}>
+                <div style={styles.waitingPulseRing}>
+                  <Clock size={40} color="#0284c7" />
+                </div>
+                
+                <h3 style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', margin: '16px 0 8px 0' }}>
+                  Bạn Đang Ở Phòng Chờ Của Nhà Trường
+                </h3>
+                
+                <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, maxWidth: '480px', margin: '0 auto 20px auto' }}>
+                  Cuộc họp này được bảo vệ bởi chế độ phê duyệt. Vui lòng đợi <strong>Người chủ trì (Ban Giám Hiệu)</strong> xác nhận để vào phòng họp chính thức.
+                </p>
 
-            {/* ĐỘNG CƠ 1: JITSI MEET NHÚNG */}
-            {activeEngine === 'jitsi' && (
-              <div style={styles.jitsiWrapper}>
-                {jitsiLoading && (
-                  <div style={styles.centerLoading}>
-                    <RefreshCw size={36} color="#38bdf8" className="animate-spin" />
-                    <p style={{ marginTop: '12px', color: '#cbd5e1', fontSize: '14px' }}>
-                      Đang kết nối vào phòng họp Hội Đồng Sư Phạm (Jitsi Meet)...
-                    </p>
+                {/* THẺ THÔNG TIN ĐẠI BIỂU */}
+                <div style={styles.waitingInfoBox}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Đại biểu:</span>
+                    <strong style={{ color: '#0f172a', fontSize: '13px' }}>{userDisplayName}</strong>
                   </div>
-                )}
-                <div ref={jitsiContainerRef} style={{ width: '100%', height: '100%' }} />
-              </div>
-            )}
-
-            {/* ĐỘNG CƠ 2: WEBRTC P2P NỘI BỘ */}
-            {activeEngine === 'webrtc' && (
-              <div style={styles.webrtcWrapper}>
-                {mediaError && (
-                  <div style={styles.mediaWarningBanner}>
-                    <AlertCircle size={16} /> {mediaError}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Đơn vị:</span>
+                    <strong style={{ color: '#0369a1', fontSize: '13px' }}>Tổ {userDepartment}</strong>
                   </div>
-                )}
-
-                <div style={styles.videoGrid(Object.keys(remotePeers).length + 1)}>
-                  {/* Video của chính mình (Local Stream) */}
-                  <div style={styles.videoCard}>
-                    <video
-                      ref={localVideoRef}
-                      autoPlay
-                      playsInline
-                      muted
-                      style={styles.videoElement(true)}
-                    />
-                    <div style={styles.videoOverlay}>
-                      <span style={styles.videoNameBadge}>
-                        👤 Bạn ({userDisplayName}) {isScreenSharing && '🖥️ (Đang chia sẻ màn hình)'}
-                      </span>
-                      <div style={{ display: 'flex', gap: '4px' }}>
-                        {isMicMuted && <span style={styles.badgeMuted}><MicOff size={12} /></span>}
-                        {isVideoMuted && <span style={styles.badgeMuted}><VideoOff size={12} /></span>}
-                      </div>
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Trạng thái:</span>
+                    <span style={{ color: '#d97706', fontSize: '13px', fontWeight: 'bold' }}>⏳ Đang chờ phê duyệt...</span>
                   </div>
-
-                  {/* Video của các bạn họp từ xa (Remote Streams) */}
-                  {Object.entries(remotePeers).map(([peerId, peer]) => (
-                    <div key={peerId} style={styles.videoCard}>
-                      <video
-                        autoPlay
-                        playsInline
-                        ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }}
-                        style={styles.videoElement(false)}
-                      />
-                      <div style={styles.videoOverlay}>
-                        <span style={styles.videoNameBadge}>
-                          👤 {peer.peerName}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
                 </div>
 
-                {/* THANH ĐIỀU KHIỂN NỔI CỦA WEBRTC */}
-                <div style={styles.webrtcToolbar}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                   <button
-                    onClick={toggleMic}
-                    style={styles.controlBtn(!isMicMuted, '#0284c7', '#ef4444')}
-                    title={isMicMuted ? "Bật Micro" : "Tắt Micro"}
+                    onClick={handleAutoCheckin}
+                    disabled={checkingIn}
+                    style={styles.btnCheckinNow}
                   >
-                    {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                    {checkingIn ? 'Đang xác thực...' : '✨ Điểm Danh Trước Cho Tôi'}
                   </button>
-
                   <button
-                    onClick={toggleCamera}
-                    style={styles.controlBtn(!isVideoMuted, '#0284c7', '#ef4444')}
-                    title={isVideoMuted ? "Bật Camera" : "Tắt Camera"}
+                    onClick={onClose}
+                    style={{ padding: '10px 20px', backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
                   >
-                    {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
-                  </button>
-
-                  <button
-                    onClick={toggleScreenShare}
-                    style={styles.controlBtn(isScreenSharing, '#10b981', '#334155')}
-                    title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
-                  >
-                    <MonitorUp size={20} />
+                    Rời Phòng Chờ
                   </button>
                 </div>
-              </div>
-            )}
 
-            {/* ĐỘNG CƠ 3: CẦU NỐI NGOÀI (GOOGLE MEET / ZOOM) */}
-            {activeEngine === 'external' && (
-              <div style={styles.externalWrapper}>
-                <div style={styles.externalCard}>
-                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#0284c715', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
-                    <ExternalLink size={32} color="#0284c7" />
-                  </div>
-                  <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                    Cầu Nối Họp Trực Tuyến Bên Ngoài
-                  </h4>
-                  <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 20px auto' }}>
-                    Cuộc họp này được liên kết qua phòng họp Google Meet / Zoom. Quý Thầy/Cô hãy mở phòng họp bằng nút bên dưới và giữ tab này mở để hệ thống <strong>tự động điểm danh</strong> và <strong>ghi nhận biểu quyết</strong> thời gian thực.
+                {checkinMessage && (
+                  <p style={{ marginTop: '12px', fontSize: '12px', color: checkinMessage.type === 'success' ? '#16a34a' : '#dc2626' }}>
+                    {checkinMessage.text}
                   </p>
+                )}
+              </div>
+            </div>
+          ) : myAdmissionStatus === 'rejected' ? (
+            /* TRƯỜNG HỢP 2: BỊ TỪ CHỐI */
+            <div style={styles.waitingRoomContainer}>
+              <div style={styles.waitingRoomCard}>
+                <div style={{ width: '70px', height: '70px', borderRadius: '50%', backgroundColor: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                  <ShieldAlert size={36} color="#dc2626" />
+                </div>
+                <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#991b1b', marginBottom: '8px' }}>
+                  Yêu Cầu Tham Gia Không Được Chấp Thuận
+                </h3>
+                <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, maxWidth: '440px', margin: '0 auto 20px' }}>
+                  Người chủ trì cuộc họp đã từ chối yêu cầu vào phòng họp của bạn. Nếu có sự nhầm lẫn, vui lòng liên hệ Ban Giám Hiệu hoặc Thư ký hội đồng.
+                </p>
+                <button
+                  onClick={onClose}
+                  style={{ padding: '10px 24px', backgroundColor: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                >
+                  Đóng Cửa Sổ
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* TRƯỜNG HỢP 3: ĐÃ ĐƯỢC PHÊ DUYỆT (VÀO PHÒNG HỌP CHÍNH THỨC) */
+            <div style={styles.videoStage}>
 
-                  {meeting.meeting_link ? (
-                    <a
-                      href={meeting.meeting_link}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={styles.btnLaunchMeet}
-                    >
-                      <Video size={18} /> Vào Phòng Họp Google Meet / Zoom Ngay
-                    </a>
-                  ) : (
-                    <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '8px', fontSize: '13px' }}>
-                      ⚠️ Ban Giám Hiệu chưa gắn đường link phòng họp ngoài. Vui lòng chuyển sang tab <strong>1. Jitsi Hội Đồng</strong> hoặc <strong>2. WebRTC P2P Nội Bộ</strong> để họp ngay trên web trường!
+              {/* ĐỘNG CƠ 1: JITSI MEET NHÚNG */}
+              {activeEngine === 'jitsi' && (
+                <div style={styles.jitsiWrapper}>
+                  {jitsiLoading && (
+                    <div style={styles.centerLoading}>
+                      <RefreshCw size={36} color="#38bdf8" className="animate-spin" />
+                      <p style={{ marginTop: '12px', color: '#cbd5e1', fontSize: '14px' }}>
+                        Đang kết nối vào phòng họp Hội Đồng Sư Phạm (Jitsi Meet)...
+                      </p>
+                    </div>
+                  )}
+                  <div ref={jitsiContainerRef} style={{ width: '100%', height: '100%' }} />
+                </div>
+              )}
+
+              {/* ĐỘNG CƠ 2: WEBRTC P2P NỘI BỘ */}
+              {activeEngine === 'webrtc' && (
+                <div style={styles.webrtcWrapper}>
+                  {mediaError && (
+                    <div style={styles.mediaWarningBanner}>
+                      <AlertCircle size={16} /> {mediaError}
                     </div>
                   )}
 
-                  <div style={{ marginTop: '24px', fontSize: '12px', color: '#94a3b8' }}>
-                    Liên kết hiện tại: {meeting.meeting_link || 'Chưa cấu hình'}
+                  <div style={styles.videoGrid(Object.keys(remotePeers).length + 1)}>
+                    {/* Video của chính mình */}
+                    <div style={styles.videoCard}>
+                      <video
+                        ref={localVideoRef}
+                        autoPlay
+                        playsInline
+                        muted
+                        style={styles.videoElement(true)}
+                      />
+                      <div style={styles.videoOverlay}>
+                        <span style={styles.videoNameBadge}>
+                          👤 Bạn ({userDisplayName}) {isScreenSharing && '🖥️ (Đang chia sẻ màn hình)'}
+                        </span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {isMicMuted && <span style={styles.badgeMuted}><MicOff size={12} /></span>}
+                          {isVideoMuted && <span style={styles.badgeMuted}><VideoOff size={12} /></span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Video của các đồng chí từ xa */}
+                    {Object.entries(remotePeers).map(([peerId, peer]) => (
+                      <div key={peerId} style={styles.videoCard}>
+                        <video
+                          autoPlay
+                          playsInline
+                          ref={el => { if (el && peer.stream) el.srcObject = peer.stream; }}
+                          style={styles.videoElement(false)}
+                        />
+                        <div style={styles.videoOverlay}>
+                          <span style={styles.videoNameBadge}>
+                            👤 {peer.peerName}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* THANH ĐIỀU KHIỂN NỔI CỦA WEBRTC */}
+                  <div style={styles.webrtcToolbar}>
+                    <button
+                      onClick={toggleMic}
+                      style={styles.controlBtn(!isMicMuted, '#0284c7', '#ef4444')}
+                      title={isMicMuted ? "Bật Micro" : "Tắt Micro"}
+                    >
+                      {isMicMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                    </button>
+
+                    <button
+                      onClick={toggleCamera}
+                      style={styles.controlBtn(!isVideoMuted, '#0284c7', '#ef4444')}
+                      title={isVideoMuted ? "Bật Camera" : "Tắt Camera"}
+                    >
+                      {isVideoMuted ? <VideoOff size={20} /> : <Video size={20} />}
+                    </button>
+
+                    <button
+                      onClick={toggleScreenShare}
+                      style={styles.controlBtn(isScreenSharing, '#10b981', '#334155')}
+                      title={isScreenSharing ? "Dừng chia sẻ màn hình" : "Chia sẻ màn hình"}
+                    >
+                      <MonitorUp size={20} />
+                    </button>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+
+              {/* ĐỘNG CƠ 3: CẦU NỐI NGOÀI (GOOGLE MEET / ZOOM) */}
+              {activeEngine === 'external' && (
+                <div style={styles.externalWrapper}>
+                  <div style={styles.externalCard}>
+                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', backgroundColor: '#0284c715', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px auto' }}>
+                      <ExternalLink size={32} color="#0284c7" />
+                    </div>
+                    <h4 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
+                      Cầu Nối Họp Trực Tuyến Bên Ngoài
+                    </h4>
+                    <p style={{ fontSize: '14px', color: '#64748b', lineHeight: 1.6, maxWidth: '520px', margin: '0 auto 20px auto' }}>
+                      Cuộc họp này được liên kết qua phòng họp Google Meet / Zoom. Quý Thầy/Cô hãy mở phòng họp bằng nút bên dưới và giữ tab này mở để hệ thống <strong>tự động điểm danh</strong> và <strong>ghi nhận biểu quyết</strong> thời gian thực.
+                    </p>
+
+                    {meeting.meeting_link ? (
+                      <a
+                        href={meeting.meeting_link}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={styles.btnLaunchMeet}
+                      >
+                        <Video size={18} /> Vào Phòng Họp Google Meet / Zoom Ngay
+                      </a>
+                    ) : (
+                      <div style={{ padding: '12px 16px', backgroundColor: '#fef3c7', color: '#92400e', borderRadius: '8px', fontSize: '13px' }}>
+                        ⚠️ Ban Giám Hiệu chưa gắn đường link phòng họp ngoài. Vui lòng chuyển sang tab <strong>1. Jitsi Hội Đồng</strong> hoặc <strong>2. WebRTC P2P</strong> để họp ngay trên web trường!
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* BẢNG ĐIỀU HÀNH HỘI NGHỊ ĐỒNG BỘ (SIDE PANEL) */}
-          {isSidePanelOpen && (
+          {isSidePanelOpen && myAdmissionStatus === 'admitted' && (
             <div style={styles.sidePanel}>
               
               {/* TABS CỦA BẢNG ĐIỀU HÀNH */}
@@ -935,19 +1142,27 @@ export default function SmartMeetingRoomModal({
                   onClick={() => setActiveSideTab('attendance')}
                   style={styles.sideTabBtn(activeSideTab === 'attendance')}
                 >
-                  <Users size={15} /> Điểm Danh
+                  <Users size={14} /> Điểm Danh
                 </button>
                 <button
                   onClick={() => setActiveSideTab('poll')}
                   style={styles.sideTabBtn(activeSideTab === 'poll')}
                 >
-                  <Vote size={15} /> Biểu Quyết
+                  <Vote size={14} /> Biểu Quyết
                 </button>
+                {isAdmin && (
+                  <button
+                    onClick={() => setActiveSideTab('lobby')}
+                    style={styles.sideTabBtn(activeSideTab === 'lobby')}
+                  >
+                    <Shield size={14} /> Duyệt ({waitingList.length})
+                  </button>
+                )}
                 <button
                   onClick={() => setActiveSideTab('minutes')}
                   style={styles.sideTabBtn(activeSideTab === 'minutes')}
                 >
-                  <FileText size={15} /> Thư Ký
+                  <FileText size={14} /> Thư Ký
                 </button>
               </div>
 
@@ -966,9 +1181,9 @@ export default function SmartMeetingRoomModal({
 
                     <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
                       {myAttendance ? (
-                        <span>Thời gian ghi nhận: <strong>{new Date(myAttendance.checkin_time).toLocaleTimeString('vi-VN')}</strong></span>
+                        <span>Ghi nhận: <strong>{new Date(myAttendance.checkin_time).toLocaleTimeString('vi-VN')}</strong></span>
                       ) : (
-                        <span>Bạn chưa được hệ thống ghi nhận có mặt tại phiên họp này.</span>
+                        <span>Hệ thống chưa ghi nhận điểm danh của bạn.</span>
                       )}
                     </div>
 
@@ -992,9 +1207,9 @@ export default function SmartMeetingRoomModal({
                   <div style={{ marginTop: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#334155' }}>
-                        Danh Sách Đã Dự Họp ({attendances.filter(a => a.status === 'PRESENT').length} người)
+                        Đã Vào Phòng ({attendances.filter(a => a.status === 'PRESENT').length} người)
                       </span>
-                      <button onClick={onRefreshAttendances} style={styles.btnRefreshSmall} title="Làm mới danh sách">
+                      <button onClick={onRefreshAttendances} style={styles.btnRefreshSmall} title="Làm mới">
                         <RefreshCw size={13} />
                       </button>
                     </div>
@@ -1077,12 +1292,80 @@ export default function SmartMeetingRoomModal({
                 </div>
               )}
 
-              {/* TAB 3: THƯ KÝ GHI CHÚ & XUẤT BIÊN BẢN */}
+              {/* TAB 3: PHÊ DUYỆT PHÒNG CHỜ (CHỦ TỌA) */}
+              {isAdmin && activeSideTab === 'lobby' && (
+                <div style={styles.tabContent}>
+                  <div style={{ marginBottom: '14px', padding: '12px', backgroundColor: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#166534' }}>Chế Độ Phòng Chờ:</span>
+                      <button
+                        onClick={() => handleToggleLobby(!isLobbyEnabled)}
+                        style={{ padding: '4px 8px', borderRadius: '6px', border: 'none', backgroundColor: isLobbyEnabled ? '#f59e0b' : '#10b981', color: '#fff', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        {isLobbyEnabled ? 'ĐANG BẬT' : 'ĐANG TẮT'}
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '11px', color: '#475569', margin: '4px 0 0 0' }}>
+                      {isLobbyEnabled ? 'Giáo viên vào phòng phải đợi bạn duyệt.' : 'Giáo viên có link được vào họp tự do.'}
+                    </p>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>
+                      Đang Đợi ({waitingList.length})
+                    </span>
+                    {waitingList.length > 0 && (
+                      <button
+                        onClick={handleAdmitAll}
+                        style={{ padding: '4px 10px', backgroundColor: '#16a34a', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                      >
+                        ✓ Duyệt Tất Cả
+                      </button>
+                    )}
+                  </div>
+
+                  {waitingList.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '32px 10px', color: '#94a3b8' }}>
+                      <UserCheck size={32} color="#cbd5e1" style={{ margin: '0 auto 8px' }} />
+                      <p style={{ fontSize: '13px', margin: 0 }}>Không có ai đang ở phòng chờ</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {waitingList.map((waitUser) => (
+                        <div key={waitUser.peerId} style={styles.waitingItemRow}>
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>{waitUser.peerName}</div>
+                            <div style={{ fontSize: '11px', color: '#64748b' }}>Tổ {waitUser.department}</div>
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              onClick={() => handleAdmitOne(waitUser.peerId)}
+                              style={styles.btnAdmit}
+                              title="Cho phép vào"
+                            >
+                              <UserCheck size={14} /> Duyệt
+                            </button>
+                            <button
+                              onClick={() => handleRejectOne(waitUser.peerId)}
+                              style={styles.btnReject}
+                              title="Từ chối"
+                            >
+                              <UserX size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: THƯ KÝ GHI CHÚ & XUẤT BIÊN BẢN */}
               {activeSideTab === 'minutes' && (
                 <div style={styles.tabContent}>
                   <div style={{ marginBottom: '12px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#334155', display: 'block', marginBottom: '6px' }}>
-                      Ghi Chú Nhanh / Diễn Biến Cuộc Họp:
+                      Diễn Biến & Ghi Chú Cuộc Họp:
                     </label>
                     <textarea
                       value={meetingNotes}
@@ -1102,9 +1385,6 @@ export default function SmartMeetingRoomModal({
                   >
                     <FileText size={16} /> Xuất Biên Bản Word (NĐ 30)
                   </button>
-                  <p style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
-                    Tự động tạo tệp theo thể thức văn bản hành chính lưu trữ nhà trường.
-                  </p>
                 </div>
               )}
             </div>
@@ -1117,7 +1397,7 @@ export default function SmartMeetingRoomModal({
 }
 
 // =========================================================================
-// BẢNG PHONG CÁCH GIAO DIỆN HIỆN ĐẠI (STYLES)
+// BẢNG PHONG CÁCH GIAO DIỆN (STYLES)
 // =========================================================================
 const styles = {
   backdrop: {
@@ -1175,7 +1455,7 @@ const styles = {
     fontWeight: 'bold',
     color: '#ffffff',
     margin: 0,
-    maxWidth: '380px',
+    maxWidth: '320px',
     whiteSpace: 'nowrap',
     overflow: 'hidden',
     textOverflow: 'ellipsis'
@@ -1190,8 +1470,15 @@ const styles = {
     color: '#22c55e',
     backgroundColor: 'rgba(34, 197, 94, 0.15)',
     padding: '2px 6px',
-    borderRadius: '4px',
-    letterSpacing: '0.5px'
+    borderRadius: '4px'
+  },
+  badgeHost: {
+    fontSize: '10px',
+    fontWeight: 'bold',
+    color: '#fbbf24',
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    padding: '2px 6px',
+    borderRadius: '4px'
   },
   engineTabs: {
     display: 'flex',
@@ -1211,14 +1498,54 @@ const styles = {
     color: active ? '#ffffff' : '#94a3b8',
     backgroundColor: active ? '#0284c7' : 'transparent',
     border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease'
+    cursor: 'pointer'
   }),
+  btnShareLink: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 12px',
+    borderRadius: '8px',
+    backgroundColor: '#059669',
+    color: '#ffffff',
+    border: 'none',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    cursor: 'pointer',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)'
+  },
+  lobbyToggleBtn: isLobby => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 12px',
+    borderRadius: '8px',
+    backgroundColor: isLobby ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+    border: isLobby ? '1px solid #f59e0b' : '1px solid #10b981',
+    color: isLobby ? '#fbbf24' : '#34d399',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    cursor: 'pointer'
+  }),
+  waitingBadgeBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '7px 12px',
+    borderRadius: '8px',
+    backgroundColor: '#ea580c',
+    color: '#ffffff',
+    border: 'none',
+    fontWeight: 'bold',
+    fontSize: '12px',
+    cursor: 'pointer',
+    animation: 'pulse 2s infinite'
+  },
   iconBtn: active => ({
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 12px',
+    padding: '7px 12px',
     borderRadius: '8px',
     color: active ? '#38bdf8' : '#cbd5e1',
     backgroundColor: active ? 'rgba(56, 189, 248, 0.15)' : 'rgba(255, 255, 255, 0.05)',
@@ -1229,19 +1556,54 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    padding: '8px 14px',
+    padding: '7px 12px',
     borderRadius: '8px',
     color: '#ffffff',
     backgroundColor: '#dc2626',
     border: 'none',
     fontWeight: 'bold',
-    fontSize: '13px',
+    fontSize: '12px',
     cursor: 'pointer'
   },
   mainLayout: {
     flex: 1,
     display: 'flex',
     overflow: 'hidden'
+  },
+  waitingRoomContainer: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#0f172a',
+    padding: '24px'
+  },
+  waitingRoomCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: '20px',
+    padding: '36px 32px',
+    textAlign: 'center',
+    maxWidth: '560px',
+    width: '100%',
+    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+  },
+  waitingPulseRing: {
+    width: '76px',
+    height: '76px',
+    borderRadius: '50%',
+    backgroundColor: '#e0f2fe',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: '0 auto'
+  },
+  waitingInfoBox: {
+    backgroundColor: '#f8fafc',
+    border: '1px solid #e2e8f0',
+    borderRadius: '12px',
+    padding: '14px 18px',
+    textAlign: 'left',
+    margin: '0 auto 20px auto'
   },
   videoStage: {
     flex: 1,
@@ -1297,8 +1659,7 @@ const styles = {
     aspectRatio: '16/9',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+    justifyContent: 'center'
   },
   videoElement: isLocal => ({
     width: '100%',
@@ -1353,8 +1714,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease'
+    cursor: 'pointer'
   }),
   externalWrapper: {
     flex: 1,
@@ -1368,8 +1728,7 @@ const styles = {
     borderRadius: '16px',
     padding: '36px',
     textAlign: 'center',
-    maxWidth: '560px',
-    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)'
+    maxWidth: '560px'
   },
   btnLaunchMeet: {
     display: 'inline-flex',
@@ -1381,8 +1740,7 @@ const styles = {
     borderRadius: '8px',
     fontWeight: 'bold',
     fontSize: '15px',
-    textDecoration: 'none',
-    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.35)'
+    textDecoration: 'none'
   },
   sidePanel: {
     width: '340px',
@@ -1402,7 +1760,7 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: '6px',
+    gap: '4px',
     padding: '12px 0',
     fontSize: '12px',
     fontWeight: active ? 'bold' : '500',
@@ -1440,14 +1798,13 @@ const styles = {
     borderRadius: '4px'
   },
   btnCheckinNow: {
-    width: '100%',
-    padding: '8px',
+    padding: '10px 18px',
     backgroundColor: '#0284c7',
     color: '#ffffff',
-    borderRadius: '6px',
+    borderRadius: '8px',
     border: 'none',
     fontWeight: 'bold',
-    fontSize: '12px',
+    fontSize: '13px',
     cursor: 'pointer'
   },
   btnRefreshSmall: {
@@ -1492,8 +1849,7 @@ const styles = {
     borderRadius: '8px',
     border: selected ? '2px solid #0284c7' : '1px solid #e2e8f0',
     backgroundColor: selected ? '#f0f9ff' : '#ffffff',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease'
+    cursor: 'pointer'
   }),
   pollProgressBarBg: {
     width: '100%',
@@ -1511,6 +1867,38 @@ const styles = {
   emptyNotice: {
     textAlign: 'center',
     padding: '36px 12px'
+  },
+  waitingItemRow: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '8px 12px',
+    backgroundColor: '#f8fafc',
+    borderRadius: '8px',
+    border: '1px solid #e2e8f0'
+  },
+  btnAdmit: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '6px 10px',
+    backgroundColor: '#16a34a',
+    color: '#fff',
+    border: 'none',
+    borderRadius: '6px',
+    fontSize: '11.5px',
+    fontWeight: 'bold',
+    cursor: 'pointer'
+  },
+  btnReject: {
+    display: 'flex',
+    alignItems: 'center',
+    padding: '6px 8px',
+    backgroundColor: '#fee2e2',
+    color: '#dc2626',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer'
   },
   notesTextarea: {
     width: '100%',

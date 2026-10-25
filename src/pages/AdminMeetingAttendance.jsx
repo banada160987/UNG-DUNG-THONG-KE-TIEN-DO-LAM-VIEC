@@ -1134,6 +1134,27 @@ export default function AdminMeetingAttendance() {
                 </button>
 
                 <button
+                  onClick={() => {
+                    if (!currentMeeting) return;
+                    const origin = window.location.origin;
+                    const directUrl = `${origin}/diem-danh-hop?id=${currentMeeting.id}&join=1`;
+                    const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${currentMeeting.title}\n⏰ Thời gian: ${new Date(currentMeeting.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+                    navigator.clipboard.writeText(message);
+                    setCopiedToast('📋 Đã sao chép link mời họp trực tiếp! Thầy/Cô có thể dán gửi Zalo.');
+                    setTimeout(() => setCopiedToast(''), 4000);
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
+                    backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '8px',
+                    fontWeight: 'bold', fontSize: '13px', cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)'
+                  }}
+                  title="Sao chép thư mời kèm link vào họp trực tiếp gửi giáo viên qua Zalo"
+                >
+                  <Copy size={16} /> 📋 Link Gửi Giáo Viên
+                </button>
+
+                <button
                   onClick={exportDecree30Word}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
@@ -1570,6 +1591,20 @@ export default function AdminMeetingAttendance() {
                       title="Mở phòng họp trực tuyến cho cuộc họp này"
                     >
                       <Video size={14} /> Vào Họp
+                    </button>
+                    <button
+                      onClick={() => {
+                        const origin = window.location.origin;
+                        const directUrl = `${origin}/diem-danh-hop?id=${m.id}&join=1`;
+                        const message = `🏛️ TRƯỜNG THPT CAO BÁ QUÁT - ĐẮK LẮK\n📢 THƯ MỜI THAM DỰ CUỘC HỌP TRỰC TUYẾN\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n📌 Cuộc họp: ${m.title}\n⏰ Thời gian: ${new Date(m.meeting_date).toLocaleDateString('vi-VN')}\n📍 Hình thức: Phòng họp trực tuyến thông minh CBQ\n🔗 Link vào phòng họp trực tiếp:\n${directUrl}\n\n(Thầy/Cô chỉ cần click vào link để vào họp trực tiếp và tự động điểm danh, không cần cài đặt phần mềm)`;
+                        navigator.clipboard.writeText(message);
+                        setCopiedToast(`📋 Đã sao chép link mời họp "${m.title}"!`);
+                        setTimeout(() => setCopiedToast(''), 4000);
+                      }}
+                      style={{ padding: '6px 10px', backgroundColor: '#059669', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Sao chép link mời giáo viên qua Zalo"
+                    >
+                      <Copy size={13} /> Link
                     </button>
                     <button
                       onClick={() => {

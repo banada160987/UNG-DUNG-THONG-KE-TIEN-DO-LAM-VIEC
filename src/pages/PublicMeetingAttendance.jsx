@@ -238,6 +238,10 @@ export default function PublicMeetingAttendance() {
 
       if (targetId) {
         setSelectedMeetingId(targetId);
+        // Nếu đường dẫn có ?join=1 hoặc ?room=1: Tự động mở phòng họp trực tuyến ngay!
+        if (searchParams.get('join') === '1' || searchParams.get('room') === '1') {
+          setShowSmartRoomModal(true);
+        }
       }
     } catch (e) {
       console.error(e);
