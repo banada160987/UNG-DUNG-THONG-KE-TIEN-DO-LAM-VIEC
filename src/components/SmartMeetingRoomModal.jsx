@@ -341,15 +341,121 @@ export default function SmartMeetingRoomModal({
   const [remotePeers, setRemotePeers] = useState({});
   const peerConnections = useRef({});
 
+  // Phân tích chính xác nguyên nhân lỗi Camera / Micro trên laptop & máy tính
+  const parseMediaError = (err, fallbackType = null) => {
+    if (!err) return { type: 'warning', text: 'Không thể truy cập thiết bị âm thanh / hình ảnh.' };
+    const errName = err.name || '';
+    const errMsg = err.message || '';
+
+    // 1. Lỗi xung đột do ứng dụng khác (Google Meet, Zoom, Zalo...) đang chiếm độc quyền camera của laptop
+    if (errName === 'NotReadableError' || errName === 'TrackStartError' || errMsg.includes('Could not start')) {
+      if (fallbackType === 'cam-only') {
+        return {
+          type: 'warning',
+          isConflict: true,
+          text: '⚡ Camera laptop đang bị chiếm giữ bởi tab Google Meet (hoặc Zoom). Đã bật Mic thành công! Thầy/Cô vui lòng tắt camera ở Google Meet để phòng họp nhận diện video.'
+        };
+      }
+      return {
+        type: 'warning',
+        isConflict: true,
+        text: '⚡ Camera/Micro laptop đang bị tab Google Meet (hoặc Zoom) chiếm giữ độc quyền. Thầy/Cô vui lòng tắt Camera ở Google Meet rồi bấm "Thử Lại" để phòng họp nhận diện!'
+      };
+    }
+
+    // 2. Lỗi quyền bị trình duyệt chặn (mỗi trang web cần cấp quyền riêng, không dùng chung quyền với meet.google.com)
+    if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError' || errName === 'SecurityError') {
+      return {
+        type: 'warning',
+        isPermission: true,
+        text: '🔒 Trình duyệt đang chặn quyền Camera/Micro của trang web này. (Lưu ý: Google Meet chạy trên meet.google.com được cấp quyền riêng, còn trang này Thầy/Cô cần bấm biểu tượng Ổ khóa 🔒 bên trái địa chỉ web và chọn "Cho phép" - Allow).'
+      };
+    }
+
+    // 3. Lỗi không tìm thấy thiết bị phần cứng
+    if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+      return {
+        type: 'info',
+        text: '🎧 Không tìm thấy Webcam/Mic. Bạn đang ở chế độ Chỉ Lắng Nghe.'
+      };
+    }
+
+    // 4. Lỗi tham số cấu hình
+    if (errName === 'OverconstrainedError') {
+      return {
+        type: 'warning',
+        text: '⚠️ Độ phân giải camera không tương thích. Đang tự động chuyển về chế độ cơ bản...'
+      };
+    }
+
+    return {
+      type: 'warning',
+      text: `⚠️ Chưa thể kết nối Camera/Mic (${errName || 'Lỗi thiết bị'}). Thầy/Cô hãy kiểm tra biểu tượng ổ khóa 🔒 trên thanh URL.`
+    };
+  };
+
+  // Hàm lấy luồng đa phương tiện thông minh (progressive fallback cho laptop)
+  const acquireMediaStream = async () => {
+    // Bước 1: Thử xin cả video và audio chuẩn (không ép frameRate cố định để tránh xung đột driver webcam laptop)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      return { stream, error: null };
+    } catch (err1) {
+      console.warn('[WebRTC] Thử Cam+Mic thất bại:', err1.name, err1.message);
+
+      // Bước 2: Nếu camera bị Google Meet/Zoom chiếm hoặc driver lỗi, thử lấy CHỈ AUDIO (để vẫn nói được)
+      try {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        return {
+          stream: audioStream,
+          error: parseMediaError(err1, 'cam-only')
+        };
+      } catch (err2) {
+        console.warn('[WebRTC] Thử Audio thất bại:', err2.name, err2.message);
+
+        // Bước 3: Thử CHỈ VIDEO (nếu mic bị chiếm)
+        try {
+          const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          return {
+            stream: videoStream,
+            error: parseMediaError(err2, 'mic-only')
+          };
+        } catch (err3) {
+          // Bước 4: Kiểm tra xem có phần cứng không
+          let hardwareFound = false;
+          try {
+            if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+              const devices = await navigator.mediaDevices.enumerateDevices();
+              hardwareFound = devices.some(d => d.kind === 'audioinput' || d.kind === 'videoinput');
+            }
+          } catch (e) {}
+
+          if (!hardwareFound) {
+            return {
+              stream: null,
+              error: {
+                type: 'info',
+                text: '🎧 Bạn đang ở chế độ Chỉ Lắng Nghe (Chưa cắm Mic/Webcam). Thầy/Cô vẫn xem và chia sẻ màn hình bình thường.'
+              }
+            };
+          }
+
+          return {
+            stream: null,
+            error: parseMediaError(err1)
+          };
+        }
+      }
+    }
+  };
+
   // Hàm yêu cầu cấp lại quyền Mic / Webcam chủ động từ người dùng
   const requestMediaAgain = async () => {
-    try {
-      setMediaError(null);
-      setDismissedMediaWarning(false);
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } },
-        audio: true
-      });
+    setMediaError(null);
+    setDismissedMediaWarning(false);
+    const { stream, error } = await acquireMediaStream();
+
+    if (stream) {
       setLocalStream(stream);
       localStreamRef.current = stream;
       if (localVideoRef.current) {
@@ -369,36 +475,11 @@ export default function SmartMeetingRoomModal({
           }
         });
       });
-    } catch (camErr) {
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        setLocalStream(audioStream);
-        localStreamRef.current = audioStream;
-        setMediaError({
-          type: 'info',
-          text: '🎙️ Đã bật Mic thành công! Máy tính không tìm thấy Webcam rời.'
-        });
-        setIsMicMuted(false);
-      } catch (micErr) {
-        let hardwareFound = false;
-        try {
-          if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-            const devices = await navigator.mediaDevices.enumerateDevices();
-            hardwareFound = devices.some(d => d.kind === 'audioinput' || d.kind === 'videoinput');
-          }
-        } catch (e) {}
+    }
 
-        if (!hardwareFound) {
-          setMediaError({
-            type: 'info',
-            text: '🎧 Bạn đang ở chế độ Chỉ Lắng Nghe (Máy tính chưa cắm Mic/Webcam). Thầy/Cô vẫn xem và chia sẻ màn hình bình thường.'
-          });
-        } else {
-          setMediaError({
-            type: 'warning',
-            text: '⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.'
-          });
-        }
+    if (error) {
+      setMediaError(error);
+      if ((error.isPermission || error.isConflict) && !stream) {
         setShowPermissionGuide(true);
       }
     }
@@ -415,42 +496,7 @@ export default function SmartMeetingRoomModal({
     async function initWebRTC() {
       try {
         setMediaError(null);
-        let stream = null;
-
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { max: 24 } },
-            audio: true
-          });
-        } catch (camErr) {
-          try {
-            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-            setMediaError({
-              type: 'info',
-              text: '🎙️ Máy tính không tìm thấy Webcam. Đang chạy chế độ Chỉ Mic (Audio).'
-            });
-          } catch (micErr) {
-            let hardwareFound = false;
-            try {
-              if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                hardwareFound = devices.some(d => d.kind === 'audioinput' || d.kind === 'videoinput');
-              }
-            } catch (e) {}
-
-            if (!hardwareFound) {
-              setMediaError({
-                type: 'info',
-                text: '🎧 Bạn đang ở chế độ Chỉ Lắng Nghe (Máy tính chưa cắm Mic/Webcam). Thầy/Cô vẫn theo dõi và chia sẻ màn hình bình thường.'
-              });
-            } else {
-              setMediaError({
-                type: 'warning',
-                text: '⚠️ Không tìm thấy Mic/Webcam hoặc trình duyệt đang chặn quyền. Thầy/Cô hãy xem hướng dẫn mở quyền 🔒.'
-              });
-            }
-          }
-        }
+        const { stream, error } = await acquireMediaStream();
 
         if (!isMounted) {
           if (stream) stream.getTracks().forEach(t => t.stop());
@@ -463,6 +509,10 @@ export default function SmartMeetingRoomModal({
           if (localVideoRef.current) {
             localVideoRef.current.srcObject = stream;
           }
+        }
+
+        if (error) {
+          setMediaError(error);
         }
 
         // Báo cho các bạn họp mình đã vào
@@ -711,6 +761,12 @@ export default function SmartMeetingRoomModal({
         if (isCancelled || !jitsiContainerRef.current) return;
         if (jitsiApiRef.current) {
           try { jitsiApiRef.current.dispose(); } catch (e) {}
+          jitsiApiRef.current = null;
+        }
+
+        // Dọn dẹp DOM container để không bị chèn trùng lặp iframe
+        if (jitsiContainerRef.current) {
+          jitsiContainerRef.current.innerHTML = '';
         }
 
         const domain = jitsiServer;
@@ -745,9 +801,10 @@ export default function SmartMeetingRoomModal({
         jitsiApiRef.current = api;
         setJitsiLoading(false);
 
-        api.addEventListener('readyToClose', () => {
-          onClose();
-        });
+        // LƯU Ý QUAN TRỌNG: KHÔNG gán onClose() vào 'readyToClose' của Jitsi!
+        // Sự kiện readyToClose của Jitsi thường xuyên tự kích hoạt khi tải trang, xác thực moderator
+        // hoặc khi có gián đoạn mạng, nếu gọi onClose() sẽ làm văng người dùng ra khỏi phòng họp!
+        // Người dùng muốn rời phòng chỉ cần bấm nút đỏ [📞 Rời Phòng] ở góc trên cùng của hệ thống.
       })
       .catch(err => {
         console.warn('[Jitsi] Fallback:', err);
@@ -761,7 +818,7 @@ export default function SmartMeetingRoomModal({
         jitsiApiRef.current = null;
       }
     };
-  }, [activeEngine, myAdmissionStatus, cleanRoomName, userDisplayName, userDepartment, onClose, jitsiServer, jitsiReloadKey]);
+  }, [activeEngine, myAdmissionStatus, cleanRoomName, jitsiServer, jitsiReloadKey]);
 
   // =========================================================================
   // 4. ĐIỂM DANH TỰ ĐỘNG & BIỂU QUYẾT TỨC THÌ
@@ -1789,6 +1846,15 @@ export default function SmartMeetingRoomModal({
                   </div>
                 </div>
 
+                {/* LƯU Ý KHI DÙNG LAPTOP VÀ GOOGLE MEET */}
+                <div style={styles.guideConflictBox}>
+                  <strong>⚡ LƯU Ý KHI DÙNG LAPTOP & GOOGLE MEET:</strong>
+                  <div style={{ marginTop: '4px', fontSize: '12px', color: '#713f12', lineHeight: 1.5 }}>
+                    1. <strong>Quyền trình duyệt cấp theo từng tên miền:</strong> Google Meet chạy trên trang <code>meet.google.com</code> đã được cấp quyền từ trước, còn trang web trường chạy ở địa chỉ này nên Chrome/Edge cần Thầy/Cô bấm vào Ổ khóa 🔒 và chọn "Cho phép" riêng.<br />
+                    2. <strong>Xung đột độc quyền phần cứng:</strong> Nếu Thầy/Cô đang mở tab Google Meet và bật Camera ở đó, hệ điều hành Windows trên Laptop sẽ khóa Camera và không cho trang khác truy cập cùng lúc. Thầy/Cô chỉ cần <strong>Tắt Camera ở tab Google Meet</strong> (hoặc đóng tab Google Meet) rồi quay lại đây bấm <strong>"Thử Lại Ngay"</strong> là Camera của laptop sẽ hiển thị lập tức!
+                  </div>
+                </div>
+
                 {/* LƯU Ý DÀNH CHO MÁY TÍNH BÀN PC */}
                 <div style={styles.guideNoteBox}>
                   <strong>💡 Lưu ý quan trọng cho Máy tính bàn (PC) không có Webcam/Mic:</strong>
@@ -2621,6 +2687,15 @@ const styles = {
     fontSize: '13px',
     color: '#1e40af',
     marginTop: '6px'
+  },
+  guideConflictBox: {
+    padding: '12px 14px',
+    backgroundColor: '#fefce8',
+    borderRadius: '10px',
+    border: '1px solid #fef08a',
+    fontSize: '13px',
+    color: '#713f12',
+    marginTop: '10px'
   },
   guideModalFooter: {
     padding: '12px 20px',

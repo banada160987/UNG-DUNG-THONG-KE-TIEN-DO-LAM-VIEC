@@ -79,6 +79,17 @@ export default function PublicMeetingAttendance() {
   const [savedTeacherInfo, setSavedTeacherInfo] = useState(null);
   const [showSmartRoomModal, setShowSmartRoomModal] = useState(false);
 
+  const handleCloseSmartRoom = () => {
+    setShowSmartRoomModal(false);
+    if (searchParams.get('join') || searchParams.get('room')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('join');
+      newParams.delete('room');
+      const newQuery = newParams.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${newQuery ? `?${newQuery}` : ''}`);
+    }
+  };
+
   // Tự động điền mã khi quét QR có param ?code=...
   useEffect(() => {
     if (codeParam) {
@@ -1625,7 +1636,7 @@ export default function PublicMeetingAttendance() {
         {showSmartRoomModal && currentMeeting && (
           <SmartMeetingRoomModal
             isOpen={showSmartRoomModal}
-            onClose={() => setShowSmartRoomModal(false)}
+            onClose={handleCloseSmartRoom}
             meeting={currentMeeting}
             currentUser={{
               name: selectedStaffName || savedTeacherInfo?.name || 'Giáo viên THPT Cao Bá Quát',

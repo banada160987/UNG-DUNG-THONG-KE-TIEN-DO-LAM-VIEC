@@ -10,6 +10,8 @@ import * as XLSX from 'xlsx';
 import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
 import SmartMeetingRoomModal from '../components/SmartMeetingRoomModal';
 
+const ADMIN_USER_OBJ = { name: 'Ban Giám Hiệu / Quản Trị Viên', department: 'Ban Giám Hiệu' };
+
 export default function AdminMeetingAttendance() {
   const [meetings, setMeetings] = useState([]);
   const [selectedMeetingId, setSelectedMeetingId] = useState('');
@@ -2409,7 +2411,7 @@ export default function AdminMeetingAttendance() {
             isOpen={showSmartRoomModal}
             onClose={() => setShowSmartRoomModal(false)}
             meeting={currentMeeting}
-            currentUser={{ name: 'Ban Giám Hiệu / Quản Trị Viên', department: 'Ban Giám Hiệu' }}
+            currentUser={ADMIN_USER_OBJ}
             attendances={attendances}
             onRefreshAttendances={() => loadMeetingDetails(selectedMeetingId, false)}
             isAdmin={true}
