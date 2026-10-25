@@ -14,6 +14,7 @@ import MathView from '../../components/MathView';
 import { supabase, DualSupabaseService } from '../../lib/supabase';
 import { gameAudio } from '../../utils/gameAudio';
 import { HIGH_SCHOOL_SUBJECTS } from '../../services/smartAssessmentService';
+import { getTeacherSession } from '../../services/authSessionManager';
 import MobileBottomNav from '../../components/MobileBottomNav';
 
 export default function ClassroomInteractiveGames() {
@@ -210,20 +211,68 @@ export default function ClassroomInteractiveGames() {
       });
       setQuestions(combinedQuestions);
 
-      // 3. Nạp danh sách Học sinh từ `cbq_students`
-      const { data: studentsData } = await DualSupabaseService.selectSmart('cbq_students', q =>
-        q.select('id, student_code, full_name, student_class, grade_level')
-         .order('student_class', { ascending: true })
-         .order('full_name', { ascending: true })
-      );
+      // 3. Nạp danh sách Học sinh từ cbq_students (Phân trang để tải đủ 1.441 học sinh của toàn bộ 34 lớp)
+      let allLoadedStudents = [];
+      try {
+        let from = 0;
+        const step = 1000;
+        while (true) {
+          const { data, error } = await supabase
+            .from('cbq_students')
+            .select('id, student_code, student_name, student_class, grade_level')
+            .range(from, from + step - 1)
+            .order('student_class', { ascending: true })
+            .order('student_name', { ascending: true });
 
-      if (Array.isArray(studentsData) && studentsData.length > 0) {
-        setAllStudents(studentsData);
-        const classes = [...new Set(studentsData.map(s => s.student_class).filter(Boolean))].sort();
+          if (error) {
+            console.warn('Lỗi nạp học sinh Supabase range:', from, error);
+            break;
+          }
+          if (!data || data.length === 0) break;
+
+          allLoadedStudents.push(...data);
+          if (data.length < step) break;
+          from += step;
+        }
+      } catch (err) {
+        console.warn('Lỗi phân trang nạp học sinh:', err);
+      }
+
+      // Fallback qua DualSupabaseService nếu trực tiếp chưa nạp được
+      if (allLoadedStudents.length === 0) {
+        try {
+          const { data: fallbackData } = await DualSupabaseService.selectSmart('cbq_students', q =>
+            q.order('student_class', { ascending: true })
+          );
+          if (Array.isArray(fallbackData) && fallbackData.length > 0) {
+            allLoadedStudents = fallbackData;
+          }
+        } catch (e) {
+          console.warn('Lỗi fallback nạp học sinh qua DualSupabaseService:', e);
+        }
+      }
+
+      // Chuẩn hóa tên học sinh (đồng bộ full_name và student_name cho toàn bộ trò chơi & tiện ích)
+      const normalizedStudents = allLoadedStudents.map(s => ({
+        ...s,
+        full_name: s.student_name || s.full_name || 'Học sinh',
+        student_name: s.student_name || s.full_name || 'Học sinh'
+      }));
+
+      if (normalizedStudents.length > 0) {
+        setAllStudents(normalizedStudents);
+        const classes = [...new Set(normalizedStudents.map(s => s.student_class).filter(Boolean))].sort();
         setClassesList(classes);
+
+        // Ưu tiên chọn lớp chủ nhiệm của giáo viên nếu có trong phiên
+        const teacherSess = getTeacherSession();
+        const preferredClass = teacherSess?.homeroomClass && classes.includes(teacherSess.homeroomClass)
+          ? teacherSess.homeroomClass
+          : classes[0];
+
         if (classes.length > 0) {
-          setSelectedClass(classes[0]);
-          const initialClassStudents = studentsData.filter(s => s.student_class === classes[0]);
+          setSelectedClass(preferredClass);
+          const initialClassStudents = normalizedStudents.filter(s => s.student_class === preferredClass);
           setClassStudents(initialClassStudents);
         }
       }
@@ -996,9 +1045,13 @@ export default function ClassroomInteractiveGames() {
               onChange={e => setSelectedClass(e.target.value)}
               style={{ padding: '7px 12px', borderRadius: '8px', border: '1.5px solid #f59e0b', background: '#0f172a', color: '#fef08a', fontSize: '13px', fontWeight: 'bold' }}
             >
-              {classesList.map(cls => (
-                <option key={cls} value={cls}>Lớp {cls} ({allStudents.filter(s => s.student_class === cls).length} HS)</option>
-              ))}
+              {classesList.length === 0 ? (
+                <option value="">{loading ? '⏳ Đang nạp dữ liệu 34 lớp...' : '⚠️ Không tìm thấy lớp'}</option>
+              ) : (
+                classesList.map(cls => (
+                  <option key={cls} value={cls}>Lớp {cls} ({allStudents.filter(s => s.student_class === cls).length} HS)</option>
+                ))
+              )}
             </select>
           </div>
         </div>
