@@ -240,7 +240,7 @@ export function exportAiRulesToWordDecree30(customData = {}) {
     type: 'application/msword;charset=utf-8'
   });
 
-  const fileName = `Quy_Tac_Su_Dung_AI_Trong_Nha_Truong_THPT_CaoBaQuat.doc`;
+  const fileName = `1-Quy_Tac_Su_Dung_AI_Trong_Nha_Truong_THPT_CaoBaQuat.doc`;
 
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, fileName);

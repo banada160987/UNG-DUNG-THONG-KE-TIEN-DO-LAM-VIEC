@@ -802,7 +802,7 @@ export function exportScheduleToWordDecree30(scheduleData) {
     type: 'application/msword;charset=utf-8'
   });
   
-  const fileName = `Lich_Cong_Tac_Tuan_${weekNumber}_THPT_CaoBaQuat.doc`;
+  const fileName = `1-Lich_Cong_Tac_Tuan_${weekNumber}_THPT_CaoBaQuat.doc`;
   
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, fileName);
@@ -883,7 +883,7 @@ export function exportMultipleSchedulesToWordDecree30(schedulesArray, customFile
     type: 'application/msword;charset=utf-8'
   });
 
-  const fileName = customFileName || `Lich_Cong_Tac_${schedulesArray.length}_Tuan_THPT_CaoBaQuat.doc`;
+  const fileName = customFileName || `1-Lich_Cong_Tac_${schedulesArray.length}_Tuan_THPT_CaoBaQuat.doc`;
 
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, fileName);
@@ -1003,7 +1003,7 @@ export function exportMonthlyPlanToWordDecree30(monthlyData) {
   `;
 
   const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
-  const fileName = `Ke_Hoach_Thang_${String(monthlyData.month).padStart(2, '0')}_${monthlyData.year}_THPT_CaoBaQuat.doc`;
+  const fileName = `1-Ke_Hoach_Thang_${String(monthlyData.month).padStart(2, '0')}_${monthlyData.year}_THPT_CaoBaQuat.doc`;
   
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -1119,7 +1119,7 @@ export function exportYearlyPlanToWordDecree30(yearlyData) {
   `;
 
   const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
-  const fileName = `Ke_Hoach_Nam_Hoc_2026_2027_THPT_CaoBaQuat.doc`;
+  const fileName = `1-Ke_Hoach_Nam_Hoc_2026_2027_THPT_CaoBaQuat.doc`;
   
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);

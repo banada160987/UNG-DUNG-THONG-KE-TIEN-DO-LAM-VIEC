@@ -1,12 +1,19 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { getTeacherSession } from '../services/authSessionManager';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function TeacherRoute({ children }) {
   const location = useLocation();
   const teacher = getTeacherSession();
+  const { user, role } = useAuth();
 
   if (teacher) {
+    return children;
+  }
+
+  // Quản trị viên (Admin) hoặc Thư ký được toàn quyền truy cập các tính năng chuyên môn giáo viên
+  if (user && (role === 'admin' || role === 'secretary')) {
     return children;
   }
 
@@ -15,7 +22,7 @@ export default function TeacherRoute({ children }) {
   if (adminStr) {
     try {
       const admin = JSON.parse(adminStr);
-      if (admin && (admin.username || admin.email)) {
+      if (admin && (admin.username || admin.email || admin.role === 'admin')) {
         return children;
       }
     } catch (_) {}

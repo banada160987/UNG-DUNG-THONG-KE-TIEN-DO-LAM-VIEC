@@ -370,7 +370,7 @@ export function exportMonthlyEvaluationToWordDecree30(data = {}) {
   `;
 
   const mhtmlPackage = buildMhtmlPackage(html, imagesToEmbed);
-  triggerMhtmlWordDownload(mhtmlPackage, `Phieu_Danh_Gia_Hang_Thang_${teacherName.replace(/\s+/g, '_')}_Thang_${monthStr}_${yearStr}.doc`);
+  triggerMhtmlWordDownload(mhtmlPackage, `1-Phieu_Danh_Gia_Hang_Thang_${teacherName.replace(/\s+/g, '_')}_Thang_${monthStr}_${yearStr}.doc`);
 }
 
 /**

@@ -847,18 +847,18 @@ export default function AdminSchedule() {
 
     if (exportMode === 'all35') {
       for (let w = 1; w <= 35; w++) targetRange.push(w);
-      customName = `Lich_Cong_Tac_Full_35_Tuan_THPT_CaoBaQuat.doc`;
+      customName = `1-Lich_Cong_Tac_Full_35_Tuan_THPT_CaoBaQuat.doc`;
     } else if (exportMode === 'term1') {
       for (let w = 1; w <= 18; w++) targetRange.push(w);
-      customName = `Lich_Cong_Tac_Hoc_Ky_I_Tu_Tuan_1_den_18_THPT_CaoBaQuat.doc`;
+      customName = `1-Lich_Cong_Tac_Hoc_Ky_I_Tu_Tuan_1_den_18_THPT_CaoBaQuat.doc`;
     } else if (exportMode === 'term2') {
       for (let w = 19; w <= 35; w++) targetRange.push(w);
-      customName = `Lich_Cong_Tac_Hoc_Ky_II_Tu_Tuan_19_den_35_THPT_CaoBaQuat.doc`;
+      customName = `1-Lich_Cong_Tac_Hoc_Ky_II_Tu_Tuan_19_den_35_THPT_CaoBaQuat.doc`;
     } else if (exportMode === 'custom') {
       const start = Math.min(Number(fromWeek), Number(toWeek));
       const end = Math.max(Number(fromWeek), Number(toWeek));
       for (let w = start; w <= end; w++) targetRange.push(w);
-      customName = `Lich_Cong_Tac_Tu_Tuan_${start}_den_Tuan_${end}_THPT_CaoBaQuat.doc`;
+      customName = `1-Lich_Cong_Tac_Tu_Tuan_${start}_den_Tuan_${end}_THPT_CaoBaQuat.doc`;
     }
 
     const list = targetRange.map(wNo => {

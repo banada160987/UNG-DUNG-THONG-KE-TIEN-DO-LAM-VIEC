@@ -85,6 +85,19 @@ export const AuthProvider = ({ children }) => {
       }
 
       setPermissions(mergedPerms);
+
+      // Lưu trữ đồng bộ cbq_user để các phân hệ khác (giáo viên, chuyên môn) nhận diện quyền quản trị viên
+      if (isSecretaryOrAdmin) {
+        try {
+          localStorage.setItem('cbq_user', JSON.stringify({
+            id: userId,
+            email: userEmail,
+            role: userRole,
+            username: userEmail?.split('@')[0] || 'admin',
+            name: userRole === 'admin' ? 'Ban Giám Hiệu / Quản trị viên' : 'Thư ký Hội đồng'
+          }));
+        } catch (_) {}
+      }
     } catch (err) {
       console.warn('Nạp vai trò:', err);
       setRole('guest');
@@ -150,6 +163,7 @@ export const AuthProvider = ({ children }) => {
         setCommitteeId(null);
         setCommitteeName(null);
         setPermissions({});
+        try { localStorage.removeItem('cbq_user'); } catch (_) {}
       }
       setLoading(false);
     });
@@ -177,6 +191,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signOut = async () => {
+    try {
+      localStorage.removeItem('cbq_user');
+    } catch (_) {}
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   };

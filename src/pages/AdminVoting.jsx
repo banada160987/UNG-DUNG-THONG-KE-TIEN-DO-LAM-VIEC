@@ -322,7 +322,7 @@ export default function AdminVoting() {
         { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 22 }, { wch: 20 }, { wch: 25 }
       ],
       sheetName: "Thống Kê",
-      fileName: `BaoCao_TyLe_ThamGia_BinhChon_${Date.now()}.xlsx`
+      fileName: `1-BaoCao_TyLe_ThamGia_BinhChon_${Date.now()}.xlsx`
     });
   };
 
