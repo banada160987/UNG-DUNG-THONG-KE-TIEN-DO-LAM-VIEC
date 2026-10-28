@@ -191,6 +191,7 @@ export default function TeacherExamMaker() {
 
   // Smart Assessment Publishing & Excel Grade Sync States
   const [showExcelSyncModal, setShowExcelSyncModal] = useState(false);
+  const [showOmrModal, setShowOmrModal] = useState(false);
   const [submissions, setSubmissions] = useState([]);
   const [examPublished, setExamPublished] = useState(false);
   const [targetExamClasses, setTargetExamClasses] = useState(['10A01', '10A07']);
@@ -667,6 +668,183 @@ export default function TeacherExamMaker() {
     setQuestions(questions.filter(q => q.id !== id));
   };
 
+  // Xuất Khung Ma Trận & Bản Đặc Tả Đề Thi ra file Word (.doc) theo chuẩn Công văn 3175/BGDĐT & Nghị định 30
+  const handleExportWordMatrix = () => {
+    const dateObj = new Date();
+    const dayStr = String(dateObj.getDate()).padStart(2, '0');
+    const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const yearStr = dateObj.getFullYear();
+
+    const part1List = questions.filter(q => q.part === 'part1');
+    const part2List = questions.filter(q => q.part === 'part2');
+    const part3List = questions.filter(q => q.part === 'part3');
+
+    const nbList = questions.filter(q => q.level === 'Nhận biết');
+    const thList = questions.filter(q => q.level === 'Thông hiểu');
+    const vdList = questions.filter(q => q.level === 'Vận dụng');
+    const vdcList = questions.filter(q => q.level === 'Vận dụng cao');
+
+    const htmlContent = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head>
+        <meta charset='utf-8'>
+        <title>Khung Ma trận & Bản đặc tả - ${examTitle}</title>
+        <style>
+          @page Section1 { size: 21.0cm 29.7cm; margin: 2.0cm 1.5cm 2.0cm 2.5cm; }
+          div.Section1 { page: Section1; }
+          body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.3; color: #000; }
+          .header-table { width: 100%; border: none; margin-bottom: 15px; }
+          .header-table td { border: none; text-align: center; vertical-align: top; }
+          .title { font-size: 13pt; font-weight: bold; text-align: center; text-transform: uppercase; margin: 15px 0 5px 0; }
+          .subtitle { font-size: 12pt; font-weight: bold; text-align: center; margin-bottom: 15px; }
+          table.data-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+          table.data-table th, table.data-table td { border: 1pt solid #000; padding: 5pt; font-size: 11pt; }
+          table.data-table th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+          .signature-table { width: 100%; border: none; margin-top: 30px; }
+          .signature-table td { border: none; text-align: center; vertical-align: top; }
+        </style>
+      </head>
+      <body>
+        <div class="Section1">
+          <table class="header-table">
+            <tr>
+              <td style="width: 45%;">
+                <strong>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</strong><br/>
+                <strong>TRƯỜNG THPT CAO BÁ QUÁT</strong><br/>
+                TỔ CHUYÊN MÔN: ${(teacher?.department || subject).toUpperCase()}
+              </td>
+              <td style="width: 55%;">
+                <strong>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
+                <strong>Độc lập - Tự do - Hạnh phúc</strong><br/>
+                <em>Đắk Lắk, ngày ${dayStr} tháng ${monthStr} năm ${yearStr}</em>
+              </td>
+            </tr>
+          </table>
+
+          <div class="title">KHUNG MA TRẬN & BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KỲ</div>
+          <div class="subtitle">MÔN: ${subject.toUpperCase()} - KHỐI ${grade.toUpperCase()} • NĂM HỌC 2025 - 2026</div>
+
+          <p><strong>I. KHUNG MA TRẬN ĐỀ KIỂM TRA THEO CÔNG VĂN 3175/BGDĐT (GDPT 2018)</strong></p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th rowspan="2">Mức độ nhận thức</th>
+                <th colspan="3">Hình thức câu hỏi</th>
+                <th rowspan="2">Tổng số câu</th>
+                <th rowspan="2">Tổng điểm</th>
+                <th rowspan="2">Tỷ lệ %</th>
+              </tr>
+              <tr>
+                <th>Phần I (4 lựa chọn)</th>
+                <th>Phần II (Đúng/Sai)</th>
+                <th>Phần III (Trả lời ngắn)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1. Nhận biết</strong></td>
+                <td style="text-align: center;">${nbList.filter(q => q.part === 'part1').length} câu</td>
+                <td style="text-align: center;">${nbList.filter(q => q.part === 'part2').length} câu</td>
+                <td style="text-align: center;">${nbList.filter(q => q.part === 'part3').length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${nbList.length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${(nbList.filter(q => q.part === 'part1').length * 0.25 + nbList.filter(q => q.part === 'part2').length * 1.0 + nbList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${Math.round((nbList.length / (questions.length || 1)) * 100)}%</td>
+              </tr>
+              <tr>
+                <td><strong>2. Thông hiểu</strong></td>
+                <td style="text-align: center;">${thList.filter(q => q.part === 'part1').length} câu</td>
+                <td style="text-align: center;">${thList.filter(q => q.part === 'part2').length} câu</td>
+                <td style="text-align: center;">${thList.filter(q => q.part === 'part3').length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${thList.length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${(thList.filter(q => q.part === 'part1').length * 0.25 + thList.filter(q => q.part === 'part2').length * 1.0 + thList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${Math.round((thList.length / (questions.length || 1)) * 100)}%</td>
+              </tr>
+              <tr>
+                <td><strong>3. Vận dụng</strong></td>
+                <td style="text-align: center;">${vdList.filter(q => q.part === 'part1').length} câu</td>
+                <td style="text-align: center;">${vdList.filter(q => q.part === 'part2').length} câu</td>
+                <td style="text-align: center;">${vdList.filter(q => q.part === 'part3').length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${vdList.length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${(vdList.filter(q => q.part === 'part1').length * 0.25 + vdList.filter(q => q.part === 'part2').length * 1.0 + vdList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${Math.round((vdList.length / (questions.length || 1)) * 100)}%</td>
+              </tr>
+              <tr>
+                <td><strong>4. Vận dụng cao</strong></td>
+                <td style="text-align: center;">${vdcList.filter(q => q.part === 'part1').length} câu</td>
+                <td style="text-align: center;">${vdcList.filter(q => q.part === 'part2').length} câu</td>
+                <td style="text-align: center;">${vdcList.filter(q => q.part === 'part3').length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${vdcList.length} câu</td>
+                <td style="text-align: center; font-weight: bold;">${(vdcList.filter(q => q.part === 'part1').length * 0.25 + vdcList.filter(q => q.part === 'part2').length * 1.0 + vdcList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${Math.round((vdcList.length / (questions.length || 1)) * 100)}%</td>
+              </tr>
+              <tr style="background-color: #f2f2f2; font-weight: bold;">
+                <td style="text-align: center;">TỔNG CỘNG</td>
+                <td style="text-align: center;">${part1List.length} câu (3.0đ)</td>
+                <td style="text-align: center;">${part2List.length} câu (4.0đ)</td>
+                <td style="text-align: center;">${part3List.length} câu (3.0đ)</td>
+                <td style="text-align: center;">${questions.length} câu</td>
+                <td style="text-align: center; color: red;">10.00 điểm</td>
+                <td style="text-align: center;">100%</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p style="margin-top: 20px;"><strong>II. BẢN ĐẶC TẢ CHI TIẾT ĐỀ KIỂM TRA ĐỊNH KỲ</strong></p>
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 8%;">TT</th>
+                <th style="width: 15%;">Hình thức</th>
+                <th style="width: 15%;">Mức độ</th>
+                <th style="width: 47%;">Yêu cầu cần đạt / Nội dung kiến thức đánh giá</th>
+                <th style="width: 15%;">Điểm số</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${questions.map((q, idx) => `
+                <tr>
+                  <td style="text-align: center; font-weight: bold;">Câu ${idx + 1}</td>
+                  <td style="text-align: center;">${q.part === 'part1' ? 'Phần I (4 lựa chọn)' : q.part === 'part2' ? 'Phần II (Đúng/Sai)' : 'Phần III (Trả lời ngắn)'}</td>
+                  <td style="text-align: center; font-weight: bold;">${q.level}</td>
+                  <td>${renderCleanMathText(q.content).slice(0, 140)}...</td>
+                  <td style="text-align: center; font-weight: bold;">${q.part === 'part1' ? '0.25đ' : q.part === 'part2' ? '1.00đ' : '0.50đ'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <table class="signature-table">
+            <tr>
+              <td style="width: 33%;">
+                <strong>NGƯỜI RA ĐỀ</strong><br/>
+                <em>(Ký, ghi rõ họ tên)</em><br/><br/><br/><br/>
+                <strong>${teacher?.name || 'Giáo viên bộ môn'}</strong>
+              </td>
+              <td style="width: 33%;">
+                <strong>TỔ TRƯỞNG CHUYÊN MÔN</strong><br/>
+                <em>(Ký, ghi rõ họ tên)</em><br/><br/><br/><br/>
+              </td>
+              <td style="width: 34%;">
+                <strong>HIỆU TRƯỞNG DUYỆT</strong><br/>
+                <em>(Ký, ghi rõ họ tên và đóng dấu)</em><br/><br/><br/><br/>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `1-Ma_tran_dac_ta_de_thi_${subject.replace(/[^a-zA-Z0-9]/g, '_')}_Khoi_${grade}_${yearStr}${monthStr}${dayStr}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   // Export File Word (.doc) with Exam Paper & Key Matrix
   const handleExportWordExam = () => {
     const activeCodeObj = mixedExamCodes.find(c => c.code === selectedCodeView) || {
@@ -777,8 +955,16 @@ export default function TeacherExamMaker() {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
 
-          <button onClick={handleGenerateMixedExams} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(217,119,6,0.3)' }}>
-            <Shuffle size={18} /> Đảo Mã Đề Thi ({numberOfCodes} Mã)
+          <button onClick={() => setShowOmrModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(124,58,237,0.3)' }} title="Xem và in Phiếu trả lời trắc nghiệm chuẩn Bộ GD&ĐT khổ A4">
+            <Printer size={17} /> Phiếu Tô OMR (A4)
+          </button>
+
+          <button onClick={handleExportWordMatrix} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#0891b2', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(8,145,178,0.3)' }} title="Xuất Khung Ma trận và Bản đặc tả đề thi theo Công văn 3175/BGDĐT">
+            <Layers size={17} /> Ma Trận Word
+          </button>
+
+          <button onClick={handleGenerateMixedExams} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#d97706', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(217,119,6,0.3)' }}>
+            <Shuffle size={17} /> Đảo Mã Đề ({numberOfCodes} Mã)
           </button>
 
           <button onClick={handlePublishOnline} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.3)' }}>
@@ -1081,9 +1267,101 @@ export default function TeacherExamMaker() {
       {/* TAB 2: EXAM MATRIX (CV 3175) */}
       {activeTab === 'matrix' && (
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: '17px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            📊 Ma Trận Đề Thi Môn {subject} Theo Chuẩn Công Văn 3175/BGDĐT & GDPT 2018 (Thang Điểm 10.0)
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800' }}>
+                📊 Khung Ma Trận & Bản Đặc Tả Đề Thi GDPT 2018 (Công Văn 3175/BGDĐT)
+              </h3>
+              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                Môn: <strong>{subject}</strong> • Khối: <strong>{grade}</strong> • Định dạng đánh giá năng lực 3 phần theo chuẩn Bộ Giáo Dục & Đào Tạo
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowOmrModal(true)}
+                style={{
+                  padding: '9px 16px',
+                  background: '#7c3aed',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  boxShadow: '0 2px 4px rgba(124,58,237,0.3)'
+                }}
+              >
+                <Printer size={16} /> In Phiếu Tô OMR A4
+              </button>
+
+              <button
+                onClick={handleExportWordMatrix}
+                style={{
+                  padding: '9px 18px',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
+                }}
+              >
+                <Download size={16} /> Xuất File Word Ma Trận & Bản Đặc Tả (.doc)
+              </button>
+            </div>
+          </div>
+
+          {/* REAL-TIME MATRIX PROGRESS TRACKER */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+              <div style={{ fontSize: '12px', color: '#0369a1', fontWeight: 'bold' }}>PHẦN I: 4 LỰA CHỌN</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#0284c7', marginTop: '4px' }}>
+                {questions.filter(q => q.part === 'part1').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 12 câu chuẩn (3.0đ)</span>
+              </div>
+              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part1').length / 12) * 100)}%`, height: '100%', background: '#0284c7' }} />
+              </div>
+            </div>
+
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#fef3c7', border: '1px solid #fde68a' }}>
+              <div style={{ fontSize: '12px', color: '#92400e', fontWeight: 'bold' }}>PHẦN II: ĐÚNG / SAI (4 Ý)</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px' }}>
+                {questions.filter(q => q.part === 'part2').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 4 câu chuẩn (4.0đ)</span>
+              </div>
+              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part2').length / 4) * 100)}%`, height: '100%', background: '#d97706' }} />
+              </div>
+            </div>
+
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f3e8ff', border: '1px solid #e9d5ff' }}>
+              <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: 'bold' }}>PHẦN III: TRẢ LỜI NGẮN</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#9333ea', marginTop: '4px' }}>
+                {questions.filter(q => q.part === 'part3').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 6 câu chuẩn (3.0đ)</span>
+              </div>
+              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part3').length / 6) * 100)}%`, height: '100%', background: '#9333ea' }} />
+              </div>
+            </div>
+
+            <div style={{ padding: '14px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+              <div style={{ fontSize: '12px', color: '#166534', fontWeight: 'bold' }}>TỔNG ĐIỂM CHUẨN ĐỀ THI</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
+                {(questions.filter(q => q.part === 'part1').length * 0.25 + questions.filter(q => q.part === 'part2').length * 1.0 + questions.filter(q => q.part === 'part3').length * 0.5).toFixed(1)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 10.0 điểm</span>
+              </div>
+              <div style={{ fontSize: '12px', color: '#15803d', marginTop: '8px', fontWeight: 'bold' }}>
+                ✓ Đạt tỷ lệ phân hóa GDPT 2018
+              </div>
+            </div>
+          </div>
           
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
             <thead>
@@ -1167,6 +1445,14 @@ export default function TeacherExamMaker() {
             </div>
 
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                onClick={() => setShowOmrModal(true)} 
+                style={{ padding: '8px 16px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                title="In Phiếu trả lời trắc nghiệm chuẩn Bộ GD&ĐT khổ A4"
+              >
+                <Printer size={16} /> Phiếu Tô OMR A4
+              </button>
+
               <button 
                 onClick={() => window.print()} 
                 style={{ padding: '8px 16px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
@@ -1413,6 +1699,43 @@ export default function TeacherExamMaker() {
               <FileSpreadsheet size={20} /> 📊 GHI ĐIỂM VÀO FILE EXCEL TỪ MÁY TÍNH
             </button>
           </div>
+
+          {/* ITEM ANALYSIS & SCORE DISTRIBUTION CARDS */}
+          {submissions.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '18px' }}>
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>ĐIỂM TRUNG BÌNH (MEAN)</span>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#0284c7', marginTop: '4px' }}>
+                  {(submissions.reduce((acc, s) => acc + (s.total_score || 0), 0) / submissions.length).toFixed(2)}
+                </div>
+                <span style={{ fontSize: '11px', color: '#0369a1' }}>Chuẩn phân hóa GDPT</span>
+              </div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>ĐIỂM CAO NHẤT / THẤP NHẤT</span>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
+                  {Math.max(...submissions.map(s => s.total_score || 0))} <span style={{ fontSize: '14px', color: '#dc2626' }}>/ {Math.min(...submissions.map(s => s.total_score || 0))}</span>
+                </div>
+                <span style={{ fontSize: '11px', color: '#15803d' }}>Khoảng biến thiên</span>
+              </div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>TỶ LỆ ĐẠT (≥ 5.0 ĐIỂM)</span>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
+                  {Math.round((submissions.filter(s => (s.total_score || 0) >= 5.0).length / submissions.length) * 100)}%
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>{submissions.filter(s => (s.total_score || 0) >= 5.0).length}/{submissions.length} học sinh</span>
+              </div>
+
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+                <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>TỶ LỆ KHÁ - GIỎI (≥ 6.5 ĐIỂM)</span>
+                <div style={{ fontSize: '22px', fontWeight: '900', color: '#d97706', marginTop: '4px' }}>
+                  {Math.round((submissions.filter(s => (s.total_score || 0) >= 6.5).length / submissions.length) * 100)}%
+                </div>
+                <span style={{ fontSize: '11px', color: '#64748b' }}>{submissions.filter(s => (s.total_score || 0) >= 6.5).length}/{submissions.length} học sinh</span>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
             <h4 style={{ margin: 0, fontSize: '15px', color: '#0f172a', fontWeight: 'bold' }}>
@@ -2370,6 +2693,243 @@ export default function TeacherExamMaker() {
                   ✓ Nạp Tất Cả Vào Đề Thi
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PHIẾU TRẢ LỜI TRẮC NGHIỆM CHUẨN BỘ GIÁO DỤC VÀ ĐÀO TẠO (KHỔ A4 OMR) */}
+      {showOmrModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            width: '100%',
+            maxWidth: '920px',
+            maxHeight: '92vh',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+            overflow: 'hidden'
+          }}>
+            {/* Modal Top Bar */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '14px 20px',
+              borderBottom: '1px solid #e2e8f0',
+              backgroundColor: '#f8fafc'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Printer size={20} color="#7c3aed" />
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#1e293b' }}>
+                  Phiếu Trả Lời Trắc Nghiệm Chuẩn Bộ GD&ĐT (Khổ A4 OMR)
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#16a34a',
+                    color: '#ffffff',
+                    fontWeight: '700',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Printer size={15} /> 🖨️ In Phiếu Ngay (A4)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowOmrModal(false)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#475569',
+                    fontWeight: '600',
+                    fontSize: '13px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content - Printable A4 Sheet */}
+            <div style={{ padding: '24px', overflowY: 'auto', backgroundColor: '#f1f5f9' }}>
+              <div id="omr-printable-sheet" style={{
+                backgroundColor: '#ffffff',
+                padding: '30px',
+                fontFamily: '"Times New Roman", Times, serif',
+                fontSize: '11.5pt',
+                color: '#000000',
+                border: '1.5px solid #000000',
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+              }}>
+                {/* Header Title */}
+                <table style={{ width: '100%', border: 'none', marginBottom: '10px' }}>
+                  <tbody>
+                    <tr>
+                      <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top' }}>
+                        <div style={{ fontSize: '10.5pt', textTransform: 'uppercase' }}>SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</div>
+                        <div style={{ fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase' }}>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                        <div style={{ fontSize: '9.5pt', fontStyle: 'italic', marginTop: '2px' }}>HỘI ĐỒNG THI / KIỂM TRA ĐỊNH KỲ</div>
+                      </td>
+                      <td style={{ width: '50%', border: 'none', textAlign: 'center', verticalAlign: 'top' }}>
+                        <div style={{ fontSize: '12pt', fontWeight: 'bold', textTransform: 'uppercase' }}>PHIẾU TRẢ LỜI TRẮC NGHIỆM</div>
+                        <div style={{ fontSize: '10.5pt', fontWeight: 'bold' }}>MÔN: {subject.toUpperCase()} - KHỐI {grade.toUpperCase()}</div>
+                        <div style={{ fontSize: '9pt', fontStyle: 'italic' }}>Chương trình GDPT 2018 (Chuẩn 2025 - 2028)</div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {/* Candidate Info Box */}
+                <div style={{ border: '1pt solid #000', padding: '8px 12px', marginBottom: '12px', fontSize: '10.5pt', lineHeight: '1.5' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Họ và tên thí sinh: ............................................................................</span>
+                    <span>Lớp: ....................</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
+                    <span>Ngày sinh: ...... / ...... / ............</span>
+                    <span>Phòng thi số: ....................</span>
+                    <span>Chữ ký Giám thị 1: ...................................</span>
+                  </div>
+                </div>
+
+                {/* Grid SBD & Mã Đề */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+                  {/* Khung Số Báo Danh (6 Cột) */}
+                  <div style={{ border: '1pt solid #000', padding: '6px 8px' }}>
+                    <div style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '10pt', marginBottom: '4px' }}>
+                      SỐ BÁO DANH (6 chữ số)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px', textAlign: 'center' }}>
+                      {[...Array(6)].map((_, col) => (
+                        <div key={col} style={{ border: '1pt dashed #cbd5e1', padding: '3px 0' }}>
+                          <div style={{ borderBottom: '1pt solid #000', height: '18px', marginBottom: '4px', fontWeight: 'bold' }}></div>
+                          {[...Array(10)].map((_, num) => (
+                            <div key={num} style={{ fontSize: '9pt', margin: '2px 0' }}>
+                              <span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', border: '1pt solid #000', lineHeight: '15px' }}>
+                                {num}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Khung Mã Đề Thi (3 Cột) */}
+                  <div style={{ border: '1pt solid #000', padding: '6px 8px' }}>
+                    <div style={{ fontWeight: 'bold', textAlign: 'center', fontSize: '10pt', marginBottom: '4px' }}>
+                      MÃ ĐỀ THI (3 chữ số)
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', textAlign: 'center' }}>
+                      {[...Array(3)].map((_, col) => (
+                        <div key={col} style={{ border: '1pt dashed #cbd5e1', padding: '3px 0' }}>
+                          <div style={{ borderBottom: '1pt solid #000', height: '18px', marginBottom: '4px', fontWeight: 'bold' }}>
+                            {selectedCodeView?.[col] || ''}
+                          </div>
+                          {[...Array(10)].map((_, num) => (
+                            <div key={num} style={{ fontSize: '9pt', margin: '2px 0' }}>
+                              <span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', border: '1pt solid #000', lineHeight: '15px' }}>
+                                {num}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3 PHẦN TRẢ LỜI CHUẨN GDPT 2018 BGDĐT */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1.2fr 1.1fr', gap: '10px' }}>
+                  {/* PHẦN I: 4 LỰA CHỌN (12 CÂU) */}
+                  <div style={{ border: '1pt solid #000', padding: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '9.5pt', textAlign: 'center', borderBottom: '1pt solid #000', paddingBottom: '3px', marginBottom: '4px' }}>
+                      PHẦN I (12 câu 4 lựa chọn)
+                    </div>
+                    {[...Array(12)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 4px', fontSize: '9.5pt' }}>
+                        <span style={{ fontWeight: 'bold', width: '22px' }}>{i + 1}</span>
+                        {['A', 'B', 'C', 'D'].map(opt => (
+                          <span key={opt} style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', border: '1pt solid #000', textAlign: 'center', lineHeight: '15px', fontSize: '8.5pt' }}>
+                            {opt}
+                          </span>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* PHẦN II: ĐÚNG / SAI (4 CÂU x 4 Ý) */}
+                  <div style={{ border: '1pt solid #000', padding: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '9.5pt', textAlign: 'center', borderBottom: '1pt solid #000', paddingBottom: '3px', marginBottom: '4px' }}>
+                      PHẦN II (Đúng / Sai)
+                    </div>
+                    {[1, 2, 3, 4].map(qNum => (
+                      <div key={qNum} style={{ marginBottom: '4px', borderBottom: qNum < 4 ? '1pt dashed #cbd5e1' : 'none', paddingBottom: '3px' }}>
+                        <div style={{ fontWeight: 'bold', fontSize: '9pt', color: '#0369a1' }}>Câu {qNum}:</div>
+                        {['a', 'b', 'c', 'd'].map(sub => (
+                          <div key={sub} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1px 6px', fontSize: '9pt' }}>
+                            <span>{sub})</span>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', border: '1pt solid #000', textAlign: 'center', lineHeight: '15px', fontSize: '8pt', fontWeight: 'bold' }}>Đ</span>
+                              <span style={{ display: 'inline-block', width: '16px', height: '16px', borderRadius: '50%', border: '1pt solid #000', textAlign: 'center', lineHeight: '15px', fontSize: '8pt', fontWeight: 'bold' }}>S</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* PHẦN III: TRẢ LỜI NGẮN (6 CÂU) */}
+                  <div style={{ border: '1pt solid #000', padding: '6px' }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '9.5pt', textAlign: 'center', borderBottom: '1pt solid #000', paddingBottom: '3px', marginBottom: '4px' }}>
+                      PHẦN III (Trả lời ngắn)
+                    </div>
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 4px', borderBottom: i < 5 ? '1pt dashed #cbd5e1' : 'none', fontSize: '9pt' }}>
+                        <span style={{ fontWeight: 'bold', width: '22px' }}>{i + 1}</span>
+                        <div style={{ display: 'flex', gap: '3px' }}>
+                          <span style={{ display: 'inline-block', width: '14px', height: '15px', border: '1pt solid #94a3b8', borderRadius: '2px', textAlign: 'center', fontSize: '8pt' }}>-</span>
+                          <span style={{ display: 'inline-block', width: '14px', height: '15px', border: '1pt solid #94a3b8', borderRadius: '2px', textAlign: 'center', fontSize: '8pt' }}>,</span>
+                          {[...Array(4)].map((_, box) => (
+                            <span key={box} style={{ display: 'inline-block', width: '14px', height: '15px', border: '1pt solid #000', borderRadius: '2px', textAlign: 'center', fontSize: '8pt' }}></span>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Footer Guide */}
+                <div style={{ marginTop: '12px', borderTop: '1pt solid #000', paddingTop: '6px', fontSize: '8.5pt', fontStyle: 'italic', textAlign: 'center' }}>
+                  * Hướng dẫn: Dùng bút chì 2B để tô đen kín các ô tròn tương ứng. Không gạch chéo hoặc đánh dấu V. Giữ phiếu phẳng, không làm rách hoặc gấp mép.
+                </div>
+              </div>
             </div>
           </div>
         </div>
