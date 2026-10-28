@@ -4,8 +4,13 @@ import {
   Trophy, Award, CheckCircle2, Search, Filter, Sparkles, 
   UserCheck, ShieldCheck, AlertCircle, Phone, Calendar, 
   HeartHandshake, Users, Eye, X, ChevronRight, User, Check, MessageCircle,
-  Clock, Lock, ShieldAlert, AlertTriangle
+  Clock, Lock, ShieldAlert, AlertTriangle, ArrowRight
 } from 'lucide-react';
+import { 
+  fetchTournaments, 
+  checkTournamentStatus, 
+  DEFAULT_TOURNAMENTS 
+} from '../services/sportsTournamentService';
 
 export const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
 
@@ -15,70 +20,41 @@ export const ALL_CBQ_CLASSES = [
   '10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12', '10A13', '10A14', '10A15'
 ];
 
-export const DEFAULT_SPORTS_CONFIG = {
-  startDate: '2026-10-20T00:00',
-  endDate: '2026-10-30T23:59',
-  isOpen: true,
-  preventDuplicate: true,
-  maxTeamsPerClass: 1,
-  announcement: 'Thời hạn đăng ký: Từ ngày 20/10/2026 đến hết ngày 30/10/2026. Mỗi lớp chỉ đăng ký 01 đội bóng chuyền duy nhất (3 Nam + 3 Nữ).'
-};
-
-const DIVISION_A_SPORTS = [
-  'Bóng đá Futsal Nam (2 hiệp x 20 phút)',
-  'Kéo co Nam Nữ phối hợp (5 Nam, 5 Nữ)',
-  'Bóng chuyền hơi Nữ (dự kiến 6 đội)',
-  'Pickleball (đôi Nam)',
-  'Pickleball (đôi Nữ)',
-  'Pickleball (đôi Nam - Nữ)'
-];
-
-const USER_CATEGORIES = [
-  { label: 'Cựu học sinh các niên khóa (Bảng A - 300.000đ)', division: 'A', fee: 300000 },
-  { label: 'Giáo viên / Cựu giáo viên (Bảng A - 300.000đ)', division: 'A', fee: 300000 },
-  { label: 'Khách mời Đại biểu / Đội khách (300.000đ)', division: 'A', fee: 300000 }
+export const USER_CATEGORIES = [
+  { label: 'Học sinh đang học tại trường (Miễn phí)', fee: 0 },
+  { label: 'Cựu học sinh các niên khóa (Bảng A - 300.000đ)', fee: 300000 },
+  { label: 'Giáo viên / Cán bộ nhân viên (Bảng A - 300.000đ)', fee: 300000 },
+  { label: 'Khách mời Đại biểu / Đội khách (300.000đ)', fee: 300000 }
 ];
 
 export default function PublicSportsRegister() {
-  const [activeTab, setActiveTab] = useState('volleyball_20_11'); // 'volleyball_20_11' | 'anniversary_30'
+  const [tournaments, setTournaments] = useState(DEFAULT_TOURNAMENTS);
+  const [selectedTournId, setSelectedTournId] = useState(DEFAULT_TOURNAMENTS[0].id);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // ⚙️ CẤU HÌNH THỜI HẠN & QUY CHUẨN ĐĂNG KÝ
-  const [sportsConfig, setSportsConfig] = useState(() => {
-    try {
-      const local = localStorage.getItem('cbq_sports_config');
-      if (local) return JSON.parse(local);
-    } catch (e) {}
-    return DEFAULT_SPORTS_CONFIG;
-  });
-
-  // 🏐 STATE FORM ĐĂNG KÝ BÓNG CHUYỀN 20/11 (THEO LỚP)
+  // 🏐 STATE FORM ĐĂNG KÝ THEO ĐỘI LỚP (CLASS TEAM)
   const [selectedClass, setSelectedClass] = useState(ALL_CBQ_CLASSES[0]);
+  const [selectedSportTeam, setSelectedSportTeam] = useState('');
   const [captainName, setCaptainName] = useState('');
   const [captainPhone, setCaptainPhone] = useState('');
   const [gvcnName, setGvcnName] = useState('');
-  const [male1, setMale1] = useState('');
-  const [male2, setMale2] = useState('');
-  const [male3, setMale3] = useState('');
-  const [female1, setFemale1] = useState('');
-  const [female2, setFemale2] = useState('');
-  const [female3, setFemale3] = useState('');
+  const [maleAthletes, setMaleAthletes] = useState(['', '', '']);
+  const [femaleAthletes, setFemaleAthletes] = useState(['', '', '']);
   const [reserves, setReserves] = useState('');
   const [volleyballNotes, setVolleyballNotes] = useState('');
-  const [healthAgreedVb, setHealthAgreedVb] = useState(true);
+  const [healthAgreedTeam, setHealthAgreedTeam] = useState(true);
 
-  // ⚽ STATE FORM HỘI THAO 30 NĂM (BẢNG A GIAO LƯU)
+  // 🏃 STATE FORM ĐĂNG KÝ CÁ NHÂN / TỰ DO (INDIVIDUAL)
+  const [fullNameInd, setFullNameInd] = useState('');
+  const [phoneInd, setPhoneInd] = useState('');
+  const [unitNameInd, setUnitNameInd] = useState('');
+  const [selectedSportInd, setSelectedSportInd] = useState('');
   const [selectedCategoryObj, setSelectedCategoryObj] = useState(USER_CATEGORIES[0]);
-  const [fullName30, setFullName30] = useState('');
-  const [sportName30, setSportName30] = useState(DIVISION_A_SPORTS[0]);
-  const [phone30, setPhone30] = useState('');
-  const [cohortYear30, setCohortYear30] = useState('');
-  const [unitName30, setUnitName30] = useState('');
-  const [notes30, setNotes30] = useState('');
-  const [healthAgreed30, setHealthAgreed30] = useState(true);
+  const [notesInd, setNotesInd] = useState('');
+  const [healthAgreedInd, setHealthAgreedInd] = useState(true);
 
   // MODAL CHI TIẾT ĐỘI HÌNH
   const [viewTeamModal, setViewTeamModal] = useState(null);
@@ -88,30 +64,26 @@ export default function PublicSportsRegister() {
   const [filterClass, setFilterClass] = useState('ALL');
 
   useEffect(() => {
-    fetchRegistrations();
-    fetchSportsConfig();
+    loadData();
   }, []);
 
-  async function fetchSportsConfig() {
+  async function loadData() {
+    setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('cbq_pages')
-        .select('*')
-        .eq('slug', 'sports-config')
-        .maybeSingle();
-
-      if (!error && data && data.content) {
-        const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
-        setSportsConfig(parsed);
-        localStorage.setItem('cbq_sports_config', JSON.stringify(parsed));
+      const tourns = await fetchTournaments();
+      setTournaments(tourns);
+      if (tourns.length > 0 && !tourns.some(t => t.id === selectedTournId)) {
+        setSelectedTournId(tourns[0].id);
       }
-    } catch (e) {
-      console.warn("Dùng local sports config:", e);
+      await fetchRegistrations();
+    } catch (err) {
+      console.warn("Lỗi nạp dữ liệu thể thao:", err);
+    } finally {
+      setLoading(false);
     }
   }
 
   async function fetchRegistrations() {
-    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('cbq_sports_registrations')
@@ -124,124 +96,126 @@ export default function PublicSportsRegister() {
       console.warn("Dùng LocalStorage fallback:", err);
       const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
       setRegistrations(local);
-    } finally {
-      setLoading(false);
     }
   }
 
-  // Danh sách các đội bóng chuyền 20/11
-  const volleyballTeams = useMemo(() => {
-    return registrations.filter(r => 
-      (r.sport_name || '').includes('20/11') || 
-      (r.sport_name || '').includes('Bóng chuyền Nam - Nữ phối hợp') ||
-      (r.user_category || '').includes('Học sinh')
-    );
-  }, [registrations]);
+  // Giải đấu đang chọn
+  const activeTourn = useMemo(() => {
+    return tournaments.find(t => t.id === selectedTournId) || tournaments[0] || null;
+  }, [tournaments, selectedTournId]);
 
-  // Danh sách các lớp đã đăng ký bóng chuyền
+  // Trạng thái mở / đóng của giải đấu đang chọn
+  const registrationStatus = useMemo(() => {
+    return checkTournamentStatus(activeTourn);
+  }, [activeTourn]);
+
+  // Cập nhật môn mặc định khi chuyển giải
+  useEffect(() => {
+    if (activeTourn && activeTourn.sports && activeTourn.sports.length > 0) {
+      setSelectedSportTeam(activeTourn.sports[0]);
+      setSelectedSportInd(activeTourn.sports[0]);
+    }
+  }, [activeTourn]);
+
+  // Khởi tạo số ô VĐV Nam/Nữ tương ứng với cấu hình giải
+  useEffect(() => {
+    if (activeTourn?.team_config) {
+      const maleCount = activeTourn.team_config.male_count || 3;
+      const femaleCount = activeTourn.team_config.female_count || 3;
+      setMaleAthletes(Array(maleCount).fill(''));
+      setFemaleAthletes(Array(femaleCount).fill(''));
+    }
+  }, [activeTourn]);
+
+  // Danh sách các đăng ký thuộc giải đấu đang chọn
+  const activeTournRegistrations = useMemo(() => {
+    if (!activeTourn) return registrations;
+    return registrations.filter(r => {
+      if (r.table_group === activeTourn.id) return true;
+      if (!r.table_group) {
+        const isVb = (r.sport_name || '').includes('Bóng chuyền') || (r.sport_name || '').includes('20/11');
+        if (activeTourn.id === 'tourn-2026-volleyball-20-11' && isVb) return true;
+        if (activeTourn.id === 'tourn-2026-hoi-thao-30-nam' && !isVb) return true;
+      }
+      return false;
+    });
+  }, [registrations, activeTourn]);
+
+  // Danh sách các lớp đã đăng ký trong giải này
   const registeredClasses = useMemo(() => {
-    return new Set(volleyballTeams.map(r => r.cohort_year || r.unit_name).filter(Boolean));
-  }, [volleyballTeams]);
+    return new Set(activeTournRegistrations.map(r => r.cohort_year || r.unit_name).filter(Boolean));
+  }, [activeTournRegistrations]);
 
-  // Đội đã đăng ký của lớp đang chọn (nếu có)
+  // Kiểm tra đội đã đăng ký của lớp đang chọn
   const existingTeamOfSelectedClass = useMemo(() => {
-    return volleyballTeams.find(r => 
+    if (activeTourn?.format !== 'class_team') return null;
+    return activeTournRegistrations.find(r => 
       (r.cohort_year === selectedClass || (r.unit_name || '').includes(selectedClass))
     ) || null;
-  }, [volleyballTeams, selectedClass]);
+  }, [activeTournRegistrations, selectedClass, activeTourn]);
 
-  // KIỂM TRA THỜI HẠN MỞ / ĐÓNG CỔNG
-  const registrationStatus = useMemo(() => {
-    if (!sportsConfig.isOpen) {
-      return {
-        allowed: false,
-        badge: '🔒 CỔNG ĐĂNG KÝ ĐANG TẠM KHÓA',
-        color: '#dc2626',
-        bg: '#fef2f2',
-        border: '#fecaca',
-        message: 'Ban Tổ Chức đang tạm dừng tiếp nhận hồ sơ đăng ký thi đấu.'
-      };
-    }
+  // Cập nhật mảng VĐV Nam
+  const handleMaleAthleteChange = (index, value) => {
+    setMaleAthletes(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
 
-    const now = new Date();
-    const start = sportsConfig.startDate ? new Date(sportsConfig.startDate) : null;
-    const end = sportsConfig.endDate ? new Date(sportsConfig.endDate) : null;
+  // Cập nhật mảng VĐV Nữ
+  const handleFemaleAthleteChange = (index, value) => {
+    setFemaleAthletes(prev => {
+      const updated = [...prev];
+      updated[index] = value;
+      return updated;
+    });
+  };
 
-    if (start && now < start) {
-      return {
-        allowed: false,
-        badge: `⏳ CỔNG CHƯA MỞ (Mở lúc ${start.toLocaleDateString('vi-VN')})`,
-        color: '#d97706',
-        bg: '#fffbeb',
-        border: '#fde68a',
-        message: `Cổng đăng ký sẽ chính thức mở vào lúc ${start.toLocaleDateString('vi-VN')}.`
-      };
-    }
-
-    if (end && now > end) {
-      return {
-        allowed: false,
-        badge: '🔒 ĐÃ HẾT HẠN TIẾP NHẬN HỒ SƠ',
-        color: '#dc2626',
-        bg: '#fef2f2',
-        border: '#fecaca',
-        message: `Đã hết thời hạn tiếp nhận hồ sơ (Hạn chót: ${end.toLocaleDateString('vi-VN')}). Ban Tổ chức không tiếp nhận thêm, trừ trường hợp đặc biệt do Trưởng Ban Tổ chức quyết định.`
-      };
-    }
-
-    let remainingDays = '';
-    if (end) {
-      const diffMs = end.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      remainingDays = diffDays > 0 ? ` (Còn ${diffDays} ngày)` : ' (Hôm nay là hạn chót)';
-    }
-
-    return {
-      allowed: true,
-      badge: `🟢 CỔNG ĐANG MỞ NHẬN HỒ SƠ${remainingDays}`,
-      color: '#16a34a',
-      bg: '#f0fdf4',
-      border: '#bbf7d0',
-      message: 'Cổng đăng ký đang mở nhận hồ sơ các Chi đoàn Lớp.'
-    };
-  }, [sportsConfig]);
-
-  // XỬ LÝ NỘP ĐĂNG KÝ BÓNG CHUYỀN 20/11
-  const handleSubmitVolleyball = async (e) => {
+  // ================= XỬ LÝ NỘP FORM ĐỘI LỚP =================
+  const handleSubmitClassTeam = async (e) => {
     e.preventDefault();
 
-    // 1. Kiểm tra thời hạn
     if (!registrationStatus.allowed) {
-      alert(`❌ CỔNG ĐĂNG KÝ HIỆN KHÔNG TIẾP NHẬN:\n${registrationStatus.message}`);
+      alert(`❌ CỔNG TIẾP NHẬN ĐANG KHÓA:\n${registrationStatus.message}`);
       return;
     }
 
-    // 2. Chống nhập trùng 2 lần theo lớp
-    if (sportsConfig.preventDuplicate && existingTeamOfSelectedClass) {
+    if (activeTourn?.prevent_duplicate && existingTeamOfSelectedClass) {
       alert(
         `❌ KHÔNG THỂ NỘP:\n` +
-        `Chi đoàn Lớp ${selectedClass} đã có một bản đăng ký trong hệ thống!\n` +
-        `Theo Điều lệ giải đấu, mỗi lớp chỉ được thành lập và đăng ký 01 đội bóng chuyền duy nhất (3 Nam + 3 Nữ).\n` +
-        `Nếu cần thay đổi danh sách VĐV, vui lòng liên hệ GVCN hoặc Ban Tổ Chức.`
+        `Chi đoàn Lớp ${selectedClass} đã có một bản đăng ký trong giải "${activeTourn.name}"!\n` +
+        `Theo Điều lệ, mỗi lớp chỉ đăng ký 01 đội. Nếu cần sửa VĐV, vui lòng liên hệ Ban Tổ Chức.`
       );
       return;
     }
 
-    // 3. Kiểm tra dữ liệu bắt buộc
-    if (!selectedClass || !captainName.trim() || !captainPhone.trim() || !gvcnName.trim()) {
-      alert("Vui lòng điền đầy đủ Lớp, Đội trưởng, Số điện thoại và GVCN xác nhận (*)");
+    if (!selectedClass || !captainName.trim() || !captainPhone.trim()) {
+      alert("Vui lòng điền đầy đủ Lớp, Họ tên Đội trưởng và Số điện thoại liên hệ (*)");
       return;
     }
-    if (!male1.trim() || !male2.trim() || !male3.trim()) {
-      alert("Vui lòng điền đủ họ tên của 03 Vận động viên Nam chính thức (*)");
+
+    if (activeTourn?.team_config?.require_gvcn && !gvcnName.trim()) {
+      alert("Vui lòng nhập Họ tên Giáo viên Chủ nhiệm (GVCN) xác nhận (*)");
       return;
     }
-    if (!female1.trim() || !female2.trim() || !female3.trim()) {
-      alert("Vui lòng điền đủ họ tên của 03 Vận động viên Nữ chính thức (*)");
+
+    const maleValid = maleAthletes.filter(m => m.trim());
+    const femaleValid = femaleAthletes.filter(f => f.trim());
+    const reqMale = activeTourn?.team_config?.male_count || 0;
+    const reqFemale = activeTourn?.team_config?.female_count || 0;
+
+    if (reqMale > 0 && maleValid.length < reqMale) {
+      alert(`Vui lòng điền đủ họ tên của ${reqMale} Vận động viên Nam chính thức (*)`);
       return;
     }
-    if (!healthAgreedVb) {
-      alert("Vui lòng tích chọn cam kết đảm bảo sức khỏe và xác nhận của GVCN.");
+    if (reqFemale > 0 && femaleValid.length < reqFemale) {
+      alert(`Vui lòng điền đủ họ tên của ${reqFemale} Vận động viên Nữ chính thức (*)`);
+      return;
+    }
+
+    if (!healthAgreedTeam) {
+      alert("Vui lòng tích chọn cam kết đảm bảo sức khỏe và xác nhận.");
       return;
     }
 
@@ -249,28 +223,30 @@ export default function PublicSportsRegister() {
     setSuccessMsg('');
 
     const rosterData = {
-      tournament: 'Giải Bóng chuyền Nam Nữ phối hợp chào mừng 20/11',
-      academic_year: '2026-2027',
+      tournament_id: activeTourn.id,
+      tournament_name: activeTourn.name,
+      academic_year: activeTourn.academic_year || '2026-2027',
       class: selectedClass,
       captain: captainName.trim(),
       captain_phone: captainPhone.trim(),
       gvcn: gvcnName.trim(),
-      male_athletes: [male1.trim(), male2.trim(), male3.trim()],
-      female_athletes: [female1.trim(), female2.trim(), female3.trim()],
+      male_athletes: maleValid,
+      female_athletes: femaleValid,
       reserves: reserves.trim() || 'Không có',
       extra_notes: volleyballNotes.trim() || ''
     };
 
     const newReg = {
       full_name: `Đội Lớp ${selectedClass} (Đội trưởng: ${captainName.trim()})`,
-      sport_name: 'Bóng chuyền Nam - Nữ phối hợp (20/11)',
+      sport_name: selectedSportTeam || activeTourn.sports[0] || 'Thể thao học sinh',
       phone: captainPhone.trim(),
       cohort_year: selectedClass,
       unit_name: `Chi đoàn ${selectedClass}`,
+      table_group: activeTourn.id, // 🎯 Lưu trực tiếp vào Database!
       notes: JSON.stringify(rosterData),
-      user_category: 'Học sinh đang học tại trường (Bảng B - Miễn phí)',
-      fee_amount: 0,
-      payment_status: 'Miễn phí (Học sinh)',
+      user_category: 'Học sinh đang học tại trường (Miễn phí)',
+      fee_amount: activeTourn.fee_amount || 0,
+      payment_status: activeTourn.fee_amount === 0 ? 'Miễn phí (Học sinh)' : 'Chờ nộp',
       created_at: new Date().toISOString()
     };
 
@@ -281,7 +257,7 @@ export default function PublicSportsRegister() {
         .select();
 
       if (error) {
-        console.warn("Supabase insert fallback sang localStorage:", error);
+        console.warn("Supabase fallback:", error);
         const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
         const updatedLocal = [newReg, ...local];
         localStorage.setItem('cbq_local_sports_regs', JSON.stringify(updatedLocal));
@@ -291,44 +267,48 @@ export default function PublicSportsRegister() {
       }
 
       setSuccessMsg(
-        `🎉 ĐĂNG KÝ THÀNH CÔNG ĐỘI BÓNG CHUYỀN LỚP ${selectedClass}!\n` +
+        `🎉 ĐĂNG KÝ THÀNH CÔNG ĐỘI THI ĐẤU LỚP ${selectedClass}!\n` +
+        `• Giải đấu: ${activeTourn.name}\n` +
+        `• Môn thi: ${newReg.sport_name}\n` +
         `• Đội trưởng: ${captainName.trim()} (${captainPhone.trim()})\n` +
-        `• GVCN xác nhận: ${gvcnName.trim()}\n` +
-        `• Đội hình chính thức: 3 Nam (${male1}, ${male2}, ${male3}) + 3 Nữ (${female1}, ${female2}, ${female3})\n\n` +
-        `👉 QUAN TRỌNG: Kính mời Đội trưởng và Đại diện lớp tham gia ngay nhóm Zalo Giải đấu để nhận thông báo bốc thăm và lịch thi đấu từ Ban Tổ Chức:\n` +
-        `🔗 ${OFFICIAL_ZALO_GROUP}`
+        `• GVCN xác nhận: ${gvcnName.trim() || 'Đã xác nhận'}\n\n` +
+        `👉 Kính mời Đội trưởng và Đại diện lớp tham gia nhóm Zalo giải đấu để nhận thông báo bốc thăm và lịch thi đấu:\n` +
+        `🔗 ${activeTourn.zalo_link || OFFICIAL_ZALO_GROUP}`
       );
 
-      // Reset fields
+      // Reset
       setCaptainName('');
       setCaptainPhone('');
       setGvcnName('');
-      setMale1('');
-      setMale2('');
-      setMale3('');
-      setFemale1('');
-      setFemale2('');
-      setFemale3('');
+      setMaleAthletes(Array(reqMale).fill(''));
+      setFemaleAthletes(Array(reqFemale).fill(''));
       setReserves('');
       setVolleyballNotes('');
 
     } catch (err) {
-      console.error("Lỗi đăng ký bóng chuyền:", err);
-      alert("Không thể gửi đăng ký. Vui lòng thử lại!");
+      console.error("Lỗi đăng ký:", err);
+      alert("Không thể gửi hồ sơ. Vui lòng thử lại!");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // XỬ LÝ NỘP HỘI THAO 30 NĂM (BẢNG A)
-  const handleSubmit30 = async (e) => {
+  // ================= XỬ LÝ NỘP FORM CÁ NHÂN / TỰ DO =================
+  const handleSubmitIndividual = async (e) => {
     e.preventDefault();
-    if (!fullName30.trim() || !phone30.trim() || !unitName30.trim()) {
-      alert("Vui lòng điền đầy đủ các trường thông tin bắt buộc (*)");
+
+    if (!registrationStatus.allowed) {
+      alert(`❌ CỔNG TIẾP NHẬN ĐANG KHÓA:\n${registrationStatus.message}`);
       return;
     }
-    if (!healthAgreed30) {
-      alert("Vui lòng tích chọn cam kết tự chịu trách nhiệm sức khỏe khi thi đấu.");
+
+    if (!fullNameInd.trim() || !phoneInd.trim() || !unitNameInd.trim()) {
+      alert("Vui lòng điền đầy đủ Họ tên, Số điện thoại và Lớp / Đơn vị (*)");
+      return;
+    }
+
+    if (!healthAgreedInd) {
+      alert("Vui lòng tích chọn cam kết đảm bảo sức khỏe khi thi đấu.");
       return;
     }
 
@@ -336,15 +316,20 @@ export default function PublicSportsRegister() {
     setSuccessMsg('');
 
     const newReg = {
-      full_name: fullName30.trim(),
-      sport_name: sportName30,
-      phone: phone30.trim(),
-      cohort_year: cohortYear30.trim() || 'Không có',
-      unit_name: unitName30.trim(),
-      notes: notes30.trim() || '',
+      full_name: fullNameInd.trim(),
+      sport_name: selectedSportInd || activeTourn.sports[0] || 'Cá nhân',
+      phone: phoneInd.trim(),
+      cohort_year: unitNameInd.trim(),
+      unit_name: unitNameInd.trim(),
+      table_group: activeTourn.id, // 🎯 Lưu trực tiếp vào Database!
+      notes: JSON.stringify({
+        tournament_id: activeTourn.id,
+        tournament_name: activeTourn.name,
+        extra_notes: notesInd.trim()
+      }),
       user_category: selectedCategoryObj.label,
-      fee_amount: selectedCategoryObj.fee,
-      payment_status: 'Chờ nộp kinh phí (300.000đ)',
+      fee_amount: activeTourn.fee_amount || selectedCategoryObj.fee,
+      payment_status: (activeTourn.fee_amount || selectedCategoryObj.fee) === 0 ? 'Miễn phí' : 'Chờ nộp kinh phí',
       created_at: new Date().toISOString()
     };
 
@@ -355,6 +340,7 @@ export default function PublicSportsRegister() {
         .select();
 
       if (error) {
+        console.warn("Supabase fallback:", error);
         const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
         const updatedLocal = [newReg, ...local];
         localStorage.setItem('cbq_local_sports_regs', JSON.stringify(updatedLocal));
@@ -364,78 +350,91 @@ export default function PublicSportsRegister() {
       }
 
       setSuccessMsg(
-        `🎉 ĐĂNG KÝ THÀNH CÔNG (BẢNG A)!\nVĐV ${fullName30} (${unitName30}) đã hoàn tất đăng ký môn "${sportName30}".\n` +
-        `📌 LƯU Ý KINH PHÍ TỔ CHỨC: 300.000đ/VĐV.\nVui lòng liên hệ / chuyển khoản cho Thầy Nguyễn Công Sự (SĐT/Zalo: 0366190199) để xác nhận vị trí thi đấu.`
+        `🎉 ĐĂNG KÝ THÀNH CÔNG VẬN ĐỘNG VIÊN: ${fullNameInd.trim()}!\n` +
+        `• Giải đấu: ${activeTourn.name}\n` +
+        `• Môn thi đấu: ${newReg.sport_name}\n` +
+        `• Đơn vị / Lớp: ${unitNameInd.trim()}\n\n` +
+        `👉 Kính mời VĐV tham gia nhóm Zalo giải đấu để nhận thông báo bốc thăm và lịch thi đấu:\n` +
+        `🔗 ${activeTourn.zalo_link || OFFICIAL_ZALO_GROUP}`
       );
 
-      setFullName30('');
-      setPhone30('');
-      setCohortYear30('');
-      setNotes30('');
+      setFullNameInd('');
+      setPhoneInd('');
+      setUnitNameInd('');
+      setNotesInd('');
+
     } catch (err) {
-      console.error(err);
+      console.error("Lỗi đăng ký cá nhân:", err);
       alert("Không thể gửi đăng ký. Vui lòng thử lại!");
     } finally {
       setSubmitting(false);
     }
   };
 
-  // Lọc danh sách bóng chuyền hiển thị
-  const filteredVolleyballTeams = volleyballTeams.filter(item => {
-    const matchClass = filterClass === 'ALL' || (item.cohort_year || '').includes(filterClass);
-    const matchSearch = (item.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.unit_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.phone || '').includes(searchQuery) ||
-      (item.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchClass && matchSearch;
-  });
+  // Filter bảng hiển thị
+  const filteredRegistrations = useMemo(() => {
+    return activeTournRegistrations.filter(item => {
+      const matchClass = filterClass === 'ALL' || (item.cohort_year || '').includes(filterClass) || (item.unit_name || '').includes(filterClass);
+      const matchSearch = (item.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.unit_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.cohort_year || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.sport_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.phone || '').includes(searchQuery) ||
+        (item.notes || '').toLowerCase().includes(searchQuery.toLowerCase());
+      return matchClass && matchSearch;
+    });
+  }, [activeTournRegistrations, filterClass, searchQuery]);
 
   return (
-    <div style={{ maxWidth: '1180px', margin: '0 auto', padding: '20px 15px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '16px 20px 60px 20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       
-      {/* HEADER BANNER CHÍNH THỨC */}
+      {/* BANNER CHÍNH */}
       <div style={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #0369a1 50%, #0284c7 100%)',
+        background: 'linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #0ea5e9 100%)',
         borderRadius: '20px',
-        padding: '28px 22px',
+        padding: '28px 24px',
         color: '#ffffff',
         textAlign: 'center',
-        boxShadow: '0 12px 28px rgba(2, 132, 199, 0.25)',
-        marginBottom: '22px'
+        marginBottom: '22px',
+        boxShadow: '0 10px 25px -5px rgba(2, 132, 199, 0.35)',
+        position: 'relative'
       }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.18)', padding: '5px 16px', borderRadius: '30px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '12px' }}>
-          <Sparkles size={15} color="#fde047" /> ĐOÀN TRƯỜNG THPT CAO BÁ QUÁT • TỔ GIÁO DỤC THỂ CHẤT • NĂM HỌC 2026 - 2027
+        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255, 255, 255, 0.2)', padding: '5px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 'bold', marginBottom: '12px' }}>
+          <Trophy size={16} /> CỔNG ĐĂNG KÝ THỂ THAO TRỰC TUYẾN - THPT CAO BÁ QUÁT
         </div>
-        
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '26px', color: '#fde047', textShadow: '0 2px 8px rgba(0,0,0,0.4)', lineHeight: 1.3 }}>
-          🏐 CỔNG ĐĂNG KÝ THI ĐẤU GIẢI BÓNG CHUYỀN CHÀO MỪNG 20/11
+
+        <h1 style={{ fontSize: '27px', fontWeight: '900', margin: '0 0 10px 0', letterSpacing: '-0.5px' }}>
+          {activeTourn?.name || 'GIẢI THỂ THAO TRƯỜNG HỌC'}
         </h1>
 
-        <p style={{ margin: '0 auto 16px auto', maxWidth: '820px', fontSize: '14.5px', color: '#e0f2fe', lineHeight: '1.6' }}>
-          Thi đấu Bóng chuyền Nam Nữ phối hợp giữa các Chi đoàn Lớp chào mừng Ngày Nhà Giáo Việt Nam 20/11.
-          Mỗi lớp thành lập 01 đội thi đấu gồm <strong>06 VĐV chính thức (3 Nam + 3 Nữ)</strong> trên sân.
+        <p style={{ fontSize: '14.5px', maxWidth: '800px', margin: '0 auto 18px auto', opacity: 0.95, lineHeight: '1.5' }}>
+          {activeTourn?.short_desc || activeTourn?.announcement || 'Tổ chức thi đấu thể dục thể thao rèn luyện sức khỏe, chào mừng các ngày lễ lớn.'}
         </p>
 
-        {/* THÔNG TIN THỜI HẠN & TRẠNG THÁI TIẾP NHẬN */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(6px)', padding: '14px 18px', borderRadius: '14px', textAlign: 'left', border: '1px solid rgba(253,224,71,0.4)', fontSize: '13.5px' }}>
+        {/* THÔNG TIN NHANH VỀ GIẢI ĐẤU */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px', background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(6px)', padding: '12px 16px', borderRadius: '14px', textAlign: 'left', border: '1px solid rgba(253,224,71,0.4)', fontSize: '13px', maxWidth: '960px', margin: '0 auto 14px auto' }}>
           <div>
-            <Calendar size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            <strong>Thời hạn đăng ký:</strong> <span style={{ color: '#fde047', fontWeight: 'bold' }}>{new Date(sportsConfig.startDate).toLocaleDateString('vi-VN')} đến hết {new Date(sportsConfig.endDate).toLocaleDateString('vi-VN')}</span>
+            <Calendar size={15} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+            <strong>Thời hạn nhận hồ sơ:</strong> <span style={{ color: '#fde047', fontWeight: 'bold' }}>
+              {activeTourn?.start_date ? new Date(activeTourn.start_date).toLocaleDateString('vi-VN') : 'Đang mở'} đến hết {activeTourn?.end_date ? new Date(activeTourn.end_date).toLocaleDateString('vi-VN') : 'Khi có thông báo'}
+            </span>
           </div>
           <div>
-            <Trophy size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            <strong>Thể thức thi đấu:</strong> Bốc thăm thi đấu loại trực tiếp
+            <Trophy size={15} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+            <strong>Hình thức thi đấu:</strong> {activeTourn?.format === 'class_team' ? 'Theo Chi đoàn Lớp' : 'Cá nhân / Đơn vị'}
           </div>
           <div>
-            <CheckCircle2 size={16} color="#4ade80" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            <strong>Kinh phí tham gia:</strong> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>MIỄN PHÍ 100% CHO HỌC SINH</span>
+            <CheckCircle2 size={15} color="#4ade80" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
+            <strong>Lệ phí tham gia:</strong> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>
+              {activeTourn?.fee_amount === 0 ? 'MIỄN PHÍ 100%' : `${Number(activeTourn?.fee_amount).toLocaleString()}đ`}
+            </span>
           </div>
         </div>
 
-        {/* NÚT THAM GIA NHÓM ZALO CHÍNH THỨC */}
-        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+        {/* NÚT THAM GIA ZALO */}
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <a
-            href={OFFICIAL_ZALO_GROUP}
+            href={activeTourn?.zalo_link || OFFICIAL_ZALO_GROUP}
             target="_blank"
             rel="noreferrer"
             style={{
@@ -452,51 +451,56 @@ export default function PublicSportsRegister() {
               boxShadow: '0 4px 14px rgba(0, 104, 255, 0.45)'
             }}
           >
-            <MessageCircle size={17} /> 💬 Tham Gia Nhóm Zalo Đội Trưởng & GVCN (Nhận Lịch Bốc Thăm)
+            <MessageCircle size={17} /> 💬 Tham Gia Nhóm Zalo Giải Đấu (Nhận Lịch & Kết Quả Bốc Thăm)
           </a>
         </div>
       </div>
 
-      {/* CHUYỂN ĐỔI TAB GIẢI ĐẤU */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', borderBottom: '2px solid #e2e8f0', paddingBottom: '10px' }}>
-        <button
-          onClick={() => setActiveTab('volleyball_20_11')}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '10px',
-            border: 'none',
-            background: activeTab === 'volleyball_20_11' ? '#0284c7' : '#f1f5f9',
-            color: activeTab === 'volleyball_20_11' ? '#ffffff' : '#475569',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            boxShadow: activeTab === 'volleyball_20_11' ? '0 4px 12px rgba(2,132,199,0.25)' : 'none'
-          }}
-        >
-          <Trophy size={16} /> 🏐 Giải Bóng Chuyền 20/11 (Theo Lớp - Học Sinh)
-        </button>
+      {/* THANH CHỌN GIẢI ĐẤU (TỰ ĐỘNG HIỂN THỊ NẾU CÓ NHIỀU GIẢI) */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', overflowX: 'auto' }}>
+        {tournaments.map(t => {
+          const isSelected = t.id === selectedTournId;
+          const status = checkTournamentStatus(t);
 
-        <button
-          onClick={() => setActiveTab('anniversary_30')}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '10px',
-            border: 'none',
-            background: activeTab === 'anniversary_30' ? '#7c3aed' : '#f1f5f9',
-            color: activeTab === 'anniversary_30' ? '#ffffff' : '#475569',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}
-        >
-          <Award size={16} /> 🏃 Hội Thao Kỷ Niệm 30 Năm (Bảng A - CHS & GV)
-        </button>
+          return (
+            <button
+              key={t.id}
+              onClick={() => {
+                setSelectedTournId(t.id);
+                setSuccessMsg('');
+              }}
+              style={{
+                padding: '10px 18px',
+                borderRadius: '12px',
+                border: isSelected ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                background: isSelected ? '#0284c7' : '#ffffff',
+                color: isSelected ? '#ffffff' : '#334155',
+                fontWeight: 'bold',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                whiteSpace: 'nowrap',
+                boxShadow: isSelected ? '0 4px 14px rgba(2,132,199,0.25)' : 'none',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              <Trophy size={16} />
+              <span>{t.name}</span>
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '2px 7px', 
+                borderRadius: '10px', 
+                background: isSelected ? '#ffffff' : status.bg, 
+                color: isSelected ? '#0284c7' : status.color, 
+                fontWeight: 'bold' 
+              }}>
+                {status.allowed ? 'Đang mở' : 'Đã đóng'}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* THÔNG BÁO THÀNH CÔNG */}
@@ -506,609 +510,548 @@ export default function PublicSportsRegister() {
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* TAB 1: GIẢI BÓNG CHUYỀN 20/11 (HỌC SINH THEO LỚP) */}
-      {/* ========================================================================= */}
-      {activeTab === 'volleyball_20_11' && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-start' }}>
+      {/* KHUNG NỘI DUNG CHÍNH: FORM ĐĂNG KÝ + DANH SÁCH ĐÃ ĐĂNG KÝ */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-start' }}>
+        
+        {/* ========================================================================= */}
+        {/* CỘT TRÁI: FORM ĐĂNG KÝ (TỰ ĐỘNG THÍCH ỨNG THEO HÌNH THỨC CỦA GIẢI ĐẤU) */}
+        {/* ========================================================================= */}
+        <div style={{ flex: '1 1 500px', background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
           
-          {/* CỘT TRÁI: FORM ĐĂNG KÝ THEO LỚP */}
-          <div style={{ flex: '1 1 480px', background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontWeight: 'bold', fontSize: '16px' }}>
+              <UserCheck size={20} color="#0369a1" /> 
+              {activeTourn?.format === 'class_team' ? 'HỒ SƠ ĐĂNG KÝ ĐỘI THI ĐẤU THEO LỚP' : 'HỒ SƠ ĐĂNG KÝ VẬN ĐỘNG VIÊN'}
+            </div>
             
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontWeight: 'bold', fontSize: '16px' }}>
-                <UserCheck size={20} color="#0369a1" /> HỒ SƠ ĐĂNG KÝ ĐỘI BÓNG CHUYỀN (*)
-              </div>
-              <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', background: registrationStatus.bg, color: registrationStatus.color, border: `1px solid ${registrationStatus.border}`, fontWeight: 'bold' }}>
-                {registrationStatus.badge}
-              </span>
+            <span style={{ 
+              fontSize: '11.5px', 
+              padding: '3px 9px', 
+              borderRadius: '12px', 
+              background: registrationStatus.bg, 
+              color: registrationStatus.color, 
+              border: `1px solid ${registrationStatus.border}`,
+              fontWeight: 'bold' 
+            }}>
+              {registrationStatus.badge}
+            </span>
+          </div>
+
+          {/* CẢNH BÁO NẾU CỔNG ĐÃ ĐÓNG HOẶC CHƯA MỞ */}
+          {!registrationStatus.allowed && (
+            <div style={{ background: registrationStatus.bg, border: `1.5px solid ${registrationStatus.border}`, color: registrationStatus.color, padding: '12px 14px', borderRadius: '10px', fontSize: '13px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Lock size={18} />
+              <div><strong>Thông báo:</strong> {registrationStatus.message}</div>
             </div>
+          )}
 
-            {/* THÔNG BÁO NHÓM ZALO */}
-            <div style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
-              <div style={{ fontSize: '13px', color: '#0369a1', lineHeight: '1.4' }}>
-                <span style={{ fontWeight: 'bold' }}>📢 Nhóm Zalo Đội Trưởng & GVCN:</span> Tham gia ngay để BTC thông báo giờ bốc thăm & lịch đấu.
-              </div>
-              <a
-                href={OFFICIAL_ZALO_GROUP}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  padding: '6px 14px',
-                  background: '#0068ff',
-                  color: '#ffffff',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                <MessageCircle size={14} /> Vào Zalo Ngay
-              </a>
-            </div>
-
-            {/* CẢNH BÁO NẾU CỔNG ĐÃ ĐÓNG HOẶC CHƯA MỞ */}
-            {!registrationStatus.allowed && (
-              <div style={{ background: registrationStatus.bg, border: `1.5px solid ${registrationStatus.border}`, borderRadius: '12px', padding: '14px', marginBottom: '16px', color: registrationStatus.color, fontSize: '13px', lineHeight: 1.5 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '13.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Lock size={16} /> {registrationStatus.badge}
-                </div>
-                {registrationStatus.message}
-              </div>
-            )}
-
-            {/* CẢNH BÁO CHỐNG NHẬP TRÙNG NẾU LỚP NÀY ĐÃ ĐĂNG KÝ */}
-            {existingTeamOfSelectedClass && (
-              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontWeight: 'bold', fontSize: '13.5px', marginBottom: '6px' }}>
-                  <ShieldAlert size={18} color="#dc2626" /> LỚP {selectedClass} ĐÃ NỘP HỒ SƠ ĐỘI HÌNH!
-                </div>
-                <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.5, marginBottom: '10px' }}>
-                  • <strong>Đội trưởng đã nộp:</strong> {existingTeamOfSelectedClass.full_name}<br/>
-                  • <strong>SĐT / Zalo:</strong> {existingTeamOfSelectedClass.phone}<br/>
-                  • <strong>Thời gian gửi:</strong> {new Date(existingTeamOfSelectedClass.created_at).toLocaleString('vi-VN')}<br/>
-                  • <strong>Quy định:</strong> Mỗi lớp thành lập đúng <strong>01 đội bóng chuyền duy nhất</strong> (3 Nam + 3 Nữ). Hệ thống chặn gửi lần 2 để bảo đảm công bằng khi bốc thăm loại trực tiếp.
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    let roster = null;
-                    try { roster = JSON.parse(existingTeamOfSelectedClass.notes); } catch (e) {}
-                    setViewTeamModal({ item: existingTeamOfSelectedClass, roster });
-                  }}
-                  style={{ padding: '6px 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
-                >
-                  <Eye size={13} /> Xem Đội Hình Đã Đăng Ký Của Lớp {selectedClass}
-                </button>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitVolleyball}>
+          {/* ================= TH1: FORM ĐĂNG KÝ THEO ĐỘI LỚP ================= */}
+          {activeTourn?.format === 'class_team' ? (
+            <form onSubmit={handleSubmitClassTeam} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
-              {/* 1. CHỌN LỚP */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Chi Đoàn Lớp Tham Gia *</label>
+              {/* CHỌN LỚP */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '5px' }}>
+                  1. Chi đoàn Lớp Đăng Ký *
+                </label>
                 <select
                   value={selectedClass}
                   onChange={e => setSelectedClass(e.target.value)}
-                  style={{ ...styles.select, fontWeight: 'bold', color: '#0369a1', fontSize: '14.5px' }}
+                  disabled={!registrationStatus.allowed}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1.5px solid #0284c7', fontSize: '14px', fontWeight: 'bold', color: '#0369a1', background: '#f0f9ff' }}
                 >
                   {ALL_CBQ_CLASSES.map(cls => {
-                    const isReg = registeredClasses.has(cls);
+                    const isRegistered = registeredClasses.has(cls);
                     return (
                       <option key={cls} value={cls}>
-                        {cls} {isReg ? '🔒 (ĐÃ ĐĂNG KÝ)' : '🟢 (Chưa đăng ký)'}
+                        Lớp {cls} {isRegistered ? '🔒 (ĐÃ ĐĂNG KÝ)' : '🟢 (Chưa đăng ký)'}
                       </option>
                     );
                   })}
                 </select>
               </div>
 
-              {/* 2. ĐỘI TRƯỞNG & SĐT & GVCN */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '14px' }}>
+              {/* CẢNH BÁO NẾU LỚP NÀY ĐÃ ĐĂNG KÝ RỒI */}
+              {activeTourn?.prevent_duplicate && existingTeamOfSelectedClass && (
+                <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '10px', padding: '12px 14px', color: '#991b1b', fontSize: '12.5px', lineHeight: '1.5' }}>
+                  <div style={{ fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                    <ShieldAlert size={16} color="#dc2626" />
+                    LỚP {selectedClass} ĐÃ CÓ BẢN ĐĂNG KÝ TRONG HỆ THỐNG:
+                  </div>
+                  <div>• Đội trưởng: <strong>{existingTeamOfSelectedClass.full_name}</strong></div>
+                  <div>• SĐT liên hệ: <strong>{existingTeamOfSelectedClass.phone}</strong></div>
+                  <div style={{ marginTop: '4px', fontSize: '11.5px', color: '#b91c1c' }}>
+                    ⚠️ Mỗi lớp chỉ được gửi 01 đội thi đấu. Nếu cần sửa danh sách VĐV, vui lòng liên hệ Ban Tổ Chức.
+                  </div>
+                </div>
+              )}
+
+              {/* CHỌN MÔN THI ĐẤU (NẾU GIẢI CÓ NHIỀU MÔN) */}
+              {(activeTourn?.sports || []).length > 1 && (
                 <div>
-                  <label style={styles.label}>Họ và Tên Đội Trưởng *</label>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '5px' }}>
+                    Môn Thi Đấu *
+                  </label>
+                  <select
+                    value={selectedSportTeam}
+                    onChange={e => setSelectedSportTeam(e.target.value)}
+                    disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13.5px', fontWeight: '600' }}
+                  >
+                    {activeTourn.sports.map(sp => (
+                      <option key={sp} value={sp}>{sp}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* ĐỘI TRƯỞNG & SĐT */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Họ Tên Đội Trưởng / Đại Diện *
+                  </label>
                   <input
                     type="text"
                     required
-                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                    placeholder="VD: Nguyễn Văn Nam"
+                    placeholder="Nguyễn Văn A"
                     value={captainName}
                     onChange={e => setCaptainName(e.target.value)}
-                    style={styles.input}
+                    disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
+
                 <div>
-                  <label style={styles.label}>SĐT / Zalo Đội Trưởng *</label>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Số Điện Thoại Zalo Liên Hệ *
+                  </label>
                   <input
                     type="tel"
                     required
-                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                    placeholder="VD: 0912 345 678"
+                    placeholder="0912345678"
                     value={captainPhone}
                     onChange={e => setCaptainPhone(e.target.value)}
-                    style={styles.input}
+                    disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Giáo Viên Chủ Nhiệm / Phụ Trách Xác Nhận *</label>
-                <input
-                  type="text"
-                  required
-                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                  placeholder="VD: Thầy/Cô Trần Thị Lan (GVCN)"
-                  value={gvcnName}
-                  onChange={e => setGvcnName(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              {/* 3. DANH SÁCH 06 VẬN ĐỘNG VIÊN CHÍNH THỨC (3 NAM + 3 NỮ) */}
-              <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #cbd5e1', marginBottom: '16px' }}>
-                <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Users size={16} color="#0284c7" /> DANH SÁCH 06 VĐV THI ĐẤU CHÍNH THỨC (3 NAM + 3 NỮ) (*)
-                </div>
-
-                {/* 3 VĐV NAM */}
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1', marginBottom: '6px' }}>
-                    👦 03 Vận Động Viên Nam Chính Thức:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nam 1 *"
-                      value={male1}
-                      onChange={e => setMale1(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nam 2 *"
-                      value={male2}
-                      onChange={e => setMale2(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nam 3 *"
-                      value={male3}
-                      onChange={e => setMale3(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
-                  </div>
-                </div>
-
-                {/* 3 VĐV NỮ */}
+              {/* GVCN XÁC NHẬN */}
+              {activeTourn?.team_config?.require_gvcn && (
                 <div>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#e11d48', marginBottom: '6px' }}>
-                    👧 03 Vận Động Viên Nữ Chính Thức:
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Họ Tên Giáo Viên Chủ Nhiệm (GVCN) Xác Nhận *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Thầy / Cô Chủ Nhiệm"
+                    value={gvcnName}
+                    onChange={e => setGvcnName(e.target.value)}
+                    disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              )}
+
+              {/* DANH SÁCH VĐV NAM */}
+              {maleAthletes.length > 0 && (
+                <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1e40af', marginBottom: '8px' }}>
+                    👦 {maleAthletes.length} VẬN ĐỘNG VIÊN NAM CHÍNH THỨC (*)
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '8px' }}>
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nữ 1 *"
-                      value={female1}
-                      onChange={e => setFemale1(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nữ 2 *"
-                      value={female2}
-                      onChange={e => setFemale2(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
-                    <input
-                      type="text"
-                      required
-                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                      placeholder="VĐV Nữ 3 *"
-                      value={female3}
-                      onChange={e => setFemale3(e.target.value)}
-                      style={{ ...styles.input, fontSize: '13px', padding: '8px 10px' }}
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(maleAthletes.length, 3)}, 1fr)`, gap: '8px' }}>
+                    {maleAthletes.map((m, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        required
+                        placeholder={`Nam ${idx + 1} *`}
+                        value={m}
+                        onChange={e => handleMaleAthleteChange(idx, e.target.value)}
+                        disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                        style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #93c5fd', fontSize: '12.5px', boxSizing: 'border-box' }}
+                      />
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* 4. VẬN ĐỘNG VIÊN DỰ BỊ */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Vận Động Viên Dự Bị (Nếu có)</label>
-                <input
-                  type="text"
-                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                  placeholder="VD: Nam: Trần Văn D, Lê Văn E; Nữ: Phạm Thị B..."
-                  value={reserves}
-                  onChange={e => setReserves(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
+              {/* DANH SÁCH VĐV NỮ */}
+              {femaleAthletes.length > 0 && (
+                <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#be123c', marginBottom: '8px' }}>
+                    👧 {femaleAthletes.length} VẬN ĐỘNG VIÊN NỮ CHÍNH THỨC (*)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(femaleAthletes.length, 3)}, 1fr)`, gap: '8px' }}>
+                    {femaleAthletes.map((f, idx) => (
+                      <input
+                        key={idx}
+                        type="text"
+                        required
+                        placeholder={`Nữ ${idx + 1} *`}
+                        value={f}
+                        onChange={e => handleFemaleAthleteChange(idx, e.target.value)}
+                        disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                        style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #fda4af', fontSize: '12.5px', boxSizing: 'border-box' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-              {/* 5. GHI CHÚ */}
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Ghi Chú Thêm (Màu áo thi đấu / Lưu ý)</label>
-                <textarea
-                  rows={2}
-                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                  placeholder="VD: Màu áo thi đấu của lớp: Xanh dương..."
-                  value={volleyballNotes}
-                  onChange={e => setVolleyballNotes(e.target.value)}
-                  style={{ ...styles.input, resize: 'vertical' }}
-                />
-              </div>
+              {/* DỰ BỊ */}
+              {activeTourn?.team_config?.allow_reserves && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Vận Động Viên Dự Bị (Nếu có):
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Nguyễn Văn D, Trần Thị E..."
+                    value={reserves}
+                    onChange={e => setReserves(e.target.value)}
+                    disabled={!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              )}
 
-              {/* 6. CAM KẾT SỨC KHỎE */}
-              <div style={{ marginBottom: '18px', background: '#f0fdf4', padding: '10px 12px', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#166534', cursor: 'pointer' }}>
+              {/* CAM KẾT SỨC KHỎE */}
+              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
-                    checked={healthAgreedVb}
-                    onChange={e => setHealthAgreedVb(e.target.checked)}
-                    style={{ marginTop: '2px' }}
+                    checked={healthAgreedTeam}
+                    onChange={e => setHealthAgreedTeam(e.target.checked)}
+                    disabled={!registrationStatus.allowed}
+                    style={{ marginTop: '2px', accentColor: '#0284c7' }}
                   />
-                  <span><strong>Cam kết & Xác nhận (*):</strong> Tất cả VĐV có tên trong danh sách đủ điều kiện sức khỏe thi đấu thể thao và đã được Giáo viên chủ nhiệm phê duyệt tham gia giải.</span>
+                  <span>
+                    Chi đoàn cam kết toàn bộ VĐV có đủ sức khỏe thi đấu và đã được sự đồng ý của GVCN lớp.
+                  </span>
                 </label>
               </div>
 
-              {/* NÚT NỘP HỒ SƠ */}
+              {/* NÚT GỬI ĐĂNG KÝ */}
               <button
                 type="submit"
-                disabled={submitting || !registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
+                disabled={submitting || !registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)}
                 style={{
-                  ...styles.submitBtn,
-                  background: (!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass))
-                    ? '#94a3b8'
-                    : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                  cursor: (!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass))
-                    ? 'not-allowed'
-                    : 'pointer'
+                  width: '100%',
+                  padding: '12px',
+                  background: !registrationStatus.allowed 
+                    ? '#cbd5e1' 
+                    : (activeTourn?.prevent_duplicate && existingTeamOfSelectedClass)
+                      ? '#fee2e2'
+                      : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: (activeTourn?.prevent_duplicate && existingTeamOfSelectedClass) ? '#dc2626' : '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 'bold',
+                  fontSize: '14.5px',
+                  cursor: (!registrationStatus.allowed || (activeTourn?.prevent_duplicate && !!existingTeamOfSelectedClass)) ? 'not-allowed' : 'pointer',
+                  boxShadow: registrationStatus.allowed ? '0 4px 14px rgba(2,132,199,0.3)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
                 }}
               >
-                {submitting ? 'Đang gửi hồ sơ...' : !registrationStatus.allowed ? '🔒 Cổng Đăng Ký Đã Khóa' : existingTeamOfSelectedClass ? `⛔ Lớp ${selectedClass} Đã Có Đội Đăng Ký (Không Gửi Trùng)` : '🏐 XÁC NHẬN ĐĂNG KÝ ĐỘI BÓNG CHUYỀN LỚP'}
+                {submitting ? (
+                  'Đang gửi hồ sơ lên hệ thống...'
+                ) : !registrationStatus.allowed ? (
+                  '🔒 Cổng đăng ký hiện đang đóng'
+                ) : (activeTourn?.prevent_duplicate && existingTeamOfSelectedClass) ? (
+                  '⛔ Lớp đã có đội đăng ký (Không gửi trùng)'
+                ) : (
+                  <>🚀 Gửi Đăng Ký Đội Lớp {selectedClass}</>
+                )}
               </button>
+
             </form>
-          </div>
-
-          {/* CỘT PHẢI: DANH SÁCH CÁC ĐỘI LỚP ĐÃ ĐĂNG KÝ */}
-          <div style={{ flex: '2 1 520px', minWidth: 0, background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#166534', fontWeight: 'bold', fontSize: '16px' }}>
-                <Trophy size={20} color="#166534" /> DANH SÁCH ĐỘI BÓNG CHUYỀN CÁC LỚP ({filteredVolleyballTeams.length} Đội)
-              </div>
-              <span style={{ fontSize: '12px', color: '#64748b' }}>
-                Tiến độ: <strong>{registeredClasses.size} / {ALL_CBQ_CLASSES.length}</strong> lớp
-              </span>
-            </div>
-
-            {/* THANH TÌM KIẾM & LỌC */}
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
-              <div style={{ flex: 1, minWidth: '160px', position: 'relative' }}>
+          ) : (
+            /* ================= TH2: FORM ĐĂNG KÝ CÁ NHÂN / TỰ DO ================= */
+            <form onSubmit={handleSubmitIndividual} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>
+                  Họ và Tên Vận Động Viên *
+                </label>
                 <input
                   type="text"
-                  placeholder="Tìm Lớp, Đội trưởng hoặc SĐT..."
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: '100%', padding: '7px 10px 7px 30px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  required
+                  placeholder="Ví dụ: Nguyễn Văn Nam"
+                  value={fullNameInd}
+                  onChange={e => setFullNameInd(e.target.value)}
+                  disabled={!registrationStatus.allowed}
+                  style={{ width: '100%', padding: '9px 11px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 />
-                <Search size={14} color="#64748b" style={{ position: 'absolute', left: '10px', top: '10px' }} />
               </div>
 
-              <select
-                value={filterClass}
-                onChange={e => setFilterClass(e.target.value)}
-                style={{ padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
-              >
-                <option value="ALL">Tất cả các khối</option>
-                <option value="12A">Khối 12</option>
-                <option value="11A">Khối 11</option>
-                <option value="10A">Khối 10</option>
-              </select>
-            </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Số Điện Thoại Zalo *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="0912345678"
+                    value={phoneInd}
+                    onChange={e => setPhoneInd(e.target.value)}
+                    disabled={!registrationStatus.allowed}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
 
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>Đang nạp danh sách đội bóng...</div>
-            ) : filteredVolleyballTeams.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px 15px', color: '#94a3b8', background: '#f8fafc', borderRadius: '10px' }}>
-                Chưa có lớp nào gửi hồ sơ. Hãy là Chi đoàn đầu tiên ghi danh thi đấu!
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Lớp / Chi đoàn / Đơn vị *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: 12A1 hoặc Niên khóa 2015"
+                    value={unitNameInd}
+                    onChange={e => setUnitNameInd(e.target.value)}
+                    disabled={!registrationStatus.allowed}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
-            ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                  <thead>
-                    <tr style={{ background: '#f1f5f9', color: '#334155', borderBottom: '2px solid #cbd5e1' }}>
-                      <th style={{ padding: '10px 8px', textAlign: 'center', width: '40px' }}>STT</th>
-                      <th style={{ padding: '10px 8px' }}>CHI ĐOÀN LỚP</th>
-                      <th style={{ padding: '10px 8px' }}>ĐỘI TRƯỞNG</th>
-                      <th style={{ padding: '10px 8px' }}>SĐT LIÊN HỆ</th>
-                      <th style={{ padding: '10px 8px' }}>GVCN XÁC NHẬN</th>
-                      <th style={{ padding: '10px 8px', textAlign: 'center' }}>ĐỘI HÌNH</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredVolleyballTeams.map((item, idx) => {
-                      let roster = null;
-                      try {
-                        roster = JSON.parse(item.notes);
-                      } catch (e) {}
 
-                      return (
-                        <tr key={item.id || idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#f8fafc' }}>
-                          <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
-                          <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#0369a1' }}>
-                            <span style={{ display: 'inline-block', padding: '3px 8px', background: '#e0f2fe', borderRadius: '6px' }}>
-                              Lớp {item.cohort_year || item.unit_name}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px 8px', fontWeight: '600', color: '#1e293b' }}>
-                            {roster?.captain || item.full_name.replace(/Đội Lớp .*\(Đội trưởng: (.*)\)/, '$1')}
-                          </td>
-                          <td style={{ padding: '10px 8px', color: '#475569', fontFamily: 'monospace' }}>
-                            {item.phone ? item.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : '***'}
-                          </td>
-                          <td style={{ padding: '10px 8px', color: '#64748b' }}>
-                            {roster?.gvcn || 'Đã xác nhận'}
-                          </td>
-                          <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                            <button
-                              onClick={() => setViewTeamModal({ item, roster })}
-                              style={{
-                                padding: '5px 10px',
-                                background: '#7c3aed',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '11.5px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px'
-                              }}
-                              title="Xem chi tiết danh sách 3 Nam + 3 Nữ"
-                            >
-                              <Eye size={13} /> Đội Hình
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: HỘI THAO KỶ NIỆM 30 NĂM (BẢNG A GIAO LƯU CHS & GV) */}
-      {/* ========================================================================= */}
-      {activeTab === 'anniversary_30' && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-start' }}>
-          
-          <div style={{ flex: '1 1 380px', background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 'bold', fontSize: '16px', marginBottom: '14px', borderBottom: '1.5px solid #ede9fe', paddingBottom: '10px' }}>
-              <Award size={20} color="#7c3aed" /> ĐĂNG KÝ HỘI THAO GIAO LƯU 30 NĂM (BẢNG A)
-            </div>
-
-            <form onSubmit={handleSubmit30}>
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Đối Tượng Dự Thi *</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '4px' }}>
+                  Chọn Môn Thi Đấu *
+                </label>
                 <select
-                  value={selectedCategoryObj.label}
-                  onChange={e => setSelectedCategoryObj(USER_CATEGORIES.find(c => c.label === e.target.value) || USER_CATEGORIES[0])}
-                  style={styles.select}
+                  value={selectedSportInd}
+                  onChange={e => setSelectedSportInd(e.target.value)}
+                  disabled={!registrationStatus.allowed}
+                  style={{ width: '100%', padding: '9px 11px', borderRadius: '6px', border: '1.5px solid #0284c7', fontSize: '13.5px', fontWeight: 'bold', color: '#0369a1' }}
                 >
-                  {USER_CATEGORIES.map(cat => (
-                    <option key={cat.label} value={cat.label}>{cat.label}</option>
+                  {(activeTourn?.sports || []).map(sp => (
+                    <option key={sp} value={sp}>{sp}</option>
                   ))}
                 </select>
               </div>
 
-              {/* Thông tin nộp kinh phí */}
-              <div style={{ background: '#fffbebe6', border: '1px solid #fde047', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', color: '#854d0e', marginBottom: '14px' }}>
-                💰 <strong>ĐỐI TƯỢNG BẢNG A (GV & CHS):</strong> Đóng góp <strong>300.000 VNĐ / 1 VĐV</strong> (Kinh phí xã hội hóa tổ chức giải & cúp huy chương).
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Họ và Tên Vận Động Viên *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="VD: Nguyễn Văn An"
-                  value={fullName30}
-                  onChange={e => setFullName30(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Môn Thi Đấu Đăng Ký *</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                  Đối Tượng Tham Gia:
+                </label>
                 <select
-                  value={sportName30}
-                  onChange={e => setSportName30(e.target.value)}
-                  style={{ ...styles.select, fontWeight: 'bold', color: '#7c3aed' }}
+                  value={selectedCategoryObj.label}
+                  onChange={e => {
+                    const found = USER_CATEGORIES.find(c => c.label === e.target.value) || USER_CATEGORIES[0];
+                    setSelectedCategoryObj(found);
+                  }}
+                  disabled={!registrationStatus.allowed}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '12.5px' }}
                 >
-                  {DIVISION_A_SPORTS.map(sp => <option key={sp} value={sp}>🏅 {sp}</option>)}
+                  {USER_CATEGORIES.map(c => (
+                    <option key={c.label} value={c.label}>{c.label}</option>
+                  ))}
                 </select>
               </div>
 
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Số Điện Thoại / Zalo *</label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="VD: 0987 654 321"
-                  value={phone30}
-                  onChange={e => setPhone30(e.target.value)}
-                  style={styles.input}
-                />
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Niên Khóa / Đơn Vị *</label>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                  Ghi chú thêm:
+                </label>
                 <input
                   type="text"
-                  required
-                  placeholder="VD: Hội CHS Khóa 2005 / Tổ Giáo Viên"
-                  value={unitName30}
-                  onChange={e => setUnitName30(e.target.value)}
-                  style={styles.input}
+                  placeholder="Ghi chú thêm cho Ban Tổ Chức..."
+                  value={notesInd}
+                  onChange={e => setNotesInd(e.target.value)}
+                  disabled={!registrationStatus.allowed}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              <div style={{ marginBottom: '14px' }}>
-                <label style={styles.label}>Ghi Chú (Đồng đội / Vị trí)</label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi chú thêm..."
-                  value={notes30}
-                  onChange={e => setNotes30(e.target.value)}
-                  style={{ ...styles.input, resize: 'vertical' }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '16px', background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#334155', cursor: 'pointer' }}>
+              <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#334155', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
-                    checked={healthAgreed30}
-                    onChange={e => setHealthAgreed30(e.target.checked)}
-                    style={{ marginTop: '2px' }}
+                    checked={healthAgreedInd}
+                    onChange={e => setHealthAgreedInd(e.target.checked)}
+                    disabled={!registrationStatus.allowed}
+                    style={{ accentColor: '#0284c7' }}
                   />
-                  <span>Tôi cam kết tự chịu trách nhiệm về sức khỏe trong quá trình thi đấu.</span>
+                  <span>Tôi cam kết có đủ sức khỏe và tự chịu trách nhiệm khi tham gia thi đấu.</span>
                 </label>
               </div>
 
               <button
                 type="submit"
-                disabled={submitting}
-                style={{ ...styles.submitBtn, background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)' }}
+                disabled={submitting || !registrationStatus.allowed}
+                style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: !registrationStatus.allowed ? '#cbd5e1' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: 'bold',
+                  fontSize: '14.5px',
+                  cursor: !registrationStatus.allowed ? 'not-allowed' : 'pointer',
+                  boxShadow: registrationStatus.allowed ? '0 4px 14px rgba(2,132,199,0.3)' : 'none'
+                }}
               >
-                {submitting ? 'Đang gửi...' : '🚀 XÁC NHẬN ĐĂNG KÝ BẢNG A'}
+                {submitting ? 'Đang gửi đăng ký...' : !registrationStatus.allowed ? '🔒 Cổng đăng ký hiện đang đóng' : '🚀 Gửi Đăng Ký Tham Gia'}
               </button>
-            </form>
-          </div>
 
-          <div style={{ flex: '2 1 500px', background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: '#334155', marginBottom: '12px' }}>
-              Danh Sách VĐV Giao Lưu Đã Đăng Ký
-            </h3>
-            <p style={{ fontSize: '13px', color: '#64748b' }}>
-              VĐV Bảng A nộp kinh phí 300.000đ trực tiếp cho BTC hoặc chuyển khoản theo hướng dẫn để được phê duyệt số đeo thi đấu.
-            </p>
-          </div>
+            </form>
+          )}
 
         </div>
-      )}
 
-      {/* ========================================================================= */}
-      {/* MODAL XEM CHI TIẾT ĐỘI HÌNH BÓNG CHUYỀN (3 NAM + 3 NỮ) */}
-      {/* ========================================================================= */}
-      {viewTeamModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '18px', padding: '24px', maxWidth: '560px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-            
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#0369a1' }}>
-                  🏐 Đội Bóng Chuyền Lớp {viewTeamModal.item.cohort_year || viewTeamModal.item.unit_name}
-                </h3>
-                <span style={{ fontSize: '12px', color: '#64748b' }}>
-                  Giải Bóng chuyền Nam Nữ phối hợp chào mừng 20/11
-                </span>
-              </div>
+        {/* ========================================================================= */}
+        {/* CỘT PHẢI: BẢNG DANH SÁCH ĐÃ ĐĂNG KÝ TRONG GIẢI NÀY */}
+        {/* ========================================================================= */}
+        <div style={{ flex: '1 1 540px', background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', marginBottom: '14px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0369a1', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Users size={18} /> Danh Sách Đã Đăng Ký ({filteredRegistrations.length})
+              </h3>
+              <div style={{ fontSize: '11.5px', color: '#64748b' }}>{activeTourn?.name}</div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <input
+                type="text"
+                placeholder="Tìm Lớp, Tên..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', width: '130px' }}
+              />
               <button
-                onClick={() => setViewTeamModal(null)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={fetchRegistrations}
+                style={{ padding: '6px 9px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}
+                title="Tải lại danh sách"
               >
-                <X size={22} color="#64748b" />
+                🔄
+              </button>
+            </div>
+          </div>
+
+          {filteredRegistrations.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 15px', color: '#94a3b8', fontSize: '13.5px' }}>
+              Chưa có đơn vị hoặc VĐV nào đăng ký trong giải này.
+            </div>
+          ) : (
+            <div style={{ overflowX: 'auto', maxHeight: '560px', overflowY: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+                <thead>
+                  <tr style={{ background: '#f0f9ff', color: '#0369a1', position: 'sticky', top: 0, zIndex: 10 }}>
+                    <th style={{ padding: '8px 6px', textAlign: 'center', width: '35px' }}>STT</th>
+                    <th style={{ padding: '8px 8px' }}>LỚP / ĐƠN VỊ</th>
+                    <th style={{ padding: '8px 8px' }}>ĐẠI DIỆN / VĐV</th>
+                    <th style={{ padding: '8px 8px' }}>MÔN THI</th>
+                    <th style={{ padding: '8px 6px', textAlign: 'center' }}>CHI TIẾT</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRegistrations.map((item, idx) => {
+                    let roster = null;
+                    try {
+                      roster = JSON.parse(item.notes);
+                    } catch (e) {}
+
+                    return (
+                      <tr key={item.id || idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '9px 6px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
+                        <td style={{ padding: '9px 8px', fontWeight: 'bold', color: '#0369a1' }}>
+                          {item.cohort_year || item.unit_name || 'Chi đoàn'}
+                        </td>
+                        <td style={{ padding: '9px 8px', fontWeight: '600', color: '#1e293b' }}>
+                          {roster?.captain || item.full_name}
+                        </td>
+                        <td style={{ padding: '9px 8px' }}>
+                          <span style={{ fontSize: '11px', padding: '2px 6px', background: '#e0f2fe', color: '#0369a1', borderRadius: '6px', fontWeight: 'bold' }}>
+                            {item.sport_name}
+                          </span>
+                        </td>
+                        <td style={{ padding: '9px 6px', textAlign: 'center' }}>
+                          {roster ? (
+                            <button
+                              onClick={() => setViewTeamModal({ item, roster })}
+                              style={{ padding: '3px 7px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '5px', fontSize: '10.5px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                            >
+                              <Eye size={11} /> Đội hình
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '11px', color: '#94a3b8' }}>-</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+        </div>
+
+      </div>
+
+      {/* ================= MODAL XEM CHI TIẾT ĐỘI HÌNH ================= */}
+      {viewTeamModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '22px', maxWidth: '520px', width: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '10px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0369a1', fontWeight: 'bold' }}>
+                🏐 Đội Hình Lớp {viewTeamModal.item.cohort_year || viewTeamModal.item.unit_name}
+              </h3>
+              <button onClick={() => setViewTeamModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={20} color="#64748b" />
               </button>
             </div>
 
-            {/* THÔNG TIN CHUNG */}
-            <div style={{ background: '#f0f9ff', padding: '12px 14px', borderRadius: '10px', marginBottom: '14px', fontSize: '13px', border: '1px solid #bae6fd' }}>
-              <div style={{ marginBottom: '4px' }}>
-                <strong>Đội trưởng:</strong> {viewTeamModal.roster?.captain || viewTeamModal.item.full_name} • <strong>SĐT:</strong> {viewTeamModal.item.phone}
+            <div style={{ background: '#f0f9ff', padding: '10px 12px', borderRadius: '8px', fontSize: '12.5px', marginBottom: '12px' }}>
+              <div><strong>Đội trưởng:</strong> {viewTeamModal.roster?.captain}</div>
+              <div><strong>GVCN / Phụ trách:</strong> {viewTeamModal.roster?.gvcn || 'Đã xác nhận'}</div>
+              <div><strong>Môn thi đấu:</strong> {viewTeamModal.item.sport_name}</div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+              <div style={{ background: '#eff6ff', padding: '10px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e40af', marginBottom: '6px' }}>👦 VĐV NAM CHÍNH THỨC:</div>
+                {(viewTeamModal.roster?.male_athletes || []).map((m, i) => (
+                  <div key={i} style={{ fontSize: '12px', padding: '2px 0' }}>{i + 1}. {m}</div>
+                ))}
               </div>
-              <div>
-                <strong>GVCN / Phụ trách:</strong> {viewTeamModal.roster?.gvcn || 'Đã xác nhận'}
+
+              <div style={{ background: '#fff1f2', padding: '10px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#be123c', marginBottom: '6px' }}>👧 VĐV NỮ CHÍNH THỨC:</div>
+                {(viewTeamModal.roster?.female_athletes || []).map((f, i) => (
+                  <div key={i} style={{ fontSize: '12px', padding: '2px 0' }}>{i + 1}. {f}</div>
+                ))}
               </div>
             </div>
 
-            {/* DANH SÁCH 6 VĐV TRÊN SÂN */}
-            <div style={{ marginBottom: '14px' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                Thành phần thi đấu chính thức (3 Nam + 3 Nữ):
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                {/* CỘT NAM */}
-                <div style={{ background: '#eff6ff', padding: '10px', borderRadius: '8px', border: '1px solid #bfdbfe' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e40af', marginBottom: '6px' }}>
-                    👦 03 VĐV NAM CHÍNH THỨC:
-                  </div>
-                  {(viewTeamModal.roster?.male_athletes || ['VĐV Nam 1', 'VĐV Nam 2', 'VĐV Nam 3']).map((m, i) => (
-                    <div key={i} style={{ fontSize: '12.5px', color: '#1e293b', padding: '3px 0' }}>
-                      {i + 1}. <strong>{m}</strong>
-                    </div>
-                  ))}
-                </div>
-
-                {/* CỘT NỮ */}
-                <div style={{ background: '#fff1f2', padding: '10px', borderRadius: '8px', border: '1px solid #fecdd3' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#be123c', marginBottom: '6px' }}>
-                    👧 03 VĐV NỮ CHÍNH THỨC:
-                  </div>
-                  {(viewTeamModal.roster?.female_athletes || ['VĐV Nữ 1', 'VĐV Nữ 2', 'VĐV Nữ 3']).map((f, i) => (
-                    <div key={i} style={{ fontSize: '12.5px', color: '#1e293b', padding: '3px 0' }}>
-                      {i + 1}. <strong>{f}</strong>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* DỰ BỊ & GHI CHÚ */}
-            {viewTeamModal.roster?.reserves && viewTeamModal.roster?.reserves !== 'Không có' && (
-              <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '8px' }}>
+            {viewTeamModal.roster?.reserves && (
+              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
                 <strong>VĐV Dự bị:</strong> {viewTeamModal.roster.reserves}
               </div>
             )}
 
-            {viewTeamModal.roster?.extra_notes && (
-              <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '14px' }}>
-                <strong>Ghi chú:</strong> {viewTeamModal.roster.extra_notes}
-              </div>
-            )}
-
-            <div style={{ textAlign: 'right' }}>
+            <div style={{ textAlign: 'right', marginTop: '14px' }}>
               <button
                 onClick={() => setViewTeamModal(null)}
-                style={{ padding: '8px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ padding: '7px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
               >
                 Đóng
               </button>
             </div>
+
           </div>
         </div>
       )}
@@ -1116,42 +1059,3 @@ export default function PublicSportsRegister() {
     </div>
   );
 }
-
-const styles = {
-  label: {
-    display: 'block',
-    fontSize: '12.5px',
-    fontWeight: 'bold',
-    color: '#334155',
-    marginBottom: '5px'
-  },
-  input: {
-    width: '100%',
-    padding: '9px 12px',
-    borderRadius: '8px',
-    border: '1.5px solid #cbd5e1',
-    fontSize: '13.5px',
-    boxSizing: 'border-box'
-  },
-  select: {
-    width: '100%',
-    padding: '9px 12px',
-    borderRadius: '8px',
-    border: '1.5px solid #cbd5e1',
-    fontSize: '13.5px',
-    background: '#ffffff',
-    boxSizing: 'border-box'
-  },
-  submitBtn: {
-    width: '100%',
-    padding: '12px',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '10px',
-    fontWeight: 'bold',
-    fontSize: '15px',
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(2, 132, 199, 0.25)',
-    transition: 'all 0.2s ease'
-  }
-};
