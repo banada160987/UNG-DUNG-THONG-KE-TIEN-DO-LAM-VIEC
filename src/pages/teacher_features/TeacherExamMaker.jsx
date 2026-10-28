@@ -13,6 +13,14 @@ import {
   getSubmissionsForExam, 
   HIGH_SCHOOL_SUBJECTS 
 } from '../../services/smartAssessmentService';
+import {
+  SUBJECT_OPTIONS,
+  GRADE_OPTIONS,
+  EXAM_TYPE_OPTIONS,
+  SUBJECT_TOPICS_MAP,
+  getMatrixConfigForSubject,
+  getSampleQuestionsForSubject
+} from '../../services/examPresetsService';
 import ExcelGradeSyncModal from '../../components/ExcelGradeSyncModal';
 import { getTeacherSession } from '../../services/authSessionManager';
 import AiStatusBadge from '../../components/AiStatusBadge';
@@ -133,11 +141,55 @@ export default function TeacherExamMaker() {
   });
 
   // Meta info
-  const [examTitle, setExamTitle] = useState('ĐỀ KIỂM TRA ĐỊNH KỲ MÔN TOÁN LỚP 11');
+  const [examType, setExamType] = useState('midterm');
   const [subject, setSubject] = useState('Toán');
   const [grade, setGrade] = useState('Khối 11');
   const [duration, setDuration] = useState('90 phút');
   const [schoolYear, setSchoolYear] = useState('2026 - 2027');
+  const [examTitle, setExamTitle] = useState('ĐỀ KIỂM TRA GIỮA HỌC KỲ MÔN TOÁN - KHỐI 11 NĂM HỌC 2026 - 2027');
+
+  // Đổi môn học thông minh: Tự động cập nhật thời gian, tiêu đề, chủ đề AI và ma trận
+  const handleSubjectChange = (newSubId) => {
+    setSubject(newSubId);
+    const subConfig = SUBJECT_OPTIONS.find(s => s.id === newSubId);
+    if (subConfig) {
+      setDuration(subConfig.defaultDuration);
+    }
+    const typeObj = EXAM_TYPE_OPTIONS.find(t => t.id === examType) || EXAM_TYPE_OPTIONS[1];
+    setExamTitle(`${typeObj.defaultPrefix} MÔN ${newSubId.toUpperCase()} - ${grade.toUpperCase()} NĂM HỌC 2026 - 2027`);
+    const topics = SUBJECT_TOPICS_MAP[newSubId] || [];
+    if (topics.length > 0) {
+      setAiTopic(topics[0]);
+    }
+  };
+
+  // Đổi khối lớp
+  const handleGradeChange = (newGrade) => {
+    setGrade(newGrade);
+    const typeObj = EXAM_TYPE_OPTIONS.find(t => t.id === examType) || EXAM_TYPE_OPTIONS[1];
+    setExamTitle(`${typeObj.defaultPrefix} MÔN ${subject.toUpperCase()} - ${newGrade.toUpperCase()} NĂM HỌC 2026 - 2027`);
+  };
+
+  // Đổi loại bài kiểm tra
+  const handleExamTypeChange = (newType) => {
+    setExamType(newType);
+    const typeObj = EXAM_TYPE_OPTIONS.find(t => t.id === newType);
+    if (typeObj) {
+      setExamTitle(`${typeObj.defaultPrefix} MÔN ${subject.toUpperCase()} - ${grade.toUpperCase()} NĂM HỌC 2026 - 2027`);
+    }
+  };
+
+  // Nạp bộ câu hỏi mẫu chuẩn Bộ GD&ĐT cho môn học được chọn
+  const handleLoadSampleForSubject = (targetSubject = subject) => {
+    const samples = getSampleQuestionsForSubject(targetSubject);
+    if (samples && samples.length > 0) {
+      setQuestions(samples);
+      setMixedExamCodes([]);
+      alert(`✅ Đã nạp thành công bộ câu hỏi mẫu chuẩn GDPT 2018 môn ${targetSubject} (${samples.length} câu)! Bạn có thể chỉnh sửa, thêm câu hỏi hoặc xáo trộn mã đề ngay.`);
+    } else {
+      alert(`Chưa có câu hỏi mẫu cho môn ${targetSubject}.`);
+    }
+  };
 
   // Questions & Mixed Exams
   const [questions, setQuestions] = useState(INITIAL_QUESTIONS);
@@ -675,6 +727,11 @@ export default function TeacherExamMaker() {
     const monthStr = String(dateObj.getMonth() + 1).padStart(2, '0');
     const yearStr = dateObj.getFullYear();
 
+    const matrixCfg = getMatrixConfigForSubject(subject);
+    const p1Point = matrixCfg?.part1?.pointPerQ || 0.25;
+    const p2Point = matrixCfg?.part2?.pointPerQ || 1.0;
+    const p3Point = matrixCfg?.part3?.pointPerQ || 0.5;
+
     const part1List = questions.filter(q => q.part === 'part1');
     const part2List = questions.filter(q => q.part === 'part2');
     const part3List = questions.filter(q => q.part === 'part3');
@@ -683,6 +740,19 @@ export default function TeacherExamMaker() {
     const thList = questions.filter(q => q.level === 'Thông hiểu');
     const vdList = questions.filter(q => q.level === 'Vận dụng');
     const vdcList = questions.filter(q => q.level === 'Vận dụng cao');
+
+    const calcPoints = (list) => {
+      const p1 = list.filter(q => q.part === 'part1').length * p1Point;
+      const p2 = list.filter(q => q.part === 'part2').length * p2Point;
+      const p3 = list.filter(q => q.part === 'part3').length * p3Point;
+      return (p1 + p2 + p3).toFixed(2);
+    };
+
+    const totalCalculatedPoints = (
+      part1List.length * p1Point +
+      part2List.length * p2Point +
+      part3List.length * p3Point
+    ).toFixed(2);
 
     const htmlContent = `
       <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -722,7 +792,7 @@ export default function TeacherExamMaker() {
           </table>
 
           <div class="title">KHUNG MA TRẬN & BẢN ĐẶC TẢ ĐỀ KIỂM TRA ĐỊNH KỲ</div>
-          <div class="subtitle">MÔN: ${subject.toUpperCase()} - KHỐI ${grade.toUpperCase()} • NĂM HỌC 2025 - 2026</div>
+          <div class="subtitle">MÔN: ${subject.toUpperCase()} - KHỐI ${grade.toUpperCase()} • NĂM HỌC ${schoolYear}</div>
 
           <p><strong>I. KHUNG MA TRẬN ĐỀ KIỂM TRA THEO CÔNG VĂN 3175/BGDĐT (GDPT 2018)</strong></p>
           <table class="data-table">
@@ -735,9 +805,9 @@ export default function TeacherExamMaker() {
                 <th rowspan="2">Tỷ lệ %</th>
               </tr>
               <tr>
-                <th>Phần I (4 lựa chọn)</th>
-                <th>Phần II (Đúng/Sai)</th>
-                <th>Phần III (Trả lời ngắn)</th>
+                <th>${matrixCfg?.part1?.name || 'Phần I (4 lựa chọn)'}</th>
+                <th>${matrixCfg?.part2?.name || 'Phần II (Đúng/Sai)'}</th>
+                <th>${matrixCfg?.part3?.name || 'Phần III (Trả lời ngắn)'}</th>
               </tr>
             </thead>
             <tbody>
@@ -747,7 +817,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${nbList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${nbList.filter(q => q.part === 'part3').length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${nbList.length} câu</td>
-                <td style="text-align: center; font-weight: bold;">${(nbList.filter(q => q.part === 'part1').length * 0.25 + nbList.filter(q => q.part === 'part2').length * 1.0 + nbList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${calcPoints(nbList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((nbList.length / (questions.length || 1)) * 100)}%</td>
               </tr>
               <tr>
@@ -756,7 +826,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${thList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${thList.filter(q => q.part === 'part3').length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${thList.length} câu</td>
-                <td style="text-align: center; font-weight: bold;">${(thList.filter(q => q.part === 'part1').length * 0.25 + thList.filter(q => q.part === 'part2').length * 1.0 + thList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${calcPoints(thList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((thList.length / (questions.length || 1)) * 100)}%</td>
               </tr>
               <tr>
@@ -765,7 +835,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${vdList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${vdList.filter(q => q.part === 'part3').length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${vdList.length} câu</td>
-                <td style="text-align: center; font-weight: bold;">${(vdList.filter(q => q.part === 'part1').length * 0.25 + vdList.filter(q => q.part === 'part2').length * 1.0 + vdList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${calcPoints(vdList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((vdList.length / (questions.length || 1)) * 100)}%</td>
               </tr>
               <tr>
@@ -774,16 +844,16 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${vdcList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${vdcList.filter(q => q.part === 'part3').length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${vdcList.length} câu</td>
-                <td style="text-align: center; font-weight: bold;">${(vdcList.filter(q => q.part === 'part1').length * 0.25 + vdcList.filter(q => q.part === 'part2').length * 1.0 + vdcList.filter(q => q.part === 'part3').length * 0.5).toFixed(2)} đ</td>
+                <td style="text-align: center; font-weight: bold;">${calcPoints(vdcList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((vdcList.length / (questions.length || 1)) * 100)}%</td>
               </tr>
               <tr style="background-color: #f2f2f2; font-weight: bold;">
                 <td style="text-align: center;">TỔNG CỘNG</td>
-                <td style="text-align: center;">${part1List.length} câu (3.0đ)</td>
-                <td style="text-align: center;">${part2List.length} câu (4.0đ)</td>
-                <td style="text-align: center;">${part3List.length} câu (3.0đ)</td>
+                <td style="text-align: center;">${part1List.length} câu (${(part1List.length * p1Point).toFixed(2)}đ)</td>
+                <td style="text-align: center;">${part2List.length} câu (${(part2List.length * p2Point).toFixed(2)}đ)</td>
+                <td style="text-align: center;">${part3List.length} câu (${(part3List.length * p3Point).toFixed(2)}đ)</td>
                 <td style="text-align: center;">${questions.length} câu</td>
-                <td style="text-align: center; color: red;">10.00 điểm</td>
+                <td style="text-align: center; color: red;">${totalCalculatedPoints} điểm</td>
                 <td style="text-align: center;">100%</td>
               </tr>
             </tbody>
@@ -794,9 +864,9 @@ export default function TeacherExamMaker() {
             <thead>
               <tr>
                 <th style="width: 8%;">TT</th>
-                <th style="width: 15%;">Hình thức</th>
+                <th style="width: 18%;">Hình thức</th>
                 <th style="width: 15%;">Mức độ</th>
-                <th style="width: 47%;">Yêu cầu cần đạt / Nội dung kiến thức đánh giá</th>
+                <th style="width: 44%;">Yêu cầu cần đạt / Nội dung kiến thức đánh giá</th>
                 <th style="width: 15%;">Điểm số</th>
               </tr>
             </thead>
@@ -804,10 +874,10 @@ export default function TeacherExamMaker() {
               ${questions.map((q, idx) => `
                 <tr>
                   <td style="text-align: center; font-weight: bold;">Câu ${idx + 1}</td>
-                  <td style="text-align: center;">${q.part === 'part1' ? 'Phần I (4 lựa chọn)' : q.part === 'part2' ? 'Phần II (Đúng/Sai)' : 'Phần III (Trả lời ngắn)'}</td>
+                  <td style="text-align: center;">${q.part === 'part1' ? (matrixCfg?.part1?.name || 'Phần I') : q.part === 'part2' ? (matrixCfg?.part2?.name || 'Phần II') : (matrixCfg?.part3?.name || 'Phần III')}</td>
                   <td style="text-align: center; font-weight: bold;">${q.level}</td>
                   <td>${renderCleanMathText(q.content).slice(0, 140)}...</td>
-                  <td style="text-align: center; font-weight: bold;">${q.part === 'part1' ? '0.25đ' : q.part === 'part2' ? '1.00đ' : '0.50đ'}</td>
+                  <td style="text-align: center; font-weight: bold;">${q.part === 'part1' ? `${p1Point}đ` : q.part === 'part2' ? `${p2Point}đ` : `${p3Point}đ`}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -818,7 +888,7 @@ export default function TeacherExamMaker() {
               <td style="width: 33%;">
                 <strong>NGƯỜI RA ĐỀ</strong><br/>
                 <em>(Ký, ghi rõ họ tên)</em><br/><br/><br/><br/>
-                <strong>${teacher?.name || 'Giáo viên bộ môn'}</strong>
+                <strong>${teacher?.full_name || teacher?.name || 'Giáo viên bộ môn'}</strong>
               </td>
               <td style="width: 33%;">
                 <strong>TỔ TRƯỞNG CHUYÊN MÔN</strong><br/>
@@ -1011,24 +1081,125 @@ export default function TeacherExamMaker() {
         <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
           
           {/* Exam Header Setting Form */}
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px', marginBottom: '20px', background: '#f8fafc', padding: '16px', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-            <div>
-              <label style={styles.label}>Tên Kỳ Thi / Tiêu Đề Đề Thi (*)</label>
-              <input type="text" value={examTitle} onChange={e => setExamTitle(e.target.value)} style={{ ...styles.input, fontWeight: 'bold' }} />
-            </div>
-            <div>
-              <label style={styles.label}>Môn Học</label>
-              <input type="text" value={subject} onChange={e => setSubject(e.target.value)} style={styles.input} />
-            </div>
-            <div>
-              <label style={styles.label}>Khối Lớp</label>
-              <input type="text" value={grade} onChange={e => setGrade(e.target.value)} style={styles.input} />
-            </div>
-            <div>
-              <label style={styles.label}>Thời Gian Làm Bài</label>
-              <input type="text" value={duration} onChange={e => setDuration(e.target.value)} style={styles.input} />
-            </div>
-          </div>
+          {(() => {
+            const matrixCfg = getMatrixConfigForSubject(subject);
+            return (
+              <div style={{ marginBottom: '22px', background: '#f8fafc', padding: '18px', borderRadius: '14px', border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                {/* Dòng 1: Tiêu đề đề thi */}
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ ...styles.label, display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Tên Kỳ Thi / Tiêu Đề Đề Thi In Ra (*)</span>
+                    <span style={{ fontSize: '11.5px', color: '#64748b', fontWeight: 'normal' }}>Năm học: {schoolYear}</span>
+                  </label>
+                  <input 
+                    type="text" 
+                    value={examTitle} 
+                    onChange={e => setExamTitle(e.target.value)} 
+                    style={{ ...styles.input, fontWeight: '700', fontSize: '14.5px', color: '#0f172a' }} 
+                  />
+                </div>
+
+                {/* Dòng 2: Cài đặt thông số đề thi */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <label style={styles.label}>Môn Học (*):</label>
+                    <select
+                      value={subject}
+                      onChange={e => handleSubjectChange(e.target.value)}
+                      style={{ ...styles.input, fontWeight: '700', color: '#0284c7', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                    >
+                      {SUBJECT_OPTIONS.map(sub => (
+                        <option key={sub.id} value={sub.id}>
+                          {sub.icon} {sub.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Khối Lớp:</label>
+                    <select
+                      value={grade}
+                      onChange={e => handleGradeChange(e.target.value)}
+                      style={{ ...styles.input, fontWeight: '600', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                    >
+                      {GRADE_OPTIONS.map(g => (
+                        <option key={g} value={g}>{g} (GDPT 2018)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Loại Bài Kiểm Tra:</label>
+                    <select
+                      value={examType}
+                      onChange={e => handleExamTypeChange(e.target.value)}
+                      style={{ ...styles.input, fontWeight: '600', backgroundColor: '#ffffff', cursor: 'pointer' }}
+                    >
+                      {EXAM_TYPE_OPTIONS.map(t => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={styles.label}>Thời Gian Làm Bài:</label>
+                    <input 
+                      type="text" 
+                      value={duration} 
+                      onChange={e => setDuration(e.target.value)} 
+                      style={{ ...styles.input, fontWeight: '600', backgroundColor: '#ffffff' }} 
+                      placeholder="VD: 50 phút, 90 phút..."
+                    />
+                  </div>
+                </div>
+
+                {/* Dòng 3: Thông tin chuẩn định dạng môn & Nút nạp đề mẫu 1-Click */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '12px', color: '#475569', fontWeight: 'bold' }}>
+                      Định dạng chuẩn GDPT 2018:
+                    </span>
+                    <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
+                      {matrixCfg?.part1?.name || 'Phần I'}
+                    </span>
+                    {matrixCfg?.part2?.count > 0 && (
+                      <span style={{ fontSize: '12px', background: '#fef3c7', color: '#92400e', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
+                        {matrixCfg.part2.name}
+                      </span>
+                    )}
+                    {matrixCfg?.part3?.count > 0 && (
+                      <span style={{ fontSize: '12px', background: '#f3e8ff', color: '#6b21a8', padding: '3px 10px', borderRadius: '12px', fontWeight: '700' }}>
+                        {matrixCfg.part3.name}
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleLoadSampleForSubject(subject)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontWeight: '700',
+                      fontSize: '12.5px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)'
+                    }}
+                    title="Nạp bộ câu hỏi mẫu chuẩn GDPT 2018 của Bộ GD&ĐT cho môn học này"
+                  >
+                    <Sparkles size={14} /> Nạp Đề Mẫu Chuẩn Bộ GD&ĐT (Môn {subject})
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Question Bank Controls & Shuffler Config */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
@@ -1265,164 +1436,281 @@ export default function TeacherExamMaker() {
       )}
 
       {/* TAB 2: EXAM MATRIX (CV 3175) */}
-      {activeTab === 'matrix' && (
-        <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-            <div>
-              <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800' }}>
-                📊 Khung Ma Trận & Bản Đặc Tả Đề Thi GDPT 2018 (Công Văn 3175/BGDĐT)
-              </h3>
-              <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
-                Môn: <strong>{subject}</strong> • Khối: <strong>{grade}</strong> • Định dạng đánh giá năng lực 3 phần theo chuẩn Bộ Giáo Dục & Đào Tạo
-              </p>
+      {activeTab === 'matrix' && (() => {
+        const matrixCfg = getMatrixConfigForSubject(subject);
+        const p1Count = questions.filter(q => q.part === 'part1').length;
+        const p2Count = questions.filter(q => q.part === 'part2').length;
+        const p3Count = questions.filter(q => q.part === 'part3').length;
+
+        const currentPoints = (
+          p1Count * matrixCfg.part1.pointPerQ +
+          p2Count * matrixCfg.part2.pointPerQ +
+          p3Count * matrixCfg.part3.pointPerQ
+        ).toFixed(1);
+
+        const subInfo = SUBJECT_OPTIONS.find(s => s.id === subject);
+
+        return (
+          <div style={{ background: 'white', padding: '24px', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <h3 style={{ margin: '0 0 6px 0', fontSize: '18px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '800' }}>
+                  📊 Khung Ma Trận & Bản Đặc Tả Đề Thi GDPT 2018 (Công Văn 3175/BGDĐT)
+                </h3>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                  Môn: <strong>{subInfo?.icon} {subject}</strong> • Khối: <strong>{grade}</strong> • Thời gian: <strong>{duration}</strong> • Cấu trúc chuẩn Bộ GD&ĐT
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <button
+                  onClick={() => setShowOmrModal(true)}
+                  style={{
+                    padding: '9px 16px',
+                    background: '#7c3aed',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    boxShadow: '0 2px 4px rgba(124,58,237,0.3)'
+                  }}
+                >
+                  <Printer size={16} /> In Phiếu Tô OMR A4
+                </button>
+
+                <button
+                  onClick={handleExportWordMatrix}
+                  style={{
+                    padding: '9px 18px',
+                    background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontSize: '13px',
+                    boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
+                  }}
+                >
+                  <Download size={16} /> Xuất File Word Ma Trận & Bản Đặc Tả (.doc)
+                </button>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <button
-                onClick={() => setShowOmrModal(true)}
-                style={{
-                  padding: '9px 16px',
-                  background: '#7c3aed',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '13px',
-                  boxShadow: '0 2px 4px rgba(124,58,237,0.3)'
-                }}
-              >
-                <Printer size={16} /> In Phiếu Tô OMR A4
-              </button>
+            {/* REAL-TIME MATRIX PROGRESS TRACKER THÍCH ỨNG THEO TỪNG MÔN */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f0f9ff', border: '1px solid #bae6fd' }}>
+                <div style={{ fontSize: '12px', color: '#0369a1', fontWeight: 'bold' }}>
+                  {subject === 'Ngữ văn' ? 'PHẦN I: ĐỌC HIỂU VĂN BẢN' : 'PHẦN I: 4 LỰA CHỌN'}
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#0284c7', marginTop: '4px' }}>
+                  {p1Count} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ {matrixCfg.part1.count} câu chuẩn ({matrixCfg.part1.total.toFixed(1)}đ)</span>
+                </div>
+                <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                  <div style={{ width: `${Math.min(100, (p1Count / (matrixCfg.part1.count || 1)) * 100)}%`, height: '100%', background: '#0284c7' }} />
+                </div>
+              </div>
 
-              <button
-                onClick={handleExportWordMatrix}
-                style={{
-                  padding: '9px 18px',
-                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  fontSize: '13px',
-                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)'
-                }}
-              >
-                <Download size={16} /> Xuất File Word Ma Trận & Bản Đặc Tả (.doc)
-              </button>
+              {matrixCfg.part2.count > 0 && (
+                <div style={{ padding: '14px', borderRadius: '12px', background: '#fef3c7', border: '1px solid #fde68a' }}>
+                  <div style={{ fontSize: '12px', color: '#92400e', fontWeight: 'bold' }}>PHẦN II: ĐÚNG / SAI (4 Ý)</div>
+                  <div style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px' }}>
+                    {p2Count} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ {matrixCfg.part2.count} câu chuẩn ({matrixCfg.part2.total.toFixed(1)}đ)</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, (p2Count / (matrixCfg.part2.count || 1)) * 100)}%`, height: '100%', background: '#d97706' }} />
+                  </div>
+                </div>
+              )}
+
+              {matrixCfg.part3.count > 0 && (
+                <div style={{ padding: '14px', borderRadius: '12px', background: '#f3e8ff', border: '1px solid #e9d5ff' }}>
+                  <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: 'bold' }}>
+                    {subject === 'Ngữ văn' ? 'PHẦN II: VIẾT NGHỊ LUẬN' : 'PHẦN III: TRẢ LỜI NGẮN'}
+                  </div>
+                  <div style={{ fontSize: '20px', fontWeight: '900', color: '#9333ea', marginTop: '4px' }}>
+                    {p3Count} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ {matrixCfg.part3.count} câu chuẩn ({matrixCfg.part3.total.toFixed(1)}đ)</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: `${Math.min(100, (p3Count / (matrixCfg.part3.count || 1)) * 100)}%`, height: '100%', background: '#9333ea' }} />
+                  </div>
+                </div>
+              )}
+
+              <div style={{ padding: '14px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
+                <div style={{ fontSize: '12px', color: '#166534', fontWeight: 'bold' }}>TỔNG ĐIỂM CHUẨN ĐỀ THI</div>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
+                  {currentPoints} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 10.0 điểm</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#15803d', marginTop: '8px', fontWeight: 'bold' }}>
+                  ✓ Chuẩn Ma trận GDPT 2018 ({subject})
+                </div>
+              </div>
+            </div>
+            
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
+                  <th style={{ padding: '12px', textAlign: 'left' }}>Mức Độ Tư Duy</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>
+                    {subject === 'Ngữ văn' ? 'Phần I: Đọc hiểu' : `Phần I (${matrixCfg.part1.pointPerQ}đ/câu)`}
+                  </th>
+                  {matrixCfg.part2.count > 0 && (
+                    <th style={{ padding: '12px', textAlign: 'center' }}>
+                      Phần II ({matrixCfg.part2.pointPerQ}đ/câu)
+                    </th>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <th style={{ padding: '12px', textAlign: 'center' }}>
+                      {subject === 'Ngữ văn' ? 'Phần II: Viết nghị luận' : `Phần III (${matrixCfg.part3.pointPerQ}đ/câu)`}
+                    </th>
+                  )}
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Tổng Điểm Chuẩn</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>
+                    1. Nhận biết ({matrixCfg.cognitiveRatios?.nb || 40}%)
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {Math.round(matrixCfg.part1.count * 0.35)} câu ({((Math.round(matrixCfg.part1.count * 0.35)) * matrixCfg.part1.pointPerQ).toFixed(2)}đ)
+                  </td>
+                  {matrixCfg.part2.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      1 câu (1.00đ)
+                    </td>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {Math.max(1, Math.round(matrixCfg.part3.count * 0.33))} câu ({((Math.max(1, Math.round(matrixCfg.part3.count * 0.33))) * matrixCfg.part3.pointPerQ).toFixed(2)}đ)
+                    </td>
+                  )}
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>
+                    {((matrixCfg.cognitiveRatios?.nb || 40) / 10).toFixed(1)} điểm ({matrixCfg.cognitiveRatios?.nb || 40}%)
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>
+                    2. Thông hiểu ({matrixCfg.cognitiveRatios?.th || 30}%)
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {Math.round(matrixCfg.part1.count * 0.35)} câu ({((Math.round(matrixCfg.part1.count * 0.35)) * matrixCfg.part1.pointPerQ).toFixed(2)}đ)
+                  </td>
+                  {matrixCfg.part2.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      1 câu (1.00đ)
+                    </td>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {Math.max(1, Math.round(matrixCfg.part3.count * 0.33))} câu ({((Math.max(1, Math.round(matrixCfg.part3.count * 0.33))) * matrixCfg.part3.pointPerQ).toFixed(2)}đ)
+                    </td>
+                  )}
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>
+                    {((matrixCfg.cognitiveRatios?.th || 30) / 10).toFixed(1)} điểm ({matrixCfg.cognitiveRatios?.th || 30}%)
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>
+                    3. Vận dụng ({matrixCfg.cognitiveRatios?.vd || 20}%)
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {Math.round(matrixCfg.part1.count * 0.18)} câu ({((Math.round(matrixCfg.part1.count * 0.18)) * matrixCfg.part1.pointPerQ).toFixed(2)}đ)
+                  </td>
+                  {matrixCfg.part2.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      1 câu (1.00đ)
+                    </td>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {Math.max(1, Math.round(matrixCfg.part3.count * 0.17))} câu ({((Math.max(1, Math.round(matrixCfg.part3.count * 0.17))) * matrixCfg.part3.pointPerQ).toFixed(2)}đ)
+                    </td>
+                  )}
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>
+                    {((matrixCfg.cognitiveRatios?.vd || 20) / 10).toFixed(1)} điểm ({matrixCfg.cognitiveRatios?.vd || 20}%)
+                  </td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
+                  <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>
+                    4. Vận dụng cao ({matrixCfg.cognitiveRatios?.vdc || 10}%)
+                  </td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {Math.max(1, matrixCfg.part1.count - (Math.round(matrixCfg.part1.count * 0.35) * 2 + Math.round(matrixCfg.part1.count * 0.18)))} câu
+                  </td>
+                  {matrixCfg.part2.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      1 câu (1.00đ)
+                    </td>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      1 câu ({matrixCfg.part3.pointPerQ.toFixed(2)}đ)
+                    </td>
+                  )}
+                  <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>
+                    {((matrixCfg.cognitiveRatios?.vdc || 10) / 10).toFixed(1)} điểm ({matrixCfg.cognitiveRatios?.vdc || 10}%)
+                  </td>
+                </tr>
+                <tr style={{ background: '#f0fdf4', fontWeight: 'bold' }}>
+                  <td style={{ padding: '12px' }}>TỔNG CỘNG (100%)</td>
+                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                    {matrixCfg.part1.count} câu ({matrixCfg.part1.total.toFixed(1)}đ)
+                  </td>
+                  {matrixCfg.part2.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {matrixCfg.part2.count} câu ({matrixCfg.part2.total.toFixed(1)}đ)
+                    </td>
+                  )}
+                  {matrixCfg.part3.count > 0 && (
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      {matrixCfg.part3.count} câu ({matrixCfg.part3.total.toFixed(1)}đ)
+                    </td>
+                  )}
+                  <td style={{ padding: '12px', textAlign: 'center', fontSize: '15px', color: '#15803d' }}>
+                    10.0 ĐIỂM (100%)
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* QUY TẮC TÍNH ĐIỂM CỦA BỘ GD&ĐT */}
+            <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', lineHeight: '1.6' }}>
+              <h4 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>
+                📌 Hướng Dẫn Chấm Điểm Chuẩn Theo Quyết Định 764/QĐ-BGDĐT Môn {subject}:
+              </h4>
+              <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                {matrixCfg.part1.count > 0 && (
+                  <li><strong>{subject === 'Ngữ văn' ? 'Phần Đọc hiểu' : 'Phần I (Trắc nghiệm 4 lựa chọn)'}:</strong> Mỗi câu trả lời đúng được <strong>{matrixCfg.part1.pointPerQ} điểm</strong>.</li>
+                )}
+                {matrixCfg.part2.count > 0 && (
+                  <li>
+                    <strong>Phần II (Trắc nghiệm Đúng/Sai lũy tiến):</strong> Mỗi câu hỏi gồm 4 ý a, b, c, d độc lập:
+                    <div style={{ margin: '4px 0 4px 12px', color: '#475569' }}>
+                      • Đúng 1 ý: <strong>0,10 điểm</strong> | Đúng 2 ý: <strong>0,25 điểm</strong> | Đúng 3 ý: <strong>0,50 điểm</strong> | Đúng 4 ý: <strong>1,00 điểm</strong>.
+                    </div>
+                  </li>
+                )}
+                {matrixCfg.part3.count > 0 && (
+                  <li>
+                    <strong>{subject === 'Ngữ văn' ? 'Phần II (Viết nghị luận)' : 'Phần III (Trắc nghiệm Trả lời ngắn)'}:</strong> 
+                    {subject === 'Ngữ văn' ? ' Đoạn văn nghị luận xã hội (2.0đ) + Bài văn nghị luận văn học (4.0đ).' : ` Mỗi câu trả lời đúng kết quả số được ${matrixCfg.part3.pointPerQ} điểm.`}
+                  </li>
+                )}
+              </ul>
             </div>
           </div>
-
-          {/* REAL-TIME MATRIX PROGRESS TRACKER */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
-            <div style={{ padding: '14px', borderRadius: '12px', background: '#f0f9ff', border: '1px solid #bae6fd' }}>
-              <div style={{ fontSize: '12px', color: '#0369a1', fontWeight: 'bold' }}>PHẦN I: 4 LỰA CHỌN</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#0284c7', marginTop: '4px' }}>
-                {questions.filter(q => q.part === 'part1').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 12 câu chuẩn (3.0đ)</span>
-              </div>
-              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part1').length / 12) * 100)}%`, height: '100%', background: '#0284c7' }} />
-              </div>
-            </div>
-
-            <div style={{ padding: '14px', borderRadius: '12px', background: '#fef3c7', border: '1px solid #fde68a' }}>
-              <div style={{ fontSize: '12px', color: '#92400e', fontWeight: 'bold' }}>PHẦN II: ĐÚNG / SAI (4 Ý)</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#d97706', marginTop: '4px' }}>
-                {questions.filter(q => q.part === 'part2').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 4 câu chuẩn (4.0đ)</span>
-              </div>
-              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part2').length / 4) * 100)}%`, height: '100%', background: '#d97706' }} />
-              </div>
-            </div>
-
-            <div style={{ padding: '14px', borderRadius: '12px', background: '#f3e8ff', border: '1px solid #e9d5ff' }}>
-              <div style={{ fontSize: '12px', color: '#6b21a8', fontWeight: 'bold' }}>PHẦN III: TRẢ LỜI NGẮN</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#9333ea', marginTop: '4px' }}>
-                {questions.filter(q => q.part === 'part3').length} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 6 câu chuẩn (3.0đ)</span>
-              </div>
-              <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (questions.filter(q => q.part === 'part3').length / 6) * 100)}%`, height: '100%', background: '#9333ea' }} />
-              </div>
-            </div>
-
-            <div style={{ padding: '14px', borderRadius: '12px', background: '#f0fdf4', border: '1px solid #bbf7d0' }}>
-              <div style={{ fontSize: '12px', color: '#166534', fontWeight: 'bold' }}>TỔNG ĐIỂM CHUẨN ĐỀ THI</div>
-              <div style={{ fontSize: '20px', fontWeight: '900', color: '#16a34a', marginTop: '4px' }}>
-                {(questions.filter(q => q.part === 'part1').length * 0.25 + questions.filter(q => q.part === 'part2').length * 1.0 + questions.filter(q => q.part === 'part3').length * 0.5).toFixed(1)} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>/ 10.0 điểm</span>
-              </div>
-              <div style={{ fontSize: '12px', color: '#15803d', marginTop: '8px', fontWeight: 'bold' }}>
-                ✓ Đạt tỷ lệ phân hóa GDPT 2018
-              </div>
-            </div>
-          </div>
-          
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13.5px' }}>
-            <thead>
-              <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1' }}>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Mức Độ Tư Duy</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Phần I (Trắc nghiệm 4 op)</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Phần II (Đúng/Sai 4 ý)</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Phần III (Trả lời ngắn)</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Tổng Điểm Chuẩn</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>1. Nhận biết (40%)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>4 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>2 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>4.0 điểm (40%)</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>2. Thông hiểu (30%)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>4 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>2 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>3.0 điểm (30%)</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>3. Vận dụng (20%)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>2 câu (0.5đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (0.5đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>2.0 điểm (20%)</td>
-              </tr>
-              <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
-                <td style={{ padding: '12px', fontWeight: 'bold', color: '#0369a1' }}>4. Vận dụng cao (10%)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>2 câu (0.5đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (1.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>1 câu (0.5đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold', color: '#16a34a' }}>1.0 điểm (10%)</td>
-              </tr>
-              <tr style={{ background: '#f0fdf4', fontWeight: 'bold' }}>
-                <td style={{ padding: '12px' }}>TỔNG CỘNG (100%)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>12 câu (3.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>4 câu (4.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center' }}>6 câu (3.0đ)</td>
-                <td style={{ padding: '12px', textAlign: 'center', fontSize: '15px', color: '#15803d' }}>10.0 ĐIỂM (100%)</td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div style={{ marginTop: '20px', padding: '16px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', lineHeight: '1.6' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: '#0f172a' }}>📌 Quy tắc tính điểm Phần II (Trắc nghiệm Đúng/Sai) theo Công văn BGDĐT:</h4>
-            <ul>
-              <li>Thí sinh chọn <strong>đúng 1 ý</strong> trong 1 câu được <strong>0,10 điểm</strong>.</li>
-              <li>Thí sinh chọn <strong>đúng 2 ý</strong> trong 1 câu được <strong>0,25 điểm</strong>.</li>
-              <li>Thí sinh chọn <strong>đúng 3 ý</strong> trong 1 câu được <strong>0,50 điểm</strong>.</li>
-              <li>Thí sinh chọn <strong>đúng 4 ý</strong> trong 1 câu được <strong>1,00 điểm</strong>.</li>
-            </ul>
-          </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* TAB 3: PREVIEW EXAM PAPER */}
       {activeTab === 'preview' && (
@@ -2368,25 +2656,34 @@ export default function TeacherExamMaker() {
               }}>
                 <div>
                   <label style={styles.label}>Môn Học:</label>
-                  <input
-                    type="text"
+                  <select
                     value={subject}
-                    onChange={e => setSubject(e.target.value)}
-                    style={styles.input}
-                    placeholder="VD: Toán, Vật lí, Hóa học..."
-                  />
+                    onChange={e => {
+                      const newSub = e.target.value;
+                      handleSubjectChange(newSub);
+                      const topics = SUBJECT_TOPICS_MAP[newSub] || [];
+                      if (topics.length > 0) setAiTopic(topics[0]);
+                    }}
+                    style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7' }}
+                  >
+                    {SUBJECT_OPTIONS.map(sub => (
+                      <option key={sub.id} value={sub.id}>
+                        {sub.icon} {sub.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label style={styles.label}>Khối Lớp:</label>
                   <select
                     value={grade}
-                    onChange={e => setGrade(e.target.value)}
+                    onChange={e => handleGradeChange(e.target.value)}
                     style={{ ...styles.input, fontWeight: 'bold' }}
                   >
-                    <option value="10">Khối 10 (GDPT 2018)</option>
-                    <option value="11">Khối 11 (GDPT 2018)</option>
-                    <option value="12">Khối 12 (GDPT 2018)</option>
+                    {GRADE_OPTIONS.map(g => (
+                      <option key={g} value={g}>{g} (GDPT 2018)</option>
+                    ))}
                   </select>
                 </div>
 
@@ -2397,10 +2694,10 @@ export default function TeacherExamMaker() {
                     onChange={e => setAiPart(e.target.value)}
                     style={{ ...styles.input, fontWeight: 'bold', color: '#4338ca' }}
                   >
-                    <option value="mixed">Hỗ hợp cả 3 Phần (Chuẩn 2025)</option>
-                    <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn (A,B,C,D)</option>
-                    <option value="part2">Phần II: Đúng / Sai (4 ý độc lập)</option>
-                    <option value="part3">Phần III: Trả lời ngắn (Short answer)</option>
+                    <option value="mixed">Hỗn hợp cả 3 Phần (Chuẩn 2025)</option>
+                    <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn (A, B, C, D)</option>
+                    <option value="part2">Phần II: Đúng / Sai (4 ý lũy tiến a, b, c, d)</option>
+                    <option value="part3">Phần III: Trả lời ngắn (Short answer / Tự luận)</option>
                   </select>
                 </div>
 
@@ -2411,10 +2708,10 @@ export default function TeacherExamMaker() {
                     onChange={e => setAiLevel(e.target.value)}
                     style={{ ...styles.input, fontWeight: 'bold' }}
                   >
-                    <option value="Nhận biết">1. Nhận biết (Cơ bản)</option>
-                    <option value="Thông hiểu">2. Thông hiểu (Chuẩn kiến thức)</option>
-                    <option value="Vận dụng">3. Vận dụng (Tình huống thực tế)</option>
-                    <option value="Vận dụng cao">4. Vận dụng cao (Phân hóa sâu)</option>
+                    <option value="Nhận biết">1. Nhận biết (Cơ bản - 40%)</option>
+                    <option value="Thông hiểu">2. Thông hiểu (Chuẩn kiến thức - 30%)</option>
+                    <option value="Vận dụng">3. Vận dụng (Tình huống thực tế - 20%)</option>
+                    <option value="Vận dụng cao">4. Vận dụng cao (Phân hóa sâu - 10%)</option>
                   </select>
                 </div>
 
@@ -2435,7 +2732,37 @@ export default function TeacherExamMaker() {
               </div>
 
               <div style={{ marginBottom: '16px' }}>
-                <label style={styles.label}>Chủ Đề / Bài Học Cần Soạn Đề (*):</label>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ ...styles.label, margin: 0 }}>Chủ Đề / Bài Học Cần Soạn Đề (*):</label>
+                  {SUBJECT_TOPICS_MAP[subject]?.length > 0 && (
+                    <span style={{ fontSize: '11.5px', color: '#6366f1' }}>
+                      💡 Gợi ý chương trình GDPT 2018 môn {subject}
+                    </span>
+                  )}
+                </div>
+                {SUBJECT_TOPICS_MAP[subject]?.length > 0 && (
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                    {SUBJECT_TOPICS_MAP[subject].map((t, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setAiTopic(t)}
+                        style={{
+                          fontSize: '11.5px',
+                          padding: '4px 9px',
+                          borderRadius: '6px',
+                          border: aiTopic === t ? '1px solid #6366f1' : '1px solid #e2e8f0',
+                          background: aiTopic === t ? '#eef2ff' : '#f8fafc',
+                          color: aiTopic === t ? '#4338ca' : '#475569',
+                          cursor: 'pointer',
+                          fontWeight: aiTopic === t ? 'bold' : 'normal'
+                        }}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <input
                   type="text"
                   value={aiTopic}
