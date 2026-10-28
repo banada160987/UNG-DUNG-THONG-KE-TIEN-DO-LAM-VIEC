@@ -1,12 +1,22 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   Trophy, Download, Trash2, Search, Filter, RefreshCw, 
   Dices, Printer, Users, DollarSign, CheckCircle2, AlertCircle, 
-  X, ShieldAlert, Eye, Copy, Check, FileText, MessageCircle
+  X, ShieldAlert, Eye, Copy, Check, FileText, MessageCircle,
+  Settings, Edit, Clock, Lock, CheckSquare, Save, AlertTriangle
 } from 'lucide-react';
 
 const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
+
+const DEFAULT_SPORTS_CONFIG = {
+  startDate: '2026-10-20T00:00',
+  endDate: '2026-10-30T23:59',
+  isOpen: true,
+  preventDuplicate: true,
+  maxTeamsPerClass: 1,
+  announcement: 'Thời hạn đăng ký: Từ ngày 20/10/2026 đến hết ngày 30/10/2026. Mỗi lớp chỉ đăng ký 01 đội bóng chuyền duy nhất (3 Nam + 3 Nữ).'
+};
 
 const OFFICIAL_SPORTS = [
   'Bóng chuyền Nam - Nữ phối hợp (20/11)',
@@ -25,6 +35,22 @@ export default function AdminSports() {
   const [selectedSport, setSelectedSport] = useState('Tất cả');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // ⚙️ CẤU HÌNH THỜI HẠN & CHỐNG TRÙNG (BAN TỔ CHỨC)
+  const [sportsConfig, setSportsConfig] = useState(() => {
+    try {
+      const local = localStorage.getItem('cbq_sports_config');
+      if (local) return JSON.parse(local);
+    } catch (e) {}
+    return DEFAULT_SPORTS_CONFIG;
+  });
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [editConfigData, setEditConfigData] = useState(DEFAULT_SPORTS_CONFIG);
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  // ✏️ MODAL SỬA ĐỘI HÌNH (ADMIN)
+  const [editingTeam, setEditingTeam] = useState(null);
+  const [savingEditTeam, setSavingEditTeam] = useState(false);
+
   // Bracket Draw Modal State
   const [showBracketModal, setShowBracketModal] = useState(false);
   const [drawSport, setDrawSport] = useState(OFFICIAL_SPORTS[0]);
@@ -38,7 +64,155 @@ export default function AdminSports() {
 
   useEffect(() => {
     fetchRegistrations();
+    fetchSportsConfig();
   }, []);
+
+  async function fetchSportsConfig() {
+    try {
+      const { data, error } = await supabase
+        .from('cbq_pages')
+        .select('*')
+        .eq('slug', 'sports-config')
+        .maybeSingle();
+
+      if (!error && data && data.content) {
+        const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+        setSportsConfig(parsed);
+        localStorage.setItem('cbq_sports_config', JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.warn("Dùng local sports config:", e);
+    }
+  }
+
+  const openConfigModal = () => {
+    setEditConfigData({ ...sportsConfig });
+    setShowConfigModal(true);
+  };
+
+  const handleSaveConfig = async (e) => {
+    e.preventDefault();
+    setSavingConfig(true);
+    try {
+      await supabase.from('cbq_pages').delete().eq('slug', 'sports-config');
+      const { error } = await supabase.from('cbq_pages').insert([{
+        slug: 'sports-config',
+        title: 'Cấu hình Giải thể thao 20/11',
+        content: JSON.stringify(editConfigData)
+      }]);
+
+      if (error) throw error;
+
+      setSportsConfig(editConfigData);
+      localStorage.setItem('cbq_sports_config', JSON.stringify(editConfigData));
+      alert("✅ Đã cập nhật và lưu cấu hình thời gian & chống trùng thành công!");
+      setShowConfigModal(false);
+    } catch (err) {
+      console.warn("Lỗi lưu Supabase, lưu dự phòng LocalStorage:", err);
+      setSportsConfig(editConfigData);
+      localStorage.setItem('cbq_sports_config', JSON.stringify(editConfigData));
+      alert("⚠️ Đã lưu cấu hình vào bộ nhớ máy quản trị (LocalStorage)!");
+      setShowConfigModal(false);
+    } finally {
+      setSavingConfig(false);
+    }
+  };
+
+  // Trạng thái cấu hình hiển thị trên badge
+  const configStatus = useMemo(() => {
+    if (!sportsConfig.isOpen) {
+      return { text: 'Đang khóa cổng', color: '#dc2626', bg: '#fee2e2' };
+    }
+    const now = new Date();
+    const start = sportsConfig.startDate ? new Date(sportsConfig.startDate) : null;
+    const end = sportsConfig.endDate ? new Date(sportsConfig.endDate) : null;
+    if (start && now < start) return { text: 'Chưa tới giờ mở', color: '#d97706', bg: '#fef3c7' };
+    if (end && now > end) return { text: 'Đã hết hạn', color: '#dc2626', bg: '#fee2e2' };
+    return { text: 'Cổng đang mở', color: '#16a34a', bg: '#dcfce7' };
+  }, [sportsConfig]);
+
+  // SỬA ĐỘI HÌNH
+  const openEditTeamModal = (item) => {
+    let roster = null;
+    try {
+      roster = JSON.parse(item.notes);
+    } catch (e) {}
+
+    setEditingTeam({
+      item,
+      roster,
+      formState: {
+        className: item.cohort_year || item.unit_name || '',
+        captain: roster?.captain || item.full_name || '',
+        phone: item.phone || '',
+        gvcn: roster?.gvcn || '',
+        male1: roster?.male_athletes?.[0] || '',
+        male2: roster?.male_athletes?.[1] || '',
+        male3: roster?.male_athletes?.[2] || '',
+        female1: roster?.female_athletes?.[0] || '',
+        female2: roster?.female_athletes?.[1] || '',
+        female3: roster?.female_athletes?.[2] || '',
+        reserves: roster?.reserves || '',
+        extra_notes: roster?.extra_notes || ''
+      }
+    });
+  };
+
+  const handleSaveEditTeam = async (e) => {
+    e.preventDefault();
+    if (!editingTeam) return;
+    setSavingEditTeam(true);
+
+    const { formState, item } = editingTeam;
+    const updatedRoster = {
+      tournament: 'Giải Bóng chuyền Nam Nữ phối hợp chào mừng 20/11',
+      academic_year: '2026-2027',
+      class: formState.className,
+      captain: formState.captain.trim(),
+      captain_phone: formState.phone.trim(),
+      gvcn: formState.gvcn.trim(),
+      male_athletes: [formState.male1.trim(), formState.male2.trim(), formState.male3.trim()],
+      female_athletes: [formState.female1.trim(), formState.female2.trim(), formState.female3.trim()],
+      reserves: formState.reserves.trim(),
+      extra_notes: formState.extra_notes.trim()
+    };
+
+    const updatedData = {
+      full_name: `Đội Lớp ${formState.className} (Đội trưởng: ${formState.captain.trim()})`,
+      phone: formState.phone.trim(),
+      cohort_year: formState.className,
+      unit_name: `Chi đoàn ${formState.className}`,
+      notes: JSON.stringify(updatedRoster)
+    };
+
+    try {
+      const { error } = await supabase
+        .from('cbq_sports_registrations')
+        .update(updatedData)
+        .eq('id', item.id);
+
+      if (error) throw error;
+
+      setRegistrations(prev => prev.map(r => r.id === item.id ? { ...r, ...updatedData } : r));
+
+      const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
+      const updatedLocal = local.map(r => r.id === item.id ? { ...r, ...updatedData } : r);
+      localStorage.setItem('cbq_local_sports_regs', JSON.stringify(updatedLocal));
+
+      alert("✅ Đã cập nhật thông tin đội hình thành công!");
+      setEditingTeam(null);
+    } catch (err) {
+      console.warn("Lỗi lưu Supabase:", err);
+      setRegistrations(prev => prev.map(r => r.id === item.id ? { ...r, ...updatedData } : r));
+      const local = JSON.parse(localStorage.getItem('cbq_local_sports_regs') || '[]');
+      const updatedLocal = local.map(r => r.id === item.id ? { ...r, ...updatedData } : r);
+      localStorage.setItem('cbq_local_sports_regs', JSON.stringify(updatedLocal));
+      alert("✅ Đã cập nhật vào dữ liệu bộ nhớ trình duyệt!");
+      setEditingTeam(null);
+    } finally {
+      setSavingEditTeam(false);
+    }
+  };
 
   async function fetchRegistrations() {
     setLoading(true);
@@ -229,6 +403,38 @@ export default function AdminSports() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button
+            onClick={openConfigModal}
+            style={{
+              padding: '9px 15px',
+              background: '#047857',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '7px',
+              boxShadow: '0 4px 12px rgba(4,120,87,0.25)',
+              fontSize: '13px'
+            }}
+            title="Cấu hình hạn chót đăng ký & bật/tắt chống nhập trùng"
+          >
+            <Settings size={16} /> ⚙️ Cấu Hình Thời Hạn & Chống Trùng
+            <span style={{ 
+              fontSize: '11px', 
+              padding: '2px 7px', 
+              borderRadius: '10px', 
+              background: configStatus.bg, 
+              color: configStatus.color,
+              fontWeight: 'bold',
+              marginLeft: '4px'
+            }}>
+              {configStatus.text}
+            </span>
+          </button>
+
           <a
             href={OFFICIAL_ZALO_GROUP}
             target="_blank"
@@ -354,8 +560,7 @@ export default function AdminSports() {
                   <th style={{ padding: '12px 10px' }}>SĐT LIÊN HỆ</th>
                   <th style={{ padding: '12px 10px' }}>GVCN XÁC NHẬN</th>
                   <th style={{ padding: '12px 10px' }}>KINH PHÍ</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>ĐỘI HÌNH</th>
-                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>XÓA</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center' }}>THAO TÁC</th>
                 </tr>
               </thead>
               <tbody>
@@ -391,26 +596,35 @@ export default function AdminSports() {
                         </span>
                       </td>
                       <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                        {roster ? (
+                        <div style={{ display: 'inline-flex', gap: '5px', alignItems: 'center', justifyContent: 'center' }}>
+                          {roster ? (
+                            <>
+                              <button
+                                onClick={() => setSelectedTeamView({ item, roster })}
+                                style={{ padding: '4px 7px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                title="Xem danh sách 3 Nam + 3 Nữ"
+                              >
+                                <Eye size={12} /> Xem
+                              </button>
+                              <button
+                                onClick={() => openEditTeamModal(item)}
+                                style={{ padding: '4px 7px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                                title="Sửa tên VĐV hoặc Đội hình"
+                              >
+                                <Edit size={12} /> Sửa
+                              </button>
+                            </>
+                          ) : (
+                            <span style={{ color: '#94a3b8', fontSize: '11px' }}>Cá nhân</span>
+                          )}
                           <button
-                            onClick={() => setSelectedTeamView({ item, roster })}
-                            style={{ padding: '4px 8px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
-                            title="Xem 3 Nam + 3 Nữ"
+                            onClick={() => handleDelete(item.id)}
+                            style={{ padding: '4px 7px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }}
+                            title="Xóa lượt đăng ký này"
                           >
-                            <Eye size={12} /> Đội hình
+                            <Trash2 size={13} />
                           </button>
-                        ) : (
-                          <span style={{ color: '#94a3b8', fontSize: '11px' }}>Cá nhân</span>
-                        )}
-                      </td>
-                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          style={{ padding: '5px 8px', background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
-                          title="Xóa lượt đăng ký này"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -607,6 +821,296 @@ export default function AdminSports() {
                 Vui lòng chọn môn và bấm <strong>"🎲 Tiến Hành Bốc Thăm"</strong> để tạo lịch thi đấu loại trực tiếp.
               </div>
             )}
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CẤU HÌNH THỜI HẠN & CHỐNG TRÙNG (BAN TỔ CHỨC) */}
+      {showConfigModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '18px', padding: '24px', maxWidth: '580px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#047857', fontWeight: 'bold', fontSize: '18px' }}>
+                <Settings size={22} color="#047857" /> CẤU HÌNH THỜI HẠN & CHỐNG NHẬP TRÙNG
+              </div>
+              <button onClick={() => setShowConfigModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={22} color="#64748b" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveConfig} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* KHÓA MỞ CỔNG TIẾP NHẬN */}
+              <div style={{ background: editConfigData.isOpen ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${editConfigData.isOpen ? '#bbf7d0' : '#fecaca'}`, borderRadius: '12px', padding: '14px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: editConfigData.isOpen ? '#166534' : '#991b1b', fontSize: '14px' }}>
+                  <input
+                    type="checkbox"
+                    checked={editConfigData.isOpen}
+                    onChange={e => setEditConfigData({ ...editConfigData, isOpen: e.target.checked })}
+                    style={{ width: '18px', height: '18px', accentColor: '#16a34a', cursor: 'pointer' }}
+                  />
+                  <span>🟢 MỞ CỔNG TIẾP NHẬN ĐĂNG KÝ (Trạng thái tổng thể)</span>
+                </label>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '6px', marginLeft: '28px' }}>
+                  Nếu bỏ chọn, cổng đăng ký sẽ lập tức bị khóa khẩn cấp ở ngoài trang công khai, không cho phép gửi bất kỳ đơn mới nào.
+                </div>
+              </div>
+
+              {/* THỜI GIAN BẮT ĐẦU VÀ KẾT THÚC */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    <Clock size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                    Ngày giờ Bắt đầu mở cổng:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editConfigData.startDate || ''}
+                    onChange={e => setEditConfigData({ ...editConfigData, startDate: e.target.value })}
+                    style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#dc2626', marginBottom: '6px' }}>
+                    <Lock size={14} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                    Hạn chót Đóng cổng tiếp nhận:
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={editConfigData.endDate || ''}
+                    onChange={e => setEditConfigData({ ...editConfigData, endDate: e.target.value })}
+                    style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', fontWeight: 'bold', color: '#b91c1c' }}
+                  />
+                </div>
+              </div>
+
+              {/* CÔNG TẮC CHỐNG NHẬP TRÙNG 2 LẦN */}
+              <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '14px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontWeight: 'bold', color: '#1e293b', fontSize: '14px' }}>
+                  <input
+                    type="checkbox"
+                    checked={editConfigData.preventDuplicate}
+                    onChange={e => setEditConfigData({ ...editConfigData, preventDuplicate: e.target.checked })}
+                    style={{ width: '18px', height: '18px', accentColor: '#0284c7', cursor: 'pointer' }}
+                  />
+                  <span>🛡️ KÍCH HOẠT CHỐNG NHẬP TRÙNG (Mỗi lớp chỉ 01 đội)</span>
+                </label>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px', marginLeft: '28px', lineHeight: '1.5' }}>
+                  Khi bật tính năng này: Nếu một lớp đã có đội đăng ký, hệ thống tự động khóa ô nhập và vô hiệu hóa nút gửi của lớp đó trên Cổng đăng ký. Học sinh không thể nộp trùng lần 2.
+                </div>
+              </div>
+
+              {/* THÔNG BÁO QUY ĐỊNH CHO HỌC SINH */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12.5px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  Thông báo hiển thị cho Học sinh & GVCN (Trang công khai):
+                </label>
+                <textarea
+                  rows={3}
+                  value={editConfigData.announcement || ''}
+                  onChange={e => setEditConfigData({ ...editConfigData, announcement: e.target.value })}
+                  placeholder="Nhập thông báo về thời hạn, thể thức hoặc quy định giải đấu..."
+                  style={{ width: '100%', padding: '10px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', fontFamily: 'inherit' }}
+                />
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowConfigModal(false)}
+                  style={{ padding: '9px 16px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px' }}
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingConfig}
+                  style={{ padding: '9px 20px', background: '#047857', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(4,120,87,0.3)' }}
+                >
+                  <Save size={15} /> {savingConfig ? 'Đang lưu...' : 'Lưu Cấu Hình'}
+                </button>
+              </div>
+            </form>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CHỈNH SỬA ĐỘI HÌNH (ADMIN) */}
+      {editingTeam && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '18px', padding: '24px', maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 25px 50px rgba(0,0,0,0.25)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontWeight: 'bold', fontSize: '17px' }}>
+                <Edit size={20} color="#0369a1" /> CHỈNH SỬA ĐỘI HÌNH: LỚP {editingTeam.formState.className}
+              </div>
+              <button onClick={() => setEditingTeam(null)} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                <X size={22} color="#64748b" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTeam} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Lớp / Chi đoàn *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTeam.formState.className}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, className: e.target.value } })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', fontWeight: 'bold' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>GVCN Xác Nhận *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTeam.formState.gvcn}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, gvcn: e.target.value } })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Họ Tên Đội Trưởng *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTeam.formState.captain}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, captain: e.target.value } })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Số Điện Thoại Liên Hệ *</label>
+                  <input
+                    type="text"
+                    required
+                    value={editingTeam.formState.phone}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, phone: e.target.value } })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              {/* 3 VĐV NAM */}
+              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#1e40af', marginBottom: '8px' }}>
+                  👦 03 VẬN ĐỘNG VIÊN NAM CHÍNH THỨC:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Nam 1 *"
+                    required
+                    value={editingTeam.formState.male1}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, male1: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #93c5fd', fontSize: '12.5px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nam 2 *"
+                    required
+                    value={editingTeam.formState.male2}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, male2: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #93c5fd', fontSize: '12.5px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nam 3 *"
+                    required
+                    value={editingTeam.formState.male3}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, male3: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #93c5fd', fontSize: '12.5px' }}
+                  />
+                </div>
+              </div>
+
+              {/* 3 VĐV NỮ */}
+              <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '12px' }}>
+                <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#be123c', marginBottom: '8px' }}>
+                  👧 03 VẬN ĐỘNG VIÊN NỮ CHÍNH THỨC:
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px' }}>
+                  <input
+                    type="text"
+                    placeholder="Nữ 1 *"
+                    required
+                    value={editingTeam.formState.female1}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, female1: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #fda4af', fontSize: '12.5px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nữ 2 *"
+                    required
+                    value={editingTeam.formState.female2}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, female2: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #fda4af', fontSize: '12.5px' }}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Nữ 3 *"
+                    required
+                    value={editingTeam.formState.female3}
+                    onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, female3: e.target.value } })}
+                    style={{ padding: '7px 9px', borderRadius: '6px', border: '1px solid #fda4af', fontSize: '12.5px' }}
+                  />
+                </div>
+              </div>
+
+              {/* DỰ BỊ & GHI CHÚ */}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>VĐV Dự Bị (nếu có):</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Nguyễn Văn D, Lê Thị E..."
+                  value={editingTeam.formState.reserves}
+                  onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, reserves: e.target.value } })}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>Ghi Chú Ban Tổ Chức:</label>
+                <input
+                  type="text"
+                  placeholder="Ghi chú thêm..."
+                  value={editingTeam.formState.extra_notes}
+                  onChange={e => setEditingTeam({ ...editingTeam, formState: { ...editingTeam.formState, extra_notes: e.target.value } })}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: '1px solid #e2e8f0', paddingTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => setEditingTeam(null)}
+                  style={{ padding: '8px 16px', background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12.5px' }}
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEditTeam}
+                  style={{ padding: '8px 18px', background: '#0284c7', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '12.5px', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2,132,199,0.3)' }}
+                >
+                  <Save size={14} /> {savingEditTeam ? 'Đang lưu...' : 'Lưu Thay Đổi'}
+                </button>
+              </div>
+
+            </form>
 
           </div>
         </div>

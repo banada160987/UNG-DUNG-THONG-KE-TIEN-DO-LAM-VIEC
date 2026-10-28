@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import { 
   Trophy, Award, CheckCircle2, Search, Filter, Sparkles, 
   UserCheck, ShieldCheck, AlertCircle, Phone, Calendar, 
-  HeartHandshake, Users, Eye, X, ChevronRight, User, Check, MessageCircle
+  HeartHandshake, Users, Eye, X, ChevronRight, User, Check, MessageCircle,
+  Clock, Lock, ShieldAlert, AlertTriangle
 } from 'lucide-react';
 
 export const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
@@ -13,6 +14,15 @@ export const ALL_CBQ_CLASSES = [
   '11A01', '11A02', '11A03', '11A04', '11A05', '11A06', '11A07', '11A08', '11A09',
   '10A01', '10A02', '10A03', '10A04', '10A05', '10A06', '10A07', '10A08', '10A09', '10A10', '10A11', '10A12', '10A13', '10A14', '10A15'
 ];
+
+export const DEFAULT_SPORTS_CONFIG = {
+  startDate: '2026-10-20T00:00',
+  endDate: '2026-10-30T23:59',
+  isOpen: true,
+  preventDuplicate: true,
+  maxTeamsPerClass: 1,
+  announcement: 'Thời hạn đăng ký: Từ ngày 20/10/2026 đến hết ngày 30/10/2026. Mỗi lớp chỉ đăng ký 01 đội bóng chuyền duy nhất (3 Nam + 3 Nữ).'
+};
 
 const DIVISION_A_SPORTS = [
   'Bóng đá Futsal Nam (2 hiệp x 20 phút)',
@@ -35,6 +45,15 @@ export default function PublicSportsRegister() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+
+  // ⚙️ CẤU HÌNH THỜI HẠN & QUY CHUẨN ĐĂNG KÝ
+  const [sportsConfig, setSportsConfig] = useState(() => {
+    try {
+      const local = localStorage.getItem('cbq_sports_config');
+      if (local) return JSON.parse(local);
+    } catch (e) {}
+    return DEFAULT_SPORTS_CONFIG;
+  });
 
   // 🏐 STATE FORM ĐĂNG KÝ BÓNG CHUYỀN 20/11 (THEO LỚP)
   const [selectedClass, setSelectedClass] = useState(ALL_CBQ_CLASSES[0]);
@@ -70,7 +89,26 @@ export default function PublicSportsRegister() {
 
   useEffect(() => {
     fetchRegistrations();
+    fetchSportsConfig();
   }, []);
+
+  async function fetchSportsConfig() {
+    try {
+      const { data, error } = await supabase
+        .from('cbq_pages')
+        .select('*')
+        .eq('slug', 'sports-config')
+        .maybeSingle();
+
+      if (!error && data && data.content) {
+        const parsed = typeof data.content === 'string' ? JSON.parse(data.content) : data.content;
+        setSportsConfig(parsed);
+        localStorage.setItem('cbq_sports_config', JSON.stringify(parsed));
+      }
+    } catch (e) {
+      console.warn("Dùng local sports config:", e);
+    }
+  }
 
   async function fetchRegistrations() {
     setLoading(true);
@@ -105,12 +143,91 @@ export default function PublicSportsRegister() {
     return new Set(volleyballTeams.map(r => r.cohort_year || r.unit_name).filter(Boolean));
   }, [volleyballTeams]);
 
-  // Kiểm tra xem lớp đang chọn đã đăng ký chưa
-  const isSelectedClassRegistered = registeredClasses.has(selectedClass);
+  // Đội đã đăng ký của lớp đang chọn (nếu có)
+  const existingTeamOfSelectedClass = useMemo(() => {
+    return volleyballTeams.find(r => 
+      (r.cohort_year === selectedClass || (r.unit_name || '').includes(selectedClass))
+    ) || null;
+  }, [volleyballTeams, selectedClass]);
+
+  // KIỂM TRA THỜI HẠN MỞ / ĐÓNG CỔNG
+  const registrationStatus = useMemo(() => {
+    if (!sportsConfig.isOpen) {
+      return {
+        allowed: false,
+        badge: '🔒 CỔNG ĐĂNG KÝ ĐANG TẠM KHÓA',
+        color: '#dc2626',
+        bg: '#fef2f2',
+        border: '#fecaca',
+        message: 'Ban Tổ Chức đang tạm dừng tiếp nhận hồ sơ đăng ký thi đấu.'
+      };
+    }
+
+    const now = new Date();
+    const start = sportsConfig.startDate ? new Date(sportsConfig.startDate) : null;
+    const end = sportsConfig.endDate ? new Date(sportsConfig.endDate) : null;
+
+    if (start && now < start) {
+      return {
+        allowed: false,
+        badge: `⏳ CỔNG CHƯA MỞ (Mở lúc ${start.toLocaleDateString('vi-VN')})`,
+        color: '#d97706',
+        bg: '#fffbeb',
+        border: '#fde68a',
+        message: `Cổng đăng ký sẽ chính thức mở vào lúc ${start.toLocaleDateString('vi-VN')}.`
+      };
+    }
+
+    if (end && now > end) {
+      return {
+        allowed: false,
+        badge: '🔒 ĐÃ HẾT HẠN TIẾP NHẬN HỒ SƠ',
+        color: '#dc2626',
+        bg: '#fef2f2',
+        border: '#fecaca',
+        message: `Đã hết thời hạn tiếp nhận hồ sơ (Hạn chót: ${end.toLocaleDateString('vi-VN')}). Ban Tổ chức không tiếp nhận thêm, trừ trường hợp đặc biệt do Trưởng Ban Tổ chức quyết định.`
+      };
+    }
+
+    let remainingDays = '';
+    if (end) {
+      const diffMs = end.getTime() - now.getTime();
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      remainingDays = diffDays > 0 ? ` (Còn ${diffDays} ngày)` : ' (Hôm nay là hạn chót)';
+    }
+
+    return {
+      allowed: true,
+      badge: `🟢 CỔNG ĐANG MỞ NHẬN HỒ SƠ${remainingDays}`,
+      color: '#16a34a',
+      bg: '#f0fdf4',
+      border: '#bbf7d0',
+      message: 'Cổng đăng ký đang mở nhận hồ sơ các Chi đoàn Lớp.'
+    };
+  }, [sportsConfig]);
 
   // XỬ LÝ NỘP ĐĂNG KÝ BÓNG CHUYỀN 20/11
   const handleSubmitVolleyball = async (e) => {
     e.preventDefault();
+
+    // 1. Kiểm tra thời hạn
+    if (!registrationStatus.allowed) {
+      alert(`❌ CỔNG ĐĂNG KÝ HIỆN KHÔNG TIẾP NHẬN:\n${registrationStatus.message}`);
+      return;
+    }
+
+    // 2. Chống nhập trùng 2 lần theo lớp
+    if (sportsConfig.preventDuplicate && existingTeamOfSelectedClass) {
+      alert(
+        `❌ KHÔNG THỂ NỘP:\n` +
+        `Chi đoàn Lớp ${selectedClass} đã có một bản đăng ký trong hệ thống!\n` +
+        `Theo Điều lệ giải đấu, mỗi lớp chỉ được thành lập và đăng ký 01 đội bóng chuyền duy nhất (3 Nam + 3 Nữ).\n` +
+        `Nếu cần thay đổi danh sách VĐV, vui lòng liên hệ GVCN hoặc Ban Tổ Chức.`
+      );
+      return;
+    }
+
+    // 3. Kiểm tra dữ liệu bắt buộc
     if (!selectedClass || !captainName.trim() || !captainPhone.trim() || !gvcnName.trim()) {
       alert("Vui lòng điền đầy đủ Lớp, Đội trưởng, Số điện thoại và GVCN xác nhận (*)");
       return;
@@ -126,11 +243,6 @@ export default function PublicSportsRegister() {
     if (!healthAgreedVb) {
       alert("Vui lòng tích chọn cam kết đảm bảo sức khỏe và xác nhận của GVCN.");
       return;
-    }
-
-    if (isSelectedClassRegistered) {
-      const conf = window.confirm(`Lớp ${selectedClass} đã có một bản đăng ký trong hệ thống. Bạn có muốn gửi thêm hoặc cập nhật lại danh sách đội hình không?`);
-      if (!conf) return;
     }
 
     setSubmitting(true);
@@ -304,11 +416,11 @@ export default function PublicSportsRegister() {
           Mỗi lớp thành lập 01 đội thi đấu gồm <strong>06 VĐV chính thức (3 Nam + 3 Nữ)</strong> trên sân.
         </p>
 
-        {/* THÔNG TIN THỜI HẠN & LIÊN HỆ */}
+        {/* THÔNG TIN THỜI HẠN & TRẠNG THÁI TIẾP NHẬN */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '12px', background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(6px)', padding: '14px 18px', borderRadius: '14px', textAlign: 'left', border: '1px solid rgba(253,224,71,0.4)', fontSize: '13.5px' }}>
           <div>
             <Calendar size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
-            <strong>Thời hạn đăng ký:</strong> <span style={{ color: '#fde047', fontWeight: 'bold' }}>Từ 20/10/2026 đến hết 30/10/2026</span>
+            <strong>Thời hạn đăng ký:</strong> <span style={{ color: '#fde047', fontWeight: 'bold' }}>{new Date(sportsConfig.startDate).toLocaleDateString('vi-VN')} đến hết {new Date(sportsConfig.endDate).toLocaleDateString('vi-VN')}</span>
           </div>
           <div>
             <Trophy size={16} color="#fde047" style={{ verticalAlign: 'middle', marginRight: '6px' }} />
@@ -402,15 +514,17 @@ export default function PublicSportsRegister() {
           
           {/* CỘT TRÁI: FORM ĐĂNG KÝ THEO LỚP */}
           <div style={{ flex: '1 1 480px', background: '#ffffff', borderRadius: '16px', padding: '22px', border: '1px solid #e2e8f0', boxShadow: '0 6px 20px rgba(0,0,0,0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
+            
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', borderBottom: '1.5px solid #e0f2fe', paddingBottom: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0369a1', fontWeight: 'bold', fontSize: '16px' }}>
                 <UserCheck size={20} color="#0369a1" /> HỒ SƠ ĐĂNG KÝ ĐỘI BÓNG CHUYỀN (*)
               </div>
-              <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '12px', background: '#dcfce7', color: '#166534', fontWeight: 'bold' }}>
-                Miễn phí 100%
+              <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '12px', background: registrationStatus.bg, color: registrationStatus.color, border: `1px solid ${registrationStatus.border}`, fontWeight: 'bold' }}>
+                {registrationStatus.badge}
               </span>
             </div>
 
+            {/* THÔNG BÁO NHÓM ZALO */}
             <div style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
               <div style={{ fontSize: '13px', color: '#0369a1', lineHeight: '1.4' }}>
                 <span style={{ fontWeight: 'bold' }}>📢 Nhóm Zalo Đội Trưởng & GVCN:</span> Tham gia ngay để BTC thông báo giờ bốc thăm & lịch đấu.
@@ -437,6 +551,42 @@ export default function PublicSportsRegister() {
               </a>
             </div>
 
+            {/* CẢNH BÁO NẾU CỔNG ĐÃ ĐÓNG HOẶC CHƯA MỞ */}
+            {!registrationStatus.allowed && (
+              <div style={{ background: registrationStatus.bg, border: `1.5px solid ${registrationStatus.border}`, borderRadius: '12px', padding: '14px', marginBottom: '16px', color: registrationStatus.color, fontSize: '13px', lineHeight: 1.5 }}>
+                <div style={{ fontWeight: 'bold', fontSize: '13.5px', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Lock size={16} /> {registrationStatus.badge}
+                </div>
+                {registrationStatus.message}
+              </div>
+            )}
+
+            {/* CẢNH BÁO CHỐNG NHẬP TRÙNG NẾU LỚP NÀY ĐÃ ĐĂNG KÝ */}
+            {existingTeamOfSelectedClass && (
+              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '12px', padding: '14px', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#dc2626', fontWeight: 'bold', fontSize: '13.5px', marginBottom: '6px' }}>
+                  <ShieldAlert size={18} color="#dc2626" /> LỚP {selectedClass} ĐÃ NỘP HỒ SƠ ĐỘI HÌNH!
+                </div>
+                <div style={{ fontSize: '12.5px', color: '#475569', lineHeight: 1.5, marginBottom: '10px' }}>
+                  • <strong>Đội trưởng đã nộp:</strong> {existingTeamOfSelectedClass.full_name}<br/>
+                  • <strong>SĐT / Zalo:</strong> {existingTeamOfSelectedClass.phone}<br/>
+                  • <strong>Thời gian gửi:</strong> {new Date(existingTeamOfSelectedClass.created_at).toLocaleString('vi-VN')}<br/>
+                  • <strong>Quy định:</strong> Mỗi lớp thành lập đúng <strong>01 đội bóng chuyền duy nhất</strong> (3 Nam + 3 Nữ). Hệ thống chặn gửi lần 2 để bảo đảm công bằng khi bốc thăm loại trực tiếp.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    let roster = null;
+                    try { roster = JSON.parse(existingTeamOfSelectedClass.notes); } catch (e) {}
+                    setViewTeamModal({ item: existingTeamOfSelectedClass, roster });
+                  }}
+                  style={{ padding: '6px 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <Eye size={13} /> Xem Đội Hình Đã Đăng Ký Của Lớp {selectedClass}
+                </button>
+              </div>
+            )}
+
             <form onSubmit={handleSubmitVolleyball}>
               
               {/* 1. CHỌN LỚP */}
@@ -445,22 +595,17 @@ export default function PublicSportsRegister() {
                 <select
                   value={selectedClass}
                   onChange={e => setSelectedClass(e.target.value)}
-                  style={{ ...styles.select, fontWeight: 'bold', color: '#0369a1', fontSize: '15px' }}
+                  style={{ ...styles.select, fontWeight: 'bold', color: '#0369a1', fontSize: '14.5px' }}
                 >
                   {ALL_CBQ_CLASSES.map(cls => {
                     const isReg = registeredClasses.has(cls);
                     return (
                       <option key={cls} value={cls}>
-                        Lớp {cls} {isReg ? '✅ (Đã gửi danh sách)' : ''}
+                        {cls} {isReg ? '🔒 (ĐÃ ĐĂNG KÝ)' : '🟢 (Chưa đăng ký)'}
                       </option>
                     );
                   })}
                 </select>
-                {isSelectedClassRegistered && (
-                  <div style={{ fontSize: '12px', color: '#d97706', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <AlertCircle size={13} /> Lớp <strong>{selectedClass}</strong> đã có đội đăng ký. Gửi lại sẽ cập nhật/bổ sung hồ sơ.
-                  </div>
-                )}
               </div>
 
               {/* 2. ĐỘI TRƯỞNG & SĐT & GVCN */}
@@ -470,6 +615,7 @@ export default function PublicSportsRegister() {
                   <input
                     type="text"
                     required
+                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                     placeholder="VD: Nguyễn Văn Nam"
                     value={captainName}
                     onChange={e => setCaptainName(e.target.value)}
@@ -481,6 +627,7 @@ export default function PublicSportsRegister() {
                   <input
                     type="tel"
                     required
+                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                     placeholder="VD: 0912 345 678"
                     value={captainPhone}
                     onChange={e => setCaptainPhone(e.target.value)}
@@ -494,7 +641,8 @@ export default function PublicSportsRegister() {
                 <input
                   type="text"
                   required
-                  placeholder="VD: Thầy/Cô Trần Thị Lan (GVCN 12A01)"
+                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
+                  placeholder="VD: Thầy/Cô Trần Thị Lan (GVCN)"
                   value={gvcnName}
                   onChange={e => setGvcnName(e.target.value)}
                   style={styles.input}
@@ -516,6 +664,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nam 1 *"
                       value={male1}
                       onChange={e => setMale1(e.target.value)}
@@ -524,6 +673,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nam 2 *"
                       value={male2}
                       onChange={e => setMale2(e.target.value)}
@@ -532,6 +682,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nam 3 *"
                       value={male3}
                       onChange={e => setMale3(e.target.value)}
@@ -549,6 +700,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nữ 1 *"
                       value={female1}
                       onChange={e => setFemale1(e.target.value)}
@@ -557,6 +709,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nữ 2 *"
                       value={female2}
                       onChange={e => setFemale2(e.target.value)}
@@ -565,6 +718,7 @@ export default function PublicSportsRegister() {
                     <input
                       type="text"
                       required
+                      disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                       placeholder="VĐV Nữ 3 *"
                       value={female3}
                       onChange={e => setFemale3(e.target.value)}
@@ -579,6 +733,7 @@ export default function PublicSportsRegister() {
                 <label style={styles.label}>Vận Động Viên Dự Bị (Nếu có)</label>
                 <input
                   type="text"
+                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                   placeholder="VD: Nam: Trần Văn D, Lê Văn E; Nữ: Phạm Thị B..."
                   value={reserves}
                   onChange={e => setReserves(e.target.value)}
@@ -591,6 +746,7 @@ export default function PublicSportsRegister() {
                 <label style={styles.label}>Ghi Chú Thêm (Màu áo thi đấu / Lưu ý)</label>
                 <textarea
                   rows={2}
+                  disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                   placeholder="VD: Màu áo thi đấu của lớp: Xanh dương..."
                   value={volleyballNotes}
                   onChange={e => setVolleyballNotes(e.target.value)}
@@ -603,6 +759,7 @@ export default function PublicSportsRegister() {
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '12.5px', color: '#166534', cursor: 'pointer' }}>
                   <input
                     type="checkbox"
+                    disabled={!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                     checked={healthAgreedVb}
                     onChange={e => setHealthAgreedVb(e.target.checked)}
                     style={{ marginTop: '2px' }}
@@ -611,15 +768,21 @@ export default function PublicSportsRegister() {
                 </label>
               </div>
 
+              {/* NÚT NỘP HỒ SƠ */}
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || !registrationStatus.allowed || Boolean(existingTeamOfSelectedClass)}
                 style={{
                   ...styles.submitBtn,
-                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)'
+                  background: (!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass))
+                    ? '#94a3b8'
+                    : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  cursor: (!registrationStatus.allowed || Boolean(existingTeamOfSelectedClass))
+                    ? 'not-allowed'
+                    : 'pointer'
                 }}
               >
-                {submitting ? 'Đang gửi hồ sơ...' : '🏐 XÁC NHẬN ĐĂNG KÝ ĐỘI BÓNG CHUYỀN LỚP'}
+                {submitting ? 'Đang gửi hồ sơ...' : !registrationStatus.allowed ? '🔒 Cổng Đăng Ký Đã Khóa' : existingTeamOfSelectedClass ? `⛔ Lớp ${selectedClass} Đã Có Đội Đăng Ký (Không Gửi Trùng)` : '🏐 XÁC NHẬN ĐĂNG KÝ ĐỘI BÓNG CHUYỀN LỚP'}
               </button>
             </form>
           </div>
