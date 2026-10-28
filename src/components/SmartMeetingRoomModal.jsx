@@ -156,7 +156,7 @@ export default function SmartMeetingRoomModal({
     if (currentUser?.department && currentUser.department !== 'Tổ Chuyên môn') {
       return currentUser.department;
     }
-    return DEFAULT_DEPARTMENTS[0] || 'Tổ Toán - Tin';
+    return DEFAULT_DEPARTMENTS[1] || 'Tổ Toán';
   });
 
   const userDisplayName = useMemo(() => {

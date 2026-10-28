@@ -30,16 +30,15 @@ export function generateUUID() {
   });
 }
 
-// Danh mục các Tổ chuyên môn chuẩn của Trường THPT Cao Bá Quát
+// Danh mục các Tổ chuyên môn chuẩn của Trường THPT Cao Bá Quát (Đồng bộ CSDL cbq_departments)
 export const DEFAULT_DEPARTMENTS = [
   'Ban Giám Hiệu',
   'Tổ Toán',
   'Tổ Ngữ Văn',
-  'Tổ Tiếng Anh',
+  'Tổ Tin học - Ngoại Ngữ',
   'Tổ Vật Lý - Hóa học',
   'Tổ Sinh học',
   'Tổ Sử - Địa - GDKT&PL',
-  'Tổ Tin học - Ngoại Ngữ',
   'Tổ GDTC - QPAN',
   'Tổ Văn Phòng'
 ];
