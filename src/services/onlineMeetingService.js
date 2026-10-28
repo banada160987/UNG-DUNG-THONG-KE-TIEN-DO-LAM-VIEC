@@ -454,9 +454,9 @@ export const OnlineMeetingService = {
   },
 
   /**
-   * 9. GIÁO VIÊN GỬI ĐIỂM DANH BẰNG MÃ OTP (HỖ TRỢ TỰ ĐỘNG TÌM PHIÊN HỌP)
+   * 9. GIÁO VIÊN GỬI ĐIỂM DANH BẰNG MÃ OTP HOẶC TRONG PHÒNG HỌP TRỰC TUYẾN
    */
-  async submitTeacherCheckin({ meetingId, staffId, staffName, department, title, checkinCode, pollAnswer, deviceInfo }) {
+  async submitTeacherCheckin({ meetingId, staffId, staffName, department, title, checkinCode, pollAnswer, deviceInfo, isSmartRoom = false, isAdminCheckin = false }) {
     if (!staffName || !department) {
       return { success: false, message: 'Thiếu thông tin người điểm danh hoặc Tổ chuyên môn!' };
     }
@@ -483,22 +483,33 @@ export const OnlineMeetingService = {
 
     const activeMeetingId = meeting.id;
 
-    if (!meeting.is_checkin_open) {
-      return { success: false, message: 'Cổng điểm danh đã được Ban Giám Hiệu đóng lại!' };
-    }
-
-    if (meeting.checkin_expires_at) {
-      const exp = new Date(meeting.checkin_expires_at).getTime();
-      if (Date.now() > exp) {
-        return { success: false, message: 'Mã số điểm danh đã hết hạn! Vui lòng liên hệ Thư ký hoặc TTCM.' };
+    // Nếu là Admin: luôn được phép điểm danh và tự động mở cổng nếu đang đóng
+    if (isAdminCheckin || staffName.includes('Ban Giám Hiệu') || staffName.includes('Quản Trị')) {
+      if (!meeting.is_checkin_open) {
+        meeting.is_checkin_open = true;
+        this.toggleCheckin(activeMeetingId, true);
+      }
+    } else {
+      if (!meeting.is_checkin_open) {
+        return { success: false, message: 'Cổng điểm danh đã được Ban Giám Hiệu đóng lại!' };
       }
     }
 
-    // Kiểm tra mã OTP
-    const cleanInputCode = String(checkinCode || '').trim();
-    const cleanRealCode = String(meeting.checkin_code || '').trim();
-    if (cleanInputCode !== cleanRealCode) {
-      return { success: false, message: 'Mã số phiên họp không chính xác! Vui lòng xem màn hình cuộc họp.' };
+    // Nếu không phải là từ phòng họp trực tuyến (isSmartRoom) hoặc Admin, thì mới kiểm tra OTP và thời hạn OTP
+    if (!isSmartRoom && !isAdminCheckin) {
+      if (meeting.checkin_expires_at) {
+        const exp = new Date(meeting.checkin_expires_at).getTime();
+        if (Date.now() > exp) {
+          return { success: false, message: 'Mã số điểm danh đã hết hạn! Vui lòng liên hệ Thư ký hoặc TTCM.' };
+        }
+      }
+
+      // Kiểm tra mã OTP
+      const cleanInputCode = String(checkinCode || '').trim();
+      const cleanRealCode = String(meeting.checkin_code || '').trim();
+      if (cleanInputCode !== cleanRealCode) {
+        return { success: false, message: 'Mã số phiên họp không chính xác! Vui lòng xem màn hình cuộc họp.' };
+      }
     }
 
     // Kiểm tra xem giáo viên này đã được TTCM / Thư ký chốt điểm danh chưa

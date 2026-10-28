@@ -8,7 +8,7 @@ import {
   Bell, Lock, Unlock, Play, Server, Info, Headphones, User, HelpCircle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { OnlineMeetingService } from '../services/onlineMeetingService';
+import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
 
 /**
  * PHÒNG HỌP TRỰC TUYẾN THÔNG MINH ĐA ĐỘNG CƠ (3-IN-1 SMART MEETING ROOM)
@@ -103,6 +103,11 @@ export default function SmartMeetingRoomModal({
     return localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
   });
 
+  // Trạng thái Cổng điểm danh (Mở / Khóa)
+  const [isCheckinOpen, setIsCheckinOpen] = useState(() => {
+    return meeting.is_checkin_open !== false;
+  });
+
   // Trạng thái phê duyệt của người dùng hiện tại:
   // 'admitted' (được vào phòng), 'waiting' (đang ở phòng chờ), 'rejected' (bị từ chối)
   const [myAdmissionStatus, setMyAdmissionStatus] = useState(() => {
@@ -114,14 +119,42 @@ export default function SmartMeetingRoomModal({
   // Danh sách các giáo viên đang chờ duyệt ở phòng chờ: [{ peerId, peerName, department, timestamp }]
   const [waitingList, setWaitingList] = useState([]);
 
-  // Thông tin người tham gia
+  // Thông tin người tham gia & Xác nhận danh tính giáo viên
+  const [displayNameInput, setDisplayNameInput] = useState(() => {
+    try {
+      const pref = localStorage.getItem('cbq_attendance_teacher_pref');
+      if (pref) {
+        const p = JSON.parse(pref);
+        if (p.name) return p.name;
+      }
+    } catch (e) {}
+    if (currentUser?.name && !currentUser.name.includes('Giáo viên THPT') && !currentUser.name.includes('Thầy/Cô THPT')) {
+      return currentUser.name;
+    }
+    return '';
+  });
+
+  const [departmentInput, setDepartmentInput] = useState(() => {
+    try {
+      const pref = localStorage.getItem('cbq_attendance_teacher_pref');
+      if (pref) {
+        const p = JSON.parse(pref);
+        if (p.department) return p.department;
+      }
+    } catch (e) {}
+    if (currentUser?.department && currentUser.department !== 'Tổ Chuyên môn') {
+      return currentUser.department;
+    }
+    return DEFAULT_DEPARTMENTS[0] || 'Tổ Toán - Tin';
+  });
+
   const userDisplayName = useMemo(() => {
-    return currentUser?.name || currentUser?.full_name || currentUser?.email || 'Thầy/Cô THPT Cao Bá Quát';
-  }, [currentUser]);
+    return (displayNameInput || '').trim() || currentUser?.name || currentUser?.full_name || currentUser?.email || 'Thầy/Cô THPT Cao Bá Quát';
+  }, [currentUser, displayNameInput]);
 
   const userDepartment = useMemo(() => {
-    return currentUser?.department || 'Tổ Chuyên môn';
-  }, [currentUser]);
+    return (departmentInput || '').trim() || currentUser?.department || 'Tổ Chuyên môn';
+  }, [currentUser, departmentInput]);
 
   // Trạng thái Điểm danh của người này
   const myAttendance = useMemo(() => {
@@ -209,6 +242,17 @@ export default function SmartMeetingRoomModal({
         }
       }
 
+      // 6. Thay đổi trạng thái Cổng điểm danh (Mở / Khóa)
+      else if (type === 'checkin-gate-toggled') {
+        setIsCheckinOpen(payload.isOpen);
+        onRefreshAttendances();
+      }
+
+      // 7. Có người mới điểm danh thành công -> Cập nhật sĩ số ngay
+      else if (type === 'attendance-updated') {
+        onRefreshAttendances();
+      }
+
       // --- SỰ KIỆN WEBRTC P2P (KHI ĐÃ ĐƯỢC DUYỆT) ---
       if (activeEngine === 'webrtc' && myAdmissionStatus === 'admitted') {
         if (type === 'peer-join') {
@@ -252,6 +296,36 @@ export default function SmartMeetingRoomModal({
       channelRef.current = null;
     };
   }, [meeting.id, isAdmin, activeEngine, myAdmissionStatus, userDisplayName, userDepartment]);
+
+  // Tự động đồng bộ sĩ số và người tham gia mỗi 4 giây
+  useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => {
+      onRefreshAttendances();
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [isOpen, onRefreshAttendances]);
+
+  // Host Bật/Tắt Cổng Điểm Danh Trực Tuyến
+  const handleToggleCheckinGate = async () => {
+    const nextState = !isCheckinOpen;
+    setIsCheckinOpen(nextState);
+    try {
+      await OnlineMeetingService.toggleCheckin(meeting.id, nextState);
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'signal',
+        payload: {
+          type: 'checkin-gate-toggled',
+          from: myPeerId.current,
+          isOpen: nextState
+        }
+      });
+      onRefreshAttendances();
+    } catch (e) {
+      console.error('Lỗi chuyển trạng thái cổng điểm danh:', e);
+    }
+  };
 
   // Host toggle Bật/Tắt chế độ phê duyệt
   const handleToggleLobby = (newVal) => {
@@ -829,18 +903,51 @@ export default function SmartMeetingRoomModal({
     setCheckingIn(true);
     setCheckinMessage(null);
     try {
+      const finalName = (displayNameInput.trim() || userDisplayName).trim();
+      const finalDept = (departmentInput.trim() || userDepartment).trim();
+
+      if (!isAdmin && (!finalName || finalName.includes('Giáo viên THPT') || finalName.includes('Thầy/Cô THPT'))) {
+        setCheckinMessage({ type: 'error', text: 'Thầy/Cô vui lòng nhập đầy đủ Họ và Tên của mình trước khi bấm điểm danh.' });
+        setCheckingIn(false);
+        return;
+      }
+
+      // Nếu là Admin và cổng đang đóng: Tự động mở cổng luôn
+      if (isAdmin && !isCheckinOpen) {
+        await OnlineMeetingService.toggleCheckin(meeting.id, true);
+        setIsCheckinOpen(true);
+        channelRef.current?.send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: { type: 'checkin-gate-toggled', isOpen: true }
+        });
+      }
+
       const res = await OnlineMeetingService.submitTeacherCheckin({
         meetingId: meeting.id,
-        staffName: userDisplayName,
-        department: userDepartment,
+        staffName: finalName,
+        department: finalDept,
         checkinCode: meeting.checkin_code || '',
         pollAnswer: selectedPollOption || null,
-        deviceInfo: `${navigator.userAgent.slice(0, 50)} | Phòng họp trực tuyến CBQ`
+        deviceInfo: `${navigator.userAgent.slice(0, 50)} | Phòng họp trực tuyến CBQ`,
+        isSmartRoom: true,
+        isAdminCheckin: isAdmin
       });
 
       if (res.success) {
         setCheckinMessage({ type: 'success', text: '✅ Đã ghi nhận điểm danh có mặt tại phòng họp!' });
+        try {
+          localStorage.setItem('cbq_attendance_teacher_pref', JSON.stringify({
+            name: finalName,
+            department: finalDept
+          }));
+        } catch (e) {}
         onRefreshAttendances();
+        channelRef.current?.send({
+          type: 'broadcast',
+          event: 'signal',
+          payload: { type: 'attendance-updated', from: myPeerId.current }
+        });
       } else {
         setCheckinMessage({ type: 'error', text: res.message || 'Điểm danh không thành công.' });
       }
@@ -861,10 +968,17 @@ export default function SmartMeetingRoomModal({
         department: userDepartment,
         checkinCode: meeting.checkin_code || '',
         pollAnswer: option,
-        deviceInfo: 'Biểu quyết trực tiếp trong phòng họp'
+        deviceInfo: 'Biểu quyết trực tiếp trong phòng họp',
+        isSmartRoom: true,
+        isAdminCheckin: isAdmin
       });
       setVotingStatus('success');
       onRefreshAttendances();
+      channelRef.current?.send({
+        type: 'broadcast',
+        event: 'signal',
+        payload: { type: 'attendance-updated', from: myPeerId.current }
+      });
     } catch (e) {
       setVotingStatus('error');
     }
@@ -1557,6 +1671,35 @@ export default function SmartMeetingRoomModal({
               {/* TAB 1: ĐIỂM DANH */}
               {activeSideTab === 'attendance' && (
                 <div style={styles.tabContent}>
+                  {/* QUẢN TRỊ VIÊN: BẬT / TẮT CỔNG ĐIỂM DANH */}
+                  {isAdmin && (
+                    <div style={{ marginBottom: '14px', padding: '10px 12px', backgroundColor: isCheckinOpen ? '#f0fdf4' : '#fef2f2', border: `1px solid ${isCheckinOpen ? '#bbf7d0' : '#fecaca'}`, borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 'bold', color: isCheckinOpen ? '#16a34a' : '#dc2626' }}>
+                          {isCheckinOpen ? '🟢 CỔNG ĐIỂM DANH: ĐANG MỞ' : '🔒 CỔNG ĐIỂM DANH: ĐANG KHÓA'}
+                        </span>
+                        <button
+                          onClick={handleToggleCheckinGate}
+                          style={{
+                            padding: '4px 10px',
+                            backgroundColor: isCheckinOpen ? '#fee2e2' : '#dcfce7',
+                            color: isCheckinOpen ? '#b91c1c' : '#15803d',
+                            border: `1px solid ${isCheckinOpen ? '#fca5a5' : '#86efac'}`,
+                            borderRadius: '6px',
+                            fontSize: '11.5px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {isCheckinOpen ? 'Khóa Cổng' : 'Mở Cổng Điểm Danh'}
+                        </button>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        {isCheckinOpen ? 'Thầy/Cô có thể tự bấm điểm danh có mặt trong hội nghị.' : 'Đang đóng cổng. Thầy/Cô chưa thể điểm danh.'}
+                      </div>
+                    </div>
+                  )}
+
                   <div style={styles.attendanceCard}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                       <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Trạng Thái Của Bạn</span>
@@ -1569,20 +1712,61 @@ export default function SmartMeetingRoomModal({
 
                     <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
                       {myAttendance ? (
-                        <span>Ghi nhận: <strong>{new Date(myAttendance.checkin_time).toLocaleTimeString('vi-VN')}</strong></span>
+                        <span>Ghi nhận: <strong>{new Date(myAttendance.checkin_time).toLocaleTimeString('vi-VN')}</strong> ({myAttendance.staff_name} - {myAttendance.department})</span>
                       ) : (
-                        <span>Hệ thống chưa ghi nhận điểm danh của bạn.</span>
+                        <span>{isAdmin ? 'Ban Giám Hiệu điều hành phiên họp.' : 'Hệ thống chưa ghi nhận điểm danh của bạn.'}</span>
                       )}
                     </div>
+
+                    {/* NẾU LÀ GIÁO VIÊN VÀ CHƯA ĐIỂM DANH: CHO PHÉP NHẬP / CHỌN TÊN */}
+                    {!isAdmin && (!myAttendance || myAttendance.status !== 'PRESENT') && (
+                      <div style={{ marginBottom: '12px', padding: '10px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
+                          Xác nhận danh tính giáo viên:
+                        </div>
+                        <div style={{ marginBottom: '6px' }}>
+                          <label style={{ display: 'block', fontSize: '10.5px', color: '#64748b', marginBottom: '2px' }}>Tổ Chuyên môn:</label>
+                          <select
+                            value={departmentInput}
+                            onChange={e => setDepartmentInput(e.target.value)}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '11.5px', backgroundColor: '#fff' }}
+                          >
+                            {DEFAULT_DEPARTMENTS.map((d, i) => (
+                              <option key={i} value={d}>{d}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '10.5px', color: '#64748b', marginBottom: '2px' }}>Họ và Tên của Thầy/Cô:</label>
+                          <input
+                            type="text"
+                            placeholder="Nhập đầy đủ Họ và Tên..."
+                            value={displayNameInput}
+                            onChange={e => setDisplayNameInput(e.target.value)}
+                            style={{ width: '100%', padding: '5px 8px', borderRadius: '4px', border: '1px solid #cbd5e1', fontSize: '11.5px', boxSizing: 'border-box' }}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     {(!myAttendance || myAttendance.status !== 'PRESENT') && (
                       <button
                         onClick={handleAutoCheckin}
-                        disabled={checkingIn}
-                        style={styles.btnCheckinNow}
+                        disabled={checkingIn || (!isAdmin && !isCheckinOpen)}
+                        style={{
+                          ...styles.btnCheckinNow,
+                          opacity: (!isAdmin && !isCheckinOpen) ? 0.6 : 1,
+                          cursor: (!isAdmin && !isCheckinOpen) ? 'not-allowed' : 'pointer'
+                        }}
                       >
-                        {checkingIn ? 'Đang xác thực...' : '✨ Điểm Danh Ngay Cho Tôi'}
+                        {checkingIn ? 'Đang xác thực...' : (isAdmin ? '✨ Điểm Danh Ban Giám Hiệu' : '✨ Điểm Danh Ngay Cho Tôi')}
                       </button>
+                    )}
+
+                    {!isAdmin && !isCheckinOpen && (!myAttendance || myAttendance.status !== 'PRESENT') && (
+                      <div style={{ marginTop: '8px', fontSize: '11.5px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <AlertCircle size={13} /> Cổng điểm danh đang tạm khóa. Vui lòng chờ BGH mở cổng!
+                      </div>
                     )}
 
                     {checkinMessage && (

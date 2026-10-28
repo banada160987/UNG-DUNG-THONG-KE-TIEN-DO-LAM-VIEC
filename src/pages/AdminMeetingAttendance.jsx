@@ -303,7 +303,7 @@ export default function AdminMeetingAttendance() {
       meeting_link: formLink.trim(),
       poll_question: formPollQuestion.trim(),
       poll_options: pollOpts,
-      is_checkin_open: editingMeeting?.is_checkin_open || false,
+      is_checkin_open: editingMeeting ? (editingMeeting.is_checkin_open !== false) : true,
       ttcm_reporting_open: editingMeeting?.ttcm_reporting_open || false,
       checkin_code: editingMeeting?.checkin_code || '839201'
     };
