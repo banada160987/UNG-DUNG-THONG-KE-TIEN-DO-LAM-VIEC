@@ -3,8 +3,10 @@ import { supabase } from '../lib/supabase';
 import { 
   Trophy, Award, CheckCircle2, Search, Filter, Sparkles, 
   UserCheck, ShieldCheck, AlertCircle, Phone, Calendar, 
-  HeartHandshake, Users, Eye, X, ChevronRight, User, Check
+  HeartHandshake, Users, Eye, X, ChevronRight, User, Check, MessageCircle
 } from 'lucide-react';
+
+export const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
 
 export const ALL_CBQ_CLASSES = [
   '12A01', '12A02', '12A03', '12A04', '12A05', '12A06', '12A07', '12A08', '12A09', '12A10',
@@ -180,8 +182,9 @@ export default function PublicSportsRegister() {
         `🎉 ĐĂNG KÝ THÀNH CÔNG ĐỘI BÓNG CHUYỀN LỚP ${selectedClass}!\n` +
         `• Đội trưởng: ${captainName.trim()} (${captainPhone.trim()})\n` +
         `• GVCN xác nhận: ${gvcnName.trim()}\n` +
-        `• Đội hình: 3 Nam (${male1}, ${male2}, ${male3}) + 3 Nữ (${female1}, ${female2}, ${female3})\n` +
-        `Ban Tổ Chức (Đoàn trường & Tổ GDTC) đã ghi nhận hồ sơ và sẽ liên hệ Đội trưởng bốc thăm xếp lịch thi đấu!`
+        `• Đội hình chính thức: 3 Nam (${male1}, ${male2}, ${male3}) + 3 Nữ (${female1}, ${female2}, ${female3})\n\n` +
+        `👉 QUAN TRỌNG: Kính mời Đội trưởng và Đại diện lớp tham gia ngay nhóm Zalo Giải đấu để nhận thông báo bốc thăm và lịch thi đấu từ Ban Tổ Chức:\n` +
+        `🔗 ${OFFICIAL_ZALO_GROUP}`
       );
 
       // Reset fields
@@ -316,6 +319,30 @@ export default function PublicSportsRegister() {
             <strong>Kinh phí tham gia:</strong> <span style={{ color: '#4ade80', fontWeight: 'bold' }}>MIỄN PHÍ 100% CHO HỌC SINH</span>
           </div>
         </div>
+
+        {/* NÚT THAM GIA NHÓM ZALO CHÍNH THỨC */}
+        <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'center' }}>
+          <a
+            href={OFFICIAL_ZALO_GROUP}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#0068ff',
+              color: '#ffffff',
+              padding: '9px 20px',
+              borderRadius: '24px',
+              fontWeight: 'bold',
+              fontSize: '13.5px',
+              textDecoration: 'none',
+              boxShadow: '0 4px 14px rgba(0, 104, 255, 0.45)'
+            }}
+          >
+            <MessageCircle size={17} /> 💬 Tham Gia Nhóm Zalo Đội Trưởng & GVCN (Nhận Lịch Bốc Thăm)
+          </a>
+        </div>
       </div>
 
       {/* CHUYỂN ĐỔI TAB GIẢI ĐẤU */}
@@ -382,6 +409,32 @@ export default function PublicSportsRegister() {
               <span style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '12px', background: '#dcfce7', color: '#166534', fontWeight: 'bold' }}>
                 Miễn phí 100%
               </span>
+            </div>
+
+            <div style={{ background: '#f0f9ff', border: '1.5px solid #7dd3fc', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ fontSize: '13px', color: '#0369a1', lineHeight: '1.4' }}>
+                <span style={{ fontWeight: 'bold' }}>📢 Nhóm Zalo Đội Trưởng & GVCN:</span> Tham gia ngay để BTC thông báo giờ bốc thăm & lịch đấu.
+              </div>
+              <a
+                href={OFFICIAL_ZALO_GROUP}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  padding: '6px 14px',
+                  background: '#0068ff',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                <MessageCircle size={14} /> Vào Zalo Ngay
+              </a>
             </div>
 
             <form onSubmit={handleSubmitVolleyball}>

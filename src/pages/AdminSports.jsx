@@ -3,8 +3,10 @@ import { supabase } from '../lib/supabase';
 import { 
   Trophy, Download, Trash2, Search, Filter, RefreshCw, 
   Dices, Printer, Users, DollarSign, CheckCircle2, AlertCircle, 
-  X, ShieldAlert, Eye, Copy, Check, FileText
+  X, ShieldAlert, Eye, Copy, Check, FileText, MessageCircle
 } from 'lucide-react';
+
+const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
 
 const OFFICIAL_SPORTS = [
   'Bóng chuyền Nam - Nữ phối hợp (20/11)',
@@ -190,7 +192,7 @@ export default function AdminSports() {
       });
     }
 
-    text += `\n⏰ Kính đề nghị các Đội trưởng & GVCN theo dõi thời gian và địa điểm thi đấu theo thông báo của Ban Tổ Chức!`;
+    text += `\n📲 Link tham gia nhóm Zalo giải đấu: ${OFFICIAL_ZALO_GROUP}\n⏰ Kính đề nghị các Đội trưởng & GVCN theo dõi thời gian và địa điểm thi đấu theo thông báo của Ban Tổ Chức!`;
     navigator.clipboard.writeText(text);
     setCopiedSchedule(true);
     setTimeout(() => setCopiedSchedule(false), 3000);
@@ -227,6 +229,27 @@ export default function AdminSports() {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <a
+            href={OFFICIAL_ZALO_GROUP}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              padding: '9px 14px',
+              background: '#0068ff',
+              color: '#ffffff',
+              borderRadius: '8px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 4px 12px rgba(0,104,255,0.25)',
+              fontSize: '13px'
+            }}
+          >
+            <MessageCircle size={16} /> 💬 Nhóm Zalo Giải Đấu
+          </a>
+
           <button
             onClick={() => setShowBracketModal(true)}
             style={{ padding: '9px 15px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.2)' }}
