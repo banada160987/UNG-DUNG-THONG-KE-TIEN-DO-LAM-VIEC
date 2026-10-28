@@ -42,12 +42,10 @@ export default function SmartMeetingRoomModal({
   onRefreshAttendances = () => {},
   isAdmin = false
 }) {
-  if (!isOpen || !meeting) return null;
-
   // Chế độ phòng họp: 'jitsi' (toàn trường) | 'webrtc' (nội bộ BGH/Tổ) | 'external' (Meet/Zoom)
-  const defaultEngine = meeting.meeting_format === 'ONLINE' && !meeting.meeting_link
+  const defaultEngine = meeting?.meeting_format === 'ONLINE' && !meeting?.meeting_link
     ? 'jitsi'
-    : (meeting.meeting_link?.includes('meet.google.com') || meeting.meeting_link?.includes('zoom.us') ? 'external' : 'jitsi');
+    : (meeting?.meeting_link?.includes('meet.google.com') || meeting?.meeting_link?.includes('zoom.us') ? 'external' : 'jitsi');
 
   const [activeEngine, setActiveEngine] = useState(defaultEngine);
   const [isSidePanelOpen, setIsSidePanelOpen] = useState(true);
@@ -57,7 +55,9 @@ export default function SmartMeetingRoomModal({
 
   // Máy chủ Jitsi chính thức: meet.jit.si (Tốc độ cao toàn cầu, CDN Singapore/VN, hỗ trợ nhúng 100%)
   const [jitsiServer, setJitsiServer] = useState(() => {
-    localStorage.setItem('cbq_jitsi_server', 'meet.jit.si');
+    try {
+      localStorage.setItem('cbq_jitsi_server', 'meet.jit.si');
+    } catch (_) {}
     return 'meet.jit.si';
   });
   const [jitsiReloadKey, setJitsiReloadKey] = useState(0);
@@ -69,12 +69,13 @@ export default function SmartMeetingRoomModal({
   // CẤU HÌNH THỜI GIAN & ĐỒNG HỒ ĐO THỜI LƯỢNG HỌP TRỰC TUYẾN
   // =========================================================================
   const timeConfig = useMemo(() => {
+    if (!meeting?.id) return {};
     try {
       return JSON.parse(localStorage.getItem(`cbq_meeting_time_${meeting.id}`) || '{}');
     } catch {
       return {};
     }
-  }, [meeting.id]);
+  }, [meeting?.id]);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
@@ -100,20 +101,30 @@ export default function SmartMeetingRoomModal({
   // =========================================================================
   // Chủ tọa (Admin) có thể bật/tắt chế độ phòng chờ
   const [isLobbyEnabled, setIsLobbyEnabled] = useState(() => {
-    return localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
+    if (!meeting?.id) return false;
+    try {
+      return localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
+    } catch {
+      return false;
+    }
   });
 
   // Trạng thái Cổng điểm danh (Mở / Khóa)
   const [isCheckinOpen, setIsCheckinOpen] = useState(() => {
-    return meeting.is_checkin_open !== false;
+    return meeting?.is_checkin_open !== false;
   });
 
   // Trạng thái phê duyệt của người dùng hiện tại:
   // 'admitted' (được vào phòng), 'waiting' (đang ở phòng chờ), 'rejected' (bị từ chối)
   const [myAdmissionStatus, setMyAdmissionStatus] = useState(() => {
     if (isAdmin) return 'admitted';
-    const lobbyOn = localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
-    return lobbyOn ? 'waiting' : 'admitted';
+    if (!meeting?.id) return 'admitted';
+    try {
+      const lobbyOn = localStorage.getItem(`cbq_lobby_enabled_${meeting.id}`) === 'true';
+      return lobbyOn ? 'waiting' : 'admitted';
+    } catch {
+      return 'admitted';
+    }
   });
 
   // Danh sách các giáo viên đang chờ duyệt ở phòng chờ: [{ peerId, peerName, department, timestamp }]
@@ -172,7 +183,12 @@ export default function SmartMeetingRoomModal({
 
   // Thư ký ghi chú
   const [meetingNotes, setMeetingNotes] = useState(() => {
-    return localStorage.getItem(`cbq_meeting_notes_${meeting.id}`) || '';
+    if (!meeting?.id) return '';
+    try {
+      return localStorage.getItem(`cbq_meeting_notes_${meeting.id}`) || '';
+    } catch {
+      return '';
+    }
   });
 
   // Unique peer id
@@ -183,6 +199,7 @@ export default function SmartMeetingRoomModal({
   // 1. KÊNH BROADCAST DÙNG CHUNG (SIGNALING & LOBBY SYNC)
   // =========================================================================
   useEffect(() => {
+    if (!isOpen || !meeting?.id) return;
     const channelName = `meeting-broadcast-${meeting.id.slice(0, 20)}`;
     const ch = supabase.channel(channelName, {
       config: { broadcast: { self: false } }
@@ -236,7 +253,9 @@ export default function SmartMeetingRoomModal({
       // 5. Thay đổi trạng thái Bật/Tắt phòng chờ từ Chủ tọa
       else if (type === 'lobby-toggle') {
         setIsLobbyEnabled(isLobby);
-        localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(isLobby));
+        if (meeting?.id) {
+          localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(isLobby));
+        }
         if (!isLobby && !isAdmin) {
           setMyAdmissionStatus('admitted');
         }
@@ -295,7 +314,7 @@ export default function SmartMeetingRoomModal({
       ch.unsubscribe();
       channelRef.current = null;
     };
-  }, [meeting.id, isAdmin, activeEngine, myAdmissionStatus, userDisplayName, userDepartment]);
+  }, [meeting?.id, isAdmin, activeEngine, myAdmissionStatus, userDisplayName, userDepartment]);
 
   // Tự động đồng bộ sĩ số và người tham gia mỗi 4 giây
   useEffect(() => {
@@ -308,6 +327,7 @@ export default function SmartMeetingRoomModal({
 
   // Host Bật/Tắt Cổng Điểm Danh Trực Tuyến
   const handleToggleCheckinGate = async () => {
+    if (!meeting?.id) return;
     const nextState = !isCheckinOpen;
     setIsCheckinOpen(nextState);
     try {
@@ -330,7 +350,9 @@ export default function SmartMeetingRoomModal({
   // Host toggle Bật/Tắt chế độ phê duyệt
   const handleToggleLobby = (newVal) => {
     setIsLobbyEnabled(newVal);
-    localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(newVal));
+    if (meeting?.id) {
+      localStorage.setItem(`cbq_lobby_enabled_${meeting.id}`, String(newVal));
+    }
 
     // Phát tín hiệu cho các máy khác
     channelRef.current?.send({
@@ -794,8 +816,9 @@ export default function SmartMeetingRoomModal({
   const [jitsiLoading, setJitsiLoading] = useState(true);
 
   const cleanRoomName = useMemo(() => {
+    if (!meeting?.id) return 'CBQ_THPT_Meeting_Room';
     return `CBQ_THPT_Meeting_${meeting.id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16)}`;
-  }, [meeting.id]);
+  }, [meeting?.id]);
 
   useEffect(() => {
     if (activeEngine !== 'jitsi' || myAdmissionStatus !== 'admitted') {
@@ -985,7 +1008,7 @@ export default function SmartMeetingRoomModal({
   };
 
   const pollStats = useMemo(() => {
-    if (!meeting.poll_options || meeting.poll_options.length === 0) return [];
+    if (!meeting?.poll_options || meeting.poll_options.length === 0) return [];
     const counts = {};
     meeting.poll_options.forEach(opt => { counts[opt] = 0; });
     let totalVotes = 0;
@@ -1002,7 +1025,7 @@ export default function SmartMeetingRoomModal({
       count: counts[opt] || 0,
       percent: totalVotes > 0 ? Math.round(((counts[opt] || 0) / totalVotes) * 100) : 0
     }));
-  }, [meeting.poll_options, attendances]);
+  }, [meeting?.poll_options, attendances]);
 
   // =========================================================================
   // 5. XUẤT BIÊN BẢN HỌP NGHỊ ĐỊNH 30/2020/NĐ-CP
@@ -1122,6 +1145,8 @@ export default function SmartMeetingRoomModal({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   };
+
+  if (!isOpen || !meeting) return null;
 
   return (
     <div style={styles.backdrop}>

@@ -2,9 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { 
   Video, CheckCircle2, Clock, Users, AlertCircle, ArrowLeft, 
-  Send, ExternalLink, ShieldCheck, Check, MessageSquare, AlertTriangle,
+  Send, ExternalLink, ShieldCheck, AlertTriangle,
   Lock, Unlock, RefreshCw, UserCheck, ShieldAlert, Zap, Search, 
-  Sparkles, Award, Printer, CheckCheck, Filter, FileText, ChevronRight
+  Award, Printer
 } from 'lucide-react';
 import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
 import SmartMeetingRoomModal from '../components/SmartMeetingRoomModal';
@@ -262,17 +262,25 @@ export default function PublicMeetingAttendance() {
   }
 
   async function loadMeetingData(meetingId) {
+    if (!meetingId) return;
     try {
       const [atts, reps] = await Promise.all([
         OnlineMeetingService.getAttendances(meetingId),
         OnlineMeetingService.getDepartmentReports(meetingId)
       ]);
-      setAttendances(atts);
-      setDeptReports(reps);
+      setAttendances(atts || []);
+      setDeptReports(reps || []);
     } catch (e) {
-      console.error(e);
+      console.error('Lỗi nạp dữ liệu cuộc họp:', e);
     }
   }
+
+  // Hàm làm mới dữ liệu điểm danh truyền xuống Modal phòng họp trực tuyến
+  const fetchAttendances = () => {
+    if (selectedMeetingId) {
+      loadMeetingData(selectedMeetingId);
+    }
+  };
 
   const currentMeeting = useMemo(() => {
     return meetings.find(m => m.id === selectedMeetingId) || null;
@@ -683,7 +691,12 @@ export default function PublicMeetingAttendance() {
               )}
 
               <button
-                onClick={() => setShowSmartRoomModal(true)}
+                onClick={() => {
+                  if (!selectedMeetingId && meetings.length > 0) {
+                    setSelectedMeetingId(meetings[0].id);
+                  }
+                  setShowSmartRoomModal(true);
+                }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '6px',
                   fontSize: '12px', color: '#ffffff', fontWeight: 'bold',
@@ -890,7 +903,12 @@ export default function PublicMeetingAttendance() {
                 {/* HÀNG NÚT BẤM TIỆN ÍCH */}
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => setShowSmartRoomModal(true)}
+                    onClick={() => {
+                      if (!selectedMeetingId && meetings.length > 0) {
+                        setSelectedMeetingId(meetings[0].id);
+                      }
+                      setShowSmartRoomModal(true);
+                    }}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '6px',
                       padding: '10px 20px', backgroundColor: '#7c3aed', color: '#fff',
