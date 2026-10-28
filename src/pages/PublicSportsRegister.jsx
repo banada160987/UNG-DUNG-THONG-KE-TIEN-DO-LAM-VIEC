@@ -72,8 +72,9 @@ export default function PublicSportsRegister() {
     try {
       const tourns = await fetchTournaments();
       setTournaments(tourns);
-      if (tourns.length > 0 && !tourns.some(t => t.id === selectedTournId)) {
-        setSelectedTournId(tourns[0].id);
+      const publicTourns = tourns.filter(t => !t.is_hidden && t.status !== 'hidden' && t.id !== 'tourn-2026-hoi-thao-30-nam');
+      if (publicTourns.length > 0 && !publicTourns.some(t => t.id === selectedTournId)) {
+        setSelectedTournId(publicTourns[0].id);
       }
       await fetchRegistrations();
     } catch (err) {
@@ -99,10 +100,15 @@ export default function PublicSportsRegister() {
     }
   }
 
+  // Danh sách giải đấu hiển thị công khai (Đã ẩn giải 30 năm)
+  const visibleTournaments = useMemo(() => {
+    return tournaments.filter(t => !t.is_hidden && t.status !== 'hidden' && t.id !== 'tourn-2026-hoi-thao-30-nam');
+  }, [tournaments]);
+
   // Giải đấu đang chọn
   const activeTourn = useMemo(() => {
-    return tournaments.find(t => t.id === selectedTournId) || tournaments[0] || null;
-  }, [tournaments, selectedTournId]);
+    return visibleTournaments.find(t => t.id === selectedTournId) || visibleTournaments[0] || tournaments[0] || null;
+  }, [visibleTournaments, selectedTournId, tournaments]);
 
   // Trạng thái mở / đóng của giải đấu đang chọn
   const registrationStatus = useMemo(() => {
@@ -456,52 +462,54 @@ export default function PublicSportsRegister() {
         </div>
       </div>
 
-      {/* THANH CHỌN GIẢI ĐẤU (TỰ ĐỘNG HIỂN THỊ NẾU CÓ NHIỀU GIẢI) */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', overflowX: 'auto' }}>
-        {tournaments.map(t => {
-          const isSelected = t.id === selectedTournId;
-          const status = checkTournamentStatus(t);
+      {/* THANH CHỌN GIẢI ĐẤU (CHỈ HIỂN THỊ KHI CÓ TỪ 2 GIẢI CÔNG KHAI TRỞ LÊN) */}
+      {visibleTournaments.length > 1 && (
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '22px', borderBottom: '2px solid #e2e8f0', paddingBottom: '12px', overflowX: 'auto' }}>
+          {visibleTournaments.map(t => {
+            const isSelected = t.id === selectedTournId;
+            const status = checkTournamentStatus(t);
 
-          return (
-            <button
-              key={t.id}
-              onClick={() => {
-                setSelectedTournId(t.id);
-                setSuccessMsg('');
-              }}
-              style={{
-                padding: '10px 18px',
-                borderRadius: '12px',
-                border: isSelected ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                background: isSelected ? '#0284c7' : '#ffffff',
-                color: isSelected ? '#ffffff' : '#334155',
-                fontWeight: 'bold',
-                fontSize: '13.5px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap',
-                boxShadow: isSelected ? '0 4px 14px rgba(2,132,199,0.25)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <Trophy size={16} />
-              <span>{t.name}</span>
-              <span style={{ 
-                fontSize: '11px', 
-                padding: '2px 7px', 
-                borderRadius: '10px', 
-                background: isSelected ? '#ffffff' : status.bg, 
-                color: isSelected ? '#0284c7' : status.color, 
-                fontWeight: 'bold' 
-              }}>
-                {status.allowed ? 'Đang mở' : 'Đã đóng'}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+            return (
+              <button
+                key={t.id}
+                onClick={() => {
+                  setSelectedTournId(t.id);
+                  setSuccessMsg('');
+                }}
+                style={{
+                  padding: '10px 18px',
+                  borderRadius: '12px',
+                  border: isSelected ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                  background: isSelected ? '#0284c7' : '#ffffff',
+                  color: isSelected ? '#ffffff' : '#334155',
+                  fontWeight: 'bold',
+                  fontSize: '13.5px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  whiteSpace: 'nowrap',
+                  boxShadow: isSelected ? '0 4px 14px rgba(2,132,199,0.25)' : 'none',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <Trophy size={16} />
+                <span>{t.name}</span>
+                <span style={{ 
+                  fontSize: '11px', 
+                  padding: '2px 7px', 
+                  borderRadius: '10px', 
+                  background: isSelected ? '#ffffff' : status.bg, 
+                  color: isSelected ? '#0284c7' : status.color, 
+                  fontWeight: 'bold' 
+                }}>
+                  {status.allowed ? 'Đang mở' : 'Đã đóng'}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* THÔNG BÁO THÀNH CÔNG */}
       {successMsg && (

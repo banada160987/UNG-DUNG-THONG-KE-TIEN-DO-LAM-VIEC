@@ -666,6 +666,11 @@ export default function AdminSports() {
                   }}
                 >
                   <span>{t.name}</span>
+                  {t.is_hidden && (
+                    <span style={{ fontSize: '10.5px', padding: '1px 5px', borderRadius: '4px', background: '#fee2e2', color: '#dc2626', fontWeight: 'bold' }}>
+                      Đã Ẩn Cổng
+                    </span>
+                  )}
                   <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '10px', background: isSelected ? '#0284c7' : '#e2e8f0', color: isSelected ? '#ffffff' : '#475569', fontWeight: 'bold' }}>
                     {count}
                   </span>
@@ -1264,6 +1269,21 @@ export default function AdminSports() {
                       onChange={e => setEditTournData({ ...editTournData, prevent_duplicate: e.target.checked })}
                     />
                     <span>🛡️ Chống nhập trùng (Mỗi lớp 1 đội)</span>
+                  </label>
+                </div>
+
+                <div style={{ background: editTournData.is_hidden ? '#fff1f2' : '#f0fdf4', border: `1px solid ${editTournData.is_hidden ? '#fecdd3' : '#bbf7d0'}`, padding: '10px', borderRadius: '8px', gridColumn: 'span 2' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '12.5px', fontWeight: 'bold', color: editTournData.is_hidden ? '#be123c' : '#166534' }}>
+                    <input
+                      type="checkbox"
+                      checked={!editTournData.is_hidden}
+                      onChange={e => setEditTournData({ 
+                        ...editTournData, 
+                        is_hidden: !e.target.checked,
+                        status: !e.target.checked ? 'hidden' : 'active'
+                      })}
+                    />
+                    <span>👁️ Hiển thị trên Cổng Đăng Ký công khai cho Học Sinh / GVCN (Bỏ tích để Ẩn)</span>
                   </label>
                 </div>
               </div>

@@ -71,12 +71,13 @@ export const DEFAULT_TOURNAMENTS = [
     },
     start_date: '2026-10-15T00:00',
     end_date: '2026-11-10T23:59',
-    is_open: true,
+    is_open: false,
+    is_hidden: true,
     prevent_duplicate: false,
     zalo_link: 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa',
     fee_amount: 300000,
     announcement: 'Hội thao giao lưu Kỷ niệm 30 năm thành lập trường THPT Cao Bá Quát dành cho Cựu học sinh và Thầy cô.',
-    status: 'active',
+    status: 'hidden',
     created_at: '2026-10-15T00:00:00.000Z'
   }
 ];

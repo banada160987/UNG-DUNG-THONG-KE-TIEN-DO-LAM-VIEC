@@ -9,9 +9,8 @@ const DEFAULT_FULL_PUBLIC_MENUS = [
   { id: 'pub_anniv_2', target_type: 'public', parent_group: 'anniversary', label: '📖 Tập san 30 năm 3D', path: '/tap-san', sort_order: 2, is_active: true },
   { id: 'pub_anniv_3', target_type: 'public', parent_group: 'anniversary', label: '📘 Cẩm nang hướng dẫn', path: '/huong-dan', sort_order: 3, is_active: true },
   { id: 'pub_anniv_4', target_type: 'public', parent_group: 'anniversary', label: '🏆 Cuộc thi tìm hiểu 30 năm', path: '/cuoc-thi', sort_order: 4, is_active: true },
-  { id: 'pub_anniv_5', target_type: 'public', parent_group: 'anniversary', label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', sort_order: 5, is_active: true },
-  { id: 'pub_anniv_6', target_type: 'public', parent_group: 'anniversary', label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', sort_order: 6, is_active: true },
-  { id: 'pub_anniv_7', target_type: 'public', parent_group: 'anniversary', label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', sort_order: 7, is_active: true },
+  { id: 'pub_anniv_6', target_type: 'public', parent_group: 'anniversary', label: '🗳️ Bình chọn tác phẩm', path: '/binh-chon', sort_order: 5, is_active: true },
+  { id: 'pub_anniv_7', target_type: 'public', parent_group: 'anniversary', label: '📤 Nộp bài thi sáng tạo', path: '/nop-bai-thi', sort_order: 6, is_active: true },
 
   // Group 2: Vận hành nhà trường
   { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
@@ -24,12 +23,13 @@ const DEFAULT_FULL_PUBLIC_MENUS = [
   { id: 'pub_school_8', target_type: 'public', parent_group: 'school', label: '💻 Điểm Danh Họp Trực Tuyến', path: '/hop-online', sort_order: 8, is_active: true },
   { id: 'pub_school_9', target_type: 'public', parent_group: 'school', label: '📜 Tra Cứu Văn Bằng Số Học Sinh', path: '/hoc-sinh/van-bang-so', sort_order: 9, is_active: true },
 
-  // Group 3: Tin tức & Thư viện
+  // Group 3: Tin tức & Thư viện (Media & Hoạt động)
   { id: 'pub_media_1', target_type: 'public', parent_group: 'media', label: '📰 Tin tức - Sự kiện', path: '/tin-tuc', sort_order: 1, is_active: true },
   { id: 'pub_media_2', target_type: 'public', parent_group: 'media', label: '📸 Thư viện ảnh nhà trường', path: '/thu-vien-anh', sort_order: 2, is_active: true },
-  { id: 'pub_media_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng tài trợ & vinh danh', path: '/bang-vang', sort_order: 3, is_active: true },
-  { id: 'pub_media_4', target_type: 'public', parent_group: 'media', label: '📺 Trạm Video & Học Liệu Số 4.0', path: '/hoc-lieu-so', sort_order: 4, is_active: true },
-  { id: 'pub_media_5', target_type: 'public', parent_group: 'media', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 5, is_active: true }
+  { id: 'pub_media_sports', target_type: 'public', parent_group: 'media', label: '⚽ Đăng ký thi đấu thể thao', path: '/dang-ky-the-thao', sort_order: 3, is_active: true },
+  { id: 'pub_media_3', target_type: 'public', parent_group: 'media', label: '🎖️ Bảng vàng tài trợ & vinh danh', path: '/bang-vang', sort_order: 4, is_active: true },
+  { id: 'pub_media_4', target_type: 'public', parent_group: 'media', label: '📺 Trạm Video & Học Liệu Số 4.0', path: '/hoc-lieu-so', sort_order: 5, is_active: true },
+  { id: 'pub_media_5', target_type: 'public', parent_group: 'media', label: '💖 Sổ lưu bút kỷ niệm', path: '/luu-but', sort_order: 6, is_active: true }
 ];
 
 const DEFAULT_FULL_ADMIN_MENUS = [
