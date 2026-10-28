@@ -56,8 +56,8 @@ export default function PublicLayout() {
           .select('*')
           .eq('is_active', true)
           .order('order_index', { ascending: true });
-        if (!error && data) {
-          setExternalLinks(data.filter(l => !l.type || l.type === 'public'));
+        if (!error && Array.isArray(data)) {
+          setExternalLinks(data.filter(l => l && (!l.type || l.type === 'public')));
         }
       } catch (e) {
         console.warn("Lỗi tải liên kết ngoài:", e);
@@ -86,10 +86,18 @@ export default function PublicLayout() {
   // Close dropdown and mobile drawer when clicking outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
-      if (!e.target.closest('.cbq-navbar')) {
-        setActiveDropdown(null);
-        setMobileMenuOpen(false);
-      } else if (!e.target.closest('.nav-dropdown')) {
+      try {
+        if (!e?.target) return;
+        const targetEl = e.target instanceof Element ? e.target : e.target.parentElement;
+        if (!targetEl || typeof targetEl.closest !== 'function') return;
+
+        if (!targetEl.closest('.cbq-navbar')) {
+          setActiveDropdown(null);
+          setMobileMenuOpen(false);
+        } else if (!targetEl.closest('.nav-dropdown')) {
+          setActiveDropdown(null);
+        }
+      } catch (_) {
         setActiveDropdown(null);
       }
     };
@@ -508,7 +516,7 @@ export default function PublicLayout() {
             )}
 
             {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI */}
-            {externalLinks.length > 0 && (
+            {externalLinks && externalLinks.length > 0 && (
               <div className={`nav-dropdown ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
                 <span 
                   onClick={(e) => {
@@ -521,9 +529,9 @@ export default function PublicLayout() {
                   🔗 Liên Kết {activeDropdown === 'links' ? '▴' : '▾'}
                 </span>
                 <div className="nav-dropdown-content" style={styles.dropdownContent}>
-                  {externalLinks.map(link => (
+                  {externalLinks.filter(l => l && l.url).map((link, idx) => (
                     <a 
-                      key={link.id} 
+                      key={link.id || link.url || idx} 
                       href={link.url} 
                       target="_blank" 
                       rel="noreferrer"
@@ -534,7 +542,7 @@ export default function PublicLayout() {
                         setActiveDropdown(null);
                       }}
                     >
-                      <span>{link.title}</span>
+                      <span>{link.title || link.url}</span>
                       <ExternalLink size={12} style={{ opacity: 0.6 }} />
                     </a>
                   ))}
@@ -689,10 +697,10 @@ export default function PublicLayout() {
                 {externalLinks.length}
               </span>
             </h4>
-            {externalLinks.length > 0 ? (
+            {externalLinks && externalLinks.length > 0 ? (
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-                {externalLinks.map(link => (
-                  <li key={link.id}>
+                {externalLinks.filter(l => l && l.url).map((link, idx) => (
+                  <li key={link.id || link.url || idx}>
                     <a 
                       href={link.url} 
                       target="_blank" 
@@ -709,7 +717,7 @@ export default function PublicLayout() {
                       onMouseLeave={(e) => { e.currentTarget.style.color = '#cbd5e1'; }}
                     >
                       <ExternalLink size={13} style={{ color: '#4ade80', flexShrink: 0 }} />
-                      <span>{link.title}</span>
+                      <span>{link.title || link.url}</span>
                     </a>
                   </li>
                 ))}

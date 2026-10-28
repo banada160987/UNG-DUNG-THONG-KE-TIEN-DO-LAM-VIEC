@@ -5,6 +5,47 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
 import MobileBottomNav from './MobileBottomNav';
+import ErrorBoundary from './ErrorBoundary';
+
+// Top-level NavItem to prevent re-creation on every render in React 19
+const NavItem = ({ to, icon: Icon, label, active, onClick }) => {
+  return (
+    <Link 
+      to={to} 
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        padding: '8px 12px 8px 22px',
+        color: active ? '#38bdf8' : '#cbd5e1',
+        textDecoration: 'none',
+        fontSize: '13px',
+        fontWeight: active ? '600' : '400',
+        backgroundColor: active ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+        borderLeft: active ? '3.5px solid #38bdf8' : '3.5px solid transparent',
+        borderRadius: '0 8px 8px 0',
+        margin: '2px 8px 2px 0',
+        transition: 'all 0.15s ease'
+      }}
+      onMouseEnter={(e) => {
+        if (!active) {
+          e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+          e.currentTarget.style.color = '#ffffff';
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (!active) {
+          e.currentTarget.style.backgroundColor = 'transparent';
+          e.currentTarget.style.color = '#cbd5e1';
+        }
+      }}
+    >
+      {Icon && <Icon size={16} style={{ color: active ? '#38bdf8' : '#94a3b8', flexShrink: 0 }} />} 
+      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+    </Link>
+  );
+};
 
 export default function Layout({ children, title }) {
   const { user, role, permissions = {}, signOut } = useAuth();
@@ -141,18 +182,19 @@ export default function Layout({ children, title }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   const filteredMenuItems = useMemo(() => {
-    if (!searchTerm.trim()) return visibleMenuItems;
+    if (!searchTerm || !searchTerm.trim()) return visibleMenuItems;
     const term = searchTerm.toLowerCase().trim();
     return visibleMenuItems.filter(item => 
-      item.label.toLowerCase().includes(term) || 
-      item.group.toLowerCase().includes(term) || 
-      item.path.toLowerCase().includes(term)
+      (item.label || '').toLowerCase().includes(term) || 
+      (item.group || '').toLowerCase().includes(term) || 
+      (item.path || '').toLowerCase().includes(term)
     );
   }, [visibleMenuItems, searchTerm]);
 
   // Gom nhóm các mục menu
   const groupedItems = useMemo(() => {
-    return filteredMenuItems.reduce((acc, item) => {
+    return (filteredMenuItems || []).reduce((acc, item) => {
+      if (!item || !item.group) return acc;
       if (!acc[item.group]) acc[item.group] = [];
       acc[item.group].push(item);
       return acc;
@@ -160,7 +202,8 @@ export default function Layout({ children, title }) {
   }, [filteredMenuItems]);
 
   const toggleGroup = (groupName) => {
-    setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+    if (!groupName) return;
+    setOpenGroups(prev => ({ ...(prev || {}), [groupName]: !prev?.[groupName] }));
   };
 
   const handleCollapseAll = () => {
@@ -169,55 +212,16 @@ export default function Layout({ children, title }) {
 
   const handleExpandAll = () => {
     const all = {};
-    Object.keys(groupedItems).forEach(g => { all[g] = true; });
+    Object.keys(groupedItems || {}).forEach(g => { all[g] = true; });
     setOpenGroups(all);
   };
 
   const isActive = (path) => {
+    if (!path) return false;
     if (path === '/admin') {
       return location.pathname === '/admin';
     }
     return location.pathname === path || location.pathname.startsWith(path + '/');
-  };
-
-  const NavItem = ({ to, icon: Icon, label }) => {
-    const active = isActive(to);
-    return (
-      <Link 
-        to={to} 
-        onClick={() => setIsSidebarOpen(false)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '8px 12px 8px 22px',
-          color: active ? '#38bdf8' : '#cbd5e1',
-          textDecoration: 'none',
-          fontSize: '13px',
-          fontWeight: active ? '600' : '400',
-          backgroundColor: active ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
-          borderLeft: active ? '3.5px solid #38bdf8' : '3.5px solid transparent',
-          borderRadius: '0 8px 8px 0',
-          margin: '2px 8px 2px 0',
-          transition: 'all 0.15s ease'
-        }}
-        onMouseEnter={(e) => {
-          if (!active) {
-            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-            e.currentTarget.style.color = '#ffffff';
-          }
-        }}
-        onMouseLeave={(e) => {
-          if (!active) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#cbd5e1';
-          }
-        }}
-      >
-        {Icon && <Icon size={16} style={{ color: active ? '#38bdf8' : '#94a3b8', flexShrink: 0 }} />} 
-        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
-      </Link>
-    );
   };
 
   return (
@@ -402,7 +406,14 @@ export default function Layout({ children, title }) {
                     />
                   </div>
                   {isOpen && items.map(item => (
-                    <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
+                    <NavItem 
+                      key={item.path} 
+                      to={item.path} 
+                      icon={item.icon} 
+                      label={item.label} 
+                      active={isActive(item.path)} 
+                      onClick={() => setIsSidebarOpen(false)} 
+                    />
                   ))}
                 </div>
               );
@@ -476,7 +487,9 @@ export default function Layout({ children, title }) {
         </header>
         
         <main className="main-content-area layout-main-area" style={styles.mainContent}>
-          {children}
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
         </main>
       </div>
 

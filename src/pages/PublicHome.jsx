@@ -187,8 +187,8 @@ export default function PublicHome() {
       if (!guestsCountRes.error) {
         setAttendingGuests(guestsCountRes.count || 0);
       }
-      if (!linksRes.error && linksRes.data) {
-        setExternalLinks(linksRes.data.filter(l => !l.type || l.type === 'public'));
+      if (!linksRes.error && Array.isArray(linksRes.data)) {
+        setExternalLinks(linksRes.data.filter(l => l && (!l.type || l.type === 'public')));
       }
     } catch (error) {
       console.log('Chưa có dữ liệu mới.');
@@ -449,10 +449,10 @@ export default function PublicHome() {
           {homeConfig.show_external_links && (
           <PortalBlock title="LIÊN KẾT TRANG" color="#166534" icon="🔗">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {externalLinks.length > 0 ? (
-                externalLinks.map(link => (
+              {externalLinks && externalLinks.length > 0 ? (
+                externalLinks.filter(l => l && l.url).map((link, idx) => (
                   <a 
-                    key={link.id}
+                    key={link.id || link.url || idx}
                     href={link.url} 
                     target="_blank" 
                     rel="noreferrer"

@@ -15,21 +15,26 @@ export default class ErrorBoundary extends React.Component {
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.setState({ errorInfo });
     
-    // Detect Vercel chunk hash update / dynamic import failure
+    // Detect Vercel chunk hash update / dynamic import failure (CHỈ khi thực sự là lỗi tải file module JS từ server)
     const isChunkError = 
       error?.message?.includes('Failed to fetch dynamically imported module') ||
       error?.message?.includes('Loading chunk') ||
-      error?.message?.includes('Unexpected token') ||
-      error?.message?.includes('importing');
+      error?.message?.includes('Failed to load module script') ||
+      (error?.message?.includes('import') && error?.message?.includes('module'));
 
     if (isChunkError) {
       try {
-        const lastReload = sessionStorage?.getItem('cbq_last_chunk_reload');
+        const reloadCount = Number(sessionStorage?.getItem('cbq_chunk_reload_count') || 0);
+        const lastReload = Number(sessionStorage?.getItem('cbq_last_chunk_reload') || 0);
         const now = Date.now();
-        if (!lastReload || now - Number(lastReload) > 8000) {
+
+        // Chỉ tự động reload tối đa 2 lần và cách nhau ít nhất 5 giây để tránh lặp vô hạn gây trắng trang
+        if (reloadCount < 2 && (!lastReload || now - lastReload > 5000)) {
+          sessionStorage?.setItem('cbq_chunk_reload_count', String(reloadCount + 1));
           sessionStorage?.setItem('cbq_last_chunk_reload', String(now));
-          console.warn("Hệ thống tự động nạp phiên bản mới nhất từ Vercel...");
+          console.warn("[ErrorBoundary] Phát hiện phiên bản mới từ Vercel, tự động nạp lại trang...");
           window.location.reload();
+          return;
         }
       } catch (e) {
         console.warn("SessionStorage unavailable:", e);
@@ -41,8 +46,18 @@ export default class ErrorBoundary extends React.Component {
     try {
       sessionStorage?.removeItem('cbq_page_refreshed_for_chunk');
       sessionStorage?.removeItem('cbq_last_chunk_reload');
+      sessionStorage?.removeItem('cbq_chunk_reload_count');
     } catch (e) {}
     window.location.href = window.location.origin + window.location.pathname + '?t=' + Date.now();
+  };
+
+  handleGoHome = () => {
+    try {
+      sessionStorage?.removeItem('cbq_page_refreshed_for_chunk');
+      sessionStorage?.removeItem('cbq_last_chunk_reload');
+      sessionStorage?.removeItem('cbq_chunk_reload_count');
+    } catch (e) {}
+    window.location.href = '/';
   };
 
   handleClearCacheAndReload = () => {
@@ -123,6 +138,26 @@ export default class ErrorBoundary extends React.Component {
                 }}
               >
                 <RefreshCw size={17} /> Tải lại trang
+              </button>
+
+              <button
+                onClick={this.handleGoHome}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '11px 20px',
+                  background: '#16a34a',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)'
+                }}
+              >
+                🏠 Về Trang Chủ
               </button>
 
               <button
