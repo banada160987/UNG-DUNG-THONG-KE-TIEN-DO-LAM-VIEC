@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail, ChevronDown, Search, X, Minimize2, Maximize2, ExternalLink } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -102,24 +102,34 @@ export default function Layout({ children, title }) {
     // 5. ⚙️ QUẢN TRỊ HỆ THỐNG
     { path: '/admin/users', icon: Settings, label: '⚙️ Phân quyền Tài khoản Cán bộ', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
     { path: '/admin/menu-config', icon: Globe, label: '🌐 Cấu Hình Menu Hiển Thị', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
+    { path: '/admin/links', icon: Link2, label: '🔗 Quản Lý Liên Kết Trang Web', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin || !!permissions.canViewLinks },
     { path: '/admin/audit', icon: Activity, label: '📋 Nhật ký Hoạt động Hệ thống', group: '⚙️ QUẢN TRỊ HỆ THỐNG', show: isAdmin },
   ];
 
   const visibleMenuItems = useMemo(() => menuItems.filter(item => item.show), [isAdmin, role, permissions]);
 
-  // Accordion State for Sidebar Groups
-  const [openGroups, setOpenGroups] = useState({
-    '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY': true,
-    '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN': true,
-    '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP': true,
-    '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG': true,
-    '⚙️ QUẢN TRỊ HỆ THỐNG': true
+  // Accordion State: Mặc định THU GỌN toàn bộ khi load trang, chỉ tự động mở nhóm chứa trang active
+  const [openGroups, setOpenGroups] = useState(() => {
+    try {
+      const curPath = window.location.pathname;
+      const initialActive = menuItems.find(item => 
+        item.path === curPath || (item.path !== '/admin' && curPath.startsWith(item.path + '/'))
+      );
+      if (initialActive?.group) {
+        return { [initialActive.group]: true };
+      }
+    } catch {
+      // fallback
+    }
+    return {};
   });
 
-  // Auto-expand group of current active path safely
+  // Tự động mở nhóm khi điều hướng trang
   useEffect(() => {
-    const activeItem = visibleMenuItems.find(item => item.path === location.pathname);
-    if (activeItem && activeItem.group) {
+    const activeItem = visibleMenuItems.find(item => 
+      item.path === location.pathname || (item.path !== '/admin' && location.pathname.startsWith(item.path + '/'))
+    );
+    if (activeItem?.group) {
       setOpenGroups(prev => {
         if (prev[activeItem.group] === true) return prev;
         return { ...prev, [activeItem.group]: true };
@@ -127,32 +137,88 @@ export default function Layout({ children, title }) {
     }
   }, [location.pathname, visibleMenuItems]);
 
+  // Bộ lọc tìm kiếm nhanh chức năng menu
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredMenuItems = useMemo(() => {
+    if (!searchTerm.trim()) return visibleMenuItems;
+    const term = searchTerm.toLowerCase().trim();
+    return visibleMenuItems.filter(item => 
+      item.label.toLowerCase().includes(term) || 
+      item.group.toLowerCase().includes(term) || 
+      item.path.toLowerCase().includes(term)
+    );
+  }, [visibleMenuItems, searchTerm]);
+
+  // Gom nhóm các mục menu
+  const groupedItems = useMemo(() => {
+    return filteredMenuItems.reduce((acc, item) => {
+      if (!acc[item.group]) acc[item.group] = [];
+      acc[item.group].push(item);
+      return acc;
+    }, {});
+  }, [filteredMenuItems]);
+
   const toggleGroup = (groupName) => {
     setOpenGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
-  // Group items
-  const groupedItems = visibleMenuItems.reduce((acc, item) => {
-    if (!acc[item.group]) acc[item.group] = [];
-    acc[item.group].push(item);
-    return acc;
-  }, {});
+  const handleCollapseAll = () => {
+    setOpenGroups({});
+  };
 
-  const isActive = (path) => location.pathname === path;
+  const handleExpandAll = () => {
+    const all = {};
+    Object.keys(groupedItems).forEach(g => { all[g] = true; });
+    setOpenGroups(all);
+  };
 
-  const NavItem = ({ to, icon: Icon, label }) => (
-    <Link 
-      to={to} 
-      onClick={() => setIsSidebarOpen(false)}
-      style={{
-        ...styles.navItem, 
-        backgroundColor: isActive(to) ? '#334155' : 'transparent',
-        borderLeft: isActive(to) ? '4px solid #3b82f6' : '4px solid transparent'
-      }}
-    >
-      {Icon && <Icon size={18} />} <span>{label}</span>
-    </Link>
-  );
+  const isActive = (path) => {
+    if (path === '/admin') {
+      return location.pathname === '/admin';
+    }
+    return location.pathname === path || location.pathname.startsWith(path + '/');
+  };
+
+  const NavItem = ({ to, icon: Icon, label }) => {
+    const active = isActive(to);
+    return (
+      <Link 
+        to={to} 
+        onClick={() => setIsSidebarOpen(false)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '8px 12px 8px 22px',
+          color: active ? '#38bdf8' : '#cbd5e1',
+          textDecoration: 'none',
+          fontSize: '13px',
+          fontWeight: active ? '600' : '400',
+          backgroundColor: active ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
+          borderLeft: active ? '3.5px solid #38bdf8' : '3.5px solid transparent',
+          borderRadius: '0 8px 8px 0',
+          margin: '2px 8px 2px 0',
+          transition: 'all 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          if (!active) {
+            e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            e.currentTarget.style.color = '#ffffff';
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (!active) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#cbd5e1';
+          }
+        }}
+      >
+        {Icon && <Icon size={16} style={{ color: active ? '#38bdf8' : '#94a3b8', flexShrink: 0 }} />} 
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>
+      </Link>
+    );
+  };
 
   return (
     <div style={styles.container}>
@@ -160,49 +226,208 @@ export default function Layout({ children, title }) {
       
       {/* Sidebar */}
       <aside className={`layout-sidebar ${isSidebarOpen ? 'open' : ''}`} style={styles.sidebar}>
+        {/* Header Thương hiệu & Trạng thái */}
         <div style={styles.logoArea}>
-          <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
-          <div>
-            <h2 style={{margin: 0, fontSize: '16px', color: 'white'}}>CBQ Admin</h2>
-            <small style={{color: '#94a3b8'}}>Quản lý Chuyên môn</small>
+          <div style={{ position: 'relative' }}>
+            <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(56, 189, 248, 0.4)' }} />
+            <span style={{
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              width: '10px',
+              height: '10px',
+              backgroundColor: '#22c55e',
+              border: '2px solid #0f172a',
+              borderRadius: '50%'
+            }} title="Hệ thống trực tuyến" />
+          </div>
+          <div style={{ overflow: 'hidden' }}>
+            <h2 style={{margin: 0, fontSize: '15px', color: 'white', fontWeight: 'bold', letterSpacing: '0.2px'}}>CBQ ADMIN</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+              <span style={{
+                backgroundColor: isAdmin ? 'rgba(239, 68, 68, 0.2)' : 'rgba(147, 51, 234, 0.2)',
+                color: isAdmin ? '#fca5a5' : '#d8b4fe',
+                border: isAdmin ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(147, 51, 234, 0.4)',
+                padding: '1px 6px',
+                borderRadius: '4px',
+                fontSize: '10px',
+                fontWeight: '600'
+              }}>
+                {isAdmin ? 'Quản Trị Viên' : (role === 'secretary' ? 'Thư Ký Hội Đồng' : 'Cán Bộ Giáo Viên')}
+              </span>
+            </div>
           </div>
         </div>
 
-        <div style={styles.navContainer}>
-          {Object.entries(groupedItems).map(([group, items]) => {
-            const isOpen = openGroups[group] ?? false;
-            return (
-              <div key={group} style={{ marginBottom: '6px' }}>
-                <div 
-                  onClick={() => toggleGroup(group)}
-                  style={{
-                    cursor: 'pointer',
-                    display: 'flex',
-                    justify: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-                    borderRadius: '6px',
-                    margin: '6px 10px 4px 10px',
-                    color: isOpen ? '#38bdf8' : '#94a3b8',
-                    fontWeight: 'bold',
-                    fontSize: '11px',
-                    userSelect: 'none'
-                  }}
-                >
-                  <span>{group} ({items.length})</span>
-                  <span style={{ fontSize: '10px' }}>{isOpen ? '▲' : '▼'}</span>
-                </div>
-                {isOpen && items.map(item => (
-                  <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
-                ))}
-              </div>
-            );
-          })}
+        {/* Thanh công cụ tìm kiếm & Thao tác nhanh */}
+        <div style={{
+          padding: '10px 12px 8px 12px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)'
+        }}>
+          {/* Ô tìm kiếm nhanh */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            backgroundColor: 'rgba(255, 255, 255, 0.06)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '6px',
+            padding: '5px 8px'
+          }}>
+            <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+            <input 
+              type="text"
+              placeholder="Tìm tính năng nhanh..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                outline: 'none',
+                color: '#f8fafc',
+                fontSize: '12px',
+                width: '100%'
+              }}
+            />
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}
+                title="Xóa tìm kiếm"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Nút Thu gọn / Mở hết */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#94a3b8', padding: '0 2px' }}>
+            <span>{searchTerm ? `Tìm thấy: ${filteredMenuItems.length}` : 'Danh mục quản trị:'}</span>
+            <div style={{ display: 'flex', gap: '5px' }}>
+              <button
+                onClick={handleCollapseAll}
+                title="Thu gọn tất cả nhóm menu"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#cbd5e1',
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '10.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px'
+                }}
+              >
+                <Minimize2 size={11} /> Thu gọn
+              </button>
+              <button
+                onClick={handleExpandAll}
+                title="Mở rộng tất cả nhóm menu"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.1)',
+                  color: '#cbd5e1',
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '10.5px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '3px'
+                }}
+              >
+                <Maximize2 size={11} /> Mở hết
+              </button>
+            </div>
+          </div>
         </div>
 
+        {/* Danh sách nhóm menu dạng Accordion */}
+        <div style={styles.navContainer}>
+          {Object.keys(groupedItems).length === 0 ? (
+            <div style={{ padding: '24px 15px', textAlign: 'center', color: '#94a3b8', fontSize: '12px' }}>
+              Không tìm thấy tính năng &quot;{searchTerm}&quot;
+            </div>
+          ) : (
+            Object.entries(groupedItems).map(([group, items]) => {
+              const isOpen = searchTerm.trim() ? true : (openGroups[group] ?? false);
+              return (
+                <div key={group} style={{ marginBottom: '6px' }}>
+                  <div 
+                    onClick={() => toggleGroup(group)}
+                    style={{
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 10px',
+                      backgroundColor: isOpen ? 'rgba(56, 189, 248, 0.1)' : 'rgba(255, 255, 255, 0.04)',
+                      border: isOpen ? '1px solid rgba(56, 189, 248, 0.25)' : '1px solid rgba(255, 255, 255, 0.05)',
+                      borderRadius: '6px',
+                      margin: '4px 8px 3px 8px',
+                      color: isOpen ? '#38bdf8' : '#cbd5e1',
+                      fontWeight: '600',
+                      fontSize: '11px',
+                      letterSpacing: '0.2px',
+                      userSelect: 'none',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{group}</span>
+                      <span style={{
+                        fontSize: '9.5px',
+                        backgroundColor: isOpen ? 'rgba(56, 189, 248, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+                        color: isOpen ? '#38bdf8' : '#94a3b8',
+                        padding: '1px 5px',
+                        borderRadius: '10px',
+                        fontWeight: 'bold'
+                      }}>
+                        {items.length}
+                      </span>
+                    </div>
+                    <ChevronDown 
+                      size={14} 
+                      style={{ 
+                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
+                        transition: 'transform 0.25s ease',
+                        color: isOpen ? '#38bdf8' : '#64748b',
+                        flexShrink: 0
+                      }} 
+                    />
+                  </div>
+                  {isOpen && items.map(item => (
+                    <NavItem key={item.path} to={item.path} icon={item.icon} label={item.label} />
+                  ))}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Chân Sidebar */}
         <div style={styles.sidebarBottom}>
-          <Link to="/" style={styles.publicLink}>← Trở ra Cổng thông tin</Link>
+          <Link 
+            to="/" 
+            style={{
+              ...styles.publicLink,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <ExternalLink size={13} />
+            <span>← Trở ra Cổng thông tin</span>
+          </Link>
+          <div style={{ textAlign: 'center', fontSize: '10px', color: '#64748b', marginTop: '8px' }}>
+            CBQ Smart School • 2025-2026
+          </div>
         </div>
       </aside>
 
@@ -268,17 +493,18 @@ const styles = {
     backgroundColor: '#f1f5f9',
   },
   sidebar: {
-    width: '260px',
-    backgroundColor: '#1e293b',
+    width: '270px',
+    backgroundColor: '#0f172a',
     color: '#f8fafc',
     display: 'flex',
     flexDirection: 'column',
-    boxShadow: '4px 0 10px rgba(0,0,0,0.1)',
+    boxShadow: '4px 0 16px rgba(0,0,0,0.2)',
+    borderRight: '1px solid rgba(255, 255, 255, 0.08)',
     zIndex: 20
   },
   logoArea: {
-    padding: '20px',
-    borderBottom: '1px solid #334155',
+    padding: '14px 14px',
+    borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
     display: 'flex',
     alignItems: 'center',
     gap: '12px'
@@ -296,40 +522,43 @@ const styles = {
   },
   navContainer: {
     flex: 1,
-    padding: '20px 0',
-    overflowY: 'auto'
+    padding: '8px 0',
+    overflowY: 'auto',
+    scrollbarWidth: 'thin'
   },
   navGroup: {
     fontSize: '11px',
     fontWeight: 'bold',
     color: '#64748b',
-    padding: '10px 20px',
-    marginTop: '10px',
-    letterSpacing: '1px'
+    padding: '8px 16px',
+    marginTop: '6px',
+    letterSpacing: '0.5px'
   },
   navItem: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-    padding: '12px 20px',
+    gap: '10px',
+    padding: '8px 16px',
     color: '#cbd5e1',
     textDecoration: 'none',
-    transition: 'all 0.2s',
-    fontSize: '14px'
+    transition: 'all 0.15s ease',
+    fontSize: '13px'
   },
   sidebarBottom: {
-    padding: '20px',
-    borderTop: '1px solid #334155'
+    padding: '12px 14px',
+    borderTop: '1px solid rgba(255, 255, 255, 0.08)'
   },
   publicLink: {
     color: '#cbd5e1',
     textDecoration: 'none',
-    fontSize: '13px',
+    fontSize: '12px',
     display: 'block',
     textAlign: 'center',
     padding: '8px',
-    border: '1px solid #475569',
-    borderRadius: '6px'
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    borderRadius: '6px',
+    transition: 'all 0.2s'
   },
   mainWrapper: {
     flex: 1,

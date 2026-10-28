@@ -257,7 +257,7 @@ function App() {
               <Route path="/admin/docs" element={permissions.canViewDocs ? <AdminDocs /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/tap-san" element={permissions.canViewMagazine ? <AdminMagazine /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/gallery" element={permissions.canViewNews ? <AdminGallery /> : <Navigate to="/admin/committee" replace />} />
-              <Route path="/admin/links" element={permissions.canViewLinks ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/links" element={(role === 'admin' || permissions.canViewLinks) ? <AdminLinks /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/department-drives" element={(role === 'admin' || role === 'secretary') ? <DepartmentDrive /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/app-hub" element={(role === 'admin' || role === 'secretary') ? <AppHub /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/registrations" element={(role === 'admin' || role === 'secretary') ? <AdminRegistrations /> : <Navigate to="/admin/committee" replace />} />
