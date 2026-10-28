@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2, User } from 'lucide-react';
+import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2, User, ExternalLink, Link2 } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 import MobileBottomNav from './MobileBottomNav';
 import ErrorBoundary from './ErrorBoundary';
@@ -46,6 +46,25 @@ export default function PublicLayout() {
   const [publicMenus, setPublicMenus] = useState(DEFAULT_FULL_MENUS);
   const [loggedTeacher, setLoggedTeacher] = useState(() => getTeacherSession());
   const [loggedStudent, setLoggedStudent] = useState(() => getStudentSession());
+  const [externalLinks, setExternalLinks] = useState([]);
+
+  useEffect(() => {
+    async function fetchExternalLinks() {
+      try {
+        const { data, error } = await supabase
+          .from('cbq_external_links')
+          .select('*')
+          .eq('is_active', true)
+          .order('order_index', { ascending: true });
+        if (!error && data) {
+          setExternalLinks(data.filter(l => !l.type || l.type === 'public'));
+        }
+      } catch (e) {
+        console.warn("Lỗi tải liên kết ngoài:", e);
+      }
+    }
+    fetchExternalLinks();
+  }, []);
 
   useEffect(() => {
     const handleTeacherChange = (e) => setLoggedTeacher(e.detail);
@@ -488,6 +507,41 @@ export default function PublicLayout() {
               </div>
             )}
 
+            {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI */}
+            {externalLinks.length > 0 && (
+              <div className={`nav-dropdown ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
+                <span 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleDropdown('links');
+                  }}
+                  style={activeDropdown === 'links' ? styles.navItemActive : styles.navItem}
+                  title="Các cổng thông tin và trang web liên kết"
+                >
+                  🔗 Liên Kết {activeDropdown === 'links' ? '▴' : '▾'}
+                </span>
+                <div className="nav-dropdown-content" style={styles.dropdownContent}>
+                  {externalLinks.map(link => (
+                    <a 
+                      key={link.id} 
+                      href={link.url} 
+                      target="_blank" 
+                      rel="noreferrer"
+                      className="nav-dropdown-item" 
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setActiveDropdown(null);
+                      }}
+                    >
+                      <span>{link.title}</span>
+                      <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* In mobile drawer: show large login cards */}
             <div className="mobile-drawer-portals">
               <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#86efac', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.5px' }}>
@@ -583,6 +637,97 @@ export default function PublicLayout() {
           <Outlet />
         </ErrorBoundary>
       </main>
+      
+      {/* 5. Chân trang Cổng Thông Tin Toàn Trường (School Portal Footer) */}
+      <footer style={{
+        backgroundColor: '#0f172a',
+        color: '#e2e8f0',
+        marginTop: '40px',
+        borderTop: '4px solid #16a34a',
+        padding: '40px 16px 30px 16px'
+      }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '30px', paddingBottom: '30px', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          {/* Cột 1: Thông tin trường */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+              <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px solid #22c55e', objectFit: 'cover' }} />
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#ffffff', letterSpacing: '0.3px' }}>TRƯỜNG THPT CAO BÁ QUÁT</h3>
+                <small style={{ color: '#86efac', fontSize: '11px', fontWeight: '600' }}>HỆ THỐNG ĐIỀU HÀNH & KHÔNG GIAN SỐ 4.0</small>
+              </div>
+            </div>
+            <p style={{ fontSize: '13px', color: '#94a3b8', lineHeight: '1.6', margin: '0 0 12px 0' }}>
+              Kênh thông tin chính thức phục vụ cán bộ giáo viên, nhân viên, phụ huynh và học sinh toàn trường. Hoạt động 24/7 trên mọi nền tảng.
+            </p>
+            <div style={{ fontSize: '12.5px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div>📍 <strong>Địa chỉ:</strong> Trường THPT Cao Bá Quát</div>
+              <div>📞 <strong>Điện thoại:</strong> 0123.456.789</div>
+              <div>✉️ <strong>Email:</strong> c3caobaquat@daklak.edu.vn</div>
+            </div>
+          </div>
+
+          {/* Cột 2: Lối tắt tiện ích */}
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              ⚡ Lối Tắt Tiện Ích
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+              <li><Link to="/lich-cong-tac" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📅 Lịch Công Tác & Thời Khóa Biểu</Link></li>
+              <li><Link to="/hoc-lieu-so" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📺 Kho Học Liệu Số & Video Bài Giảng</Link></li>
+              <li><Link to="/dang-ky-the-thao" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚽ Đăng Ký Thi Đấu Thể Thao</Link></li>
+              <li><Link to="/hom-thu-hoc-sinh" style={{ color: '#cbd5e1', textDecoration: 'none' }}>💌 Hòm Thư Tâm Tư & Nguyện Vọng HS</Link></li>
+              <li><Link to="/hop-online" style={{ color: '#cbd5e1', textDecoration: 'none' }}>💻 Điểm Danh Họp Trực Tuyến & Sĩ Số</Link></li>
+              <li><Link to="/can-chinh-nghi-dinh-30" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📄 Căn Chỉnh Văn Bản Chuẩn NĐ 30</Link></li>
+            </ul>
+          </div>
+
+          {/* Cột 3: Các trang liên kết ngoài */}
+          <div>
+            <h4 style={{ fontSize: '14px', fontWeight: 'bold', color: '#4ade80', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>🔗 Các Trang Liên Kết</span>
+              <span style={{ fontSize: '10px', backgroundColor: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', padding: '1px 6px', borderRadius: '10px' }}>
+                {externalLinks.length}
+              </span>
+            </h4>
+            {externalLinks.length > 0 ? (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                {externalLinks.map(link => (
+                  <li key={link.id}>
+                    <a 
+                      href={link.url} 
+                      target="_blank" 
+                      rel="noreferrer" 
+                      style={{ 
+                        color: '#cbd5e1', 
+                        textDecoration: 'none', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '6px',
+                        transition: 'color 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = '#4ade80'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = '#cbd5e1'; }}
+                    >
+                      <ExternalLink size={13} style={{ color: '#4ade80', flexShrink: 0 }} />
+                      <span>{link.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p style={{ fontSize: '12.5px', color: '#64748b', fontStyle: 'italic', margin: 0 }}>
+                Chưa có liên kết nào được cấu hình.
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Bản quyền */}
+        <div style={{ maxWidth: '1280px', margin: '18px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: '#64748b' }}>
+          <div>© 2025 - 2026 TRƯỜNG THPT CAO BÁ QUÁT. All rights reserved.</div>
+          <div>Hệ Thống Tiện Ích & Điều Hành Thông Minh</div>
+        </div>
+      </footer>
       
       {/* Smart School AI Chatbot */}
       <ChatbotWidget />

@@ -26,10 +26,16 @@ export default function AdminLinks() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+      title: formData.title?.trim() || '',
+      url: formData.url?.trim() || '',
+      order_index: Number(formData.order_index) || 0,
+      is_active: formData.is_active !== false
+    };
+
     if (formData.id) {
       // Update
-      const { id, ...updateData } = formData;
-      const { error } = await supabase.from('cbq_external_links').update(updateData).eq('id', id);
+      const { error } = await supabase.from('cbq_external_links').update(payload).eq('id', formData.id);
       if (!error) {
         setShowForm(false);
         resetForm();
@@ -39,8 +45,7 @@ export default function AdminLinks() {
       }
     } else {
       // Insert
-      const { id, ...insertData } = formData;
-      const { error } = await supabase.from('cbq_external_links').insert([{...insertData, type: insertData.type || 'public'}]);
+      const { error } = await supabase.from('cbq_external_links').insert([payload]);
       if (!error) {
         setShowForm(false);
         resetForm();

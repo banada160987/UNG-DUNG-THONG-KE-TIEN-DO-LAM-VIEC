@@ -146,7 +146,7 @@ export default function PublicHome() {
         supabase.from('cbq_sponsors').select('*').eq('is_public', true).order('date_received', { ascending: false }),
         supabase.from('cbq_news').select('*').order('published_at', { ascending: false }),
         supabase.from('cbq_guests').select('*', { count: 'exact', head: true }).eq('rsvp_status', 'attending'),
-        supabase.from('cbq_external_links').select('*').eq('is_active', true).eq('type', 'public').order('order_index', { ascending: true }),
+        supabase.from('cbq_external_links').select('*').eq('is_active', true).order('order_index', { ascending: true }),
         supabase.from('cbq_pages').select('*').in('slug', ['invite-config', 'home-config']),
         supabase.from('cbq_quiz_submissions').select('*').order('total_score', { ascending: false }).order('time_taken_seconds', { ascending: true }).limit(10),
         supabase.from('cbq_quizzes').select('*').limit(1),
@@ -187,7 +187,9 @@ export default function PublicHome() {
       if (!guestsCountRes.error) {
         setAttendingGuests(guestsCountRes.count || 0);
       }
-      if (!linksRes.error) setExternalLinks(linksRes.data || []);
+      if (!linksRes.error && linksRes.data) {
+        setExternalLinks(linksRes.data.filter(l => !l.type || l.type === 'public'));
+      }
     } catch (error) {
       console.log('Chưa có dữ liệu mới.');
     } finally {
@@ -446,18 +448,53 @@ export default function PublicHome() {
 
           {homeConfig.show_external_links && (
           <PortalBlock title="LIÊN KẾT TRANG" color="#166534" icon="🔗">
-            <ul style={styles.linkList}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {externalLinks.length > 0 ? (
                 externalLinks.map(link => (
-                  <li key={link.id}>
-                    <ChevronRight size={14} color="#166534" /> 
-                    <a href={link.url} target="_blank" rel="noreferrer" style={{color: '#334155', textDecoration: 'none'}}>{link.title}</a>
-                  </li>
+                  <a 
+                    key={link.id}
+                    href={link.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '8px 12px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '8px',
+                      color: '#0f172a',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      textDecoration: 'none',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#ecfdf5';
+                      e.currentTarget.style.borderColor = '#86efac';
+                      e.currentTarget.style.color = '#15803d';
+                      e.currentTarget.style.transform = 'translateX(3px)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#f8fafc';
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                      e.currentTarget.style.color = '#0f172a';
+                      e.currentTarget.style.transform = 'translateX(0)';
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ color: '#16a34a' }}>🔗</span>
+                      <span>{link.title}</span>
+                    </span>
+                    <ExternalLink size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  </a>
                 ))
               ) : (
-                <li><span style={{color: '#94a3b8', fontStyle: 'italic', fontSize: '13px'}}>Đang cập nhật...</span></li>
+                <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px', padding: '6px 0' }}>Đang cập nhật...</div>
               )}
-            </ul>
+            </div>
           </PortalBlock>
           )}
         </div>
