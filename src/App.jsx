@@ -93,6 +93,7 @@ const TeacherDiscipline = lazy(() => import('./pages/teacher_features/TeacherDis
 const TeacherAcademics = lazy(() => import('./pages/teacher_features/TeacherAcademics'));
 const TeacherLessonPlanBuilder = lazy(() => import('./pages/teacher_features/TeacherLessonPlanBuilder'));
 const TeacherExamMaker = lazy(() => import('./pages/teacher_features/TeacherExamMaker'));
+const TeacherQuestionBank = lazy(() => import('./pages/teacher_features/TeacherQuestionBank'));
 const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/TeacherAssessmentTT22'));
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
 const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
@@ -198,6 +199,7 @@ function App() {
             <Route path="/giao-vien/hoc-lieu-so" element={<TeacherRoute><TeacherEduMaterials /></TeacherRoute>} />
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/giao-vien/ngan-hang-cau-hoi" element={<TeacherRoute><TeacherQuestionBank /></TeacherRoute>} />
             <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
             <Route path="/giao-vien/tro-choi-lop-hoc" element={<TeacherRoute><ClassroomInteractiveGames /></TeacherRoute>} />
             <Route path="/tro-choi-hoc-tap" element={<ClassroomInteractiveGames />} />
@@ -212,6 +214,7 @@ function App() {
             {/* Teacher Route Aliases */}
             <Route path="/teacher/lesson-plans" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
             <Route path="/teacher/exam-maker" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/teacher/question-bank" element={<TeacherRoute><TeacherQuestionBank /></TeacherRoute>} />
             <Route path="/teacher/assessment-tt22" element={<TeacherRoute><TeacherAssessmentTT22 /></TeacherRoute>} />
             <Route path="/teacher/academics" element={<TeacherRoute><TeacherAcademics /></TeacherRoute>} />
             <Route path="/teacher/homeroom" element={<TeacherRoute><TeacherHomeroomStudents /></TeacherRoute>} />

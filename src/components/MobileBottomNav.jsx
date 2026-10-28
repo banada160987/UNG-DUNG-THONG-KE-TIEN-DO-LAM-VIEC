@@ -95,6 +95,7 @@ export default function MobileBottomNav() {
     { title: 'Ghi Sổ Đầu Bài Hôm Nay', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Ký số và ghi nhận đánh giá tiết dạy' },
     { title: 'Kế Hoạch Bài Dạy (CV 5512)', path: '/admin/department-drives', icon: '📂', desc: 'Nộp và duyệt giáo án chuẩn chuyên môn' },
     { title: 'Ngân Hàng Đề Thi & Trộn Đề', path: '/giao-vien/ra-de-thi', icon: '✏️', desc: 'Hỗ trợ công thức LaTeX, tạo mã đề đa dạng' },
+    { title: 'Ngân Hàng Câu Hỏi Tổ Chuyên Môn', path: '/giao-vien/ngan-hang-cau-hoi', icon: '🌳', desc: 'Quản lý cây thư mục Chương - Bài & bốc đề ma trận' },
     { title: 'Sổ Chấm Điểm Thi Đua Tuần', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Đánh giá nề nếp thi đua 34 lớp học' },
     { title: 'Căn Chỉnh Nghị Định 30', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Chuẩn hóa thể thức văn bản hành chính' },
     { title: 'Hồ Sơ Tổ Chuyên Môn', path: '/to-chuyen-mon', icon: '🌳', desc: 'Cây phân cấp 4 tầng & hoạt động chuyên môn' },

@@ -5,9 +5,10 @@ import {
   ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
   FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
   CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image,
-  Copy, Search, Filter, Database
+  Copy, Search, Filter, Database, FolderTree
 } from 'lucide-react';
 import MathView, { MathToolbar } from '../../components/MathView';
+import BankExamPickerModal from '../../components/BankExamPickerModal';
 import { 
   savePublishedExam, 
   getSubmissionsForExam, 
@@ -240,6 +241,19 @@ export default function TeacherExamMaker() {
   const [aiRawContext, setAiRawContext] = useState('');
   const [aiGeneratedPreview, setAiGeneratedPreview] = useState([]);
   const [aiError, setAiError] = useState('');
+
+  // Question Bank Picker Modal (Matrix or Manual Selection)
+  const [showBankPickerModal, setShowBankPickerModal] = useState(false);
+
+  const handleInsertFromBank = (bankQuestions) => {
+    if (!bankQuestions || bankQuestions.length === 0) return;
+    const formatted = bankQuestions.map((q, idx) => ({
+      ...q,
+      id: q.id || `bank_imp_${Date.now()}_${idx}`
+    }));
+    setQuestions(prev => [...prev, ...formatted]);
+    setMixedExamCodes([]);
+  };
 
   // Smart Assessment Publishing & Excel Grade Sync States
   const [showExcelSyncModal, setShowExcelSyncModal] = useState(false);
@@ -1175,27 +1189,51 @@ export default function TeacherExamMaker() {
                     )}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => handleLoadSampleForSubject(subject)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      padding: '7px 14px',
-                      background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontWeight: '700',
-                      fontSize: '12.5px',
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)'
-                    }}
-                    title="Nạp bộ câu hỏi mẫu chuẩn GDPT 2018 của Bộ GD&ĐT cho môn học này"
-                  >
-                    <Sparkles size={14} /> Nạp Đề Mẫu Chuẩn Bộ GD&ĐT (Môn {subject})
-                  </button>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowBankPickerModal(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(2, 132, 199, 0.25)'
+                      }}
+                      title="Mở phân hệ Ngân hàng câu hỏi cây thư mục của tổ: Bốc đề theo ma trận hoặc chọn từng câu"
+                    >
+                      <FolderTree size={14} /> 🌳 Ra Đề Từ Ngân Hàng Tổ (Ma Trận / Chọn Câu)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSampleForSubject(subject)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '7px 14px',
+                        background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: '700',
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)'
+                      }}
+                      title="Nạp bộ câu hỏi mẫu chuẩn GDPT 2018 của Bộ GD&ĐT cho môn học này"
+                    >
+                      <Sparkles size={14} /> Nạp Đề Mẫu Chuẩn Bộ GD&ĐT (Môn {subject})
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1213,6 +1251,47 @@ export default function TeacherExamMaker() {
             </div>
             
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <Link
+                to="/giao-vien/ngan-hang-cau-hoi"
+                style={{
+                  padding: '8px 14px',
+                  background: '#f8fafc',
+                  color: '#0f172a',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px'
+                }}
+                title="Mở không gian quản lý Ngân hàng câu hỏi theo cây thư mục Chương - Bài của Tổ Chuyên Môn"
+              >
+                <FolderTree size={15} color="#0284c7" /> Quản Lý Cây Ngân Hàng Tổ
+              </Link>
+
+              <button
+                type="button"
+                onClick={() => setShowBankPickerModal(true)}
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '13px',
+                  boxShadow: '0 2px 6px rgba(2,132,199,0.25)'
+                }}
+              >
+                <FolderTree size={16} /> Bốc Đề Từ Ma Trận / Chọn Câu
+              </button>
+
               <button
                 type="button"
                 onClick={() => setShowAiGenModal(true)}
@@ -3264,6 +3343,15 @@ export default function TeacherExamMaker() {
 
       {/* MODAL: CẤU HÌNH KHÓA GEMINI AI CÁ NHÂN (BYOK) */}
       <AiSettingsModal isOpen={showAiSettings} onClose={() => setShowAiSettings(false)} />
+
+      {/* MODAL: BỐC ĐỀ & CHỌN CÂU HỎI TỪ NGÂN HÀNG CÂY THƯ MỤC CỦA TỔ */}
+      <BankExamPickerModal
+        isOpen={showBankPickerModal}
+        onClose={() => setShowBankPickerModal(false)}
+        subject={subject}
+        grade={grade}
+        onInsertQuestions={handleInsertFromBank}
+      />
 
     </div>
   );

@@ -4,7 +4,7 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart, Video, Plus, Trophy, Gamepad2
+  Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -620,28 +620,50 @@ export default function TeacherDashboard() {
                       Ra đề chuẩn cấu trúc BGDĐT 2025, tổ chức thi trực tuyến, tự động chấm và ghi điểm thẳng vào file Excel sổ điểm từ máy tính.
                     </p>
                   </div>
-                  <button
-                    onClick={() => navigate('/giao-vien/ra-de-thi')}
-                    style={{
-                      marginTop: '20px',
-                      width: '100%',
-                      padding: '11px 16px',
-                      backgroundColor: '#d97706',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '13.5px',
-                      fontWeight: '600',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px',
-                      boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
-                    }}
-                  >
-                    <Zap size={16} /> Ra Đề & Ghi Điểm Excel
-                  </button>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => navigate('/giao-vien/ra-de-thi')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#d97706',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
+                      }}
+                      title="Soạn thảo đề thi, ma trận đặc tả, đảo mã đề và ghi điểm Excel"
+                    >
+                      <Zap size={15} /> Ra Đề Thi
+                    </button>
+                    <button
+                      onClick={() => navigate('/giao-vien/ngan-hang-cau-hoi')}
+                      style={{
+                        padding: '11px 12px',
+                        backgroundColor: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                      }}
+                      title="Quản lý ngân hàng câu hỏi theo cây thư mục Chương - Bài của Tổ Chuyên Môn"
+                    >
+                      <FolderTree size={15} /> Ngân Hàng Tổ
+                    </button>
+                  </div>
                 </div>
 
                 {/* CARD 3: ĐÁNH GIÁ TT 22 */}
