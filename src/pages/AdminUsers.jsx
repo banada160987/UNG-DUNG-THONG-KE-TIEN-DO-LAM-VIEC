@@ -440,6 +440,23 @@ export default function AdminUsers() {
     if (target === 'edit') setEditPermissions(updated);
   };
 
+  // Lưu hoặc cập nhật vai trò + phân quyền mà không phụ thuộc vào ràng buộc UNIQUE của CSDL
+  const saveUserRoleToDB = async (client, targetUserId, targetRole, targetPermissions) => {
+    // 1. Xóa bản ghi cũ của user_id (nếu có) để triệt tiêu dòng trùng lặp
+    try {
+      await client.from('cbq_user_roles').delete().eq('user_id', targetUserId);
+    } catch (_) {}
+
+    // 2. Chèn bản ghi mới chuẩn xác
+    const { error: insertError } = await client.from('cbq_user_roles').insert([{
+      user_id: targetUserId,
+      role: targetRole,
+      permissions: targetPermissions
+    }]);
+
+    if (insertError) throw insertError;
+  };
+
   // Lưu chỉnh sửa phân quyền
   const handleSavePermissions = async (e) => {
     e.preventDefault();
@@ -450,16 +467,8 @@ export default function AdminUsers() {
     try {
       const client = supabaseAdmin || supabase;
 
-      // 1. Cập nhật bảng cbq_user_roles (dùng upsert chống lỗi thiếu bản ghi)
-      const { error: roleError } = await client
-        .from('cbq_user_roles')
-        .upsert([{
-          user_id: editingUser.id,
-          role: finalRole,
-          permissions: editPermissions
-        }], { onConflict: 'user_id' });
-
-      if (roleError) throw roleError;
+      // 1. Cập nhật bảng cbq_user_roles bằng phương thức an toàn
+      await saveUserRoleToDB(client, editingUser.id, finalRole, editPermissions);
 
       // 2. Cập nhật user_metadata trong Auth nếu có quyền admin
       if (supabaseAdmin && editFullName.trim()) {
@@ -518,14 +527,8 @@ export default function AdminUsers() {
 
       if (createError) throw createError;
 
-      // 2. Lưu vai trò và ma trận quyền vào cbq_user_roles
-      const { error: roleError } = await supabaseAdmin.from('cbq_user_roles').upsert([{
-        user_id: userData.user.id,
-        role: finalRole,
-        permissions: createPermissions
-      }], { onConflict: 'user_id' });
-
-      if (roleError) console.warn("Lưu cbq_user_roles cảnh báo:", roleError.message);
+      // 2. Lưu vai trò và ma trận quyền vào cbq_user_roles bằng phương thức an toàn
+      await saveUserRoleToDB(supabaseAdmin, userData.user.id, finalRole, createPermissions);
 
       alert(`🎉 ĐÃ TẠO TÀI KHOẢN MỚI THÀNH CÔNG!\n\n👤 Cán bộ/GV: ${createFullName.trim() || 'Cán bộ'}\n📧 Email: ${createEmail}\n🔑 Mật khẩu: ${finalPassword}\n🏷️ Vai trò/Tổ: ${finalRole}\n\n(Hệ thống đã tự động gán đủ ${Object.values(createPermissions).filter(Boolean).length}/18 quyền chức năng đã chọn)`);
       setShowCreateModal(false);
@@ -562,6 +565,15 @@ export default function AdminUsers() {
     setSaving(true);
     try {
       const client = supabaseAdmin || supabase;
+      const userIds = usersList.map(u => u.id);
+
+      // Xóa các bản ghi cũ của các user_id này trước để tránh trùng lặp
+      if (userIds.length > 0) {
+        try {
+          await client.from('cbq_user_roles').delete().in('user_id', userIds);
+        } catch (_) {}
+      }
+
       const payload = usersList.map(u => ({
         user_id: u.id,
         role: u.role,
@@ -570,7 +582,7 @@ export default function AdminUsers() {
 
       const { error } = await client
         .from('cbq_user_roles')
-        .upsert(payload, { onConflict: 'user_id' });
+        .insert(payload);
 
       if (error) throw error;
       alert(`🎉 ĐÃ ĐỒNG BỘ THÀNH CÔNG TOÀN BỘ MA TRẬN PHÂN QUYỀN CỦA ${usersList.length} TÀI KHOẢN VÀO CSDL SUPABASE!`);
