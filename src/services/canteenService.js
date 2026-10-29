@@ -4,7 +4,12 @@
  * 
  * Phụ trách vận hành: Cô Lương Thị Hải Vân (Bộ phận Văn thư)
  * Hỗ trợ học sinh và cán bộ giáo viên đặt đồ ăn sáng dinh dưỡng, an toàn trước giờ vào lớp.
+ * 
+ * Tích hợp Cơ Sở Dữ Liệu Supabase (cbq_canteen_config, cbq_canteen_menu, cbq_canteen_orders)
+ * kèm cơ chế Fallback LocalStorage & Realtime đồng bộ đa thiết bị!
  */
+
+import { supabase } from '../lib/supabase';
 
 const STORAGE_KEY_CONFIG = 'cbq_canteen_config';
 const STORAGE_KEY_MENU = 'cbq_canteen_menu';
@@ -106,18 +111,6 @@ const INITIAL_MENU_ITEMS = [
     soldCount: 0
   },
   {
-    id: 'food_06',
-    name: 'Bún thịt nướng chả ram',
-    category: 'Bún & Phở',
-    price: 20000,
-    unit: 'tô',
-    image: 'https://images.unsplash.com/photo-1503764654157-724e03053a67?auto=format&fit=crop&w=600&q=80',
-    description: 'Bún tươi, thịt nướng than hoa thơm lừng, chả ram giòn rụm, đậu phộng rang và nước mắm chua ngọt.',
-    isActiveToday: false,
-    dailyQuota: 30,
-    soldCount: 0
-  },
-  {
     id: 'drink_01',
     name: 'Sữa chua nếp cẩm nhà làm',
     category: 'Đồ uống & Tráng miệng',
@@ -196,31 +189,11 @@ const INITIAL_ORDERS = [
     orderStatus: 'preparing',
     orderNote: 'Đặt chung cho 2 bạn',
     createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString()
-  },
-  {
-    id: 'order_103',
-    code: 'BS-03',
-    customerName: 'Thầy Lê Hoàng Nam (GV Tin Học)',
-    customerClass: 'Tổ Toán - Tin',
-    customerPhone: '0905111222',
-    customerRole: 'teacher',
-    items: [
-      { id: 'food_01', name: 'Bánh mì xíu mại pate đặc biệt', price: 15000, quantity: 1, note: 'Không ớt cay' },
-      { id: 'drink_03', name: 'Sữa tươi tiệt trùng Vinamilk (Có đường)', price: 10000, quantity: 1, note: '' }
-    ],
-    totalAmount: 25000,
-    paymentMethod: 'vietqr',
-    paymentStatus: 'paid',
-    paidAt: new Date().toISOString(),
-    paymentNote: 'Đã nhận chuyển khoản VietQR',
-    orderStatus: 'completed',
-    orderNote: 'Gửi phòng hội đồng',
-    createdAt: new Date(Date.now() - 60 * 60 * 1000).toISOString()
   }
 ];
 
 /**
- * Lấy cấu hình Bếp Sáng
+ * 1. Lấy cấu hình Bếp Sáng (Hỗ trợ Supabase + Fallback Cache)
  */
 export function getCanteenConfig() {
   try {
@@ -233,20 +206,72 @@ export function getCanteenConfig() {
   return DEFAULT_CONFIG;
 }
 
+export async function fetchCanteenConfigAsync() {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('cbq_canteen_config').select('*').eq('id', 'primary_config').single();
+      if (!error && data) {
+        const mapped = {
+          storeName: data.store_name,
+          sellerName: data.seller_name,
+          sellerRole: data.seller_role,
+          phone: data.phone,
+          pickupLocation: data.pickup_location,
+          isOpen: data.is_open,
+          cutoffTime: data.cutoff_time,
+          pickupTimeWindow: data.pickup_time_window,
+          bankAccount: {
+            bankCode: data.bank_code,
+            bankName: data.bank_name,
+            accountNumber: data.account_number,
+            accountName: data.account_name
+          },
+          announcement: data.announcement
+        };
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(mapped));
+        return mapped;
+      }
+    }
+  } catch (e) {
+    console.warn("Lỗi fetch cấu hình căn tin từ Supabase, sử dụng cache:", e);
+  }
+  return getCanteenConfig();
+}
+
 /**
  * Lưu cấu hình Bếp Sáng
  */
-export function saveCanteenConfig(config) {
+export async function saveCanteenConfig(config) {
   try {
     localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(config));
     window.dispatchEvent(new CustomEvent('cbq-canteen-config-changed', { detail: config }));
+
+    if (supabase) {
+      await supabase.from('cbq_canteen_config').upsert({
+        id: 'primary_config',
+        store_name: config.storeName,
+        seller_name: config.sellerName,
+        seller_role: config.sellerRole,
+        phone: config.phone,
+        pickup_location: config.pickupLocation,
+        is_open: config.isOpen,
+        cutoff_time: config.cutoffTime,
+        pickup_time_window: config.pickupTimeWindow,
+        bank_code: config.bankAccount?.bankCode || 'MB',
+        bank_name: config.bankAccount?.bankName || 'MBBank',
+        account_number: config.bankAccount?.accountNumber || '',
+        account_name: config.bankAccount?.accountName || 'LUONG THI HAI VAN',
+        announcement: config.announcement,
+        updated_at: new Date().toISOString()
+      });
+    }
   } catch (e) {
     console.error("Lỗi lưu cấu hình căn tin:", e);
   }
 }
 
 /**
- * Lấy toàn bộ thực đơn món ăn
+ * 2. Lấy toàn bộ thực đơn món ăn
  */
 export function getMenuItems() {
   try {
@@ -259,13 +284,57 @@ export function getMenuItems() {
   return INITIAL_MENU_ITEMS;
 }
 
+export async function fetchMenuItemsAsync() {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('cbq_canteen_menu').select('*').order('created_at', { ascending: true });
+      if (!error && data && data.length > 0) {
+        const mapped = data.map(item => ({
+          id: item.id,
+          name: item.name,
+          category: item.category,
+          price: Number(item.price) || 0,
+          unit: item.unit || 'phần',
+          image: item.image,
+          description: item.description,
+          isActiveToday: item.is_active_today,
+          dailyQuota: item.daily_quota,
+          soldCount: item.sold_count || 0
+        }));
+        localStorage.setItem(STORAGE_KEY_MENU, JSON.stringify(mapped));
+        return mapped;
+      }
+    }
+  } catch (e) {
+    console.warn("Lỗi fetch thực đơn từ Supabase, dùng cache:", e);
+  }
+  return getMenuItems();
+}
+
 /**
  * Lưu toàn bộ thực đơn món ăn
  */
-export function saveMenuItems(items) {
+export async function saveMenuItems(items) {
   try {
     localStorage.setItem(STORAGE_KEY_MENU, JSON.stringify(items));
     window.dispatchEvent(new CustomEvent('cbq-canteen-menu-changed', { detail: items }));
+
+    if (supabase) {
+      const payload = items.map(it => ({
+        id: it.id,
+        name: it.name,
+        category: it.category,
+        price: it.price,
+        unit: it.unit,
+        image: it.image,
+        description: it.description,
+        is_active_today: it.isActiveToday,
+        daily_quota: it.dailyQuota,
+        sold_count: it.soldCount || 0,
+        updated_at: new Date().toISOString()
+      }));
+      await supabase.from('cbq_canteen_menu').upsert(payload);
+    }
   } catch (e) {
     console.error("Lỗi lưu thực đơn căn tin:", e);
   }
@@ -299,15 +368,22 @@ export function upsertMenuItem(item) {
 /**
  * Xóa một món ăn
  */
-export function deleteMenuItem(id) {
+export async function deleteMenuItem(id) {
   const items = getMenuItems();
   const filtered = items.filter(i => i.id !== id);
   saveMenuItems(filtered);
+  if (supabase) {
+    try {
+      await supabase.from('cbq_canteen_menu').delete().eq('id', id);
+    } catch (e) {
+      console.warn("Lỗi xóa món ăn Supabase:", e);
+    }
+  }
   return filtered;
 }
 
 /**
- * Bật / Tắt trạng thái bán hôm nay của một món ăn (Cô Vân bấm 1-chạm)
+ * Bật / Tắt trạng thái bán hôm nay của một món ăn
  */
 export function toggleItemActiveToday(id) {
   const items = getMenuItems();
@@ -321,7 +397,7 @@ export function toggleItemActiveToday(id) {
 }
 
 /**
- * Lấy toàn bộ danh sách đơn đặt món
+ * 3. Lấy toàn bộ danh sách đơn đặt món
  */
 export function getAllCanteenOrders() {
   try {
@@ -332,6 +408,39 @@ export function getAllCanteenOrders() {
   }
   saveAllCanteenOrders(INITIAL_ORDERS);
   return INITIAL_ORDERS;
+}
+
+export async function fetchCanteenOrdersAsync() {
+  try {
+    if (supabase) {
+      const { data, error } = await supabase.from('cbq_canteen_orders').select('*').order('created_at', { ascending: false });
+      if (!error && data) {
+        const mapped = data.map(o => ({
+          id: o.id,
+          code: o.code,
+          customerName: o.customer_name,
+          customerClass: o.customer_class,
+          customerPhone: o.customer_phone,
+          customerRole: o.customer_role,
+          items: o.items || [],
+          totalAmount: Number(o.total_amount) || 0,
+          paymentMethod: o.payment_method,
+          paymentStatus: o.payment_status,
+          paidAt: o.paid_at,
+          paymentNote: o.payment_note,
+          paymentProofImage: o.payment_proof_image,
+          orderStatus: o.order_status,
+          orderNote: o.order_note,
+          createdAt: o.created_at
+        }));
+        localStorage.setItem(STORAGE_KEY_ORDERS, JSON.stringify(mapped));
+        return mapped;
+      }
+    }
+  } catch (e) {
+    console.warn("Lỗi fetch đơn hàng từ Supabase, dùng cache:", e);
+  }
+  return getAllCanteenOrders();
 }
 
 /**
@@ -349,7 +458,7 @@ export function saveAllCanteenOrders(orders) {
 /**
  * Tạo một đơn đặt đồ ăn mới
  */
-export function createCanteenOrder(orderData) {
+export async function createCanteenOrder(orderData) {
   const orders = getAllCanteenOrders();
   const todayStr = new Date().toISOString().slice(0, 10);
   const todayOrders = orders.filter(o => o.createdAt && o.createdAt.startsWith(todayStr));
@@ -365,12 +474,12 @@ export function createCanteenOrder(orderData) {
     customerRole: orderData.customerRole || 'student',
     items: orderData.items || [],
     totalAmount: orderData.totalAmount || 0,
-    paymentMethod: orderData.paymentMethod || 'cash', // 'vietqr' | 'cash'
-    paymentStatus: orderData.paymentStatus || 'pending', // 'paid' | 'pending'
+    paymentMethod: orderData.paymentMethod || 'cash',
+    paymentStatus: orderData.paymentStatus || 'pending',
     paidAt: orderData.paymentStatus === 'paid' ? new Date().toISOString() : null,
     paymentNote: orderData.paymentNote || '',
     paymentProofImage: orderData.paymentProofImage || '',
-    orderStatus: 'confirmed', // 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'
+    orderStatus: 'confirmed',
     orderNote: orderData.orderNote || '',
     createdAt: new Date().toISOString()
   };
@@ -385,25 +494,66 @@ export function createCanteenOrder(orderData) {
   });
   saveMenuItems(menu);
 
+  // Lưu local
   orders.unshift(newOrder);
   saveAllCanteenOrders(orders);
+
+  // Đồng bộ lên Supabase nếu có
+  if (supabase) {
+    try {
+      await supabase.from('cbq_canteen_orders').insert({
+        id: newOrder.id,
+        code: newOrder.code,
+        customer_name: newOrder.customerName,
+        customer_class: newOrder.customerClass,
+        customer_phone: newOrder.customerPhone,
+        customer_role: newOrder.customerRole,
+        items: newOrder.items,
+        total_amount: newOrder.totalAmount,
+        payment_method: newOrder.paymentMethod,
+        payment_status: newOrder.paymentStatus,
+        paid_at: newOrder.paidAt,
+        payment_note: newOrder.paymentNote,
+        payment_proof_image: newOrder.paymentProofImage,
+        order_status: newOrder.orderStatus,
+        order_note: newOrder.orderNote,
+        created_at: newOrder.createdAt
+      });
+    } catch (e) {
+      console.warn("Lỗi đồng bộ đơn hàng lên Supabase:", e);
+    }
+  }
+
   return newOrder;
 }
 
 /**
  * Cập nhật trạng thái chế biến / giao hàng của đơn
  */
-export function updateOrderStatus(orderId, orderStatus) {
+export async function updateOrderStatus(orderId, orderStatus) {
   const orders = getAllCanteenOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx >= 0) {
     orders[idx].orderStatus = orderStatus;
     if (orderStatus === 'completed' && orders[idx].paymentMethod === 'cash') {
-      // Khi giao hàng xong, nếu trả tiền mặt thì tự động đánh dấu đã thu tiền
       orders[idx].paymentStatus = 'paid';
       orders[idx].paidAt = new Date().toISOString();
     }
     saveAllCanteenOrders(orders);
+
+    if (supabase) {
+      try {
+        await supabase.from('cbq_canteen_orders').update({
+          order_status: orderStatus,
+          payment_status: orders[idx].paymentStatus,
+          paid_at: orders[idx].paidAt,
+          updated_at: new Date().toISOString()
+        }).eq('id', orderId);
+      } catch (e) {
+        console.warn("Lỗi update status đơn Supabase:", e);
+      }
+    }
+
     return orders[idx];
   }
   return null;
@@ -412,7 +562,7 @@ export function updateOrderStatus(orderId, orderStatus) {
 /**
  * Cập nhật trạng thái thanh toán (Xác nhận chuyển khoản hoặc Thu tiền mặt)
  */
-export function updatePaymentStatus(orderId, paymentStatus, paymentNote = '') {
+export async function updatePaymentStatus(orderId, paymentStatus, paymentNote = '') {
   const orders = getAllCanteenOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx >= 0) {
@@ -422,6 +572,20 @@ export function updatePaymentStatus(orderId, paymentStatus, paymentNote = '') {
       orders[idx].paymentNote = paymentNote;
     }
     saveAllCanteenOrders(orders);
+
+    if (supabase) {
+      try {
+        await supabase.from('cbq_canteen_orders').update({
+          payment_status: paymentStatus,
+          paid_at: orders[idx].paidAt,
+          payment_note: paymentNote || orders[idx].paymentNote,
+          updated_at: new Date().toISOString()
+        }).eq('id', orderId);
+      } catch (e) {
+        console.warn("Lỗi update payment Supabase:", e);
+      }
+    }
+
     return orders[idx];
   }
   return null;
@@ -430,16 +594,49 @@ export function updatePaymentStatus(orderId, paymentStatus, paymentNote = '') {
 /**
  * Xóa một đơn hàng (hủy đơn)
  */
-export function cancelCanteenOrder(orderId, reason = '') {
+export async function cancelCanteenOrder(orderId, reason = '') {
   const orders = getAllCanteenOrders();
   const idx = orders.findIndex(o => o.id === orderId);
   if (idx >= 0) {
     orders[idx].orderStatus = 'cancelled';
     orders[idx].cancelReason = reason;
     saveAllCanteenOrders(orders);
+
+    if (supabase) {
+      try {
+        await supabase.from('cbq_canteen_orders').update({
+          order_status: 'cancelled',
+          order_note: reason ? `[HỦY]: ${reason}` : '[ĐÃ HỦY]',
+          updated_at: new Date().toISOString()
+        }).eq('id', orderId);
+      } catch (e) {
+        console.warn("Lỗi hủy đơn Supabase:", e);
+      }
+    }
+
     return orders[idx];
   }
   return null;
+}
+
+/**
+ * Đăng ký lắng nghe Realtime khi có đơn hàng mới
+ */
+export function subscribeToCanteenOrders(onOrderChanged) {
+  if (!supabase) return () => {};
+
+  const channel = supabase
+    .channel('canteen_orders_realtime')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'cbq_canteen_orders' }, payload => {
+      if (onOrderChanged) {
+        onOrderChanged(payload);
+      }
+    })
+    .subscribe();
+
+  return () => {
+    supabase.removeChannel(channel);
+  };
 }
 
 /**
@@ -453,26 +650,20 @@ export function generateVietQrUrl({ bankCode = 'MB', accountNumber, accountName,
   const cleanMemo = encodeURIComponent((memo || 'CBQ FOOD').trim());
   const cleanName = encodeURIComponent((accountName || 'LUONG THI HAI VAN').trim());
 
-  // Định dạng chuẩn dịch vụ VietQR API Compact2
   return `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${cleanAmount}&addInfo=${cleanMemo}&accountName=${cleanName}`;
 }
 
 /**
- * Thống kê tổng hợp bếp sáng cho Cô Vân:
- * 1. Tổng số lượng từng món cần chế biến sáng nay
- * 2. Gom nhóm đơn hàng theo từng LỚP HỌC (để đóng theo túi lớp)
- * 3. Chỉ số tài chính: Doanh thu, Đã chuyển khoản, Đã thu tiền mặt, Còn phải thu
+ * Thống kê tổng hợp bếp sáng cho Cô Vân
  */
 export function getKitchenSummaryToday() {
   const orders = getAllCanteenOrders();
   const todayStr = new Date().toISOString().slice(0, 10);
   
-  // Đơn hôm nay và không bị hủy
   const activeOrders = orders.filter(o => 
     o.createdAt && o.createdAt.startsWith(todayStr) && o.orderStatus !== 'cancelled'
   );
 
-  // 1. Tổng hợp số lượng từng món
   const itemCountsMap = {};
   activeOrders.forEach(ord => {
     (ord.items || []).forEach(it => {
@@ -489,7 +680,6 @@ export function getKitchenSummaryToday() {
   });
   const itemsSummary = Object.values(itemCountsMap);
 
-  // 2. Gom nhóm đơn theo Lớp học
   const classGroupsMap = {};
   activeOrders.forEach(ord => {
     const cls = ord.customerClass || 'Khác';
@@ -507,7 +697,6 @@ export function getKitchenSummaryToday() {
   });
   const classSummary = Object.values(classGroupsMap).sort((a, b) => a.className.localeCompare(b.className));
 
-  // 3. Thống kê tài chính
   const totalRevenue = activeOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
   
   const transferPaidAmount = activeOrders
