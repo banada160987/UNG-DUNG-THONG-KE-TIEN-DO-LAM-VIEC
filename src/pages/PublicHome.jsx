@@ -569,8 +569,8 @@ export default function PublicHome() {
                 <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
                   <span style={{ fontSize: '22px' }}>🍳</span>
                   <div>
-                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
-                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Đặt đồ ăn cô Vân</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Điểm Tâm Sáng CBQ</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Tiếp sức học đường</div>
                   </div>
                 </Link>
 
@@ -705,8 +705,8 @@ export default function PublicHome() {
                 <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
                   <span style={{ fontSize: '22px' }}>🍳</span>
                   <div>
-                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
-                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Điểm tâm Thầy Cô</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Điểm Tâm Sáng CBQ</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Suất ăn Thầy Cô</div>
                   </div>
                 </Link>
 
@@ -873,8 +873,8 @@ export default function PublicHome() {
                     <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
                       <span style={{ fontSize: '22px' }}>🍳</span>
                       <div>
-                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
-                        <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Căn tin học đường</div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Điểm Tâm Sáng CBQ</div>
+                        <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Tiếp sức học đường</div>
                       </div>
                     </Link>
 

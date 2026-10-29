@@ -89,14 +89,14 @@ export default function AppHub() {
       }
     }
 
-    // Luôn đảm bảo có ứng dụng Bếp Sáng CBQ & Căn Tin Học Đường
+    // Luôn đảm bảo có ứng dụng Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)
     if (!filtered.some(a => (a.url || '').includes('bep-sang') || (a.url || '').includes('cantin'))) {
       filtered.unshift({
         id: 'canteen_online_order',
-        title: 'Bếp Sáng CBQ - Điểm Tâm Học Đường',
+        title: 'Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)',
         url: '/bep-sang',
         category: 'Đời Sống & Tiện Ích Học Đường',
-        description: 'Đặt món ăn sáng dinh dưỡng, an toàn trước 06h30. Thanh toán VietQR tự động hoặc tiền mặt. Phụ trách: Cô Lương Thị Hải Vân (Phòng Văn thư).',
+        description: 'Đăng ký suất ăn điểm tâm dinh dưỡng trước 06h30. Đối soát kinh phí qua VietQR hoặc trực tiếp tại bàn tiếp nhận sảnh Tầng 1. Phụ trách: Cô Lương Thị Hải Vân (Tổ hỗ trợ đời sống CBQ).',
         icon: 'Utensils',
         bg_color: '#ffedd5',
         border_color: '#fdba74',

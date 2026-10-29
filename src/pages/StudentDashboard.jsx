@@ -411,7 +411,7 @@ export default function StudentDashboard() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             <Link to="/bep-sang" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#fff7ed', borderRadius: '12px', textDecoration: 'none', color: '#c2410c', border: '1.5px solid #fed7aa' }}>
               <span style={{ fontSize: '26px' }}>🍳</span>
-              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Bếp Sáng CBQ</span>
+              <span style={{ fontSize: '13px', fontWeight: 'bold', textAlign: 'center' }}>Điểm Tâm Sáng CBQ</span>
             </Link>
             <button onClick={openProfileModal} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '14px 10px', background: '#f0f9ff', borderRadius: '12px', textDecoration: 'none', color: '#0369a1', border: '1px solid #bae6fd', cursor: 'pointer' }}>
               <IdCard size={26} color="#0284c7" />

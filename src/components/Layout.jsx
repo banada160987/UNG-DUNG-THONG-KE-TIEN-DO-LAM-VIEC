@@ -118,8 +118,8 @@ export default function Layout({ children, title }) {
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Sổ Sách (Hub)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
 
     // 2. 📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN
-    { path: '/admin/cantin', icon: Utensils, label: '🍳 Điều Phối Bếp Sáng & Căn Tin', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
-    { path: '/bep-sang', icon: Utensils, label: '🛒 Cổng Đặt Điểm Tâm (Học Sinh & GV)', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
+    { path: '/admin/cantin', icon: Utensils, label: '🍳 Điều Phối Điểm Tâm & Suất Ăn Sáng', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
+    { path: '/bep-sang', icon: Utensils, label: '🍱 Đăng Ký Điểm Tâm Sáng (Tiếp Sức Học Đường)', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
     { path: '/admin/registrations', icon: FileText, label: '📋 Quản Lý Đợt Đăng Ký Động', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' },
     { path: '/admin/quizzes', icon: CheckSquare, label: '📝 Quản Lý Cuộc Thi & Quiz Online', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
     { path: '/admin/voting', icon: Heart, label: '❤️ Quản Lý Bầu Chọn & Tác Phẩm', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
@@ -470,9 +470,9 @@ export default function Layout({ children, title }) {
                 fontWeight: '700',
                 textDecoration: 'none'
               }}
-              title="Mở Cổng đặt món Bếp Sáng CBQ (Giao diện học sinh/giáo viên)"
+              title="Mở Cổng đăng ký Điểm Tâm Sáng CBQ (Giao diện học sinh/giáo viên)"
             >
-              <span>🍳 Cổng Bếp Sáng</span>
+              <span>🍳 Điểm Tâm Sáng</span>
               <ExternalLink size={12} />
             </Link>
 

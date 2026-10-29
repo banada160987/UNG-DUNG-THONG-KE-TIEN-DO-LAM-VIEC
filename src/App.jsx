@@ -241,7 +241,7 @@ function App() {
             <Route path="/teacher/eduhub" element={<EduVideoHub />} />
             <Route path="/hub" element={<AppHub />} />
 
-            {/* Bếp Sáng CBQ & Căn Tin Học Đường */}
+            {/* Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường) */}
             <Route path="/bep-sang" element={<CanteenOrderPage />} />
             <Route path="/cantin" element={<CanteenOrderPage />} />
             <Route path="/can-tin" element={<CanteenOrderPage />} />

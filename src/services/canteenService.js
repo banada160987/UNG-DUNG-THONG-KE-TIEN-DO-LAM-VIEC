@@ -1,9 +1,9 @@
 /**
- * Dịch Vụ Căn Tin Học Đường & Bếp Sáng CBQ
+ * Chương Trình Điểm Tâm Sáng CBQ - Tiếp Sức Học Đường
  * Trường THPT Cao Bá Quát - Cư M'gar, Đắk Lắk
  * 
- * Phụ trách vận hành: Cô Lương Thị Hải Vân (Bộ phận Văn thư)
- * Hỗ trợ học sinh và cán bộ giáo viên đặt đồ ăn sáng dinh dưỡng, an toàn trước giờ vào lớp.
+ * Phụ trách chuẩn bị suất ăn: Cô Lương Thị Hải Vân (Tổ hỗ trợ đời sống CBQ)
+ * Hỗ trợ học sinh ở xa và cán bộ giáo viên đăng ký suất ăn dinh dưỡng, an toàn trước giờ vào lớp.
  * 
  * Tích hợp Cơ Sở Dữ Liệu Supabase (cbq_canteen_config, cbq_canteen_menu, cbq_canteen_orders)
  * kèm cơ chế Fallback LocalStorage & Realtime đồng bộ đa thiết bị!
@@ -29,16 +29,16 @@ export const POPULAR_BANKS = [
   { code: 'LPB', name: 'LPBank (Lộc Phát)', bin: '970449' }
 ];
 
-// Cấu hình mặc định của Bếp sáng
+// Cấu hình mặc định của chương trình Điểm tâm sáng học đường
 const DEFAULT_CONFIG = {
-  storeName: 'Bếp Sáng CBQ - Điểm Tâm Học Đường',
+  storeName: 'Điểm Tâm Sáng CBQ - Tiếp Sức Học Đường',
   sellerName: 'Cô Lương Thị Hải Vân',
-  sellerRole: 'Bộ phận Văn thư - Trường THPT Cao Bá Quát',
+  sellerRole: 'Phụ trách chuẩn bị suất ăn • Tổ hỗ trợ đời sống CBQ',
   phone: '0984.xxx.xxx',
-  pickupLocation: 'Phòng Văn thư (Tầng 1 - Khu Hiệu Bộ)',
+  pickupLocation: 'Bàn tiếp nhận điểm tâm (Sảnh Tầng 1 - Khu Hiệu Bộ)',
   isOpen: true,
-  cutoffTime: '06:30', // Giờ chốt đơn sáng hàng ngày
-  pickupTimeWindow: '06:35 - 06:55 (Trước giờ truy bài)',
+  cutoffTime: '06:30', // Giờ chốt đăng ký trước giờ làm việc
+  pickupTimeWindow: '06:35 - 06:55 (Trước giờ truy bài và giờ học chính khóa)',
   bankAccount: {
     bankCode: 'TPB',
     bankName: 'TPBank (Ngân Hàng Tiên Phong)',
@@ -46,7 +46,7 @@ const DEFAULT_CONFIG = {
     accountName: 'LUONG THI HAI VAN',
     qrImage: '/qr_bep_sang_co_van.png'
   },
-  announcement: '🌟 Chào mừng các em học sinh và quý Thầy/Cô đến với Bếp Sáng CBQ! Vui lòng đặt món trước 06h30 để cô chuẩn bị chu đáo và nóng hổi nhất nhé!'
+  announcement: '🌟 Chương trình Điểm Tâm Sáng CBQ hỗ trợ học sinh ở xa và quý Thầy/Cô kịp thời có bữa sáng nóng hổi, bảo đảm dinh dưỡng và an toàn thực phẩm trước giờ học chính khóa. Vui lòng đăng ký trước 06h30 để cô chuẩn bị chu đáo!'
 };
 
 // Thực đơn món ăn sáng mẫu phong phú
@@ -194,7 +194,7 @@ const INITIAL_ORDERS = [
 ];
 
 /**
- * 1. Lấy cấu hình Bếp Sáng (Hỗ trợ Supabase + Fallback Cache)
+ * 1. Lấy cấu hình Điểm Tâm Sáng (Hỗ trợ Supabase + Fallback Cache)
  */
 export function getCanteenConfig() {
   try {
@@ -204,8 +204,15 @@ export function getCanteenConfig() {
       // Nâng cấp tự động tài khoản thật của Cô Vân (TPBank: 1775 3888 888)
       if (parsed?.bankAccount?.accountNumber === '0984123456' || parsed?.bankAccount?.bankCode === 'MB' || !parsed?.bankAccount?.accountNumber) {
         parsed.bankAccount = { ...DEFAULT_CONFIG.bankAccount };
-        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(parsed));
       }
+      // Chuẩn hóa câu chữ hành chính bảo vệ nhà trường & cô Vân
+      if (parsed?.pickupLocation?.includes('Phòng Văn thư') || parsed?.storeName?.includes('Bếp Sáng CBQ - Điểm Tâm')) {
+        parsed.storeName = DEFAULT_CONFIG.storeName;
+        parsed.sellerRole = DEFAULT_CONFIG.sellerRole;
+        parsed.pickupLocation = DEFAULT_CONFIG.pickupLocation;
+        parsed.announcement = DEFAULT_CONFIG.announcement;
+      }
+      localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(parsed));
       return parsed;
     }
   } catch (e) {
@@ -248,7 +255,7 @@ export async function fetchCanteenConfigAsync() {
 }
 
 /**
- * Lưu cấu hình Bếp Sáng
+ * Lưu cấu hình Điểm Tâm Sáng
  */
 export async function saveCanteenConfig(config) {
   try {
@@ -655,14 +662,14 @@ export function generateVietQrUrl({ bankCode = 'TPB', accountNumber = '177538888
   const cleanBank = bankCode || 'TPB';
   const cleanAcc = encodeURIComponent((accountNumber || '17753888888').replace(/\s+/g, ''));
   const cleanAmount = parseInt(amount, 10) || 0;
-  const cleanMemo = encodeURIComponent((memo || 'BEP SANG CBQ').trim());
+  const cleanMemo = encodeURIComponent((memo || 'CBQ DIEM TAM SANG').trim());
   const cleanName = encodeURIComponent((accountName || 'LUONG THI HAI VAN').trim());
 
   return `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${cleanAmount}&addInfo=${cleanMemo}&accountName=${cleanName}`;
 }
 
 /**
- * Thống kê tổng hợp bếp sáng cho Cô Vân
+ * Thống kê tổng hợp số suất điểm tâm cần chuẩn bị cho Cô Vân
  */
 export function getKitchenSummaryToday() {
   const orders = getAllCanteenOrders();

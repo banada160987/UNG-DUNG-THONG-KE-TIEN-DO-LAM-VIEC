@@ -10,7 +10,7 @@ import { getTeacherSession, clearTeacherSession, getStudentSession, clearStudent
 const DEFAULT_FULL_MENUS = [
   // Nhóm 1: Vận hành nhà trường (school)
   { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
-  { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Bếp Sáng CBQ (Căn Tin Online)', path: '/bep-sang', sort_order: 2, is_active: true },
+  { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)', path: '/bep-sang', sort_order: 2, is_active: true },
   { id: 'm_sc_2', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: false },
   { id: 'm_sc_3', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: false },
   { id: 'm_sc_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
@@ -127,9 +127,9 @@ export default function PublicLayout() {
         if (cached) {
           let parsed = JSON.parse(cached);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            // Tự động bổ sung Bếp Sáng CBQ nếu cache cũ chưa có
+            // Tự động bổ sung Điểm Tâm Sáng CBQ nếu cache cũ chưa có
             if (!parsed.some(m => (m?.path || '').includes('bep-sang') || (m?.path || '').includes('cantin'))) {
-              parsed.splice(1, 0, { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Bếp Sáng CBQ (Căn Tin Online)', path: '/bep-sang', sort_order: 2, is_active: true });
+              parsed.splice(1, 0, { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)', path: '/bep-sang', sort_order: 2, is_active: true });
               try {
                 localStorage.setItem('cbq_menus_public_v2', JSON.stringify(parsed));
                 localStorage.setItem('cbq_menus_public', JSON.stringify(parsed));
@@ -149,7 +149,7 @@ export default function PublicLayout() {
       if (!error && data && data.length > 0) {
         let menuData = [...data];
         if (!menuData.some(m => (m?.path || '').includes('bep-sang') || (m?.path || '').includes('cantin'))) {
-          menuData.splice(1, 0, { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Bếp Sáng CBQ (Căn Tin Online)', path: '/bep-sang', sort_order: 2, is_active: true });
+          menuData.splice(1, 0, { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)', path: '/bep-sang', sort_order: 2, is_active: true });
         }
         setPublicMenus(menuData);
         localStorage.setItem('cbq_menus_public_v2', JSON.stringify(menuData));
@@ -415,7 +415,7 @@ export default function PublicLayout() {
               📅 Lịch & TKB
             </Link>
 
-            {/* MENU ĐỘC LẬP: BẾP SÁNG CBQ - CĂN TIN ONLINE */}
+            {/* MENU ĐỘC LẬP: ĐIỂM TÂM SÁNG CBQ - TIẾP SỨC HỌC ĐƯỜNG */}
             <Link 
               to="/bep-sang" 
               style={{
@@ -433,9 +433,9 @@ export default function PublicLayout() {
                 }),
               }}
               onClick={() => setMobileMenuOpen(false)}
-              title="Bếp Sáng CBQ - Đặt điểm tâm sáng cô Lương Thị Hải Vân (Trước 06h30)"
+              title="Điểm Tâm Sáng CBQ - Tiếp sức học đường (Đăng ký trước 06h30)"
             >
-              <span>🍳 Bếp Sáng CBQ</span>
+              <span>🍳 Điểm Tâm Sáng</span>
               <span style={{
                 fontSize: '9.5px',
                 backgroundColor: '#dc2626',
@@ -726,7 +726,7 @@ export default function PublicLayout() {
               ⚡ Lối Tắt Tiện Ích
             </h4>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
-              <li><Link to="/bep-sang" style={{ color: '#fef08a', fontWeight: 'bold', textDecoration: 'none' }}>🍳 Bếp Sáng CBQ (Đặt Món Điểm Tâm)</Link></li>
+              <li><Link to="/bep-sang" style={{ color: '#fef08a', fontWeight: 'bold', textDecoration: 'none' }}>🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)</Link></li>
               <li><Link to="/lich-cong-tac" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📅 Lịch Công Tác & Thời Khóa Biểu</Link></li>
               <li><Link to="/hoc-lieu-so" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📺 Kho Học Liệu Số & Video Bài Giảng</Link></li>
               <li><Link to="/dang-ky-the-thao" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚽ Đăng Ký Thi Đấu Thể Thao</Link></li>

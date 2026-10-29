@@ -224,7 +224,7 @@ export default function CanteenOrderPage() {
       accountNumber: config.bankAccount.accountNumber,
       accountName: config.bankAccount.accountName,
       amount: cartSummary.totalAmount,
-      memo: `CBQ FOOD ${customerClass ? customerClass.replace(/\s+/g, '') : ''} ${customerPhone ? customerPhone.slice(-4) : ''}`
+      memo: `CBQ DIEM TAM ${customerClass ? customerClass.replace(/\s+/g, '') : ''} ${customerPhone ? customerPhone.slice(-4) : ''}`
     });
   }, [config, cartSummary.totalAmount, customerClass, customerPhone]);
 
@@ -269,9 +269,9 @@ export default function CanteenOrderPage() {
                 borderRadius: '8px',
                 border: '1px solid rgba(255,255,255,0.2)'
               }}
-              title="Dành riêng cho Cô Lương Thị Hải Vân quản lý thực đơn và chốt đơn buổi sáng"
+              title="Dành riêng cho Cô Lương Thị Hải Vân điều phối suất ăn buổi sáng"
             >
-              👩‍🍳 Quản Lý Bếp (Cô Vân)
+              📋 Điều Phối Suất Ăn (Cô Vân)
             </Link>
           </div>
 
@@ -285,7 +285,7 @@ export default function CanteenOrderPage() {
                 {config.storeName}
               </h1>
               <div style={{ fontSize: '13.5px', opacity: 0.95, display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <span>👩‍🍳 Phụ trách: <strong>{config.sellerName}</strong></span>
+                <span>👩‍🍳 Phụ trách chuẩn bị: <strong>{config.sellerName}</strong></span>
                 <span>• 📍 {config.pickupLocation}</span>
                 <span>• 📞 Zalo/SĐT: <strong>{config.phone}</strong></span>
               </div>
@@ -301,10 +301,10 @@ export default function CanteenOrderPage() {
           {/* Time notice badge */}
           <div style={{ marginTop: '10px', display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <div style={{ background: '#ffffff', color: '#c2410c', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '800', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <Clock size={14} /> Chốt đơn sáng: <strong>{config.cutoffTime}</strong>
+              <Clock size={14} /> Chốt đăng ký sáng: <strong>{config.cutoffTime}</strong>
             </div>
             <div style={{ background: 'rgba(255,255,255,0.2)', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-              <MapPin size={14} /> Nhận đồ ăn: <strong>{config.pickupTimeWindow}</strong>
+              <MapPin size={14} /> Nhận suất ăn: <strong>{config.pickupTimeWindow}</strong>
             </div>
           </div>
 
@@ -664,7 +664,7 @@ export default function CanteenOrderPage() {
               boxShadow: '0 2px 6px rgba(234,88,12,0.4)'
             }}
           >
-            Tiến Hành Đặt Món <ChevronRight size={16} />
+            Tiến Hành Đăng Ký Suất Ăn <ChevronRight size={16} />
           </button>
         </div>
       )}
@@ -677,10 +677,10 @@ export default function CanteenOrderPage() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>
-                  Xác Nhận Đặt Bữa Sáng
+                  Phiếu Đăng Ký Điểm Tâm Sáng
                 </h3>
                 <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '2px' }}>
-                  Điểm tâm học đường - Bếp Sáng Cô Lương Thị Hải Vân
+                  Chương trình hỗ trợ điểm tâm dinh dưỡng & tiếp sức ngày mới CBQ
                 </div>
               </div>
               <button type="button" onClick={() => setShowCheckoutModal(false)} style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
@@ -689,7 +689,7 @@ export default function CanteenOrderPage() {
             {/* Thông tin người đặt */}
             <div style={{ marginBottom: '18px' }}>
               <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                1. Thông Tin Người Nhận Món:
+                1. Thông Tin Học Sinh / Giáo Viên Đăng Ký:
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                 <div>
@@ -752,15 +752,15 @@ export default function CanteenOrderPage() {
                 </div>
               ))}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', fontSize: '15px' }}>
-                <strong>Tổng thanh toán:</strong>
+                <strong>Tổng kinh phí suất ăn:</strong>
                 <strong style={{ fontSize: '18px', color: '#ea580c' }}>{cartSummary.totalAmount.toLocaleString('vi-VN')}đ</strong>
               </div>
             </div>
 
-            {/* Chọn hình thức thanh toán */}
+            {/* Chọn hình thức đóng góp kinh phí */}
             <div style={{ marginBottom: '20px' }}>
               <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                3. Chọn Hình Thức Thanh Toán:
+                3. Hình Thức Đóng Góp Kinh Phí Suất Ăn:
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
@@ -782,7 +782,7 @@ export default function CanteenOrderPage() {
                   />
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Chuyển khoản VietQR</div>
-                    <div style={{ fontSize: '11.5px', color: '#64748b' }}>Quét mã QR app ngân hàng</div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b' }}>TPBank tự điền tiền & nội dung</div>
                   </div>
                 </label>
 
@@ -803,8 +803,8 @@ export default function CanteenOrderPage() {
                     onChange={() => setPaymentMethod('cash')}
                   />
                   <div>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Tiền mặt khi nhận</div>
-                    <div style={{ fontSize: '11.5px', color: '#64748b' }}>Trả trực tiếp cho cô Vân</div>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a' }}>Gửi tại bàn tiếp nhận</div>
+                    <div style={{ fontSize: '11.5px', color: '#64748b' }}>Nhận suất ăn sảnh Tầng 1</div>
                   </div>
                 </label>
               </div>
@@ -813,7 +813,7 @@ export default function CanteenOrderPage() {
               {paymentMethod === 'vietqr' && (
                 <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                    Quét Mã Chuyển Khoản Cho Cô Lương Thị Hải Vân:
+                    Quét Mã Chuyển Khoản Kinh Phí Cho Cô Lương Thị Hải Vân:
                   </div>
 
                   {/* Nút chuyển đổi giữa QR tự điền tiền và QR gốc TPBank */}
@@ -978,19 +978,19 @@ export default function CanteenOrderPage() {
                   ))}
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', borderTop: '1px solid #fed7aa', paddingTop: '6px' }}>
-                  <span>Tổng tiền:</span>
+                  <span>Kinh phí suất ăn:</span>
                   <strong style={{ color: '#ea580c', fontSize: '15px' }}>{placedOrder.totalAmount?.toLocaleString('vi-VN')}đ</strong>
                 </div>
                 <div style={{ marginTop: '4px', fontSize: '12px' }}>
-                  Thanh toán: <strong style={{ color: placedOrder.paymentStatus === 'paid' ? '#166534' : '#c2410c' }}>
-                    {placedOrder.paymentStatus === 'paid' ? '✓ Đã thanh toán (Chuyển khoản)' : '⏳ Thu tiền mặt khi nhận'}
+                  Đối soát: <strong style={{ color: placedOrder.paymentStatus === 'paid' ? '#166534' : '#c2410c' }}>
+                    {placedOrder.paymentStatus === 'paid' ? '✓ Đã chuyển khoản kinh phí' : '⏳ Gửi trực tiếp tại bàn tiếp nhận'}
                   </strong>
                 </div>
               </div>
             </div>
 
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '10px 14px', fontSize: '12.5px', color: '#166534', marginBottom: '20px', textAlign: 'left', lineHeight: 1.5 }}>
-              💡 <strong>Cách nhận đồ ăn:</strong><br/>
+              💡 <strong>Cách nhận suất ăn:</strong><br/>
               Sáng mai từ <strong>06h35 đến 06h55</strong>, bạn đến <strong>{config.pickupLocation}</strong> đọc mã <strong>#{placedOrder.code}</strong> hoặc tên để nhận suất ăn nóng hổi nhé!
             </div>
 

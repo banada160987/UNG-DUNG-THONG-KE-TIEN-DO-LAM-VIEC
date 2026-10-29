@@ -166,9 +166,9 @@ export default function TeacherDashboard() {
                 cursor: 'pointer',
                 transition: 'all 0.2s ease'
               }}
-              title="Đặt điểm tâm sáng cô Vân phục vụ Thầy Cô giáo"
+              title="Đăng ký điểm tâm sáng tiếp sức học đường & Thầy Cô"
             >
-              <span>🍳 Bếp Sáng CBQ</span>
+              <span>🍳 Điểm Tâm Sáng CBQ</span>
             </button>
 
             <button

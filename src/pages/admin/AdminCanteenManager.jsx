@@ -199,38 +199,38 @@ export default function AdminCanteenManager() {
   const handleSaveConfig = (e) => {
     e.preventDefault();
     saveCanteenConfig(config);
-    alert("🎉 Đã lưu thành công cấu hình Bếp Sáng & Thông tin ngân hàng của Cô Vân!");
+    alert("🎉 Đã lưu thành công cấu hình Điểm Tâm Sáng & Tài khoản đối soát của Cô Vân!");
     setRefreshKey(k => k + 1);
   };
 
-  // Xuất file Excel danh sách đơn hàng tuân thủ quy tắc tiền tố 1-... trong GEMINI.md
+  // Xuất file Excel danh sách phiếu đăng ký tuân thủ quy tắc tiền tố 1-... trong GEMINI.md
   const handleExportOrdersExcel = () => {
     if (filteredOrders.length === 0) {
-      alert("Không có đơn hàng nào trong bộ lọc để xuất Excel!");
+      alert("Không có phiếu đăng ký nào trong bộ lọc để xuất Excel!");
       return;
     }
 
     const excelRows = filteredOrders.map((ord, idx) => ({
       "STT": idx + 1,
-      "Mã đơn": ord.code,
-      "Thời gian đặt": new Date(ord.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+      "Mã phiếu": ord.code,
+      "Thời gian đăng ký": new Date(ord.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
       "Họ và Tên": ord.customerName,
       "Lớp / Phòng ban": ord.customerClass,
       "Số điện thoại": ord.customerPhone,
-      "Món đã đặt": ord.items?.map(it => `${it.name} (x${it.quantity})`).join('; '),
-      "Tổng tiền (VNĐ)": ord.totalAmount,
-      "Hình thức thanh toán": ord.paymentMethod === 'vietqr' ? 'Chuyển khoản VietQR' : 'Tiền mặt',
-      "Trạng thái thanh toán": ord.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán (Chờ thu)',
-      "Trạng thái giao hàng": ord.orderStatus === 'completed' ? 'Đã giao xong' : ord.orderStatus === 'ready' ? 'Đã xong chờ lấy' : ord.orderStatus === 'preparing' ? 'Đang chuẩn bị' : 'Đã nhận đơn',
-      "Ghi chú khách hàng": ord.orderNote || ''
+      "Suất ăn đăng ký": ord.items?.map(it => `${it.name} (x${it.quantity})`).join('; '),
+      "Kinh phí (VNĐ)": ord.totalAmount,
+      "Hình thức đóng góp": ord.paymentMethod === 'vietqr' ? 'Chuyển khoản VietQR' : 'Gửi trực tiếp tại sảnh',
+      "Trạng thái đối soát": ord.paymentStatus === 'paid' ? 'Đã nhận kinh phí' : 'Chờ đối soát',
+      "Tiến độ chuẩn bị": ord.orderStatus === 'completed' ? 'Đã nhận suất ăn' : ord.orderStatus === 'ready' ? 'Đã xong chờ lấy' : ord.orderStatus === 'preparing' ? 'Đang chuẩn bị' : 'Đã tiếp nhận',
+      "Ghi chú": ord.orderNote || ''
     }));
 
     const ws = XLSX.utils.json_to_sheet(excelRows);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Danh sách đơn ăn sáng");
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sách điểm tâm sáng");
 
     const cleanDate = filterDate.replace(/-/g, '_');
-    const fileName = `1-Danh_sach_don_an_sang_ngay_${cleanDate}.xlsx`;
+    const fileName = `1-Danh_sach_suat_an_diem_tam_sang_ngay_${cleanDate}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
@@ -261,7 +261,7 @@ export default function AdminCanteenManager() {
           </button>
           
           <h1 style={{ fontSize: '21px', fontWeight: '900', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Utensils color="#ea580c" size={24} /> Bảng Điều Phối Bếp Sáng CBQ (Cô Lương Thị Hải Vân)
+            <Utensils color="#ea580c" size={24} /> Điều Phối Điểm Tâm Sáng CBQ (Cô Lương Thị Hải Vân)
           </h1>
         </div>
 
@@ -283,7 +283,7 @@ export default function AdminCanteenManager() {
               gap: '6px'
             }}
           >
-            🍽️ Xem Cổng Đặt Món Học Sinh ↗
+            🍽️ Xem Cổng Đăng Ký Suất Ăn ↗
           </Link>
           
           <button
@@ -303,7 +303,7 @@ export default function AdminCanteenManager() {
               gap: '6px',
               boxShadow: '0 2px 4px rgba(22,163,74,0.3)'
             }}
-            title="Xuất danh sách đơn đặt món sang file Excel tuân thủ quy tắc 1-..."
+            title="Xuất danh sách đăng ký suất ăn sang file Excel tuân thủ quy tắc 1-..."
           >
             <Download size={15} /> Xuất Excel (.xlsx)
           </button>
@@ -315,53 +315,53 @@ export default function AdminCanteenManager() {
         
         <div style={{ background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid #fed7aa', boxShadow: '0 2px 6px rgba(234,88,12,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#9a3412' }}>DOANH THU SÁNG NAY</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#9a3412' }}>TỔNG KINH PHÍ SUẤT ĂN</span>
             <DollarSign size={18} color="#ea580c" />
           </div>
           <div style={{ fontSize: '22px', fontWeight: '900', color: '#ea580c' }}>
             {kitchenSummary.finances.totalRevenue.toLocaleString('vi-VN')}đ
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
-            Tổng số: <strong>{kitchenSummary.activeOrdersCount} đơn hàng</strong>
+            Tổng số: <strong>{kitchenSummary.activeOrdersCount} phiếu đăng ký</strong>
           </div>
         </div>
 
         <div style={{ background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid #bbf7d0', boxShadow: '0 2px 6px rgba(22,163,74,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#166534' }}>ĐÃ THU CHUYỂN KHOẢN</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#166534' }}>KINH PHÍ ĐÃ NHẬN QUA CK</span>
             <CreditCard size={18} color="#16a34a" />
           </div>
           <div style={{ fontSize: '22px', fontWeight: '900', color: '#16a34a' }}>
             {kitchenSummary.finances.transferPaidAmount.toLocaleString('vi-VN')}đ
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
-            VietQR về thẳng tài khoản cô Vân
+            VietQR TPBank về tài khoản đối soát
           </div>
         </div>
 
         <div style={{ background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid #bae6fd', boxShadow: '0 2px 6px rgba(2,132,199,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1' }}>ĐÃ THU TIỀN MẶT</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#0369a1' }}>KINH PHÍ GỬI TRỰC TIẾP</span>
             <Banknote size={18} color="#0284c7" />
           </div>
           <div style={{ fontSize: '22px', fontWeight: '900', color: '#0284c7' }}>
             {kitchenSummary.finances.cashPaidAmount.toLocaleString('vi-VN')}đ
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
-            Tiền mặt đã nhận trực tiếp
+            Nhận tại bàn tiếp nhận sảnh Tầng 1
           </div>
         </div>
 
         <div style={{ background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid #fecaca', boxShadow: '0 2px 6px rgba(220,38,38,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#991b1b' }}>CHỜ THU / CẦN THU</span>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#991b1b' }}>KINH PHÍ CẦN ĐỐI SOÁT</span>
             <AlertCircle size={18} color="#dc2626" />
           </div>
           <div style={{ fontSize: '22px', fontWeight: '900', color: '#dc2626' }}>
             {kitchenSummary.finances.totalPending.toLocaleString('vi-VN')}đ
           </div>
           <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px' }}>
-            Cần thu khi học sinh đến nhận món
+            Đối soát khi bàn giao suất ăn sáng
           </div>
         </div>
 
@@ -386,7 +386,7 @@ export default function AdminCanteenManager() {
             gap: '6px'
           }}
         >
-          <ShoppingBag size={17} /> 📋 Đơn Hàng & Thu Tiền ({orders.length})
+          <ShoppingBag size={17} /> 📋 Phiếu Đăng Ký & Đối Soát ({orders.length})
         </button>
 
         <button
@@ -406,7 +406,7 @@ export default function AdminCanteenManager() {
             gap: '6px'
           }}
         >
-          <Utensils size={17} /> 🍳 Bảng Chuẩn Bị Bếp ({kitchenSummary.itemsSummary.length} món)
+          <Utensils size={17} /> 🍳 Tổng Hợp Suất Ăn Cần Chuẩn Bị ({kitchenSummary.itemsSummary.length} món)
         </button>
 
         <button
@@ -426,7 +426,7 @@ export default function AdminCanteenManager() {
             gap: '6px'
           }}
         >
-          <Layers size={17} /> 🍱 Quản Lý Thực Đơn & Giá ({menuItems.length})
+          <Layers size={17} /> 🍱 Danh Mục Món & Mức Đóng Góp ({menuItems.length})
         </button>
 
         <button
@@ -446,11 +446,11 @@ export default function AdminCanteenManager() {
             gap: '6px'
           }}
         >
-          <Settings size={17} /> ⚙️ Cài Đặt Ngân Hàng & Giờ Chốt
+          <Settings size={17} /> ⚙️ Cài Đặt Tiếp Nhận & Tài Khoản Đối Soát
         </button>
       </div>
 
-      {/* ==================== TAB 1: ĐƠN HÀNG & THU TIỀN ==================== */}
+      {/* ==================== TAB 1: PHIẾU ĐĂNG KÝ & ĐỐI SOÁT ==================== */}
       {activeTab === 'orders' && (
         <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           
@@ -826,10 +826,10 @@ export default function AdminCanteenManager() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '10px' }}>
             <div>
               <h3 style={{ fontSize: '17px', fontWeight: '900', margin: 0, color: '#0f172a' }}>
-                Danh Sách Món Ăn Bếp Sáng
+                Danh Mục Món Điểm Tâm & Mức Đóng Góp
               </h3>
               <p style={{ fontSize: '12.5px', color: '#64748b', margin: '2px 0 0 0' }}>
-                Cô Vân có thể bật/tắt bán từng món theo ngày, thay đổi giá tiền và giới hạn số suất.
+                Cô Vân có thể bật/tắt chuẩn bị từng món theo ngày, điều chỉnh mức kinh phí và giới hạn số suất.
               </p>
             </div>
 
@@ -936,7 +936,7 @@ export default function AdminCanteenManager() {
       {activeTab === 'settings' && (
         <div style={{ maxWidth: '650px', margin: '0 auto', background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           <h3 style={{ fontSize: '17px', fontWeight: '900', color: '#0f172a', margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Settings color="#ea580c" size={20} /> Cài Đặt Thông Tin Bếp Sáng & Tài Khoản Ngân Hàng
+            <Settings color="#ea580c" size={20} /> Cài Đặt Thông Tin Điểm Tâm & Tài Khoản Đối Soát
           </h3>
 
           <form onSubmit={handleSaveConfig}>
@@ -1085,7 +1085,7 @@ export default function AdminCanteenManager() {
                     accountNumber: config.bankAccount.accountNumber,
                     accountName: config.bankAccount.accountName,
                     amount: 15000,
-                    memo: 'BS01 12A1'
+                    memo: 'CBQ 12A1'
                   }) : '/qr_bep_sang_co_van.png'}
                   alt="QR Preview"
                   onError={(e) => { e.currentTarget.src = '/qr_bep_sang_co_van.png'; }}
