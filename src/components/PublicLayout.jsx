@@ -425,11 +425,11 @@ export default function PublicLayout() {
                   background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.25), rgba(249, 115, 22, 0.25))',
                   border: '1px solid rgba(253, 224, 71, 0.4)',
                   borderRadius: '6px',
-                  margin: '3px 4px',
-                  padding: '7px 11px',
+                  margin: '2px 3px',
+                  padding: '6px 9px',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: '6px'
+                  gap: '5px'
                 }),
               }}
               onClick={() => setMobileMenuOpen(false)}
@@ -437,21 +437,22 @@ export default function PublicLayout() {
             >
               <span>🍳 Điểm Tâm Sáng</span>
               <span style={{
-                fontSize: '9.5px',
+                fontSize: '9px',
                 backgroundColor: '#dc2626',
                 color: '#ffffff',
                 padding: '1px 5px',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 fontWeight: '900',
-                letterSpacing: '0.4px',
-                lineHeight: 1.2
+                letterSpacing: '0.3px',
+                lineHeight: 1.1
               }}>MỚI</span>
             </Link>
 
-            {/* MENU ĐỘC LẬP: TRẠM HỌC LIỆU SỐ & VIDEO */}
+            {/* MENU ĐỘC LẬP: TRẠM HỌC LIỆU SỐ & VIDEO (Ưu tiên hiển thị màn hình rộng) */}
             {safeMenus.some(m => (m?.path === '/hoc-lieu-so' || m?.path === '/video-hoc-tap') && m?.is_active === true) && (
               <Link 
                 to="/hoc-lieu-so" 
+                className="nav-wide-only"
                 style={{
                   ...(isActive('/hoc-lieu-so') || isActive('/video-hoc-tap') ? styles.navItemActive : styles.navItem),
                   fontWeight: '700'
@@ -476,7 +477,7 @@ export default function PublicLayout() {
                 </span>
                 <div className="nav-dropdown-content" style={styles.dropdownContent}>
                   {safeMenus
-                    .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active === true)
+                    .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active === true && !m?.path?.includes('bep-sang') && !m?.path?.includes('cantin'))
                     .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
                     .map(m => (
                       <Link 
@@ -505,7 +506,7 @@ export default function PublicLayout() {
                   }}
                   style={isGroupActive('media') ? styles.navItemActive : styles.navItem}
                 >
-                  📰 Hoạt Động & Media {activeDropdown === 'media' ? '▴' : '▾'}
+                  📰 Hoạt Động {activeDropdown === 'media' ? '▴' : '▾'}
                 </span>
                 <div className="nav-dropdown-content" style={styles.dropdownContent}>
                   {safeMenus
@@ -528,9 +529,9 @@ export default function PublicLayout() {
               </div>
             )}
 
-            {/* DROPDOWN 3: ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU) */}
+            {/* DROPDOWN 3: ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU) - CĂN PHẢI TRÁNH TRÀN */}
             {safeMenus.some(m => m?.parent_group === 'anniversary' && m?.is_active === true) && (
-              <div className={`nav-dropdown ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
+              <div className={`nav-dropdown align-right ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
                 <span 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -561,9 +562,9 @@ export default function PublicLayout() {
               </div>
             )}
 
-            {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI */}
+            {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI - CĂN PHẢI TRÁNH TRÀN */}
             {externalLinks && externalLinks.length > 0 && (
-              <div className={`nav-dropdown ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
+              <div className={`nav-dropdown align-right ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
                 <span 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -616,11 +617,14 @@ export default function PublicLayout() {
           </div>
 
           {/* Desktop Quick Access Portals with Auto Session Detection */}
-          <div className="desktop-portal-btns" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <div className="desktop-portal-btns" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
             {loggedStudent ? (
-              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #0284c7, #0369a1)', borderRadius: '10px', padding: '3px 8px', gap: '6px', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)' }}>
-                <Link to="/student-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <GraduationCap size={13} /> {loggedStudent.full_name || 'Học Sinh'}
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #0284c7, #0369a1)', borderRadius: '10px', padding: '3px 8px', gap: '5px', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)' }}>
+                <Link to="/student-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <GraduationCap size={13} />
+                  <span style={{ maxWidth: '95px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                    {loggedStudent.full_name || 'Học Sinh'}
+                  </span>
                 </Link>
                 <button
                   type="button"
@@ -637,14 +641,17 @@ export default function PublicLayout() {
               </div>
             ) : (
               <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
-                <GraduationCap size={14} /> Học Sinh
+                <GraduationCap size={13} /> Học Sinh
               </Link>
             )}
 
             {loggedTeacher ? (
-              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #16a34a, #15803d)', borderRadius: '10px', padding: '3px 8px', gap: '6px', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)' }}>
-                <Link to="/teacher-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '12px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                  <Briefcase size={13} /> {loggedTeacher.full_name || loggedTeacher.name || 'Giáo Viên'}
+              <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #16a34a, #15803d)', borderRadius: '10px', padding: '3px 8px', gap: '5px', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)' }}>
+                <Link to="/teacher-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Briefcase size={13} />
+                  <span style={{ maxWidth: '95px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                    {loggedTeacher.full_name || loggedTeacher.name || 'Giáo Viên'}
+                  </span>
                 </Link>
                 <button
                   type="button"
@@ -661,12 +668,12 @@ export default function PublicLayout() {
               </div>
             ) : (
               <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
-                <Briefcase size={14} /> Giáo Viên
+                <Briefcase size={13} /> Giáo Viên
               </Link>
             )}
 
             <Link to="/admin" className="premium-nav-btn admin" title="Trang Quản Lý & Bảng Điều Khiển Nhà Trường">
-              <ShieldCheck size={14} /> Quản Trị
+              <ShieldCheck size={13} /> Quản Trị
             </Link>
           </div>
         </div>
@@ -961,9 +968,9 @@ const styles = {
     overflow: 'visible'
   },
   navContainer: {
-    maxWidth: '1280px',
+    maxWidth: '1360px',
     margin: '0 auto',
-    padding: '0 12px',
+    padding: '0 10px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -974,8 +981,8 @@ const styles = {
   navItem: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '10px 11px',
-    fontSize: '13px',
+    padding: '9px 10px',
+    fontSize: '12.8px',
     fontWeight: '700',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -988,8 +995,8 @@ const styles = {
   navItemActive: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '10px 11px',
-    fontSize: '13px',
+    padding: '9px 10px',
+    fontSize: '12.8px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -1003,8 +1010,8 @@ const styles = {
   navItemHighlight: {
     color: '#fef08a',
     textDecoration: 'none',
-    padding: '10px 11px',
-    fontSize: '13px',
+    padding: '9px 10px',
+    fontSize: '12.8px',
     fontWeight: '800',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',
@@ -1017,8 +1024,8 @@ const styles = {
   navItemHighlightActive: {
     color: '#ffffff',
     textDecoration: 'none',
-    padding: '10px 11px',
-    fontSize: '13px',
+    padding: '9px 10px',
+    fontSize: '12.8px',
     fontWeight: '900',
     whiteSpace: 'nowrap',
     borderRight: '1px solid rgba(255, 255, 255, 0.12)',

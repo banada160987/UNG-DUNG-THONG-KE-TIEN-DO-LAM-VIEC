@@ -368,85 +368,93 @@ export default function AdminCanteenManager() {
       </div>
 
       {/* 3. TABS CHỨC NĂNG */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '12px' }}>
         <button
           type="button"
           onClick={() => setActiveTab('orders')}
           style={{
-            padding: '10px 18px',
+            padding: '8px 16px',
             border: 'none',
-            borderBottom: activeTab === 'orders' ? '3px solid #ea580c' : '3px solid transparent',
-            background: 'none',
-            color: activeTab === 'orders' ? '#ea580c' : '#64748b',
+            borderRadius: '8px',
+            background: activeTab === 'orders' ? '#ea580c' : 'transparent',
+            color: activeTab === 'orders' ? '#ffffff' : '#64748b',
             fontWeight: '800',
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            boxShadow: activeTab === 'orders' ? '0 2px 6px rgba(234, 88, 12, 0.3)' : 'none',
+            transition: 'all 0.2s ease'
           }}
         >
-          <ShoppingBag size={17} /> 📋 Phiếu Đăng Ký & Đối Soát ({orders.length})
+          <ShoppingBag size={16} /> 📋 Phiếu Đăng Ký & Đối Soát ({orders.length})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('kitchen')}
           style={{
-            padding: '10px 18px',
+            padding: '8px 16px',
             border: 'none',
-            borderBottom: activeTab === 'kitchen' ? '3px solid #ea580c' : '3px solid transparent',
-            background: 'none',
-            color: activeTab === 'kitchen' ? '#ea580c' : '#64748b',
+            borderRadius: '8px',
+            background: activeTab === 'kitchen' ? '#ea580c' : 'transparent',
+            color: activeTab === 'kitchen' ? '#ffffff' : '#64748b',
             fontWeight: '800',
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            boxShadow: activeTab === 'kitchen' ? '0 2px 6px rgba(234, 88, 12, 0.3)' : 'none',
+            transition: 'all 0.2s ease'
           }}
         >
-          <Utensils size={17} /> 🍳 Tổng Hợp Suất Ăn Cần Chuẩn Bị ({kitchenSummary.itemsSummary.length} món)
+          <Utensils size={16} /> 🍳 Tổng Hợp Suất Ăn ({kitchenSummary.itemsSummary.length} món)
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('menu')}
           style={{
-            padding: '10px 18px',
+            padding: '8px 16px',
             border: 'none',
-            borderBottom: activeTab === 'menu' ? '3px solid #ea580c' : '3px solid transparent',
-            background: 'none',
-            color: activeTab === 'menu' ? '#ea580c' : '#64748b',
+            borderRadius: '8px',
+            background: activeTab === 'menu' ? '#ea580c' : 'transparent',
+            color: activeTab === 'menu' ? '#ffffff' : '#64748b',
             fontWeight: '800',
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            boxShadow: activeTab === 'menu' ? '0 2px 6px rgba(234, 88, 12, 0.3)' : 'none',
+            transition: 'all 0.2s ease'
           }}
         >
-          <Layers size={17} /> 🍱 Danh Mục Món & Mức Đóng Góp ({menuItems.length})
+          <Layers size={16} /> 🍱 Danh Mục Món & Mức Đóng Góp ({menuItems.length})
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('settings')}
           style={{
-            padding: '10px 18px',
+            padding: '8px 16px',
             border: 'none',
-            borderBottom: activeTab === 'settings' ? '3px solid #ea580c' : '3px solid transparent',
-            background: 'none',
-            color: activeTab === 'settings' ? '#ea580c' : '#64748b',
+            borderRadius: '8px',
+            background: activeTab === 'settings' ? '#ea580c' : 'transparent',
+            color: activeTab === 'settings' ? '#ffffff' : '#64748b',
             fontWeight: '800',
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '6px'
+            gap: '6px',
+            boxShadow: activeTab === 'settings' ? '0 2px 6px rgba(234, 88, 12, 0.3)' : 'none',
+            transition: 'all 0.2s ease'
           }}
         >
-          <Settings size={17} /> ⚙️ Cài Đặt Tiếp Nhận & Tài Khoản Đối Soát
+          <Settings size={16} /> ⚙️ Cài Đặt Tiếp Nhận & Đối Soát
         </button>
       </div>
 

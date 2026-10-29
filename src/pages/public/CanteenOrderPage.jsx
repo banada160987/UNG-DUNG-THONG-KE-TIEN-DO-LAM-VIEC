@@ -313,7 +313,7 @@ export default function CanteenOrderPage() {
 
       {/* 2. NAVIGATION TABS: Thực Đơn & Tra Cứu Đơn */}
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ display: 'flex', gap: '10px', margin: '20px 0 16px 0', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+        <div style={{ display: 'flex', gap: '10px', margin: '20px 0 16px 0', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={() => setActiveTab('menu')}
