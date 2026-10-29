@@ -83,6 +83,7 @@ export default function MobileBottomNav() {
 
   // Danh mục tiện ích nhanh cho Bottom Sheet - Phân quyền chuẩn xác theo vai trò
   const quickActions = student ? [
+    { title: 'Bếp Sáng CBQ (Đặt Đồ Ăn)', path: '/bep-sang', icon: '🍳', desc: 'Đặt đồ ăn sáng cô Vân trước 06h30' },
     { title: 'Sổ Đầu Bài Lớp Em', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Theo dõi tiến độ học tập và ghi sổ lớp' },
     { title: 'Phòng Thi GDPT 2018', path: '/hoc-sinh/kiem-tra-danh-gia', icon: '📝', desc: 'Làm bài kiểm tra & thi thử chuẩn cấu trúc mới' },
     { title: 'Điểm Danh Câu Lạc Bộ', path: '/admin/registrations', icon: '🎯', desc: 'Kiểm tra lịch sinh hoạt & điểm danh CLB' },
@@ -92,6 +93,7 @@ export default function MobileBottomNav() {
     { title: 'Cố Vấn Tổ Hợp 2+2 & Ngành', path: '/hoc-sinh/tu-van-to-hop-2-cong-2', icon: '🧭', desc: 'Định hướng tổ hợp môn thi & nghề nghiệp' },
     { title: 'Trạm Video Kỹ Năng Số', path: '/hoc-lieu-so', icon: '📺', desc: 'Kho học liệu số, video thí nghiệm & kỹ năng' }
   ] : teacher ? [
+    { title: 'Bếp Sáng CBQ (Điểm Tâm)', path: '/bep-sang', icon: '🍳', desc: 'Điểm tâm sáng phục vụ Thầy Cô giáo' },
     { title: 'Ghi Sổ Đầu Bài Hôm Nay', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Ký số và ghi nhận đánh giá tiết dạy' },
     { title: 'Kế Hoạch Bài Dạy (CV 5512)', path: '/admin/department-drives', icon: '📂', desc: 'Nộp và duyệt giáo án chuẩn chuyên môn' },
     { title: 'Ngân Hàng Đề Thi & Trộn Đề', path: '/giao-vien/ra-de-thi', icon: '✏️', desc: 'Hỗ trợ công thức LaTeX, tạo mã đề đa dạng' },
@@ -102,6 +104,7 @@ export default function MobileBottomNav() {
     { title: 'Quản Lý Điểm Danh CLB', path: '/admin/registrations', icon: '🎯', desc: 'Theo dõi học sinh đăng ký các câu lạc bộ' },
     { title: 'Quản Lý Xe Máy Học Sinh', path: '/admin/parking', icon: '🛵', desc: 'Duyệt vé xe và kiểm tra phương tiện học sinh' }
   ] : [
+    { title: 'Bếp Sáng CBQ (Căn Tin)', path: '/bep-sang', icon: '🍳', desc: 'Căn tin trực tuyến & Điểm tâm học đường' },
     { title: 'Tra Cứu Bằng Tốt Nghiệp & Học Bạ', path: '/tra-cuu-van-bang', icon: '📜', desc: 'Bằng tốt nghiệp THPT & học bạ điện tử' },
     { title: 'Lịch Công Tác BGH Nhà Trường', path: '/lich-cong-tac', icon: '📅', desc: 'Lịch tuần, kế hoạch tháng & năm học chính thức' },
     { title: 'Sổ Chấm Điểm Thi Đua 34 Lớp', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Bảng xếp hạng nề nếp thi đua các lớp' },

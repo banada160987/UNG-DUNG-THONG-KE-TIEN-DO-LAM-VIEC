@@ -1057,7 +1057,7 @@ export default function AdminCanteenManager() {
                       ...config,
                       bankAccount: { ...config.bankAccount, accountNumber: e.target.value }
                     })}
-                    placeholder="VD: 0984123456..."
+                    placeholder="VD: 17753888888..."
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
@@ -1074,6 +1074,26 @@ export default function AdminCanteenManager() {
                     placeholder="LUONG THI HAI VAN"
                     style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
+                </div>
+              </div>
+
+              {/* Preview mã QR thanh toán */}
+              <div style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px dashed #cbd5e1', display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <img
+                  src={config.bankAccount?.accountNumber ? generateVietQrUrl({
+                    bankCode: config.bankAccount.bankCode,
+                    accountNumber: config.bankAccount.accountNumber,
+                    accountName: config.bankAccount.accountName,
+                    amount: 15000,
+                    memo: 'BS01 12A1'
+                  }) : '/qr_bep_sang_co_van.png'}
+                  alt="QR Preview"
+                  onError={(e) => { e.currentTarget.src = '/qr_bep_sang_co_van.png'; }}
+                  style={{ width: '80px', height: '80px', borderRadius: '6px', border: '1px solid #cbd5e1', objectFit: 'contain' }}
+                />
+                <div style={{ fontSize: '12px', color: '#64748b', lineHeight: '1.5' }}>
+                  <strong style={{ color: '#0f172a' }}>Xem trước mã VietQR tự sinh cho học sinh:</strong><br/>
+                  Học sinh khi đặt món quét mã này sẽ tự động điền đúng số tiền và nội dung chuyển khoản để cô Vân kiểm tra tức thì.
                 </div>
               </div>
             </div>

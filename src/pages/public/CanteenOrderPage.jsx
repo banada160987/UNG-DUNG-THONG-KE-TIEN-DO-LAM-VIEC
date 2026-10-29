@@ -36,6 +36,7 @@ export default function CanteenOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState('vietqr'); // 'vietqr' | 'cash'
   const [hasTransferred, setHasTransferred] = useState(false);
   const [paymentProofImage, setPaymentProofImage] = useState('');
+  const [showOriginalQr, setShowOriginalQr] = useState(false);
 
   // Success state
   const [placedOrder, setPlacedOrder] = useState(null);
@@ -812,23 +813,70 @@ export default function CanteenOrderPage() {
               {paymentMethod === 'vietqr' && (
                 <div style={{ background: '#f8fafc', padding: '16px', borderRadius: '14px', border: '1px solid #cbd5e1', textAlign: 'center' }}>
                   <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>
-                    Quét Mã VietQR Chuyển Khoản Cho Cô Vân:
+                    Quét Mã Chuyển Khoản Cho Cô Lương Thị Hải Vân:
                   </div>
 
-                  {vietQrUrl && (
+                  {/* Nút chuyển đổi giữa QR tự điền tiền và QR gốc TPBank */}
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '10px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginalQr(false)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        border: !showOriginalQr ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
+                        background: !showOriginalQr ? '#ffedd5' : '#ffffff',
+                        color: !showOriginalQr ? '#c2410c' : '#64748b',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      ⚡ QR Động (Đã Điền Sẵn Tiền)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowOriginalQr(true)}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '11.5px',
+                        fontWeight: '700',
+                        border: showOriginalQr ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
+                        background: showOriginalQr ? '#ffedd5' : '#ffffff',
+                        color: showOriginalQr ? '#c2410c' : '#64748b',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📷 Ảnh QR Gốc TPBank
+                    </button>
+                  </div>
+
+                  {!showOriginalQr ? (
+                    vietQrUrl && (
+                      <img
+                        src={vietQrUrl}
+                        alt="VietQR Code Điền Sẵn Tiền"
+                        onError={(e) => { e.currentTarget.src = '/qr_bep_sang_co_van.png'; }}
+                        style={{ width: '220px', height: '220px', margin: '0 auto', display: 'block', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+                      />
+                    )
+                  ) : (
                     <img
-                      src={vietQrUrl}
-                      alt="VietQR Code"
-                      style={{ width: '220px', height: '220px', margin: '0 auto', display: 'block', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                      src="/qr_bep_sang_co_van.png"
+                      alt="Ảnh mã QR TPBank gốc của cô Lương Thị Hải Vân"
+                      style={{ width: '220px', height: 'auto', maxHeight: '280px', objectFit: 'contain', margin: '0 auto', display: 'block', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
                     />
                   )}
 
-                  <div style={{ marginTop: '10px', fontSize: '12.5px', color: '#475569', lineHeight: 1.5 }}>
-                    Ngân hàng: <strong>{config.bankAccount?.bankName}</strong><br/>
-                    Số tài khoản: <strong style={{ color: '#0284c7' }}>{config.bankAccount?.accountNumber}</strong>{' '}
-                    <button type="button" onClick={() => copyToClipboard(config.bankAccount?.accountNumber, 'Số tài khoản')} style={{ border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}>Copy</button><br/>
-                    Chủ tài khoản: <strong>{config.bankAccount?.accountName}</strong><br/>
-                    Số tiền: <strong style={{ color: '#ea580c', fontSize: '14px' }}>{cartSummary.totalAmount.toLocaleString('vi-VN')}đ</strong>
+                  <div style={{ marginTop: '12px', fontSize: '12.5px', color: '#475569', lineHeight: 1.6 }}>
+                    Ngân hàng: <strong>{config.bankAccount?.bankName || 'TPBank (Ngân Hàng Tiên Phong)'}</strong><br/>
+                    Số tài khoản: <strong style={{ color: '#0284c7', fontSize: '14px', letterSpacing: '0.5px' }}>
+                      {(config.bankAccount?.accountNumber || '17753888888').replace(/(\d{4})(\d{4})(\d+)/, '$1 $2 $3')}
+                    </strong>{' '}
+                    <button type="button" onClick={() => copyToClipboard(config.bankAccount?.accountNumber || '17753888888', 'Số tài khoản')} style={{ border: 'none', background: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}>Copy</button><br/>
+                    Chủ tài khoản: <strong>{config.bankAccount?.accountName || 'LUONG THI HAI VAN'}</strong><br/>
+                    Số tiền: <strong style={{ color: '#ea580c', fontSize: '15px' }}>{cartSummary.totalAmount.toLocaleString('vi-VN')}đ</strong>
                   </div>
 
                   <div style={{ marginTop: '14px', paddingTop: '12px', borderTop: '1px dashed #cbd5e1' }}>

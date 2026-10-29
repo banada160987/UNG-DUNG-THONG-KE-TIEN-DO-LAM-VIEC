@@ -151,6 +151,27 @@ export default function TeacherDashboard() {
             <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
 
             <button
+              onClick={() => navigate('/bep-sang')}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 18px',
+                fontSize: '13.5px',
+                fontWeight: '700',
+                color: '#fef08a',
+                backgroundColor: 'rgba(234, 179, 8, 0.2)',
+                border: '1px solid rgba(250, 204, 21, 0.45)',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Đặt điểm tâm sáng cô Vân phục vụ Thầy Cô giáo"
+            >
+              <span>🍳 Bếp Sáng CBQ</span>
+            </button>
+
+            <button
               onClick={() => navigate('/')}
               style={{
                 display: 'inline-flex',

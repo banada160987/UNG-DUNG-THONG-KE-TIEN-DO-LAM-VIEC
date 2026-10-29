@@ -40,10 +40,11 @@ const DEFAULT_CONFIG = {
   cutoffTime: '06:30', // Giờ chốt đơn sáng hàng ngày
   pickupTimeWindow: '06:35 - 06:55 (Trước giờ truy bài)',
   bankAccount: {
-    bankCode: 'MB',
-    bankName: 'MBBank (Quân Đội)',
-    accountNumber: '0984123456',
-    accountName: 'LUONG THI HAI VAN'
+    bankCode: 'TPB',
+    bankName: 'TPBank (Ngân Hàng Tiên Phong)',
+    accountNumber: '17753888888',
+    accountName: 'LUONG THI HAI VAN',
+    qrImage: '/qr_bep_sang_co_van.png'
   },
   announcement: '🌟 Chào mừng các em học sinh và quý Thầy/Cô đến với Bếp Sáng CBQ! Vui lòng đặt món trước 06h30 để cô chuẩn bị chu đáo và nóng hổi nhất nhé!'
 };
@@ -198,7 +199,15 @@ const INITIAL_ORDERS = [
 export function getCanteenConfig() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY_CONFIG);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      // Nâng cấp tự động tài khoản thật của Cô Vân (TPBank: 1775 3888 888)
+      if (parsed?.bankAccount?.accountNumber === '0984123456' || parsed?.bankAccount?.bankCode === 'MB' || !parsed?.bankAccount?.accountNumber) {
+        parsed.bankAccount = { ...DEFAULT_CONFIG.bankAccount };
+        localStorage.setItem(STORAGE_KEY_CONFIG, JSON.stringify(parsed));
+      }
+      return parsed;
+    }
   } catch (e) {
     console.error("Lỗi đọc cấu hình căn tin:", e);
   }
@@ -642,12 +651,11 @@ export function subscribeToCanteenOrders(onOrderChanged) {
 /**
  * Tạo URL mã QR VietQR chuẩn ngân hàng để chuyển khoản trực tiếp cho Cô Vân
  */
-export function generateVietQrUrl({ bankCode = 'MB', accountNumber, accountName, amount, memo }) {
-  if (!accountNumber) return '';
-  const cleanBank = bankCode || 'MB';
-  const cleanAcc = encodeURIComponent(accountNumber.trim());
+export function generateVietQrUrl({ bankCode = 'TPB', accountNumber = '17753888888', accountName = 'LUONG THI HAI VAN', amount, memo }) {
+  const cleanBank = bankCode || 'TPB';
+  const cleanAcc = encodeURIComponent((accountNumber || '17753888888').replace(/\s+/g, ''));
   const cleanAmount = parseInt(amount, 10) || 0;
-  const cleanMemo = encodeURIComponent((memo || 'CBQ FOOD').trim());
+  const cleanMemo = encodeURIComponent((memo || 'BEP SANG CBQ').trim());
   const cleanName = encodeURIComponent((accountName || 'LUONG THI HAI VAN').trim());
 
   return `https://img.vietqr.io/image/${cleanBank}-${cleanAcc}-compact2.png?amount=${cleanAmount}&addInfo=${cleanMemo}&accountName=${cleanName}`;

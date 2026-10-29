@@ -566,6 +566,14 @@ export default function PublicHome() {
               </div>
 
               <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '10px' }}>
+                <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
+                  <span style={{ fontSize: '22px' }}>🍳</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Đặt đồ ăn cô Vân</div>
+                  </div>
+                </Link>
+
                 <Link to="/lich-cong-tac?tab=class_tkb" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
                   <span style={{ fontSize: '22px' }}>📅</span>
                   <div>
@@ -694,6 +702,14 @@ export default function PublicHome() {
               </div>
 
               <div style={{ padding: '14px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '10px' }}>
+                <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
+                  <span style={{ fontSize: '22px' }}>🍳</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Điểm tâm Thầy Cô</div>
+                  </div>
+                </Link>
+
                 <Link to="/lich-cong-tac?tab=teacher_tkb" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
                   <span style={{ fontSize: '22px' }}>📅</span>
                   <div>
@@ -854,6 +870,14 @@ export default function PublicHome() {
               {activeGuestTab === 'parents' && (
                 <div style={{ padding: '14px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                    <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
+                      <span style={{ fontSize: '22px' }}>🍳</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Bếp Sáng CBQ</div>
+                        <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Căn tin học đường</div>
+                      </div>
+                    </Link>
+
                     <Link to="/tra-cuu-van-bang" style={styles.actionCard('#f0fdf4', '#22c55e', '#15803d')}>
                       <span style={{ fontSize: '22px' }}>📜</span>
                       <div>

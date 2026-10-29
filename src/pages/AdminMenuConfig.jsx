@@ -14,7 +14,8 @@ const DEFAULT_FULL_PUBLIC_MENUS = [
 
   // Group 2: Vận hành nhà trường
   { id: 'pub_school_2', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
-  { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 2, is_active: true },
+  { id: 'pub_canteen_1', target_type: 'public', parent_group: 'school', label: '🍳 Bếp Sáng CBQ (Căn Tin Online)', path: '/bep-sang', sort_order: 2, is_active: true },
+  { id: 'pub_school_3', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: true },
   { id: 'pub_school_3_1', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: true },
   { id: 'pub_school_4', target_type: 'public', parent_group: 'school', label: '📋 Sổ Chấm điểm Thi đua Trực tuần', path: '/cham-diem-thi-dua', sort_order: 4, is_active: true },
   { id: 'pub_school_5', target_type: 'public', parent_group: 'school', label: '📜 Văn bản - Thông báo', path: '/van-ban', sort_order: 5, is_active: true },
@@ -43,7 +44,8 @@ const DEFAULT_FULL_ADMIN_MENUS = [
   { id: 'adm_anniv_7', target_type: 'admin', parent_group: 'anniversary', label: '📖 Quản lý Tập San 30 năm', path: '/admin/tap-san', sort_order: 7, is_active: true },
 
   // Group 2: 🏫 VẬN HÀNH NHÀ TRƯỜNG
-  { id: 'adm_school_1', target_type: 'admin', parent_group: 'school', label: '📋 Chấm Điểm Thi Đua Lớp', path: '/admin/emulation', sort_order: 1, is_active: true },
+  { id: 'adm_canteen_1', target_type: 'admin', parent_group: 'school', label: '🍳 Điều Phối Bếp Sáng & Căn Tin', path: '/admin/cantin', sort_order: 1, is_active: true },
+  { id: 'adm_school_1', target_type: 'admin', parent_group: 'school', label: '📋 Chấm Điểm Thi Đua Lớp', path: '/admin/emulation', sort_order: 2, is_active: true },
   { id: 'adm_school_2', target_type: 'admin', parent_group: 'school', label: '👨‍🎓 Danh Sách Học Sinh', path: '/admin/students', sort_order: 2, is_active: true },
   { id: 'adm_school_3', target_type: 'admin', parent_group: 'school', label: '📅 Lịch Công Tác Tuần', path: '/admin/schedule', sort_order: 3, is_active: true },
   { id: 'adm_school_4', target_type: 'admin', parent_group: 'school', label: '👨‍🏫 Đội Ngũ & Tổ Chuyên Môn', path: '/admin/staff', sort_order: 4, is_active: true },
@@ -72,6 +74,7 @@ const DEFAULT_FULL_ADMIN_MENUS = [
 const PRESET_SYSTEM_PAGES = [
   // Public Pages
   { label: '🏠 Trang chủ Kỷ niệm 30 năm', path: '/', group: 'school' },
+  { label: '🍳 Bếp Sáng CBQ (Đặt Món Online)', path: '/bep-sang', group: 'school' },
   { label: '📅 Lịch công tác tuần & Trực BGH', path: '/lich-cong-tac', group: 'school' },
   { label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', group: 'school' },
   { label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', group: 'school' },

@@ -119,6 +119,7 @@ export default function Layout({ children, title }) {
 
     // 2. 📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN
     { path: '/admin/cantin', icon: Utensils, label: '🍳 Điều Phối Bếp Sáng & Căn Tin', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
+    { path: '/bep-sang', icon: Utensils, label: '🛒 Cổng Đặt Điểm Tâm (Học Sinh & GV)', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
     { path: '/admin/registrations', icon: FileText, label: '📋 Quản Lý Đợt Đăng Ký Động', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' },
     { path: '/admin/quizzes', icon: CheckSquare, label: '📝 Quản Lý Cuộc Thi & Quiz Online', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
     { path: '/admin/voting', icon: Heart, label: '❤️ Quản Lý Bầu Chọn & Tác Phẩm', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewQuizzes },
@@ -453,6 +454,28 @@ export default function Layout({ children, title }) {
             <h1 className="header-title" style={styles.headerTitle}>{title}</h1>
           </div>
           <div style={styles.headerRight}>
+            <Link
+              to="/bep-sang"
+              target="_blank"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '5px 10px',
+                backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                borderRadius: '8px',
+                color: '#d97706',
+                fontSize: '12px',
+                fontWeight: '700',
+                textDecoration: 'none'
+              }}
+              title="Mở Cổng đặt món Bếp Sáng CBQ (Giao diện học sinh/giáo viên)"
+            >
+              <span>🍳 Cổng Bếp Sáng</span>
+              <ExternalLink size={12} />
+            </Link>
+
             <div style={{position: 'relative'}} ref={notifRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)} 
