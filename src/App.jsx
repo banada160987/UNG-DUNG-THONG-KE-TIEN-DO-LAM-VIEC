@@ -101,6 +101,8 @@ const TeacherHomeroomStudents = lazy(() => import('./pages/teacher_features/Teac
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
 const ClassroomInteractiveGames = lazy(() => import('./pages/teacher_features/ClassroomInteractiveGames'));
+const CanteenOrderPage = lazy(() => import('./pages/public/CanteenOrderPage'));
+const AdminCanteenManager = lazy(() => import('./pages/admin/AdminCanteenManager'));
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -238,6 +240,13 @@ function App() {
             <Route path="/teacher-dashboard/eduhub" element={<EduVideoHub />} />
             <Route path="/teacher/eduhub" element={<EduVideoHub />} />
             <Route path="/hub" element={<AppHub />} />
+
+            {/* Bếp Sáng CBQ & Căn Tin Học Đường */}
+            <Route path="/bep-sang" element={<CanteenOrderPage />} />
+            <Route path="/cantin" element={<CanteenOrderPage />} />
+            <Route path="/can-tin" element={<CanteenOrderPage />} />
+            <Route path="/hoc-sinh/bep-sang" element={<CanteenOrderPage />} />
+            <Route path="/quan-ly-bep-sang" element={<AdminCanteenManager />} />
           </Route>
           
           {/* Protected Admin Routes */}
@@ -283,6 +292,8 @@ function App() {
               <Route path="/admin/career-advisor" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <StudentCareerAdvisor /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/eduhub" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/video-hoc-lieu" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/cantin" element={<AdminCanteenManager />} />
+              <Route path="/admin/bep-sang" element={<AdminCanteenManager />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />

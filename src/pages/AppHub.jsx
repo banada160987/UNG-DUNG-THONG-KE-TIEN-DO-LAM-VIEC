@@ -9,7 +9,8 @@ import {
   Video, FileCheck, FileSpreadsheet, BookOpen, GraduationCap,
   Users, Calendar, Globe, Database, Shield, Award, Sparkles,
   Heart, FileText, CheckSquare, Settings, Link2, FolderOpen,
-  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers
+  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers,
+  Coffee, Utensils
 } from 'lucide-react';
 
 // Helpers to auto-generate colors
@@ -31,7 +32,8 @@ const ICON_MAP = {
   Video, FileCheck, FileSpreadsheet, BookOpen, GraduationCap,
   Users, Calendar, Globe, Database, Shield, Award, Sparkles,
   Heart, FileText, CheckSquare, Settings, Link2, FolderOpen,
-  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers
+  HardDrive, Mail, Phone, Clock, Search, RefreshCw, Layers,
+  Coffee, Utensils
 };
 
 // Dynamic Icon Component
@@ -85,6 +87,21 @@ export default function AppHub() {
         const personalApps = data.filter(app => app.type === 'hub_personal' && app.owner_id === currentTeacher.username);
         filtered = [...filtered, ...personalApps];
       }
+    }
+
+    // Luôn đảm bảo có ứng dụng Bếp Sáng CBQ & Căn Tin Học Đường
+    if (!filtered.some(a => (a.url || '').includes('bep-sang') || (a.url || '').includes('cantin'))) {
+      filtered.unshift({
+        id: 'canteen_online_order',
+        title: 'Bếp Sáng CBQ - Điểm Tâm Học Đường',
+        url: '/bep-sang',
+        category: 'Đời Sống & Tiện Ích Học Đường',
+        description: 'Đặt món ăn sáng dinh dưỡng, an toàn trước 06h30. Thanh toán VietQR tự động hoặc tiền mặt. Phụ trách: Cô Lương Thị Hải Vân (Phòng Văn thư).',
+        icon: 'Utensils',
+        bg_color: '#ffedd5',
+        border_color: '#fdba74',
+        type: 'hub_global'
+      });
     }
 
     // Luôn đảm bảo có ứng dụng Điểm Danh Họp Trực Tuyến & Sĩ Số
