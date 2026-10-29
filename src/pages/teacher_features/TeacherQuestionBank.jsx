@@ -5,7 +5,7 @@ import {
   Filter, Sparkles, Download, Upload, ArrowLeft, CheckCircle2, 
   HelpCircle, ChevronRight, ChevronDown, Award, Send, Save, Eye,
   Database, FileText, CheckSquare, RefreshCw, BarChart3, Clock,
-  ShieldCheck, Check, FileUp, AlertCircle, Printer, X
+  ShieldCheck, Check, FileUp, AlertCircle, Printer, X, RotateCcw
 } from 'lucide-react';
 import MathView, { MathToolbar } from '../../components/MathView';
 import { getTeacherSession } from '../../services/authSessionManager';
@@ -19,6 +19,10 @@ import {
   getTaxonomyForSubject,
   upsertChapter,
   upsertLesson,
+  deleteChapter,
+  deleteLesson,
+  renameChapter,
+  renameLesson,
   getAllBankQuestions,
   upsertBankQuestion,
   bulkUpsertBankQuestions,
@@ -50,14 +54,22 @@ export default function TeacherQuestionBank() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Modals
+  // Modals for Chapter
   const [showAddChapterModal, setShowAddChapterModal] = useState(false);
   const [newChapterTitle, setNewChapterTitle] = useState('');
+  const [showEditChapterModal, setShowEditChapterModal] = useState(false);
+  const [editingChapterId, setEditingChapterId] = useState(null);
+  const [editChapterTitle, setEditChapterTitle] = useState('');
 
+  // Modals for Lesson
   const [showAddLessonModal, setShowAddLessonModal] = useState(false);
   const [newLessonTitle, setNewLessonTitle] = useState('');
   const [targetChapterForLesson, setTargetChapterForLesson] = useState(null);
+  const [showEditLessonModal, setShowEditLessonModal] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState(null);
+  const [editLessonTitle, setEditLessonTitle] = useState('');
 
+  // Question Modal
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
 
@@ -150,6 +162,16 @@ export default function TeacherQuestionBank() {
     return getQuestionStatsForNode(selectedLessonId);
   }, [selectedLessonId, refreshKey]);
 
+  // Tổng số câu hỏi của môn & khối đang chọn trong toàn bộ kho
+  const totalSubjectQuestions = useMemo(() => {
+    return getAllBankQuestions().filter(q => q.subject === selectedSubject && q.grade === selectedGrade).length;
+  }, [selectedSubject, selectedGrade, refreshKey]);
+
+  // Tổng số bài học của môn & khối đang chọn
+  const totalSubjectLessons = useMemo(() => {
+    return (currentTaxonomy?.chapters || []).reduce((acc, ch) => acc + (ch.lessons?.length || 0), 0);
+  }, [currentTaxonomy]);
+
   // Số lượng câu hỏi chờ thẩm định trong bài học đang chọn
   const pendingInActiveLesson = useMemo(() => {
     if (!selectedLessonId) return 0;
@@ -157,13 +179,27 @@ export default function TeacherQuestionBank() {
     return all.filter(q => q.lessonId === selectedLessonId && q.status === 'pending').length;
   }, [selectedLessonId, refreshKey]);
 
+  const activeChapterObj = useMemo(() => {
+    return currentTaxonomy?.chapters?.find(c => c.id === selectedChapterId);
+  }, [currentTaxonomy, selectedChapterId]);
+
   const activeLessonObj = useMemo(() => {
     return currentTaxonomy?.chapters
       ?.flatMap(c => c.lessons || [])
       ?.find(l => l.id === selectedLessonId);
   }, [currentTaxonomy, selectedLessonId]);
 
-  // Thêm chương mới
+  // Kiểm tra có đang áp dụng bất kỳ bộ lọc nào không
+  const hasActiveFilters = filterLevel !== 'all' || filterPart !== 'all' || filterStatus !== 'all' || searchQuery.trim() !== '';
+
+  const handleResetFilters = () => {
+    setFilterLevel('all');
+    setFilterPart('all');
+    setFilterStatus('all');
+    setSearchQuery('');
+  };
+
+  // Quản lý Chương: Thêm mới, Sửa, Xóa
   const handleSaveNewChapter = () => {
     if (!newChapterTitle.trim()) {
       alert("Vui lòng nhập tên chương.");
@@ -179,7 +215,39 @@ export default function TeacherQuestionBank() {
     setRefreshKey(k => k + 1);
   };
 
-  // Thêm bài học mới
+  const handleOpenEditChapter = (ch) => {
+    setEditingChapterId(ch.id);
+    setEditChapterTitle(ch.title);
+    setShowEditChapterModal(true);
+  };
+
+  const handleSaveEditChapter = () => {
+    if (!editChapterTitle.trim() || !editingChapterId) return;
+    renameChapter(selectedSubject, selectedGrade, editingChapterId, editChapterTitle.trim());
+    setShowEditChapterModal(false);
+    setRefreshKey(k => k + 1);
+  };
+
+  const handleDeleteChapterClick = (ch) => {
+    const chStats = getQuestionStatsForNode(ch.id);
+    if (chStats.total > 0) {
+      if (!window.confirm(`⚠️ Chương "${ch.title}" đang chứa ${chStats.total} câu hỏi trong các bài học. Thầy/Cô có chắc chắn muốn xóa toàn bộ chương này khỏi cây thư mục?`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm(`Thầy/Cô có chắc chắn muốn xóa chương "${ch.title}"?`)) {
+        return;
+      }
+    }
+    deleteChapter(selectedSubject, selectedGrade, ch.id);
+    if (selectedChapterId === ch.id) {
+      setSelectedChapterId(null);
+      setSelectedLessonId(null);
+    }
+    setRefreshKey(k => k + 1);
+  };
+
+  // Quản lý Bài Học: Thêm mới, Sửa, Xóa
   const handleSaveNewLesson = () => {
     if (!newLessonTitle.trim() || !targetChapterForLesson) {
       alert("Vui lòng nhập tên bài học.");
@@ -191,6 +259,38 @@ export default function TeacherQuestionBank() {
     });
     setNewLessonTitle('');
     setShowAddLessonModal(false);
+    setRefreshKey(k => k + 1);
+  };
+
+  const handleOpenEditLesson = (less, chId) => {
+    setTargetChapterForLesson(chId);
+    setEditingLessonId(less.id);
+    setEditLessonTitle(less.title);
+    setShowEditLessonModal(true);
+  };
+
+  const handleSaveEditLesson = () => {
+    if (!editLessonTitle.trim() || !editingLessonId || !targetChapterForLesson) return;
+    renameLesson(selectedSubject, selectedGrade, targetChapterForLesson, editingLessonId, editLessonTitle.trim());
+    setShowEditLessonModal(false);
+    setRefreshKey(k => k + 1);
+  };
+
+  const handleDeleteLessonClick = (less, chId) => {
+    const stats = getQuestionStatsForNode(less.id);
+    if (stats.total > 0) {
+      if (!window.confirm(`⚠️ Bài "${less.title}" đang có ${stats.total} câu hỏi. Thầy/Cô có chắc chắn muốn xóa bài học này khỏi cây thư mục?`)) {
+        return;
+      }
+    } else {
+      if (!window.confirm(`Thầy/Cô có chắc chắn muốn xóa bài "${less.title}"?`)) {
+        return;
+      }
+    }
+    deleteLesson(selectedSubject, selectedGrade, chId, less.id);
+    if (selectedLessonId === less.id) {
+      setSelectedLessonId(null);
+    }
     setRefreshKey(k => k + 1);
   };
 
@@ -326,7 +426,6 @@ export default function TeacherQuestionBank() {
     try {
       const text = await readExamFileAsText(file);
       setImportRawText(text);
-      // Tự động phân tích ngay
       const parsed = parseExamText(text, importDefaultLevel);
       setParsedPreviewQuestions(parsed);
       setSelectedImportIndices(new Set(parsed.map((_, idx) => idx)));
@@ -671,14 +770,14 @@ export default function TeacherQuestionBank() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto', fontFamily: '"Inter", sans-serif', color: '#1e293b' }}>
+    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', fontFamily: '"Inter", sans-serif', color: '#1e293b' }}>
       
-      {/* Top Header Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      {/* 1. TOP HEADER: Điều hướng chuẩn mực & CTA chính duy nhất */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             type="button"
-            onClick={() => navigate('/giao-vien/ra-de-thi')}
+            onClick={() => navigate('/teacher-dashboard')}
             style={{
               padding: '8px 14px',
               borderRadius: '8px',
@@ -692,62 +791,42 @@ export default function TeacherQuestionBank() {
               gap: '6px',
               fontSize: '13px'
             }}
+            title="Quay lại Bảng điều khiển Giáo viên"
           >
-            <ArrowLeft size={16} /> Quay lại Trang Ra Đề Thi
+            <ArrowLeft size={16} /> Bảng Điều Khiển
           </button>
           
-          <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <FolderTree color="#0284c7" size={24} /> Phân Hệ Ngân Hàng Đề Tổ Chuyên Môn
+          <h1 style={{ fontSize: '21px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FolderTree color="#0284c7" size={24} /> Phân Hệ Ngân Hàng Câu Hỏi Tổ Chuyên Môn
           </h1>
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
-
-          <button
-            type="button"
-            onClick={() => setShowCoverageModal(true)}
-            style={{
-              padding: '9px 16px',
-              borderRadius: '8px',
-              border: '1px solid #c7d2fe',
-              background: '#eef2ff',
-              color: '#4338ca',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              boxShadow: '0 1px 2px rgba(67, 56, 202, 0.08)'
-            }}
-            title="Xem bảng ma trận độ phủ câu hỏi toàn bộ chương trình môn học"
-          >
-            <BarChart3 size={16} /> Ma Trận Độ Phủ Kho
-          </button>
           
           <Link
             to="/giao-vien/ra-de-thi"
             style={{
-              padding: '9px 16px',
+              padding: '9px 18px',
               borderRadius: '8px',
               background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
               color: '#ffffff',
               fontWeight: '700',
-              fontSize: '13px',
+              fontSize: '13.5px',
               textDecoration: 'none',
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               boxShadow: '0 2px 6px rgba(2,132,199,0.3)'
             }}
+            title="Chuyển sang phân hệ Soạn và Trộn đề thi GDPT 2018"
           >
-            <Sparkles size={15} /> ⚡ Chuyển Sang Soạn & Trộn Đề Thi
+            <Sparkles size={16} /> ⚡ Soạn & Trộn Đề Thi
           </Link>
         </div>
       </div>
 
-      {/* Subject & Grade Filter Bar */}
+      {/* 2. FILTER BAR: Phạm vi Môn Học, Khối Lớp, Chỉ Số Toàn Trường & Xuất Báo Cáo */}
       <div style={{
         background: '#ffffff',
         padding: '16px 20px',
@@ -758,10 +837,10 @@ export default function TeacherQuestionBank() {
         justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
-        gap: '14px',
+        gap: '16px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
       }}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
           <div>
             <label style={{ fontSize: '12px', fontWeight: 'bold', color: '#64748b', display: 'block', marginBottom: '4px' }}>
               Môn Học (*):
@@ -811,16 +890,38 @@ export default function TeacherQuestionBank() {
               ))}
             </select>
           </div>
-        </div>
 
-        {/* Global Bank Stats for this Subject & Grade */}
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ background: '#f8fafc', padding: '8px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', textAlign: 'center' }}>
-            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>TỔNG CÂU HỎI TRONG KHO</div>
-            <div style={{ fontSize: '18px', fontWeight: '900', color: '#0284c7' }}>
-              {getAllBankQuestions().filter(q => q.subject === selectedSubject && q.grade === selectedGrade).length} câu
+          <div style={{ background: '#f8fafc', padding: '6px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>QUY MÔ KHO {selectedSubject.toUpperCase()}</div>
+            <div style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a' }}>
+              <span style={{ color: '#0284c7' }}>{totalSubjectQuestions}</span> câu • <span style={{ color: '#475569' }}>{currentTaxonomy?.chapters?.length || 0}</span> chương • <span style={{ color: '#475569' }}>{totalSubjectLessons}</span> bài
             </div>
           </div>
+        </div>
+
+        {/* Cụm Báo Cáo & Xuất Dữ Liệu Toàn Môn */}
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setShowCoverageModal(true)}
+            style={{
+              padding: '9px 16px',
+              borderRadius: '8px',
+              border: '1px solid #c7d2fe',
+              background: '#eef2ff',
+              color: '#4338ca',
+              fontWeight: '700',
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 1px 2px rgba(67, 56, 202, 0.08)'
+            }}
+            title="Xem bảng ma trận độ phủ câu hỏi toàn bộ chương trình môn học"
+          >
+            <BarChart3 size={16} /> 📊 Ma Trận Độ Phủ Kho
+          </button>
 
           <button
             type="button"
@@ -828,9 +929,9 @@ export default function TeacherQuestionBank() {
             style={{
               padding: '9px 16px',
               borderRadius: '8px',
-              border: 'none',
-              background: '#0284c7',
-              color: '#ffffff',
+              border: '1px solid #cbd5e1',
+              background: '#ffffff',
+              color: '#0284c7',
               fontWeight: '700',
               fontSize: '13px',
               cursor: 'pointer',
@@ -840,54 +941,56 @@ export default function TeacherQuestionBank() {
             }}
             title="Xuất toàn bộ ngân hàng câu hỏi môn này sang file Word (.doc)"
           >
-            <Download size={15} /> Xuất Word (.doc)
-          </button>
-
-          <button
-            type="button"
-            onClick={() => {
-              setTargetChapterForLesson(null);
-              setShowAddChapterModal(true);
-            }}
-            style={{
-              padding: '9px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              background: '#0f172a',
-              color: '#ffffff',
-              fontWeight: '700',
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Plus size={15} /> Thêm Chương Mới
+            <Download size={15} /> 📄 Xuất Word (.doc)
           </button>
         </div>
       </div>
 
-      {/* Main Workspace Layout (2 Columns: Tree & Question Bank) */}
-      <div style={{ display: 'grid', gridTemplateColumns: '360px 1fr', gap: '20px', alignItems: 'start' }}>
+      {/* 3. MAIN WORKSPACE (2 Cột Công Thái Học: Cây Thư Mục & Ngân Hàng Câu Hỏi) */}
+      <div style={{ display: 'grid', gridTemplateColumns: '370px 1fr', gap: '20px', alignItems: 'start' }}>
         
-        {/* LEFT COLUMN: CÂY THƯ MỤC PHÂN CẤP CHƯƠNG - BÀI */}
+        {/* CỘT TRÁI: CÂY THƯ MỤC CHƯƠNG - BÀI & CÔNG CỤ QUẢN TRỊ CÂY */}
         <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <BookOpen size={16} color="#0284c7" /> Cây Thư Mục Chương - Bài
               </div>
-              <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px' }}>
+              <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
                 {currentTaxonomy?.chapters?.length || 0} Chương của {selectedSubject} ({selectedGrade})
               </div>
             </div>
+
+            {/* Nút Thêm Chương Mới đặt ngay tại Header Cây Thư Mục */}
+            <button
+              type="button"
+              onClick={() => {
+                setNewChapterTitle('');
+                setShowAddChapterModal(true);
+              }}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: '#0284c7',
+                color: '#ffffff',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}
+              title="Thêm Chương / Chủ đề mới vào cây thư mục"
+            >
+              <Plus size={14} /> Thêm Chương
+            </button>
           </div>
 
-          <div style={{ padding: '14px', maxHeight: '72vh', overflowY: 'auto' }}>
+          <div style={{ padding: '12px', maxHeight: '74vh', overflowY: 'auto' }}>
             {(!currentTaxonomy?.chapters || currentTaxonomy.chapters.length === 0) ? (
               <div style={{ textAlign: 'center', padding: '40px 10px', color: '#64748b', fontSize: '13px' }}>
-                Chưa có chương nào. Thầy/Cô bấm "Thêm Chương Mới" để bắt đầu xây dựng cây thư mục.
+                Chưa có chương nào. Thầy/Cô bấm "+ Thêm Chương" để bắt đầu xây dựng cây thư mục.
               </div>
             ) : (
               currentTaxonomy.chapters.map((ch) => {
@@ -899,7 +1002,7 @@ export default function TeacherQuestionBank() {
                     {/* Chapter Header */}
                     <div
                       style={{
-                        padding: '10px 14px',
+                        padding: '10px 12px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -914,15 +1017,17 @@ export default function TeacherQuestionBank() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
                         {isExpanded ? <ChevronDown size={16} color="#0284c7" /> : <ChevronRight size={16} color="#64748b" />}
-                        <span style={{ fontSize: '13px', fontWeight: '700', color: isExpanded ? '#0369a1' : '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ fontSize: '13px', fontWeight: '700', color: isExpanded ? '#0369a1' : '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={ch.title}>
                           {ch.title}
                         </span>
                       </div>
                       
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ fontSize: '11px', background: '#e2e8f0', color: '#475569', padding: '1px 7px', borderRadius: '8px', fontWeight: 'bold' }}>
-                          {chStats.total} câu
+                      {/* Chapter Actions: +Bài, Sửa, Xóa */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '11px', background: '#e2e8f0', color: '#475569', padding: '1px 6px', borderRadius: '8px', fontWeight: 'bold' }}>
+                          {chStats.total}
                         </span>
+                        
                         <button
                           type="button"
                           onClick={(e) => {
@@ -943,6 +1048,30 @@ export default function TeacherQuestionBank() {
                           title="Thêm bài học vào chương này"
                         >
                           + Bài
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenEditChapter(ch);
+                          }}
+                          style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', padding: '2px' }}
+                          title="Đổi tên chương này"
+                        >
+                          <Edit3 size={13} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteChapterClick(ch);
+                          }}
+                          style={{ border: 'none', background: 'transparent', color: '#dc2626', cursor: 'pointer', padding: '2px' }}
+                          title="Xóa chương này"
+                        >
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     </div>
@@ -967,7 +1096,7 @@ export default function TeacherQuestionBank() {
                                   setSelectedChapterId(ch.id);
                                 }}
                                 style={{
-                                  padding: '8px 12px',
+                                  padding: '7px 10px',
                                   margin: '3px 0',
                                   borderRadius: '8px',
                                   cursor: 'pointer',
@@ -976,16 +1105,43 @@ export default function TeacherQuestionBank() {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
-                                  gap: '8px',
+                                  gap: '6px',
                                   transition: 'all 0.15s'
                                 }}
                               >
-                                <span style={{ fontSize: '12.5px', fontWeight: isSelected ? '700' : '500', lineHeight: 1.3 }}>
+                                <span style={{ fontSize: '12.5px', fontWeight: isSelected ? '700' : '500', lineHeight: 1.3, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }} title={less.title}>
                                   {less.title}
                                 </span>
-                                <span style={{ fontSize: '11px', opacity: isSelected ? 0.9 : 0.7, fontWeight: 'bold' }}>
-                                  {stats.total} câu
-                                </span>
+                                
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ fontSize: '11px', opacity: isSelected ? 0.95 : 0.7, fontWeight: 'bold' }}>
+                                    {stats.total}c
+                                  </span>
+                                  
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenEditLesson(less, ch.id);
+                                    }}
+                                    style={{ border: 'none', background: 'transparent', color: isSelected ? '#ffffff' : '#64748b', cursor: 'pointer', padding: '1px' }}
+                                    title="Đổi tên bài học"
+                                  >
+                                    <Edit3 size={12} />
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteLessonClick(less, ch.id);
+                                    }}
+                                    style={{ border: 'none', background: 'transparent', color: isSelected ? '#fecaca' : '#dc2626', cursor: 'pointer', padding: '1px' }}
+                                    title="Xóa bài học"
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
                               </div>
                             );
                           })
@@ -999,21 +1155,21 @@ export default function TeacherQuestionBank() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: CHI TIẾT NGÂN HÀNG CÂU HỎI THUỘC BÀI ĐANG CHỌN */}
+        {/* CỘT PHẢI: CHI TIẾT BÀI HỌC & NGÂN HÀNG CÂU HỎI */}
         <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           
-          {/* Active Lesson Header & Quick Stats */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '18px' }}>
+          {/* Header Bài Học Đang Chọn & Nhóm Hành Động Nạp Câu Hỏi */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
             <div>
-              <div style={{ fontSize: '12.5px', color: '#0284c7', fontWeight: 'bold' }}>
-                ĐƠN VỊ KIẾN THỨC ĐANG CHỌN:
+              <div style={{ fontSize: '12px', color: '#0284c7', fontWeight: 'bold' }}>
+                {activeChapterObj ? `${activeChapterObj.title} ↳ ` : ''}ĐƠN VỊ KIẾN THỨC ĐANG CHỌN:
               </div>
               <h2 style={{ fontSize: '18px', fontWeight: '800', margin: '4px 0 0 0', color: '#0f172a' }}>
                 {activeLessonObj?.title || 'Tất Cả Câu Hỏi Trong Chương'}
               </h2>
             </div>
 
-            {/* Actions for this lesson */}
+            {/* Nhóm nút hành động phân cấp khoa học */}
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
               {pendingInActiveLesson > 0 && (
                 <button
@@ -1080,7 +1236,7 @@ export default function TeacherQuestionBank() {
                   boxShadow: '0 2px 4px rgba(79, 70, 229, 0.25)'
                 }}
               >
-                <Sparkles size={14} /> AI Soạn Thêm
+                <Sparkles size={14} /> ✨ AI Soạn Thêm
               </button>
 
               <button
@@ -1102,14 +1258,14 @@ export default function TeacherQuestionBank() {
                   boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)'
                 }}
               >
-                <Plus size={15} /> Thêm Câu Hỏi Mới
+                <Plus size={15} /> + Thêm Câu Hỏi Mới
               </button>
             </div>
           </div>
 
           {/* Cognitive Level Stats for Active Lesson */}
           {selectedLessonId && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px', marginBottom: '18px' }}>
               <div style={{ padding: '8px 12px', borderRadius: '10px', background: '#f0f9ff', border: '1px solid #bae6fd' }}>
                 <div style={{ fontSize: '10.5px', color: '#0369a1', fontWeight: 'bold' }}>NHẬN BIẾT</div>
                 <div style={{ fontSize: '17px', fontWeight: '900', color: '#0284c7', marginTop: '2px' }}>
@@ -1149,32 +1305,33 @@ export default function TeacherQuestionBank() {
             </div>
           )}
 
-          {/* Search & Filter within Active Lesson */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+          {/* Search & Filter Toolbar with Counter & Clear Filter Button */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', background: '#f8fafc', padding: '10px 14px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
               <input
                 type="text"
-                placeholder="Tìm nhanh nội dung câu hỏi trong bài này..."
+                placeholder="Tìm kiếm nội dung câu hỏi trong bài..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '8px 12px 8px 32px',
-                  borderRadius: '8px',
+                  padding: '7px 10px 7px 30px',
+                  borderRadius: '6px',
                   border: '1px solid #cbd5e1',
                   fontSize: '12.5px',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  background: '#ffffff'
                 }}
               />
-              <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '11px' }} />
+              <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
             </div>
 
             <select
               value={filterLevel}
               onChange={e => setFilterLevel(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold' }}
+              style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', background: '#ffffff' }}
             >
-              <option value="all">Mọi mức độ nhận thức</option>
+              <option value="all">Mọi mức độ</option>
               <option value="Nhận biết">1. Nhận biết</option>
               <option value="Thông hiểu">2. Thông hiểu</option>
               <option value="Vận dụng">3. Vận dụng</option>
@@ -1184,34 +1341,71 @@ export default function TeacherQuestionBank() {
             <select
               value={filterPart}
               onChange={e => setFilterPart(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold', color: filterPart === 'essay' ? '#7c3aed' : 'inherit' }}
+              style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', background: '#ffffff', color: filterPart === 'essay' ? '#7c3aed' : 'inherit' }}
             >
-              <option value="all">Mọi định dạng phần thi</option>
+              <option value="all">Mọi phần thi</option>
               <option value="part1">Phần I: 4 lựa chọn</option>
               <option value="part2">Phần II: Đúng / Sai</option>
               <option value="part3">Phần III: Trả lời ngắn</option>
-              <option value="essay">Phần Tự Luận (Câu hỏi / Bài tập tự luận)</option>
+              <option value="essay">Phần Tự Luận</option>
             </select>
 
             <select
               value={filterStatus}
               onChange={e => setFilterStatus(e.target.value)}
-              style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold', color: filterStatus === 'pending' ? '#d97706' : filterStatus === 'approved' ? '#16a34a' : 'inherit' }}
+              style={{ padding: '7px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', background: '#ffffff', color: filterStatus === 'pending' ? '#d97706' : filterStatus === 'approved' ? '#16a34a' : 'inherit' }}
             >
-              <option value="all">Mọi trạng thái thẩm định</option>
-              <option value="approved">✅ Đã thẩm định / Đã duyệt</option>
-              <option value="pending">⏳ Chờ thẩm định của Tổ</option>
+              <option value="all">Mọi trạng thái</option>
+              <option value="approved">✅ Đã duyệt</option>
+              <option value="pending">⏳ Chờ duyệt</option>
             </select>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>
+                Hiển thị: <strong>{questionsList.length}</strong> / {activeLessonStats.total} câu
+              </span>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    background: '#ffffff',
+                    color: '#dc2626',
+                    fontSize: '11.5px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Xóa toàn bộ bộ lọc và ô tìm kiếm"
+                >
+                  <RotateCcw size={12} /> Đặt lại
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Questions List Render */}
           <div>
             {questionsList.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '12px' }}>
-                <HelpCircle size={36} style={{ margin: '0 auto 8px auto', opacity: 0.5 }} />
-                <div style={{ fontSize: '14px', fontWeight: 'bold' }}>Chưa có câu hỏi nào thỏa mãn bộ lọc.</div>
-                <div style={{ fontSize: '12.5px', marginTop: '4px' }}>
-                  Thầy/Cô có thể bấm <strong>"📥 Nhập Word / Văn Bản"</strong>, <strong>"AI Soạn Thêm"</strong> hoặc <strong>"Thêm Câu Hỏi Mới"</strong>.
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8', border: '1px dashed #cbd5e1', borderRadius: '12px' }}>
+                <HelpCircle size={34} style={{ margin: '0 auto 8px auto', opacity: 0.5 }} />
+                <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#475569' }}>
+                  {hasActiveFilters ? 'Không tìm thấy câu hỏi phù hợp với bộ lọc.' : 'Chưa có câu hỏi nào trong bài học này.'}
+                </div>
+                <div style={{ fontSize: '12px', marginTop: '4px' }}>
+                  {hasActiveFilters ? (
+                    <button type="button" onClick={handleResetFilters} style={{ background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 'bold', textDecoration: 'underline' }}>
+                      Bấm vào đây để đặt lại bộ lọc
+                    </button>
+                  ) : (
+                    'Thầy/Cô có thể bấm "📥 Nhập Word / Văn Bản", "✨ AI Soạn Thêm" hoặc "+ Thêm Câu Hỏi Mới".'
+                  )}
                 </div>
               </div>
             ) : (
@@ -1219,21 +1413,21 @@ export default function TeacherQuestionBank() {
                 <div
                   key={q.id}
                   style={{
-                    padding: '18px',
+                    padding: '16px',
                     borderRadius: '12px',
                     border: '1px solid #e2e8f0',
                     background: '#ffffff',
-                    marginBottom: '16px',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                    marginBottom: '14px',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>
+                      <span style={{ fontWeight: '800', fontSize: '13.5px', color: '#0f172a' }}>
                         Câu {idx + 1}
                       </span>
                       <span style={{
-                        fontSize: '11.5px',
+                        fontSize: '11px',
                         background: q.part === 'essay' ? '#f5f3ff' : '#e0f2fe',
                         color: q.part === 'essay' ? '#6b21a8' : '#0369a1',
                         border: q.part === 'essay' ? '1px solid #ddd6fe' : 'none',
@@ -1246,7 +1440,7 @@ export default function TeacherQuestionBank() {
                          q.part === 'part3' ? 'Phần III (Trả lời ngắn)' : 
                          `Phần Tự Luận (${q.maxScore || 2.0} điểm)`}
                       </span>
-                      <span style={{ fontSize: '11.5px', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
+                      <span style={{ fontSize: '11px', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
                         {q.level}
                       </span>
                       
@@ -1264,7 +1458,7 @@ export default function TeacherQuestionBank() {
                       </span>
 
                       {q.author && (
-                        <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                        <span style={{ fontSize: '11px', color: '#64748b' }}>
                           • Tác giả: <strong>{q.author}</strong>
                         </span>
                       )}
@@ -1275,7 +1469,7 @@ export default function TeacherQuestionBank() {
                         type="button"
                         onClick={() => handleToggleQuestionStatus(q.id, q.status || 'approved')}
                         style={{
-                          padding: '5px 10px',
+                          padding: '4px 9px',
                           borderRadius: '6px',
                           border: (q.status || 'approved') === 'approved' ? '1px solid #fed7aa' : '1px solid #86efac',
                           background: (q.status || 'approved') === 'approved' ? '#fff7ed' : '#f0fdf4',
@@ -1296,22 +1490,22 @@ export default function TeacherQuestionBank() {
                       <button
                         type="button"
                         onClick={() => handleOpenEditQuestion(q)}
-                        style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0284c7', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ padding: '4px 9px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#0284c7', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        <Edit3 size={13} /> Sửa
+                        <Edit3 size={12} /> Sửa
                       </button>
                       <button
                         type="button"
                         onClick={() => handleDeleteQuestion(q.id)}
-                        style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#dc2626', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        style={{ padding: '4px 9px', borderRadius: '6px', border: '1px solid #fee2e2', background: '#fef2f2', color: '#dc2626', fontSize: '11.5px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                       >
-                        <Trash2 size={13} /> Xóa
+                        <Trash2 size={12} /> Xóa
                       </button>
                     </div>
                   </div>
 
                   {/* Question Content */}
-                  <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#1e293b', marginBottom: '12px' }}>
+                  <div style={{ fontSize: '13.5px', lineHeight: '1.6', color: '#1e293b', marginBottom: '10px' }}>
                     <MathView text={q.content} />
                   </div>
 
@@ -1324,11 +1518,11 @@ export default function TeacherQuestionBank() {
                           <div
                             key={optIdx}
                             style={{
-                              padding: '8px 12px',
+                              padding: '7px 12px',
                               borderRadius: '6px',
                               background: isCorrect ? '#dcfce7' : '#f8fafc',
                               border: isCorrect ? '1px solid #86efac' : '1px solid #e2e8f0',
-                              fontSize: '13px',
+                              fontSize: '12.5px',
                               fontWeight: isCorrect ? 'bold' : 'normal',
                               color: isCorrect ? '#166534' : '#334155'
                             }}
@@ -1344,7 +1538,7 @@ export default function TeacherQuestionBank() {
                   {q.part === 'part2' && q.subItems && (
                     <div style={{ background: '#f8fafc', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
                       {q.subItems.map(sub => (
-                        <div key={sub.key} style={{ fontSize: '13px', display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
+                        <div key={sub.key} style={{ fontSize: '12.5px', display: 'flex', justifyContent: 'space-between', padding: '3px 0' }}>
                           <div><strong>{sub.key})</strong> <MathView inline text={sub.text} /></div>
                           <strong style={{ color: sub.isTrue ? '#16a34a' : '#dc2626' }}>[{sub.isTrue ? 'ĐÚNG' : 'SAI'}]</strong>
                         </div>
@@ -1354,19 +1548,19 @@ export default function TeacherQuestionBank() {
 
                   {/* Part 3 Short Answer */}
                   {q.part === 'part3' && (
-                    <div style={{ fontSize: '13px', color: '#0284c7', fontWeight: 'bold', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '12.5px', color: '#0284c7', fontWeight: 'bold', marginBottom: '8px' }}>
                       👉 Đáp số: <MathView inline text={q.shortAnswer} />
                     </div>
                   )}
 
                   {/* Essay Rubric */}
                   {q.part === 'essay' && q.rubric && Array.isArray(q.rubric) && (
-                    <div style={{ background: '#faf5ff', padding: '12px 14px', borderRadius: '8px', border: '1px solid #e9d5ff', marginBottom: '10px' }}>
-                      <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#6b21a8', marginBottom: '6px' }}>
+                    <div style={{ background: '#faf5ff', padding: '10px 14px', borderRadius: '8px', border: '1px solid #e9d5ff', marginBottom: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#6b21a8', marginBottom: '6px' }}>
                         📋 Bareme Tiêu Chí Chấm Điểm Chi Tiết (Tổng: {q.maxScore || 2.0}đ):
                       </div>
                       {q.rubric.map((r, rIdx) => (
-                        <div key={rIdx} style={{ fontSize: '12.5px', display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px dashed #f3e8ff' }}>
+                        <div key={rIdx} style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', padding: '3px 0', borderBottom: '1px dashed #f3e8ff' }}>
                           <span>• {r.criteria}</span>
                           <strong style={{ color: '#7c3aed' }}>{r.score}đ</strong>
                         </div>
@@ -1375,7 +1569,7 @@ export default function TeacherQuestionBank() {
                   )}
 
                   {q.explanation && (
-                    <div style={{ fontSize: '12.5px', color: '#64748b', fontStyle: 'italic', background: '#f1f5f9', padding: '8px 12px', borderRadius: '6px' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', background: '#f1f5f9', padding: '7px 12px', borderRadius: '6px' }}>
                       💡 {q.part === 'essay' ? 'Hướng dẫn chấm & Đáp án tự luận:' : 'Lời giải chi tiết:'} <MathView text={q.explanation} />
                     </div>
                   )}
@@ -1387,6 +1581,95 @@ export default function TeacherQuestionBank() {
         </div>
 
       </div>
+
+      {/* MODAL: THÊM CHƯƠNG MỚI */}
+      {showAddChapterModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
+              Thêm Chương / Chủ Đề Mới
+            </h3>
+            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b' }}>
+              Môn: <strong>{selectedSubject}</strong> • Khối: <strong>{selectedGrade}</strong>
+            </p>
+            <input
+              type="text"
+              placeholder="VD: Chương I: Đạo hàm và Khảo sát hàm số..."
+              value={newChapterTitle}
+              onChange={e => setNewChapterTitle(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setShowAddChapterModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
+              <button type="button" onClick={handleSaveNewChapter} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Lưu Chương</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SỬA TÊN CHƯƠNG */}
+      {showEditChapterModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
+              Đổi Tên Chương / Chủ Đề
+            </h3>
+            <input
+              type="text"
+              value={editChapterTitle}
+              onChange={e => setEditChapterTitle(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setShowEditChapterModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
+              <button type="button" onClick={handleSaveEditChapter} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Cập Nhật</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: THÊM BÀI HỌC MỚI */}
+      {showAddLessonModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
+              Thêm Bài Học Mới Vào Chương
+            </h3>
+            <input
+              type="text"
+              placeholder="VD: Bài 1: Tính đơn điệu của hàm số..."
+              value={newLessonTitle}
+              onChange={e => setNewLessonTitle(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setShowAddLessonModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
+              <button type="button" onClick={handleSaveNewLesson} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Lưu Bài Học</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: SỬA TÊN BÀI HỌC */}
+      {showEditLessonModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
+              Đổi Tên Bài Học
+            </h3>
+            <input
+              type="text"
+              value={editLessonTitle}
+              onChange={e => setEditLessonTitle(e.target.value)}
+              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button type="button" onClick={() => setShowEditLessonModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
+              <button type="button" onClick={handleSaveEditLesson} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Cập Nhật</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL: NHẬP HÀNG LOẠT TỪ WORD (.DOCX) HOẶC DÁN VĂN BẢN VÀO BÀI HỌC */}
       {showImportModal && (
@@ -1816,53 +2099,6 @@ export default function TeacherQuestionBank() {
               </button>
             </div>
 
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: THÊM CHƯƠNG MỚI */}
-      {showAddChapterModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
-              Thêm Chương / Chủ Đề Mới
-            </h3>
-            <p style={{ margin: '0 0 16px 0', fontSize: '13px', color: '#64748b' }}>
-              Môn: <strong>{selectedSubject}</strong> • Khối: <strong>{selectedGrade}</strong>
-            </p>
-            <input
-              type="text"
-              placeholder="VD: Chương I: Đạo hàm và Khảo sát hàm số..."
-              value={newChapterTitle}
-              onChange={e => setNewChapterTitle(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button type="button" onClick={() => setShowAddChapterModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
-              <button type="button" onClick={handleSaveNewChapter} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Lưu Chương</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL: THÊM BÀI HỌC MỚI */}
-      {showAddLessonModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '16px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
-            <h3 style={{ margin: '0 0 12px 0', fontSize: '17px', color: '#0f172a', fontWeight: '800' }}>
-              Thêm Bài Học Mới Vào Chương
-            </h3>
-            <input
-              type="text"
-              placeholder="VD: Bài 1: Tính đơn điệu của hàm số..."
-              value={newLessonTitle}
-              onChange={e => setNewLessonTitle(e.target.value)}
-              style={{ width: '100%', padding: '10px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', boxSizing: 'border-box', marginBottom: '20px' }}
-            />
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-              <button type="button" onClick={() => setShowAddLessonModal(false)} style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', fontWeight: '600' }}>Hủy</button>
-              <button type="button" onClick={handleSaveNewLesson} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', cursor: 'pointer', fontWeight: '700' }}>Lưu Bài Học</button>
-            </div>
           </div>
         </div>
       )}

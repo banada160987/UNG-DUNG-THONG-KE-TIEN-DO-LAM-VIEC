@@ -785,6 +785,70 @@ export function upsertLesson(subject, grade, chapterId, lessonData) {
 }
 
 /**
+ * Xóa một Chương khỏi cây thư mục
+ */
+export function deleteChapter(subject, grade, chapterId) {
+  const allTree = getTaxonomyTree();
+  const subTree = allTree.find(item => item.subject === subject && item.grade === grade);
+  if (!subTree || !subTree.chapters) return false;
+
+  subTree.chapters = subTree.chapters.filter(c => c.id !== chapterId);
+  saveTaxonomyTree(allTree);
+  return true;
+}
+
+/**
+ * Xóa một Bài học khỏi một Chương
+ */
+export function deleteLesson(subject, grade, chapterId, lessonId) {
+  const allTree = getTaxonomyTree();
+  const subTree = allTree.find(item => item.subject === subject && item.grade === grade);
+  if (!subTree || !subTree.chapters) return false;
+
+  const chapter = subTree.chapters.find(c => c.id === chapterId);
+  if (!chapter || !chapter.lessons) return false;
+
+  chapter.lessons = chapter.lessons.filter(l => l.id !== lessonId);
+  saveTaxonomyTree(allTree);
+  return true;
+}
+
+/**
+ * Đổi tên một Chương
+ */
+export function renameChapter(subject, grade, chapterId, newTitle) {
+  const allTree = getTaxonomyTree();
+  const subTree = allTree.find(item => item.subject === subject && item.grade === grade);
+  if (!subTree || !subTree.chapters) return false;
+
+  const chapter = subTree.chapters.find(c => c.id === chapterId);
+  if (!chapter) return false;
+
+  chapter.title = newTitle;
+  saveTaxonomyTree(allTree);
+  return true;
+}
+
+/**
+ * Đổi tên một Bài học
+ */
+export function renameLesson(subject, grade, chapterId, lessonId, newTitle) {
+  const allTree = getTaxonomyTree();
+  const subTree = allTree.find(item => item.subject === subject && item.grade === grade);
+  if (!subTree || !subTree.chapters) return false;
+
+  const chapter = subTree.chapters.find(c => c.id === chapterId);
+  if (!chapter || !chapter.lessons) return false;
+
+  const lesson = chapter.lessons.find(l => l.id === lessonId);
+  if (!lesson) return false;
+
+  lesson.title = newTitle;
+  saveTaxonomyTree(allTree);
+  return true;
+}
+
+/**
  * Lấy toàn bộ danh sách câu hỏi trong ngân hàng
  */
 export function getAllBankQuestions() {
