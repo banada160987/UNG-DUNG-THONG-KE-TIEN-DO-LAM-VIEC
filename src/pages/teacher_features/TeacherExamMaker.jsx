@@ -132,6 +132,22 @@ const INITIAL_QUESTIONS = [
     content: 'Cho phương trình $4^x - m \\cdot 2^{x+1} + 2m = 0$. Tìm số các giá trị nguyên của tham số $m \\in [-10; 10]$ để phương trình có $2$ nghiệm phân biệt.',
     shortAnswer: '8',
     explanation: 'Đặt $t = 2^x$ ($t > 0$). Phương trình trở thành $t^2 - 2mt + 2m = 0$ có 2 nghiệm $t_1 > t_2 > 0$. Điều kiện $\\Delta\' > 0, S > 0, P > 0 \\Leftrightarrow m > 2$. Vì $m \\in [-10; 10], m \\in \\mathbb{Z} \\Rightarrow m \\in \\{3, 4, 5, 6, 7, 8, 9, 10\\}$ (có 8 giá trị).'
+  },
+
+  // PHẦN IV: Tự luận (Essay)
+  {
+    id: 'q9',
+    part: 'essay',
+    title: 'Câu 1 (Phần IV - Tự luận)',
+    level: 'Vận dụng',
+    content: 'Một hộ kinh doanh nông sản dự định xây một hầm chứa thóc dạng hình hộp chữ nhật không nắp có thể tích $V = 32\\text{ m}^3$, đáy là hình chữ nhật có chiều dài gấp đôi chiều rộng. Chi phí xây dựng đáy là $300.000\\text{ đ/m}^2$, chi phí xây dựng bốn bức tường xung quanh là $200.000\\text{ đ/m}^2$. Xác định kích thước của hầm chứa (chiều dài, chiều rộng, chiều cao) để tổng chi phí xây dựng là nhỏ nhất.',
+    maxScore: 2.0,
+    rubric: [
+      { criteria: 'Thiết lập biểu thức diện tích và hàm chi phí $C(x)$ theo chiều rộng đáy $x$', score: 0.75 },
+      { criteria: 'Khảo sát hàm số tìm giá trị nhỏ nhất hoặc áp dụng bất đẳng thức AM-GM', score: 0.75 },
+      { criteria: 'Kết luận kích thước tối ưu: chiều rộng $2\\text{ m}$, chiều dài $4\\text{ m}$, chiều cao $4\\text{ m}$', score: 0.5 }
+    ],
+    explanation: 'Gọi chiều rộng đáy là $x$ ($x > 0$), chiều dài đáy là $2x$. Thể tích $V = 2x^2 \\cdot h = 32 \\Rightarrow h = \\frac{16}{x^2}$. Tổng chi phí $C(x) = 300 \\cdot 2x^2 + 200 \\cdot (2 \\cdot 2xh + 2 \\cdot xh) = 600x^2 + \\frac{19200}{x}$. Khảo sát $C\'(x) = 1200x - \\frac{19200}{x^2} = 0 \\Leftrightarrow x^3 = 16 \\Rightarrow x = 2$. Vậy rộng $2\\text{ m}$, dài $4\\text{ m}$, cao $4\\text{ m}$.'
   }
 ];
 
@@ -219,6 +235,11 @@ export default function TeacherExamMaker() {
     { key: 'd', text: '', isTrue: false }
   ]);
   const [newShortAnswer, setNewShortAnswer] = useState('');
+  const [newMaxScore, setNewMaxScore] = useState(2.0);
+  const [newRubric, setNewRubric] = useState([
+    { criteria: 'Nêu đúng bản chất / hiện tượng / định lý / dẫn chứng', score: 1.0 },
+    { criteria: 'Lập luận logic, giải bài toán / bình luận và rút ra kết luận chuẩn xác', score: 1.0 }
+  ]);
   const [newExplanation, setNewExplanation] = useState('');
   const [newImageUrl, setNewImageUrl] = useState('');
 
@@ -328,6 +349,10 @@ export default function TeacherExamMaker() {
         currentPart = 'part3';
         return;
       }
+      if (lower.includes('tự luận') || lower.includes('tu luan') || lower.includes('phần iv') || lower.includes('phan iv')) {
+        currentPart = 'essay';
+        return;
+      }
 
       const questionMatch = line.match(/^(câu|cau|question)\s*(\d+)[\:\.]?\s*(.*)/i);
       if (questionMatch) {
@@ -336,13 +361,15 @@ export default function TeacherExamMaker() {
         currentQ = {
           id: `imported-q-${Date.now()}-${parsedQuestions.length}`,
           part: currentPart,
-          title: `Câu ${parsedQuestions.length + 1} (${currentPart === 'part1' ? 'Phần I' : currentPart === 'part2' ? 'Phần II' : 'Phần III'})`,
+          title: `Câu ${parsedQuestions.length + 1} (${currentPart === 'part1' ? 'Phần I' : currentPart === 'part2' ? 'Phần II' : currentPart === 'part3' ? 'Phần III' : 'Phần Tự Luận'})`,
           level: 'Thông hiểu',
           content: qContent,
           options: [],
           correctAnswerIndex: 0,
           subItems: [],
           shortAnswer: '',
+          maxScore: currentPart === 'essay' ? 2.0 : undefined,
+          rubric: currentPart === 'essay' ? [{ criteria: 'Nội dung và lập luận', score: 2.0 }] : undefined,
           explanation: ''
         };
         return;
@@ -540,6 +567,7 @@ export default function TeacherExamMaker() {
       const part1Questions = questions.filter(q => q.part === 'part1');
       const part2Questions = questions.filter(q => q.part === 'part2');
       const part3Questions = questions.filter(q => q.part === 'part3');
+      const essayQuestions = questions.filter(q => q.part === 'essay');
 
       // 1. Shuffle Part 1: Questions & Options (with clean A, B, C, D re-indexing)
       const shuffledPart1 = shuffleArray(part1Questions).map(q => {
@@ -571,11 +599,18 @@ export default function TeacherExamMaker() {
       // 3. Shuffle Part 3: Questions
       const shuffledPart3 = shuffleArray(part3Questions);
 
+      // 4. Part Essay: Tự luận
+      const essayList = essayQuestions.map((q, idx) => ({
+        ...q,
+        essayIndex: idx + 1
+      }));
+
       codes.push({
         code: codeStr,
         part1: shuffledPart1,
         part2: shuffledPart2,
-        part3: shuffledPart3
+        part3: shuffledPart3,
+        essay: essayList
       });
     }
 
@@ -600,6 +635,11 @@ export default function TeacherExamMaker() {
   const handleStartEdit = (q) => {
     setEditingQuestion({
       ...q,
+      maxScore: q.maxScore || 2.0,
+      rubric: q.rubric ? q.rubric.map(r => ({ ...r })) : [
+        { criteria: 'Ý 1: Nêu đúng định lý / hiện tượng / dẫn chứng', score: 1.0 },
+        { criteria: 'Ý 2: Lập luận logic và kết luận chính xác', score: 1.0 }
+      ],
       options: q.options ? [...q.options] : ['', '', '', ''],
       subItems: q.subItems ? q.subItems.map(s => ({ ...s })) : [
         { key: 'a', text: '', isTrue: true },
@@ -690,6 +730,20 @@ export default function TeacherExamMaker() {
       const wsPart3 = XLSX.utils.json_to_sheet(part3Rows);
       XLSX.utils.book_append_sheet(wb, wsPart3, "Phần III - Trả lời ngắn");
 
+      // 4. Sheet Part 4: Tự luận (nếu có)
+      const firstCodeObj = activeCodes[0] || {};
+      const essayList = firstCodeObj.essay || questions.filter(q => q.part === 'essay') || [];
+      if (essayList.length > 0) {
+        const essayRows = essayList.map((q, i) => ({
+          "Câu hỏi": `Câu ${i + 1}`,
+          "Nội dung": renderCleanMathText(q.content),
+          "Thang điểm tối đa": `${q.maxScore || 2.0} điểm`,
+          "Hướng dẫn chấm / Bareme": (q.rubric || []).map(r => `[${r.score}đ] ${r.criteria}`).join('; ') || (q.explanation || '')
+        }));
+        const wsEssay = XLSX.utils.json_to_sheet(essayRows);
+        XLSX.utils.book_append_sheet(wb, wsEssay, "Phần IV - Tự Luận");
+      }
+
       // GEMINI.md naming rule: Prefix sequence number 1-...
       const fileName = `1-Bang_dap_an_tong_hop_tron_de_CBQ_${subject || 'Mon'}_${grade || 'Khoi'}.xlsx`;
       XLSX.writeFile(wb, fileName);
@@ -709,7 +763,7 @@ export default function TeacherExamMaker() {
     const newQ = {
       id: `q-${Date.now()}`,
       part: newPart,
-      title: newPart === 'part1' ? `Câu ${questions.length + 1} (Phần I - Trắc nghiệm)` : newPart === 'part2' ? `Câu ${questions.length + 1} (Phần II - Đúng/Sai)` : `Câu ${questions.length + 1} (Phần III - Trả lời ngắn)`,
+      title: newPart === 'part1' ? `Câu ${questions.length + 1} (Phần I - Trắc nghiệm)` : newPart === 'part2' ? `Câu ${questions.length + 1} (Phần II - Đúng/Sai)` : newPart === 'part3' ? `Câu ${questions.length + 1} (Phần III - Trả lời ngắn)` : `Câu ${questions.length + 1} (Phần Tự Luận - ${newMaxScore || 2.0}đ)`,
       level: newLevel,
       content: newContent,
       image_url: newImageUrl || '',
@@ -717,6 +771,8 @@ export default function TeacherExamMaker() {
       correctAnswerIndex: newPart === 'part1' ? newCorrectIdx : 0,
       subItems: newPart === 'part2' ? newSubItems : [],
       shortAnswer: newPart === 'part3' ? newShortAnswer : '',
+      maxScore: newPart === 'essay' ? (parseFloat(newMaxScore) || 2.0) : undefined,
+      rubric: newPart === 'essay' ? newRubric.filter(r => r.criteria && r.criteria.trim()) : undefined,
       explanation: newExplanation
     };
 
@@ -749,6 +805,7 @@ export default function TeacherExamMaker() {
     const part1List = questions.filter(q => q.part === 'part1');
     const part2List = questions.filter(q => q.part === 'part2');
     const part3List = questions.filter(q => q.part === 'part3');
+    const essayList = questions.filter(q => q.part === 'essay');
 
     const nbList = questions.filter(q => q.level === 'Nhận biết');
     const thList = questions.filter(q => q.level === 'Thông hiểu');
@@ -759,13 +816,15 @@ export default function TeacherExamMaker() {
       const p1 = list.filter(q => q.part === 'part1').length * p1Point;
       const p2 = list.filter(q => q.part === 'part2').length * p2Point;
       const p3 = list.filter(q => q.part === 'part3').length * p3Point;
-      return (p1 + p2 + p3).toFixed(2);
+      const pe = list.filter(q => q.part === 'essay').reduce((sum, q) => sum + (parseFloat(q.maxScore) || 2.0), 0);
+      return (p1 + p2 + p3 + pe).toFixed(2);
     };
 
     const totalCalculatedPoints = (
       part1List.length * p1Point +
       part2List.length * p2Point +
-      part3List.length * p3Point
+      part3List.length * p3Point +
+      essayList.reduce((sum, q) => sum + (parseFloat(q.maxScore) || 2.0), 0)
     ).toFixed(2);
 
     const htmlContent = `
@@ -813,7 +872,7 @@ export default function TeacherExamMaker() {
             <thead>
               <tr>
                 <th rowspan="2">Mức độ nhận thức</th>
-                <th colspan="3">Hình thức câu hỏi</th>
+                <th colspan="${essayList.length > 0 ? 4 : 3}">Hình thức câu hỏi</th>
                 <th rowspan="2">Tổng số câu</th>
                 <th rowspan="2">Tổng điểm</th>
                 <th rowspan="2">Tỷ lệ %</th>
@@ -822,6 +881,7 @@ export default function TeacherExamMaker() {
                 <th>${matrixCfg?.part1?.name || 'Phần I (4 lựa chọn)'}</th>
                 <th>${matrixCfg?.part2?.name || 'Phần II (Đúng/Sai)'}</th>
                 <th>${matrixCfg?.part3?.name || 'Phần III (Trả lời ngắn)'}</th>
+                ${essayList.length > 0 ? `<th>Phần Tự Luận</th>` : ''}
               </tr>
             </thead>
             <tbody>
@@ -830,6 +890,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${nbList.filter(q => q.part === 'part1').length} câu</td>
                 <td style="text-align: center;">${nbList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${nbList.filter(q => q.part === 'part3').length} câu</td>
+                ${essayList.length > 0 ? `<td style="text-align: center;">${nbList.filter(q => q.part === 'essay').length} câu</td>` : ''}
                 <td style="text-align: center; font-weight: bold;">${nbList.length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${calcPoints(nbList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((nbList.length / (questions.length || 1)) * 100)}%</td>
@@ -839,6 +900,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${thList.filter(q => q.part === 'part1').length} câu</td>
                 <td style="text-align: center;">${thList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${thList.filter(q => q.part === 'part3').length} câu</td>
+                ${essayList.length > 0 ? `<td style="text-align: center;">${thList.filter(q => q.part === 'essay').length} câu</td>` : ''}
                 <td style="text-align: center; font-weight: bold;">${thList.length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${calcPoints(thList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((thList.length / (questions.length || 1)) * 100)}%</td>
@@ -848,6 +910,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${vdList.filter(q => q.part === 'part1').length} câu</td>
                 <td style="text-align: center;">${vdList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${vdList.filter(q => q.part === 'part3').length} câu</td>
+                ${essayList.length > 0 ? `<td style="text-align: center;">${vdList.filter(q => q.part === 'essay').length} câu</td>` : ''}
                 <td style="text-align: center; font-weight: bold;">${vdList.length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${calcPoints(vdList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((vdList.length / (questions.length || 1)) * 100)}%</td>
@@ -857,6 +920,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${vdcList.filter(q => q.part === 'part1').length} câu</td>
                 <td style="text-align: center;">${vdcList.filter(q => q.part === 'part2').length} câu</td>
                 <td style="text-align: center;">${vdcList.filter(q => q.part === 'part3').length} câu</td>
+                ${essayList.length > 0 ? `<td style="text-align: center;">${vdcList.filter(q => q.part === 'essay').length} câu</td>` : ''}
                 <td style="text-align: center; font-weight: bold;">${vdcList.length} câu</td>
                 <td style="text-align: center; font-weight: bold;">${calcPoints(vdcList)} đ</td>
                 <td style="text-align: center; font-weight: bold;">${Math.round((vdcList.length / (questions.length || 1)) * 100)}%</td>
@@ -866,6 +930,7 @@ export default function TeacherExamMaker() {
                 <td style="text-align: center;">${part1List.length} câu (${(part1List.length * p1Point).toFixed(2)}đ)</td>
                 <td style="text-align: center;">${part2List.length} câu (${(part2List.length * p2Point).toFixed(2)}đ)</td>
                 <td style="text-align: center;">${part3List.length} câu (${(part3List.length * p3Point).toFixed(2)}đ)</td>
+                ${essayList.length > 0 ? `<td style="text-align: center;">${essayList.length} câu (${essayList.reduce((sum, q) => sum + (parseFloat(q.maxScore) || 2.0), 0).toFixed(1)}đ)</td>` : ''}
                 <td style="text-align: center;">${questions.length} câu</td>
                 <td style="text-align: center; color: red;">${totalCalculatedPoints} điểm</td>
                 <td style="text-align: center;">100%</td>
@@ -888,10 +953,10 @@ export default function TeacherExamMaker() {
               ${questions.map((q, idx) => `
                 <tr>
                   <td style="text-align: center; font-weight: bold;">Câu ${idx + 1}</td>
-                  <td style="text-align: center;">${q.part === 'part1' ? (matrixCfg?.part1?.name || 'Phần I') : q.part === 'part2' ? (matrixCfg?.part2?.name || 'Phần II') : (matrixCfg?.part3?.name || 'Phần III')}</td>
+                  <td style="text-align: center;">${q.part === 'part1' ? (matrixCfg?.part1?.name || 'Phần I') : q.part === 'part2' ? (matrixCfg?.part2?.name || 'Phần II') : q.part === 'part3' ? (matrixCfg?.part3?.name || 'Phần III') : 'Phần Tự Luận'}</td>
                   <td style="text-align: center; font-weight: bold;">${q.level}</td>
                   <td>${renderCleanMathText(q.content).slice(0, 140)}...</td>
-                  <td style="text-align: center; font-weight: bold;">${q.part === 'part1' ? `${p1Point}đ` : q.part === 'part2' ? `${p2Point}đ` : `${p3Point}đ`}</td>
+                  <td style="text-align: center; font-weight: bold;">${q.part === 'part1' ? `${p1Point}đ` : q.part === 'part2' ? `${p2Point}đ` : q.part === 'part3' ? `${p3Point}đ` : `${q.maxScore || 2.0}đ`}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -935,7 +1000,8 @@ export default function TeacherExamMaker() {
       code: '101',
       part1: questions.filter(q => q.part === 'part1').map(q => ({ ...q, shuffledOptions: q.options, shuffledCorrectIndex: q.correctAnswerIndex })),
       part2: questions.filter(q => q.part === 'part2').map(q => ({ ...q, shuffledSubItems: q.subItems.map((s, i) => ({ ...s, newKey: ['a','b','c','d'][i] })) })),
-      part3: questions.filter(q => q.part === 'part3')
+      part3: questions.filter(q => q.part === 'part3'),
+      essay: questions.filter(q => q.part === 'essay')
     };
 
     const examElement = document.getElementById('exam-paper-preview-content');
@@ -984,6 +1050,40 @@ export default function TeacherExamMaker() {
           ${activeCodeObj.part3.map(q => `<td style="border: 1pt solid black; padding: 4pt; text-align: center; font-weight: bold; color: blue;">${q.shortAnswer}</td>`).join('')}
         </tr>
       </table>
+
+      ${activeCodeObj.essay && activeCodeObj.essay.length > 0 ? `
+        <h3>PHẦN IV. HƯỚNG DẪN CHẤM & BIỂU ĐIỂM TỰ LUẬN</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr style="background-color: #f1f5f9;">
+            <th style="border: 1pt solid black; padding: 5pt; width: 12%;">Câu</th>
+            <th style="border: 1pt solid black; padding: 5pt; width: 68%;">Nội dung yêu cầu / Tiêu chí bareme</th>
+            <th style="border: 1pt solid black; padding: 5pt; width: 20%; text-align: center;">Điểm tối đa</th>
+          </tr>
+          ${activeCodeObj.essay.map((q, i) => `
+            <tr>
+              <td style="border: 1pt solid black; padding: 5pt; font-weight: bold; text-align: center; vertical-align: top;">Câu ${i + 1}</td>
+              <td style="border: 1pt solid black; padding: 5pt; vertical-align: top;">
+                <div><strong>Nội dung:</strong> ${renderCleanMathText(q.content)}</div>
+                ${q.rubric && q.rubric.length > 0 ? `
+                  <div style="margin-top: 6pt;"><strong>Biểu điểm chi tiết:</strong></div>
+                  <table style="width: 100%; border-collapse: collapse; margin-top: 4pt;">
+                    ${q.rubric.map(r => `
+                      <tr>
+                        <td style="border: 0.5pt solid #999; padding: 3pt;">${renderCleanMathText(r.criteria)}</td>
+                        <td style="border: 0.5pt solid #999; padding: 3pt; text-align: center; width: 50pt; font-weight: bold;">${r.score}đ</td>
+                      </tr>
+                    `).join('')}
+                  </table>
+                ` : ''}
+                ${q.explanation ? `<div style="margin-top: 6pt; font-style: italic;"><strong>Lời giải gợi ý:</strong> ${renderCleanMathText(q.explanation)}</div>` : ''}
+              </td>
+              <td style="border: 1pt solid black; padding: 5pt; text-align: center; font-weight: bold; vertical-align: top; color: #7c3aed;">
+                ${q.maxScore || 2.0} điểm
+              </td>
+            </tr>
+          `).join('')}
+        </table>
+      ` : ''}
     `;
 
     const htmlContent = `
@@ -1024,7 +1124,8 @@ export default function TeacherExamMaker() {
     code: '101',
     part1: questions.filter(q => q.part === 'part1').map(q => ({ ...q, shuffledOptions: q.options, shuffledCorrectIndex: q.correctAnswerIndex })),
     part2: questions.filter(q => q.part === 'part2').map(q => ({ ...q, shuffledSubItems: q.subItems.map((s, i) => ({ ...s, newKey: ['a','b','c','d'][i] })) })),
-    part3: questions.filter(q => q.part === 'part3')
+    part3: questions.filter(q => q.part === 'part3'),
+    essay: questions.filter(q => q.part === 'essay')
   };
 
   return (
@@ -1362,6 +1463,7 @@ export default function TeacherExamMaker() {
                 <option value="part1">Phần I: 4 Lựa chọn</option>
                 <option value="part2">Phần II: Đúng / Sai</option>
                 <option value="part3">Phần III: Trả lời ngắn</option>
+                <option value="essay">Phần Tự Luận</option>
               </select>
 
               <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 'bold' }}>Mức độ:</span>
@@ -1394,7 +1496,15 @@ export default function TeacherExamMaker() {
               <div key={q.id} style={{ background: '#f8fafc', padding: '18px', borderRadius: '12px', border: '1px solid #cbd5e1', position: 'relative' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                   <span style={{ fontWeight: 'bold', color: '#0284c7', fontSize: '14.5px' }}>
-                    {q.title} <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', marginLeft: '8px' }}>{q.level}</span>
+                    {q.title} 
+                    <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#e0f2fe', color: '#0369a1', marginLeft: '8px' }}>
+                      {q.level}
+                    </span>
+                    {q.part === 'essay' && (
+                      <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '12px', background: '#f5f3ff', color: '#7c3aed', marginLeft: '6px', fontWeight: 'bold' }}>
+                        Tự Luận ({q.maxScore || 2.0}đ)
+                      </span>
+                    )}
                   </span>
                   
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
@@ -1502,6 +1612,35 @@ export default function TeacherExamMaker() {
                   </div>
                 )}
 
+                {/* Part Essay with Rubric */}
+                {q.part === 'essay' && (
+                  <div style={{ background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: '8px', padding: '12px 14px', marginBottom: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <strong style={{ color: '#86198f', fontSize: '13.5px' }}>📋 Hướng dẫn chấm & Thang điểm (Tối đa: {q.maxScore || 2.0} điểm):</strong>
+                    </div>
+                    {q.rubric && q.rubric.length > 0 ? (
+                      <table style={{ width: '100%', fontSize: '12.5px', borderCollapse: 'collapse', marginTop: '6px', background: '#ffffff', borderRadius: '6px', overflow: 'hidden' }}>
+                        <thead>
+                          <tr style={{ background: '#fae8ff', color: '#701a75' }}>
+                            <th style={{ padding: '6px 10px', textAlign: 'left', border: '1px solid #f0abfc' }}>Tiêu chí đánh giá / Nội dung yêu cầu</th>
+                            <th style={{ padding: '6px 10px', width: '90px', textAlign: 'center', border: '1px solid #f0abfc' }}>Điểm số</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {q.rubric.map((r, rIdx) => (
+                            <tr key={rIdx}>
+                              <td style={{ padding: '6px 10px', border: '1px solid #f0abfc', color: '#334155' }}><MathView inline text={r.criteria} /></td>
+                              <td style={{ padding: '6px 10px', textAlign: 'center', fontWeight: 'bold', color: '#86198f', border: '1px solid #f0abfc' }}>{r.score}đ</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div style={{ fontSize: '12px', color: '#701a75', fontStyle: 'italic' }}>Chưa thiết lập bareme chi tiết. Điểm tối đa: {q.maxScore || 2.0}đ</div>
+                    )}
+                  </div>
+                )}
+
                 {q.explanation && (
                   <div style={{ fontSize: '12.5px', color: '#475569', fontStyle: 'italic', background: '#f1f5f9', padding: '8px 12px', borderRadius: '6px', marginTop: '6px' }}>
                     💡 <strong>Lời giải chi tiết:</strong> <MathView text={q.explanation} />
@@ -1520,11 +1659,14 @@ export default function TeacherExamMaker() {
         const p1Count = questions.filter(q => q.part === 'part1').length;
         const p2Count = questions.filter(q => q.part === 'part2').length;
         const p3Count = questions.filter(q => q.part === 'part3').length;
+        const essayCount = questions.filter(q => q.part === 'essay').length;
+        const essayPoints = questions.filter(q => q.part === 'essay').reduce((sum, q) => sum + (parseFloat(q.maxScore) || 2.0), 0);
 
         const currentPoints = (
           p1Count * matrixCfg.part1.pointPerQ +
           p2Count * matrixCfg.part2.pointPerQ +
-          p3Count * matrixCfg.part3.pointPerQ
+          p3Count * matrixCfg.part3.pointPerQ +
+          essayPoints
         ).toFixed(1);
 
         const subInfo = SUBJECT_OPTIONS.find(s => s.id === subject);
@@ -1620,6 +1762,18 @@ export default function TeacherExamMaker() {
                   </div>
                   <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
                     <div style={{ width: `${Math.min(100, (p3Count / (matrixCfg.part3.count || 1)) * 100)}%`, height: '100%', background: '#9333ea' }} />
+                  </div>
+                </div>
+              )}
+
+              {essayCount > 0 && (
+                <div style={{ padding: '14px', borderRadius: '12px', background: '#faf5ff', border: '1px solid #e9d5ff' }}>
+                  <div style={{ fontSize: '12px', color: '#7c3aed', fontWeight: 'bold' }}>PHẦN TỰ LUẬN</div>
+                  <div style={{ fontSize: '20px', fontWeight: '900', color: '#6d28d9', marginTop: '4px' }}>
+                    {essayCount} <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 'normal' }}>câu ({essayPoints.toFixed(1)}đ)</span>
+                  </div>
+                  <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '3px', marginTop: '8px', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', height: '100%', background: '#7c3aed' }} />
                   </div>
                 </div>
               )}
@@ -1937,6 +2091,35 @@ export default function TeacherExamMaker() {
                 </div>
               ))}
 
+              {/* PHẦN TỰ LUẬN (nếu có) */}
+              {activeCodeObj.essay && activeCodeObj.essay.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '12pt', marginBottom: '8px' }}>
+                    PHẦN IV. CÂU HỎI TỰ LUẬN (Thí sinh làm bài trực tiếp vào giấy làm bài thi. Tổng điểm: {(activeCodeObj.essay.reduce((sum, q) => sum + (parseFloat(q.maxScore) || 2.0), 0)).toFixed(1)} điểm).
+                  </div>
+                  {activeCodeObj.essay.map((q, idx) => (
+                    <div key={q.id || idx} style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', gap: '6px', alignItems: 'baseline' }}>
+                        <strong>Câu {idx + 1} ({q.maxScore || 2.0} điểm):</strong>
+                        <MathView inline text={q.content} />
+                      </div>
+                      {q.image_url && (
+                        <div style={{ textAlign: 'center', margin: '8px 0' }}>
+                          <img src={q.image_url} alt="Hình vẽ minh họa" style={{ maxWidth: '300px', maxHeight: '180px', objectFit: 'contain', border: '1px solid #cbd5e1', borderRadius: '4px' }} />
+                        </div>
+                      )}
+                      {/* Dòng kẻ chấm chừa chỗ cho học sinh làm bài */}
+                      <div style={{ marginTop: '10px', color: '#64748b', fontSize: '11pt', letterSpacing: '2px', lineHeight: '2' }}>
+                        <div>....................................................................................................................................................................................................</div>
+                        <div>....................................................................................................................................................................................................</div>
+                        <div>....................................................................................................................................................................................................</div>
+                        <div>....................................................................................................................................................................................................</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div style={{ textAlign: 'center', marginTop: '35px', fontWeight: 'bold' }}>
                 ------------------ HẾT ------------------
               </div>
@@ -2014,7 +2197,7 @@ export default function TeacherExamMaker() {
                 </div>
               </div>
 
-              <div>
+              <div style={{ marginBottom: '12px' }}>
                 <strong style={{ fontSize: '13px', color: '#334155' }}>PHẦN III. TRẢ LỜI NGẮN:</strong>
                 <div style={{ display: 'flex', gap: '10px', marginTop: '6px', flexWrap: 'wrap' }}>
                   {codeObj.part3.map((q, i) => (
@@ -2024,6 +2207,39 @@ export default function TeacherExamMaker() {
                   ))}
                 </div>
               </div>
+
+              {codeObj.essay && codeObj.essay.length > 0 && (
+                <div style={{ marginTop: '12px' }}>
+                  <strong style={{ fontSize: '13px', color: '#334155' }}>PHẦN IV. TỰ LUẬN & HƯỚNG DẪN CHẤM:</strong>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                    {codeObj.essay.map((q, i) => (
+                      <div key={i} style={{ background: '#fff', border: '1px solid #cbd5e1', padding: '10px 14px', borderRadius: '8px', fontSize: '13px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <strong>Câu {i + 1}:</strong>
+                          <span style={{ color: '#7c3aed', fontWeight: 'bold' }}>Thang điểm: {q.maxScore || 2.0}đ</span>
+                        </div>
+                        <div style={{ color: '#334155', marginBottom: '6px' }}><MathView inline text={q.content} /></div>
+                        {q.rubric && q.rubric.length > 0 && (
+                          <div style={{ background: '#fdf4ff', border: '1px solid #f0abfc', padding: '6px 10px', borderRadius: '6px' }}>
+                            <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#86198f', marginBottom: '2px' }}>Bareme chi tiết:</div>
+                            {q.rubric.map((r, rIdx) => (
+                              <div key={rIdx} style={{ fontSize: '12px', display: 'flex', justifyContent: 'space-between', padding: '2px 0' }}>
+                                <span>- {r.criteria}</span>
+                                <strong style={{ color: '#86198f' }}>{r.score}đ</strong>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {q.explanation && (
+                          <div style={{ fontSize: '11.5px', color: '#64748b', fontStyle: 'italic', marginTop: '4px' }}>
+                            💡 Hướng dẫn giải: {q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -2199,6 +2415,7 @@ export default function TeacherExamMaker() {
                     <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn</option>
                     <option value="part2">Phần II: Trắc nghiệm Đúng / Sai</option>
                     <option value="part3">Phần III: Trắc nghiệm Trả lời ngắn</option>
+                    <option value="essay">Phần Tự Luận: Câu hỏi / Bài tập tự luận</option>
                   </select>
                 </div>
                 <div>
@@ -2354,6 +2571,77 @@ export default function TeacherExamMaker() {
                 </div>
               )}
 
+              {/* Part Essay Inputs */}
+              {newPart === 'essay' && (
+                <div style={{ background: '#fdf4ff', border: '1px solid #f0abfc', padding: '14px', borderRadius: '10px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ ...styles.label, color: '#86198f' }}>Thang điểm tối đa cho câu tự luận (*):</label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      max="10.0"
+                      value={newMaxScore}
+                      onChange={e => setNewMaxScore(parseFloat(e.target.value) || 2.0)}
+                      style={{ ...styles.input, width: '120px', fontWeight: 'bold', color: '#86198f' }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ ...styles.label, margin: 0, color: '#86198f' }}>Tiêu chí bareme / Hướng dẫn chấm chi tiết:</label>
+                      <button
+                        type="button"
+                        onClick={() => setNewRubric([...newRubric, { criteria: '', score: 0.5 }])}
+                        style={{ fontSize: '11.5px', background: '#fae8ff', border: '1px solid #f0abfc', color: '#86198f', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        + Thêm ý tiêu chí
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {newRubric.map((r, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#86198f', width: '35px' }}>Ý {idx + 1}:</span>
+                          <input
+                            type="text"
+                            value={r.criteria}
+                            onChange={e => {
+                              const updated = [...newRubric];
+                              updated[idx].criteria = e.target.value;
+                              setNewRubric(updated);
+                            }}
+                            placeholder="Mô tả tiêu chí cần đạt..."
+                            style={{ ...styles.input, flex: 1, fontSize: '12.5px' }}
+                          />
+                          <input
+                            type="number"
+                            step="0.25"
+                            value={r.score}
+                            onChange={e => {
+                              const updated = [...newRubric];
+                              updated[idx].score = parseFloat(e.target.value) || 0.5;
+                              setNewRubric(updated);
+                            }}
+                            style={{ ...styles.input, width: '65px', textAlign: 'center', fontWeight: 'bold', color: '#86198f' }}
+                          />
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>đ</span>
+                          {newRubric.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => setNewRubric(newRubric.filter((_, i) => i !== idx))}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={styles.label}>Lời giải chi tiết (Hướng dẫn chấm & công thức giải):</label>
                 <textarea rows={2} value={newExplanation} onChange={e => setNewExplanation(e.target.value)} style={{ ...styles.input, resize: 'vertical' }} placeholder="Nhập hướng dẫn giải chi tiết cho câu hỏi (hỗ trợ $...$)..." />
@@ -2398,6 +2686,7 @@ export default function TeacherExamMaker() {
                     <option value="part1">Phần I: Trắc nghiệm 4 lựa chọn</option>
                     <option value="part2">Phần II: Trắc nghiệm Đúng / Sai</option>
                     <option value="part3">Phần III: Trắc nghiệm Trả lời ngắn</option>
+                    <option value="essay">Phần Tự Luận: Câu hỏi / Bài tập tự luận</option>
                   </select>
                 </div>
                 <div>
@@ -2534,6 +2823,91 @@ export default function TeacherExamMaker() {
                     style={{ ...styles.input, fontWeight: 'bold', color: '#0284c7' }} 
                     required 
                   />
+                </div>
+              )}
+
+              {/* Part Essay Edit Inputs */}
+              {editingQuestion.part === 'essay' && (
+                <div style={{ background: '#fdf4ff', border: '1px solid #f0abfc', padding: '14px', borderRadius: '10px' }}>
+                  <div style={{ marginBottom: '12px' }}>
+                    <label style={{ ...styles.label, color: '#86198f' }}>Thang điểm tối đa cho câu tự luận (*):</label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min="0.25"
+                      max="10.0"
+                      value={editingQuestion.maxScore || 2.0}
+                      onChange={e => setEditingQuestion({ ...editingQuestion, maxScore: parseFloat(e.target.value) || 2.0 })}
+                      style={{ ...styles.input, width: '120px', fontWeight: 'bold', color: '#86198f' }}
+                    />
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ ...styles.label, margin: 0, color: '#86198f' }}>Tiêu chí bareme / Hướng dẫn chấm chi tiết:</label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const currentRubric = editingQuestion.rubric || [];
+                          setEditingQuestion({
+                            ...editingQuestion,
+                            rubric: [...currentRubric, { criteria: '', score: 0.5 }]
+                          });
+                        }}
+                        style={{ fontSize: '11.5px', background: '#fae8ff', border: '1px solid #f0abfc', color: '#86198f', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
+                      >
+                        + Thêm ý tiêu chí
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {(editingQuestion.rubric || [
+                        { criteria: 'Ý 1: Nêu đúng định lý / hiện tượng / dẫn chứng', score: 1.0 },
+                        { criteria: 'Ý 2: Lập luận logic và kết luận chính xác', score: 1.0 }
+                      ]).map((r, idx) => (
+                        <div key={idx} style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#86198f', width: '35px' }}>Ý {idx + 1}:</span>
+                          <input
+                            type="text"
+                            value={r.criteria}
+                            onChange={e => {
+                              const updated = [...(editingQuestion.rubric || [])];
+                              if (!updated[idx]) updated[idx] = { criteria: '', score: 0.5 };
+                              updated[idx].criteria = e.target.value;
+                              setEditingQuestion({ ...editingQuestion, rubric: updated });
+                            }}
+                            placeholder="Mô tả tiêu chí cần đạt..."
+                            style={{ ...styles.input, flex: 1, fontSize: '12.5px' }}
+                          />
+                          <input
+                            type="number"
+                            step="0.25"
+                            value={r.score}
+                            onChange={e => {
+                              const updated = [...(editingQuestion.rubric || [])];
+                              if (!updated[idx]) updated[idx] = { criteria: '', score: 0.5 };
+                              updated[idx].score = parseFloat(e.target.value) || 0.5;
+                              setEditingQuestion({ ...editingQuestion, rubric: updated });
+                            }}
+                            style={{ ...styles.input, width: '65px', textAlign: 'center', fontWeight: 'bold', color: '#86198f' }}
+                          />
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>đ</span>
+                          {(editingQuestion.rubric || []).length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = (editingQuestion.rubric || []).filter((_, i) => i !== idx);
+                                setEditingQuestion({ ...editingQuestion, rubric: updated });
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 'bold' }}
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
 

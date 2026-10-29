@@ -6,17 +6,64 @@
  * 1. Môn học & Khối lớp
  * 2. Chương / Chủ đề lớn
  * 3. Bài học / Đơn vị kiến thức
- * 4. Mức độ nhận thức (NB, TH, VD, VDC) & Hình thức thi (Phần I, II, III)
+ * 4. Mức độ nhận thức (NB, TH, VD, VDC) & Hình thức thi:
+ *    - Phần I: Trắc nghiệm 4 lựa chọn (A, B, C, D)
+ *    - Phần II: Trắc nghiệm Đúng / Sai 4 ý lũy tiến
+ *    - Phần III: Trắc nghiệm Trả lời ngắn
+ *    - Phần Tự luận: Câu hỏi tự luận / Bài tập tự luận có Bareme chấm điểm chi tiết
  */
 
 import { DualSupabaseService } from '../lib/supabase';
 
-const STORAGE_KEY_TREE = 'cbq_question_bank_tree_v1';
-const STORAGE_KEY_QUESTIONS = 'cbq_question_bank_items_v1';
+const STORAGE_KEY_TREE = 'cbq_question_bank_tree_v2';
+const STORAGE_KEY_QUESTIONS = 'cbq_question_bank_items_v2';
 
-// CÂY THƯ MỤC MẪU CHUẨN GDPT 2018 CHO CÁC MÔN HỌC BẬC THPT
+// CÂY THƯ MỤC MẪU CHUẨN GDPT 2018 CHO TẤT CẢ CÁC MÔN HỌC BẬC THPT
 export const DEFAULT_TAXONOMY_TREE = [
-  // 1. MÔN TOÁN HỌC - KHỐI 12
+  // 1. MÔN GIÁO DỤC KINH TẾ & PHÁP LUẬT (GDKT & PL) - KHỐI 12
+  {
+    id: 'gdktpl_12',
+    subject: 'GDKT & PL',
+    grade: 'Khối 12',
+    chapters: [
+      {
+        id: 'gdktpl_12_c1',
+        title: 'Chủ đề 1: Tăng trưởng và phát triển kinh tế',
+        lessons: [
+          { id: 'gdktpl_12_c1_l1', title: 'Bài 1: Tăng trưởng và phát triển kinh tế' },
+          { id: 'gdktpl_12_c1_l2', title: 'Bài 2: Hội nhập kinh tế quốc tế và phát triển bền vững' }
+        ]
+      },
+      {
+        id: 'gdktpl_12_c2',
+        title: 'Chủ đề 2: Lao động và an sinh xã hội',
+        lessons: [
+          { id: 'gdktpl_12_c2_l1', title: 'Bài 3: Bảo hiểm và an sinh xã hội' },
+          { id: 'gdktpl_12_c2_l2', title: 'Bài 4: Quản lý thu, chi và tài chính gia đình' }
+        ]
+      },
+      {
+        id: 'gdktpl_12_c3',
+        title: 'Chủ đề 3: Quyền và nghĩa vụ của công dân về kinh tế',
+        lessons: [
+          { id: 'gdktpl_12_c3_l1', title: 'Bài 5: Quyền và nghĩa vụ của công dân trong kinh doanh' },
+          { id: 'gdktpl_12_c3_l2', title: 'Bài 6: Quyền và nghĩa vụ của công dân về nộp thuế' },
+          { id: 'gdktpl_12_c3_l3', title: 'Bài 7: Quyền sở hữu tài sản và nghĩa vụ tôn trọng tài sản người khác' }
+        ]
+      },
+      {
+        id: 'gdktpl_12_c4',
+        title: 'Chủ đề 4: Quyền và nghĩa vụ của công dân trong đời sống xã hội',
+        lessons: [
+          { id: 'gdktpl_12_c4_l1', title: 'Bài 8: Quyền và nghĩa vụ của công dân về bảo vệ môi trường' },
+          { id: 'gdktpl_12_c4_l2', title: 'Bài 9: Quyền và nghĩa vụ của công dân trong hôn nhân và gia đình' },
+          { id: 'gdktpl_12_c4_l3', title: 'Bài 10: Quyền con người và pháp luật quốc tế' }
+        ]
+      }
+    ]
+  },
+
+  // 2. MÔN TOÁN HỌC - KHỐI 12
   {
     id: 'math_12',
     subject: 'Toán',
@@ -34,7 +81,7 @@ export const DEFAULT_TAXONOMY_TREE = [
       },
       {
         id: 'math_12_c2',
-        title: 'Chương II: Tọa độ của vectơ trong không gian',
+        title: 'Chương II: Tọa độ của vectơ trong không gian Oxyz',
         lessons: [
           { id: 'math_12_c2_l1', title: 'Bài 1: Vectơ và các phép toán trong không gian' },
           { id: 'math_12_c2_l2', title: 'Bài 2: Tọa độ của vectơ trong không gian Oxyz' },
@@ -51,7 +98,7 @@ export const DEFAULT_TAXONOMY_TREE = [
       },
       {
         id: 'math_12_c4',
-        title: 'Chương IV: Nguyên hàm, tích phân và ứng dụng',
+        title: 'Chương IV: Nguyên hàm, tích phân và ứng dụng thực tế',
         lessons: [
           { id: 'math_12_c4_l1', title: 'Bài 1: Khái niệm nguyên hàm và tính chất' },
           { id: 'math_12_c4_l2', title: 'Bài 2: Tích phân và ứng dụng hình học tính diện tích, thể tích' }
@@ -68,7 +115,7 @@ export const DEFAULT_TAXONOMY_TREE = [
       },
       {
         id: 'math_12_c6',
-        title: 'Chương VI: Xác suất có điều kiện và công thức xác suất toàn phần',
+        title: 'Chương VI: Xác suất có điều kiện và công thức Bayes',
         lessons: [
           { id: 'math_12_c6_l1', title: 'Bài 1: Xác suất có điều kiện' },
           { id: 'math_12_c6_l2', title: 'Bài 2: Công thức xác suất toàn phần và công thức Bayes' }
@@ -77,7 +124,7 @@ export const DEFAULT_TAXONOMY_TREE = [
     ]
   },
 
-  // 2. MÔN TOÁN HỌC - KHỐI 11
+  // 3. MÔN TOÁN HỌC - KHỐI 11
   {
     id: 'math_11',
     subject: 'Toán',
@@ -117,14 +164,13 @@ export const DEFAULT_TAXONOMY_TREE = [
         lessons: [
           { id: 'math_11_c4_l1', title: 'Bài 1: Điểm, đường thẳng và mặt phẳng trong không gian' },
           { id: 'math_11_c4_l2', title: 'Bài 2: Hai đường thẳng song song' },
-          { id: 'math_11_c4_l3', title: 'Bài 3: Đường thẳng và mặt phẳng song song' },
-          { id: 'math_11_c4_l4', title: 'Bài 4: Hai mặt phẳng song song' }
+          { id: 'math_11_c4_l3', title: 'Bài 3: Đường thẳng và mặt phẳng song song' }
         ]
       }
     ]
   },
 
-  // 3. MÔN VẬT LÍ - KHỐI 12
+  // 4. MÔN VẬT LÍ - KHỐI 12
   {
     id: 'physics_12',
     subject: 'Vật lí',
@@ -170,7 +216,7 @@ export const DEFAULT_TAXONOMY_TREE = [
     ]
   },
 
-  // 4. MÔN HÓA HỌC - KHỐI 12
+  // 5. MÔN HÓA HỌC - KHỐI 12
   {
     id: 'chemistry_12',
     subject: 'Hóa học',
@@ -214,7 +260,142 @@ export const DEFAULT_TAXONOMY_TREE = [
     ]
   },
 
-  // 5. MÔN TIẾNG ANH - KHỐI 12
+  // 6. MÔN LỊCH SỬ - KHỐI 12
+  {
+    id: 'history_12',
+    subject: 'Lịch sử',
+    grade: 'Khối 12',
+    chapters: [
+      {
+        id: 'his_12_c1',
+        title: 'Chủ đề 1: Thế giới trong và sau Chiến tranh lạnh',
+        lessons: [
+          { id: 'his_12_c1_l1', title: 'Bài 1: Trật tự thế giới hai cực I-an-ta và sự sụp đổ' },
+          { id: 'his_12_c1_l2', title: 'Bài 2: Trật tự thế giới đa cực sau Chiến tranh lạnh' }
+        ]
+      },
+      {
+        id: 'his_12_c2',
+        title: 'Chủ đề 2: ASEAN: Những chặng đường lịch sử',
+        lessons: [
+          { id: 'his_12_c2_l1', title: 'Bài 3: Quá trình hình thành và phát triển của ASEAN' },
+          { id: 'his_12_c2_l2', title: 'Bài 4: Cộng đồng ASEAN: Tầm nhìn và triển vọng' }
+        ]
+      },
+      {
+        id: 'his_12_c3',
+        title: 'Chủ đề 3: Cách mạng tháng Tám 1945 và cuộc kháng chiến bảo vệ Tổ quốc (1945 - 1975)',
+        lessons: [
+          { id: 'his_12_c3_l1', title: 'Bài 5: Cách mạng tháng Tám năm 1945 và sự ra đời nước VNDCCH' },
+          { id: 'his_12_c3_l2', title: 'Bài 6: Cuộc kháng chiến chống thực dân Pháp (1945 - 1954)' },
+          { id: 'his_12_c3_l3', title: 'Bài 7: Cuộc kháng chiến chống Mỹ, cứu nước (1954 - 1975)' }
+        ]
+      },
+      {
+        id: 'his_12_c4',
+        title: 'Chủ đề 4: Công cuộc Đổi mới ở Việt Nam từ năm 1986 đến nay',
+        lessons: [
+          { id: 'his_12_c4_l1', title: 'Bài 8: Bối cảnh lịch sử và chủ trương Đổi mới' },
+          { id: 'his_12_c4_l2', title: 'Bài 9: Thành tựu và bài học kinh nghiệm của công cuộc Đổi mới' }
+        ]
+      }
+    ]
+  },
+
+  // 7. MÔN ĐỊA LÍ - KHỐI 12
+  {
+    id: 'geo_12',
+    subject: 'Địa lí',
+    grade: 'Khối 12',
+    chapters: [
+      {
+        id: 'geo_12_c1',
+        title: 'Chủ đề 1: Địa lí tự nhiên Việt Nam',
+        lessons: [
+          { id: 'geo_12_c1_l1', title: 'Bài 1: Vị trí địa lí và phạm vi lãnh thổ' },
+          { id: 'geo_12_c1_l2', title: 'Bài 2: Thiên nhiên nhiệt đới ẩm gió mùa và cảnh quan' }
+        ]
+      },
+      {
+        id: 'geo_12_c2',
+        title: 'Chủ đề 2: Địa lí các ngành kinh tế',
+        lessons: [
+          { id: 'geo_12_c2_l1', title: 'Bài 3: Địa lí ngành nông nghiệp, lâm nghiệp và thủy sản' },
+          { id: 'geo_12_c2_l2', title: 'Bài 4: Địa lí ngành công nghiệp và phát triển năng lượng xanh' },
+          { id: 'geo_12_c2_l3', title: 'Bài 5: Địa lí ngành dịch vụ, giao thông và du lịch' }
+        ]
+      },
+      {
+        id: 'geo_12_c3',
+        title: 'Chủ đề 3: Các vùng kinh tế trọng điểm và biển đảo',
+        lessons: [
+          { id: 'geo_12_c3_l1', title: 'Bài 6: Khai thác thế mạnh ở vùng Tây Nguyên' },
+          { id: 'geo_12_c3_l2', title: 'Bài 7: Phát triển kinh tế biển và bảo vệ chủ quyền biển đảo' }
+        ]
+      }
+    ]
+  },
+
+  // 8. MÔN SINH HỌC - KHỐI 12
+  {
+    id: 'bio_12',
+    subject: 'Sinh học',
+    grade: 'Khối 12',
+    chapters: [
+      {
+        id: 'bio_12_c1',
+        title: 'Chương I: Di truyền phân tử và di truyền nhiễm sắc thể',
+        lessons: [
+          { id: 'bio_12_c1_l1', title: 'Bài 1: DNA, tái bản DNA và phiên mã' },
+          { id: 'bio_12_c1_l2', title: 'Bài 2: Dịch mã, điều hòa biểu hiện gen và đột biến gen' },
+          { id: 'bio_12_c1_l3', title: 'Bài 3: Nhiễm sắc thể và đột biến nhiễm sắc thể' }
+        ]
+      },
+      {
+        id: 'bio_12_c2',
+        title: 'Chương II: Các quy luật di truyền và di truyền học người',
+        lessons: [
+          { id: 'bio_12_c2_l1', title: 'Bài 4: Quy luật Men-đen và tương tác gen' },
+          { id: 'bio_12_c2_l2', title: 'Bài 5: Di truyền liên kết giới tính và phả hệ' }
+        ]
+      }
+    ]
+  },
+
+  // 9. MÔN TIN HỌC - KHỐI 12
+  {
+    id: 'cs_12',
+    subject: 'Tin học',
+    grade: 'Khối 12',
+    chapters: [
+      {
+        id: 'cs_12_c1',
+        title: 'Chủ đề 1: Mạng máy tính và Internet',
+        lessons: [
+          { id: 'cs_12_c1_l1', title: 'Bài 1: Cơ chế hoạt động của mạng Internet và giao thức TCP/IP' },
+          { id: 'cs_12_c1_l2', title: 'Bài 2: An toàn thông tin và bảo mật mạng không dây' }
+        ]
+      },
+      {
+        id: 'cs_12_c2',
+        title: 'Chủ đề 2: Cơ sở dữ liệu và hệ quản trị CSDL quan hệ (SQL)',
+        lessons: [
+          { id: 'cs_12_c2_l1', title: 'Bài 3: Khái niệm CSDL quan hệ và khóa chính' },
+          { id: 'cs_12_c2_l2', title: 'Bài 4: Truy vấn dữ liệu bằng câu lệnh SQL' }
+        ]
+      },
+      {
+        id: 'cs_12_c3',
+        title: 'Chủ đề 3: Lập trình Python ứng dụng và Trí tuệ nhân tạo (AI)',
+        lessons: [
+          { id: 'cs_12_c3_l1', title: 'Bài 5: Lập trình giải thuật và cấu trúc dữ liệu Python' },
+          { id: 'cs_12_c3_l2', title: 'Bài 6: Ứng dụng AI và đạo đức trong kỷ nguyên số' }
+        ]
+      }
+    ]
+  },
+
+  // 10. MÔN TIẾNG ANH - KHỐI 12
   {
     id: 'english_12',
     subject: 'Tiếng Anh',
@@ -241,7 +422,7 @@ export const DEFAULT_TAXONOMY_TREE = [
     ]
   },
 
-  // 6. MÔN NGỮ VĂN - KHỐI 12
+  // 11. MÔN NGỮ VĂN - KHỐI 12
   {
     id: 'lit_12',
     subject: 'Ngữ văn',
@@ -275,9 +456,67 @@ export const DEFAULT_TAXONOMY_TREE = [
   }
 ];
 
-// BỘ CÂU HỎI MẪU ĐƯỢC PHÂN THEO BÀI HỌC VÀ MỨC ĐỘ NHẬN THỨC
+// BỘ CÂU HỎI MẪU PHONG PHÚ: TRẮC NGHIỆM PHẦN I, II, III & CÂU HỎI TỰ LUẬN
 export const INITIAL_BANK_QUESTIONS = [
-  // --- MÔN TOÁN: Bài math_12_c1_l1 (Tính đơn điệu và cực trị) ---
+  // ==================== 1. MÔN GDKT & PL (KHỐI 12) ====================
+  {
+    id: 'bank_gdktpl_01',
+    subject: 'GDKT & PL',
+    grade: 'Khối 12',
+    chapterId: 'gdktpl_12_c1',
+    lessonId: 'gdktpl_12_c1_l1',
+    level: 'Nhận biết',
+    part: 'part1',
+    content: 'Tăng trưởng kinh tế là sự gia tăng về quy mô sản lượng của một nền kinh tế trong một thời kỳ nhất định, thường được đo lường chủ yếu bằng chỉ tiêu nào sau đây?',
+    options: ['Tổng sản phẩm quốc nội (GDP) hoặc Tổng thu nhập quốc gia (GNI)', 'Chỉ số phát triển con người (HDI)', 'Tỷ lệ người dân tham gia bảo hiểm y tế', 'Mức độ hài lòng về chất lượng môi trường'],
+    correctAnswerIndex: 0,
+    explanation: 'Tăng trưởng kinh tế phản ánh sự gia tăng về lượng của nền kinh tế, đo bằng tốc độ tăng GDP hoặc GNI.',
+    author: 'Tổ Sử - Địa - GDKT&PL',
+    createdAt: '2026-09-01T08:00:00Z'
+  },
+  {
+    id: 'bank_gdktpl_02',
+    subject: 'GDKT & PL',
+    grade: 'Khối 12',
+    chapterId: 'gdktpl_12_c1',
+    lessonId: 'gdktpl_12_c1_l1',
+    level: 'Thông hiểu',
+    part: 'part2',
+    content: 'Doanh nghiệp tư nhân H tại Đắk Lắk mở rộng sản xuất cà phê xuất khẩu. Xét tính Đúng / Sai của các mệnh đề sau:',
+    subItems: [
+      { key: 'a', text: 'Doanh nghiệp H có quyền tự do lựa chọn ngành nghề kinh doanh mà pháp luật không cấm.', isTrue: true },
+      { key: 'b', text: 'Doanh nghiệp H có nghĩa vụ nộp thuế thu nhập doanh nghiệp đầy đủ theo quy định của Luật Thuế.', isTrue: true },
+      { key: 'c', text: 'Doanh nghiệp H được phép xả chất thải chưa qua xử lý ra môi trường tự nhiên để tiết kiệm chi phí sản xuất.', isTrue: false },
+      { key: 'd', text: 'Tăng trưởng kinh tế gắn liền với bảo vệ môi trường là biểu hiện của phát triển kinh tế bền vững.', isTrue: true }
+    ],
+    explanation: 'Mệnh đề c sai vì pháp luật bảo vệ môi trường nghiêm cấm hành vi xả thải chưa qua xử lý.',
+    author: 'Tổ Sử - Địa - GDKT&PL',
+    createdAt: '2026-09-01T09:00:00Z'
+  },
+  // CÂU HỎI TỰ LUẬN MÔN GDKT & PL
+  {
+    id: 'bank_gdktpl_essay_01',
+    subject: 'GDKT & PL',
+    grade: 'Khối 12',
+    chapterId: 'gdktpl_12_c3',
+    lessonId: 'gdktpl_12_c3_l1',
+    level: 'Vận dụng',
+    part: 'essay',
+    title: 'Câu hỏi Tự luận (2.0 điểm) - Xử lý tình huống pháp luật trong kinh doanh',
+    content: 'Anh K dự định mở một xưởng chế biến nông sản tại địa phương. Bạn của anh K khuyên: "Cứ hoạt động trước đi, khi nào cơ quan nhà nước đến kiểm tra thì mới làm thủ tục đăng ký kinh doanh và kê khai nộp thuế để đỡ tốn kém ban đầu".\n\na) Căn cứ vào quy định pháp luật về quyền và nghĩa vụ của công dân trong kinh doanh, anh/chị hãy nhận xét lời khuyên của người bạn anh K.\nb) Nếu là anh K, anh/chị sẽ thực hiện các bước pháp lý như thế nào trước khi xưởng chế biến đi vào hoạt động chính thức?',
+    maxScore: 2.0,
+    rubric: [
+      { criteria: 'Khẳng định lời khuyên của người bạn là sai và vi phạm pháp luật (Kinh doanh không đăng ký, trốn thuế)', score: 0.5 },
+      { criteria: 'Nêu rõ nghĩa vụ đăng ký kinh doanh và chấp hành pháp luật về thuế, bảo vệ môi trường', score: 0.5 },
+      { criteria: 'Đề xuất hành vi đúng đắn: Lập hồ sơ đăng ký kinh doanh tại cơ quan có thẩm quyền', score: 0.5 },
+      { criteria: 'Thực hiện cam kết bảo vệ môi trường, an toàn vệ sinh thực phẩm và kê khai nộp thuế đầy đủ', score: 0.5 }
+    ],
+    explanation: 'Hướng dẫn chấm:\n- Ý a (1.0đ): Khẳng định lời khuyên sai. Mọi chủ thể khi kinh doanh đều có nghĩa vụ đăng ký kinh doanh và nộp thuế theo luật định. Hành vi kinh doanh không đăng ký là kinh doanh trái phép.\n- Ý b (1.0đ): Các bước đúng: Đăng ký thành lập hộ kinh doanh/doanh nghiệp, xin cấp phép ATTP và môi trường, mở mã số thuế và kê khai hóa đơn điện tử.',
+    author: 'Tổ Sử - Địa - GDKT&PL',
+    createdAt: '2026-09-02T10:00:00Z'
+  },
+
+  // ==================== 2. MÔN TOÁN HỌC (KHỐI 12) ====================
   {
     id: 'bank_m12_01',
     subject: 'Toán',
@@ -300,21 +539,6 @@ export const INITIAL_BANK_QUESTIONS = [
     chapterId: 'math_12_c1',
     lessonId: 'math_12_c1_l1',
     level: 'Thông hiểu',
-    part: 'part1',
-    content: 'Điểm cực đại của đồ thị hàm số $y = x^3 - 3x^2 + 2$ là:',
-    options: ['$(0; 2)$', '$(2; -2)$', '$(0; 0)$', '$(2; 2)$'],
-    correctAnswerIndex: 0,
-    explanation: 'Ta có $y\' = 3x^2 - 6x = 0 \\Leftrightarrow x = 0$ hoặc $x = 2$. Với $x = 0 \\Rightarrow y = 2$ (cực đại). Vậy tọa độ điểm cực đại là $(0; 2)$.',
-    author: 'Tổ Toán - THPT Cao Bá Quát',
-    createdAt: '2026-09-01T08:00:00Z'
-  },
-  {
-    id: 'bank_m12_03',
-    subject: 'Toán',
-    grade: 'Khối 12',
-    chapterId: 'math_12_c1',
-    lessonId: 'math_12_c1_l1',
-    level: 'Thông hiểu',
     part: 'part2',
     content: 'Cho hàm số $y = f(x) = \\frac{2x - 1}{x + 1}$. Xét tính Đúng / Sai của các mệnh đề sau:',
     subItems: [
@@ -328,7 +552,7 @@ export const INITIAL_BANK_QUESTIONS = [
     createdAt: '2026-09-02T10:00:00Z'
   },
   {
-    id: 'bank_m12_04',
+    id: 'bank_m12_03',
     subject: 'Toán',
     grade: 'Khối 12',
     chapterId: 'math_12_c1',
@@ -336,45 +560,35 @@ export const INITIAL_BANK_QUESTIONS = [
     level: 'Vận dụng',
     part: 'part3',
     content: 'Tìm số các giá trị nguyên của tham số $m \\in [-10; 10]$ để hàm số $y = \\frac{1}{3}x^3 - mx^2 + (m + 2)x - 5$ đồng biến trên toàn trục số $\\mathbb{R}$.',
-    shortAnswer: '3',
+    shortAnswer: '4',
     explanation: 'Ta có $y\' = x^2 - 2mx + (m + 2)$. Để hàm số đồng biến trên $\\mathbb{R}$ thì $\\Delta\' = m^2 - m - 2 \\le 0 \\Leftrightarrow -1 \\le m \\le 2$. Có 4 giá trị nguyên $\\{-1, 0, 1, 2\\}$.',
     author: 'Tổ Toán - THPT Cao Bá Quát',
     createdAt: '2026-09-02T11:00:00Z'
   },
-
-  // --- MÔN TOÁN: Bài math_12_c2_l2 (Tọa độ vectơ trong không gian Oxyz) ---
+  // CÂU HỎI TỰ LUẬN MÔN TOÁN
   {
-    id: 'bank_m12_05',
+    id: 'bank_m12_essay_01',
     subject: 'Toán',
     grade: 'Khối 12',
-    chapterId: 'math_12_c2',
-    lessonId: 'math_12_c2_l2',
-    level: 'Nhận biết',
-    part: 'part1',
-    content: 'Trong không gian $Oxyz$, cho điểm $A(1; 2; -3)$. Tọa độ hình chiếu vuông góc của điểm $A$ lên mặt phẳng $(Oxy)$ là:',
-    options: ['$(1; 2; 0)$', '$(0; 0; -3)$', '$(1; 0; -3)$', '$(0; 2; -3)$'],
-    correctAnswerIndex: 0,
-    explanation: 'Hình chiếu của $A(x; y; z)$ lên mặt phẳng $(Oxy)$ có tọa độ là $(x; y; 0) = (1; 2; 0)$.',
+    chapterId: 'math_12_c1',
+    lessonId: 'math_12_c1_l2',
+    level: 'Vận dụng',
+    part: 'essay',
+    title: 'Câu hỏi Tự luận (2.0 điểm) - Bài toán tối ưu hóa chi phí sản xuất thực tế',
+    content: 'Một công ty sản xuất bao bì muốn thiết kế một thùng các-tông dạng hình hộp chữ nhật không nắp có đáy là hình vuông và thể tích bằng $500\\text{ dm}^3$. Chi phí làm đáy thùng là $40.000\\text{ đ/dm}^2$, chi phí làm các mặt bên là $20.000\\text{ đ/dm}^2$.\n\na) Hãy lập hàm số biểu diễn tổng chi phí sản xuất thùng theo độ dài cạnh đáy $x\\text{ (dm)}$.\nb) Tìm kích thước của thùng (cạnh đáy $x$ và chiều cao $h$) để tổng chi phí sản xuất là nhỏ nhất. Tính chi phí nhỏ nhất đó.',
+    maxScore: 2.0,
+    rubric: [
+      { criteria: 'Biểu diễn chiều cao $h = \\frac{500}{x^2}$ và diện tích đáy $S_d = x^2$, diện tích 4 mặt bên $S_{xq} = 4xh = \\frac{2000}{x}$', score: 0.5 },
+      { criteria: 'Xây dựng hàm chi phí $C(x) = 40.000x^2 + 20.000 \\cdot \\frac{2000}{x} = 40.000(x^2 + \\frac{1000}{x})$', score: 0.5 },
+      { criteria: 'Tính đạo hàm $C\'(x) = 40.000(2x - \\frac{1000}{x^2}) = 0 \\Leftrightarrow 2x^3 = 1000 \\Leftrightarrow x = 10\\text{ dm}$', score: 0.5 },
+      { criteria: 'Lập bảng biến thiên kết luận kích thước $x = 10\\text{ dm}, h = 5\\text{ dm}$ và chi phí tối thiểu $C_{min} = 12.000.000\\text{ đồng}$', score: 0.5 }
+    ],
+    explanation: 'Hướng dẫn chấm:\n- Bước 1: $V = x^2 h = 500 \\Rightarrow h = 500/x^2$ ($x > 0$). (0.5đ)\n- Bước 2: Hàm tổng chi phí $C(x) = 40.000 x^2 + 80.000.000/x$. (0.5đ)\n- Bước 3: Đạo hàm $C\'(x) = 80.000 x - 80.000.000/x^2 = 0 \\Leftrightarrow x = 10\\text{ dm}$. (0.5đ)\n- Bước 4: $h = 5\\text{ dm}$, $C(10) = 40.000(100) + 8.000.000 = 12.000.000\\text{ đ}$. (0.5đ)',
     author: 'Tổ Toán - THPT Cao Bá Quát',
-    createdAt: '2026-09-05T09:00:00Z'
-  },
-  {
-    id: 'bank_m12_06',
-    subject: 'Toán',
-    grade: 'Khối 12',
-    chapterId: 'math_12_c2',
-    lessonId: 'math_12_c2_l2',
-    level: 'Thông hiểu',
-    part: 'part1',
-    content: 'Trong không gian $Oxyz$, cho hai vectơ $\\vec{u} = (1; -2; 2)$ và $\\vec{v} = (2; 1; -1)$. Tích vô hướng $\\vec{u} \\cdot \\vec{v}$ bằng:',
-    options: ['$-2$', '$2$', '$6$', '$0$'],
-    correctAnswerIndex: 0,
-    explanation: '$\\vec{u} \\cdot \\vec{v} = 1 \\cdot 2 + (-2) \\cdot 1 + 2 \\cdot (-1) = 2 - 2 - 2 = -2$.',
-    author: 'Tổ Toán - THPT Cao Bá Quát',
-    createdAt: '2026-09-05T09:30:00Z'
+    createdAt: '2026-09-03T09:00:00Z'
   },
 
-  // --- MÔN VẬT LÍ: Bài phy_12_c1_l2 (Nội năng và định luật I) ---
+  // ==================== 3. MÔN VẬT LÍ (KHỐI 12) ====================
   {
     id: 'bank_p12_01',
     subject: 'Vật lí',
@@ -390,74 +604,51 @@ export const INITIAL_BANK_QUESTIONS = [
     author: 'Tổ Vật Lí - THPT Cao Bá Quát',
     createdAt: '2026-09-03T14:00:00Z'
   },
+  // CÂU HỎI TỰ LUẬN MÔN VẬT LÍ
   {
-    id: 'bank_p12_02',
-    subject: 'Vật lí',
-    grade: 'Khối 12',
-    chapterId: 'phy_12_c1',
-    lessonId: 'phy_12_c1_l2',
-    level: 'Thông hiểu',
-    part: 'part2',
-    content: 'Một khối khí lí tưởng thực hiện một chu trình biến đổi nhiệt động. Xét tính Đúng / Sai của các khẳng định sau:',
-    subItems: [
-      { key: 'a', text: 'Theo biểu thức $\\Delta U = A + Q$, khi hệ nhận nhiệt lượng thì $Q > 0$.', isTrue: true },
-      { key: 'b', text: 'Khi khối khí giãn nở sinh công thì công $A > 0$.', isTrue: false },
-      { key: 'c', text: 'Trong quá trình đẳng nhiệt của khí lí tưởng, độ biến thiên nội năng $\\Delta U = 0$.', isTrue: true },
-      { key: 'd', text: 'Trong quá trình đoạn nhiệt, hệ không trao đổi nhiệt với môi trường nên $Q = 0$.', isTrue: true }
-    ],
-    explanation: 'Ý b sai vì khi hệ sinh công thì theo quy ước dấu $A < 0$ (hoặc nhận công $A > 0$).',
-    author: 'Tổ Vật Lí - THPT Cao Bá Quát',
-    createdAt: '2026-09-03T15:00:00Z'
-  },
-  {
-    id: 'bank_p12_03',
+    id: 'bank_p12_essay_01',
     subject: 'Vật lí',
     grade: 'Khối 12',
     chapterId: 'phy_12_c1',
     lessonId: 'phy_12_c1_l3',
     level: 'Vận dụng',
-    part: 'part3',
-    content: 'Một ấm điện có công suất $1000\\text{ W}$ đun sôi $1.5\\text{ kg}$ nước từ nhiệt độ $20^\\circ\\text{C}$. Biết nhiệt dung riêng của nước là $c = 4200\\text{ J/(kg}\\cdot\\text{K)}$ và hiệu suất của ấm là $84\\%$. Thời gian đun sôi nước là bao nhiêu giây?',
-    shortAnswer: '600',
-    explanation: '$Q = m \\cdot c \\cdot \\Delta T = 1.5 \\cdot 4200 \\cdot 80 = 504000\\text{ J}$. Năng lượng ấm cung cấp $A = \\frac{Q}{H} = \\frac{504000}{0.84} = 600000\\text{ J}$. Thời gian $t = \\frac{A}{P} = \\frac{600000}{1000} = 600\\text{ s}$.',
+    part: 'essay',
+    title: 'Câu hỏi Tự luận (2.0 điểm) - Nhiệt động lực học và cân bằng nhiệt thực nghiệm',
+    content: 'Một nhiệt lượng kế bằng đồng có khối lượng $m_1 = 200\\text{ g}$ chứa $m_2 = 400\\text{ g}$ nước ở nhiệt độ $t_1 = 20^\\circ\\text{C}$. Người ta thả vào nhiệt lượng kế một thỏi kim loại có khối lượng $m_3 = 500\\text{ g}$ được nung nóng đến nhiệt độ $t_2 = 100^\\circ\\text{C}$. Nhiệt độ của hệ khi cân bằng nhiệt là $t = 28^\\circ\\text{C}$. Bỏ qua nhiệt lượng hao phí ra môi trường xung quanh. Biết nhiệt dung riêng của đồng $c_1 = 380\\text{ J/(kg}\\cdot\\text{K)}$, của nước $c_2 = 4200\\text{ J/(kg}\\cdot\\text{K)}$.\n\na) Tính nhiệt lượng do nước và nhiệt lượng kế thu vào khi tăng nhiệt độ từ $20^\\circ\\text{C}$ lên $28^\\circ\\text{C}$.\nb) Xác định nhiệt dung riêng $c_3$ của thỏi kim loại và đối chiếu với bảng số liệu để dự đoán kim loại đó.',
+    maxScore: 2.0,
+    rubric: [
+      { criteria: 'Viết công thức và tính nhiệt lượng thu vào $Q_{thu} = (m_1 c_1 + m_2 c_2)(t - t_1)$', score: 0.5 },
+      { criteria: 'Tính chính xác $Q_{thu} = (0.2 \\cdot 380 + 0.4 \\cdot 4200)(28 - 20) = 14.048\\text{ J}$', score: 0.5 },
+      { criteria: 'Viết phương trình cân bằng nhiệt $Q_{toa} = Q_{thu} \\Leftrightarrow m_3 c_3 (t_2 - t) = Q_{thu}$', score: 0.5 },
+      { criteria: 'Tính được $c_3 \\approx 390.2\\text{ J/(kg}\\cdot\\text{K)}$ và kết luận thỏi kim loại là Đồng hoặc Hợp kim đồng', score: 0.5 }
+    ],
+    explanation: 'Hướng dẫn chấm:\n- Ý a (1.0đ): $Q_{thu} = (76 + 1680) \\cdot 8 = 14048\\text{ J}$.\n- Ý b (1.0đ): $Q_{toa} = 0.5 \\cdot c_3 \\cdot (100 - 28) = 36 c_3 = 14048 \\Rightarrow c_3 \\approx 390.2\\text{ J/(kg}\\cdot\\text{K)}$. Thỏi kim loại làm bằng đồng.',
     author: 'Tổ Vật Lí - THPT Cao Bá Quát',
     createdAt: '2026-09-04T10:00:00Z'
   },
 
-  // --- MÔN HÓA HỌC: Bài chem_12_c1_l1 (Ester và xà phòng hóa) ---
+  // ==================== 4. MÔN NGỮ VĂN (KHỐI 12) ====================
   {
-    id: 'bank_c12_01',
-    subject: 'Hóa học',
+    id: 'bank_lit_essay_01',
+    subject: 'Ngữ văn',
     grade: 'Khối 12',
-    chapterId: 'chem_12_c1',
-    lessonId: 'chem_12_c1_l1',
-    level: 'Nhận biết',
-    part: 'part1',
-    content: 'Ester có công thức cấu tạo $\\text{CH}_3\\text{COOCH}_3$ có tên gọi quốc tế IUPAC là gì?',
-    options: ['Methyl acetate', 'Ethyl formate', 'Methyl propionate', 'Ethyl acetate'],
-    correctAnswerIndex: 0,
-    explanation: 'Gốc alcohol là methyl ($\\text{-CH}_3$), gốc acid là acetate ($\\text{CH}_3\\text{COO-}$), tên gọi là Methyl acetate.',
-    author: 'Tổ Hóa Học - THPT Cao Bá Quát',
-    createdAt: '2026-09-04T14:00:00Z'
-  },
-  {
-    id: 'bank_c12_02',
-    subject: 'Hóa học',
-    grade: 'Khối 12',
-    chapterId: 'chem_12_c1',
-    lessonId: 'chem_12_c1_l1',
-    level: 'Thông hiểu',
-    part: 'part2',
-    content: 'Tiến hành thí nghiệm xà phòng hóa chất béo trong phòng thí nghiệm. Xét tính Đúng / Sai của các nhận định sau:',
-    subItems: [
-      { key: 'a', text: 'Chất béo là triester của glycerol với các acid béo mạch dài không phân nhánh.', isTrue: true },
-      { key: 'b', text: 'Sau khi đun sôi hỗn hợp dầu ăn với dung dịch NaOH, thêm dung dịch NaCl bão hòa để muối sodium của acid béo kết tinh và nổi lên trên.', isTrue: true },
-      { key: 'c', text: 'Glycerol tạo thành trong phản ứng không tan trong nước.', isTrue: false },
-      { key: 'd', text: 'Chất béo lỏng chứa chủ yếu các gốc acid béo chưa no.', isTrue: true }
+    chapterId: 'lit_12_c3',
+    lessonId: 'lit_12_c3_l1',
+    level: 'Vận dụng',
+    part: 'essay',
+    title: 'Câu hỏi Tự luận (2.0 điểm) - Viết đoạn văn nghị luận xã hội',
+    content: 'Viết một đoạn văn (khoảng 200 chữ) trình bày suy nghĩ của anh/chị về ý nghĩa của lòng biết ơn và tinh thần trách nhiệm của thế hệ trẻ đối với quê hương, đất nước trong bối cảnh toàn cầu hóa hiện nay.',
+    maxScore: 2.0,
+    rubric: [
+      { criteria: 'Đảm bảo đúng hình thức đoạn văn khoảng 200 chữ, không gạch đầu dòng, diễn đạt mạch lạc', score: 0.25 },
+      { criteria: 'Xác định đúng vấn đề nghị luận: Ý nghĩa của lòng biết ơn và trách nhiệm của tuổi trẻ', score: 0.25 },
+      { criteria: 'Triển khai vấn đề: Giải thích khái niệm, phân tích ý nghĩa (bồi dưỡng nhân cách, tạo động lực cống hiến), dẫn chứng thuyết phục', score: 1.0 },
+      { criteria: 'Phản biện, mở rộng vấn đề và rút ra bài học nhận thức, hành động cụ thể', score: 0.25 },
+      { criteria: 'Sáng tạo, dùng từ giàu hình ảnh, không sai lỗi chính tả và ngữ pháp', score: 0.25 }
     ],
-    explanation: 'Ý c sai vì glycerol tan vô hạn trong nước do có 3 nhóm -OH tạo liên kết hydro bền vững với nước.',
-    author: 'Tổ Hóa Học - THPT Cao Bá Quát',
-    createdAt: '2026-09-04T15:00:00Z'
+    explanation: 'Yêu cầu: Bài viết cần làm rõ lòng biết ơn là cội nguồn của đạo lý dân tộc, trách nhiệm của thanh niên là học tập, cống hiến xây dựng quê hương Đắk Lắk và đất nước giàu đẹp.',
+    author: 'Tổ Ngữ Văn - THPT Cao Bá Quát',
+    createdAt: '2026-09-05T08:00:00Z'
   }
 ];
 
@@ -490,21 +681,48 @@ export function saveTaxonomyTree(tree) {
 }
 
 /**
- * Lấy cây thư mục của một môn học & khối lớp cụ thể
+ * Lấy cây thư mục của một môn học & khối lớp cụ thể (tự động fallback tạo khung nếu chưa có)
  */
 export function getTaxonomyForSubject(subject, grade) {
   const all = getTaxonomyTree();
   let found = all.find(item => item.subject === subject && item.grade === grade);
+  
   if (!found) {
-    // Tìm theo môn học nếu chưa khớp đúng khối
+    // Tìm theo môn học
     found = all.find(item => item.subject === subject);
   }
-  return found || {
-    id: `${subject}_${grade}`,
+
+  if (found) return found;
+
+  // Nếu môn học hoàn toàn chưa có trong cây mặc định, tự động sinh khung cây mẫu chuẩn GDPT 2018
+  const fallbackTree = {
+    id: `${subject}_${grade}_default`,
     subject,
     grade,
-    chapters: []
+    chapters: [
+      {
+        id: `ch_1_${Date.now()}`,
+        title: `Chương I: Chuyên đề trọng tâm học kỳ I - Môn ${subject}`,
+        lessons: [
+          { id: `less_1_${Date.now()}`, title: `Bài 1: Kiến thức nền tảng và phương pháp học tập` },
+          { id: `less_2_${Date.now()}`, title: `Bài 2: Vận dụng kiến thức vào thực tiễn` }
+        ]
+      },
+      {
+        id: `ch_2_${Date.now()}`,
+        title: `Chương II: Chuyên đề nâng cao học kỳ II - Môn ${subject}`,
+        lessons: [
+          { id: `less_3_${Date.now()}`, title: `Bài 3: Kỹ năng tổng hợp và giải quyết vấn đề` },
+          { id: `less_4_${Date.now()}`, title: `Bài 4: Ôn tập kiểm tra đánh giá định kỳ` }
+        ]
+      }
+    ]
   };
+
+  // Lưu vào tree để lần sau không bị trắng
+  all.push(fallbackTree);
+  saveTaxonomyTree(all);
+  return fallbackTree;
 }
 
 /**
@@ -617,6 +835,57 @@ export function upsertBankQuestion(question) {
 }
 
 /**
+ * Thêm hoặc cập nhật hàng loạt câu hỏi vào ngân hàng
+ */
+export function bulkUpsertBankQuestions(newQuestions) {
+  const all = getAllBankQuestions();
+  const preparedList = newQuestions.map((q, idx) => ({
+    ...q,
+    id: q.id || `bank_q_${Date.now()}_${idx}`,
+    status: q.status || 'approved',
+    updatedAt: new Date().toISOString()
+  }));
+
+  const map = new Map(all.map(q => [q.id, q]));
+  preparedList.forEach(q => map.set(q.id, q));
+
+  const updatedAll = Array.from(map.values());
+  saveAllBankQuestions(updatedAll);
+  return preparedList;
+}
+
+/**
+ * Cập nhật trạng thái duyệt/thẩm định của Tổ chuyên môn cho một câu hỏi
+ */
+export function setQuestionApprovalStatus(questionId, status = 'approved') {
+  const all = getAllBankQuestions();
+  const idx = all.findIndex(q => q.id === questionId);
+  if (idx >= 0) {
+    all[idx] = { ...all[idx], status, updatedAt: new Date().toISOString() };
+    saveAllBankQuestions(all);
+    return all[idx];
+  }
+  return null;
+}
+
+/**
+ * Duyệt toàn bộ câu hỏi trong một bài học
+ */
+export function bulkApproveQuestionsInLesson(lessonId) {
+  const all = getAllBankQuestions();
+  let updatedCount = 0;
+  const updated = all.map(q => {
+    if (q.lessonId === lessonId && q.status !== 'approved') {
+      updatedCount++;
+      return { ...q, status: 'approved', updatedAt: new Date().toISOString() };
+    }
+    return q;
+  });
+  saveAllBankQuestions(updated);
+  return updatedCount;
+}
+
+/**
  * Xóa một câu hỏi khỏi ngân hàng
  */
 export function deleteBankQuestion(questionId) {
@@ -627,9 +896,9 @@ export function deleteBankQuestion(questionId) {
 }
 
 /**
- * Lọc câu hỏi theo Chương / Bài / Mức độ / Hình thức
+ * Lọc câu hỏi theo Chương / Bài / Mức độ / Hình thức / Trạng thái duyệt
  */
-export function queryBankQuestions({ subject, grade, chapterId, lessonId, level, part, search }) {
+export function queryBankQuestions({ subject, grade, chapterId, lessonId, level, part, status, search }) {
   const all = getAllBankQuestions();
   return all.filter(q => {
     if (subject && q.subject !== subject) return false;
@@ -638,6 +907,7 @@ export function queryBankQuestions({ subject, grade, chapterId, lessonId, level,
     if (lessonId && q.lessonId !== lessonId) return false;
     if (level && level !== 'all' && q.level !== level) return false;
     if (part && part !== 'all' && q.part !== part) return false;
+    if (status && status !== 'all' && (q.status || 'approved') !== status) return false;
     if (search && search.trim()) {
       const s = search.toLowerCase();
       const inContent = q.content?.toLowerCase().includes(s);
@@ -649,7 +919,7 @@ export function queryBankQuestions({ subject, grade, chapterId, lessonId, level,
 }
 
 /**
- * Thống kê số lượng câu hỏi trong một bài học hoặc chương theo mức độ
+ * Thống kê số lượng câu hỏi trong một bài học hoặc chương theo mức độ & dạng câu hỏi
  */
 export function getQuestionStatsForNode(lessonOrChapterId) {
   const all = getAllBankQuestions();
@@ -662,18 +932,13 @@ export function getQuestionStatsForNode(lessonOrChapterId) {
     vdc: matched.filter(q => q.level === 'Vận dụng cao').length,
     part1: matched.filter(q => q.part === 'part1').length,
     part2: matched.filter(q => q.part === 'part2').length,
-    part3: matched.filter(q => q.part === 'part3').length
+    part3: matched.filter(q => q.part === 'part3').length,
+    essay: matched.filter(q => q.part === 'essay').length
   };
 }
 
 /**
- * Thuật toán bốc đề ngẫu nhiên từ Khung Ma Trận (Auto Matrix Exam Generator)
- * @param {Array} matrixSpecs Mảng cấu hình ma trận:
- * [
- *   { lessonId: 'math_12_c1_l1', nb: 2, th: 1, vd: 1, vdc: 0 },
- *   { lessonId: 'math_12_c1_l2', nb: 1, th: 1, vd: 0, vdc: 0 }
- * ]
- * @returns { selectedQuestions: Array, missingLogs: Array }
+ * Thuật toán bốc đề ngẫu nhiên từ Khung Ma Trận (Hỗ trợ cả bốc câu hỏi Tự luận)
  */
 export function generateExamFromMatrix(matrixSpecs, subject, grade) {
   const allQuestions = getAllBankQuestions().filter(q => {
@@ -704,6 +969,7 @@ export function generateExamFromMatrix(matrixSpecs, subject, grade) {
   matrixSpecs.forEach(spec => {
     const { lessonId, lessonTitle } = spec;
     
+    // Bốc trắc nghiệm theo 4 mức độ
     levels.forEach(lvl => {
       const requestedCount = Number(spec[lvl.key]) || 0;
       if (requestedCount <= 0) return;
@@ -711,6 +977,7 @@ export function generateExamFromMatrix(matrixSpecs, subject, grade) {
       const candidates = allQuestions.filter(q => 
         q.lessonId === lessonId && 
         q.level === lvl.label &&
+        q.part !== 'essay' &&
         !selectedQuestions.some(sq => sq.id === q.id)
       );
 
@@ -722,12 +989,37 @@ export function generateExamFromMatrix(matrixSpecs, subject, grade) {
         missingLogs.push({
           lessonTitle: lessonTitle || lessonId,
           level: lvl.label,
+          type: 'Trắc nghiệm',
           requested: requestedCount,
           found: picked.length,
           missing: requestedCount - picked.length
         });
       }
     });
+
+    // Bốc câu hỏi tự luận (nếu có yêu cầu trong ma trận)
+    const requestedEssay = Number(spec.essay) || 0;
+    if (requestedEssay > 0) {
+      const essayCandidates = allQuestions.filter(q =>
+        q.lessonId === lessonId &&
+        q.part === 'essay' &&
+        !selectedQuestions.some(sq => sq.id === q.id)
+      );
+      const shuffledEssay = shuffleArray(essayCandidates);
+      const pickedEssay = shuffledEssay.slice(0, requestedEssay);
+      selectedQuestions.push(...pickedEssay);
+
+      if (pickedEssay.length < requestedEssay) {
+        missingLogs.push({
+          lessonTitle: lessonTitle || lessonId,
+          level: 'Tự luận',
+          type: 'Câu hỏi Tự luận',
+          requested: requestedEssay,
+          found: pickedEssay.length,
+          missing: requestedEssay - pickedEssay.length
+        });
+      }
+    }
   });
 
   return {

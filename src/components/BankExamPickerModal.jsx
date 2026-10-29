@@ -66,7 +66,7 @@ export default function BankExamPickerModal({
     setMatrixConfig(prev => ({
       ...prev,
       [lessonId]: {
-        ...(prev[lessonId] || { nb: 0, th: 0, vd: 0, vdc: 0 }),
+        ...(prev[lessonId] || { nb: 0, th: 0, vd: 0, vdc: 0, essay: 0 }),
         [levelKey]: count
       }
     }));
@@ -74,15 +74,16 @@ export default function BankExamPickerModal({
 
   // Tính tổng số câu hỏi yêu cầu trong Ma trận
   const matrixSummary = useMemo(() => {
-    let totalNb = 0, totalTh = 0, totalVd = 0, totalVdc = 0;
+    let totalNb = 0, totalTh = 0, totalVd = 0, totalVdc = 0, totalEssay = 0;
     Object.values(matrixConfig).forEach(item => {
       totalNb += item.nb || 0;
       totalTh += item.th || 0;
       totalVd += item.vd || 0;
       totalVdc += item.vdc || 0;
+      totalEssay += item.essay || 0;
     });
-    const total = totalNb + totalTh + totalVd + totalVdc;
-    return { total, totalNb, totalTh, totalVd, totalVdc };
+    const total = totalNb + totalTh + totalVd + totalVdc + totalEssay;
+    return { total, totalNb, totalTh, totalVd, totalVdc, totalEssay };
   }, [matrixConfig]);
 
   // Thực hiện Bốc đề tự động từ Ma trận
@@ -93,7 +94,7 @@ export default function BankExamPickerModal({
     taxonomy.chapters.forEach(ch => {
       (ch.lessons || []).forEach(less => {
         const cfg = matrixConfig[less.id];
-        if (cfg && (cfg.nb > 0 || cfg.th > 0 || cfg.vd > 0 || cfg.vdc > 0)) {
+        if (cfg && (cfg.nb > 0 || cfg.th > 0 || cfg.vd > 0 || cfg.vdc > 0 || cfg.essay > 0)) {
           specs.push({
             lessonId: less.id,
             lessonTitle: less.title,
@@ -356,8 +357,8 @@ export default function BankExamPickerModal({
                           {(ch.lessons || []).map((less, lessIdx) => {
                             const isSelected = selectedLessonId === less.id;
                             const lessStats = getQuestionStatsForNode(less.id);
-                            const cfg = matrixConfig[less.id] || { nb: 0, th: 0, vd: 0, vdc: 0 };
-                            const hasConfig = cfg.nb > 0 || cfg.th > 0 || cfg.vd > 0 || cfg.vdc > 0;
+                            const cfg = matrixConfig[less.id] || { nb: 0, th: 0, vd: 0, vdc: 0, essay: 0 };
+                            const hasConfig = cfg.nb > 0 || cfg.th > 0 || cfg.vd > 0 || cfg.vdc > 0 || cfg.essay > 0;
 
                             return (
                               <div
@@ -383,7 +384,7 @@ export default function BankExamPickerModal({
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   {hasConfig && mode === 'matrix' && (
                                     <span style={{ fontSize: '10px', background: isSelected ? '#ffffff' : '#dcfce7', color: isSelected ? '#0284c7' : '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 'bold' }}>
-                                      Đã chọn {cfg.nb + cfg.th + cfg.vd + cfg.vdc}
+                                      Đã chọn {cfg.nb + cfg.th + cfg.vd + cfg.vdc + (cfg.essay || 0)}
                                     </span>
                                   )}
                                   <span style={{ fontSize: '10.5px', opacity: isSelected ? 0.9 : 0.6, fontWeight: 'bold' }}>
@@ -481,6 +482,10 @@ export default function BankExamPickerModal({
                     <span style={{ color: '#6b21a8', fontWeight: 'bold' }}>Vận dụng cao (VDC):</span>
                     <strong style={{ color: '#9333ea' }}>{matrixSummary.totalVdc} câu</strong>
                   </div>
+                  <div style={{ padding: '8px 14px', borderRadius: '8px', background: '#f5f3ff', border: '1px solid #ddd6fe', fontSize: '12.5px', display: 'flex', gap: '6px' }}>
+                    <span style={{ color: '#6d28d9', fontWeight: 'bold' }}>Tự luận (TL):</span>
+                    <strong style={{ color: '#7c3aed' }}>{matrixSummary.totalEssay} câu</strong>
+                  </div>
                 </div>
 
                 {/* Matrix Lessons Table */}
@@ -488,12 +493,13 @@ export default function BankExamPickerModal({
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                     <thead>
                       <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1' }}>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', width: '38%' }}>Chương & Bài Học Trong Cây Thư Mục</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '14%' }}>Kho Có Sẵn</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '12%', color: '#0284c7' }}>Nhận Biết</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '12%', color: '#059669' }}>Thông Hiểu</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '12%', color: '#d97706' }}>Vận Dụng</th>
-                        <th style={{ padding: '12px', textAlign: 'center', width: '12%', color: '#9333ea' }}>Vận Dụng Cao</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', width: '34%' }}>Chương & Bài Học Trong Cây Thư Mục</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '18%' }}>Kho Có Sẵn</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '9%', color: '#0284c7' }}>Nhận Biết</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '9%', color: '#059669' }}>Thông Hiểu</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '9%', color: '#d97706' }}>Vận Dụng</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '9%', color: '#9333ea' }}>Vận Dụng Cao</th>
+                        <th style={{ padding: '12px', textAlign: 'center', width: '12%', color: '#7c3aed' }}>Tự Luận</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -501,7 +507,7 @@ export default function BankExamPickerModal({
                         <React.Fragment key={ch.id}>
                           {/* Chapter Section Bar */}
                           <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                            <td colSpan={6} style={{ padding: '10px 16px', fontWeight: '800', color: '#1e293b', fontSize: '13px' }}>
+                            <td colSpan={7} style={{ padding: '10px 16px', fontWeight: '800', color: '#1e293b', fontSize: '13px' }}>
                               📂 {ch.title}
                             </td>
                           </tr>
@@ -509,7 +515,7 @@ export default function BankExamPickerModal({
                           {/* Lessons Rows */}
                           {(ch.lessons || []).map(less => {
                             const stats = getQuestionStatsForNode(less.id);
-                            const cfg = matrixConfig[less.id] || { nb: 0, th: 0, vd: 0, vdc: 0 };
+                            const cfg = matrixConfig[less.id] || { nb: 0, th: 0, vd: 0, vdc: 0, essay: 0 };
 
                             return (
                               <tr key={less.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
@@ -517,8 +523,8 @@ export default function BankExamPickerModal({
                                   <div style={{ fontWeight: '600', color: '#334155' }}>{less.title}</div>
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
-                                  <span style={{ fontSize: '11.5px', background: stats.total > 0 ? '#dcfce7' : '#fee2e2', color: stats.total > 0 ? '#15803d' : '#b91c1c', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
-                                    {stats.total} câu ({stats.nb} NB - {stats.th} TH - {stats.vd} VD - {stats.vdc} VDC)
+                                  <span style={{ fontSize: '11px', background: stats.total > 0 ? '#dcfce7' : '#fee2e2', color: stats.total > 0 ? '#15803d' : '#b91c1c', padding: '2px 6px', borderRadius: '8px', fontWeight: 'bold', display: 'inline-block' }}>
+                                    {stats.total} câu ({stats.nb} NB - {stats.th} TH - {stats.vd} VD - {stats.vdc} VDC - {stats.essay || 0} TL)
                                   </span>
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -529,7 +535,7 @@ export default function BankExamPickerModal({
                                     value={cfg.nb || ''}
                                     placeholder="0"
                                     onChange={e => handleMatrixCountChange(less.id, 'nb', e.target.value)}
-                                    style={{ width: '56px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.nb > stats.nb ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#0284c7' }}
+                                    style={{ width: '48px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.nb > stats.nb ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#0284c7' }}
                                   />
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -540,7 +546,7 @@ export default function BankExamPickerModal({
                                     value={cfg.th || ''}
                                     placeholder="0"
                                     onChange={e => handleMatrixCountChange(less.id, 'th', e.target.value)}
-                                    style={{ width: '56px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.th > stats.th ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#059669' }}
+                                    style={{ width: '48px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.th > stats.th ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#059669' }}
                                   />
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -551,7 +557,7 @@ export default function BankExamPickerModal({
                                     value={cfg.vd || ''}
                                     placeholder="0"
                                     onChange={e => handleMatrixCountChange(less.id, 'vd', e.target.value)}
-                                    style={{ width: '56px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.vd > stats.vd ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#d97706' }}
+                                    style={{ width: '48px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.vd > stats.vd ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#d97706' }}
                                   />
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
@@ -562,7 +568,18 @@ export default function BankExamPickerModal({
                                     value={cfg.vdc || ''}
                                     placeholder="0"
                                     onChange={e => handleMatrixCountChange(less.id, 'vdc', e.target.value)}
-                                    style={{ width: '56px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.vdc > stats.vdc ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#9333ea' }}
+                                    style={{ width: '48px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: cfg.vdc > stats.vdc ? '1px solid #ef4444' : '1px solid #cbd5e1', fontWeight: 'bold', color: '#9333ea' }}
+                                  />
+                                </td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={stats.essay || 99}
+                                    value={cfg.essay || ''}
+                                    placeholder="0"
+                                    onChange={e => handleMatrixCountChange(less.id, 'essay', e.target.value)}
+                                    style={{ width: '48px', padding: '6px', textAlign: 'center', borderRadius: '6px', border: (cfg.essay || 0) > (stats.essay || 0) ? '1px solid #ef4444' : '1px solid #ddd6fe', fontWeight: 'bold', color: '#7c3aed', background: '#faf5ff' }}
                                   />
                                 </td>
                               </tr>
@@ -629,6 +646,7 @@ export default function BankExamPickerModal({
                       <option value="part1">Phần I (4 lựa chọn)</option>
                       <option value="part2">Phần II (Đúng/Sai)</option>
                       <option value="part3">Phần III (Trả lời ngắn)</option>
+                      <option value="essay">Phần Tự Luận</option>
                     </select>
 
                     <button
@@ -705,8 +723,15 @@ export default function BankExamPickerModal({
                               <span style={{ fontWeight: '800', fontSize: '14px', color: '#0f172a' }}>
                                 Câu {idx + 1}
                               </span>
-                              <span style={{ fontSize: '11px', background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
-                                {q.part === 'part1' ? 'Phần I (4 lựa chọn)' : q.part === 'part2' ? 'Phần II (Đúng/Sai)' : 'Phần III (Trả lời ngắn)'}
+                              <span style={{ 
+                                fontSize: '11px', 
+                                background: q.part === 'essay' ? '#f5f3ff' : '#e0f2fe', 
+                                color: q.part === 'essay' ? '#7c3aed' : '#0369a1', 
+                                padding: '2px 8px', 
+                                borderRadius: '10px', 
+                                fontWeight: 'bold' 
+                              }}>
+                                {q.part === 'part1' ? 'Phần I (4 lựa chọn)' : q.part === 'part2' ? 'Phần II (Đúng/Sai)' : q.part === 'part3' ? 'Phần III (Trả lời ngắn)' : `Phần Tự Luận (${q.maxScore || 2.0}đ)`}
                               </span>
                               <span style={{ fontSize: '11px', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>
                                 {q.level}
@@ -777,6 +802,33 @@ export default function BankExamPickerModal({
                           {q.part === 'part3' && (
                             <div style={{ fontSize: '13px', color: '#0284c7', fontWeight: 'bold', marginBottom: '8px' }}>
                               👉 Đáp số: <MathView inline text={q.shortAnswer} />
+                            </div>
+                          )}
+
+                          {/* Essay Details & Rubric */}
+                          {q.part === 'essay' && (
+                            <div style={{ background: '#fdf4ff', border: '1px solid #f0abfc', borderRadius: '8px', padding: '10px 14px', marginBottom: '10px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                <strong style={{ color: '#86198f', fontSize: '13px' }}>📋 Hướng dẫn chấm & Thang điểm (Tối đa: {q.maxScore || 2.0} điểm):</strong>
+                              </div>
+                              {q.rubric && q.rubric.length > 0 && (
+                                <table style={{ width: '100%', fontSize: '12px', borderCollapse: 'collapse', marginTop: '4px', background: '#ffffff', borderRadius: '6px', overflow: 'hidden' }}>
+                                  <thead>
+                                    <tr style={{ background: '#fae8ff', color: '#701a75' }}>
+                                      <th style={{ padding: '6px 10px', textAlign: 'left', border: '1px solid #f0abfc' }}>Nội dung / Tiêu chí yêu cầu</th>
+                                      <th style={{ padding: '6px 10px', width: '80px', textAlign: 'center', border: '1px solid #f0abfc' }}>Điểm</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {q.rubric.map((r, rIdx) => (
+                                      <tr key={rIdx}>
+                                        <td style={{ padding: '6px 10px', border: '1px solid #f0abfc', color: '#334155' }}><MathView inline text={r.criteria} /></td>
+                                        <td style={{ padding: '6px 10px', textAlign: 'center', fontWeight: 'bold', color: '#86198f', border: '1px solid #f0abfc' }}>{r.score}đ</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
                             </div>
                           )}
 
