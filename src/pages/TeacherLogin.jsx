@@ -1,8 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { BookOpen, User, Lock, LogIn, ArrowLeft, Eye, EyeOff, Search, Sparkles, X, Check, HelpCircle } from 'lucide-react';
-import { saveTeacherSession } from '../services/authSessionManager';
+import { 
+  BookOpen, User, Lock, LogIn, ArrowLeft, Eye, EyeOff, 
+  ShieldCheck, ShieldAlert, GraduationCap, ArrowRight, AlertCircle, 
+  HelpCircle, LockKeyhole, Sparkles 
+} from 'lucide-react';
+import { 
+  saveTeacherSession, 
+  getStudentSession, 
+  clearStudentSession, 
+  getTeacherSession 
+} from '../services/authSessionManager';
 
 export default function TeacherLogin() {
   const [username, setUsername] = useState('');
@@ -12,83 +21,73 @@ export default function TeacherLogin() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Modal tra cứu tài khoản giáo viên cho người dùng điện thoại
-  const [showLookupModal, setShowLookupModal] = useState(false);
-  const [lookupSearch, setLookupSearch] = useState('');
-  const [staffDirectory, setStaffDirectory] = useState([]);
-  const [loadingStaff, setLoadingStaff] = useState(false);
+  // Phiên học sinh hiện có trên máy (để cảnh báo cách ly)
+  const [activeStudent, setActiveStudent] = useState(null);
 
   const navigate = useNavigate();
 
-  // Tải danh bạ giáo viên để hỗ trợ tra cứu nhanh khi cần
+  // Kiểm tra cách ly: nếu đang có phiên Học sinh hoặc Giáo viên trên máy
   useEffect(() => {
-    async function loadStaffDirectory() {
-      setLoadingStaff(true);
-      try {
-        const { data: users } = await supabase
-          .from('cbq_teacher_users')
-          .select('id, username, full_name, homeroom_class, phone_number')
-          .order('id', { ascending: true });
+    try {
+      const curStudent = getStudentSession();
+      setActiveStudent(curStudent);
 
-        if (users && users.length > 0) {
-          setStaffDirectory(users);
-        } else {
-          // Fallback nạp từ cbq_staff
-          const { data: staff } = await supabase
-            .from('cbq_staff')
-            .select('name, department, email, phone')
-            .order('sort_order', { ascending: true });
-
-          if (staff && staff.length > 0) {
-            const mapped = staff.map(s => {
-              const prefix = s.email && s.email.includes('@') ? s.email.split('@')[0] : s.name;
-              return {
-                username: 'gv.' + prefix,
-                full_name: s.name,
-                department: s.department
-              };
-            });
-            setStaffDirectory(mapped);
-          }
-        }
-      } catch (err) {
-        console.warn("Lỗi tải danh bạ giáo viên:", err);
-      } finally {
-        setLoadingStaff(false);
+      // Nếu đã có phiên Giáo viên hợp lệ, tự động gợi ý vào dashboard
+      const curTeacher = getTeacherSession();
+      if (curTeacher && curTeacher.role === 'teacher') {
+        // Giáo viên đã đăng nhập sẵn
       }
-    }
-    loadStaffDirectory();
+    } catch (_) {}
   }, []);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
+
+    const rawInput = username.trim();
+    const cleanUsername = rawInput.toLowerCase();
+    const cleanPassword = password.trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      setError('Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu giáo viên!');
+      return;
+    }
+
+    // 🔒 1. CHẶN HỌC SINH MẠO DANH: Kiểm tra tiền tố hoặc định dạng tài khoản học sinh
+    if (cleanUsername.startsWith('hs.') || cleanUsername.startsWith('hs_') || /^\d{10,12}$/.test(rawInput)) {
+      // Thử kiểm tra nhanh xem có phải tài khoản học sinh không
+      try {
+        const { data: isStudent } = await supabase
+          .from('cbq_student_users')
+          .select('id, full_name, student_class')
+          .or(`username.ilike.${cleanUsername},student_code.ilike.${rawInput},identity_card.eq.${rawInput}`)
+          .limit(1);
+
+        if (isStudent && isStudent.length > 0) {
+          setError(`🚫 TRUY CẬP BỊ TỪ CHỐI: Tài khoản [${rawInput}] thuộc về Học sinh (${isStudent[0].full_name} - ${isStudent[0].student_class}). Em không có quyền đăng nhập vào Cổng Giáo Viên!`);
+          return;
+        }
+      } catch (_) {}
+    }
+
     setLoading(true);
 
     try {
-      const rawInput = username.trim();
-      const cleanUsername = rawInput.toLowerCase();
-      const cleanPassword = password.trim();
-
-      if (!cleanUsername || !cleanPassword) {
-        setError('Vui lòng nhập đầy đủ Tên đăng nhập và Mật khẩu!');
-        setLoading(false);
-        return;
-      }
-
       let matchedUser = null;
 
-      // 1. Tìm kiếm thông minh trong bảng cbq_teacher_users trên Supabase
+      // 🔒 2. Xác thực giáo viên qua bảng cbq_teacher_users trên Supabase
       try {
-        // A. Thử tìm chính xác username
+        // A. Tìm theo username chính xác hoặc không phân biệt hoa/thường
         const { data: byUsername } = await supabase
           .from('cbq_teacher_users')
-          .select('*')
+          .select('id, username, password_hash, full_name, homeroom_class, department, phone_number, email, role')
           .ilike('username', cleanUsername);
 
         if (byUsername && byUsername.length > 0) {
           matchedUser = byUsername.find(u => 
-            u.password_hash === cleanPassword || u.password === cleanPassword
+            u.password_hash === cleanPassword || 
+            u.password_hash === password ||
+            u.password === cleanPassword
           );
         }
 
@@ -96,112 +95,78 @@ export default function TeacherLogin() {
         if (!matchedUser && !cleanUsername.startsWith('gv.')) {
           const { data: byGvPrefix } = await supabase
             .from('cbq_teacher_users')
-            .select('*')
+            .select('id, username, password_hash, full_name, homeroom_class, department, phone_number, email, role')
             .ilike('username', 'gv.' + cleanUsername);
 
           if (byGvPrefix && byGvPrefix.length > 0) {
             matchedUser = byGvPrefix.find(u => 
-              u.password_hash === cleanPassword || u.password === cleanPassword
+              u.password_hash === cleanPassword || 
+              u.password_hash === password ||
+              u.password === cleanPassword
             );
           }
         }
 
-        // C. Tìm theo số điện thoại
-        if (!matchedUser && /^\d+$/.test(rawInput)) {
+        // C. Tìm theo số điện thoại đã đăng ký của giáo viên
+        if (!matchedUser && /^\d{9,11}$/.test(rawInput)) {
           const { data: byPhone } = await supabase
             .from('cbq_teacher_users')
-            .select('*')
+            .select('id, username, password_hash, full_name, homeroom_class, department, phone_number, email, role')
             .eq('phone_number', rawInput);
 
           if (byPhone && byPhone.length > 0) {
             matchedUser = byPhone.find(u => 
-              u.password_hash === cleanPassword || u.password === cleanPassword
+              u.password_hash === cleanPassword || 
+              u.password_hash === password ||
+              u.password === cleanPassword
             );
           }
         }
 
-        // D. Tìm theo Họ và tên giáo viên
-        if (!matchedUser) {
-          const { data: byName } = await supabase
+        // D. Tìm theo email giáo viên
+        if (!matchedUser && cleanUsername.includes('@')) {
+          const { data: byEmail } = await supabase
             .from('cbq_teacher_users')
-            .select('*')
-            .ilike('full_name', rawInput);
+            .select('id, username, password_hash, full_name, homeroom_class, department, phone_number, email, role')
+            .ilike('email', cleanUsername);
 
-          if (byName && byName.length > 0) {
-            matchedUser = byName.find(u => 
-              u.password_hash === cleanPassword || u.password === cleanPassword
+          if (byEmail && byEmail.length > 0) {
+            matchedUser = byEmail.find(u => 
+              u.password_hash === cleanPassword || 
+              u.password_hash === password ||
+              u.password === cleanPassword
             );
           }
         }
       } catch (dbErr) {
-        console.warn("Lỗi tra cứu Supabase cbq_teacher_users:", dbErr);
+        console.warn("Lỗi tra cứu cbq_teacher_users:", dbErr);
       }
 
-      // 2. Tra cứu đối soát từ bảng danh bạ cbq_staff
+      // 🔒 3. Nếu chưa khớp, kiểm tra xem có phải tài khoản học sinh cố tình nhập vào đây không
       if (!matchedUser) {
         try {
-          const { data: staffFound } = await supabase
-            .from('cbq_staff')
-            .select('*')
-            .or(`email.ilike.${cleanUsername},email.ilike.${cleanUsername}@thptcaobaquat.edu.vn,phone.eq.${rawInput},name.ilike.%${rawInput}%`)
+          const { data: checkStudent } = await supabase
+            .from('cbq_student_users')
+            .select('id, full_name, student_class')
+            .or(`username.ilike.${cleanUsername},student_code.ilike.${rawInput}`)
             .limit(1);
 
-          if (staffFound && staffFound.length > 0) {
-            const st = staffFound[0];
-            // Thử tìm tài khoản giáo viên liên kết với tên này
-            const { data: linkedUsers } = await supabase
-              .from('cbq_teacher_users')
-              .select('*')
-              .ilike('full_name', st.name);
-
-            if (linkedUsers && linkedUsers.length > 0) {
-              matchedUser = linkedUsers.find(u => 
-                u.password_hash === cleanPassword || u.password === cleanPassword
-              );
-            }
-
-            // Nếu mật khẩu nhập là 123456 (mật khẩu mặc định hệ thống)
-            if (!matchedUser && cleanPassword === '123456') {
-              matchedUser = {
-                id: st.id,
-                username: 'gv.' + (st.email ? st.email.split('@')[0] : 'giaovien'),
-                full_name: st.name,
-                department: st.department,
-                homeroom_class: st.homeroom_class || null,
-                phone_number: st.phone || null
-              };
-            }
+          if (checkStudent && checkStudent.length > 0) {
+            setError(`🚫 TRUY CẬP BỊ TỪ CHỐI: Đây là tài khoản của Học sinh [${checkStudent[0].full_name} - ${checkStudent[0].student_class}]. Vui lòng bấm vào 'Cổng Học Sinh' bên dưới để đăng nhập.`);
+            setLoading(false);
+            return;
           }
-        } catch (staffErr) {
-          console.warn("Lỗi đối soát cbq_staff:", staffErr);
-        }
+        } catch (_) {}
       }
 
-      // 3. Fallback sang LocalStorage (Nếu có lưu cục bộ trên máy này)
+      // 🔒 4. Báo lỗi bảo mật an toàn nếu không khớp (Không tiết lộ tài khoản có tồn tại hay không)
       if (!matchedUser) {
-        try {
-          const localAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
-          const localMatch = localAccounts.find(u => 
-            ((u.username || '').trim().toLowerCase() === cleanUsername || 
-             (u.username || '').trim().toLowerCase() === 'gv.' + cleanUsername ||
-             (u.full_name || '').trim().toLowerCase() === cleanUsername) &&
-            (u.password_hash === cleanPassword || u.password === cleanPassword)
-          );
-          if (localMatch) {
-            matchedUser = localMatch;
-          }
-        } catch {
-          // ignore
-        }
-      }
-
-      if (!matchedUser) {
-        setError('Tài khoản hoặc mật khẩu không đúng! (Mẹo: Thầy/Cô có thể bấm vào "Quên tài khoản?" bên dưới để tra cứu tên tài khoản chính xác)');
+        setError('Tên đăng nhập hoặc mật khẩu giáo viên không chính xác! Vui lòng kiểm tra lại ký tự hoặc liên hệ BGH/Admin nếu cần cấp lại mật khẩu.');
         setLoading(false);
         return;
       }
 
-      // 4. Chuẩn hóa đối tượng phiên đăng nhập an toàn
+      // 🔒 5. Chuẩn hóa phiên đăng nhập: XÓA 100% MẬT KHẨU KHỎI BỘ NHỚ
       const safeTeacher = {
         id: matchedUser.id || `gv_${Date.now()}`,
         username: matchedUser.username,
@@ -216,7 +181,11 @@ export default function TeacherLogin() {
         role: 'teacher'
       };
 
-      // Lưu phiên làm việc an toàn
+      // Xóa hoàn toàn dấu vết mật khẩu
+      delete safeTeacher.password;
+      delete safeTeacher.password_hash;
+
+      // Lưu phiên làm việc an toàn với chữ ký bảo mật (Tự động thanh lọc phiên học sinh nếu có)
       saveTeacherSession(safeTeacher, rememberMe);
 
       // Chuyển hướng ngay đến Không gian Giáo Viên
@@ -224,43 +193,32 @@ export default function TeacherLogin() {
 
     } catch (err) {
       console.error(err);
-      setError('Lỗi kết nối máy chủ. Vui lòng thử lại sau ít giây.');
+      setError('Lỗi kết nối máy chủ an toàn. Vui lòng thử lại sau ít giây.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Lọc danh bạ tra cứu
-  const filteredStaff = useMemo(() => {
-    if (!lookupSearch.trim()) return staffDirectory.slice(0, 15);
-    const q = lookupSearch.toLowerCase().trim();
-    return staffDirectory.filter(s => 
-      (s.full_name || '').toLowerCase().includes(q) ||
-      (s.username || '').toLowerCase().includes(q) ||
-      (s.department || '').toLowerCase().includes(q)
-    );
-  }, [staffDirectory, lookupSearch]);
-
   return (
     <div style={{
       minHeight: '100dvh',
-      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+      background: 'linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%)',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '16px',
+      padding: '20px 16px',
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
       
       <div style={{
         width: '100%',
-        maxWidth: '420px',
+        maxWidth: '440px',
         background: '#ffffff',
         borderRadius: '24px',
-        padding: '32px 24px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
-        border: '1px solid #e2e8f0',
+        padding: '32px 26px',
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.35)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
         boxSizing: 'border-box'
       }}>
         
@@ -273,383 +231,294 @@ export default function TeacherLogin() {
             gap: '6px',
             color: '#15803d',
             textDecoration: 'none',
-            marginBottom: '20px',
-            fontSize: '13.5px',
+            marginBottom: '18px',
+            fontSize: '13px',
             fontWeight: 'bold',
-            padding: '4px 10px',
+            padding: '5px 12px',
             borderRadius: '8px',
             backgroundColor: '#f0fdf4',
             border: '1px solid #bbf7d0'
           }}
         >
-          <ArrowLeft size={16} /> Trang chủ
+          <ArrowLeft size={15} /> Trang chủ THPT Cao Bá Quát
         </Link>
+
+        {/* Cảnh báo cách ly: Nếu máy đang có phiên Học sinh đang mở */}
+        {activeStudent && (
+          <div style={{
+            background: '#fef2f2',
+            border: '1px solid #fca5a5',
+            borderRadius: '14px',
+            padding: '12px 14px',
+            marginBottom: '20px',
+            textAlign: 'left'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+              <ShieldAlert size={18} color="#dc2626" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div style={{ fontSize: '12.5px', color: '#991b1b', lineHeight: 1.45 }}>
+                <strong>Phát hiện phiên Học sinh:</strong> Em <strong>{activeStudent.full_name} ({activeStudent.student_class})</strong> đang đăng nhập trên trình duyệt này.
+                <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearStudentSession();
+                      setActiveStudent(null);
+                    }}
+                    style={{
+                      background: '#dc2626',
+                      color: '#ffffff',
+                      border: 'none',
+                      padding: '5px 12px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Đăng xuất Học sinh để đăng nhập Giáo viên
+                  </button>
+                  <Link
+                    to="/student-dashboard"
+                    style={{
+                      background: '#ffffff',
+                      color: '#0284c7',
+                      border: '1px solid #cbd5e1',
+                      padding: '5px 10px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      textDecoration: 'none'
+                    }}
+                  >
+                    Về Cổng Học Sinh
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Header Cổng Giáo Viên */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-          <div style={{ display: 'inline-flex', padding: '14px', background: '#dcfce7', borderRadius: '50%', color: '#15803d', marginBottom: '12px' }}>
+          <div style={{
+            display: 'inline-flex',
+            padding: '14px',
+            background: 'linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%)',
+            borderRadius: '50%',
+            color: '#166534',
+            marginBottom: '12px',
+            boxShadow: '0 4px 12px rgba(22, 163, 74, 0.15)'
+          }}>
             <BookOpen size={36} />
           </div>
-          <h1 style={{ fontSize: '22px', fontWeight: '900', margin: '0 0 6px 0', color: '#166534' }}>
-            Cổng Giáo Viên CBQ
+          <h1 style={{ fontSize: '22px', fontWeight: '900', margin: '0 0 6px 0', color: '#166534', letterSpacing: '-0.3px' }}>
+            CỔNG GIÁO VIÊN CBQ
           </h1>
-          <p style={{ margin: 0, color: '#64748b', fontSize: '13px' }}>
-            Đăng nhập để vào Báo giảng, Sổ điểm, Ra đề & Quản lý lớp
+          <p style={{ margin: 0, color: '#64748b', fontSize: '13px', fontWeight: '500' }}>
+            Không Gian Điều Hành Chuyên Môn & Giảng Dạy
           </p>
         </div>
 
-        {/* Thông báo lỗi nếu có */}
+        {/* Huy hiệu bảo mật nghiêm ngặt */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          padding: '6px 12px',
+          borderRadius: '30px',
+          fontSize: '12px',
+          color: '#475569',
+          fontWeight: '600',
+          marginBottom: '20px'
+        }}>
+          <LockKeyhole size={14} color="#16a34a" /> Xác thực phân quyền cán bộ giáo viên
+        </div>
+
         {error && (
           <div style={{
-            padding: '12px 14px',
             background: '#fef2f2',
-            color: '#b91c1c',
+            border: '1px solid #fca5a5',
+            color: '#991b1b',
+            padding: '12px 14px',
             borderRadius: '12px',
-            marginBottom: '16px',
             fontSize: '13px',
-            fontWeight: '600',
-            border: '1px solid #fecaca',
-            lineHeight: '1.4'
+            marginBottom: '18px',
+            fontWeight: '500',
+            lineHeight: 1.5,
+            textAlign: 'left'
           }}>
             {error}
           </div>
         )}
 
-        {/* Form Đăng Nhập */}
-        <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           
-          {/* Ô Tên Đăng Nhập */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Tên đăng nhập (Tài khoản GV / SĐT / Email)
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px', textAlign: 'left' }}>
+              Tài Khoản Giáo Viên <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
               <User size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input 
-                type="text" 
-                name="cbq_teacher_account_input"
-                id="cbq_teacher_account_input"
+              <input
+                type="text"
+                required
                 autoComplete="off"
-                autoCapitalize="none"
                 autoCorrect="off"
-                spellCheck={false}
-                inputMode="text"
-                required 
-                placeholder="VD: gv.hoangnam hoặc gv.nguyenvana..." 
-                value={username} 
-                onChange={(e) => setUsername(e.target.value)}
+                autoCapitalize="none"
+                spellCheck="false"
+                placeholder="Nhập tên tài khoản (VD: gv.nguyenvana)"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px 14px 12px 38px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #cbd5e1',
+                  padding: '12px 12px 12px 40px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
                   fontSize: '15px',
                   boxSizing: 'border-box',
                   outline: 'none',
-                  transition: 'border-color 0.15s'
+                  backgroundColor: '#ffffff'
                 }}
-                onFocus={e => e.target.style.borderColor = '#16a34a'}
-                onBlur={e => e.target.style.borderColor = '#cbd5e1'}
               />
             </div>
+            <span style={{ fontSize: '11.5px', color: '#64748b', marginTop: '4px', display: 'block', textAlign: 'left' }}>
+              💡 Thầy/Cô có thể nhập tài khoản có hoặc không có tiền tố <code style={{ color: '#16a34a', fontWeight: 'bold' }}>gv.</code>
+            </span>
           </div>
 
-          {/* Ô Mật Khẩu (Kèm nút xem/ẩn mật khẩu) */}
           <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
-              Mật khẩu
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px', textAlign: 'left' }}>
+              Mật Khẩu Giáo Viên <span style={{ color: '#ef4444' }}>*</span>
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input 
-                type={showPassword ? 'text' : 'password'}
-                name="cbq_teacher_secret_input"
-                id="cbq_teacher_secret_input"
+              <Lock size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type={showPassword ? "text" : "password"}
+                required
                 autoComplete="current-password"
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                required 
-                placeholder="••••••••" 
-                value={password} 
-                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Nhập mật khẩu giáo viên"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px 42px 12px 38px',
-                  borderRadius: '12px',
-                  border: '1.5px solid #cbd5e1',
+                  padding: '12px 42px 12px 36px',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
                   fontSize: '15px',
                   boxSizing: 'border-box',
                   outline: 'none',
-                  transition: 'border-color 0.15s'
+                  backgroundColor: '#ffffff'
                 }}
-                onFocus={e => e.target.style.borderColor = '#16a34a'}
-                onBlur={e => e.target.style.borderColor = '#cbd5e1'}
               />
+              {/* Nút Xem/Ẩn mật khẩu */}
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 style={{
                   position: 'absolute',
-                  right: '12px',
+                  right: '10px',
                   top: '50%',
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
+                  color: '#64748b',
                   cursor: 'pointer',
-                  color: '#94a3b8',
-                  padding: 0,
+                  padding: '4px',
                   display: 'flex',
                   alignItems: 'center'
                 }}
-                title={showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          {/* Tùy chọn Ghi nhớ phiên 24h trên thiết bị cá nhân */}
-          <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#334155', cursor: 'pointer', userSelect: 'none' }}>
-              <input 
-                type="checkbox" 
-                id="cbq_remember_teacher"
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
                 checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#16a34a' }}
+                onChange={e => setRememberMe(e.target.checked)}
+                style={{ cursor: 'pointer' }}
               />
-              <span style={{ fontWeight: '600' }}>Ghi nhớ phiên 24h trên điện thoại này</span>
+              Ghi nhớ 24 giờ trên máy cá nhân
             </label>
           </div>
 
-          {/* Nút bấm Đăng Nhập */}
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             style={{
-              marginTop: '4px',
+              width: '100%',
+              padding: '13px',
+              backgroundColor: '#16a34a',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              fontSize: '15px',
+              fontWeight: 'bold',
+              cursor: loading ? 'not-allowed' : 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              width: '100%',
-              padding: '14px',
-              background: 'linear-gradient(135deg, #22c55e, #16a34a)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '12px',
-              fontWeight: 'bold',
-              fontSize: '15px',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 8px 16px rgba(22, 163, 74, 0.3)',
-              transition: 'transform 0.15s ease'
+              boxShadow: '0 4px 15px rgba(22, 163, 74, 0.3)',
+              marginTop: '4px'
             }}
           >
-            {loading ? (
-              'Đang xác thực...'
-            ) : (
-              <>
-                <LogIn size={18} /> ĐĂNG NHẬP GIÁO VIÊN
-              </>
-            )}
+            <LogIn size={18} /> {loading ? 'Đang xác minh chuyên môn...' : 'ĐĂNG NHẬP CỔNG GIÁO VIÊN'}
           </button>
         </form>
-        
-        {/* Nút hỗ trợ tra cứu nhanh tài khoản cho Giáo viên */}
-        <div style={{ textAlign: 'center', marginTop: '16px' }}>
-          <button
-            type="button"
-            onClick={() => setShowLookupModal(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#0284c7',
-              fontSize: '13px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}
-          >
-            <HelpCircle size={15} /> Quên tài khoản? Bấm tra cứu tên Thầy/Cô
-          </button>
-        </div>
 
-        {/* Đăng ký tài khoản giáo viên mới */}
-        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '13px', color: '#64748b' }}>
-          Chưa có tài khoản Giáo viên?{' '}
-          <Link to="/dang-ky-giao-vien" style={{ color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}>
-            Đăng ký ngay 📝
-          </Link>
-        </div>
-
-        {/* Chuyển sang Cổng Học Sinh */}
-        <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '18px', paddingTop: '14px', textAlign: 'center', fontSize: '12.5px', color: '#64748b' }}>
-          Em là Học sinh?{' '}
-          <Link to="/dang-nhap-hoc-sinh" style={{ color: '#0284c7', fontWeight: 'bold', textDecoration: 'none' }}>
-            Chuyển sang Cổng Học Sinh 🎓
-          </Link>
-        </div>
-
-      </div>
-
-      {/* =========================================================================
-          MODAL TRA CỨU TÀI KHOẢN GIÁO VIÊN NHANH
-          ========================================================================= */}
-      {showLookupModal && (
+        {/* Khối bảo mật thông tin & Hướng dẫn cấp lại tài khoản chuyên môn */}
         <div style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.6)',
-          zIndex: 99999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '16px'
+          marginTop: '20px',
+          padding: '14px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: '12px',
+          textAlign: 'left',
+          fontSize: '12px',
+          color: '#475569',
+          lineHeight: 1.5
         }}>
-          <div style={{
-            backgroundColor: '#ffffff',
-            borderRadius: '20px',
-            maxWidth: '460px',
-            width: '100%',
-            overflow: 'hidden',
-            boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
-            border: '1px solid #e2e8f0',
-            maxHeight: '90vh',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {/* Header Modal */}
-            <div style={{
-              padding: '14px 18px',
-              backgroundColor: '#166534',
-              color: '#ffffff',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexShrink: 0
-            }}>
-              <div style={{ fontSize: '15px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Sparkles size={16} color="#fde047" /> Tra Cứu Tài Khoản Giáo Viên
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+            <HelpCircle size={16} color="#059669" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <div>
+              <strong style={{ color: '#0f172a' }}>Hỗ trợ bảo mật & Cấp lại tài khoản:</strong>
+              <div style={{ marginTop: '2px' }}>
+                Tài khoản giáo viên chứa dữ liệu sổ điểm và hồ sơ chuyên môn nội bộ. Để bảo mật tuyệt đối, hệ thống <u>không công khai danh sách tài khoản</u>. Thầy/Cô quên mật khẩu vui lòng liên hệ trực tiếp <strong>Ban Giám Hiệu</strong> hoặc <strong>Quản trị viên CNTT</strong> nhà trường để được cấp lại bảo mật.
               </div>
-              <button
-                type="button"
-                onClick={() => setShowLookupModal(false)}
-                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer', padding: 0 }}
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <div style={{ padding: '16px', flex: 1, overflowY: 'auto' }}>
-              <div style={{ fontSize: '12.5px', color: '#475569', marginBottom: '12px', lineHeight: '1.4' }}>
-                Thầy/Cô hãy tìm tên của mình bên dưới. Bấm <strong>"Chọn"</strong> để hệ thống tự động điền Tên đăng nhập. Mật khẩu khởi tạo chung là: <strong style={{ color: '#16a34a' }}>123456</strong>.
-              </div>
-
-              {/* Ô tìm kiếm */}
-              <div style={{ position: 'relative', marginBottom: '12px' }}>
-                <input
-                  type="text"
-                  placeholder="Nhập tên Thầy/Cô (VD: Chuyên, Hoa, Nam...)"
-                  value={lookupSearch}
-                  onChange={e => setLookupSearch(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px 8px 32px',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '13px',
-                    boxSizing: 'border-box',
-                    outline: 'none'
-                  }}
-                />
-                <Search size={14} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
-              </div>
-
-              {/* Danh sách giáo viên */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '300px', overflowY: 'auto' }}>
-                {loadingStaff ? (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '13px' }}>
-                    Đang nạp danh sách Thầy/Cô...
-                  </div>
-                ) : filteredStaff.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8', fontSize: '13px' }}>
-                    Không tìm thấy Thầy/Cô phù hợp
-                  </div>
-                ) : (
-                  filteredStaff.map((st, idx) => (
-                    <div
-                      key={st.id || idx}
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '10px',
-                        backgroundColor: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        gap: '8px'
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a' }}>
-                          {st.full_name}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>
-                          Tài khoản: <code style={{ color: '#16a34a', fontWeight: 'bold' }}>{st.username}</code>
-                          {st.homeroom_class && ` • Lớp ${st.homeroom_class}`}
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setUsername(st.username);
-                          setPassword('123456');
-                          setShowLookupModal(false);
-                        }}
-                        style={{
-                          padding: '5px 12px',
-                          borderRadius: '6px',
-                          border: 'none',
-                          backgroundColor: '#16a34a',
-                          color: '#ffffff',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        Chọn
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #e2e8f0', backgroundColor: '#f8fafc', textAlign: 'right' }}>
-              <button
-                type="button"
-                onClick={() => setShowLookupModal(false)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  background: '#ffffff',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer'
-                }}
-              >
-                Đóng
-              </button>
             </div>
           </div>
         </div>
-      )}
+
+        {/* Phân tuyến chuyển đổi sang Cổng Học Sinh hoặc Quản Trị */}
+        <div style={{ marginTop: '22px', paddingTop: '16px', borderTop: '1px dashed #e2e8f0' }}>
+          <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '10px', textAlign: 'center' }}>
+            Không Gian Dành Cho Học Sinh & Ban Quản Trị
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            <Link 
+              to="/dang-nhap-hoc-sinh" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 12px', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', textDecoration: 'none' }}
+            >
+              <GraduationCap size={15} /> Cổng Học Sinh
+            </Link>
+            <Link 
+              to="/admin" 
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: '9px 12px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '12.5px', fontWeight: 'bold', textDecoration: 'none' }}
+            >
+              <ShieldCheck size={15} /> Quản Trị Viên
+            </Link>
+          </div>
+        </div>
+
+      </div>
 
     </div>
   );

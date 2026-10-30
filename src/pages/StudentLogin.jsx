@@ -228,6 +228,23 @@ export default function StudentLogin() {
         );
       }
 
+      // 4. Nếu không tìm thấy, kiểm tra xem có phải tài khoản Giáo viên cố nhập nhầm không
+      if (!foundUser) {
+        try {
+          const { data: isTeacher } = await supabase
+            .from('cbq_teacher_users')
+            .select('id, full_name')
+            .or(`username.ilike.${cleanUsername},username.ilike.gv.${cleanUsername}`)
+            .limit(1);
+
+          if (isTeacher && isTeacher.length > 0) {
+            setErrorMsg(`🚫 ĐÂY LÀ TÀI KHOẢN GIÁO VIÊN: Tài khoản này thuộc về Thầy/Cô [${isTeacher[0].full_name}]. Thầy/Cô vui lòng bấm vào 'Cổng Giáo Viên' bên dưới để thực hiện công tác chuyên môn.`);
+            setSubmitting(false);
+            return;
+          }
+        } catch (_) {}
+      }
+
       if (!foundUser) {
         setErrorMsg("⚠️ Không tìm thấy tài khoản học sinh phù hợp. Em có thể bấm 'Tra cứu tài khoản theo Lớp' bên dưới hoặc Đăng ký tài khoản mới.");
         setSubmitting(false);
