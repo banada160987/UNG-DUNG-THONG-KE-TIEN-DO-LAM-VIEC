@@ -55,16 +55,22 @@ export const DEFAULT_EXAM_STRUCTURE = {
   }
 };
 
-// Danh sách các mẫu phiếu hỗ trợ
+// Danh sách các mẫu phiếu hỗ trợ (Chuẩn QM 2025/2027 & Bộ GD)
 export const SHEET_TEMPLATES = [
-  { id: 'CBQ_2027_A4', name: 'CBQ 2027 - Chuẩn Bộ GD (A4)', description: 'Phiếu A4 đầy đủ Phần 1 (40c), Phần 2 (8c), Phần 3 (6c)' },
-  { id: 'CBQ_2027_TOAN_A4', name: 'CBQ 2027 - Chuyên Môn Toán (A4)', description: 'Toán 12/11/10: 12 câu P1, 4 câu P2, 6 câu P3' },
-  { id: 'CBQ_2027_KHTN_A4', name: 'CBQ 2027 - Lý, Hóa, Sinh, Địa (A4)', description: '18 câu P1, 4 câu P2, 6 câu P3' },
-  { id: 'CBQ_2027_KHXH_A4', name: 'CBQ 2027 - Sử, Tin, Công Nghệ, GDKT&PL', description: '24 câu P1, 4 câu P2' },
-  { id: 'CBQ_2027_NGOAINGU_A4', name: 'CBQ 2027 - Ngoại Ngữ (A4)', description: '40 câu P1 trắc nghiệm 4 lựa chọn' },
-  { id: 'CBQ_2027_A5', name: 'CBQ 2027 - Tiết Kiệm Giấy (A5)', description: 'In 2 phiếu trên 1 tờ A4 (Khổ A5)' },
-  { id: 'QM_2025_A4', name: 'QM 2025/2027 - A4 (Tương thích)', description: 'Tương thích phiếu Chấm thi QM / TNmaker' },
-  { id: 'AZOTA_2025_A4', name: 'Azota 2025/2027 - A4 (Tương thích)', description: 'Tương thích mẫu phiếu Azota' }
+  { id: 'QM_2025_A4', name: 'QM 2025 - A4', description: 'Phiếu A4 chuẩn GDPT 2018 (Phần 1, 2, 3)' },
+  { id: 'QM_2025_TOAN', name: 'QM 2025 - Toán', description: 'Chuyên biệt môn Toán THPT (12 câu P1, 4 câu P2, 6 câu P3)' },
+  { id: 'QM_2025_KHTN', name: 'QM 2025 - Lý, Hóa, Sinh, Địa', description: 'Môn KHTN & Địa lý (18 câu P1, 4 câu P2, 6 câu P3)' },
+  { id: 'QM_2025_KHXH', name: 'QM 2025 - Sử, Tin, Công Nghệ, GDPL', description: 'Môn KHXH & Tin học (24 câu P1, 4 câu P2)' },
+  { id: 'QM_2025_NGOAINGU', name: 'QM 2025 - Ngoại ngữ', description: 'Trắc nghiệm 4 lựa chọn (40 hoặc 50 câu)' },
+  { id: 'QM_2025_ONTAP', name: 'QM 2025 - Ôn tập - TL ngắn', description: 'Chuyên biệt ôn tập câu hỏi trả lời ngắn' },
+  { id: 'BOGD_2025_A4', name: 'Bộ GD 2025 - A4', description: 'Mẫu chuẩn của Cục Quản lý Chất lượng - Bộ GD&ĐT' },
+  { id: 'TNMAKER_2025_A4', name: 'TNmaker 2025 - A4', description: 'Tương thích máy quét TNmaker A4' },
+  { id: 'AZOTA_2025_A4', name: 'Azota 2025 - A4', description: 'Phiếu trả lời trắc nghiệm chuẩn Azota A4' },
+  { id: 'AZOTA_2025_A5', name: 'Azota 2025 - A5', description: 'Phiếu trắc nghiệm tiết kiệm khổ A5 (2 phiếu / tờ A4)' },
+  { id: 'AZOTA_2025_A4_TULUA', name: 'Azota 2025 - A4 TN và Tự luận', description: 'Kết hợp chấm trắc nghiệm OMR và phần viết tự luận' },
+  { id: 'QM_2025_KHTN_10', name: 'QM 2025 - KH Tự Nhiên - 10', description: 'Dành cho môn KHTN Lớp 10 chương trình mới' },
+  { id: 'CBQ_2027_A4', name: 'CBQ 2027 - Chuẩn Bộ GD (A4)', description: 'Mẫu phiếu độc quyền Trường THPT Cao Bá Quát A4' },
+  { id: 'CBQ_2027_A5', name: 'CBQ 2027 - Tiết Kiệm Giấy (A5)', description: 'Mẫu phiếu in 2 mặt / 2 trang A5 trường THPT Cao Bá Quát' }
 ];
 
 /**
@@ -430,6 +436,34 @@ function getGradeClassification(score) {
 function getInitialDemoBatches() {
   const initial = [
     {
+      id: 'batch-town-2025',
+      title: 'town',
+      subject: 'Tiếng Anh',
+      grade: 'Khối 12',
+      className: '12A01',
+      codeDigits: 3,
+      scanSbd: true,
+      sheetTemplate: 'QM_2025_A4',
+      parts: {
+        part1: { count: 12, pointPerQ: 0.25 },
+        part2: { count: 4, points: { 1: 0.1, 2: 0.25, 3: 0.5, 4: 1.0 } },
+        part3: { count: 3, pointPerQ: 0.5 }
+      },
+      answerKeys: {
+        '101': {
+          part1: ['A', 'B', 'C', 'D', 'A', 'C', 'B', 'D', 'A', 'B', 'C', 'D'],
+          part2: [
+            { a: 'D', b: 'S', c: 'D', d: 'S' },
+            { a: 'S', b: 'D', c: 'D', d: 'S' },
+            { a: 'D', b: 'D', c: 'S', d: 'D' },
+            { a: 'S', b: 'S', c: 'D', d: 'D' }
+          ],
+          part3: ['4', '-2.5', '12']
+        }
+      },
+      createdAt: '2026-10-30 14:56:44'
+    },
+    {
       id: 'batch-2027-demo-01',
       title: 'Kiểm Tra Giữa Kỳ 1 - Môn Toán 12 (GDPT 2018)',
       subject: 'Toán',
@@ -437,10 +471,10 @@ function getInitialDemoBatches() {
       className: '12A01',
       codeDigits: 3,
       scanSbd: true,
-      sheetTemplate: 'CBQ_2027_TOAN_A4',
+      sheetTemplate: 'QM_2025_TOAN',
       parts: {
         part1: { count: 12, pointPerQ: 0.25 },
-        part2: { count: 4, p1: 0.1, p2: 0.25, p3: 0.5, p4: 1.0 },
+        part2: { count: 4, points: { 1: 0.1, 2: 0.25, 3: 0.5, 4: 1.0 } },
         part3: { count: 6, pointPerQ: 0.5 }
       },
       answerKeys: {
@@ -465,7 +499,7 @@ function getInitialDemoBatches() {
           part3: ['8', '1.5', '-4', '10', '25', '2.71']
         }
       },
-      createdAt: '2026-10-30T08:00:00.000Z'
+      createdAt: '2026-10-30 08:00:00'
     }
   ];
   return initial;
