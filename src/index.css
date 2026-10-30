@@ -37,6 +37,51 @@
 html, body {
   overflow-x: hidden;
   max-width: 100vw;
+  width: 100%;
+  position: relative;
+}
+
+#root {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Ngăn tràn trang và tối ưu trải nghiệm di động chuẩn Native */
+@media (max-width: 768px) {
+  /* Bảng dữ liệu tự động cuộn ngang mượt mà, không làm tràn toàn trang */
+  table {
+    max-width: 100%;
+  }
+
+  /* Hạn chế chữ và số bị vỡ dòng hoặc tràn thẻ */
+  h1, h2, h3, h4, h5, h6 {
+    word-break: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* Kích thước chữ nhập liệu chuẩn để điện thoại không tự phóng to màn hình */
+  input, select, textarea {
+    font-size: 14px !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Bo góc và khoảng cách đệm vừa vặn trên màn hình nhỏ */
+  .glass {
+    padding: 12px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Khắc phục lề các khối giao diện */
+  .container, .main-content-area, .public-main-content {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    box-sizing: border-box !important;
+  }
 }
 
 body {

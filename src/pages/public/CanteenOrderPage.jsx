@@ -388,7 +388,7 @@ export default function CanteenOrderPage() {
               </div>
 
               {/* Search input */}
-              <div style={{ position: 'relative', width: '220px' }}>
+              <div style={{ position: 'relative', width: '100%', maxWidth: '240px', flex: '1 1 180px' }}>
                 <input
                   type="text"
                   placeholder="Tìm món ăn..."
@@ -409,7 +409,7 @@ export default function CanteenOrderPage() {
             </div>
 
             {/* Food Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '18px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
               {filteredItems.map(item => {
                 const qtyInCart = cart[item.id] || 0;
                 const remaining = Math.max(0, (item.dailyQuota || 50) - (item.soldCount || 0));
@@ -617,30 +617,32 @@ export default function CanteenOrderPage() {
       {cartSummary.totalItems > 0 && !showCheckoutModal && !placedOrder && (
         <div style={{
           position: 'fixed',
-          bottom: '20px',
-          left: '20px',
-          right: '20px',
+          bottom: '76px', // Nâng lên khỏi MobileBottomNav trên điện thoại
+          left: '12px',
+          right: '12px',
           maxWidth: '800px',
           margin: '0 auto',
           background: '#0f172a',
           color: '#ffffff',
           borderRadius: '16px',
-          padding: '14px 20px',
+          padding: '12px 16px',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
           boxShadow: '0 10px 25px -5px rgba(0,0,0,0.4)',
           zIndex: 1000
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingBag size={22} color="#ffffff" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ea580c', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShoppingBag size={20} color="#ffffff" />
             </div>
             <div>
-              <div style={{ fontSize: '13px', opacity: 0.9 }}>
+              <div style={{ fontSize: '12px', opacity: 0.9 }}>
                 Đã chọn <strong>{cartSummary.totalItems} món</strong> ăn sáng
               </div>
-              <div style={{ fontSize: '18px', fontWeight: '900', color: '#fba053' }}>
+              <div style={{ fontSize: '16px', fontWeight: '900', color: '#fba053' }}>
                 {cartSummary.totalAmount.toLocaleString('vi-VN')}đ
               </div>
             </div>
@@ -650,21 +652,22 @@ export default function CanteenOrderPage() {
             type="button"
             onClick={() => setShowCheckoutModal(true)}
             style={{
-              padding: '10px 22px',
+              padding: '9px 18px',
               borderRadius: '10px',
               border: 'none',
               background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
               color: '#ffffff',
               fontWeight: '800',
-              fontSize: '13.5px',
+              fontSize: '13px',
               cursor: 'pointer',
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
               gap: '6px',
-              boxShadow: '0 2px 6px rgba(234,88,12,0.4)'
+              boxShadow: '0 2px 6px rgba(234,88,12,0.4)',
+              flexShrink: 0
             }}
           >
-            Tiến Hành Đăng Ký Suất Ăn <ChevronRight size={16} />
+            Đăng Ký Suất Ăn <ChevronRight size={15} />
           </button>
         </div>
       )}
