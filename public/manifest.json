@@ -1,0 +1,62 @@
+{
+  "name": "THPT Cao Bá Quát - Hệ Thống Điều Hành & Tiện Ích",
+  "short_name": "THPT Cao Bá Quát",
+  "description": "Cổng thông tin, điều hành quản lý tiến độ và trung tâm tiện ích số Trường THPT Cao Bá Quát",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#be123c",
+  "orientation": "portrait-primary",
+  "lang": "vi",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Lịch Công Tác Tuần",
+      "short_name": "Lịch Tuần",
+      "description": "Tra cứu lịch công tác và họp tuần",
+      "url": "/lich-cong-tac",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Điểm Tâm Sáng",
+      "short_name": "Điểm Tâm",
+      "description": "Đăng ký suất ăn sáng học sinh",
+      "url": "/diem-tam-sang",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Đăng Ký Xe Máy",
+      "short_name": "Xe Máy",
+      "description": "Đăng ký phương tiện học sinh",
+      "url": "/dang-ky-xe-may",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Cổng Đăng Nhập",
+      "short_name": "Đăng Nhập",
+      "description": "Đăng nhập giáo viên & quản trị",
+      "url": "/login",
+      "icons": [{ "src": "/pwa-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
