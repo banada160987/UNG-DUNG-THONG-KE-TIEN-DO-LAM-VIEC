@@ -1,7 +1,23 @@
 -- SQL Script for Dynamic Navigation Menus & Granular Permission Matrix (RBAC)
 
--- 1. Add permissions column to cbq_user_roles table
-ALTER TABLE cbq_user_roles ADD COLUMN IF NOT EXISTS permissions jsonb DEFAULT '{}'::jsonb;
+-- 1. Chuẩn hóa bảng phân quyền tài khoản cbq_user_roles
+ALTER TABLE public.cbq_user_roles ADD COLUMN IF NOT EXISTS permissions jsonb DEFAULT '{}'::jsonb;
+
+-- Dọn dẹp các dòng trùng lặp (nếu có) trước khi tạo ràng buộc UNIQUE
+DELETE FROM public.cbq_user_roles a USING public.cbq_user_roles b
+WHERE a.ctid < b.ctid AND a.user_id = b.user_id;
+
+-- Bổ sung ràng buộc UNIQUE cho user_id (tránh lỗi ON CONFLICT khi upsert)
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'cbq_user_roles_user_id_key'
+    ) THEN
+        ALTER TABLE public.cbq_user_roles 
+        ADD CONSTRAINT cbq_user_roles_user_id_key UNIQUE (user_id);
+    END IF;
+END $$;
 
 -- 2. Create Dynamic Navigation Menus Table
 CREATE TABLE IF NOT EXISTS cbq_navigation_menus (
