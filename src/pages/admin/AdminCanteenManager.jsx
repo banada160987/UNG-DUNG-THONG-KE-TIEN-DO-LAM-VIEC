@@ -235,10 +235,10 @@ export default function AdminCanteenManager() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', fontFamily: '"Inter", sans-serif', color: '#1e293b' }}>
+    <div className="admin-canteen-container" style={{ padding: '24px', maxWidth: '1440px', margin: '0 auto', fontFamily: '"Inter", sans-serif', color: '#1e293b' }}>
       
       {/* 1. TOP HEADER NAVIGATION */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
             type="button"
@@ -260,12 +260,12 @@ export default function AdminCanteenManager() {
             <ArrowLeft size={16} /> Trang Quản Trị Trường
           </button>
           
-          <h1 style={{ fontSize: '21px', fontWeight: '900', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <h1 style={{ fontSize: '20px', fontWeight: '900', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Utensils color="#ea580c" size={24} /> Điều Phối Điểm Tâm Sáng CBQ (Cô Lương Thị Hải Vân)
           </h1>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="admin-btn-group" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <Link
             to="/bep-sang"
             target="_blank"
@@ -311,7 +311,7 @@ export default function AdminCanteenManager() {
       </div>
 
       {/* 2. STATS OVERVIEW CARDS (Thống Kê Tài Chính & Bếp Hôm Nay) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '22px' }}>
+      <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px', marginBottom: '22px' }}>
         
         <div style={{ background: '#ffffff', padding: '16px', borderRadius: '16px', border: '1px solid #fed7aa', boxShadow: '0 2px 6px rgba(234,88,12,0.06)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
@@ -368,7 +368,7 @@ export default function AdminCanteenManager() {
       </div>
 
       {/* 3. TABS CHỨC NĂNG */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '12px' }}>
+      <div className="mobile-tab-scroll" style={{ display: 'flex', gap: '8px', marginBottom: '20px', backgroundColor: '#f1f5f9', padding: '6px', borderRadius: '12px' }}>
         <button
           type="button"
           onClick={() => setActiveTab('orders')}
@@ -463,7 +463,7 @@ export default function AdminCanteenManager() {
         <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
           
           {/* Filters Bar */}
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div className="admin-filter-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', background: '#f8fafc', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
             <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
               <input
                 type="text"
@@ -542,7 +542,7 @@ export default function AdminCanteenManager() {
           </div>
 
           {/* Orders Table */}
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrapper" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #cbd5e1', color: '#475569', textAlign: 'left' }}>
@@ -760,7 +760,7 @@ export default function AdminCanteenManager() {
 
       {/* ==================== TAB 2: BẢNG CHUẨN BỊ BẾP (KITCHEN SUMMARY) ==================== */}
       {activeTab === 'kitchen' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', alignItems: 'start' }}>
+        <div className="admin-kitchen-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '20px', alignItems: 'start' }}>
           
           {/* Cột Trái: Tổng số lượng từng món cần làm */}
           <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '20px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
@@ -862,7 +862,7 @@ export default function AdminCanteenManager() {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
             {menuItems.map(item => (
               <div
                 key={item.id}
@@ -1143,7 +1143,7 @@ export default function AdminCanteenManager() {
       {/* MODAL: THÊM / SỬA MÓN ĂN */}
       {showItemModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1300, padding: '16px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '520px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)' }}>
+          <div className="admin-modal-card" style={{ background: '#ffffff', borderRadius: '16px', maxWidth: '520px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.35)' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '17px', fontWeight: '800', color: '#0f172a' }}>

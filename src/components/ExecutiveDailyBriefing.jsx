@@ -276,7 +276,7 @@ export default function ExecutiveDailyBriefing() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
       {/* TOP HEADER THỐNG KÊ ĐIỀU HÀNH BGH */}
-      <div style={{
+      <div className="admin-banner-card" style={{
         background: 'linear-gradient(135deg, #0f766e 0%, #115e59 50%, #134e4a 100%)',
         color: '#ffffff',
         borderRadius: '16px',
@@ -284,7 +284,7 @@ export default function ExecutiveDailyBriefing() {
         boxShadow: '0 10px 25px rgba(15, 118, 110, 0.2)',
         position: 'relative'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#a7f3d0', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '8px' }}>
               <ShieldCheck size={15} color="#34d399" /> PHÂN HỆ ĐIỀU HÀNH HÀNG NGÀY BGH & THƯ KÝ (DATABASE SYNC)
@@ -297,7 +297,7 @@ export default function ExecutiveDailyBriefing() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div className="admin-btn-group" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: '8px', padding: '6px 12px', border: '1px solid #cbd5e1' }}>
               <Calendar size={15} color="#0f766e" style={{ marginRight: '6px' }} />
               <input 
@@ -358,7 +358,7 @@ export default function ExecutiveDailyBriefing() {
       ) : (
         <>
           {/* REALTIME KPI CARDS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
+          <div className="admin-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
             <div style={styles.kpiCard('#f0fdf4', '#22c55e', '#166534')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#15803d', fontWeight: 'bold' }}>Tổng Sĩ Số (Database)</span>

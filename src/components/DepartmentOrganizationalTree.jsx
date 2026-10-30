@@ -188,7 +188,7 @@ export default function DepartmentOrganizationalTree() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
       {/* HEADER BANNER ĐỒNG BỘ TỪ DATABASE */}
-      <div style={{
+      <div className="admin-banner-card" style={{
         background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
         borderRadius: '16px',
         padding: '24px 28px',
@@ -196,7 +196,7 @@ export default function DepartmentOrganizationalTree() {
         boxShadow: '0 10px 25px rgba(15, 23, 42, 0.15)',
         position: 'relative'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '8px' }}>
               <GitBranch size={15} color="#38bdf8" /> CÂY PHÂN CẤP ĐIỀU HÀNH 4 TẦNG (ĐỒNG BỘ 100% TỪ DATABASE)
@@ -209,7 +209,7 @@ export default function DepartmentOrganizationalTree() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <div className="admin-btn-group" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <button
               onClick={loadDatabaseData}
               disabled={loading}

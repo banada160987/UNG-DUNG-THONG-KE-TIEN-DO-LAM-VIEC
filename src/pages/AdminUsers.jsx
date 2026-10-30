@@ -616,25 +616,25 @@ export default function AdminUsers() {
   return (
     <Layout title="Quản lý Tài khoản & Phân quyền">
       {/* 1. TOP HEADER & ACTION BUTTONS */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={26} color="#be123c" /> Quản Lý Tài Khoản & Ma Trận Phân Quyền (RBAC)
+            <Users size={24} color="#be123c" /> Quản Lý Tài Khoản & Phân Quyền
           </h2>
-          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13.5px' }}>
-            Phân quyền chi tiết 18 danh mục chức năng theo 4 nhóm chuyên môn, dịch vụ, nề nếp và truyền thông nhà trường
+          <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
+            Phân quyền 18 danh mục chức năng theo 4 nhóm chuyên môn, dịch vụ, nề nếp và truyền thông
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="admin-btn-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button 
             type="button"
             onClick={handleSyncAllRolesToDB} 
             disabled={saving}
             className="btn-primary" 
-            style={{ padding: '9px 16px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            style={{ padding: '8px 14px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
           >
-            <Save size={16} /> {saving ? 'Đang lưu...' : '💾 Đồng Bộ Toàn Bộ Vào CSDL'}
+            <Save size={15} /> {saving ? 'Đang lưu...' : '💾 Đồng Bộ CSDL'}
           </button>
 
           <button 
@@ -650,33 +650,33 @@ export default function AdminUsers() {
               setShowCreateModal(true);
             }} 
             className="btn-primary" 
-            style={{ padding: '9px 18px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+            style={{ padding: '8px 16px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
           >
-            <Plus size={16} /> Tạo Tài Khoản Mới
+            <Plus size={15} /> Tạo Tài Khoản Mới
           </button>
         </div>
       </div>
 
       {/* 2. SEARCH & FILTER TOOLBAR */}
-      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '16px', background: '#ffffff', padding: '12px 16px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+      <div className="admin-filter-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px', background: '#ffffff', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
           <input
             type="text"
             placeholder="Tìm theo email, họ tên, vai trò..."
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
-            style={{ width: '100%', padding: '8px 12px 8px 34px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
           />
-          <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+          <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '9px' }} />
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Filter size={15} color="#64748b" />
-          <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#475569' }}>Lọc Vai Trò:</span>
+          <Filter size={14} color="#64748b" />
+          <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>Vai Trò:</span>
           <select
             value={roleFilter}
             onChange={e => setRoleFilter(e.target.value)}
-            style={{ padding: '7px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', fontWeight: 'bold', color: '#1e293b' }}
+            style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}
           >
             <option value="all">Tất cả vai trò ({usersList.length})</option>
             {ROLE_OPTIONS.filter(r => r.value !== 'custom').map(r => (
@@ -687,18 +687,18 @@ export default function AdminUsers() {
       </div>
 
       {/* 3. USERS LIST TABLE */}
-      <div className="glass" style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: 'white' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '10px', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-          <h3 style={{ margin: 0, color: '#be123c', fontSize: '16px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            👥 Danh Sách Tài Khoản Người Dùng ({filteredUsers.length} / {usersList.length})
+      <div className="glass" style={{ padding: '1rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px', marginBottom: '12px', flexWrap: 'wrap', gap: '6px' }}>
+          <h3 style={{ margin: 0, color: '#be123c', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            👥 Danh Sách Tài Khoản ({filteredUsers.length} / {usersList.length})
           </h3>
-          <span style={{ fontSize: '12px', color: '#64748b' }}>
-            💡 Quản trị viên (Admin) mặc định có đủ 18 quyền. Các tài khoản khác được phân quyền theo ma trận chi tiết.
+          <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+            💡 Quản trị viên (Admin) mặc định có 18/18 quyền.
           </span>
         </div>
 
         {loading ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Đang nạp danh sách tài khoản...</p> : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
@@ -801,7 +801,7 @@ export default function AdminUsers() {
       {/* ========================================================================= */}
       {editingUser && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+          <div className="admin-modal-card" style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <div>
                 <h3 style={{ margin: 0, color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -976,7 +976,7 @@ export default function AdminUsers() {
       {/* ========================================================================= */}
       {showCreateModal && (
         <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
+          <div className="admin-modal-card" style={styles.modalContent}>
             <div style={styles.modalHeader}>
               <div>
                 <h3 style={{ margin: 0, color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px' }}>

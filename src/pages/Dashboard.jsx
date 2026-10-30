@@ -127,7 +127,7 @@ export default function Dashboard() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           
           {/* TOP PROFESSIONAL HEADER BANNER */}
-          <div style={{
+          <div className="admin-banner-card" style={{
             background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0369a1 100%)',
             color: '#ffffff',
             borderRadius: '16px',
@@ -136,7 +136,7 @@ export default function Dashboard() {
             position: 'relative',
             overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10 }}>
+            <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 10 }}>
               <div>
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '4px 14px', backgroundColor: 'rgba(255, 255, 255, 0.15)', color: '#fef08a', borderRadius: '20px', fontSize: '12.5px', fontWeight: 'bold', marginBottom: '8px' }}>
                   <ShieldCheck size={15} color="#4ade80" /> HỆ THỐNG ĐIỀU HÀNH CHUYÊN MÔN & SỔ SÁCH 4.0
@@ -149,7 +149,7 @@ export default function Dashboard() {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <div className="admin-btn-group" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button 
                   onClick={handleExportAcademicReport}
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#ffffff', color: '#0f172a', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -167,7 +167,7 @@ export default function Dashboard() {
           </div>
 
           {/* REALTIME ACADEMIC KPI INDICATORS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
+          <div className="admin-kpi-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '14px' }}>
             <div style={styles.kpiCard('#eff6ff', '#3b82f6', '#1d4ed8')}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#1e40af', fontWeight: 'bold' }}>Hồ Sơ Tổ Chuyên Môn</span>
@@ -227,7 +227,7 @@ export default function Dashboard() {
               <span style={{ fontSize: '12px', color: '#64748b', fontWeight: '600' }}>⚡ Xử lý nhanh trong 1 touch</span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+            <div className="admin-shortcuts-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
               <Link to="/admin/department-drives" style={{ textDecoration: 'none' }}>
                 <div style={{ backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                   <FolderOpen size={20} color="#0284c7" />
@@ -272,7 +272,7 @@ export default function Dashboard() {
 
           {/* ACADEMIC MODULE TABS HEADER */}
           <div style={{ backgroundColor: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 10px rgba(0,0,0,0.03)', padding: '16px 20px' }}>
-            <div className="mobile-tab-scroll" style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px', flexWrap: 'wrap' }}>
+            <div className="mobile-tab-scroll" style={{ display: 'flex', borderBottom: '2px solid #f1f5f9', gap: '8px', paddingBottom: '8px' }}>
               <button 
                 onClick={() => setActiveTab('briefing')}
                 style={styles.tabBtn(activeTab === 'briefing', '#0f766e')}

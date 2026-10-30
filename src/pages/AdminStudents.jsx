@@ -833,7 +833,7 @@ export default function AdminStudents() {
 
   return (
     <Layout title="Danh sách Học sinh Nhà trường">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Users size={26} color="#be123c" /> Quản Lý Danh Sách Học Sinh Nhà Trường (Chuẩn SMAS)
@@ -843,7 +843,7 @@ export default function AdminStudents() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="admin-btn-group" style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
           <button 
             onClick={handleToggleLockUpdate} 
             className="btn-primary" 
@@ -1020,7 +1020,7 @@ export default function AdminStudents() {
       )}
 
       {/* SEARCH & FILTERS */}
-      <div className="glass" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="glass admin-filter-toolbar" style={{ padding: '1.2rem', borderRadius: '1rem', backgroundColor: 'white', marginBottom: '1.5rem', display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '8px 12px', flex: 1, minWidth: '240px' }}>
           <Search size={18} color="#64748b" />
           <input
@@ -1053,7 +1053,7 @@ export default function AdminStudents() {
         </h3>
 
         {loading ? <p>Đang nạp danh sách học sinh...</p> : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="admin-table-wrapper" style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>

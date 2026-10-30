@@ -236,36 +236,59 @@ export default function Layout({ children, title }) {
       {/* Sidebar */}
       <aside className={`layout-sidebar ${isSidebarOpen ? 'open' : ''}`} style={styles.sidebar}>
         {/* Header Thương hiệu & Trạng thái */}
-        <div style={styles.logoArea}>
-          <div style={{ position: 'relative' }}>
-            <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(56, 189, 248, 0.4)' }} />
-            <span style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: '10px',
-              height: '10px',
-              backgroundColor: '#22c55e',
-              border: '2px solid #0f172a',
-              borderRadius: '50%'
-            }} title="Hệ thống trực tuyến" />
-          </div>
-          <div style={{ overflow: 'hidden' }}>
-            <h2 style={{margin: 0, fontSize: '15px', color: 'white', fontWeight: 'bold', letterSpacing: '0.2px'}}>CBQ ADMIN</h2>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+        <div style={{ ...styles.logoArea, justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+            <div style={{ position: 'relative' }}>
+              <img src="/logo.jpg" alt="Logo THPT Cao Bá Quát" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(56, 189, 248, 0.4)' }} />
               <span style={{
-                backgroundColor: isAdmin ? 'rgba(239, 68, 68, 0.2)' : 'rgba(147, 51, 234, 0.2)',
-                color: isAdmin ? '#fca5a5' : '#d8b4fe',
-                border: isAdmin ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(147, 51, 234, 0.4)',
-                padding: '1px 6px',
-                borderRadius: '4px',
-                fontSize: '10px',
-                fontWeight: '600'
-              }}>
-                {isAdmin ? 'Quản Trị Viên' : (role === 'secretary' ? 'Thư Ký Hội Đồng' : 'Cán Bộ Giáo Viên')}
-              </span>
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: '10px',
+                height: '10px',
+                backgroundColor: '#22c55e',
+                border: '2px solid #0f172a',
+                borderRadius: '50%'
+              }} title="Hệ thống trực tuyến" />
+            </div>
+            <div style={{ overflow: 'hidden' }}>
+              <h2 style={{margin: 0, fontSize: '15px', color: 'white', fontWeight: 'bold', letterSpacing: '0.2px'}}>CBQ ADMIN</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '3px' }}>
+                <span style={{
+                  backgroundColor: isAdmin ? 'rgba(239, 68, 68, 0.2)' : 'rgba(147, 51, 234, 0.2)',
+                  color: isAdmin ? '#fca5a5' : '#d8b4fe',
+                  border: isAdmin ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(147, 51, 234, 0.4)',
+                  padding: '1px 6px',
+                  borderRadius: '4px',
+                  fontSize: '10px',
+                  fontWeight: '600'
+                }}>
+                  {isAdmin ? 'Quản Trị Viên' : (role === 'secretary' ? 'Thư Ký Hội Đồng' : 'Cán Bộ Giáo Viên')}
+                </span>
+              </div>
             </div>
           </div>
+
+          {/* Nút đóng sidebar trên màn hình di động */}
+          <button 
+            type="button"
+            className="sidebar-close-btn"
+            onClick={() => setIsSidebarOpen(false)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: 'none',
+              borderRadius: '8px',
+              color: '#cbd5e1',
+              padding: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="Đóng menu"
+          >
+            <X size={18} />
+          </button>
         </div>
 
         {/* Thanh công cụ tìm kiếm & Thao tác nhanh */}
@@ -448,18 +471,19 @@ export default function Layout({ children, title }) {
       </aside>
 
       {/* Main Content Area */}
-      <div style={styles.mainWrapper}>
-        <header style={styles.header}>
-          <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
+      <div className="layout-main-wrapper" style={{ ...styles.mainWrapper, minWidth: 0 }}>
+        <header className="layout-header" style={styles.header}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1}}>
             <button className="hamburger-btn" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
-              <Menu size={24} />
+              <Menu size={22} />
             </button>
-            <h1 className="header-title" style={styles.headerTitle}>{title}</h1>
+            <h1 className="header-title layout-header-title" style={styles.headerTitle}>{title}</h1>
           </div>
-          <div style={styles.headerRight}>
+          <div className="layout-header-right" style={styles.headerRight}>
             <Link
               to="/bep-sang"
               target="_blank"
+              className="admin-header-canteen-link"
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -485,7 +509,7 @@ export default function Layout({ children, title }) {
                 style={styles.notifBtn}
                 title="Thông báo"
               >
-                <Bell size={20} />
+                <Bell size={18} />
                 {notifications.length > 0 && <span style={styles.notifBadge}>{notifications.length}</span>}
               </button>
               
@@ -506,9 +530,9 @@ export default function Layout({ children, title }) {
               )}
             </div>
 
-            <span style={styles.userInfo}>{user?.email || 'Admin User'}</span>
+            <span className="admin-header-user-email" style={styles.userInfo}>{user?.email || 'Admin User'}</span>
             <button onClick={signOut} style={styles.logoutBtn} title="Đăng xuất">
-              <LogOut size={18} />
+              <LogOut size={16} />
             </button>
           </div>
         </header>
