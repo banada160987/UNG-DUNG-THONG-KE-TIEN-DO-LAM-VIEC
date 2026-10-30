@@ -3,15 +3,18 @@
  * Trường THPT Cao Bá Quát - Quốc Oai, Hà Nội
  * 
  * Phục vụ: Ban Giám Hiệu, Thầy Cô Giáo Viên, Quý Phụ Huynh & Các Em Học Sinh
- * Cơ chế hoạt động:
- * 1. Supabase WebSocket Broadcast: Gửi nhận tin nhắn tức thì đa thiết bị (Điện thoại <-> Máy tính)
- * 2. Supabase Postgres Replication: Tự động lưu trữ vĩnh viễn khi có bảng cbq_chat_messages
- * 3. LocalStorage Cache & Cross-Tab Sync: Đảm bảo 100% hoạt động mượt mà kể cả khi offline hoặc chưa chạy SQL.
+ * 
+ * Cập nhật:
+ * - ĐÃ XÓA TOÀN BỘ DỮ LIỆU MẪU (0 tin nhắn mẫu, kênh trắng tinh sạch sẽ).
+ * - Tự động xóa sạch bộ nhớ đệm tin nhắn mẫu cũ (v1, v2) trên mọi trình duyệt.
+ * - Hỗ trợ phát sóng Supabase WebSocket Broadcast tức thời đa thiết bị.
+ * - Lưu trữ Supabase DB vĩnh viễn khi có bảng cbq_chat_messages.
  */
 
 import { supabase } from '../lib/supabase';
 
-const STORAGE_KEY_CHAT_MESSAGES = 'cbq_chat_messages_records_v1';
+// Key phiên bản mới (v3) để tự động xóa sạch dữ liệu mẫu cũ trong LocalStorage của người dùng
+const STORAGE_KEY_CHAT_MESSAGES = 'cbq_chat_messages_records_v3';
 const STORAGE_KEY_CHAT_IDENTITY = 'cbq_chat_saved_identity_v1';
 
 // Danh sách các kênh hội thoại chính thức
@@ -66,69 +69,8 @@ export const DEFAULT_CHANNELS = [
   }
 ];
 
-// Tin nhắn mẫu ban đầu
-const INITIAL_MOCK_MESSAGES = [
-  {
-    id: 'msg-seed-001',
-    channelId: 'general-announcements',
-    channelName: '📢 Bảng Tin Thông Báo Nhà Trường',
-    senderId: 'admin@caobaquat.edu.vn',
-    senderName: 'Thầy Hiệu Trưởng (BGH THPT Cao Bá Quát)',
-    senderRole: 'admin',
-    senderAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80',
-    content: 'Kính gửi Quý Thầy/Cô, Quý Phụ huynh và các em học sinh:\n\nNhà trường chính thức khai trương Cổng Dịch Vụ Công Trực Tuyến 4.0 kết nối Zalo OA và Kênh Chat Nội Bộ CBQ. Giờ đây phụ huynh có thể xin Giấy xác nhận học sinh, xin nghỉ phép điện tử và rút sao y học bạ trực tiếp trên điện thoại mà không cần phải đi lại văn phòng trường. Chúc toàn trường một tuần học tập và làm việc hiệu quả!',
-    attachments: [],
-    likesCount: 24,
-    isPinned: true,
-    isAnnouncement: true,
-    createdAt: '2026-10-30T07:30:00Z'
-  },
-  {
-    id: 'msg-seed-002',
-    channelId: 'parent-support',
-    channelName: '🤝 Hỗ Trợ Dịch Vụ Công & Phụ Huynh',
-    senderId: 'parent-0912',
-    senderName: 'Bác Nguyễn Văn Hùng (PH em Minh Quân - 12A1)',
-    senderRole: 'parent',
-    senderAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
-    content: 'Kính chào Thầy/Cô Văn thư. Tôi vừa nộp hồ sơ xin cấp Giấy xác nhận học sinh cho cháu Quân mã số CBQ-DVC-2026-0182 để nộp Công an huyện làm CCCD. Nhờ Thầy/Cô kiểm tra giúp tôi ạ!',
-    attachments: [],
-    likesCount: 2,
-    isPinned: false,
-    isAnnouncement: false,
-    createdAt: '2026-10-30T08:15:00Z'
-  },
-  {
-    id: 'msg-seed-003',
-    channelId: 'parent-support',
-    channelName: '🤝 Hỗ Trợ Dịch Vụ Công & Phụ Huynh',
-    senderId: 'vanthu@caobaquat.edu.vn',
-    senderName: 'Cô Thu Hà (Văn Thư Nhà Trường)',
-    senderRole: 'teacher',
-    senderAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
-    content: 'Dạ kính chào Bác Hùng! Văn thư trường đã đối soát dữ liệu của em Quân và BGH đã ký số điện tử phê duyệt rồi ạ. Bác có thể bấm vào mục Tra cứu DVC tải file PDF Giấy xác nhận có mộc số và mã QR ngay trên điện thoại, hoặc ghé phòng Văn thư nhận bản in dấu đỏ nếu cần ạ!',
-    attachments: [],
-    likesCount: 5,
-    isPinned: false,
-    isAnnouncement: false,
-    createdAt: '2026-10-30T08:22:00Z'
-  },
-  {
-    id: 'msg-seed-004',
-    channelId: 'class-12a1',
-    channelName: '🏫 Lớp 12A1 (GVCN: Thầy Hoàng Nam)',
-    senderId: 'namhoang@caobaquat.edu.vn',
-    senderName: 'Thầy Hoàng Nam (GVCN Lớp 12A1)',
-    senderRole: 'teacher',
-    senderAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80',
-    content: 'Nhắc nhở các em học sinh lớp 12A1: Tiết 3 sáng nay lớp mình có bài kiểm tra thường xuyên môn Toán (Chuyên đề Tích phân & Oxyz). Các em chuẩn bị đầy đủ máy tính cầm tay và giấy nháp nhé!',
-    attachments: [],
-    likesCount: 15,
-    isPinned: true,
-    isAnnouncement: true,
-    createdAt: '2026-10-30T07:45:00Z'
-  }
-];
+// 0 tin nhắn mẫu theo yêu cầu người dùng
+const INITIAL_MOCK_MESSAGES = [];
 
 // Khởi tạo Supabase Realtime Broadcast Channel (Hoạt động đa thiết bị không cần bảng DB)
 let realtimeBroadcastChannel = null;
@@ -136,16 +78,12 @@ let realtimeBroadcastChannel = null;
 function getRealtimeChannel() {
   if (!realtimeBroadcastChannel && supabase) {
     try {
-      realtimeBroadcastChannel = supabase.channel('cbq_chat_realtime_v1', {
+      realtimeBroadcastChannel = supabase.channel('cbq_chat_realtime_v3', {
         config: {
           broadcast: { self: false } // Không lặp lại tin nhắn về chính thiết bị gửi
         }
       });
-      realtimeBroadcastChannel.subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          // Channel connected
-        }
-      });
+      realtimeBroadcastChannel.subscribe();
     } catch (e) {
       console.warn('Không thể khởi tạo Supabase Realtime Channel:', e);
     }
@@ -153,24 +91,26 @@ function getRealtimeChannel() {
   return realtimeBroadcastChannel;
 }
 
-// Lấy danh sách tin nhắn từ LocalStorage
+// Lấy danh sách tin nhắn từ LocalStorage (Tự động quét dọn dữ liệu mẫu cũ)
 function getLocalMessages() {
   try {
+    // 1. Tự động xóa sạch các bản ghi dữ liệu mẫu phiên bản cũ
+    localStorage.removeItem('cbq_chat_messages_records_v1');
+    localStorage.removeItem('cbq_chat_messages_records_v2');
+
     const raw = localStorage.getItem(STORAGE_KEY_CHAT_MESSAGES);
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      if (Array.isArray(parsed)) {
+        // Lọc bỏ bất kỳ tin nhắn mẫu cũ nào còn sót
+        const cleaned = parsed.filter(m => m && !m.id?.startsWith('msg-seed-') && !m.id?.startsWith('msg-00'));
+        return cleaned;
+      }
     }
   } catch (e) {
     console.error('Lỗi đọc local chat:', e);
   }
-  // Mặc định nạp tin nhắn mẫu
-  try {
-    localStorage.setItem(STORAGE_KEY_CHAT_MESSAGES, JSON.stringify(INITIAL_MOCK_MESSAGES));
-  } catch {
-    // Ignore storage quota
-  }
-  return INITIAL_MOCK_MESSAGES;
+  return [];
 }
 
 // Lưu danh sách tin nhắn vào LocalStorage và dispatch event nội bộ
@@ -215,30 +155,32 @@ export async function getMessagesByChannel(channelId) {
         .eq('channel_id', channelId)
         .order('created_at', { ascending: true });
 
-      if (!error && Array.isArray(data) && data.length > 0) {
-        const mapped = data.map(item => ({
-          id: item.id,
-          channelId: item.channel_id,
-          channelName: item.channel_name,
-          senderId: item.sender_id,
-          senderName: item.sender_name,
-          senderRole: item.sender_role,
-          senderAvatar: item.sender_avatar,
-          content: item.content,
-          attachments: item.attachments || [],
-          likesCount: item.likes_count || 0,
-          isPinned: item.is_pinned || false,
-          isAnnouncement: item.is_announcement || false,
-          createdAt: item.created_at
-        }));
+      if (!error && Array.isArray(data)) {
+        const mapped = data
+          .filter(item => item && !item.id?.startsWith('msg-seed-'))
+          .map(item => ({
+            id: item.id,
+            channelId: item.channel_id,
+            channelName: item.channel_name,
+            senderId: item.sender_id,
+            senderName: item.sender_name,
+            senderRole: item.sender_role,
+            senderAvatar: item.sender_avatar,
+            content: item.content,
+            attachments: item.attachments || [],
+            likesCount: item.likes_count || 0,
+            isPinned: item.is_pinned || false,
+            isAnnouncement: item.is_announcement || false,
+            createdAt: item.created_at
+          }));
         return mapped;
       }
     }
-  } catch (err) {
+  } catch {
     // Supabase table chưa có hoặc offline
   }
 
-  // 2. Fallback sang LocalStorage
+  // 2. Fallback sang LocalStorage (Đã sạch dữ liệu mẫu)
   const all = getLocalMessages();
   return all.filter(m => m.channelId === channelId);
 }
@@ -300,11 +242,11 @@ export async function sendChatMessage(msgData) {
         newMsg.id = data.id;
       }
     }
-  } catch (dbErr) {
+  } catch {
     // Không sao, đã lưu local và broadcast
   }
 
-  // 3. Cập nhật LocalStorage (skipEvent = true để tránh tự kích hoạt sync đè trên cùng tab)
+  // 3. Cập nhật LocalStorage
   const localList = getLocalMessages();
   if (!localList.some(m => m.id === newMsg.id)) {
     const updatedList = [...localList, newMsg];
@@ -395,15 +337,12 @@ export async function togglePinChatMessage(msgId) {
 
 // Đăng ký nhận tin nhắn Realtime (Đa thiết bị + Đa tab)
 export function subscribeToChatMessages(onNewMessage, onLikeUpdate, onPinUpdate) {
-  // 1. Lắng nghe qua Supabase WebSocket Broadcast (Giữa các thiết bị khác nhau)
   const channel = getRealtimeChannel();
-  let subRef = null;
 
   if (channel) {
-    subRef = channel
+    channel
       .on('broadcast', { event: 'new_message' }, ({ payload }) => {
         if (payload && onNewMessage) {
-          // Lưu vào local
           const localList = getLocalMessages();
           if (!localList.some(m => m.id === payload.id)) {
             saveLocalMessages([...localList, payload], true);
@@ -423,7 +362,7 @@ export function subscribeToChatMessages(onNewMessage, onLikeUpdate, onPinUpdate)
       });
   }
 
-  // 2. Lắng nghe qua Storage event giữa các tab trên cùng trình duyệt
+  // Lắng nghe qua Storage event giữa các tab trên cùng trình duyệt
   const handleStorageChange = (e) => {
     if (e.key === STORAGE_KEY_CHAT_MESSAGES && e.newValue) {
       try {
@@ -441,10 +380,8 @@ export function subscribeToChatMessages(onNewMessage, onLikeUpdate, onPinUpdate)
   };
   window.addEventListener('storage', handleStorageChange);
 
-  // Trả về hàm hủy đăng ký
   return () => {
     window.removeEventListener('storage', handleStorageChange);
-    // Lưu ý: không unmount channel chung để giữ kết nối liên tục
   };
 }
 

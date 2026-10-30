@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { useAuth } from '../contexts/AuthContext';
 import { 
   MessageSquare, Send, Heart, Pin, Bell, Shield, Users, Search, 
-  ArrowLeft, CheckCircle2, Clock, Check, RefreshCw, X, Sparkles, 
-  User, Copy, Database, HelpCircle, Smile, Volume2, ShieldAlert
+  ArrowLeft, CheckCircle2, RefreshCw, X, Sparkles, Database, 
+  Copy, Smile
 } from 'lucide-react';
 import { 
   getChatChannels, 
@@ -34,7 +34,6 @@ const QUICK_EMOJIS = ['👍', '❤️', '👏', '💐', '📚', '✍️', '⭐',
 export default function InternalChatPage() {
   const { user } = useAuth();
   const location = useLocation();
-  const navigate = useNavigate();
 
   // Xác định xem trang đang mở trong giao diện Admin hay Standalone
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -79,7 +78,6 @@ export default function InternalChatPage() {
 
   // Nhận diện danh tính người dùng thông minh
   const [currentIdentity, setCurrentIdentity] = useState(() => {
-    // 1. Kiểm tra session Admin
     if (user?.email) {
       return {
         id: user.id || user.email,
@@ -88,7 +86,6 @@ export default function InternalChatPage() {
         avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=150&q=80'
       };
     }
-    // 2. Kiểm tra session Giáo viên
     const teacherSession = getTeacherSession();
     if (teacherSession?.full_name || teacherSession?.name) {
       const name = teacherSession.full_name || teacherSession.name;
@@ -100,7 +97,6 @@ export default function InternalChatPage() {
         avatar: teacherSession.avatar_url || 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&q=80'
       };
     }
-    // 3. Kiểm tra session Học sinh
     const studentSession = getStudentSession();
     if (studentSession?.full_name || studentSession?.name) {
       const name = studentSession.full_name || studentSession.name;
@@ -112,11 +108,9 @@ export default function InternalChatPage() {
         avatar: studentSession.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'
       };
     }
-    // 4. Kiểm tra danh tính đã lưu của Phụ huynh / Khách
     const saved = getSavedChatIdentity();
     if (saved?.name) return saved;
 
-    // 5. Mặc định Phụ huynh
     return QUICK_IDENTITIES[3];
   });
 
@@ -149,7 +143,6 @@ export default function InternalChatPage() {
   useEffect(() => {
     const unsubscribe = subscribeToChatMessages(
       (newMsg) => {
-        // Chỉ thêm nếu đúng kênh đang mở hoặc cập nhật bộ nhớ
         if (newMsg && newMsg.channelId === activeChannelId) {
           setMessages(prev => {
             if (prev.some(m => m.id === newMsg.id)) return prev;
@@ -207,7 +200,6 @@ export default function InternalChatPage() {
         isAnnouncement: currentIdentity.role === 'admin' && activeChannel.id === 'general-announcements'
       });
 
-      // Cập nhật an toàn không trùng lặp
       setMessages(prev => {
         if (prev.some(m => m.id === sentMsg.id)) return prev;
         return [...prev, sentMsg];
@@ -336,14 +328,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
     <div style={{
       display: 'flex',
       flexDirection: 'row',
-      height: isAdminRoute ? 'calc(100vh - 140px)' : 'calc(100dvh - 54px)',
+      height: isAdminRoute ? 'calc(100vh - 140px)' : (isMobile ? 'calc(100dvh - 52px)' : 'calc(100dvh - 56px)'),
       minHeight: isAdminRoute ? '560px' : 'auto',
       backgroundColor: '#ffffff',
       overflow: 'hidden',
       borderRadius: isAdminRoute ? '14px' : '0',
       border: isAdminRoute ? '1px solid #e2e8f0' : 'none',
       boxShadow: isAdminRoute ? '0 4px 20px rgba(0,0,0,0.06)' : 'none',
-      position: 'relative'
+      position: 'relative',
+      width: '100%'
     }}>
 
       {/* CỘT TRÁI: DANH SÁCH KÊNH HỘI THOẠI */}
@@ -359,10 +352,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
         flexShrink: 0
       }}>
         {/* Header danh sách kênh */}
-        <div style={{ padding: '14px 16px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-            <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <MessageSquare size={18} color="#0284c7" /> Kênh Hội Thoại CBQ
+        <div style={{ padding: '12px 14px', backgroundColor: '#ffffff', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div style={{ fontSize: '14.5px', fontWeight: '900', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <MessageSquare size={17} color="#0284c7" /> Kênh Hội Thoại CBQ
             </div>
             <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
@@ -450,7 +443,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                     }
                   }}
                   style={{
-                    padding: '12px 14px',
+                    padding: '11px 13px',
                     borderRadius: '10px',
                     marginBottom: '6px',
                     cursor: 'pointer',
@@ -479,7 +472,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
           )}
         </div>
 
-        {/* Chân danh sách kênh: Thông tin người gửi hiện tại */}
+        {/* Chân danh sách kênh: Thông tin người gửi */}
         <div style={{
           padding: '10px 14px',
           borderTop: '1px solid #e2e8f0',
@@ -487,7 +480,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '8px'
+          gap: '8px',
+          flexShrink: 0
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
             <img
@@ -521,7 +515,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
               fontSize: '11px',
               fontWeight: 'bold',
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             Đổi vai trò
@@ -541,89 +536,63 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
         position: 'relative'
       }}>
 
-        {/* Chat Room Header */}
-        <div style={{
-          padding: '10px 16px',
-          borderBottom: '1px solid #e2e8f0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: '#ffffff',
-          flexShrink: 0
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-            {/* Nút quay lại danh sách kênh (CHỈ hiện trên Mobile) */}
-            {isMobile && (
-              <button
-                type="button"
-                onClick={() => setMobileViewChat(false)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 10px',
-                  borderRadius: '6px',
-                  border: '1px solid #cbd5e1',
-                  background: '#f8fafc',
-                  color: '#0f172a',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                <ArrowLeft size={16} /> Kênh
-              </button>
-            )}
-
+        {/* Desktop Chat Room Header (CHỈ hiển thị trên Desktop hoặc Admin mode; trên Mobile đã có Unified Header) */}
+        {!isMobile && (
+          <div style={{
+            padding: '10px 16px',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            backgroundColor: '#ffffff',
+            flexShrink: 0
+          }}>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: '14.5px', fontWeight: '900', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: '15px', fontWeight: '900', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeChannel.name}
               </div>
-              <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: '11.5px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeChannel.description}
               </div>
             </div>
-          </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* Thông báo trạng thái Realtime */}
-            <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
-              <span className="hide-on-small-mobile">Trực tuyến</span>
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                Trực tuyến
+              </span>
 
-            {/* Nút kiểm tra SQL cho BGH/Admin */}
-            {isAdminRoute && (
-              <button
-                type="button"
-                onClick={() => setShowSqlModal(true)}
-                title="Kiểm tra cấu hình CSDL Supabase"
-                style={{
-                  padding: '4px 8px',
-                  borderRadius: '6px',
-                  border: dbHealth.isDbReady ? '1px solid #86efac' : '1px solid #fde047',
-                  backgroundColor: dbHealth.isDbReady ? '#f0fdf4' : '#fefce8',
-                  color: dbHealth.isDbReady ? '#166534' : '#854d0e',
-                  fontSize: '11px',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}
-              >
-                <Database size={13} />
-                <span>{dbHealth.isDbReady ? 'DB Cloud OK' : 'SQL Setup'}</span>
-              </button>
-            )}
+              {isAdminRoute && (
+                <button
+                  type="button"
+                  onClick={() => setShowSqlModal(true)}
+                  title="Kiểm tra cấu hình CSDL Supabase"
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: '6px',
+                    border: dbHealth.isDbReady ? '1px solid #86efac' : '1px solid #fde047',
+                    backgroundColor: dbHealth.isDbReady ? '#f0fdf4' : '#fefce8',
+                    color: dbHealth.isDbReady ? '#166534' : '#854d0e',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Database size={13} />
+                  <span>{dbHealth.isDbReady ? 'DB Cloud OK' : 'SQL Setup'}</span>
+                </button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Thanh tin nhắn ghim (Pinned Announcement Bar) */}
         {pinnedMessages.length > 0 && (
           <div style={{
-            padding: '8px 16px',
+            padding: '8px 14px',
             backgroundColor: '#fffbeb',
             borderBottom: '1px solid #fde68a',
             display: 'flex',
@@ -644,21 +613,37 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
         <div style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '14px 16px',
+          padding: isMobile ? '12px 10px' : '14px 16px',
           backgroundColor: '#f8fafc',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px'
+          gap: '10px'
         }}>
           {loadingMessages ? (
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8', fontSize: '13px' }}>
-              <RefreshCw size={18} className="animate-spin" style={{ marginRight: '8px' }} /> Đang tải lịch sử trò chuyện...
+              <RefreshCw size={18} className="animate-spin" style={{ marginRight: '8px' }} /> Đang tải tin nhắn...
             </div>
           ) : messages.length === 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100%', color: '#94a3b8', gap: '8px', padding: '20px', textAlign: 'center' }}>
-              <MessageSquare size={36} color="#cbd5e1" />
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#64748b' }}>Chưa có tin nhắn nào trong kênh này</div>
-              <div style={{ fontSize: '12px' }}>Hãy là người đầu tiên gửi tin nhắn chào mừng Thầy Cô, Phụ huynh và Học sinh!</div>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100%',
+              color: '#94a3b8',
+              gap: '10px',
+              padding: '24px 16px',
+              textAlign: 'center'
+            }}>
+              <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <MessageSquare size={28} color="#94a3b8" />
+              </div>
+              <div style={{ fontSize: '14.5px', fontWeight: 'bold', color: '#475569' }}>
+                Kênh chưa có tin nhắn nào
+              </div>
+              <div style={{ fontSize: '12px', color: '#94a3b8', maxWidth: '300px', lineHeight: '1.5' }}>
+                Hãy gửi lời chào hoặc nhập câu hỏi đầu tiên để bắt đầu cuộc trò chuyện trong {activeChannel.name}!
+              </div>
             </div>
           ) : (
             messages.map(msg => {
@@ -671,7 +656,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                   style={{
                     display: 'flex',
                     flexDirection: isMe ? 'row-reverse' : 'row',
-                    gap: '10px',
+                    gap: '8px',
                     alignItems: 'flex-start'
                   }}
                 >
@@ -680,8 +665,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                     src={msg.senderAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}
                     alt={msg.senderName}
                     style={{
-                      width: '34px',
-                      height: '34px',
+                      width: '32px',
+                      height: '32px',
                       borderRadius: '50%',
                       objectFit: 'cover',
                       flexShrink: 0,
@@ -701,18 +686,18 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
+                      gap: '5px',
                       marginBottom: '3px',
                       flexWrap: 'wrap',
                       justifyContent: isMe ? 'flex-end' : 'flex-start'
                     }}>
-                      <span style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b' }}>
+                      <span style={{ fontSize: '11.5px', fontWeight: '700', color: '#1e293b' }}>
                         {msg.senderName}
                       </span>
                       <span style={{
-                        fontSize: '9.5px',
+                        fontSize: '9px',
                         fontWeight: 'bold',
-                        padding: '1px 6px',
+                        padding: '1px 5px',
                         borderRadius: '6px',
                         backgroundColor: badge.bg,
                         color: badge.text,
@@ -720,21 +705,21 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                       }}>
                         {badge.label}
                       </span>
-                      <span style={{ fontSize: '10.5px', color: '#94a3b8' }}>
+                      <span style={{ fontSize: '10px', color: '#94a3b8' }}>
                         {formatTime(msg.createdAt)}
                       </span>
                     </div>
 
                     {/* Bubble Content */}
                     <div style={{
-                      padding: '10px 14px',
+                      padding: '9px 13px',
                       borderRadius: isMe ? '14px 2px 14px 14px' : '2px 14px 14px 14px',
                       backgroundColor: isMe ? '#0284c7' : msg.isAnnouncement ? '#fef3c7' : '#ffffff',
                       color: isMe ? '#ffffff' : '#0f172a',
                       border: isMe ? 'none' : msg.isAnnouncement ? '1.5px solid #fde68a' : '1px solid #e2e8f0',
-                      fontSize: '13.5px',
+                      fontSize: '13px',
                       lineHeight: '1.5',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word'
                     }}>
@@ -742,7 +727,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                     </div>
 
                     {/* Actions: Thả tim & Ghim tin */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '3px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '3px' }}>
                       <button
                         type="button"
                         onClick={() => handleLike(msg.id)}
@@ -796,7 +781,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
 
         {/* Thanh biểu tượng cảm xúc nhanh */}
         <div style={{
-          padding: '6px 14px',
+          padding: '5px 12px',
           backgroundColor: '#ffffff',
           borderTop: '1px solid #f1f5f9',
           display: 'flex',
@@ -819,11 +804,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                 cursor: 'pointer',
                 fontSize: '15px',
                 padding: '2px 4px',
-                borderRadius: '4px',
-                transition: 'transform 0.1s'
+                borderRadius: '4px'
               }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
             >
               {emoji}
             </button>
@@ -834,7 +816,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
         <form
           onSubmit={handleSend}
           style={{
-            padding: '10px 14px',
+            padding: isMobile ? '8px 10px max(10px, env(safe-area-inset-bottom, 10px)) 10px' : '10px 14px',
             borderTop: '1px solid #e2e8f0',
             backgroundColor: '#ffffff',
             display: 'flex',
@@ -846,7 +828,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
             zIndex: 10
           }}
         >
-          <div style={{ position: 'relative', flex: 1 }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
             <input
               type="text"
               value={inputText}
@@ -854,10 +836,10 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
               placeholder={`Nhắn tin vào ${activeChannel.name}...`}
               style={{
                 width: '100%',
-                padding: '10px 14px',
+                padding: isMobile ? '9px 12px' : '10px 14px',
                 borderRadius: '24px',
                 border: '1.5px solid #cbd5e1',
-                fontSize: '13.5px',
+                fontSize: '13px',
                 boxSizing: 'border-box',
                 outline: 'none',
                 transition: 'border-color 0.15s ease'
@@ -871,7 +853,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
             type="submit"
             disabled={!inputText.trim() || isSending}
             style={{
-              padding: '10px 18px',
+              padding: isMobile ? '9px 14px' : '10px 18px',
               borderRadius: '24px',
               border: 'none',
               backgroundColor: inputText.trim() && !isSending ? '#0284c7' : '#cbd5e1',
@@ -881,8 +863,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
               cursor: inputText.trim() && !isSending ? 'pointer' : 'default',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px',
+              gap: '5px',
               flexShrink: 0,
+              whiteSpace: 'nowrap',
               transition: 'background-color 0.15s ease'
             }}
           >
@@ -938,7 +921,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
               </button>
             </div>
 
-            <form onSubmit={handleSaveIdentity} style={{ padding: '18px' }}>
+            <form onSubmit={handleSaveIdentity} style={{ padding: '16px' }}>
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
                   Họ và tên hiển thị trong kênh chat:
@@ -953,7 +936,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                 />
               </div>
 
-              <div style={{ marginBottom: '16px' }}>
+              <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
                   Vai trò của bạn:
                 </label>
@@ -968,14 +951,14 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                       key={r.id}
                       onClick={() => setCustomRoleInput(r.id)}
                       style={{
-                        padding: '10px 12px',
+                        padding: '9px 11px',
                         borderRadius: '8px',
                         border: customRoleInput === r.id ? '2px solid #0284c7' : '1px solid #e2e8f0',
                         backgroundColor: customRoleInput === r.id ? '#f0f9ff' : '#f8fafc',
                         cursor: 'pointer'
                       }}
                     >
-                      <div style={{ fontSize: '13px', fontWeight: 'bold', color: customRoleInput === r.id ? '#0369a1' : '#0f172a' }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: customRoleInput === r.id ? '#0369a1' : '#0f172a' }}>
                         {r.label}
                       </div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>{r.desc}</div>
@@ -985,9 +968,9 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
               </div>
 
               {/* Lựa chọn nhanh tài khoản thử nghiệm */}
-              <div style={{ marginBottom: '16px', padding: '10px 12px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
-                  Chọn nhanh tài khoản mẫu:
+              <div style={{ marginBottom: '14px', padding: '10px 12px', backgroundColor: '#f1f5f9', borderRadius: '8px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#475569', marginBottom: '6px' }}>
+                  Chọn nhanh danh tính:
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                   {QUICK_IDENTITIES.map(qi => (
@@ -1017,13 +1000,13 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                 <button
                   type="button"
                   onClick={() => setShowIdentityModal(false)}
-                  style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  style={{ padding: '8px 14px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: '#0284c7', color: '#ffffff', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer' }}
                 >
                   Lưu & Áp Dụng
                 </button>
@@ -1096,7 +1079,7 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`;
                 )}
                 <div>
                   <div style={{ fontWeight: 'bold', color: dbHealth.isDbReady ? '#166534' : '#854d0e' }}>
-                    {dbHealth.isDbReady ? 'CSDL Supabase đã sẵn sàng 100%' : 'Hệ thống đang chạy qua Realtime Broadcast + Local Storage'}
+                    {dbHealth.isDbReady ? 'CSDL Supabase đã sẵn sàng 100%' : 'Hệ thống đang chạy qua Realtime Broadcast + Bộ nhớ đệm'}
                   </div>
                   <div style={{ fontSize: '11.5px', color: '#64748b' }}>
                     {dbHealth.isDbReady 
@@ -1203,109 +1186,191 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.cbq_chat_messages;`}
       backgroundColor: '#f1f5f9',
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
     }}>
-      {/* Top Header thanh thoát độc lập */}
+      
+      {/* =========================================================================
+          UNIFIED HEADER DUY NHẤT: THIẾT KẾ CO GIÃN CHUẨN XÁC, KHÔNG TRÀN CHỮ
+          ========================================================================= */}
       <header style={{
-        height: '54px',
+        height: isMobile ? '52px' : '56px',
         backgroundColor: '#ffffff',
         borderBottom: '1px solid #e2e8f0',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '0 16px',
+        padding: isMobile ? '0 12px' : '0 20px',
         flexShrink: 0,
         zIndex: 20,
-        boxShadow: '0 1px 4px rgba(0,0,0,0.03)'
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
       }}>
-        {/* Left: Back to Home + Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Link
-            to="/"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              textDecoration: 'none',
-              color: '#0f172a',
-              fontSize: '13.5px',
-              fontWeight: 'bold',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              backgroundColor: '#f8fafc',
-              border: '1px solid #e2e8f0'
-            }}
-            title="Quay lại Cổng Thông Tin Toàn Trường"
-          >
-            <ArrowLeft size={16} />
-            <span className="hide-on-small-mobile">Trang Chủ</span>
-          </Link>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <img
-              src="/logo.jpg"
-              alt="Logo THPT Cao Bá Quát"
-              style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #22c55e' }}
-            />
-            <div>
-              <span style={{ fontSize: '14px', fontWeight: '900', color: '#0f172a' }}>
-                CBQ Chat
-              </span>
-              <span style={{ fontSize: '11px', color: '#64748b', marginLeft: '6px' }} className="hide-on-small-mobile">
-                • THPT Cao Bá Quát
-              </span>
+        {/* TRÊN MOBILE KHI ĐANG MỞ KÊNH CHAT: Header hiển thị Nút [← Kênh] + Tên Kênh */}
+        {isMobile && mobileViewChat ? (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
+              <button
+                type="button"
+                onClick={() => setMobileViewChat(false)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  border: '1px solid #cbd5e1',
+                  background: '#f8fafc',
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: '#0f172a',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                  cursor: 'pointer'
+                }}
+              >
+                <ArrowLeft size={15} /> Kênh
+              </button>
+
+              <div style={{ minWidth: 0, flex: 1, overflow: 'hidden' }}>
+                <div style={{ fontSize: '13.5px', fontWeight: '900', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {activeChannel.name}
+                </div>
+                <div style={{ fontSize: '10.5px', color: '#16a34a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} /> Trực tuyến
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Right: User Identity Pill */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              setCustomNameInput(currentIdentity.name);
-              setCustomRoleInput(currentIdentity.role);
-              setShowIdentityModal(true);
-            }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '4px 10px',
-              borderRadius: '20px',
-              border: '1px solid #cbd5e1',
-              backgroundColor: '#f8fafc',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-            title="Bấm để đổi tên hiển thị và vai trò"
-          >
-            <img
-              src={currentIdentity.avatar}
-              alt={currentIdentity.name}
-              style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
-            />
-            <span style={{
-              fontSize: '12px',
-              fontWeight: 'bold',
-              color: '#0f172a',
-              maxWidth: isMobile ? '120px' : '180px',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {currentIdentity.name}
-            </span>
-            <span style={{
-              fontSize: '9.5px',
-              fontWeight: 'bold',
-              padding: '1px 5px',
-              borderRadius: '6px',
-              backgroundColor: getRoleBadge(currentIdentity.role).bg,
-              color: getRoleBadge(currentIdentity.role).text
-            }}>
-              {getRoleBadge(currentIdentity.role).label}
-            </span>
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={() => {
+                setCustomNameInput(currentIdentity.name);
+                setCustomRoleInput(currentIdentity.role);
+                setShowIdentityModal(true);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                border: 'none',
+                background: 'none',
+                padding: '2px',
+                cursor: 'pointer',
+                flexShrink: 0,
+                marginLeft: '8px'
+              }}
+              title="Đổi tên và vai trò"
+            >
+              <img
+                src={currentIdentity.avatar}
+                alt={currentIdentity.name}
+                style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #0284c7' }}
+              />
+            </button>
+          </>
+        ) : (
+          /* TRÊN MÁY TÍNH HOẶC TRÊN MOBILE KHI Ở DANH SÁCH KÊNH */
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '14px', minWidth: 0 }}>
+              <Link
+                to="/"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  textDecoration: 'none',
+                  color: '#0f172a',
+                  fontSize: isMobile ? '12px' : '13px',
+                  fontWeight: 'bold',
+                  padding: isMobile ? '6px 10px' : '7px 12px',
+                  borderRadius: '8px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #cbd5e1',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0
+                }}
+                title="Quay lại Cổng Thông Tin Toàn Trường"
+              >
+                <ArrowLeft size={15} />
+                <span>Trang Chủ</span>
+              </Link>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+                <img
+                  src="/logo.jpg"
+                  alt="Logo THPT Cao Bá Quát"
+                  style={{ width: '28px', height: '28px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #22c55e', flexShrink: 0 }}
+                />
+                <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                  <span style={{ fontSize: isMobile ? '14.5px' : '15px', fontWeight: '900', color: '#0f172a', whiteSpace: 'nowrap' }}>
+                    CBQ Chat
+                  </span>
+                  {!isMobile && (
+                    <span style={{ fontSize: '11.5px', color: '#64748b', marginLeft: '6px', whiteSpace: 'nowrap' }}>
+                      • THPT Cao Bá Quát
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+              {!isMobile && (
+                <span style={{ fontSize: '11.5px', color: '#16a34a', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', display: 'inline-block' }} />
+                  Đồng bộ Realtime 24/7
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomNameInput(currentIdentity.name);
+                  setCustomRoleInput(currentIdentity.role);
+                  setShowIdentityModal(true);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: isMobile ? '3px 8px' : '4px 12px',
+                  borderRadius: '20px',
+                  border: '1px solid #cbd5e1',
+                  backgroundColor: '#f8fafc',
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+                title="Bấm để đổi tên hiển thị và vai trò"
+              >
+                <img
+                  src={currentIdentity.avatar}
+                  alt={currentIdentity.name}
+                  style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }}
+                />
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: '#0f172a',
+                  maxWidth: isMobile ? '100px' : '180px',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {currentIdentity.name}
+                </span>
+                <span style={{
+                  fontSize: '9.5px',
+                  fontWeight: 'bold',
+                  padding: '1px 5px',
+                  borderRadius: '6px',
+                  backgroundColor: getRoleBadge(currentIdentity.role).bg,
+                  color: getRoleBadge(currentIdentity.role).text
+                }}>
+                  {getRoleBadge(currentIdentity.role).label}
+                </span>
+              </button>
+            </div>
+          </>
+        )}
+
       </header>
 
       {/* Vùng chat toàn màn hình */}

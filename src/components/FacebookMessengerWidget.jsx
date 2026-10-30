@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   MessageSquare, MessageCircle, X, ExternalLink, 
   ShieldCheck, FileBadge, ChevronUp, ChevronDown, Sparkles 
@@ -8,7 +8,18 @@ import { getSocialConfig, openFacebookMessenger, openZaloOa } from '../services/
 
 export default function FacebookMessengerWidget() {
   const [isOpen, setIsOpen] = useState(false);
+  const location = useLocation();
   const socialConfig = getSocialConfig();
+
+  // Ẩn nút nổi khi đang ở trong phòng chat nội bộ hoặc màn hình sân khấu để tránh che nội dung
+  const isChatOrFullscreen = location.pathname === '/chat' || 
+    location.pathname === '/tin-nhan' || 
+    location.pathname.startsWith('/admin/chat') || 
+    location.pathname === '/truyen-lua-led';
+
+  if (isChatOrFullscreen) {
+    return null;
+  }
 
   return (
     <div style={{ position: 'fixed', right: '20px', bottom: '86px', zIndex: 9990, fontFamily: '"Inter", sans-serif' }}>
