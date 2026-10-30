@@ -310,6 +310,52 @@ export default function MobileBottomNav() {
               </button>
             </div>
 
+            {/* Nút Cài đặt App Điện thoại */}
+            <div 
+              onClick={() => {
+                setShowMoreDrawer(false);
+                window.dispatchEvent(new CustomEvent('cbq-open-pwa-install'));
+              }}
+              style={{
+                backgroundColor: '#fff1f2',
+                border: '1.5px dashed #f43f5e',
+                borderRadius: '12px',
+                padding: '10px 14px',
+                marginBottom: '14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                cursor: 'pointer'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '24px' }}>📲</span>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#be123c' }}>
+                    Cài Đặt App THPT Cao Bá Quát
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#881337' }}>
+                    Thêm vào màn hình chính, mở toàn màn hình
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button"
+                style={{
+                  backgroundColor: '#be123c',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '6px 12px',
+                  fontSize: '11.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Cài Đặt
+              </button>
+            </div>
+
             {/* Trạng thái đăng nhập nhanh */}
             {(student || teacher) && (
               <div style={{

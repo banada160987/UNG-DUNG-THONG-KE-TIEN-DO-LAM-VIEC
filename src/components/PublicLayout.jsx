@@ -612,6 +612,28 @@ export default function PublicLayout() {
                 <Link to="/admin" className="premium-nav-btn admin" style={{ justifyContent: 'center' }} onClick={() => setMobileMenuOpen(false)}>
                   <ShieldCheck size={15} /> Quản Trị
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.dispatchEvent(new CustomEvent('cbq-open-pwa-install'));
+                  }}
+                  className="premium-nav-btn"
+                  style={{
+                    backgroundColor: '#fff1f2',
+                    color: '#be123c',
+                    border: '1.5px dashed #f43f5e',
+                    fontWeight: 'bold',
+                    justifyContent: 'center',
+                    padding: '8px 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📲 Cài Đặt Ứng Dụng (App)
+                </button>
               </div>
             </div>
           </div>
