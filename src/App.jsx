@@ -108,6 +108,7 @@ const PublicServicesPortal = lazy(() => import('./pages/public/PublicServicesPor
 const AdminPublicServices = lazy(() => import('./pages/admin/AdminPublicServices'));
 const InternalChatPage = lazy(() => import('./pages/InternalChatPage'));
 import FacebookMessengerWidget from './components/FacebookMessengerWidget';
+import ScrollToTopButton from './components/ScrollToTopButton';
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -322,6 +323,7 @@ function App() {
         </Routes>
       </Suspense>
       <FacebookMessengerWidget />
+      <ScrollToTopButton />
       <PwaInstallPrompt />
     </ErrorBoundary>
   );
