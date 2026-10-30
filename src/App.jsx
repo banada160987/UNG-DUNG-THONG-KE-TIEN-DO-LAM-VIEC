@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import PublicLayout from './components/PublicLayout';
 import ErrorBoundary from './components/ErrorBoundary';
+import PwaInstallPrompt from './components/PwaInstallPrompt';
 import StudentRoute from './components/StudentRoute';
 import TeacherRoute from './components/TeacherRoute';
 import { lazyWithRetry as lazy } from './utils/lazyWithRetry';
@@ -306,6 +307,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <PwaInstallPrompt />
     </ErrorBoundary>
   );
 }
