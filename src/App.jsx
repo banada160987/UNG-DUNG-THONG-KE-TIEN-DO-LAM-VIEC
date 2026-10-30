@@ -141,6 +141,8 @@ function App() {
           <Route path="/giao-vien/dinh-dang-van-ban-nd30" element={<Decree30DocFormatter />} />
           <Route path="/teacher/decree30-formatter" element={<Decree30DocFormatter />} />
           <Route path="/admin/decree30-formatter" element={<Decree30DocFormatter />} />
+          <Route path="/chat" element={<InternalChatPage />} />
+          <Route path="/tin-nhan" element={<InternalChatPage />} />
 
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>
@@ -257,10 +259,6 @@ function App() {
             <Route path="/dich-vu-cong" element={<PublicServicesPortal />} />
             <Route path="/dvc" element={<PublicServicesPortal />} />
             <Route path="/dich-vu-cong-truc-tuyen" element={<PublicServicesPortal />} />
-
-            {/* Hệ Thống Nhắn Tin Nội Bộ (CBQ Chat) */}
-            <Route path="/chat" element={<InternalChatPage />} />
-            <Route path="/tin-nhan" element={<InternalChatPage />} />
           </Route>
           
           {/* Protected Admin Routes */}
