@@ -5,7 +5,7 @@ import {
   ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
   FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
   CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image,
-  Copy, Search, Filter, Database, FolderTree
+  Copy, Search, Filter, Database, FolderTree, Camera
 } from 'lucide-react';
 import MathView, { MathToolbar } from '../../components/MathView';
 import BankExamPickerModal from '../../components/BankExamPickerModal';
@@ -1139,6 +1139,10 @@ export default function TeacherExamMaker() {
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
           <AiStatusBadge onOpenSettings={() => setShowAiSettings(true)} />
+
+          <button onClick={() => navigate('/giao-vien/cham-thi-2027')} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(124,58,237,0.35)' }} title="Chấm bài thi trắc nghiệm bằng Camera điện thoại chuẩn 2027 (GDPT 2018)">
+            <Camera size={17} /> Chấm Thi 2027 (Camera)
+          </button>
 
           <button onClick={() => setShowOmrModal(true)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 16px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(124,58,237,0.3)' }} title="Xem và in Phiếu trả lời trắc nghiệm chuẩn Bộ GD&ĐT khổ A4">
             <Printer size={17} /> Phiếu Tô OMR (A4)

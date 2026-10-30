@@ -4,7 +4,7 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree
+  Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree, Camera
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -664,25 +664,48 @@ export default function TeacherDashboard() {
                       <Zap size={15} /> Ra Đề Thi
                     </button>
                     <button
-                      onClick={() => navigate('/giao-vien/ngan-hang-cau-hoi')}
+                      onClick={() => navigate('/giao-vien/cham-thi-2027')}
                       style={{
                         padding: '11px 12px',
-                        backgroundColor: '#0284c7',
+                        background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '10px',
                         fontSize: '13px',
-                        fontWeight: '600',
+                        fontWeight: '700',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         gap: '6px',
-                        boxShadow: '0 3px 8px rgba(2,132,199,0.3)'
+                        boxShadow: '0 3px 8px rgba(124,58,237,0.35)'
+                      }}
+                      title="Chấm phiếu trắc nghiệm bằng Camera điện thoại chuẩn 2027 (GDPT 2018)"
+                    >
+                      <Camera size={15} /> Chấm Thi 2027
+                    </button>
+                  </div>
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => navigate('/giao-vien/ngan-hang-cau-hoi')}
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        backgroundColor: '#f0f9ff',
+                        color: '#0369a1',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '8px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
                       }}
                       title="Quản lý ngân hàng câu hỏi theo cây thư mục Chương - Bài của Tổ Chuyên Môn"
                     >
-                      <FolderTree size={15} /> Ngân Hàng Tổ
+                      <FolderTree size={14} /> Ngân Hàng Câu Hỏi Tổ Chuyên Môn
                     </button>
                   </div>
                 </div>

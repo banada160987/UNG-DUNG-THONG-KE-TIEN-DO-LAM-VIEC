@@ -98,6 +98,7 @@ const TeacherQuestionBank = lazy(() => import('./pages/teacher_features/TeacherQ
 const TeacherAssessmentTT22 = lazy(() => import('./pages/teacher_features/TeacherAssessmentTT22'));
 const TeacherDepartmentManagement = lazy(() => import('./pages/teacher_features/TeacherDepartmentManagement'));
 const TeacherKPIEvaluation = lazy(() => import('./pages/teacher_features/TeacherKPIEvaluation'));
+const MobileExamGrader2027 = lazy(() => import('./pages/teacher_features/MobileExamGrader2027'));
 const TeacherHomeroomStudents = lazy(() => import('./pages/teacher_features/TeacherHomeroomStudents'));
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
@@ -209,6 +210,10 @@ function App() {
             <Route path="/giao-vien/hoc-lieu-so" element={<TeacherRoute><TeacherEduMaterials /></TeacherRoute>} />
             <Route path="/giao-vien/soan-giao-an-5512" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
             <Route path="/giao-vien/ra-de-thi" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
+            <Route path="/giao-vien/cham-thi-2027" element={<TeacherRoute><MobileExamGrader2027 /></TeacherRoute>} />
+            <Route path="/cham-thi-2027" element={<TeacherRoute><MobileExamGrader2027 /></TeacherRoute>} />
+            <Route path="/teacher/cham-thi-2027" element={<TeacherRoute><MobileExamGrader2027 /></TeacherRoute>} />
+            <Route path="/teacher/omr-scanner" element={<TeacherRoute><MobileExamGrader2027 /></TeacherRoute>} />
             <Route path="/giao-vien/ngan-hang-cau-hoi" element={<TeacherRoute><TeacherQuestionBank /></TeacherRoute>} />
             <Route path="/giao-vien/kiem-tra-danh-gia" element={<TeacherRoute><TeacherExamMaker /></TeacherRoute>} />
             <Route path="/giao-vien/tro-choi-lop-hoc" element={<TeacherRoute><ClassroomInteractiveGames /></TeacherRoute>} />
