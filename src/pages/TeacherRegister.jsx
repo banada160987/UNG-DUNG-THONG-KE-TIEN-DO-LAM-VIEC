@@ -243,24 +243,43 @@ export default function TeacherRegister() {
           .eq('id', selectedStaffId);
       }
 
-      // 3. Create teacher account in cbq_teacher_users
-      const newTeacherUser = {
+      // 3. Create teacher account in cbq_teacher_users (Khớp chính xác các cột trên Supabase)
+      const cleanHomeroom = (formData.homeroom_class || '').trim().toUpperCase() || null;
+      const cleanPhone = (formData.phone || '').trim() || null;
+
+      const teacherDbRecord = {
         username: cleanUsername,
-        password: formData.password,
         password_hash: formData.password,
         full_name: formData.full_name.trim(),
+        homeroom_class: cleanHomeroom,
+        phone_number: cleanPhone
+      };
+
+      const { data: insertedData, error: insertErr } = await supabase
+        .from('cbq_teacher_users')
+        .insert([teacherDbRecord])
+        .select();
+
+      if (insertErr) {
+        console.warn("Lỗi ghi cbq_teacher_users:", insertErr.message);
+      }
+
+      // Đối tượng session đầy đủ thông tin để lưu phiên
+      const newTeacherUser = {
+        id: insertedData?.[0]?.id || `gv_${Date.now()}`,
+        username: cleanUsername,
+        full_name: formData.full_name.trim(),
+        name: formData.full_name.trim(),
         teacher_code: finalTeacherCode,
         department: formData.department,
-        homeroom_class: formData.homeroom_class.trim().toUpperCase(),
-        phone: formData.phone.trim(),
+        homeroom_class: cleanHomeroom,
+        homeroomClass: cleanHomeroom,
+        phone: cleanPhone,
+        phone_number: cleanPhone,
         email: formData.email.trim(),
         role: 'teacher',
         created_at: new Date().toISOString()
       };
-
-      const { error: insertErr } = await supabase
-        .from('cbq_teacher_users')
-        .insert([newTeacherUser]);
 
       // Always save a local copy as backup so login works even if DB/network is unreachable
       const localTeacherAccounts = JSON.parse(localStorage.getItem('cbq_teacher_accounts') || '[]');
