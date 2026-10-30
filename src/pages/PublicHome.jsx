@@ -870,6 +870,22 @@ export default function PublicHome() {
               {activeGuestTab === 'parents' && (
                 <div style={{ padding: '14px' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+                    <Link to="/dich-vu-cong" style={styles.actionCard('#e0f2fe', '#0284c7', '#0369a1')}>
+                      <span style={{ fontSize: '22px' }}>🏛️</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Dịch Vụ Công 4.0</div>
+                        <div style={{ fontSize: '10.5px', color: '#0284c7' }}>Giấy xác nhận & nghỉ phép</div>
+                      </div>
+                    </Link>
+
+                    <Link to="/chat" style={styles.actionCard('#f0fdf4', '#16a34a', '#15803d')}>
+                      <span style={{ fontSize: '22px' }}>💬</span>
+                      <div>
+                        <div style={{ fontWeight: '800', fontSize: '13px' }}>Nhắn Tin Nội Bộ</div>
+                        <div style={{ fontSize: '10.5px', color: '#16a34a' }}>Hội thoại Thầy Cô & PH</div>
+                      </div>
+                    </Link>
+
                     <Link to="/bep-sang" style={styles.actionCard('#fff7ed', '#f97316', '#c2410c')}>
                       <span style={{ fontSize: '22px' }}>🍳</span>
                       <div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail, ChevronDown, Search, X, Minimize2, Maximize2, ExternalLink, Utensils } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail, ChevronDown, Search, X, Minimize2, Maximize2, ExternalLink, Utensils, FileBadge, MessageCircle } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -118,6 +118,8 @@ export default function Layout({ children, title }) {
     { path: '/admin/app-hub', icon: LayoutDashboard, label: '🎯 Cổng Tiện Ích Sổ Sách (Hub)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
 
     // 2. 📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN
+    { path: '/admin/dich-vu-cong', icon: FileBadge, label: '🏛️ Tiếp Nhận Dịch Vụ Công & Hồ Sơ Phụ Huynh', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' || !!permissions.canViewDocs },
+    { path: '/admin/chat', icon: MessageSquare, label: '💬 Hệ Thống Nhắn Tin Nội Bộ (CBQ Chat)', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
     { path: '/admin/cantin', icon: Utensils, label: '🍳 Điều Phối Điểm Tâm & Suất Ăn Sáng', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' || role === 'canteen_staff' || !!permissions.canManageCanteen },
     { path: '/bep-sang', icon: Utensils, label: '🍱 Đăng Ký Điểm Tâm Sáng (Tiếp Sức Học Đường)', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: true },
     { path: '/admin/registrations', icon: FileText, label: '📋 Quản Lý Đợt Đăng Ký Động', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || role === 'secretary' || !!permissions.canViewRegistrations },

@@ -104,6 +104,10 @@ const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree3
 const ClassroomInteractiveGames = lazy(() => import('./pages/teacher_features/ClassroomInteractiveGames'));
 const CanteenOrderPage = lazy(() => import('./pages/public/CanteenOrderPage'));
 const AdminCanteenManager = lazy(() => import('./pages/admin/AdminCanteenManager'));
+const PublicServicesPortal = lazy(() => import('./pages/public/PublicServicesPortal'));
+const AdminPublicServices = lazy(() => import('./pages/admin/AdminPublicServices'));
+const InternalChatPage = lazy(() => import('./pages/InternalChatPage'));
+import FacebookMessengerWidget from './components/FacebookMessengerWidget';
 
 function App() {
   const { user, role, permissions = {}, loading } = useAuth();
@@ -248,6 +252,15 @@ function App() {
             <Route path="/can-tin" element={<CanteenOrderPage />} />
             <Route path="/hoc-sinh/bep-sang" element={<CanteenOrderPage />} />
             <Route path="/quan-ly-bep-sang" element={<AdminCanteenManager />} />
+
+            {/* Cổng Dịch Vụ Công Trực Tuyến & Zalo OA */}
+            <Route path="/dich-vu-cong" element={<PublicServicesPortal />} />
+            <Route path="/dvc" element={<PublicServicesPortal />} />
+            <Route path="/dich-vu-cong-truc-tuyen" element={<PublicServicesPortal />} />
+
+            {/* Hệ Thống Nhắn Tin Nội Bộ (CBQ Chat) */}
+            <Route path="/chat" element={<InternalChatPage />} />
+            <Route path="/tin-nhan" element={<InternalChatPage />} />
           </Route>
           
           {/* Protected Admin Routes */}
@@ -255,6 +268,9 @@ function App() {
             <>
               <Route path="/admin" element={(role === 'admin' || role === 'secretary') ? <Dashboard /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/committee" element={<CommitteeView />} />
+              <Route path="/admin/dich-vu-cong" element={<AdminPublicServices />} />
+              <Route path="/admin/dvc" element={<AdminPublicServices />} />
+              <Route path="/admin/chat" element={<InternalChatPage />} />
               <Route path="/admin/emulation" element={permissions.canViewEmulation ? <AdminEmulation /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/students" element={permissions.canViewStudents ? <AdminStudents /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/bus" element={permissions.canViewStudents ? <AdminBus /> : <Navigate to="/admin/committee" replace />} />
@@ -307,6 +323,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Suspense>
+      <FacebookMessengerWidget />
       <PwaInstallPrompt />
     </ErrorBoundary>
   );

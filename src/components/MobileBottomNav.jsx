@@ -83,6 +83,8 @@ export default function MobileBottomNav() {
 
   // Danh mục tiện ích nhanh cho Bottom Sheet - Phân quyền chuẩn xác theo vai trò
   const quickActions = student ? [
+    { title: 'Cổng Dịch Vụ Công Trực Tuyến', path: '/dich-vu-cong', icon: '🏛️', desc: 'Xin giấy xác nhận học sinh & nghỉ phép điện tử' },
+    { title: 'Kênh Chat Lớp & Học Đường', path: '/chat', icon: '💬', desc: 'Nhắn tin lớp học & nhận thông báo' },
     { title: 'Điểm Tâm Sáng CBQ', path: '/bep-sang', icon: '🍳', desc: 'Đăng ký suất ăn sáng trước 06h30' },
     { title: 'Sổ Đầu Bài Lớp Em', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Theo dõi tiến độ học tập và ghi sổ lớp' },
     { title: 'Phòng Thi GDPT 2018', path: '/hoc-sinh/kiem-tra-danh-gia', icon: '📝', desc: 'Làm bài kiểm tra & thi thử chuẩn cấu trúc mới' },
@@ -93,6 +95,8 @@ export default function MobileBottomNav() {
     { title: 'Cố Vấn Tổ Hợp 2+2 & Ngành', path: '/hoc-sinh/tu-van-to-hop-2-cong-2', icon: '🧭', desc: 'Định hướng tổ hợp môn thi & nghề nghiệp' },
     { title: 'Trạm Video Kỹ Năng Số', path: '/hoc-lieu-so', icon: '📺', desc: 'Kho học liệu số, video thí nghiệm & kỹ năng' }
   ] : teacher ? [
+    { title: 'Tiếp Nhận Dịch Vụ Công', path: '/admin/dich-vu-cong', icon: '🏛️', desc: 'Thẩm định giấy xác nhận & đơn nghỉ phép' },
+    { title: 'Kênh Chat Nội Bộ Trường', path: '/chat', icon: '💬', desc: 'Trao đổi chuyên môn & hội thoại lớp' },
     { title: 'Điểm Tâm Sáng CBQ', path: '/bep-sang', icon: '🍳', desc: 'Suất ăn tiếp sức Thầy Cô giáo' },
     { title: 'Ghi Sổ Đầu Bài Hôm Nay', path: '/hoc-sinh/so-dau-bai', icon: '📖', desc: 'Ký số và ghi nhận đánh giá tiết dạy' },
     { title: 'Kế Hoạch Bài Dạy (CV 5512)', path: '/admin/department-drives', icon: '📂', desc: 'Nộp và duyệt giáo án chuẩn chuyên môn' },
@@ -104,6 +108,8 @@ export default function MobileBottomNav() {
     { title: 'Quản Lý Điểm Danh CLB', path: '/admin/registrations', icon: '🎯', desc: 'Theo dõi học sinh đăng ký các câu lạc bộ' },
     { title: 'Quản Lý Xe Máy Học Sinh', path: '/admin/parking', icon: '🛵', desc: 'Duyệt vé xe và kiểm tra phương tiện học sinh' }
   ] : [
+    { title: 'Cổng Dịch Vụ Công 4.0', path: '/dich-vu-cong', icon: '🏛️', desc: 'Xin giấy xác nhận học sinh, nghỉ phép, sao y học bạ' },
+    { title: 'Nhắn Tin Nội Bộ (CBQ Chat)', path: '/chat', icon: '💬', desc: 'Hội thoại trực tiếp Thầy Cô, Phụ huynh & Học sinh' },
     { title: 'Điểm Tâm Sáng CBQ', path: '/bep-sang', icon: '🍳', desc: 'Chương trình điểm tâm sáng học đường' },
     { title: 'Tra Cứu Bằng Tốt Nghiệp & Học Bạ', path: '/tra-cuu-van-bang', icon: '📜', desc: 'Bằng tốt nghiệp THPT & học bạ điện tử' },
     { title: 'Lịch Công Tác BGH Nhà Trường', path: '/lich-cong-tac', icon: '📅', desc: 'Lịch tuần, kế hoạch tháng & năm học chính thức' },
