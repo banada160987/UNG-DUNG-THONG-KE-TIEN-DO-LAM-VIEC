@@ -1,11 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 import { supabase, supabaseAdmin } from '../lib/supabase';
+import * as XLSX from 'xlsx';
 import { 
   Users, Save, Trash2, Settings, X, Plus, ShieldCheck, 
   CheckSquare, Square, RefreshCw, Search, Filter, Key, 
   Mail, User, Phone, Check, AlertCircle, BookOpen, 
-  GraduationCap, Utensils, Award, Sparkles, ExternalLink
+  GraduationCap, Utensils, Award, Sparkles, ExternalLink,
+  Edit3, Lock, KeyRound, FileSpreadsheet, Eye, EyeOff,
+  UserCheck, RotateCcw, ShieldAlert
 } from 'lucide-react';
 
 // =========================================================================
@@ -319,8 +322,43 @@ export default function AdminUsers() {
   const [editCustomRole, setEditCustomRole] = useState('');
   const [editPermissions, setEditPermissions] = useState(() => getRoleDefaultPermissions('to_toan'));
 
+  // =========================================================================
+  // SUB-SYSTEM: CẤP & QUẢN LÝ TÀI KHOẢN GIÁO VIÊN (cbq_teacher_users)
+  // =========================================================================
+  const [activeMainTab, setActiveMainTab] = useState('teachers'); // Mặc định mở Tab Giáo viên
+  const [teacherUsers, setTeacherUsers] = useState([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(false);
+  const [teacherSearch, setTeacherSearch] = useState('');
+  const [teacherClassFilter, setTeacherClassFilter] = useState('all');
+
+  // Form State: Cấp tài khoản giáo viên mới
+  const [showCreateTeacherModal, setShowCreateTeacherModal] = useState(false);
+  const [createTeacherForm, setCreateTeacherForm] = useState({
+    full_name: '',
+    username: '',
+    password: '123456',
+    homeroom_class: '',
+    phone_number: ''
+  });
+
+  // Form State: Reset / Cấp lại mật khẩu giáo viên
+  const [resetPwTeacher, setResetPwTeacher] = useState(null);
+  const [newPasswordInput, setNewPasswordInput] = useState('123456');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
+  // Form State: Sửa thông tin tài khoản giáo viên
+  const [editingTeacher, setEditingTeacher] = useState(null);
+  const [editTeacherForm, setEditTeacherForm] = useState({
+    id: null,
+    full_name: '',
+    username: '',
+    homeroom_class: '',
+    phone_number: ''
+  });
+
   useEffect(() => {
     fetchData();
+    fetchTeacherUsers();
   }, []);
 
   async function fetchData() {
@@ -607,6 +645,177 @@ export default function AdminUsers() {
     });
   }, [usersList, searchQuery, roleFilter]);
 
+  // Nạp danh sách tài khoản giáo viên
+  const fetchTeacherUsers = async () => {
+    setLoadingTeachers(true);
+    try {
+      const { data, error } = await supabase
+        .from('cbq_teacher_users')
+        .select('*')
+        .order('id', { ascending: true });
+      if (!error && data) {
+        setTeacherUsers(data);
+      }
+    } catch (err) {
+      console.warn("Lỗi tải cbq_teacher_users:", err);
+    } finally {
+      setLoadingTeachers(false);
+    }
+  };
+
+  // Cấp tài khoản giáo viên mới
+  const handleCreateTeacher = async (e) => {
+    e.preventDefault();
+    if (!createTeacherForm.full_name.trim() || !createTeacherForm.username.trim() || !createTeacherForm.password) {
+      alert("Vui lòng điền đầy đủ Họ tên, Tên đăng nhập và Mật khẩu!");
+      return;
+    }
+
+    const cleanUsername = createTeacherForm.username.trim().toLowerCase();
+    const exists = teacherUsers.some(t => (t.username || '').toLowerCase() === cleanUsername);
+    if (exists) {
+      alert(`Tên đăng nhập "${cleanUsername}" đã tồn tại! Vui lòng chọn tên đăng nhập khác.`);
+      return;
+    }
+
+    try {
+      const payload = {
+        full_name: createTeacherForm.full_name.trim(),
+        username: cleanUsername,
+        password_hash: createTeacherForm.password,
+        homeroom_class: createTeacherForm.homeroom_class.trim().toUpperCase() || null,
+        phone_number: createTeacherForm.phone_number.trim() || null
+      };
+
+      const { error } = await supabase
+        .from('cbq_teacher_users')
+        .insert([payload]);
+
+      if (error) throw error;
+
+      alert(`✅ Đã cấp tài khoản giáo viên thành công cho Thầy/Cô ${createTeacherForm.full_name}!`);
+      setShowCreateTeacherModal(false);
+      setCreateTeacherForm({ full_name: '', username: '', password: '123456', homeroom_class: '', phone_number: '' });
+      fetchTeacherUsers();
+    } catch (err) {
+      alert("Lỗi cấp tài khoản: " + err.message);
+    }
+  };
+
+  // Đổi / Reset mật khẩu giáo viên
+  const handleSaveResetPassword = async (e) => {
+    e.preventDefault();
+    if (!resetPwTeacher || !newPasswordInput.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from('cbq_teacher_users')
+        .update({ password_hash: newPasswordInput.trim() })
+        .eq('id', resetPwTeacher.id);
+
+      if (error) throw error;
+
+      alert(`✅ Đã cập nhật mật khẩu cho Thầy/Cô [${resetPwTeacher.full_name}] thành "${newPasswordInput.trim()}" thành công!`);
+      setResetPwTeacher(null);
+      fetchTeacherUsers();
+    } catch (err) {
+      alert("Lỗi đổi mật khẩu: " + err.message);
+    }
+  };
+
+  // Cập nhật thông tin giáo viên
+  const handleSaveEditTeacher = async (e) => {
+    e.preventDefault();
+    if (!editingTeacher) return;
+
+    try {
+      const { error } = await supabase
+        .from('cbq_teacher_users')
+        .update({
+          full_name: editTeacherForm.full_name.trim(),
+          username: editTeacherForm.username.trim().toLowerCase(),
+          homeroom_class: editTeacherForm.homeroom_class.trim().toUpperCase() || null,
+          phone_number: editTeacherForm.phone_number.trim() || null
+        })
+        .eq('id', editingTeacher.id);
+
+      if (error) throw error;
+
+      alert("✅ Đã cập nhật thông tin giáo viên thành công!");
+      setEditingTeacher(null);
+      fetchTeacherUsers();
+    } catch (err) {
+      alert("Lỗi cập nhật: " + err.message);
+    }
+  };
+
+  // Xóa tài khoản giáo viên
+  const handleDeleteTeacher = async (teacher) => {
+    if (window.confirm(`Bạn có chắc chắn muốn xóa tài khoản của Thầy/Cô [${teacher.full_name}] (${teacher.username}) không?`)) {
+      try {
+        const { error } = await supabase
+          .from('cbq_teacher_users')
+          .delete()
+          .eq('id', teacher.id);
+
+        if (error) throw error;
+        alert("Đã xóa tài khoản giáo viên thành công!");
+        fetchTeacherUsers();
+      } catch (err) {
+        alert("Lỗi xóa tài khoản: " + err.message);
+      }
+    }
+  };
+
+  // Xuất file Excel danh sách tài khoản giáo viên (Tuân thủ quy tắc tiền tố GEMINI.md)
+  const handleExportTeachersExcel = () => {
+    if (teacherUsers.length === 0) {
+      alert("Danh sách tài khoản trống!");
+      return;
+    }
+
+    const rows = teacherUsers.map((t, idx) => ({
+      'STT': idx + 1,
+      'Họ và Tên Giáo Viên': t.full_name,
+      'Tên Đăng Nhập': t.username,
+      'Mật Khẩu Hiện Tại': t.password_hash || '123456',
+      'Lớp Chủ Nhiệm': t.homeroom_class || '',
+      'Số Điện Thoại': t.phone_number || '',
+      'Ngày Cấp': t.created_at ? new Date(t.created_at).toLocaleDateString('vi-VN') : ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DanhSachTaiKhoanGV");
+    XLSX.writeFile(wb, "1-Danh_sach_tai_khoan_giao_vien_THPT_Cao_Ba_Quat.xlsx");
+  };
+
+  // Danh sách các lớp chủ nhiệm duy nhất
+  const uniqueTeacherClasses = useMemo(() => {
+    const set = new Set();
+    teacherUsers.forEach(t => {
+      if (t.homeroom_class) set.add(t.homeroom_class);
+    });
+    return Array.from(set).sort();
+  }, [teacherUsers]);
+
+  // Lọc danh sách giáo viên
+  const filteredTeacherUsers = useMemo(() => {
+    return teacherUsers.filter(t => {
+      const q = teacherSearch.toLowerCase();
+      const matchesSearch = 
+        (t.full_name || '').toLowerCase().includes(q) ||
+        (t.username || '').toLowerCase().includes(q) ||
+        (t.homeroom_class || '').toLowerCase().includes(q) ||
+        (t.phone_number || '').toLowerCase().includes(q);
+
+      const matchesClass = teacherClassFilter === 'all' || 
+        (t.homeroom_class || '').toUpperCase() === teacherClassFilter.toUpperCase();
+
+      return matchesSearch && matchesClass;
+    });
+  }, [teacherUsers, teacherSearch, teacherClassFilter]);
+
   // Đếm số quyền đã cấp
   const countActivePermissions = (perms) => {
     if (!perms) return 0;
@@ -619,44 +828,292 @@ export default function AdminUsers() {
       <div className="admin-top-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
           <h2 style={{ margin: 0, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Users size={24} color="#be123c" /> Quản Lý Tài Khoản & Phân Quyền
+            <Users size={24} color="#be123c" /> Quản Lý & Cấp Tài Khoản Hệ Thống
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#64748b', fontSize: '13px' }}>
-            Phân quyền 18 danh mục chức năng theo 4 nhóm chuyên môn, dịch vụ, nề nếp và truyền thông
+            Cấp tài khoản giáo viên, khôi phục mật khẩu và ma trận phân quyền 18 danh mục chuyên môn
           </p>
         </div>
 
         <div className="admin-btn-group" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button 
-            type="button"
-            onClick={handleSyncAllRolesToDB} 
-            disabled={saving}
-            className="btn-primary" 
-            style={{ padding: '8px 14px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
-          >
-            <Save size={15} /> {saving ? 'Đang lưu...' : '💾 Đồng Bộ CSDL'}
-          </button>
+          {activeMainTab === 'teachers' ? (
+            <>
+              <button 
+                type="button"
+                onClick={handleExportTeachersExcel}
+                className="btn-secondary" 
+                style={{ padding: '8px 14px', backgroundColor: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+                title="Xuất danh sách tài khoản giáo viên theo quy tắc GEMINI.md"
+              >
+                <FileSpreadsheet size={15} /> 📥 Xuất Excel
+              </button>
 
-          <button 
-            type="button"
-            onClick={() => {
-              setCreateFullName('');
-              setCreatePhone('');
-              setCreateEmail('');
-              setCreatePassword('');
-              setCreateRoleSelect('to_toan');
-              setCreateCustomRole('');
-              setCreatePermissions(getRoleDefaultPermissions('to_toan'));
-              setShowCreateModal(true);
-            }} 
-            className="btn-primary" 
-            style={{ padding: '8px 16px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
-          >
-            <Plus size={15} /> Tạo Tài Khoản Mới
-          </button>
+              <button 
+                type="button"
+                onClick={fetchTeacherUsers}
+                disabled={loadingTeachers}
+                className="btn-secondary" 
+                style={{ padding: '8px 14px', backgroundColor: '#0284c7', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}
+              >
+                <RefreshCw size={15} className={loadingTeachers ? 'animate-spin' : ''} /> {loadingTeachers ? 'Đang tải...' : 'Làm Mới'}
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setCreateTeacherForm({ full_name: '', username: '', password: '123456', homeroom_class: '', phone_number: '' });
+                  setShowCreateTeacherModal(true);
+                }} 
+                className="btn-primary" 
+                style={{ padding: '8px 16px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+              >
+                <Plus size={15} /> + Cấp Tài Khoản Giáo Viên
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                type="button"
+                onClick={handleSyncAllRolesToDB} 
+                disabled={saving}
+                className="btn-primary" 
+                style={{ padding: '8px 14px', backgroundColor: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+              >
+                <Save size={15} /> {saving ? 'Đang lưu...' : '💾 Đồng Bộ CSDL'}
+              </button>
+
+              <button 
+                type="button"
+                onClick={() => {
+                  setCreateFullName('');
+                  setCreatePhone('');
+                  setCreateEmail('');
+                  setCreatePassword('');
+                  setCreateRoleSelect('to_toan');
+                  setCreateCustomRole('');
+                  setCreatePermissions(getRoleDefaultPermissions('to_toan'));
+                  setShowCreateModal(true);
+                }} 
+                className="btn-primary" 
+                style={{ padding: '8px 16px', backgroundColor: '#be123c', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px' }}
+              >
+                <Plus size={15} /> Tạo Tài Khoản Mới
+              </button>
+            </>
+          )}
         </div>
       </div>
 
+      {/* THANH CHUYỂN TAB CHÍNH */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '14px', borderBottom: '2px solid #e2e8f0', paddingBottom: '2px' }}>
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('teachers')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '13.5px',
+            fontWeight: 'bold',
+            border: 'none',
+            borderBottom: activeMainTab === 'teachers' ? '3px solid #be123c' : '3px solid transparent',
+            backgroundColor: activeMainTab === 'teachers' ? '#fff1f2' : 'transparent',
+            color: activeMainTab === 'teachers' ? '#be123c' : '#64748b',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <UserCheck size={17} />
+          <span>👩‍🏫 Cấp & Quản Lý Tài Khoản Giáo Viên ({teacherUsers.length})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveMainTab('roles')}
+          style={{
+            padding: '10px 18px',
+            fontSize: '13.5px',
+            fontWeight: 'bold',
+            border: 'none',
+            borderBottom: activeMainTab === 'roles' ? '3px solid #0284c7' : '3px solid transparent',
+            backgroundColor: activeMainTab === 'roles' ? '#f0f9ff' : 'transparent',
+            color: activeMainTab === 'roles' ? '#0284c7' : '#64748b',
+            borderRadius: '8px 8px 0 0',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            transition: 'all 0.15s ease'
+          }}
+        >
+          <ShieldCheck size={17} />
+          <span>🛡️ Phân Quyền 18 Chức Năng Ban Ngành ({usersList.length})</span>
+        </button>
+      </div>
+
+      {/* TAB 1: CẤP & QUẢN LÝ TÀI KHOẢN GIÁO VIÊN */}
+      {activeMainTab === 'teachers' && (
+        <div>
+          {/* SEARCH & FILTER TOOLBAR FOR TEACHERS */}
+          <div className="admin-filter-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px', background: '#ffffff', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
+              <input
+                type="text"
+                placeholder="Tìm giáo viên theo họ tên, tên đăng nhập (gv.xxx), lớp, SĐT..."
+                value={teacherSearch}
+                onChange={e => setTeacherSearch(e.target.value)}
+                style={{ width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+              />
+              <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '10px', top: '9px' }} />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Filter size={14} color="#64748b" />
+              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569' }}>Lớp Chủ Nhiệm:</span>
+              <select
+                value={teacherClassFilter}
+                onChange={e => setTeacherClassFilter(e.target.value)}
+                style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}
+              >
+                <option value="all">Tất cả lớp ({teacherUsers.length} GV)</option>
+                {uniqueTeacherClasses.map(cls => (
+                  <option key={cls} value={cls}>Lớp {cls}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* TEACHERS LIST TABLE */}
+          <div className="glass" style={{ padding: '1rem', borderRadius: '1rem', backgroundColor: 'white' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #f1f5f9', paddingBottom: '8px', marginBottom: '12px', flexWrap: 'wrap', gap: '6px' }}>
+              <h3 style={{ margin: 0, color: '#be123c', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                👩‍🏫 Danh Sách Cán Bộ Giáo Viên ({filteredTeacherUsers.length} / {teacherUsers.length})
+              </h3>
+              <span style={{ fontSize: '11.5px', color: '#64748b' }}>
+                💡 Mật khẩu mặc định hệ thống cấp là <strong>123456</strong>. Bấm nút Đổi / Reset để cấp lại mật khẩu mới khi giáo viên báo quên.
+              </span>
+            </div>
+
+            {loadingTeachers ? <p style={{ padding: '20px', textAlign: 'center', color: '#64748b' }}>Đang nạp danh sách tài khoản giáo viên...</p> : (
+              <div className="admin-table-wrapper" style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left', background: '#f8fafc' }}>
+                      <th style={{ padding: '12px 10px', width: '50px' }}>STT</th>
+                      <th style={{ padding: '12px 10px' }}>Họ Và Tên Giáo Viên</th>
+                      <th style={{ padding: '12px 10px' }}>Tên Đăng Nhập</th>
+                      <th style={{ padding: '12px 10px' }}>Mật Khẩu Hiện Tại</th>
+                      <th style={{ padding: '12px 10px' }}>Chủ Nhiệm / SĐT</th>
+                      <th style={{ padding: '12px 10px', textAlign: 'right' }}>Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTeacherUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: '#94a3b8' }}>
+                          Không tìm thấy tài khoản giáo viên nào phù hợp với bộ lọc tìm kiếm.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredTeacherUsers.map((t, idx) => (
+                        <tr key={t.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '10px', color: '#94a3b8', fontWeight: 'bold' }}>
+                            {idx + 1}
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ fontWeight: 'bold', color: '#0f172a', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <UserCheck size={16} color="#0284c7" />
+                              {t.full_name}
+                            </div>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>
+                              Ngày cấp: {t.created_at ? new Date(t.created_at).toLocaleDateString('vi-VN') : 'Mặc định'}
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ display: 'inline-block', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#e0f2fe', color: '#0369a1', fontFamily: 'monospace' }}>
+                              {t.username}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', backgroundColor: '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace' }}>
+                                {t.password_hash || '123456'}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px' }}>
+                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                              {t.homeroom_class && (
+                                <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #bbf7d0' }}>
+                                  Lớp {t.homeroom_class}
+                                </span>
+                              )}
+                              {t.phone_number && (
+                                <span style={{ padding: '2px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', backgroundColor: '#f1f5f9', color: '#475569' }}>
+                                  📞 {t.phone_number}
+                                </span>
+                              )}
+                              {!t.homeroom_class && !t.phone_number && (
+                                <span style={{ fontSize: '11.5px', color: '#94a3b8' }}>Chưa gán</span>
+                              )}
+                            </div>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setResetPwTeacher(t);
+                                  setNewPasswordInput('123456');
+                                }}
+                                style={{ padding: '5px 10px', borderRadius: '6px', border: '1px solid #fed7aa', background: '#fff7ed', color: '#ea580c', cursor: 'pointer', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                                title="Đổi / Reset mật khẩu cho giáo viên"
+                              >
+                                <KeyRound size={13} /> Reset MK
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingTeacher(t);
+                                  setEditTeacherForm({
+                                    id: t.id,
+                                    full_name: t.full_name || '',
+                                    username: t.username || '',
+                                    homeroom_class: t.homeroom_class || '',
+                                    phone_number: t.phone_number || ''
+                                  });
+                                }}
+                                style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontSize: '11.5px' }}
+                                title="Sửa thông tin giáo viên"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTeacher(t)}
+                                style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer', fontSize: '11.5px' }}
+                                title="Xóa tài khoản giáo viên này"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: QUẢN TRỊ VIÊN & PHÂN QUYỀN 18 CHỨC NĂNG */}
+      {activeMainTab === 'roles' && (
+        <div>
       {/* 2. SEARCH & FILTER TOOLBAR */}
       <div className="admin-filter-toolbar" style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '14px', background: '#ffffff', padding: '10px 14px', borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
         <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
@@ -795,6 +1252,8 @@ export default function AdminUsers() {
           </div>
         )}
       </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 4. MODAL DIALOG: CHỈNH SỬA VAI TRÒ & MA TRẬN PHÂN QUYỀN                   */}
@@ -1169,6 +1628,255 @@ export default function AdminUsers() {
                 </button>
                 <button type="submit" className="btn-primary" style={{ padding: '9px 24px', backgroundColor: '#be123c', fontSize: '13px' }}>
                   <Save size={16} /> Tạo Tài Khoản & Cấp Quyền
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 6. MODAL: CẤP TÀI KHOẢN GIÁO VIÊN MỚI (cbq_teacher_users)                */}
+      {/* ========================================================================= */}
+      {showCreateTeacherModal && (
+        <div style={styles.modalOverlay}>
+          <div className="admin-modal-card" style={{ ...styles.modalContent, maxWidth: '520px' }}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h3 style={{ margin: 0, color: '#be123c', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
+                  <UserCheck size={20} color="#be123c" /> Cấp Tài Khoản Giáo Viên Mới
+                </h3>
+                <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '12px' }}>
+                  Tài khoản đăng nhập cổng chuyên môn giáo viên THPT Cao Bá Quát
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowCreateTeacherModal(false)} style={styles.closeBtn}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateTeacher} style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={styles.label}>Họ và Tên Giáo Viên (*):</label>
+                <input
+                  type="text"
+                  required
+                  value={createTeacherForm.full_name}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const parts = val.trim().toLowerCase().split(' ');
+                    const lastName = parts[parts.length - 1] || '';
+                    const generatedUser = lastName ? `gv.${lastName}` : '';
+                    setCreateTeacherForm(prev => ({
+                      ...prev,
+                      full_name: val,
+                      username: prev.username ? prev.username : generatedUser
+                    }));
+                  }}
+                  style={styles.input}
+                  placeholder="VD: Nguyễn Văn An, Trần Thị Lan..."
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label style={styles.label}>Tên Đăng Nhập (*):</label>
+                  <input
+                    type="text"
+                    required
+                    value={createTeacherForm.username}
+                    onChange={e => setCreateTeacherForm(prev => ({ ...prev, username: e.target.value.toLowerCase().trim() }))}
+                    style={{ ...styles.input, fontFamily: 'monospace', fontWeight: 'bold' }}
+                    placeholder="VD: gv.an, gv.lan..."
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Mật Khẩu Ban Đầu (*):</label>
+                  <input
+                    type="text"
+                    required
+                    value={createTeacherForm.password}
+                    onChange={e => setCreateTeacherForm(prev => ({ ...prev, password: e.target.value }))}
+                    style={{ ...styles.input, fontFamily: 'monospace' }}
+                    placeholder="Mặc định: 123456"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                <div>
+                  <label style={styles.label}>Lớp Chủ Nhiệm (nếu có):</label>
+                  <input
+                    type="text"
+                    value={createTeacherForm.homeroom_class}
+                    onChange={e => setCreateTeacherForm(prev => ({ ...prev, homeroom_class: e.target.value.toUpperCase() }))}
+                    style={styles.input}
+                    placeholder="VD: 10A1, 11B2..."
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Số Điện Thoại:</label>
+                  <input
+                    type="text"
+                    value={createTeacherForm.phone_number}
+                    onChange={e => setCreateTeacherForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                    style={styles.input}
+                    placeholder="VD: 0984.xxx.xxx"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setShowCreateTeacherModal(false)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                  Hủy Bỏ
+                </button>
+                <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#be123c', fontSize: '13px' }}>
+                  <Save size={15} /> Xác Nhận Cấp Tài Khoản
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 7. MODAL: ĐỔI / RESET MẬT KHẨU GIÁO VIÊN                                  */}
+      {/* ========================================================================= */}
+      {resetPwTeacher && (
+        <div style={styles.modalOverlay}>
+          <div className="admin-modal-card" style={{ ...styles.modalContent, maxWidth: '460px' }}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h3 style={{ margin: 0, color: '#ea580c', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
+                  <KeyRound size={20} color="#ea580c" /> Đổi / Reset Mật Khẩu Giáo Viên
+                </h3>
+                <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '12px' }}>
+                  Cán bộ: <strong>{resetPwTeacher.full_name}</strong> ({resetPwTeacher.username})
+                </p>
+              </div>
+              <button type="button" onClick={() => setResetPwTeacher(null)} style={styles.closeBtn}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveResetPassword} style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={styles.label}>Mật Khẩu Mới Cần Đặt:</label>
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    value={newPasswordInput}
+                    onChange={e => setNewPasswordInput(e.target.value)}
+                    style={{ ...styles.input, paddingRight: '40px', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '14px' }}
+                    placeholder="Nhập mật khẩu mới..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    style={{ position: 'absolute', right: '10px', top: '10px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                  >
+                    {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Nút reset nhanh về mặc định 123456 */}
+              <div style={{ marginBottom: '20px', display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setNewPasswordInput('123456')}
+                  style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid #fed7aa', backgroundColor: '#fff7ed', color: '#c2410c', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                >
+                  <RotateCcw size={13} /> Về Mặc Định "123456"
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setResetPwTeacher(null)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                  Hủy Bỏ
+                </button>
+                <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#ea580c', fontSize: '13px' }}>
+                  <Save size={15} /> Lưu Mật Khẩu Mới
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 8. MODAL: SỬA THÔNG TIN TÀI KHOẢN GIÁO VIÊN                               */}
+      {/* ========================================================================= */}
+      {editingTeacher && (
+        <div style={styles.modalOverlay}>
+          <div className="admin-modal-card" style={{ ...styles.modalContent, maxWidth: '500px' }}>
+            <div style={styles.modalHeader}>
+              <div>
+                <h3 style={{ margin: 0, color: '#0284c7', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '16px' }}>
+                  <Edit3 size={20} color="#0284c7" /> Cập Nhật Thông Tin Giáo Viên
+                </h3>
+                <p style={{ margin: '3px 0 0 0', color: '#64748b', fontSize: '12px' }}>
+                  Chỉnh sửa họ tên, tên đăng nhập hoặc lớp chủ nhiệm
+                </p>
+              </div>
+              <button type="button" onClick={() => setEditingTeacher(null)} style={styles.closeBtn}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditTeacher} style={{ padding: '20px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <label style={styles.label}>Họ và Tên Giáo Viên (*):</label>
+                <input
+                  type="text"
+                  required
+                  value={editTeacherForm.full_name}
+                  onChange={e => setEditTeacherForm(prev => ({ ...prev, full_name: e.target.value }))}
+                  style={styles.input}
+                />
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={styles.label}>Tên Đăng Nhập (*):</label>
+                <input
+                  type="text"
+                  required
+                  value={editTeacherForm.username}
+                  onChange={e => setEditTeacherForm(prev => ({ ...prev, username: e.target.value.toLowerCase().trim() }))}
+                  style={{ ...styles.input, fontFamily: 'monospace', fontWeight: 'bold' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '20px' }}>
+                <div>
+                  <label style={styles.label}>Lớp Chủ Nhiệm:</label>
+                  <input
+                    type="text"
+                    value={editTeacherForm.homeroom_class}
+                    onChange={e => setEditTeacherForm(prev => ({ ...prev, homeroom_class: e.target.value.toUpperCase() }))}
+                    style={styles.input}
+                    placeholder="VD: 10A1..."
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Số Điện Thoại:</label>
+                  <input
+                    type="text"
+                    value={editTeacherForm.phone_number}
+                    onChange={e => setEditTeacherForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                    style={styles.input}
+                    placeholder="VD: 0984.xxx.xxx"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button type="button" onClick={() => setEditingTeacher(null)} style={{ padding: '8px 16px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px' }}>
+                  Hủy Bỏ
+                </button>
+                <button type="submit" className="btn-primary" style={{ padding: '8px 20px', backgroundColor: '#0284c7', fontSize: '13px' }}>
+                  <Save size={15} /> Lưu Cập Nhật
                 </button>
               </div>
             </form>

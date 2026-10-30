@@ -34,7 +34,9 @@ export default function MobileExamGrader2027() {
 
   // State điều hướng màn hình (Views)
   // 'home' | 'batches' | 'batch_detail' | 'new_batch' | 'settings' | 'answers' | 'scanner' | 'graded_list' | 'stats' | 'choose_class' | 'print_sheet'
-  const [currentView, setCurrentView] = useState('batches');
+  const [currentView, setCurrentView] = useState('home');
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   // Đợt thi đang chọn
   const [batches, setBatches] = useState([]);
@@ -472,7 +474,7 @@ export default function MobileExamGrader2027() {
   const getHeaderTitle = () => {
     switch (currentView) {
       case 'home':
-        return 'Chấm Thi 2025';
+        return 'Chấm Thi 2027';
       case 'batches':
         return 'Danh sách chấm';
       case 'batch_detail':
@@ -618,6 +620,207 @@ export default function MobileExamGrader2027() {
 
       {/* Main Content Area - Căn giữa cho Mobile & Tablet */}
       <main style={{ maxWidth: '540px', margin: '0 auto', padding: '16px 14px' }}>
+
+        {/* =======================================================================
+            SCREEN 0: "TRANG CHỦ CHẤM THI 2027" (CHÍNH XÁC 100% THEO SCREENSHOT 3)
+            ======================================================================= */}
+        {currentView === 'home' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Header Box / Banner */}
+            <div style={{
+              textAlign: 'center',
+              padding: '6px 0 16px 0',
+              position: 'relative'
+            }}>
+              <div style={{
+                height: '1px',
+                backgroundColor: '#cbd5e1',
+                margin: '0 20px 14px 20px'
+              }} />
+              <h2 style={{
+                margin: 0,
+                fontSize: '22px',
+                fontWeight: '800',
+                color: '#475569',
+                letterSpacing: '-0.3px'
+              }}>
+                Chấm thi QM
+              </h2>
+              <p style={{
+                margin: '4px 0 0 0',
+                fontSize: '15px',
+                color: '#64748b'
+              }}>
+                Phiên bản chấm thi TN 2027
+              </p>
+            </div>
+
+            {/* 5 Main Function Cards */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* 1. Danh sách chấm */}
+              <div
+                onClick={() => setCurrentView('batches')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  border: '1px solid #f1f5f9',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
+                  <FileSpreadsheet size={24} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                  Danh sách chấm
+                </div>
+              </div>
+
+              {/* 2. Tải phiếu trả lời */}
+              <div
+                onClick={() => setCurrentView('print_sheet')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  border: '1px solid #f1f5f9',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
+                  <FileText size={24} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                  Tải phiếu trả lời
+                </div>
+              </div>
+
+              {/* 3. Cài đặt */}
+              <div
+                onClick={() => setCurrentView('settings')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  border: '1px solid #f1f5f9',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
+                  <Settings size={24} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                  Cài đặt
+                </div>
+              </div>
+
+              {/* 4. Tài khoản */}
+              <div
+                onClick={() => setShowAccountModal(true)}
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  border: '1px solid #f1f5f9',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
+                  <Users size={24} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                  Tài khoản
+                </div>
+              </div>
+
+              {/* 5. Lớp học */}
+              <div
+                onClick={() => setCurrentView('choose_class')}
+                style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '18px 22px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '18px',
+                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  cursor: 'pointer',
+                  border: '1px solid #f1f5f9',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
+                  <Award size={24} strokeWidth={2.2} />
+                </div>
+                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                  Lớp học
+                </div>
+              </div>
+            </div>
+
+            {/* Green Badge [FREE] */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px', marginBottom: '16px' }}>
+              <div style={{
+                border: '2.5px solid #009688',
+                borderRadius: '8px',
+                padding: '4px 20px',
+                color: '#009688',
+                fontWeight: '900',
+                fontSize: '20px',
+                letterSpacing: '1px',
+                backgroundColor: '#ffffff'
+              }}>
+                FREE
+              </div>
+            </div>
+
+            {/* Bottom Footer Links: Hướng dẫn | Liên hệ */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '24px',
+              borderTop: '1px solid #cbd5e1',
+              paddingTop: '14px',
+              fontSize: '14.5px',
+              color: '#64748b'
+            }}>
+              <span
+                onClick={() => setShowGuideModal(true)}
+                style={{ cursor: 'pointer', fontWeight: '600' }}
+              >
+                Hướng dẫn
+              </span>
+              <span style={{ color: '#cbd5e1' }}>|</span>
+              <span
+                onClick={() => alert("Hỗ trợ kỹ thuật chấm thi OMR THPT Cao Bá Quát: 0984.xxx.xxx")}
+                style={{ cursor: 'pointer', fontWeight: '600' }}
+              >
+                Liên hệ
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* =======================================================================
             SCREEN 1: "DANH SÁCH CHẤM" (CHÍNH XÁC 100% THEO SCREENSHOT 2)
@@ -2497,6 +2700,136 @@ export default function MobileExamGrader2027() {
       {/* Canvas ẩn phục vụ tiền xử lý ảnh OMR */}
       <canvas ref={canvasRef} style={{ display: 'none' }} />
 
+      {/* MODAL THÔNG TIN TÀI KHOẢN GIÁO VIÊN */}
+      {showAccountModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px', zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '420px',
+            width: '100%',
+            overflow: 'hidden',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{
+              backgroundColor: '#6200ee',
+              color: '#ffffff',
+              padding: '16px 20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '16px', fontWeight: '800' }}>Tài Khoản Giáo Viên</div>
+              <button
+                type="button"
+                onClick={() => setShowAccountModal(false)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '20px', fontSize: '14px', color: '#334155', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <span style={{ color: '#64748b' }}>Họ và tên:</span> <strong>{teacher?.full_name || teacher?.name || 'Giáo viên THPT Cao Bá Quát'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b' }}>Tên đăng nhập:</span> <strong style={{ color: '#6200ee', fontFamily: 'monospace' }}>{teacher?.username || 'gv.cbq'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b' }}>Lớp chủ nhiệm:</span> <strong>{teacher?.homeroom_class ? `Lớp ${teacher.homeroom_class}` : 'Không chủ nhiệm'}</strong>
+              </div>
+              <div>
+                <span style={{ color: '#64748b' }}>Phiên bản OMR:</span> <strong style={{ color: '#00897b' }}>Chấm Thi 2027 (QM Engine)</strong>
+              </div>
+              <div style={{ marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAccountModal(false)}
+                  style={{
+                    backgroundColor: '#6200ee',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HƯỚNG DẪN CHẤM THI */}
+      {showGuideModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '16px', zIndex: 9999
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '16px',
+            maxWidth: '480px',
+            width: '100%',
+            maxHeight: '90vh',
+            overflowY: 'auto',
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{
+              backgroundColor: '#6200ee',
+              color: '#ffffff',
+              padding: '16px 20px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ fontSize: '16px', fontWeight: '800' }}>Hướng Dẫn Sử Dụng Chấm Thi 2027</div>
+              <button
+                type="button"
+                onClick={() => setShowGuideModal(false)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div style={{ padding: '20px', fontSize: '13.5px', color: '#334155', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div><strong>Bước 1: Tải phiếu trả lời</strong><br/>Bấm mục "Tải phiếu trả lời" trên trang chủ để tải file PDF phiếu QM 2025/2027 in cho học sinh. Khuyên dùng in khổ A4 rõ nét.</div>
+              <div><strong>Bước 2: Tạo bài chấm</strong><br/>Bấm "Danh sách chấm" → Bấm nút (+) xanh ngọc để tạo đợt thi mới, đặt tên bài và chọn đúng mẫu phiếu đã phát cho học sinh.</div>
+              <div><strong>Bước 3: Nhập đáp án</strong><br/>Trong chi tiết đợt thi, bấm mục "Đáp án" để nhập đáp án cho các mã đề (101, 102...).</div>
+              <div><strong>Bước 4: Chấm bài</strong><br/>Bấm mục "Chấm bài" → Đưa camera điện thoại vào thẳng phiếu bài thi sao cho 4 góc định vị nằm trọn trong khung hình. Máy sẽ tự nhận diện và kêu Beep khi chấm xong!</div>
+              <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowGuideModal(false)}
+                  style={{
+                    backgroundColor: '#6200ee',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 18px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đã Hiểu
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

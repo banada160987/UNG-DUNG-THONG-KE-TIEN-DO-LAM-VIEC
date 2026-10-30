@@ -474,6 +474,47 @@ export default function TeacherLogin() {
           </button>
         </form>
 
+        {/* Nút Đăng ký tài khoản Giáo Viên mới */}
+        <div style={{
+          marginTop: '16px',
+          padding: '12px 14px',
+          backgroundColor: '#f0fdf4',
+          borderRadius: '12px',
+          border: '1.5px solid #86efac',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '8px'
+        }}>
+          <div style={{ textAlign: 'left', minWidth: 0 }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534' }}>
+              Thầy/Cô chưa có tài khoản?
+            </div>
+            <div style={{ fontSize: '11.5px', color: '#15803d' }}>
+              Đăng ký tài khoản giáo viên bộ môn / GVCN
+            </div>
+          </div>
+          <Link
+            to="/dang-ky-giao-vien"
+            style={{
+              padding: '7px 14px',
+              backgroundColor: '#16a34a',
+              color: '#ffffff',
+              borderRadius: '8px',
+              fontSize: '12.5px',
+              fontWeight: 'bold',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              flexShrink: 0,
+              boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+            }}
+          >
+            Đăng ký <ArrowRight size={13} />
+          </Link>
+        </div>
+
         {/* Khối bảo mật thông tin & Hướng dẫn cấp lại tài khoản chuyên môn */}
         <div style={{
           marginTop: '20px',

@@ -173,8 +173,8 @@ export default function TeacherRegister() {
       try {
         const { data: users } = await supabase
           .from('cbq_teacher_users')
-          .select('*')
-          .or(`teacher_code.eq.${tCode},full_name.ilike.${tName}`)
+          .select('id, username, full_name')
+          .ilike('full_name', tName.trim())
           .limit(1);
 
         if (users && users.length > 0) {
