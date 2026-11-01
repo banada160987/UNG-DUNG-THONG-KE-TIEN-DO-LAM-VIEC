@@ -6,6 +6,7 @@ import {
   Eye, Check, X, Bookmark
 } from 'lucide-react';
 import MathView from '../../components/MathView';
+import { ALL_CBQ_CLASSES_34 } from '../../services/signmarTournamentService';
 import { getPublishedExams, getExamDetail, submitStudentExam } from '../../services/smartAssessmentService';
 
 export default function StudentExamPortal() {
@@ -13,6 +14,9 @@ export default function StudentExamPortal() {
   const { examId } = useParams();
 
   const [student, setStudent] = useState(null);
+  const [quickStudentName, setQuickStudentName] = useState('');
+  const [quickStudentClass, setQuickStudentClass] = useState('10A01');
+  const [quickStudentSbd, setQuickStudentSbd] = useState('');
   const [exam, setExam] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -141,10 +145,23 @@ export default function StudentExamPortal() {
   }, [answers, timeLeft, examStarted, examSubmitted, exam, student, selectedExamCode]);
 
   const handleStartExam = () => {
-    if (!student) {
-      alert("Vui lòng đăng nhập tài khoản học sinh trước khi làm bài!");
-      navigate('/dang-nhap-hoc-sinh');
-      return;
+    let activeStudent = student;
+    if (!activeStudent) {
+      if (!quickStudentName.trim()) {
+        alert("Vui lòng điền đầy đủ Họ và Tên của em trước khi bắt đầu làm bài!");
+        return;
+      }
+      activeStudent = {
+        full_name: quickStudentName.trim(),
+        student_class: quickStudentClass,
+        student_code: quickStudentSbd.trim() || `CBQ${Date.now().toString().slice(-4)}`,
+        username: quickStudentSbd.trim() || `cbq_${Date.now().toString().slice(-4)}`,
+        is_guest: true
+      };
+      setStudent(activeStudent);
+      try {
+        localStorage.setItem('cbq_current_student', JSON.stringify(activeStudent));
+      } catch (_) {}
     }
     setExamStarted(true);
   };
@@ -394,6 +411,81 @@ export default function StudentExamPortal() {
               </div>
             )}
           </div>
+
+          {/* Student Info Card */}
+          {student ? (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '14px', padding: '16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <User size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a' }}>
+                    Thí sinh: {student.full_name}
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: '#15803d' }}>
+                    Lớp: <strong>{student.student_class}</strong> • SBD/Mã: <strong>{student.student_code || student.username}</strong>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('cbq_current_student');
+                  setStudent(null);
+                }}
+                style={{ padding: '6px 12px', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '12px', color: '#64748b', cursor: 'pointer', fontWeight: '600' }}
+              >
+                Đổi người làm bài
+              </button>
+            </div>
+          ) : (
+            <div style={{ background: '#f8fafc', border: '2px solid #0284c7', borderRadius: '16px', padding: '20px', marginBottom: '20px' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '15px', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <User size={18} color="#0284c7" /> Điền Thông Tin Thí Sinh Làm Bài (Nộp bài tập):
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Họ và Tên Học Sinh (*)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: Nguyễn Văn An"
+                    value={quickStudentName}
+                    onChange={e => setQuickStudentName(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Lớp Học (*)
+                  </label>
+                  <select
+                    value={quickStudentClass}
+                    onChange={e => setQuickStudentClass(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px', background: 'white' }}
+                  >
+                    {ALL_CBQ_CLASSES_34.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Số Báo Danh / Mã Học Sinh
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="VD: 100101 hoặc STT trong lớp"
+                    value={quickStudentSbd}
+                    onChange={e => setQuickStudentSbd(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13.5px' }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '14px', padding: '16px', marginBottom: '28px', color: '#92400e', fontSize: '13.5px', lineHeight: 1.6 }}>
             <strong>📌 Quy chế phòng thi trực tuyến:</strong>

@@ -5,10 +5,15 @@ import {
   ArrowLeft, Award, BookOpen, Download, Plus, Trash2, Edit3, Shuffle, 
   FileText, CheckCircle2, HelpCircle, Layers, Printer, RefreshCw, Eye, 
   CheckSquare, Send, FileSpreadsheet, Sparkles, QrCode, Upload, Image,
-  Copy, Search, Filter, Database, FolderTree, Camera
+  Copy, Search, Filter, Database, FolderTree, Camera, BarChart2
 } from 'lucide-react';
 import MathView, { MathToolbar } from '../../components/MathView';
 import BankExamPickerModal from '../../components/BankExamPickerModal';
+import { 
+  readExamFileAsText, 
+  downloadExcelQuestionTemplate 
+} from '../../services/examImportParser';
+import { ALL_CBQ_CLASSES_34 } from '../../services/signmarTournamentService';
 import { 
   savePublishedExam, 
   getSubmissionsForExam, 
@@ -276,51 +281,96 @@ export default function TeacherExamMaker() {
     setMixedExamCodes([]);
   };
 
-  // Smart Assessment Publishing & Excel Grade Sync States
+  // Smart Assessment Publishing & Homework States
   const [showExcelSyncModal, setShowExcelSyncModal] = useState(false);
   const [showOmrModal, setShowOmrModal] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishType, setPublishType] = useState('homework'); // 'homework' | 'official_exam'
+  const [publishDeadline, setPublishDeadline] = useState('');
+  const [publishDuration, setPublishDuration] = useState(15);
+  const [publishedLink, setPublishedLink] = useState('');
+  const [publishedExamId, setPublishedExamId] = useState('');
+  const [publishCopied, setPublishCopied] = useState(false);
+  const [publishTargetClasses, setPublishTargetClasses] = useState(['10A01', '10A02']);
+  const [activeExamIdForSubmissions, setActiveExamIdForSubmissions] = useState('exam-toan-gdpt2018');
   const [submissions, setSubmissions] = useState([]);
   const [examPublished, setExamPublished] = useState(false);
   const [targetExamClasses, setTargetExamClasses] = useState(['10A01', '10A07']);
 
-  const loadSubmissions = () => {
-    const list = getSubmissionsForExam('exam-toan-gdpt2018');
-    if (list && list.length > 0) {
-      setSubmissions(list);
-    } else {
-      // Dữ liệu học sinh làm bài thi mẫu để giáo viên có thể thử nghiệm ngay tính năng Excel
-      const sampleSubmissions = [
-        { id: 'sub-1', student_code: '10A0101', student_name: 'Nguyễn Văn An', student_class: '10A01', total_score: 9.25, submitted_at: new Date().toISOString() },
-        { id: 'sub-2', student_code: '10A0102', student_name: 'Trần Thị Bình', student_class: '10A01', total_score: 8.5, submitted_at: new Date().toISOString() },
-        { id: 'sub-3', student_code: '10A0103', student_name: 'Lê Hoàng Cường', student_class: '10A01', total_score: 7.75, submitted_at: new Date().toISOString() },
-        { id: 'sub-4', student_code: '10A0104', student_name: 'Phạm Thu Dung', student_class: '10A01', total_score: 10.0, submitted_at: new Date().toISOString() },
-        { id: 'sub-5', student_code: '10A0105', student_name: 'Đặng Tuấn Hải', student_class: '10A01', total_score: 8.0, submitted_at: new Date().toISOString() },
-        { id: 'sub-6', student_code: '10A0106', student_name: 'Vũ Ngọc Mai', student_class: '10A01', total_score: 9.0, submitted_at: new Date().toISOString() },
-        { id: 'sub-7', student_code: '10A0107', student_name: 'Bùi Gia Phúc', student_class: '10A01', total_score: 6.5, submitted_at: new Date().toISOString() },
-        { id: 'sub-8', student_code: '10A0108', student_name: 'Hoàng Minh Tâm', student_class: '10A01', total_score: 8.75, submitted_at: new Date().toISOString() }
-      ];
-      setSubmissions(sampleSubmissions);
-    }
+  const loadSubmissions = async (targetId = activeExamIdForSubmissions) => {
+    try {
+      const list = await getSubmissionsForExam(targetId);
+      if (list && list.length > 0) {
+        setSubmissions(list);
+      } else {
+        // Dữ liệu học sinh làm bài thi mẫu để giáo viên có thể thử nghiệm ngay tính năng Excel
+        const sampleSubmissions = [
+          { id: 'sub-1', student_code: '10A0101', student_name: 'Nguyễn Văn An', student_class: '10A01', total_score: 9.25, submitted_at: new Date().toISOString() },
+          { id: 'sub-2', student_code: '10A0102', student_name: 'Trần Thị Bình', student_class: '10A01', total_score: 8.5, submitted_at: new Date().toISOString() },
+          { id: 'sub-3', student_code: '10A0103', student_name: 'Lê Hoàng Cường', student_class: '10A01', total_score: 7.75, submitted_at: new Date().toISOString() },
+          { id: 'sub-4', student_code: '10A0104', student_name: 'Phạm Thu Dung', student_class: '10A01', total_score: 10.0, submitted_at: new Date().toISOString() },
+          { id: 'sub-5', student_code: '10A0105', student_name: 'Đặng Tuấn Hải', student_class: '10A01', total_score: 8.0, submitted_at: new Date().toISOString() },
+          { id: 'sub-6', student_code: '10A0106', student_name: 'Vũ Ngọc Mai', student_class: '10A01', total_score: 9.0, submitted_at: new Date().toISOString() },
+          { id: 'sub-7', student_code: '10A0107', student_name: 'Bùi Gia Phúc', student_class: '10A01', total_score: 6.5, submitted_at: new Date().toISOString() },
+          { id: 'sub-8', student_code: '10A0108', student_name: 'Hoàng Minh Tâm', student_class: '10A01', total_score: 8.75, submitted_at: new Date().toISOString() }
+        ];
+        setSubmissions(sampleSubmissions);
+      }
+    } catch (_) {}
   };
 
-  const handlePublishOnline = async () => {
+  const handleOpenPublishModal = () => {
+    setPublishDuration(parseInt(duration, 10) || 15);
+    setShowPublishModal(true);
+  };
+
+  const handleConfirmPublish = async () => {
     try {
+      const examId = `exam-${Date.now()}`;
       const examData = {
-        id: 'exam-toan-gdpt2018',
+        id: examId,
         title: examTitle,
         subject: subject,
         grade: grade,
-        duration_minutes: parseInt(duration, 10) || 45,
-        target_classes: targetExamClasses,
+        exam_type: publishType,
+        deadline: publishDeadline,
+        duration_minutes: parseInt(publishDuration, 10) || 15,
+        target_classes: publishTargetClasses,
         questions: questions,
-        mixedExamCodes: mixedExamCodes.length > 0 ? mixedExamCodes : null
+        mixedExamCodes: mixedExamCodes.length > 0 ? mixedExamCodes : null,
+        created_by: teacher?.full_name || 'Giáo viên THPT Cao Bá Quát'
       };
       await savePublishedExam(examData);
+      setPublishedExamId(examId);
+      const link = `${window.location.origin}/hoc-sinh/lam-bai-thi/${examId}`;
+      setPublishedLink(link);
       setExamPublished(true);
-      alert(`🎉 ĐÃ XUẤT BẢN THI TRỰC TUYẾN THÀNH CÔNG!\n\nHọc sinh các lớp ${targetExamClasses.join(', ')} có thể vào Cổng Học Sinh để làm bài thi trực tuyến ngay.`);
+      setActiveExamIdForSubmissions(examId);
     } catch (e) {
-      alert("Lỗi khi xuất bản đề thi: " + e.message);
+      alert("Lỗi khi giao bài tập: " + e.message);
     }
+  };
+
+  const handleExportSubmissionsExcel = () => {
+    if (!submissions || submissions.length === 0) {
+      alert("Chưa có bài nộp nào để xuất!");
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+    const rows = submissions.map((sub, idx) => ({
+      "STT": idx + 1,
+      "Mã Học Sinh": sub.student_code || '',
+      "Họ và Tên": sub.student_name || '',
+      "Lớp": sub.student_class || '',
+      "Mã Đề Thi": sub.exam_code || '101',
+      "Điểm Tổng Kết": sub.total_score,
+      "Thời Gian Nộp": new Date(sub.submitted_at || Date.now()).toLocaleString('vi-VN')
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.book_append_sheet(wb, ws, "Ket_qua_bai_nop");
+    const sanitizedTitle = (examTitle || 'kiem_tra').replace(/[^a-zA-Z0-9]/g, '_');
+    const fileName = `1-Bang_diem_bai_tap_${sanitizedTitle}_CBQ.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
   const [importRawText, setImportRawText] = useState('');
   const [parsedPreviewQuestions, setParsedPreviewQuestions] = useState([]);
@@ -443,18 +493,18 @@ export default function TeacherExamMaker() {
     return parsedQuestions;
   };
 
-  const handleFileUploadDocxOrPdf = (e) => {
+  const handleFileUploadDocxOrPdf = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target.result;
+    try {
+      const text = await readExamFileAsText(file);
       setImportRawText(text);
       const parsed = parseRawExamText(text);
       setParsedPreviewQuestions(parsed);
-    };
-    reader.readAsText(file);
+    } catch (err) {
+      alert("Lỗi khi đọc file câu hỏi: " + err.message);
+    }
   };
 
   const handleConfirmImportQuestions = () => {
@@ -1156,8 +1206,8 @@ export default function TeacherExamMaker() {
             <Shuffle size={17} /> Đảo Mã Đề ({numberOfCodes} Mã)
           </button>
 
-          <button onClick={handlePublishOnline} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.3)' }}>
-            <Send size={18} /> {examPublished ? '✓ Đã Xuất Bản Online' : '🚀 Xuất Bản Thi Trực Tuyến'}
+          <button onClick={handleOpenPublishModal} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(22,163,74,0.3)' }}>
+            <Send size={18} /> {examPublished ? '✓ Đã Giao Bài / Xuất Bản' : '🚀 Giao Bài Tập Về Nhà / Xuất Bản'}
           </button>
 
           <button onClick={handleExportWordExam} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 18px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(2,132,199,0.3)' }}>
@@ -2266,25 +2316,47 @@ export default function TeacherExamMaker() {
               </p>
             </div>
 
-            <button
-              onClick={() => setShowExcelSyncModal(true)}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '12px 24px',
-                background: 'linear-gradient(135deg, #059669, #10b981)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                fontWeight: '900',
-                fontSize: '15px',
-                cursor: 'pointer',
-                boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
-              }}
-            >
-              <FileSpreadsheet size={20} /> 📊 GHI ĐIỂM VÀO FILE EXCEL TỪ MÁY TÍNH
-            </button>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                onClick={handleExportSubmissionsExcel}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 18px',
+                  background: '#0284c7',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)'
+                }}
+              >
+                <Download size={18} /> 📥 Xuất Bảng Điểm Excel (.xlsx)
+              </button>
+
+              <button
+                onClick={() => setShowExcelSyncModal(true)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #059669, #10b981)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '900',
+                  fontSize: '15px',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 15px rgba(16, 185, 129, 0.35)'
+                }}
+              >
+                <FileSpreadsheet size={20} /> 📊 GHI ĐIỂM VÀO SỔ ĐIỂM EXCEL
+              </button>
+            </div>
           </div>
 
           {/* ITEM ANALYSIS & SCORE DISTRIBUTION CARDS */}
@@ -2942,23 +3014,44 @@ export default function TeacherExamMaker() {
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
               <h3 style={{ margin: 0, fontSize: '17px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                📥 Nạp Đề Thi Thông Minh Từ File Word (.docx/.doc), PDF hoặc Sao Chép Văn Bản
+                📥 Nạp Đề Thi Thông Minh Từ File Word (.docx), Excel (.xlsx/.xls) hoặc Sao Chép Văn Bản
               </h3>
               <button onClick={() => setShowImportModal(false)} style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: '#64748b' }}>✕</button>
             </div>
 
             <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '8px', border: '1px solid #cbd5e1', marginBottom: '16px', fontSize: '12.5px', color: '#334155', lineHeight: '1.5' }}>
-              <strong>💡 Hướng Dẫn Định Dạng Nhập Nhanh:</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong>💡 Hướng Dẫn Định Dạng Nhập Nhanh:</strong>
+                <button
+                  type="button"
+                  onClick={downloadExcelQuestionTemplate}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #16a34a',
+                    background: '#f0fdf4',
+                    color: '#15803d',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Tải tệp Excel mẫu chuẩn nhập câu hỏi trắc nghiệm GDPT 2018"
+                >
+                  <Download size={13} /> 📥 Tải Mẫu Excel Chuẩn (.xlsx)
+                </button>
+              </div>
               <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
-                <li>Phần I (Trắc nghiệm 4 op): Các đáp án dạng <code>A. Nội dung</code>, <code>B. Nội dung</code>. Đánh dấu <code>*</code> hoặc <code>✅</code> ở đáp án đúng.</li>
-                <li>Phần II (Đúng / Sai): Các mệnh đề dạng <code>a) Mệnh đề... [ĐÚNG]</code> hoặc <code>b) Mệnh đề... [SAI]</code>.</li>
-                <li>Phần III (Trả lời ngắn): Ghi dòng <code>Đáp số: 50</code> hoặc <code>Đáp án: 50</code> bên dưới câu hỏi.</li>
+                <li><strong>Word / Text:</strong> Phần I có các đáp án <code>A. ... B. ...</code> kèm dấu <code>*</code> ở đáp án đúng; Phần II dạng <code>a) ... [ĐÚNG]</code>; Phần III dạng <code>Đáp số: ...</code></li>
+                <li><strong>Excel (.xlsx):</strong> Tự động nhận diện các cột STT, Mức độ, Nội dung câu hỏi, Phương án A, B, C, D, Đáp án đúng, Lời giải.</li>
               </ul>
             </div>
 
             <div style={{ marginBottom: '16px' }}>
-              <label style={styles.label}>Cách 1: Chọn File Đề Thi (.txt / .doc / .docx / .pdf text):</label>
-              <input type="file" accept=".txt,.docx,.doc,.pdf" onChange={handleFileUploadDocxOrPdf} style={{ fontSize: '13px', marginTop: '4px' }} />
+              <label style={styles.label}>Cách 1: Chọn File Đề Thi (Word .docx / Excel .xlsx, .xls / Text .txt):</label>
+              <input type="file" accept=".txt,.docx,.doc,.xlsx,.xls,.pdf" onChange={handleFileUploadDocxOrPdf} style={{ fontSize: '13px', marginTop: '4px' }} />
             </div>
 
             <div style={{ marginBottom: '16px' }}>
@@ -3017,6 +3110,235 @@ export default function TeacherExamMaker() {
               <button type="button" onClick={handleConfirmImportQuestions} disabled={parsedPreviewQuestions.length === 0} style={{ padding: '8px 20px', background: parsedPreviewQuestions.length > 0 ? '#16a34a' : '#cbd5e1', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: parsedPreviewQuestions.length > 0 ? 'pointer' : 'not-allowed' }}>
                 Nạp {parsedPreviewQuestions.length} Câu Hỏi Vào Đề Thi
               </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* MODAL GIAO BÀI TẬP VỀ NHÀ / XUẤT BẢN THI TRỰC TUYẾN */}
+      {showPublishModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15,23,42,0.65)', backdropFilter: 'blur(5px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1200, padding: '20px' }}>
+          <div style={{ background: 'white', width: '100%', maxWidth: '780px', borderRadius: '20px', padding: '28px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.3)', maxHeight: '90vh', overflowY: 'auto' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '19px', color: '#0f172a', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Send color="#16a34a" size={22} /> Giao Bài Tập Về Nhà & Xuất Bản Thi Trực Tuyến
+                </h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Tạo bài quiz online ngắn với thời gian đếm ngược, hệ thống tự động thu bài và chấm điểm
+                </p>
+              </div>
+              <button onClick={() => setShowPublishModal(false)} style={{ border: 'none', background: 'none', fontSize: '20px', cursor: 'pointer', color: '#64748b' }}>✕</button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  1. Loại Hình Kiểm Tra / Bài Tập:
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => { setPublishType('homework'); setPublishDuration(15); }}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: publishType === 'homework' ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                      background: publishType === 'homework' ? '#f0fdf4' : '#ffffff',
+                      color: publishType === 'homework' ? '#15803d' : '#475569',
+                      fontWeight: 'bold',
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    📝 Bài Tập Về Nhà (Homework / Quiz Tự Luyện)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPublishType('official_exam'); setPublishDuration(45); }}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '12px',
+                      border: publishType === 'official_exam' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                      background: publishType === 'official_exam' ? '#f0f9ff' : '#ffffff',
+                      color: publishType === 'official_exam' ? '#0369a1' : '#475569',
+                      fontWeight: 'bold',
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    📑 Bài Kiểm Tra Định Kỳ (15p / 45p / Giữa kỳ)
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    2. Thời Gian Đếm Ngược (Phút):
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    {[10, 15, 20, 30, 45, 90].map(mins => (
+                      <button
+                        key={mins}
+                        type="button"
+                        onClick={() => setPublishDuration(mins)}
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '8px',
+                          border: publishDuration === mins ? '2px solid #16a34a' : '1px solid #cbd5e1',
+                          background: publishDuration === mins ? '#dcfce7' : '#ffffff',
+                          color: publishDuration === mins ? '#15803d' : '#334155',
+                          fontWeight: 'bold',
+                          fontSize: '12.5px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {mins}p
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                    3. Hạn Chót Nộp Bài (Deadline):
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={publishDeadline}
+                    onChange={e => setPublishDeadline(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 'bold', color: '#334155', marginBottom: '6px' }}>
+                  4. Chọn Các Lớp Giao Bài (THPT Cao Bá Quát):
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', maxHeight: '120px', overflowY: 'auto', padding: '10px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                  {ALL_CBQ_CLASSES_34.map(cls => {
+                    const isChecked = publishTargetClasses.includes(cls);
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => {
+                          if (isChecked) {
+                            setPublishTargetClasses(publishTargetClasses.filter(c => c !== cls));
+                          } else {
+                            setPublishTargetClasses([...publishTargetClasses, cls]);
+                          }
+                        }}
+                        style={{
+                          padding: '4px 10px',
+                          borderRadius: '6px',
+                          border: isChecked ? '1px solid #16a34a' : '1px solid #cbd5e1',
+                          background: isChecked ? '#16a34a' : '#ffffff',
+                          color: isChecked ? '#ffffff' : '#334155',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {isChecked ? `✓ ${cls}` : cls}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ background: '#f0fdf4', padding: '12px 16px', borderRadius: '12px', border: '1px solid #bbf7d0', fontSize: '12.5px', color: '#166534', lineHeight: 1.6 }}>
+                <div>✓ <strong>Tự động đếm ngược & thu bài:</strong> Khi đồng hồ về 0, hệ thống tự động khóa và thu bài của học sinh.</div>
+                <div>✓ <strong>Chấm điểm tự động tức thì (0ms latency):</strong> Học sinh và giáo viên thấy ngay kết quả & phổ điểm.</div>
+                <div>✓ <strong>Tự động xáo trộn mã đề:</strong> {mixedExamCodes.length > 0 ? `Đã sẵn sàng ${mixedExamCodes.length} mã đề đảo (${mixedExamCodes.map(c => c.code).join(', ')}) chống nhìn bài.` : 'Đề thi gốc (hoặc bấm "Đảo Mã Đề" ở thanh công cụ để tạo 4 mã đề).'}</div>
+              </div>
+
+              {publishedLink ? (
+                <div style={{ background: '#f8fafc', border: '2px solid #16a34a', borderRadius: '14px', padding: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#16a34a', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
+                    <CheckCircle2 size={18} /> ĐÃ GIAO BÀI TẬP THÀNH CÔNG!
+                  </div>
+                  <div style={{ fontSize: '13px', color: '#334155', marginBottom: '8px' }}>
+                    Đường link làm bài thi trực tuyến cho học sinh:
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <input
+                      type="text"
+                      readOnly
+                      value={publishedLink}
+                      style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#0f172a', fontWeight: '600' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(publishedLink);
+                        setPublishCopied(true);
+                        setTimeout(() => setPublishCopied(false), 2500);
+                      }}
+                      style={{ padding: '8px 16px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Copy size={15} /> {publishCopied ? 'Đã chép!' : 'Chép link'}
+                    </button>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = `📣 [THPT CAO BÁ QUÁT] THÔNG BÁO BÀI TẬP VỀ NHÀ\n📚 Môn: ${subject} - Khối: ${grade}\n📝 Bài tập: ${examTitle}\n👥 Lớp áp dụng: ${publishTargetClasses.join(', ')}\n⏱️ Thời gian: ${publishDuration} phút\n⏰ Hạn nộp: ${publishDeadline ? new Date(publishDeadline).toLocaleString('vi-VN') : 'Trước tiết học kế tiếp'}\n🔗 Link làm bài: ${publishedLink}\n(Hệ thống tự động đếm ngược và chấm điểm ngay khi nộp bài!)`;
+                        navigator.clipboard.writeText(msg);
+                        alert("✅ Đã sao chép tin nhắn Zalo kèm Link làm bài vào clipboard! Thầy/Cô chỉ cần mở Zalo lớp và dán (Ctrl+V) gửi cho học sinh.");
+                      }}
+                      style={{ padding: '10px 18px', background: '#0284c7', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <Send size={15} /> 📋 Sao Chép Tin Nhắn Gửi Zalo Lớp
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPublishModal(false);
+                        setActiveTab('submissions');
+                        loadSubmissions(publishedExamId);
+                      }}
+                      style={{ padding: '10px 18px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      <BarChart2 size={15} /> 📊 Theo Dõi Học Sinh Nộp Bài
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowPublishModal(false)}
+                    style={{ padding: '10px 18px', background: '#f1f5f9', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer', color: '#475569' }}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleConfirmPublish}
+                    style={{ padding: '10px 24px', background: 'linear-gradient(135deg, #16a34a, #15803d)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', fontSize: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(22,163,74,0.3)' }}
+                  >
+                    <Send size={16} /> 🚀 Xác Nhận Giao Bài Tập Ngay
+                  </button>
+                </div>
+              )}
+
             </div>
 
           </div>

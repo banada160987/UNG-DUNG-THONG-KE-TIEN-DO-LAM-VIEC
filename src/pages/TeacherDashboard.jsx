@@ -598,7 +598,7 @@ export default function TeacherDashboard() {
                   </button>
                 </div>
 
-                {/* CARD 2: RA ĐỀ THI 2025 & GHI ĐIỂM EXCEL */}
+                {/* CARD 2: KIỂM TRA, TRỘN ĐỀ, CHẤM OMR & GIAO BÀI TẬP */}
                 <div style={{
                   backgroundColor: '#ffffff',
                   borderRadius: '16px',
@@ -628,86 +628,110 @@ export default function TeacherDashboard() {
                         borderRadius: '20px',
                         fontSize: '11px',
                         fontWeight: '700',
-                        backgroundColor: '#fffbeb',
+                        backgroundColor: '#fef3c7',
                         color: '#b45309',
                         border: '1px solid #fde68a'
                       }}>
-                        GDPT 2018 • Ghi Điểm Excel
+                        TÍNH NĂNG TRỌNG TÂM • GDPT 2018
                       </span>
                     </div>
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
-                      Kiểm Tra Thông Minh & Ghi Điểm Excel
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Kiểm Tra, Trộn Đề & Chấm Điểm 4.0
                     </h3>
                     <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
-                      Ra đề chuẩn cấu trúc BGDĐT 2025, tổ chức thi trực tuyến, tự động chấm và ghi điểm thẳng vào file Excel sổ điểm từ máy tính.
+                      Trọn bộ 3 giải pháp kiểm tra: Nhập câu hỏi hàng loạt từ Word/Excel & trộn mã đề; Chấm OMR camera điện thoại 1s/phiếu; Giao bài tập về nhà đếm ngược và chấm tự động.
                     </p>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '20px' }}>
-                    <button
-                      onClick={() => navigate('/giao-vien/ra-de-thi')}
-                      style={{
-                        padding: '11px 12px',
-                        backgroundColor: '#d97706',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
-                      }}
-                      title="Soạn thảo đề thi, ma trận đặc tả, đảo mã đề và ghi điểm Excel"
-                    >
-                      <Zap size={15} /> Ra Đề Thi
-                    </button>
-                    <button
-                      onClick={() => navigate('/giao-vien/cham-thi-2027')}
-                      style={{
-                        padding: '11px 12px',
-                        background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '10px',
-                        fontSize: '13px',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                        boxShadow: '0 3px 8px rgba(124,58,237,0.35)'
-                      }}
-                      title="Chấm phiếu trắc nghiệm bằng Camera điện thoại chuẩn 2027 (GDPT 2018)"
-                    >
-                      <Camera size={15} /> Chấm Thi 2027
-                    </button>
-                  </div>
-                  <div style={{ marginTop: '8px' }}>
-                    <button
-                      onClick={() => navigate('/giao-vien/ngan-hang-cau-hoi')}
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        backgroundColor: '#f0f9ff',
-                        color: '#0369a1',
-                        border: '1px solid #bae6fd',
-                        borderRadius: '8px',
-                        fontSize: '12.5px',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px'
-                      }}
-                      title="Quản lý ngân hàng câu hỏi theo cây thư mục Chương - Bài của Tổ Chuyên Môn"
-                    >
-                      <FolderTree size={14} /> Ngân Hàng Câu Hỏi Tổ Chuyên Môn
-                    </button>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '18px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        onClick={() => navigate('/giao-vien/ra-de-thi')}
+                        style={{
+                          padding: '11px 10px',
+                          backgroundColor: '#d97706',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontSize: '12.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 3px 8px rgba(217,119,6,0.3)'
+                        }}
+                        title="Soạn thảo đề thi, ma trận đặc tả, đảo 4 mã đề và xuất Word/PDF"
+                      >
+                        <Zap size={15} /> Soạn & Trộn Đề
+                      </button>
+                      <button
+                        onClick={() => navigate('/giao-vien/cham-thi-2027')}
+                        style={{
+                          padding: '11px 10px',
+                          background: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          fontSize: '12.5px',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 3px 8px rgba(124,58,237,0.35)'
+                        }}
+                        title="Dùng camera điện thoại quét và chấm phiếu trắc nghiệm ngay tại lớp"
+                      >
+                        <Camera size={15} /> Quét OMR Camera
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                      <button
+                        onClick={() => navigate('/giao-vien/ngan-hang-cau-hoi')}
+                        style={{
+                          padding: '9px 10px',
+                          backgroundColor: '#f0f9ff',
+                          color: '#0369a1',
+                          border: '1px solid #bae6fd',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px'
+                        }}
+                        title="Quản lý ngân hàng câu hỏi theo cây thư mục Chương - Bài, nhập Word/Excel"
+                      >
+                        <FolderTree size={13} /> Ngân Hàng Word/Excel
+                      </button>
+
+                      <button
+                        onClick={() => navigate('/giao-vien/ra-de-thi')}
+                        style={{
+                          padding: '9px 10px',
+                          backgroundColor: '#f0fdf4',
+                          color: '#15803d',
+                          border: '1px solid #bbf7d0',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '5px'
+                        }}
+                        title="Giao bài tập về nhà với thời gian đếm ngược và tự động chấm điểm"
+                      >
+                        <Send size={13} /> Giao Bài Về Nhà (Quiz)
+                      </button>
+                    </div>
                   </div>
                 </div>
 

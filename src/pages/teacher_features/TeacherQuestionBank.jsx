@@ -32,7 +32,11 @@ import {
   queryBankQuestions,
   getQuestionStatsForNode
 } from '../../services/questionBankService';
-import { readExamFileAsText, parseExamText } from '../../services/examImportParser';
+import { 
+  readExamFileAsText, 
+  parseExamText, 
+  downloadExcelQuestionTemplate 
+} from '../../services/examImportParser';
 import { generate2025ExamQuestionsAi } from '../../services/aiAssistantService';
 import AiStatusBadge from '../../components/AiStatusBadge';
 import AiSettingsModal from '../../components/AiSettingsModal';
@@ -1679,7 +1683,7 @@ export default function TeacherQuestionBank() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '14px' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '800', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileUp color="#0284c7" size={22} /> Nhập Hàng Loạt Câu Hỏi Từ Word (.docx) / Văn Bản Vào Bài Học
+                  <FileUp color="#0284c7" size={22} /> Nhập Hàng Loạt Câu Hỏi Từ Word (.docx) / Excel (.xlsx) / Văn Bản Vào Bài Học
                 </h3>
                 <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '3px' }}>
                   Nạp vào bài: <strong style={{ color: '#0284c7' }}>{activeLessonObj?.title}</strong> ({selectedSubject} - {selectedGrade})
@@ -1690,12 +1694,34 @@ export default function TeacherQuestionBank() {
 
             {/* Guide Box */}
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '12px', padding: '12px 16px', marginBottom: '18px', fontSize: '12.5px', lineHeight: 1.5, color: '#0369a1' }}>
-              <strong>💡 Hướng Dẫn Định Dạng Chuẩn Thương Mại (Tương thích Word, Azota, McMIX):</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                <strong>💡 Hướng Dẫn Định Dạng Chuẩn Thương Mại (Tương thích Word, Excel, Azota, McMIX):</strong>
+                <button
+                  type="button"
+                  onClick={downloadExcelQuestionTemplate}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    border: '1px solid #16a34a',
+                    background: '#f0fdf4',
+                    color: '#15803d',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Tải tệp Excel mẫu chuẩn nhập câu hỏi trắc nghiệm GDPT 2018"
+                >
+                  <Download size={13} /> 📥 Tải Mẫu Excel Chuẩn (.xlsx)
+                </button>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px', marginTop: '6px' }}>
                 <div>• <strong>Phần I (4 lựa chọn):</strong> <code>Câu 1 [NB]: ... A. ... *B. ... C. ... D. ...</code> (Dấu * hoặc [Đúng] ở đáp án đúng).</div>
                 <div>• <strong>Phần II (Đúng/Sai):</strong> <code>Câu 2 [TH]: ... a) ... [Đúng] b) ... [Sai] c) ... d) ...</code></div>
                 <div>• <strong>Phần III (Trả lời ngắn):</strong> <code>Câu 3 [VD]: ... Đáp số: 12.5</code></div>
-                <div>• <strong>Phần Tự Luận:</strong> <code>Câu 4 [VDC] (2.0 điểm): ... - Ý 1: 1.0đ - Ý 2: 1.0đ Lời giải: ...</code></div>
+                <div>• <strong>Excel (.xlsx):</strong> Tự động đọc dữ liệu các cột STT, Mức độ, Nội dung, Phương án A, B, C, D, Đáp án đúng.</div>
               </div>
             </div>
 
@@ -1715,7 +1741,7 @@ export default function TeacherQuestionBank() {
                     cursor: 'pointer'
                   }}
                 >
-                  📁 Chọn File Word (.docx / .txt)
+                  📁 Chọn File Word / Excel (.docx / .xlsx / .txt)
                 </button>
                 <button
                   type="button"
@@ -1778,14 +1804,14 @@ export default function TeacherQuestionBank() {
                 }}>
                   <FileUp size={36} color="#0284c7" style={{ marginBottom: '8px' }} />
                   <span style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>
-                    {importFile ? `Đã chọn: ${importFile.name}` : 'Nhấn để chọn file Word (.docx) hoặc kéo thả vào đây'}
+                    {importFile ? `Đã chọn: ${importFile.name}` : 'Nhấn để chọn file Word (.docx) hoặc Excel (.xlsx) hoặc kéo thả vào đây'}
                   </span>
                   <span style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
                     Hệ thống sẽ tự động quét toàn bộ câu hỏi [NB], [TH], [VD], [VDC], công thức và đáp án
                   </span>
                   <input
                     type="file"
-                    accept=".docx,.txt,.doc"
+                    accept=".docx,.xlsx,.xls,.txt,.doc"
                     onChange={handleFileImportChange}
                     style={{ display: 'none' }}
                   />
