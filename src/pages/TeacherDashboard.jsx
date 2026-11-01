@@ -4,7 +4,8 @@ import {
   FileText, Zap, Award, BookOpen, Users, Wallet, ShieldAlert,
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
-  Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree, Camera
+  Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree, Camera,
+  Clock, Shuffle, RotateCcw, DollarSign
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -1686,25 +1687,413 @@ export default function TeacherDashboard() {
                   justifyContent: 'center',
                   boxShadow: '0 2px 6px rgba(124,58,237,0.15)'
                 }}>
-                  <Calendar size={20} />
+                  <Sparkles size={20} />
                 </div>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0, color: '#0f172a' }}>
-                    4. Tra Cứu & Tiện Ích Trường Học
+                    4. Tra Cứu & Hệ Sinh Thái Tiện Ích Sư Phạm 4.0
                   </h2>
                   <p style={{ margin: '2px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
-                    Thời khóa biểu giảng dạy, lịch trực ban Ban Giám Hiệu & kho ứng dụng liên kết
+                    Hộp công cụ trợ giảng lên lớp, quản lý sơ đồ chỗ ngồi, nhận xét học bạ TT22 & lịch giảng dạy năm học 2026 - 2027
                   </p>
+                </div>
+              </div>
+
+              {/* HERO BANNER: HỘP TIỆN ÍCH SƯ PHẠM 4.0 */}
+              <div style={{
+                background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%)',
+                borderRadius: '20px',
+                padding: '24px',
+                color: '#ffffff',
+                marginBottom: '22px',
+                boxShadow: '0 10px 25px -5px rgba(67, 56, 202, 0.3)',
+                border: '1px solid rgba(255, 255, 255, 0.12)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ maxWidth: '680px' }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', backgroundColor: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(8px)', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: '700', marginBottom: '10px' }}>
+                      <Sparkles size={14} color="#facc15" /> TIỆN ÍCH THÔNG MINH DÀNH CHO THẦY CÔ • NĂM HỌC 2026 - 2027
+                    </div>
+                    <h3 style={{ fontSize: '20px', fontWeight: '800', margin: '0 0 8px 0', lineHeight: 1.3 }}>
+                      Bộ Công Cụ Trợ Giảng & Nghiệp Vụ Sư Phạm Đa Năng
+                    </h3>
+                    <p style={{ fontSize: '13.5px', color: '#c7d2fe', margin: 0, lineHeight: 1.6 }}>
+                      Tích hợp trọn bộ 7 công cụ số hỗ trợ giảng dạy trực quan: Đồng hồ đếm giờ làm bài, Vòng quay bốc thăm học sinh, Chia nhóm ngẫu nhiên, Sơ đồ lớp xoay vòng chống lệch cột sống, Trợ lý nhận xét học bạ TT22 & Bảng tính vượt giờ.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/tien-ich-thong-minh')}
+                    style={{
+                      padding: '12px 24px',
+                      backgroundColor: '#f59e0b',
+                      color: '#0f172a',
+                      border: 'none',
+                      borderRadius: '12px',
+                      fontWeight: '700',
+                      fontSize: '14px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 14px rgba(245, 158, 11, 0.4)',
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    <Sparkles size={16} /> Mở Trọn Bộ Tiện Ích Sư Phạm
+                  </button>
+                </div>
+
+                {/* FAST SHORTCUT CHIPS */}
+                <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: '1px solid rgba(255,255,255,0.15)', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {[
+                    { label: '⏱️ Đồng Hồ Lớp Học', tab: 'timer' },
+                    { label: '🎯 Bốc Thăm / Vòng Quay', tab: 'wheel' },
+                    { label: '👥 Chia Nhóm Ngẫu Nhiên', tab: 'groups' },
+                    { label: '🪑 Sơ Đồ Lớp & Đảo Chỗ', tab: 'seating' },
+                    { label: '📝 Nhận Xét Học Bạ TT22', tab: 'comments' },
+                    { label: '🔄 Đổi Tiết & Ghép Giờ', tab: 'swap' },
+                    { label: '💰 Tính Tiết Vượt Giờ', tab: 'overtime' },
+                  ].map((chip, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(`/giao-vien/tien-ich-thong-minh?tab=${chip.tab}`)}
+                      style={{
+                        padding: '6px 14px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        borderRadius: '20px',
+                        color: '#ffffff',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        transition: 'background-color 0.2s',
+                        backdropFilter: 'blur(4px)'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.25)'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)'}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 310px), 1fr))',
                 gap: '20px'
               }}>
                 
-                {/* CARD 1: TKB & LỊCH TUẦN */}
+                {/* CARD 1: ĐỒNG HỒ & BỐC THĂM TRÊN LỚP */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fed7aa',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff7ed',
+                        color: '#ea580c',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Clock size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff7ed',
+                        color: '#c2410c',
+                        border: '1px solid #ffedd5'
+                      }}>
+                        Trợ Giảng 4.0
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Đồng Hồ Lớp Học & Bốc Thăm Gọi Tên
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Đồng hồ đếm ngược hoạt động thảo luận kèm âm chuông sinh động, vòng quay ngẫu nhiên 34 lớp học sinh và chia nhóm học tập tự động.
+                    </p>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=timer')}
+                      style={{
+                        padding: '10px 8px',
+                        backgroundColor: '#ea580c',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Clock size={15} /> Đếm Giờ TV
+                    </button>
+                    <button
+                      onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=wheel')}
+                      style={{
+                        padding: '10px 8px',
+                        backgroundColor: '#fff7ed',
+                        color: '#c2410c',
+                        border: '1px solid #fed7aa',
+                        borderRadius: '10px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Shuffle size={15} /> Bốc Thăm HS
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARD 2: SƠ ĐỒ CHỖ NGỒI & ĐẢO CHỖ XOAY VÒNG */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #bbf7d0',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#f0fdf4',
+                        color: '#16a34a',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Users size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#f0fdf4',
+                        color: '#15803d',
+                        border: '1px solid #dcfce7'
+                      }}>
+                        Chủ Nhiệm / Bộ Môn
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Sơ Đồ Chỗ Ngồi Lớp Học & Đảo Chỗ
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Bố cục chuẩn 4 dãy x 5 hàng (40-45 hs), tự động xoay chuyển vị trí định kỳ chống tật khúc xạ và xuất file Excel lưu trữ chuyên nghiệp.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=seating')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#16a34a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(22,163,74,0.3)'
+                    }}
+                  >
+                    <RotateCcw size={16} /> Sắp Xếp & Đảo Sơ Đồ Lớp
+                  </button>
+                </div>
+
+                {/* CARD 3: TRỢ LÝ NHẬN XÉT HỌC BẠ TT22 */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #e0e7ff',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#eef2ff',
+                        color: '#4f46e5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileText size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#eef2ff',
+                        color: '#4338ca',
+                        border: '1px solid #c7d2fe'
+                      }}>
+                        Thông Tư 22/2021
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Trợ Lý Nhận Xét Học Bạ Thông Tư 22
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Ngân hàng mẫu nhận xét chuẩn mực theo môn học THPT, các mức năng lực và phẩm chất, sao chép 1 chạm vào SMAS/VnEdu dễ dàng.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=comments')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#4f46e5',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(79,70,229,0.3)'
+                    }}
+                  >
+                    <FileText size={16} /> Soạn Nhận Xét Học Bạ
+                  </button>
+                </div>
+
+                {/* CARD 4: TRỢ LÝ ĐỔI TIẾT DẠY & TÍNH VƯỢT GIỜ */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fecdd3',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff1f2',
+                        color: '#e11d48',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <DollarSign size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff1f2',
+                        color: '#be123c',
+                        border: '1px solid #ffe4e6'
+                      }}>
+                        TT 28/2009 & TT 15/2020
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Đổi Tiết Dạy & Bảng Tính Tiết Vượt Giờ
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Mẫu đơn xin đổi tiết/báo BGH chuẩn hành chính và bảng tính định mức tiết dạy, tiền thù lao vượt giờ dự kiến tự động.
+                    </p>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '20px' }}>
+                    <button
+                      onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=swap')}
+                      style={{
+                        padding: '10px 8px',
+                        backgroundColor: '#fff1f2',
+                        color: '#be123c',
+                        border: '1px solid #fecdd3',
+                        borderRadius: '10px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <RotateCcw size={15} /> Đổi Tiết Dạy
+                    </button>
+                    <button
+                      onClick={() => navigate('/giao-vien/tien-ich-thong-minh?tab=overtime')}
+                      style={{
+                        padding: '10px 8px',
+                        backgroundColor: '#e11d48',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '10px',
+                        fontSize: '12.5px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <DollarSign size={15} /> Tính Vượt Giờ
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARD 5: TKB & LỊCH TUẦN */}
                 <div style={{
                   backgroundColor: '#ffffff',
                   borderRadius: '16px',
@@ -1772,7 +2161,7 @@ export default function TeacherDashboard() {
                   </button>
                 </div>
 
-                {/* CARD 2: CỔNG TIỆN ÍCH LINKING */}
+                {/* CARD 6: CỔNG TIỆN ÍCH LINKING */}
                 <div style={{
                   backgroundColor: '#ffffff',
                   borderRadius: '16px',

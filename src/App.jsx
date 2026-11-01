@@ -103,6 +103,7 @@ const TeacherHomeroomStudents = lazy(() => import('./pages/teacher_features/Teac
 const ExamDossierChecker = lazy(() => import('./pages/ExamDossierChecker'));
 const Decree30DocFormatter = lazy(() => import('./pages/teacher_features/Decree30DocFormatter'));
 const ClassroomInteractiveGames = lazy(() => import('./pages/teacher_features/ClassroomInteractiveGames'));
+const TeacherSmartUtilities = lazy(() => import('./pages/teacher_features/TeacherSmartUtilities'));
 const CanteenOrderPage = lazy(() => import('./pages/public/CanteenOrderPage'));
 const AdminCanteenManager = lazy(() => import('./pages/admin/AdminCanteenManager'));
 const PublicServicesPortal = lazy(() => import('./pages/public/PublicServicesPortal'));
@@ -225,6 +226,9 @@ function App() {
             <Route path="/teacher-dashboard/kpi-evaluation" element={<TeacherRoute><TeacherKPIEvaluation /></TeacherRoute>} />
             <Route path="/teacher-dashboard/app-hub" element={<TeacherRoute><AppHub /></TeacherRoute>} />
             <Route path="/teacher-dashboard/department-drive" element={<TeacherRoute><DepartmentDrive /></TeacherRoute>} />
+            <Route path="/giao-vien/tien-ich-thong-minh" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
+            <Route path="/teacher/smart-utilities" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/smart-utilities" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
 
             {/* Teacher Route Aliases */}
             <Route path="/teacher/lesson-plans" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
