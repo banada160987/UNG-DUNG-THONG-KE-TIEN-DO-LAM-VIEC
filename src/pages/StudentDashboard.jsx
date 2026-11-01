@@ -997,9 +997,9 @@ export default function StudentDashboard() {
                       onChange={e => handleGradeChange(e.target.value)}
                       style={styles.select}
                     >
-                      <option value="Khối 10">Khối 10 (Năm học 2025-2026)</option>
-                      <option value="Khối 11">Khối 11 (Năm học 2025-2026)</option>
-                      <option value="Khối 12">Khối 12 (Năm học 2025-2026)</option>
+                      <option value="Khối 10">Khối 10 (Năm học 2026-2027)</option>
+                      <option value="Khối 11">Khối 11 (Năm học 2026-2027)</option>
+                      <option value="Khối 12">Khối 12 (Năm học 2026-2027)</option>
                     </select>
                   </div>
 

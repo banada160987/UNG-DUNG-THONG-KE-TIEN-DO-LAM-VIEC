@@ -12,7 +12,7 @@ export default function MonthlyEvaluationDakLakModal({
   onClose,
   teacherData,
   evaluationMonth = 'Tháng 6',
-  schoolYear = '2025-2026',
+  schoolYear = '2026-2027',
   departmentName = 'Tổ Ngữ văn',
   currentTeacher = null,
   isManager = false,
@@ -26,7 +26,7 @@ export default function MonthlyEvaluationDakLakModal({
     teacher_title: 'Giáo viên',
     department: '',
     evaluation_month: 'Tháng 6',
-    school_year: '2025-2026',
+    school_year: '2026-2027',
     eval_year: '2026',
 
     self_crit_1: 'Đạt',

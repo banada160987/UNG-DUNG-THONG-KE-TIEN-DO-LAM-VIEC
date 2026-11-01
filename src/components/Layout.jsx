@@ -521,7 +521,7 @@ export default function Layout({ children, title }) {
             <span>← Trở ra Cổng thông tin</span>
           </Link>
           <div style={{ textAlign: 'center', fontSize: '10px', color: '#64748b', marginTop: '8px' }}>
-            CBQ Smart School • 2025-2026
+            CBQ Smart School • 2026-2027
           </div>
         </div>
       </aside>

@@ -808,7 +808,7 @@ export default function PublicLayout() {
 
         {/* Bản quyền */}
         <div style={{ maxWidth: '1280px', margin: '18px auto 0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '12px', color: '#64748b' }}>
-          <div>© 2025 - 2026 TRƯỜNG THPT CAO BÁ QUÁT. All rights reserved.</div>
+          <div>© 2026 - 2027 TRƯỜNG THPT CAO BÁ QUÁT. All rights reserved.</div>
           <div>Hệ Thống Tiện Ích & Điều Hành Thông Minh</div>
         </div>
       </footer>

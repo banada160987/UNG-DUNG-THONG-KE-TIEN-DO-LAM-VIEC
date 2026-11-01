@@ -248,7 +248,7 @@ export default function TeacherDiscipline() {
       ['TRƯỜNG THPT CAO BÁ QUÁT', '', '', 'Độc lập - Tự do - Hạnh phúc'],
       ['', '', '', ''],
       [`BÁO CÁO KẾT QUẢ THI ĐUA & NỀ NẾP LỚP ${homeroomClass}`],
-      [`(Tuần thi đua thứ: ${selectedWeek} - Năm học 2025 - 2026)`],
+      [`(Tuần thi đua thứ: ${selectedWeek} - Năm học 2026 - 2027)`],
       ['', '', '', ''],
       [`Điểm tổng kết: ${weekKPI.finalScore}đ | Xếp loại: ${weekKPI.classification} | Hạng Khối: ${weekKPI.gradeRank}/${weekKPI.totalGradeClasses} | Hạng Trường: ${weekKPI.overallRank}/${weekKPI.totalSchoolClasses}`],
       ['', '', '', '']

@@ -87,7 +87,7 @@ export async function saveTimetableConfigToCloud(meta = {}, timings = []) {
   const cleanMeta = {
     version: meta.version || 'TKB Mới',
     applyDate: meta.applyDate || '',
-    schoolYear: meta.schoolYear || '2025 - 2026',
+    schoolYear: meta.schoolYear || '2026 - 2027',
     semester: meta.semester || 'Học kỳ II',
     note: (meta.note || '').slice(0, 100)
   };

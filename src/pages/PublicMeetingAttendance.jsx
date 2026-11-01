@@ -826,7 +826,7 @@ export default function PublicMeetingAttendance() {
                       THẺ ĐẠI BIỂU DỰ HỌP ĐIỆN TỬ
                     </div>
                     <div style={{ display: 'inline-block', backgroundColor: 'rgba(255, 255, 255, 0.2)', padding: '2px 10px', borderRadius: '12px', fontSize: '11px', marginTop: '6px', fontWeight: '600' }}>
-                      NĂM HỌC 2025 - 2026 • ĐÃ XÁC THỰC HIỆN DIỆN
+                      NĂM HỌC 2026 - 2027 • ĐÃ XÁC THỰC HIỆN DIỆN
                     </div>
                   </div>
 

@@ -245,7 +245,7 @@ export default function AdminEmulation() {
       ['TRƯỜNG THPT CAO BÁ QUÁT', '', '', 'Độc lập - Tự do - Hạnh phúc'],
       ['', '', '', ''],
       [`BẢNG TỔNG HỢP XẾP HẠNG THI ĐUA CÁC LỚP TOÀN TRƯỜNG`],
-      [`(Tuần thi đua thứ: ${selectedWeek} - Năm học 2025 - 2026)`],
+      [`(Tuần thi đua thứ: ${selectedWeek} - Năm học 2026 - 2027)`],
       ['', '', '', '']
     ];
 

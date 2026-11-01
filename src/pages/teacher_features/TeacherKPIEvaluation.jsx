@@ -133,7 +133,7 @@ export default function TeacherKPIEvaluation() {
   const [currentTeacher, setCurrentTeacher] = useState(null);
   
   // Selection State
-  const [schoolYear, setSchoolYear] = useState('2025-2026');
+  const [schoolYear, setSchoolYear] = useState('2026-2027');
   const [selectedMonth, setSelectedMonth] = useState('Tháng 9');
   const [selectedDept, setSelectedDept] = useState('');
   

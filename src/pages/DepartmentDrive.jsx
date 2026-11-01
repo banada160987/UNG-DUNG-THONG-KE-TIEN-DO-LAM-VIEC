@@ -55,7 +55,7 @@ export default function DepartmentDrive() {
     title: '',
     file_url: '',
     drive_url: '',
-    school_year: '2025-2026',
+    school_year: '2026-2027',
     term: 'HK1'
   });
   const [submitting, setSubmitting] = useState(false);
@@ -239,7 +239,7 @@ export default function DepartmentDrive() {
         title: '',
         file_url: '',
         drive_url: '',
-        school_year: '2025-2026',
+        school_year: '2026-2027',
         term: 'HK1'
       });
       handleSelectDept(selectedDept || teacherDept);

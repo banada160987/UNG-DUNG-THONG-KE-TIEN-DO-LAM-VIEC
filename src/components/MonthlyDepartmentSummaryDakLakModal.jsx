@@ -12,7 +12,7 @@ export default function MonthlyDepartmentSummaryDakLakModal({
   onClose,
   departmentName = 'Tổ Ngữ văn',
   evaluationMonth = 'Tháng 6',
-  schoolYear = '2025-2026',
+  schoolYear = '2026-2027',
   staffList = [],
   evaluations = [],
   currentTeacher = null

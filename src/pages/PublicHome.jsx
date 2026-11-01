@@ -540,7 +540,7 @@ export default function PublicHome() {
                       Chào em, {loggedStudent.full_name}
                     </div>
                     <div style={{ fontSize: '11.5px', color: '#e0f2fe' }}>
-                      Học sinh lớp <strong>{loggedStudent.student_class || 'CBQ'}</strong> • Năm học 2025 - 2026
+                      Học sinh lớp <strong>{loggedStudent.student_class || 'CBQ'}</strong> • Năm học 2026 - 2027
                     </div>
                   </div>
                 </div>
@@ -676,7 +676,7 @@ export default function PublicHome() {
                       Kính chào Thầy/Cô {loggedTeacher.full_name || loggedTeacher.name}
                     </div>
                     <div style={{ fontSize: '11.5px', color: '#bbf7d0' }}>
-                      {loggedTeacher.department || 'Tổ Chuyên Môn'} • Năm học 2025 - 2026
+                      {loggedTeacher.department || 'Tổ Chuyên Môn'} • Năm học 2026 - 2027
                     </div>
                   </div>
                 </div>
@@ -1074,7 +1074,7 @@ export default function PublicHome() {
                 <Clock size={18} /> LỊCH CÔNG TÁC & BÁO GIẢNG TUẦN NHÀ TRƯỜNG
               </div>
               <span style={{ fontSize: '12px', backgroundColor: '#3b82f6', padding: '2px 10px', borderRadius: '12px' }}>
-                Năm học 2025 - 2026
+                Năm học 2026 - 2027
               </span>
             </div>
 
