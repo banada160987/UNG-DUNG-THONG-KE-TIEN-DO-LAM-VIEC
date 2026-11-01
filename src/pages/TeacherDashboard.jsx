@@ -5,7 +5,7 @@ import {
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
   Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree, Camera,
-  Clock, Shuffle, RotateCcw, DollarSign
+  Clock, Shuffle, RotateCcw, DollarSign, Send
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
