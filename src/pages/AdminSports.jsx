@@ -14,6 +14,12 @@ import {
   COMMON_SPORTS_PRESETS,
   DEFAULT_TOURNAMENTS 
 } from '../services/sportsTournamentService';
+import SignmarBracketViewer from '../components/SignmarBracketViewer';
+import { 
+  createSignmar34Draw, 
+  saveSignmarBracket, 
+  fetchSignmarBracket 
+} from '../services/signmarTournamentService';
 
 export default function AdminSports() {
   const [tournaments, setTournaments] = useState(DEFAULT_TOURNAMENTS);
@@ -61,9 +67,11 @@ export default function AdminSports() {
   // 🎲 MODAL BỐC THĂM BẢNG ĐẤU & PHÂN CẶP
   const [showBracketModal, setShowBracketModal] = useState(false);
   const [drawSport, setDrawSport] = useState('');
-  const [drawMode, setDrawMode] = useState('knockout'); // 'knockout' | 'groups'
+  const [drawMode, setDrawMode] = useState('signmar_34'); // 'signmar_34' | 'knockout' | 'groups'
+  const [drawDataSource, setDrawDataSource] = useState('all_34_classes'); // 'all_34_classes' | 'registered_only'
   const [numGroups, setNumGroups] = useState(2);
   const [drawnBrackets, setDrawnBrackets] = useState(null);
+  const [signmarBracket, setSignmarBracket] = useState(null);
   const [copiedSchedule, setCopiedSchedule] = useState(false);
 
   // 👁️ MODAL XEM CHI TIẾT ĐỘI HÌNH
@@ -146,12 +154,26 @@ export default function AdminSports() {
     });
   }, [activeTournRegistrations, selectedSport, searchQuery]);
 
-  // Cập nhật môn bốc thăm mặc định khi giải đổi
+  // Cập nhật môn bốc thăm mặc định khi giải đổi và nạp sơ đồ Signmar đã lưu
   useEffect(() => {
     if (activeTourn && activeTourn.sports && activeTourn.sports.length > 0) {
-      setDrawSport(activeTourn.sports[0]);
+      const sp = activeTourn.sports[0];
+      setDrawSport(sp);
+      fetchSignmarBracket(activeTourn.id, sp).then(saved => {
+        if (saved) setSignmarBracket(saved);
+      });
     }
   }, [activeTourn]);
+
+  // Nạp sơ đồ Signmar khi chọn môn bốc thăm khác
+  useEffect(() => {
+    if (activeTourn && drawSport) {
+      fetchSignmarBracket(activeTourn.id, drawSport).then(saved => {
+        if (saved) setSignmarBracket(saved);
+        else setSignmarBracket(null);
+      });
+    }
+  }, [activeTourn, drawSport]);
 
   // ================= XỬ LÝ TẠO GIẢI ĐẤU MỚI =================
   const handleOpenCreateModal = () => {
@@ -450,6 +472,29 @@ export default function AdminSports() {
 
   // ================= BỐC THĂM BẢNG ĐẤU & PHÂN CẶP =================
   const handleRandomDraw = () => {
+    // 1. THỂ THỨC SƠ ĐỒ NHÁNH SIGNMAR (34 ĐỘI CHUẨN THỂ THAO TRƯỜNG HỌC)
+    if (drawMode === 'signmar_34') {
+      const athletesInSport = activeTournRegistrations.filter(r => 
+        (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || '')
+      );
+
+      if (drawDataSource === 'registered_only' && athletesInSport.length === 0) {
+        alert(`Hiện tại chưa có VĐV hoặc Đội nào đăng ký môn "${drawSport}" trong giải đấu này. Bạn có thể chọn nguồn "Đầy đủ 34 Chi đoàn Lớp CBQ" để bốc thăm toàn trường.`);
+        return;
+      }
+
+      const inputTeams = (drawDataSource === 'registered_only') ? athletesInSport : athletesInSport;
+      const newSignmar = createSignmar34Draw(inputTeams, {
+        sportName: drawSport,
+        tournamentName: activeTourn?.name || 'Giải Thể Thao Trường THPT Cao Bá Quát'
+      });
+
+      setSignmarBracket(newSignmar);
+      saveSignmarBracket(activeTourn?.id || 'default', drawSport, newSignmar);
+      return;
+    }
+
+    // 2. CÁC THỂ THỨC KHÁC (KNOCKOUT CƠ BẢN / CHIA BẢNG VÒNG TRÒN)
     const athletesInSport = activeTournRegistrations.filter(r => 
       (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || '')
     );
@@ -1577,8 +1622,8 @@ export default function AdminSports() {
 
       {/* ================= MODAL BỐC THĂM CHIA BẢNG ĐẤU & PHÂN CẶP ================= */}
       {showBracketModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', maxWidth: '850px', width: '100%', maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', maxWidth: (drawMode === 'signmar_34' || signmarBracket) ? '1340px' : '850px', width: '100%', maxHeight: '92vh', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.25)', transition: 'max-width 0.2s ease' }}>
             
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7c3aed', fontWeight: 'bold', fontSize: '18px' }}>
@@ -1611,10 +1656,25 @@ export default function AdminSports() {
                   onChange={e => setDrawMode(e.target.value)}
                   style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #c4b5fd', fontSize: '13px', fontWeight: 'bold', color: '#7c3aed' }}
                 >
-                  <option value="knockout">⚔️ Phân Cặp Đấu Loại Trực Tiếp (Vòng loại)</option>
+                  <option value="signmar_34">🏆 Sơ Đồ Nhánh Signmar (34 Đội - Đấu Loại Trực Tiếp) [Chuẩn]</option>
+                  <option value="knockout">⚔️ Phân Cặp Đấu Loại Trực Tiếp Cơ Bản (Danh sách phẳng)</option>
                   <option value="groups">📊 Chia Bảng Đấu (Vòng tròn tính điểm)</option>
                 </select>
               </div>
+
+              {drawMode === 'signmar_34' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 'bold', color: '#5b21b6', marginBottom: '5px' }}>Nguồn Đội Tham Gia *</label>
+                  <select
+                    value={drawDataSource}
+                    onChange={e => setDrawDataSource(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #c4b5fd', fontSize: '13px' }}
+                  >
+                    <option value="all_34_classes">🏛️ Đầy đủ 34 Chi đoàn Lớp CBQ (10A01 - 12A10)</option>
+                    <option value="registered_only">📋 Chỉ các đội đã nộp đăng ký môn này</option>
+                  </select>
+                </div>
+              )}
 
               {drawMode === 'groups' && (
                 <div>
@@ -1640,74 +1700,106 @@ export default function AdminSports() {
               </div>
             </div>
 
-            {/* KẾT QUẢ BỐC THĂM */}
-            {drawnBrackets ? (
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ color: '#15803d', fontWeight: 'bold', fontSize: '15px' }}>
-                    🎉 KẾT QUẢ BỐC THĂM: {drawSport.toUpperCase()}
+            {/* KẾT QUẢ BỐC THĂM SIGNMAR CHUYÊN NGHIỆP */}
+            {drawMode === 'signmar_34' ? (
+              signmarBracket ? (
+                <SignmarBracketViewer 
+                  bracket={signmarBracket} 
+                  tournament={activeTourn} 
+                  sportName={drawSport} 
+                  onReshuffle={handleRandomDraw}
+                  onBracketChange={updated => {
+                    setSignmarBracket(updated);
+                    saveSignmarBracket(activeTourn?.id || 'default', drawSport, updated);
+                  }}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '45px 15px', color: '#64748b', background: '#f8fafc', borderRadius: '16px', border: '1.5px dashed #cbd5e1' }}>
+                  <div style={{ fontSize: '38px', marginBottom: '8px' }}>🎲</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#334155', marginBottom: '4px' }}>
+                    Sơ Đồ Nhánh Signmar Chuẩn 34 Đội (THPT Cao Bá Quát)
                   </div>
+                  <p style={{ margin: '0 auto 14px auto', maxWidth: '540px', fontSize: '13px', color: '#64748b' }}>
+                    Sơ đồ phân nhánh đấu loại trực tiếp nhị phân: 2 trận sơ loại (Play-in) + 30 vé vào thẳng vòng 32 đội, tiến dần đến Tứ kết, Bán kết và Chung kết.
+                  </p>
                   <button
-                    onClick={copyDrawSchedule}
-                    style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    onClick={handleRandomDraw}
+                    style={{ padding: '9px 18px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.25)' }}
                   >
-                    {copiedSchedule ? <Check size={14} /> : <Copy size={14} />} {copiedSchedule ? 'Đã sao chép!' : '📋 Copy Kết Quả Gửi Zalo'}
+                    🎲 Bắt Đầu Bốc Thăm Ngay
                   </button>
                 </div>
-
-                {drawnBrackets.type === 'knockout' ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
-                    {drawnBrackets.matchups.map(m => (
-                      <div key={m.matchNumber} style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
-                        <div style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '13px', marginBottom: '8px' }}>
-                          TRẬN {m.matchNumber}:
-                        </div>
-                        {m.isBye ? (
-                          <div style={{ fontSize: '13px', color: '#166534', background: '#dcfce7', padding: '8px 10px', borderRadius: '6px' }}>
-                            🎉 <strong>{m.teamA.cohort_year || m.teamA.unit_name || m.teamA.full_name}</strong>: <em>Đặc cách vào vòng sau</em>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
-                            <span style={{ fontWeight: 'bold', color: '#0369a1' }}>{m.teamA.cohort_year || m.teamA.unit_name || m.teamA.full_name}</span>
-                            <span style={{ color: '#dc2626', fontWeight: 'bold', fontSize: '12px' }}>VS</span>
-                            <span style={{ fontWeight: 'bold', color: '#be123c' }}>{m.teamB.cohort_year || m.teamB.unit_name || m.teamB.full_name}</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
-                    {drawnBrackets.groups.map((grp, gIdx) => (
-                      <div key={gIdx} style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '14px' }}>
-                        <div style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '14.5px', marginBottom: '8px', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
-                          BẢNG {String.fromCharCode(65 + gIdx)} ({grp.length} Đội)
-                        </div>
-                        <ol style={{ paddingLeft: '18px', margin: 0, fontSize: '12.5px', color: '#334155' }}>
-                          {grp.map((v, vIdx) => (
-                            <li key={vIdx} style={{ marginBottom: '4px' }}>
-                              <strong>{v.cohort_year || v.unit_name || v.full_name}</strong>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div style={{ marginTop: '18px', textAlign: 'center' }}>
-                  <button
-                    onClick={() => window.print()}
-                    style={{ padding: '8px 18px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
-                  >
-                    <Printer size={15} /> 🖨️ In Lịch Thi Đấu Bốc Thăm
-                  </button>
-                </div>
-              </div>
+              )
             ) : (
-              <div style={{ textAlign: 'center', padding: '35px 15px', color: '#64748b', fontStyle: 'italic' }}>
-                Vui lòng chọn môn và bấm <strong>"🎲 Tiến Hành Bốc Thăm"</strong> để tạo lịch thi đấu.
-              </div>
+              /* KẾT QUẢ BỐC THĂM DẠNG PHẲNG HOẶC CHIA BẢNG */
+              drawnBrackets ? (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ color: '#15803d', fontWeight: 'bold', fontSize: '15px' }}>
+                      🎉 KẾT QUẢ BỐC THĂM: {drawSport.toUpperCase()}
+                    </div>
+                    <button
+                      onClick={copyDrawSchedule}
+                      style={{ padding: '6px 12px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      {copiedSchedule ? <Check size={14} /> : <Copy size={14} />} {copiedSchedule ? 'Đã sao chép!' : '📋 Copy Kết Quả Gửi Zalo'}
+                    </button>
+                  </div>
+
+                  {drawnBrackets.type === 'knockout' ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '12px' }}>
+                      {drawnBrackets.matchups.map(m => (
+                        <div key={m.matchNumber} style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                          <div style={{ fontWeight: 'bold', color: '#7c3aed', fontSize: '13px', marginBottom: '8px' }}>
+                            TRẬN {m.matchNumber}:
+                          </div>
+                          {m.isBye ? (
+                            <div style={{ fontSize: '13px', color: '#166534', background: '#dcfce7', padding: '8px 10px', borderRadius: '6px' }}>
+                              🎉 <strong>{m.teamA.cohort_year || m.teamA.unit_name || m.teamA.full_name}</strong>: <em>Đặc cách vào vòng sau</em>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
+                              <span style={{ fontWeight: 'bold', color: '#0369a1' }}>{m.teamA.cohort_year || m.teamA.unit_name || m.teamA.full_name}</span>
+                              <span style={{ color: '#dc2626', fontWeight: 'bold', fontSize: '12px' }}>VS</span>
+                              <span style={{ fontWeight: 'bold', color: '#be123c' }}>{m.teamB.cohort_year || m.teamB.unit_name || m.teamB.full_name}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
+                      {drawnBrackets.groups.map((grp, gIdx) => (
+                        <div key={gIdx} style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '12px', padding: '14px' }}>
+                          <div style={{ fontWeight: 'bold', color: '#1e3a8a', fontSize: '14.5px', marginBottom: '8px', borderBottom: '2px solid #3b82f6', paddingBottom: '4px' }}>
+                            BẢNG {String.fromCharCode(65 + gIdx)} ({grp.length} Đội)
+                          </div>
+                          <ol style={{ paddingLeft: '18px', margin: 0, fontSize: '12.5px', color: '#334155' }}>
+                            {grp.map((v, vIdx) => (
+                              <li key={vIdx} style={{ marginBottom: '4px' }}>
+                                <strong>{v.cohort_year || v.unit_name || v.full_name}</strong>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '18px', textAlign: 'center' }}>
+                    <button
+                      onClick={() => window.print()}
+                      style={{ padding: '8px 18px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                    >
+                      <Printer size={15} /> 🖨️ In Lịch Thi Đấu Bốc Thăm
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '35px 15px', color: '#64748b', fontStyle: 'italic' }}>
+                  Vui lòng chọn môn và bấm <strong>"🎲 Tiến Hành Bốc Thăm"</strong> để tạo lịch thi đấu.
+                </div>
+              )
             )}
 
           </div>
