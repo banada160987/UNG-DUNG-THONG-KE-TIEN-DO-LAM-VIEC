@@ -98,3 +98,60 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 4. Push Event: Xử lý thông báo đẩy (Web Push Notifications) trên điện thoại
+self.addEventListener('push', (event) => {
+  let data = {
+    title: 'THPT Cao Bá Quát - Đắk Lắk',
+    body: 'Bạn có thông báo mới từ hệ thống nhà trường!',
+    icon: '/pwa-192x192.png',
+    badge: '/favicon.svg',
+    url: '/'
+  };
+
+  if (event.data) {
+    try {
+      const payload = event.data.json();
+      data = { ...data, ...payload };
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || '/pwa-192x192.png',
+    badge: data.badge || '/favicon.svg',
+    vibrate: [200, 100, 200],
+    data: { url: data.url || '/' },
+    actions: [
+      { action: 'open', title: 'Xem chi tiết' }
+    ]
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+  );
+});
+
+// 5. Notification Click Event: Chạm vào thông báo trên điện thoại để mở ngay ứng dụng
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Nếu ứng dụng đang mở sẵn ở một tab/cửa sổ thì focus và chuyển trang
+      for (const client of clientList) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
+          return client.focus();
+        }
+      }
+      // Nếu ứng dụng đang đóng thì mở cửa sổ mới
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});

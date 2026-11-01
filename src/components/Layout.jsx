@@ -54,6 +54,9 @@ export default function Layout({ children, title }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notifPermission, setNotifPermission] = useState(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
+  );
   const notifRef = useRef(null);
 
   const targetDate = new Date('2026-09-03');
@@ -78,6 +81,31 @@ export default function Layout({ children, title }) {
     const channel = supabase.channel('public:cbq_notifications')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cbq_notifications' }, payload => {
         setNotifications(prev => [payload.new, ...prev].slice(0, 5));
+
+        // Phát thông báo đẩy trên thiết bị (điện thoại/máy tính) nếu đã cấp quyền
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          const title = payload.new.title || 'THPT Cao Bá Quát';
+          const body = payload.new.message || payload.new.content || 'Có thông báo mới từ nhà trường';
+          const targetUrl = payload.new.task_id ? `/admin/committee?taskId=${payload.new.task_id}` : '/';
+
+          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            navigator.serviceWorker.ready.then(reg => {
+              reg.showNotification(title, {
+                body,
+                icon: '/pwa-192x192.png',
+                badge: '/favicon.svg',
+                vibrate: [200, 100, 200],
+                data: { url: targetUrl }
+              });
+            });
+          } else {
+            try {
+              new Notification(title, { body, icon: '/pwa-192x192.png' });
+            } catch (e) {
+              console.warn('Lỗi new Notification:', e);
+            }
+          }
+        }
       })
       .subscribe();
       
@@ -93,6 +121,32 @@ export default function Layout({ children, title }) {
       document.removeEventListener('mousedown', handleClickOutside);
     }
   }, []);
+
+  // Xin quyền nhận thông báo trên điện thoại/trình duyệt
+  const requestDeviceNotificationPermission = async () => {
+    if (!('Notification' in window)) {
+      alert('Trình duyệt hoặc thiết bị này không hỗ trợ thông báo đẩy Web Notification.');
+      return;
+    }
+    try {
+      const permission = await Notification.requestPermission();
+      setNotifPermission(permission);
+      if (permission === 'granted') {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then(reg => {
+            reg.showNotification('THPT Cao Bá Quát - Đắk Lắk', {
+              body: '🔔 Bạn đã kích hoạt thông báo trên thiết bị thành công! Mọi tin tức mới sẽ được gửi về đây.',
+              icon: '/pwa-192x192.png',
+              badge: '/favicon.svg',
+              vibrate: [200, 100, 200]
+            });
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Lỗi xin quyền thông báo:', e);
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -518,6 +572,22 @@ export default function Layout({ children, title }) {
               {showNotifications && (
                 <div style={styles.notifDropdown}>
                   <div style={styles.notifHeader}>Thông báo mới nhất</div>
+                  
+                  {/* THANH TRẠNG THÁI / KÍCH HOẠT THÔNG BÁO THIẾT BỊ */}
+                  {notifPermission === 'granted' ? (
+                    <div style={{ padding: '6px 12px', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0', fontSize: '11px', color: '#166534', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 'bold' }}>
+                      <Check size={13} color="#16a34a" /> Đã bật thông báo trên thiết bị
+                    </div>
+                  ) : notifPermission !== 'unsupported' ? (
+                    <button 
+                      onClick={requestDeviceNotificationPermission}
+                      style={{ width: '100%', padding: '7px 12px', background: '#f5f3ff', border: 'none', borderBottom: '1px solid #ddd6fe', fontSize: '11.5px', color: '#6d28d9', fontWeight: 'bold', cursor: 'pointer', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                      title="Nhấn để nhận thông báo rung/chuông trên điện thoại"
+                    >
+                      <Bell size={13} color="#7c3aed" /> 🔔 Bật thông báo trên điện thoại
+                    </button>
+                  ) : null}
+
                   <div style={styles.notifList}>
                     {notifications.map(n => (
                       <div key={n.id} style={{...styles.notifItem, cursor: n.task_id ? 'pointer' : 'default'}} onClick={() => handleNotificationClick(n)}>
