@@ -252,10 +252,17 @@ export function getUnregisteredClasses(tournament, registrations = [], targetSpo
   });
 
   const registeredMap = new Map();
+  const classOccurrences = new Map();
+
   tournRegs.forEach(reg => {
     const rawClass = reg.cohort_year || reg.unit_name || '';
     const norm = normalizeClassName(rawClass);
     if (norm) {
+      if (!classOccurrences.has(norm)) {
+        classOccurrences.set(norm, []);
+      }
+      classOccurrences.get(norm).push(reg);
+
       let roster = null;
       try {
         if (reg.notes && reg.notes.startsWith('{')) {
@@ -263,6 +270,7 @@ export function getUnregisteredClasses(tournament, registrations = [], targetSpo
         }
       } catch (e) {}
 
+      // Lấy bản ghi mới nhất nếu có nhiều lần nộp
       if (!registeredMap.has(norm)) {
         registeredMap.set(norm, {
           className: norm,
@@ -276,6 +284,18 @@ export function getUnregisteredClasses(tournament, registrations = [], targetSpo
           registrationId: reg.id
         });
       }
+    }
+  });
+
+  // Tìm các lớp bị nộp trùng (như 11A06 nộp 2 lần)
+  const duplicateClasses = [];
+  classOccurrences.forEach((regs, cls) => {
+    if (regs.length > 1) {
+      duplicateClasses.push({
+        className: cls,
+        count: regs.length,
+        regs
+      });
     }
   });
 
@@ -308,12 +328,15 @@ export function getUnregisteredClasses(tournament, registrations = [], targetSpo
   const totalClasses = ALL_CBQ_CLASSES_34.length;
   const registeredCount = registeredList.length;
   const unregisteredCount = unregisteredList.length;
+  const totalSubmissions = tournRegs.length;
   const completionPercent = totalClasses > 0 ? Math.round((registeredCount / totalClasses) * 100) : 0;
 
   return {
     totalClasses,
     registeredCount,
     unregisteredCount,
+    totalSubmissions,
+    duplicateClasses,
     completionPercent,
     byGrade,
     registeredList,

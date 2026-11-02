@@ -821,8 +821,23 @@ export default function AdminSports() {
         
         <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', borderRadius: '14px', padding: '16px 18px', boxShadow: '0 4px 14px rgba(2,132,199,0.2)' }}>
           <div style={{ fontSize: '12px', fontWeight: 'bold', opacity: 0.9 }}>TỔNG ĐƠN ĐĂNG KÝ (GIẢI NÀY)</div>
-          <div style={{ fontSize: '28px', fontWeight: '800', margin: '4px 0' }}>{totalTeams} <span style={{ fontSize: '14px' }}>Đội / VĐV</span></div>
-          <div style={{ fontSize: '11.5px', opacity: 0.85 }}>Học sinh & đơn vị tham gia</div>
+          <div style={{ fontSize: '28px', fontWeight: '800', margin: '4px 0' }}>
+            {totalTeams} <span style={{ fontSize: '14px' }}>Đơn nộp</span>
+          </div>
+          <div style={{ fontSize: '11.5px', opacity: 0.95 }}>
+            {activeTourn?.format === 'class_team' ? (
+              <span>
+                Thực tế: <strong>{unregisteredData.registeredCount}/34</strong> Chi đoàn
+                {unregisteredData.duplicateClasses.length > 0 && (
+                  <span style={{ display: 'block', color: '#fef08a', marginTop: '3px', fontWeight: 'bold' }}>
+                    ⚠️ {unregisteredData.duplicateClasses.map(d => `${d.className} nộp ${d.count} đơn`).join(', ')}
+                  </span>
+                )}
+              </span>
+            ) : (
+              'Học sinh & đơn vị tham gia'
+            )}
+          </div>
         </div>
 
         <div style={{ background: '#ffffff', border: `1.5px solid ${activeTournStatus.border}`, borderRadius: '14px', padding: '16px 18px', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
@@ -882,9 +897,14 @@ export default function AdminSports() {
               </span>
             </div>
             <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
-              Khối 10: <strong>{unregisteredData.byGrade['Khối 10'].registered.length}/15</strong> lớp • 
-              Khối 11: <strong>{unregisteredData.byGrade['Khối 11'].registered.length}/9</strong> lớp • 
-              Khối 12: <strong>{unregisteredData.byGrade['Khối 12'].registered.length}/10</strong> lớp
+              Khối 10: <strong>{unregisteredData.byGrade['Khối 10'].registered.length}/15</strong> lớp (còn thiếu {unregisteredData.byGrade['Khối 10'].unregistered.length}) • 
+              Khối 11: <strong>{unregisteredData.byGrade['Khối 11'].registered.length}/9</strong> lớp (đủ 100%) • 
+              Khối 12: <strong>{unregisteredData.byGrade['Khối 12'].registered.length}/10</strong> lớp (đủ 100%)
+              {unregisteredData.duplicateClasses.length > 0 && (
+                <span style={{ display: 'block', color: '#c2410c', marginTop: '3px', fontWeight: 'bold' }}>
+                  ℹ️ Hệ thống ghi nhận {unregisteredData.totalSubmissions} đơn nộp của {unregisteredData.registeredCount} lớp (Lớp {unregisteredData.duplicateClasses.map(d => `${d.className} nộp ${d.count} lần`).join(', ')} - Đã lấy bản nộp mới nhất).
+                </span>
+              )}
             </p>
           </div>
 
@@ -1040,6 +1060,11 @@ export default function AdminSports() {
                       <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 'bold', color: '#64748b' }}>{idx + 1}</td>
                       <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#0369a1' }}>
                         {item.cohort_year || item.unit_name || 'Chi đoàn'}
+                        {unregisteredData.duplicateClasses.some(d => d.className === (item.cohort_year || item.unit_name)) && (
+                          <span style={{ marginLeft: '6px', fontSize: '10.5px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }} title="Lớp này có từ 2 đơn nộp trở lên trên hệ thống">
+                            ⚠️ Trùng lớp
+                          </span>
+                        )}
                       </td>
                       <td style={{ padding: '12px 10px', fontWeight: '600', color: '#1e293b' }}>
                         {roster?.captain || item.full_name}
@@ -2073,17 +2098,24 @@ export default function AdminSports() {
               border: '1px solid #e2e8f0'
             }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>TỔNG SỐ LỚP</div>
-                <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>34 Lớp</div>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>TỔNG ĐƠN NỘP</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>
+                  {unregisteredData.totalSubmissions} Đơn
+                </div>
+                {unregisteredData.duplicateClasses.length > 0 && (
+                  <div style={{ fontSize: '10.5px', color: '#d97706', fontWeight: 'bold' }}>
+                    (⚠️ {unregisteredData.duplicateClasses.map(d => `${d.className}: nộp ${d.count} lần`).join(', ')})
+                  </div>
+                )}
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: '#166534', fontWeight: 'bold' }}>ĐÃ NỘP HỒ SƠ</div>
+                <div style={{ fontSize: '11px', color: '#166534', fontWeight: 'bold' }}>LỚP ĐÃ ĐĂNG KÝ</div>
                 <div style={{ fontSize: '18px', fontWeight: '900', color: '#16a34a' }}>
-                  {unregisteredData.registeredCount} Lớp
+                  {unregisteredData.registeredCount} / 34 Lớp
                 </div>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 'bold' }}>CHƯA NỘP HỒ SƠ</div>
+                <div style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 'bold' }}>LỚP CÒN THIẾU</div>
                 <div style={{ fontSize: '18px', fontWeight: '900', color: '#dc2626' }}>
                   {unregisteredData.unregisteredCount} Lớp
                 </div>
