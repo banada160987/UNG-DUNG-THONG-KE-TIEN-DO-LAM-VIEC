@@ -5,14 +5,17 @@ import {
   Dices, Printer, Users, DollarSign, CheckCircle2, AlertCircle, 
   X, ShieldAlert, Eye, Copy, Check, FileText, MessageCircle,
   Settings, Edit, Clock, Lock, CheckSquare, Save, AlertTriangle,
-  PlusCircle, Calendar, Tag, ChevronDown, Award
+  PlusCircle, Calendar, Tag, ChevronDown, Award, Send, Bell, ExternalLink, Share2
 } from 'lucide-react';
 import { 
   fetchTournaments, 
   saveTournaments, 
   checkTournamentStatus, 
   COMMON_SPORTS_PRESETS,
-  DEFAULT_TOURNAMENTS 
+  DEFAULT_TOURNAMENTS,
+  getUnregisteredClasses,
+  generateZaloReminderMessage,
+  exportUnregisteredClassesExcel
 } from '../services/sportsTournamentService';
 import SignmarBracketViewer from '../components/SignmarBracketViewer';
 import { 
@@ -76,6 +79,15 @@ export default function AdminSports() {
 
   // 👁️ MODAL XEM CHI TIẾT ĐỘI HÌNH
   const [selectedTeamView, setSelectedTeamView] = useState(null);
+
+  // 📢 TÍNH NĂNG THÔNG BÁO ZALO CÁC LỚP CHƯA ĐĂNG KÝ
+  const [showZaloModal, setShowZaloModal] = useState(false);
+  const [zaloTargetSport, setZaloTargetSport] = useState('Tất cả');
+  const [zaloCustomDeadline, setZaloCustomDeadline] = useState('');
+  const [zaloCustomNote, setZaloCustomNote] = useState('');
+  const [zaloCopiedToast, setZaloCopiedToast] = useState(false);
+  const [zaloActiveTab, setZaloActiveTab] = useState('unregistered'); // 'unregistered' | 'registered'
+  const [singleClassCopied, setSingleClassCopied] = useState(null);
 
   useEffect(() => {
     loadInitialData();
@@ -153,6 +165,35 @@ export default function AdminSports() {
       return matchSport && matchSearch;
     });
   }, [activeTournRegistrations, selectedSport, searchQuery]);
+
+  // Phân tích tiến độ 34 lớp trường THPT Cao Bá Quát
+  const unregisteredData = useMemo(() => {
+    return getUnregisteredClasses(activeTourn, registrations, zaloTargetSport);
+  }, [activeTourn, registrations, zaloTargetSport]);
+
+  // Sinh nội dung tin nhắn Zalo chuẩn mực sư phạm Đoàn Trường
+  const zaloReminderMessage = useMemo(() => {
+    return generateZaloReminderMessage(activeTourn, unregisteredData, {
+      customDeadline: zaloCustomDeadline,
+      customNote: zaloCustomNote,
+      targetSport: zaloTargetSport
+    });
+  }, [activeTourn, unregisteredData, zaloCustomDeadline, zaloCustomNote, zaloTargetSport]);
+
+  const handleCopyZaloMessage = () => {
+    navigator.clipboard.writeText(zaloReminderMessage);
+    setZaloCopiedToast(true);
+    setTimeout(() => setZaloCopiedToast(false), 3000);
+  };
+
+  const handleCopySingleClassReminder = (className, grade) => {
+    const tournName = activeTourn?.name || 'Giải Thể Thao Học Đường';
+    const deadline = zaloCustomDeadline || (activeTourn?.end_date ? new Date(activeTourn.end_date).toLocaleDateString('vi-VN') : 'Sớm nhất');
+    const text = `📢 Kính gửi Quý Thầy/Cô GVCN & Ban Cán sự Chi đoàn ${className} (${grade}): Hiện tại BTC giải "${tournName}" chưa nhận được danh sách đăng ký thi đấu của lớp mình. Kính nhờ Thầy/Cô và lớp hoàn tất đăng ký trước ${deadline} tại: https://thptcaobaquat.vercel.app/dang-ky-the-thao . Trân trọng cảm ơn!`;
+    navigator.clipboard.writeText(text);
+    setSingleClassCopied(className);
+    setTimeout(() => setSingleClassCopied(null), 2500);
+  };
 
   // Cập nhật môn bốc thăm mặc định khi giải đổi và nạp sơ đồ Signmar đã lưu
   useEffect(() => {
@@ -631,6 +672,41 @@ export default function AdminSports() {
               <Settings size={15} /> ⚙️ Sửa Cấu Hình Giải
             </button>
 
+            <button
+              onClick={() => setShowZaloModal(true)}
+              style={{
+                padding: '9px 14px',
+                background: 'linear-gradient(135deg, #ea580c, #c2410c)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '9px',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '13px',
+                boxShadow: '0 4px 12px rgba(234,88,12,0.3)',
+                position: 'relative'
+              }}
+              title="Thông báo Zalo nhắc nhở các Chi đoàn lớp chưa nộp danh sách đăng ký"
+            >
+              <Send size={15} /> 📢 Nhắc Zalo Chưa ĐK
+              {unregisteredData.unregisteredCount > 0 && (
+                <span style={{
+                  backgroundColor: '#fee2e2',
+                  color: '#b91c1c',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  fontSize: '11px',
+                  fontWeight: '900',
+                  marginLeft: '2px'
+                }}>
+                  {unregisteredData.unregisteredCount} lớp
+                </span>
+              )}
+            </button>
+
             <a
               href={activeTourn?.zalo_link || 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa'}
               target="_blank"
@@ -781,6 +857,123 @@ export default function AdminSports() {
           </div>
         </div>
 
+      </div>
+
+      {/* BANNER THỐNG KÊ TIẾN ĐỘ 34 CHI ĐOÀN LỚP & NÚT NHẮC ZALO */}
+      <div style={{
+        background: unregisteredData.unregisteredCount === 0 
+          ? 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)' 
+          : 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+        border: `1.5px solid ${unregisteredData.unregisteredCount === 0 ? '#86efac' : '#fdba74'}`,
+        borderRadius: '16px',
+        padding: '16px 20px',
+        marginBottom: '20px',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.03)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '15px', fontWeight: '800', color: unregisteredData.unregisteredCount === 0 ? '#166534' : '#9a3412' }}>
+              <span>{unregisteredData.unregisteredCount === 0 ? '🎉' : '📢'} TIẾN ĐỘ ĐĂNG KÝ 34 CHI ĐOÀN LỚP CBQ:</span>
+              <span style={{ fontSize: '17px', color: unregisteredData.unregisteredCount === 0 ? '#15803d' : '#ea580c' }}>
+                {unregisteredData.registeredCount}/34 Lớp ({unregisteredData.completionPercent}%)
+              </span>
+            </div>
+            <p style={{ margin: '4px 0 0 0', fontSize: '12.5px', color: '#64748b' }}>
+              Khối 10: <strong>{unregisteredData.byGrade['Khối 10'].registered.length}/15</strong> lớp • 
+              Khối 11: <strong>{unregisteredData.byGrade['Khối 11'].registered.length}/9</strong> lớp • 
+              Khối 12: <strong>{unregisteredData.byGrade['Khối 12'].registered.length}/10</strong> lớp
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setShowZaloModal(true)}
+              style={{
+                padding: '9px 16px',
+                background: 'linear-gradient(135deg, #0068ff, #0050cc)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 4px 12px rgba(0,104,255,0.25)'
+              }}
+            >
+              <Send size={15} /> 📢 Soạn & Gửi Nhắc Nhở Zalo
+            </button>
+
+            <button
+              onClick={() => exportUnregisteredClassesExcel(activeTourn, unregisteredData)}
+              style={{
+                padding: '9px 14px',
+                background: '#ffffff',
+                color: '#166534',
+                border: '1.5px solid #86efac',
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              title="Xuất file Excel danh sách lớp chưa đăng ký theo chuẩn tiền tố 1-..."
+            >
+              <Download size={14} /> Xuất Excel Lớp Chưa ĐK (1-...)
+            </button>
+          </div>
+        </div>
+
+        {/* PROGRESS BAR */}
+        <div style={{ width: '100%', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '5px', overflow: 'hidden' }}>
+          <div style={{
+            width: `${unregisteredData.completionPercent}%`,
+            height: '100%',
+            backgroundColor: unregisteredData.unregisteredCount === 0 ? '#22c55e' : '#ea580c',
+            borderRadius: '5px',
+            transition: 'width 0.4s ease'
+          }} />
+        </div>
+
+        {/* DANH SÁCH NHANH CÁC LỚP CHƯA NỘP NẾU CÓ */}
+        {unregisteredData.unregisteredCount > 0 ? (
+          <div style={{ fontSize: '12.5px', color: '#9a3412', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+            <strong>⚠️ Còn {unregisteredData.unregisteredCount} lớp chưa nộp:</strong>
+            {unregisteredData.unregisteredList.slice(0, 15).map(u => (
+              <span 
+                key={u.className} 
+                onClick={() => handleCopySingleClassReminder(u.className, u.grade)}
+                title="Bấm để sao chép tin nhắn nhắc riêng cho lớp này"
+                style={{
+                  backgroundColor: '#fee2e2',
+                  color: '#b91c1c',
+                  border: '1px solid #fecaca',
+                  padding: '2px 8px',
+                  borderRadius: '6px',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                  cursor: 'pointer'
+                }}
+              >
+                {u.className}
+              </span>
+            ))}
+            {unregisteredData.unregisteredCount > 15 && (
+              <span style={{ fontStyle: 'italic', color: '#78350f' }}>...và {unregisteredData.unregisteredCount - 15} lớp khác (bấm nút để xem chi tiết)</span>
+            )}
+          </div>
+        ) : (
+          <div style={{ fontSize: '12.5px', color: '#166534', fontWeight: 'bold' }}>
+            ✓ Toàn bộ 34 Chi đoàn lớp đã hoàn thành đăng ký hồ sơ tham gia giải đấu!
+          </div>
+        )}
       </div>
 
       {/* FILTER & SEARCH BAR */}
@@ -1186,6 +1379,8 @@ export default function AdminSports() {
         </div>
       )}
 
+      
+
       {/* ================= MODAL SỬA CẤU HÌNH GIẢI ĐẤU HIỆN TẠI ================= */}
       {showConfigModal && editTournData && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
@@ -1390,6 +1585,8 @@ export default function AdminSports() {
         </div>
       )}
 
+      
+
       {/* ================= MODAL SỬA ĐỘI HÌNH VẬN ĐỘNG VIÊN ================= */}
       {editingTeam && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: '15px' }}>
@@ -1567,6 +1764,8 @@ export default function AdminSports() {
         </div>
       )}
 
+      
+
       {/* ================= MODAL XEM CHI TIẾT ĐỘI HÌNH ================= */}
       {selectedTeamView && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '15px' }}>
@@ -1619,6 +1818,8 @@ export default function AdminSports() {
           </div>
         </div>
       )}
+
+      
 
       {/* ================= MODAL BỐC THĂM CHIA BẢNG ĐẤU & PHÂN CẶP ================= */}
       {showBracketModal && (
@@ -1803,6 +2004,520 @@ export default function AdminSports() {
             )}
 
           </div>
+        </div>
+      )}
+
+      {/* 📢 MODAL THÔNG BÁO ZALO & ĐÔN ĐỐC TIẾN ĐỘ 34 LỚP */}
+      {showZaloModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1200,
+          padding: '16px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            padding: '24px',
+            maxWidth: '960px',
+            width: '100%',
+            maxHeight: '92vh',
+            overflowY: 'auto',
+            boxShadow: '0 25px 60px rgba(0,0,0,0.3)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '18px'
+          }}>
+            {/* Header Modal */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1.5px solid #e2e8f0', paddingBottom: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#0068ff', fontWeight: '900', fontSize: '18px' }}>
+                  <Send size={22} color="#0068ff" /> 📢 THÔNG BÁO ZALO NHẮC NHỞ TIẾN ĐỘ ĐĂNG KÝ THI ĐẤU
+                </div>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                  Đoàn trường THPT Cao Bá Quát • Giải: <strong>{activeTourn?.name}</strong> (34 Chi đoàn lớp)
+                </p>
+              </div>
+              <button
+                onClick={() => setShowZaloModal(false)}
+                style={{
+                  background: '#f1f5f9',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '32px',
+                  height: '32px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#64748b'
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: '10px',
+              backgroundColor: '#f8fafc',
+              padding: '12px 14px',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'bold' }}>TỔNG SỐ LỚP</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>34 Lớp</div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#166534', fontWeight: 'bold' }}>ĐÃ NỘP HỒ SƠ</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#16a34a' }}>
+                  {unregisteredData.registeredCount} Lớp
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#b91c1c', fontWeight: 'bold' }}>CHƯA NỘP HỒ SƠ</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#dc2626' }}>
+                  {unregisteredData.unregisteredCount} Lớp
+                </div>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', color: '#0369a1', fontWeight: 'bold' }}>TỶ LỆ HOÀN THÀNH</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#0284c7' }}>
+                  {unregisteredData.completionPercent}%
+                </div>
+              </div>
+            </div>
+
+            {/* Main Content: 2 Columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '18px' }}>
+              
+              {/* LEFT COLUMN: PREVIEW TIN NHẮN & NÚT GỬI */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                
+                {/* Tùy chỉnh thông số */}
+                <div style={{ background: '#f8fafc', padding: '12px 14px', borderRadius: '12px', border: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#1e293b' }}>
+                    ⚙️ Tùy chỉnh nội dung thông báo:
+                  </div>
+
+                  {activeTourn?.sports && activeTourn.sports.length > 1 && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11.5px', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>
+                        Môn thi đấu nhắc nhở:
+                      </label>
+                      <select
+                        value={zaloTargetSport}
+                        onChange={e => setZaloTargetSport(e.target.value)}
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', background: '#fff' }}
+                      >
+                        <option value="Tất cả">Tất cả môn ({activeTourn.sports.length} môn)</option>
+                        {activeTourn.sports.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>
+                      Thời hạn chót (Deadline hiển thị trong tin nhắn):
+                    </label>
+                    <input
+                      type="text"
+                      placeholder={activeTourn?.end_date ? new Date(activeTourn.end_date).toLocaleString('vi-VN') : 'VD: Trước 17h00 ngày 30/10/2026'}
+                      value={zaloCustomDeadline}
+                      onChange={e => setZaloCustomDeadline(e.target.value)}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>
+                      Lời nhắn / Lưu ý thêm từ Ban Tổ Chức:
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="VD: Đề nghị Bí thư Chi đoàn kiểm tra kỹ thông tin VĐV Nam/Nữ và số điện thoại liên lạc trước khi gửi..."
+                      value={zaloCustomNote}
+                      onChange={e => setZaloCustomNote(e.target.value)}
+                      style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box', resize: 'vertical' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Khung Textarea Preview Zalo */}
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#334155' }}>
+                      📝 Nội dung tin nhắn chuẩn mực Zalo (Xem trước):
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#0284c7', fontWeight: 'bold' }}>
+                      {zaloReminderMessage.length} ký tự
+                    </span>
+                  </div>
+                  <textarea
+                    readOnly
+                    value={zaloReminderMessage}
+                    rows={12}
+                    style={{
+                      width: '100%',
+                      padding: '12px 14px',
+                      borderRadius: '10px',
+                      border: '1.5px solid #93c5fd',
+                      backgroundColor: '#f0f9ff',
+                      color: '#0f172a',
+                      fontSize: '12.5px',
+                      fontFamily: 'monospace, sans-serif',
+                      lineHeight: '1.5',
+                      boxSizing: 'border-box',
+                      whiteSpace: 'pre-wrap',
+                      outline: 'none'
+                    }}
+                  />
+                </div>
+
+                {/* Các nút hành động chính */}
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={handleCopyZaloMessage}
+                    style={{
+                      flex: 1,
+                      minWidth: '170px',
+                      padding: '11px 16px',
+                      background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '13.5px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(2,132,199,0.3)'
+                    }}
+                  >
+                    {zaloCopiedToast ? <Check size={18} /> : <Copy size={18} />}
+                    {zaloCopiedToast ? 'ĐÃ SAO CHÉP ZALO!' : '📋 SAO CHÉP TIN NHẮN ZALO'}
+                  </button>
+
+                  <a
+                    href={activeTourn?.zalo_link || 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa'}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      padding: '11px 16px',
+                      background: 'linear-gradient(135deg, #0068ff, #0050cc)',
+                      color: '#ffffff',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '13.5px',
+                      textDecoration: 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 4px 12px rgba(0,104,255,0.3)'
+                    }}
+                  >
+                    <Send size={16} /> 📲 Mở Nhóm Zalo Gửi Ngay
+                  </a>
+
+                  <button
+                    onClick={() => exportUnregisteredClassesExcel(activeTourn, unregisteredData)}
+                    style={{
+                      padding: '11px 16px',
+                      background: '#166534',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    title="Xuất file Excel theo chuẩn tiền tố 1-..."
+                  >
+                    <Download size={16} /> Xuất Excel (1-...)
+                  </button>
+                </div>
+
+              </div>
+
+              {/* RIGHT COLUMN: DANH SÁCH CHI TIẾT CÁC LỚP */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                
+                {/* Tabs Chưa Đăng Ký / Đã Đăng Ký */}
+                <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '10px' }}>
+                  <button
+                    onClick={() => setZaloActiveTab('unregistered')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      background: zaloActiveTab === 'unregistered' ? '#ffffff' : 'transparent',
+                      color: zaloActiveTab === 'unregistered' ? '#dc2626' : '#64748b',
+                      boxShadow: zaloActiveTab === 'unregistered' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+                    }}
+                  >
+                    ⚠️ Chưa Nộp ({unregisteredData.unregisteredCount})
+                  </button>
+                  <button
+                    onClick={() => setZaloActiveTab('registered')}
+                    style={{
+                      flex: 1,
+                      padding: '8px 10px',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12.5px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      background: zaloActiveTab === 'registered' ? '#ffffff' : 'transparent',
+                      color: zaloActiveTab === 'registered' ? '#16a34a' : '#64748b',
+                      boxShadow: zaloActiveTab === 'registered' ? '0 2px 6px rgba(0,0,0,0.08)' : 'none'
+                    }}
+                  >
+                    ✓ Đã Nộp ({unregisteredData.registeredCount})
+                  </button>
+                </div>
+
+                {/* DANH SÁCH CHI TIẾT THEO TAB */}
+                <div style={{
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  maxHeight: '440px',
+                  overflowY: 'auto',
+                  backgroundColor: '#ffffff'
+                }}>
+                  {zaloActiveTab === 'unregistered' ? (
+                    <div>
+                      {unregisteredData.unregisteredCount === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '30px 15px', color: '#16a34a' }}>
+                          <CheckCircle2 size={40} color="#16a34a" style={{ marginBottom: '8px' }} />
+                          <div style={{ fontWeight: 'bold', fontSize: '15px' }}>100% CÁC LỚP ĐÃ ĐĂNG KÝ!</div>
+                          <div style={{ fontSize: '12.5px', color: '#64748b', marginTop: '4px' }}>
+                            Không còn lớp nào chưa nộp danh sách.
+                          </div>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic' }}>
+                            💡 Bấm vào từng lớp dưới đây để <strong>sao chép nhanh tin nhắn nhắc riêng</strong> gửi cho GVCN hoặc Bí thư lớp đó!
+                          </div>
+
+                          {/* Khối 10 */}
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#9a3412', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Khối 10 ({unregisteredData.byGrade['Khối 10'].unregistered.length}/15 lớp chưa nộp):</span>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {unregisteredData.byGrade['Khối 10'].unregistered.length === 0 ? (
+                                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>✓ Đã nộp đủ 15/15 lớp</span>
+                              ) : (
+                                unregisteredData.byGrade['Khối 10'].unregistered.map(cls => (
+                                  <button
+                                    key={cls.className}
+                                    onClick={() => handleCopySingleClassReminder(cls.className, 'Khối 10')}
+                                    title="Bấm để copy tin nhắn nhắc riêng cho lớp này"
+                                    style={{
+                                      padding: '5px 10px',
+                                      background: singleClassCopied === cls.className ? '#bbf7d0' : '#fee2e2',
+                                      color: singleClassCopied === cls.className ? '#166534' : '#b91c1c',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '7px',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {singleClassCopied === cls.className ? '✓ Đã Copy' : cls.className}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Khối 11 */}
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#9a3412', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Khối 11 ({unregisteredData.byGrade['Khối 11'].unregistered.length}/9 lớp chưa nộp):</span>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {unregisteredData.byGrade['Khối 11'].unregistered.length === 0 ? (
+                                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>✓ Đã nộp đủ 9/9 lớp</span>
+                              ) : (
+                                unregisteredData.byGrade['Khối 11'].unregistered.map(cls => (
+                                  <button
+                                    key={cls.className}
+                                    onClick={() => handleCopySingleClassReminder(cls.className, 'Khối 11')}
+                                    title="Bấm để copy tin nhắn nhắc riêng cho lớp này"
+                                    style={{
+                                      padding: '5px 10px',
+                                      background: singleClassCopied === cls.className ? '#bbf7d0' : '#fee2e2',
+                                      color: singleClassCopied === cls.className ? '#166534' : '#b91c1c',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '7px',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {singleClassCopied === cls.className ? '✓ Đã Copy' : cls.className}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Khối 12 */}
+                          <div>
+                            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#9a3412', marginBottom: '6px', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>Khối 12 ({unregisteredData.byGrade['Khối 12'].unregistered.length}/10 lớp chưa nộp):</span>
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                              {unregisteredData.byGrade['Khối 12'].unregistered.length === 0 ? (
+                                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 'bold' }}>✓ Đã nộp đủ 10/10 lớp</span>
+                              ) : (
+                                unregisteredData.byGrade['Khối 12'].unregistered.map(cls => (
+                                  <button
+                                    key={cls.className}
+                                    onClick={() => handleCopySingleClassReminder(cls.className, 'Khối 12')}
+                                    title="Bấm để copy tin nhắn nhắc riêng cho lớp này"
+                                    style={{
+                                      padding: '5px 10px',
+                                      background: singleClassCopied === cls.className ? '#bbf7d0' : '#fee2e2',
+                                      color: singleClassCopied === cls.className ? '#166534' : '#b91c1c',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '7px',
+                                      fontSize: '12px',
+                                      fontWeight: 'bold',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    {singleClassCopied === cls.className ? '✓ Đã Copy' : cls.className}
+                                  </button>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* TAB ĐÃ ĐĂNG KÝ */
+                    <div>
+                      {unregisteredData.registeredList.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '30px 15px', color: '#64748b' }}>
+                          Chưa có lớp nào nộp danh sách.
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          {unregisteredData.registeredList.map(item => (
+                            <div key={item.className} style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '8px 12px',
+                              background: '#f8fafc',
+                              borderRadius: '8px',
+                              border: '1px solid #e2e8f0',
+                              fontSize: '12.5px'
+                            }}>
+                              <div>
+                                <span style={{ fontWeight: 'bold', color: '#0369a1', marginRight: '8px' }}>
+                                  Lớp {item.className}
+                                </span>
+                                <span style={{ color: '#475569' }}>
+                                  Đội trưởng: <strong>{item.captain}</strong> ({item.phone})
+                                </span>
+                              </div>
+                              <span style={{ fontSize: '11px', color: '#16a34a', fontWeight: 'bold', background: '#dcfce7', padding: '2px 8px', borderRadius: '12px' }}>
+                                ✓ Đã nộp
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* TOAST THÔNG BÁO SAO CHÉP THÀNH CÔNG */}
+      {zaloCopiedToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          zIndex: 9999,
+          fontSize: '13.5px',
+          fontWeight: 'bold',
+          borderLeft: '4px solid #22c55e'
+        }}>
+          <CheckCircle2 size={18} color="#22c55e" />
+          <span>✓ Đã sao chép tin nhắn Zalo! Hãy mở Zalo và dán (Ctrl+V) vào nhóm.</span>
+        </div>
+      )}
+
+      {singleClassCopied && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          backgroundColor: '#0f172a',
+          color: '#ffffff',
+          padding: '12px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          zIndex: 9999,
+          fontSize: '13.5px',
+          fontWeight: 'bold',
+          borderLeft: '4px solid #38bdf8'
+        }}>
+          <CheckCircle2 size={18} color="#38bdf8" />
+          <span>✓ Đã sao chép tin nhắn nhắc riêng cho Lớp {singleClassCopied}!</span>
         </div>
       )}
 

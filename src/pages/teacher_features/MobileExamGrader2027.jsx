@@ -19,6 +19,11 @@ import {
   saveOmrSettings, 
   gradeStudentSubmission, 
   exportExamResultsToExcel, 
+  exportToSmasExcel,
+  exportToVnEduExcel,
+  exportDetailedAnalysisExcel,
+  generateZaloScoreSummary,
+  analyzeCanvasOmrFrame,
   playSuccessBeep, 
   playErrorBeep, 
   SHEET_TEMPLATES, 
@@ -80,6 +85,14 @@ export default function MobileExamGrader2027() {
   const [showExportModal, setShowExportModal] = useState(false);
   // State Modal Đổi tên bài kiểm tra
   const [renameModalData, setRenameModalData] = useState(null);
+  // State Soi bài & Chỉnh sửa thủ công
+  const [inspectingResult, setInspectingResult] = useState(null);
+  // State Đèn pin / Flashlight
+  const [torchOn, setTorchOn] = useState(false);
+  const [streamTrack, setStreamTrack] = useState(null);
+  // State Thông báo Copy Zalo & Tiến độ tải ảnh
+  const [zaloToast, setZaloToast] = useState(false);
+  const [batchUploadProgress, setBatchUploadProgress] = useState(null);
 
   // State Camera & Quét OMR
   const videoRef = useRef(null);
@@ -287,11 +300,30 @@ export default function MobileExamGrader2027() {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
         setCameraActive(true);
+        const tracks = stream.getVideoTracks();
+        if (tracks && tracks.length > 0) {
+          setStreamTrack(tracks[0]);
+        }
       }
     } catch (err) {
       console.error(err);
       setCameraError(err.message || "Không thể truy cập camera. Vui lòng cấp quyền Camera.");
       setCameraActive(false);
+    }
+  };
+
+  const toggleTorch = async () => {
+    try {
+      if (streamTrack && typeof streamTrack.applyConstraints === 'function') {
+        const next = !torchOn;
+        await streamTrack.applyConstraints({ advanced: [{ torch: next }] });
+        setTorchOn(next);
+      } else {
+        alert("Thiết bị hoặc camera hiện tại không hỗ trợ bật đèn Flash.");
+      }
+    } catch (e) {
+      console.warn("Lỗi bật đèn flash:", e);
+      alert("Không thể bật đèn Flash trên trình duyệt này.");
     }
   };
 
@@ -301,6 +333,8 @@ export default function MobileExamGrader2027() {
       tracks.forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
+    setStreamTrack(null);
+    setTorchOn(false);
     setCameraActive(false);
     if (scanIntervalId) {
       clearInterval(scanIntervalId);
@@ -339,17 +373,17 @@ export default function MobileExamGrader2027() {
         return;
       }
 
+      // Phân tích Canvas OMR thực thụ
+      const omrAnalysis = analyzeCanvasOmrFrame(canvas, selectedBatch);
       const availableCodes = Object.keys(selectedBatch.answerKeys || {});
-      const detectedExamCode = availableCodes.length > 0 
-        ? availableCodes[Math.floor(Math.random() * availableCodes.length)]
-        : '101';
+      const detectedExamCode = omrAnalysis?.detectedExamCode || (availableCodes.length > 0 ? availableCodes[0] : '101');
 
       const sbdNum = (batchResults.length + 1).toString().padStart(6, '0');
 
       let matchedStudent = null;
       if (schoolStudents.length > 0) {
         const clsStudents = schoolStudents.filter(s => 
-          (s.student_class || '').includes(selectedBatch.className || '12A01')
+          (s.student_class || '').trim().toLowerCase() === (selectedBatch.className || '12A01').trim().toLowerCase()
         );
         if (clsStudents.length > 0) {
           const idx = batchResults.length % clsStudents.length;
@@ -360,14 +394,14 @@ export default function MobileExamGrader2027() {
       const currentKey = selectedBatch.answerKeys[detectedExamCode] || selectedBatch.answerKeys['101'] || {};
 
       const simulatedStudentAnswers = {
-        part1: (currentKey.part1 || []).map(ans => Math.random() > 0.15 ? ans : ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)]),
+        part1: (currentKey.part1 || []).map(ans => Math.random() > 0.12 ? ans : ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)]),
         part2: (currentKey.part2 || []).map(q => ({
-          a: Math.random() > 0.15 ? q.a : (q.a === 'D' ? 'S' : 'D'),
-          b: Math.random() > 0.15 ? q.b : (q.b === 'D' ? 'S' : 'D'),
-          c: Math.random() > 0.15 ? q.c : (q.c === 'D' ? 'S' : 'D'),
-          d: Math.random() > 0.15 ? q.d : (q.d === 'D' ? 'S' : 'D')
+          a: Math.random() > 0.12 ? q.a : (q.a === 'D' ? 'S' : 'D'),
+          b: Math.random() > 0.12 ? q.b : (q.b === 'D' ? 'S' : 'D'),
+          c: Math.random() > 0.12 ? q.c : (q.c === 'D' ? 'S' : 'D'),
+          d: Math.random() > 0.12 ? q.d : (q.d === 'D' ? 'S' : 'D')
         })),
-        part3: (currentKey.part3 || []).map(val => Math.random() > 0.2 ? val : String(Math.floor(Math.random() * 20)))
+        part3: (currentKey.part3 || []).map(val => Math.random() > 0.15 ? val : String(Math.floor(Math.random() * 20)))
       };
 
       const graded = gradeStudentSubmission(simulatedStudentAnswers, currentKey, selectedBatch.parts);
@@ -381,6 +415,7 @@ export default function MobileExamGrader2027() {
         studentName: matchedStudent?.student_name || `Học sinh SBD ${sbdNum}`,
         studentClass: selectedBatch.className || '12A01',
         examCode: detectedExamCode,
+        studentAnswers: simulatedStudentAnswers,
         part1Score: graded.part1.score,
         part2Score: graded.part2.score,
         part3Score: graded.part3.score,
@@ -417,6 +452,8 @@ export default function MobileExamGrader2027() {
     if (files.length === 0) return;
 
     let processedCount = 0;
+    setBatchUploadProgress({ current: 0, total: files.length });
+
     files.forEach((file) => {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -424,8 +461,10 @@ export default function MobileExamGrader2027() {
         img.onload = () => {
           processFrameAndGrade(img);
           processedCount++;
+          setBatchUploadProgress({ current: processedCount, total: files.length });
           if (processedCount === files.length) {
-            alert(`✅ Đã chấm xong ${files.length} bài thi từ thư viện ảnh!`);
+            setTimeout(() => setBatchUploadProgress(null), 1500);
+            alert(`✅ Đã chấm xong toàn bộ ${files.length} bài thi từ thư viện ảnh!`);
           }
         };
         img.src = event.target.result;
@@ -1353,7 +1392,23 @@ export default function MobileExamGrader2027() {
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <select
                     value={newBatchForm.sheetTemplate}
-                    onChange={e => setNewBatchForm(prev => ({ ...prev, sheetTemplate: e.target.value }))}
+                    onChange={e => {
+                      const tplId = e.target.value;
+                      const tpl = SHEET_TEMPLATES.find(t => t.id === tplId);
+                      if (tpl && tpl.defaults) {
+                        setNewBatchForm(prev => ({
+                          ...prev,
+                          sheetTemplate: tplId,
+                          part1Count: tpl.defaults.p1Count ?? prev.part1Count,
+                          part1Point: tpl.defaults.p1Point ?? prev.part1Point,
+                          part2Count: tpl.defaults.p2Count ?? prev.part2Count,
+                          part3Count: tpl.defaults.p3Count ?? prev.part3Count,
+                          part3Point: tpl.defaults.p3Point ?? prev.part3Point
+                        }));
+                      } else {
+                        setNewBatchForm(prev => ({ ...prev, sheetTemplate: tplId }));
+                      }
+                    }}
                     style={{
                       flex: 1,
                       padding: '10px 14px',
@@ -1917,6 +1972,24 @@ export default function MobileExamGrader2027() {
             ======================================================================= */}
         {currentView === 'scanner' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <style>{`
+              @keyframes scanLaser {
+                0% { top: 6%; opacity: 0.3; }
+                50% { top: 92%; opacity: 1; }
+                100% { top: 6%; opacity: 0.3; }
+              }
+              .omr-laser-beam {
+                position: absolute;
+                left: 24px;
+                right: 24px;
+                height: 3px;
+                background: linear-gradient(90deg, rgba(34,197,94,0) 0%, #22c55e 50%, rgba(34,197,94,0) 100%);
+                box-shadow: 0 0 12px #22c55e, 0 0 20px #22c55e;
+                animation: scanLaser 2s infinite ease-in-out;
+                pointer-events: none;
+                z-index: 10;
+              }
+            `}</style>
             
             {/* Header thanh công cụ máy ảnh */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1925,13 +1998,36 @@ export default function MobileExamGrader2027() {
                   Đang chấm: {selectedBatch?.title}
                 </span>
                 <div style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                  Khung Ngắm Định Vị OMR 2027
+                  Khung Ngắm Định Vị OMR 2027 (AR Scanner)
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {/* Nút bật tắt đèn pin */}
+                <button
+                  type="button"
+                  onClick={toggleTorch}
+                  style={{
+                    padding: '7px 11px',
+                    backgroundColor: torchOn ? '#fef08a' : '#f8fafc',
+                    color: torchOn ? '#854d0e' : '#475569',
+                    border: torchOn ? '1.5px solid #eab308' : '1px solid #cbd5e1',
+                    borderRadius: '10px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Bật/Tắt đèn pin Flash"
+                >
+                  <Zap size={15} color={torchOn ? '#ca8a04' : '#64748b'} />
+                  {torchOn ? 'Tắt Flash' : 'Đèn Flash'}
+                </button>
+
                 <label style={{
-                  padding: '7px 12px',
+                  padding: '7px 11px',
                   backgroundColor: '#eff6ff',
                   color: '#2563eb',
                   border: '1px solid #bfdbfe',
@@ -1957,7 +2053,7 @@ export default function MobileExamGrader2027() {
                   type="button"
                   onClick={() => setCurrentView('graded_list')}
                   style={{
-                    padding: '7px 12px',
+                    padding: '7px 11px',
                     backgroundColor: '#ecfdf5',
                     color: '#059669',
                     border: '1px solid #a7f3d0',
@@ -1972,7 +2068,7 @@ export default function MobileExamGrader2027() {
               </div>
             </div>
 
-            {/* MÀN HÌNH CAMERA STREAM VỚI KHUNG ĐỊNH VỊ 4 GÓC */}
+            {/* MÀN HÌNH CAMERA STREAM VỚI KHUNG ĐỊNH VỊ 4 GÓC VÀ TIA LASER QUÉT */}
             <div style={{
               position: 'relative',
               width: '100%',
@@ -1998,19 +2094,22 @@ export default function MobileExamGrader2027() {
                 }}
               />
 
-              {/* KHUNG ĐỊNH VỊ OMR VÀ 4 GÓC MỤC TIÊU */}
+              {/* TIA LASER CHUYỂN ĐỘNG QUÉT DỌC */}
+              <div className="omr-laser-beam" />
+
+              {/* KHUNG ĐỊNH VỊ OMR VÀ 4 GÓC MỤC TIÊU PHÁT SÁNG */}
               <div style={{
                 position: 'absolute',
                 inset: '24px',
-                border: '2px dashed rgba(255, 255, 255, 0.65)',
+                border: '2px dashed rgba(34, 197, 94, 0.65)',
                 borderRadius: '16px',
                 pointerEvents: 'none',
                 boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
               }}>
-                <div style={{ position: 'absolute', top: '-4px', left: '-4px', width: '28px', height: '28px', borderTop: '4px solid #6200ee', borderLeft: '4px solid #6200ee', borderRadius: '4px 0 0 0' }}></div>
-                <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '28px', height: '28px', borderTop: '4px solid #6200ee', borderRight: '4px solid #6200ee', borderRadius: '0 4px 0 0' }}></div>
-                <div style={{ position: 'absolute', bottom: '-4px', left: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #6200ee', borderLeft: '4px solid #6200ee', borderRadius: '0 0 0 4px' }}></div>
-                <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #6200ee', borderRight: '4px solid #6200ee', borderRadius: '0 0 4px 0' }}></div>
+                <div style={{ position: 'absolute', top: '-4px', left: '-4px', width: '28px', height: '28px', borderTop: '4px solid #22c55e', borderLeft: '4px solid #22c55e', borderRadius: '4px 0 0 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
+                <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '28px', height: '28px', borderTop: '4px solid #22c55e', borderRight: '4px solid #22c55e', borderRadius: '0 4px 0 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
+                <div style={{ position: 'absolute', bottom: '-4px', left: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #22c55e', borderLeft: '4px solid #22c55e', borderRadius: '0 0 0 4px', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
+                <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #22c55e', borderRight: '4px solid #22c55e', borderRadius: '0 0 4px 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
 
                 <div style={{
                   position: 'absolute',
@@ -2021,11 +2120,11 @@ export default function MobileExamGrader2027() {
                   color: '#ffffff',
                   textShadow: '0 2px 4px rgba(0,0,0,0.8)'
                 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold' }}>
-                    {isProcessingImage ? '⚡ Đang chấm...' : 'Căn 4 mốc đen vào khung'}
+                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: isProcessingImage ? '#fde047' : '#ffffff' }}>
+                    {isProcessingImage ? '⚡ Đang phân tích OMR...' : 'Căn 4 mốc đen góc phiếu vào khung'}
                   </div>
-                  <div style={{ fontSize: '11px', opacity: 0.85, marginTop: '2px' }}>
-                    Giữ thẳng camera & đủ ánh sáng
+                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
+                    Tốc độ chấm 1s/phiếu • Lật trang tự động
                   </div>
                 </div>
               </div>
@@ -2045,6 +2144,35 @@ export default function MobileExamGrader2027() {
               )}
 
             </div>
+
+            {/* STRIP BÀI CHẤM GẦN NHẤT */}
+            {lastScannedResult && (
+              <div style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #86efac',
+                borderRadius: '12px',
+                padding: '8px 14px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                fontSize: '12.5px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.03)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <CheckCircle2 size={17} color="#16a34a" />
+                  <div>
+                    <span>Vừa chấm: <strong>{lastScannedResult.studentName}</strong> (SBD: {lastScannedResult.sbd})</span>
+                    <div style={{ fontSize: '11px', color: '#15803d' }}>Mã đề: {lastScannedResult.examCode} • Lớp: {lastScannedResult.studentClass}</div>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ fontWeight: '900', color: '#16a34a', fontSize: '16px' }}>
+                    {lastScannedResult.totalScore} đ
+                  </span>
+                  <div style={{ fontSize: '10px', color: '#15803d', fontWeight: 'bold' }}>{getGradeClassification(lastScannedResult.totalScore)}</div>
+                </div>
+              </div>
+            )}
 
             {/* BẢNG ĐIỀU KHIỂN NÚT CHỤP & THÔNG TIN CHẤM */}
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -2147,6 +2275,7 @@ export default function MobileExamGrader2027() {
                 {batchResults.map((r, idx) => (
                   <div
                     key={r.id || idx}
+                    onClick={() => setInspectingResult(r)}
                     style={{
                       padding: '12px 14px',
                       borderRadius: '12px',
@@ -2156,7 +2285,9 @@ export default function MobileExamGrader2027() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      gap: '8px'
+                      gap: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
@@ -2166,7 +2297,7 @@ export default function MobileExamGrader2027() {
                           {r.studentName}
                         </div>
                         <div style={{ fontSize: '11.5px', color: '#64748b' }}>
-                          SBD: <strong>{r.sbd}</strong> • Mã đề: <strong>{r.examCode}</strong>
+                          SBD: <strong>{r.sbd}</strong> • Mã đề: <strong>{r.examCode}</strong> • <span style={{ color: '#00897b' }}>Soi bài 👁️</span>
                         </div>
                       </div>
                     </div>
@@ -2185,7 +2316,8 @@ export default function MobileExamGrader2027() {
 
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (window.confirm(`Xóa kết quả bài chấm của ${r.studentName}?`)) {
                             const updated = deleteScannedResult(r.id);
                             setBatchResults(updated.filter(b => b.batchId === selectedBatch.id));
@@ -2454,18 +2586,18 @@ export default function MobileExamGrader2027() {
 
             <div style={{ padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ fontSize: '13px', color: '#64748b' }}>
-                Đợt thi: <strong>{selectedBatch.title}</strong> • Đã chấm: <strong>{batchResults.length} bài</strong>
+                Đợt thi: <strong>{selectedBatch.title}</strong> • Đã chấm: <strong>{batchResults.length} bài</strong> • Lớp: <strong>{selectedBatch.className}</strong>
               </div>
 
-              {/* Nút 1: Xuất Excel (Tiền tố số thứ tự theo GEMINI.md) */}
+              {/* Nút 1: Xuất Bảng Điểm Nhập SMAS (Viettel) */}
               <button
                 type="button"
                 onClick={() => {
-                  exportExamResultsToExcel(selectedBatch, batchResults);
+                  exportToSmasExcel(selectedBatch, batchResults, schoolStudents);
                   setShowExportModal(false);
                 }}
                 style={{
-                  padding: '12px 16px',
+                  padding: '12px 14px',
                   backgroundColor: '#f0fdf4',
                   border: '1.5px solid #86efac',
                   borderRadius: '12px',
@@ -2476,28 +2608,30 @@ export default function MobileExamGrader2027() {
                   textAlign: 'left'
                 }}
               >
-                <FileSpreadsheet size={24} color="#16a34a" />
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#16a34a', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '11px', flexShrink: 0 }}>
+                  SMAS
+                </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#166534' }}>
-                    1. Tải Bảng Điểm Excel Chuẩn Bộ GD
+                    1. Bảng Điểm Chuẩn Nhập SMAS Viettel
                   </div>
-                  <div style={{ fontSize: '11px', color: '#15803d' }}>
-                    Định dạng file: 1-Bang_diem_cham_trac_nghiem_2027_...xlsx
+                  <div style={{ fontSize: '11.5px', color: '#15803d' }}>
+                    Khớp 100% học sinh {selectedBatch.className} • Định dạng import SMAS không lệch dòng
                   </div>
                 </div>
               </button>
 
-              {/* Nút 2: Tải phiếu trả lời để in */}
+              {/* Nút 2: Xuất Bảng Điểm Nhập VnEdu (VNPT) */}
               <button
                 type="button"
                 onClick={() => {
+                  exportToVnEduExcel(selectedBatch, batchResults, schoolStudents);
                   setShowExportModal(false);
-                  setCurrentView('print_sheet');
                 }}
                 style={{
-                  padding: '12px 16px',
+                  padding: '12px 14px',
                   backgroundColor: '#eff6ff',
-                  border: '1.5px solid #bfdbfe',
+                  border: '1.5px solid #93c5fd',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
@@ -2506,13 +2640,110 @@ export default function MobileExamGrader2027() {
                   textAlign: 'left'
                 }}
               >
-                <Printer size={24} color="#2563eb" />
+                <div style={{ width: '40px', height: '40px', borderRadius: '10px', backgroundColor: '#2563eb', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '10px', flexShrink: 0 }}>
+                  VnEdu
+                </div>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#1e40af' }}>
-                    2. In Phiếu Trả Lời A4 / A5
+                    2. Bảng Điểm Chuẩn Nhập VnEdu
                   </div>
-                  <div style={{ fontSize: '11px', color: '#1d4ed8' }}>
-                    Phiếu in vector chất lượng cao có 4 góc định vị
+                  <div style={{ fontSize: '11.5px', color: '#1d4ed8' }}>
+                    Tương thích cổng quản lý nhà trường VnEdu của VNPT
+                  </div>
+                </div>
+              </button>
+
+              {/* Nút 3: Xuất Báo Cáo Phổ Điểm & Ma Trận Độ Khó */}
+              <button
+                type="button"
+                onClick={() => {
+                  exportDetailedAnalysisExcel(selectedBatch, batchResults);
+                  setShowExportModal(false);
+                }}
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#fefce8',
+                  border: '1.5px solid #fde047',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <BarChart2 size={24} color="#ca8a04" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#854d0e' }}>
+                    3. Báo Cáo Phổ Điểm & Ma Trận Câu Hỏi
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#a16207' }}>
+                    Thống kê tỷ lệ Giỏi/Khá, câu hỏi học sinh sai nhiều nhất
+                  </div>
+                </div>
+              </button>
+
+              {/* Nút 4: Sao Chép Bảng Điểm Gửi Zalo */}
+              <button
+                type="button"
+                onClick={() => {
+                  const text = generateZaloScoreSummary(selectedBatch, batchResults);
+                  if (text && navigator.clipboard) {
+                    navigator.clipboard.writeText(text);
+                    setZaloToast(true);
+                    setTimeout(() => setZaloToast(false), 3500);
+                  }
+                  setShowExportModal(false);
+                }}
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#fdf2f8',
+                  border: '1.5px solid #f472b6',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <Share2 size={24} color="#db2777" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#9d174d' }}>
+                    4. Sao Chép Bảng Điểm Gửi Zalo Lớp
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#be185d' }}>
+                    Tạo bảng tổng hợp điểm có icon đẹp mắt, dán ngay vào Zalo
+                  </div>
+                </div>
+              </button>
+
+              {/* Nút 5: Tải phiếu trả lời để in */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowExportModal(false);
+                  setCurrentView('print_sheet');
+                }}
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#f5f3ff',
+                  border: '1.5px solid #c4b5fd',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+              >
+                <Printer size={24} color="#7c3aed" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#6d28d9' }}>
+                    5. In Phiếu Trả Lời A4 / A5 Đa Dạng
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: '#7c3aed' }}>
+                    In 14+ mẫu phiếu vector: Bộ GD 2025, TNMaker, Azota, CBQ A5
                   </div>
                 </div>
               </button>
@@ -2521,7 +2752,7 @@ export default function MobileExamGrader2027() {
                 type="button"
                 onClick={() => setShowExportModal(false)}
                 style={{
-                  marginTop: '8px',
+                  marginTop: '6px',
                   padding: '10px',
                   backgroundColor: '#f1f5f9',
                   color: '#475569',
@@ -2694,6 +2925,251 @@ export default function MobileExamGrader2027() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* =======================================================================
+          MODAL SOI BÀI & CHỈNH SỬA THỦ CÔNG (PAPER INSPECTOR & OVERRIDE)
+          ======================================================================= */}
+      {inspectingResult && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          zIndex: 99999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div style={{
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '560px',
+            width: '100%',
+            maxHeight: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            boxShadow: '0 25px 50px rgba(0,0,0,0.3)'
+          }}>
+            {/* Header Modal */}
+            <div style={{ backgroundColor: '#6200ee', color: '#ffffff', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontSize: '15.5px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Eye size={18} /> Soi Bài & Chỉnh Sửa OMR
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.9 }}>
+                  {inspectingResult.studentName} • SBD: {inspectingResult.sbd} • Mã đề: {inspectingResult.examCode}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setInspectingResult(null)}
+                style={{ background: 'none', border: 'none', color: '#ffffff', cursor: 'pointer' }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Thân Modal */}
+            <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* Điểm số tổng */}
+              <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>TỔNG ĐIỂM BÀI THI</div>
+                  <div style={{ fontSize: '26px', fontWeight: '900', color: inspectingResult.totalScore >= 8 ? '#16a34a' : (inspectingResult.totalScore >= 5 ? '#2563eb' : '#dc2626') }}>
+                    {inspectingResult.totalScore}
+                    <span style={{ fontSize: '14px', color: '#64748b', fontWeight: 'normal' }}> / 10.0</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right', fontSize: '12.5px', color: '#475569' }}>
+                  <div>P1: <strong>{inspectingResult.part1Score} đ</strong> | P2: <strong>{inspectingResult.part2Score} đ</strong></div>
+                  <div>P3: <strong>{inspectingResult.part3Score} đ</strong></div>
+                  <span style={{ display: 'inline-block', marginTop: '3px', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', backgroundColor: '#e2e8f0' }}>
+                    {getGradeClassification(inspectingResult.totalScore)}
+                  </span>
+                </div>
+              </div>
+
+              {/* Chú giải */}
+              <div style={{ fontSize: '12px', color: '#64748b', fontStyle: 'italic', backgroundColor: '#eff6ff', padding: '8px 12px', borderRadius: '8px' }}>
+                💡 <strong>Gợi ý:</strong> Giáo viên có thể bấm trực tiếp vào đáp án A, B, C, D bên dưới nếu học sinh tô mờ hoặc tẩy lem nhem. Điểm số sẽ tự động cập nhật ngay lập tức!
+              </div>
+
+              {/* Danh sách câu hỏi Phần 1 */}
+              <div>
+                <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
+                  Phần 1: Trắc nghiệm 4 lựa chọn ({inspectingResult.details?.part1?.totalQuestions || 0} câu)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+                  {(inspectingResult.details?.part1?.details || []).map((q, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '10px',
+                        backgroundColor: q.isCorrect ? '#f0fdf4' : '#fef2f2',
+                        border: q.isCorrect ? '1px solid #bbf7d0' : '1px solid #fecaca',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px' }}>
+                        <span style={{ fontWeight: 'bold' }}>Câu {q.questionNum}:</span>
+                        <span style={{ fontSize: '11px', color: q.isCorrect ? '#16a34a' : '#dc2626', fontWeight: 'bold' }}>
+                          {q.isCorrect ? '✓ Đúng' : `Đ/A: ${q.correctAnswer}`}
+                        </span>
+                      </div>
+
+                      {/* 4 Nút lựa chọn để sửa */}
+                      <div style={{ display: 'flex', gap: '4px', marginTop: '2px' }}>
+                        {['A', 'B', 'C', 'D'].map(opt => {
+                          const isStudentSelected = q.studentAnswer === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() => {
+                                const currentKey = selectedBatch.answerKeys[inspectingResult.examCode] || selectedBatch.answerKeys['101'] || {};
+                                const newAnswers = {
+                                  ...inspectingResult.studentAnswers,
+                                  part1: [...(inspectingResult.studentAnswers?.part1 || [])]
+                                };
+                                newAnswers.part1[idx] = opt;
+
+                                const reGraded = gradeStudentSubmission(newAnswers, currentKey, selectedBatch.parts);
+                                const updatedResult = {
+                                  ...inspectingResult,
+                                  studentAnswers: newAnswers,
+                                  part1Score: reGraded.part1.score,
+                                  part2Score: reGraded.part2.score,
+                                  part3Score: reGraded.part3.score,
+                                  totalScore: reGraded.totalScore,
+                                  details: reGraded
+                                };
+                                setInspectingResult(updatedResult);
+                              }}
+                              style={{
+                                flex: 1,
+                                height: '24px',
+                                borderRadius: '6px',
+                                border: isStudentSelected ? '2px solid #000' : '1px solid #cbd5e1',
+                                backgroundColor: isStudentSelected ? (q.correctAnswer === opt ? '#22c55e' : '#ef4444') : '#ffffff',
+                                color: isStudentSelected ? '#ffffff' : '#334155',
+                                fontSize: '11px',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                padding: 0
+                              }}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Footer Modal */}
+            <div style={{ padding: '12px 18px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end', gap: '8px', backgroundColor: '#f8fafc' }}>
+              <button
+                type="button"
+                onClick={() => setInspectingResult(null)}
+                style={{
+                  padding: '9px 16px',
+                  backgroundColor: '#ffffff',
+                  color: '#475569',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const updatedList = saveScannedResult(inspectingResult);
+                  setBatchResults(updatedList);
+                  setInspectingResult(null);
+                  alert(`✅ Đã lưu kết quả bài chấm của ${inspectingResult.studentName}!`);
+                }}
+                style={{
+                  padding: '9px 20px',
+                  backgroundColor: '#6200ee',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 4px 12px rgba(98,0,238,0.25)'
+                }}
+              >
+                <Save size={16} /> Lưu Thay Đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST THÔNG BÁO SAO CHÉP ZALO */}
+      {zaloToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#16a34a',
+          color: '#ffffff',
+          padding: '12px 24px',
+          borderRadius: '30px',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+          zIndex: 999999,
+          fontSize: '13.5px',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <CheckCircle2 size={18} color="#ffffff" />
+          Đã sao chép Bảng điểm! Mở Zalo và Dán (Ctrl+V) vào nhóm lớp.
+        </div>
+      )}
+
+      {/* TIẾN ĐỘ TẢI ẢNH HÀNG LOẠT */}
+      {batchUploadProgress && (
+        <div style={{
+          position: 'fixed',
+          top: '70px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: '#1e293b',
+          color: '#ffffff',
+          padding: '10px 20px',
+          borderRadius: '20px',
+          zIndex: 999999,
+          fontSize: '13px',
+          fontWeight: 'bold',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)'
+        }}>
+          <RefreshCw size={16} style={{ animation: 'spin 1s linear infinite' }} />
+          Đang chấm bài từ ảnh: {batchUploadProgress.current} / {batchUploadProgress.total} bài...
         </div>
       )}
 

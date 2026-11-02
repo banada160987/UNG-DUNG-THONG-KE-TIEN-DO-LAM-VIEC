@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase';
+import { ALL_CBQ_CLASSES_34 } from './signmarTournamentService';
+import { exportToExcelWithTitle } from '../utils/excelExport';
 
 export const TOURNAMENTS_SLUG = 'sports-tournaments-list';
 export const LOCAL_STORAGE_KEY = 'cbq_sports_tournaments_list';
@@ -211,4 +213,214 @@ export function checkTournamentStatus(tourn) {
     border: '#bbf7d0',
     message: 'Cổng đăng ký đang mở nhận hồ sơ.'
   };
+}
+
+/**
+ * Chuẩn hóa tên lớp học sinh THPT Cao Bá Quát
+ * Ví dụ: 'Lớp 10A1' -> '10A01', '10a01' -> '10A01', 'Chi đoàn 11A9' -> '11A09', '12A10' -> '12A10'
+ */
+export function normalizeClassName(raw) {
+  if (!raw) return '';
+  const str = String(raw).trim();
+  const match = str.match(/(10|11|12)\s*[-_./\s]?\s*([a-zA-Z])\s*[-_./\s]?\s*(\d{1,2})/i);
+  if (match) {
+    const grade = match[1];
+    const letter = match[2].toUpperCase();
+    const num = parseInt(match[3], 10);
+    const padded = num < 10 ? `0${num}` : `${num}`;
+    return `${grade}${letter}${padded}`;
+  }
+  return str.replace(/^(Lớp|Chi\s*đoàn|CĐ)\s+/i, '').trim();
+}
+
+/**
+ * Lấy danh sách các lớp đã đăng ký và chưa đăng ký giải thể thao
+ * Đối chiếu với toàn bộ 34 lớp trường THPT Cao Bá Quát
+ */
+export function getUnregisteredClasses(tournament, registrations = [], targetSport = 'Tất cả') {
+  const tournRegs = (registrations || []).filter(r => {
+    if (!tournament) return true;
+    if (r.table_group === tournament.id) return true;
+    if (!r.table_group) {
+      const isVolleyball = (r.sport_name || '').includes('Bóng chuyền') || (r.sport_name || '').includes('20/11');
+      if (tournament.id === 'tourn-2026-volleyball-20-11' && isVolleyball) return true;
+    }
+    return false;
+  }).filter(r => {
+    if (targetSport === 'Tất cả') return true;
+    return (r.sport_name || '').includes(targetSport) || targetSport.includes(r.sport_name || '');
+  });
+
+  const registeredMap = new Map();
+  tournRegs.forEach(reg => {
+    const rawClass = reg.cohort_year || reg.unit_name || '';
+    const norm = normalizeClassName(rawClass);
+    if (norm) {
+      let roster = null;
+      try {
+        if (reg.notes && reg.notes.startsWith('{')) {
+          roster = JSON.parse(reg.notes);
+        }
+      } catch (e) {}
+
+      if (!registeredMap.has(norm)) {
+        registeredMap.set(norm, {
+          className: norm,
+          originalName: rawClass,
+          grade: norm.startsWith('10') ? 'Khối 10' : norm.startsWith('11') ? 'Khối 11' : 'Khối 12',
+          captain: roster?.captain || reg.full_name || 'Chưa cập nhật',
+          phone: reg.phone || roster?.phone || 'Chưa có',
+          gvcn: roster?.gvcn || 'Chưa có',
+          registeredAt: reg.created_at,
+          sportName: reg.sport_name || '',
+          registrationId: reg.id
+        });
+      }
+    }
+  });
+
+  const registeredList = [];
+  const unregisteredList = [];
+
+  const byGrade = {
+    'Khối 10': { total: 15, registered: [], unregistered: [] },
+    'Khối 11': { total: 9, registered: [], unregistered: [] },
+    'Khối 12': { total: 10, registered: [], unregistered: [] }
+  };
+
+  ALL_CBQ_CLASSES_34.forEach(cls => {
+    const gradeName = cls.grade || (cls.name.startsWith('10') ? 'Khối 10' : cls.name.startsWith('11') ? 'Khối 11' : 'Khối 12');
+    if (registeredMap.has(cls.name)) {
+      const regInfo = registeredMap.get(cls.name);
+      registeredList.push(regInfo);
+      if (byGrade[gradeName]) byGrade[gradeName].registered.push(regInfo);
+    } else {
+      const unregInfo = {
+        className: cls.name,
+        grade: gradeName,
+        id: cls.id
+      };
+      unregisteredList.push(unregInfo);
+      if (byGrade[gradeName]) byGrade[gradeName].unregistered.push(unregInfo);
+    }
+  });
+
+  const totalClasses = ALL_CBQ_CLASSES_34.length;
+  const registeredCount = registeredList.length;
+  const unregisteredCount = unregisteredList.length;
+  const completionPercent = totalClasses > 0 ? Math.round((registeredCount / totalClasses) * 100) : 0;
+
+  return {
+    totalClasses,
+    registeredCount,
+    unregisteredCount,
+    completionPercent,
+    byGrade,
+    registeredList,
+    unregisteredList,
+    unregisteredClassNames: unregisteredList.map(u => u.className)
+  };
+}
+
+/**
+ * Tạo văn bản thông báo Zalo chuẩn mực sư phạm Đoàn Trường
+ */
+export function generateZaloReminderMessage(tournament, unregisteredData, options = {}) {
+  const {
+    customDeadline = '',
+    customNote = '',
+    targetSport = 'Tất cả'
+  } = options;
+
+  const now = new Date();
+  const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}, ngày ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+
+  const tournName = tournament?.name || 'Giải Thể Thao Học Đường THPT Cao Bá Quát';
+  const sportLabel = targetSport && targetSport !== 'Tất cả' ? ` (${targetSport})` : '';
+  
+  let deadlineStr = customDeadline;
+  if (!deadlineStr && tournament?.end_date) {
+    const end = new Date(tournament.end_date);
+    deadlineStr = `${end.toLocaleDateString('vi-VN')} lúc ${end.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+  if (!deadlineStr) {
+    deadlineStr = 'Trước 17h00 ngày 30/10/2026';
+  }
+
+  const { totalClasses, registeredCount, unregisteredCount, completionPercent, byGrade } = unregisteredData;
+
+  const k10Unreg = byGrade['Khối 10'].unregistered.map(u => u.className).join(', ') || 'Đã nộp đủ 15/15 lớp (100% 🎉)';
+  const k11Unreg = byGrade['Khối 11'].unregistered.map(u => u.className).join(', ') || 'Đã nộp đủ 9/9 lớp (100% 🎉)';
+  const k12Unreg = byGrade['Khối 12'].unregistered.map(u => u.className).join(', ') || 'Đã nộp đủ 10/10 lớp (100% 🎉)';
+
+  let msg = `📢 [ĐOÀN TRƯỜNG THPT CAO BÁ QUÁT]\n`;
+  msg += `THÔNG BÁO TIẾN ĐỘ NỘP HỒ SƠ ĐĂNG KÝ THI ĐẤU THỂ THAO\n`;
+  msg += `------------------------------------\n`;
+  msg += `🏆 Giải đấu: ${tournName}${sportLabel}\n`;
+  msg += `⏱ Cập nhật lúc: ${timeStr}\n`;
+  msg += `📊 Tiến độ toàn trường: ${registeredCount}/${totalClasses} Chi đoàn (${completionPercent}%)\n\n`;
+
+  if (unregisteredCount === 0) {
+    msg += `🎉 XIN CHÚC MỪNG TOÀN THỂ 34 CHI ĐOÀN LỚP ĐÃ HOÀN TẤT NỘP DANH SÁCH 100%!\n`;
+    msg += `Ban Tổ Chức đang tiến hành niêm yết danh sách và chuẩn bị công tác bốc thăm sơ đồ Signmar.\n`;
+  } else {
+    msg += `⚠️ DANH SÁCH ${unregisteredCount} CHI ĐOÀN LỚP CHƯA NỘP HỒ SƠ:\n\n`;
+    msg += `🔴 Khối 10 (Chưa nộp: ${byGrade['Khối 10'].unregistered.length}/15 lớp):\n👉 ${k10Unreg}\n\n`;
+    msg += `🔴 Khối 11 (Chưa nộp: ${byGrade['Khối 11'].unregistered.length}/9 lớp):\n👉 ${k11Unreg}\n\n`;
+    msg += `🔴 Khối 12 (Chưa nộp: ${byGrade['Khối 12'].unregistered.length}/10 lớp):\n👉 ${k12Unreg}\n\n`;
+    msg += `------------------------------------\n`;
+    msg += `⏰ HẠN CHÓT TIẾP NHẬN HỒ SƠ: ${deadlineStr}\n`;
+  }
+
+  msg += `🌐 CỔNG ĐĂNG KÝ TRỰC TUYẾN: https://thptcaobaquat.vercel.app/dang-ky-the-thao\n`;
+  if (tournament?.zalo_link) {
+    msg += `📲 LINK NHÓM ZALO GIẢI ĐẤU: ${tournament.zalo_link}\n`;
+  }
+
+  if (customNote && customNote.trim()) {
+    msg += `\n💬 LƯU Ý TỪ BAN TỔ CHỨC:\n${customNote.trim()}\n`;
+  }
+
+  msg += `\nTrân trọng đề nghị Quý Thầy/Cô GVCN và Ban Cán sự các Chi đoàn lớp khẩn trương hoàn tất đăng ký để Ban Tổ Chức tiến hành bốc thăm Signmar xếp lịch thi đấu!`;
+
+  return msg;
+}
+
+/**
+ * Xuất file Excel danh sách các lớp chưa đăng ký thể thao
+ * Tuân thủ quy tắc GEMINI.md: Tiền tố số thứ tự 1-Danh_sach_cac_lop_chua_dang_ky_the_thao_[TenGiai].xlsx
+ */
+export function exportUnregisteredClassesExcel(tournament, unregisteredData) {
+  const { unregisteredList, registeredCount, totalClasses } = unregisteredData;
+  const tournName = tournament?.name || 'Giai_The_Thao';
+  const safeTournName = tournName.replace(/[^a-zA-Z0-9_\u00C0-\u1EF9]/g, '_').substring(0, 40);
+
+  const reportData = [
+    ["STT", "Khối Lớp", "Tên Chi Đoàn Lớp", "Tình Trạng Hồ Sơ", "Thời Gian Kiểm Tra", "Ghi Chú Ban Tổ Chức"],
+    ...unregisteredList.map((item, index) => [
+      index + 1,
+      item.grade,
+      item.className,
+      "CHƯA ĐĂNG KÝ",
+      new Date().toLocaleString('vi-VN'),
+      "Chưa nộp danh sách VĐV lên hệ thống"
+    ])
+  ];
+
+  const cols = [
+    { wch: 8 },  // STT
+    { wch: 15 }, // Khối Lớp
+    { wch: 20 }, // Tên Chi Đoàn
+    { wch: 22 }, // Tình Trạng
+    { wch: 25 }, // Thời Gian
+    { wch: 35 }  // Ghi Chú
+  ];
+
+  exportToExcelWithTitle({
+    reportName: `DANH SÁCH CHI ĐOÀN LỚP CHƯA ĐĂNG KÝ THI ĐẤU - ${tournName.toUpperCase()} (ĐÃ NỘP: ${registeredCount}/${totalClasses})`,
+    data: reportData,
+    cols,
+    sheetName: "Lop_Chua_Dang_Ky",
+    fileName: `1-Danh_sach_cac_lop_chua_dang_ky_the_thao_${safeTournName}.xlsx`
+  });
 }
