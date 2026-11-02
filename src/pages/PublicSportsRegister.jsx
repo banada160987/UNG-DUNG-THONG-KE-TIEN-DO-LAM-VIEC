@@ -228,6 +228,31 @@ export default function PublicSportsRegister() {
     setSubmitting(true);
     setSuccessMsg('');
 
+    // 🛡️ CHỐNG TRÙNG THỜI GIAN THỰC (Đội Lớp): Truy vấn trực tiếp cơ sở dữ liệu Supabase trước khi ghi
+    if (activeTourn?.prevent_duplicate) {
+      try {
+        const { data: dbCheck } = await supabase
+          .from('cbq_sports_registrations')
+          .select('id, full_name, created_at')
+          .eq('table_group', activeTourn.id)
+          .eq('cohort_year', selectedClass);
+
+        if (dbCheck && dbCheck.length > 0) {
+          alert(
+            `❌ KHÔNG THỂ NỘP:\n` +
+            `Chi đoàn Lớp ${selectedClass} đã có bản đăng ký trong hệ thống!\n` +
+            `Theo Điều lệ giải, mỗi lớp chỉ đăng ký 01 đội duy nhất.\n` +
+            `Nếu cần chỉnh sửa danh sách VĐV, vui lòng liên hệ Ban Tổ Chức.`
+          );
+          setSubmitting(false);
+          await fetchRegistrations();
+          return;
+        }
+      } catch (checkErr) {
+        console.warn("Lỗi kiểm tra trùng lặp trên DB:", checkErr);
+      }
+    }
+
     const rosterData = {
       tournament_id: activeTourn.id,
       tournament_name: activeTourn.name,
@@ -320,6 +345,30 @@ export default function PublicSportsRegister() {
 
     setSubmitting(true);
     setSuccessMsg('');
+
+    // 🛡️ CHỐNG TRÙNG THỜI GIAN THỰC (Cá nhân): Kiểm tra SĐT trong cùng giải đấu
+    if (activeTourn?.prevent_duplicate) {
+      try {
+        const { data: dbCheck } = await supabase
+          .from('cbq_sports_registrations')
+          .select('id, full_name, created_at')
+          .eq('table_group', activeTourn.id)
+          .eq('phone', phoneInd.trim());
+
+        if (dbCheck && dbCheck.length > 0) {
+          alert(
+            `❌ KHÔNG THỂ NỘP:\n` +
+            `Số điện thoại ${phoneInd.trim()} (${dbCheck[0].full_name}) đã có bản đăng ký trong giải đấu này!\n` +
+            `Theo Điều lệ, mỗi vận động viên chỉ đăng ký 01 lượt.`
+          );
+          setSubmitting(false);
+          await fetchRegistrations();
+          return;
+        }
+      } catch (checkErr) {
+        console.warn("Lỗi kiểm tra trùng lặp trên DB:", checkErr);
+      }
+    }
 
     const newReg = {
       full_name: fullNameInd.trim(),

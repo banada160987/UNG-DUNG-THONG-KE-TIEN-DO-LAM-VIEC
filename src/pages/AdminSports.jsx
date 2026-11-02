@@ -376,6 +376,46 @@ export default function AdminSports() {
     }
   };
 
+  // ================= 🧹 DỌN DẸP CÁC ĐƠN NỘP TRÙNG (GIỮ ĐƠN MỚI NHẤT) =================
+  const handleCleanupDuplicates = async () => {
+    if (!unregisteredData.duplicateClasses.length) return;
+    const confirmMsg = `Phát hiện có ${unregisteredData.duplicateClasses.length} lớp nộp trùng:\n` +
+      unregisteredData.duplicateClasses.map(d => `• Lớp ${d.className}: có ${d.count} đơn nộp`).join('\n') +
+      `\n\nBạn có muốn tự động XÓA các bản ghi cũ và chỉ GIỮ LẠI đơn nộp mới nhất của mỗi lớp không?`;
+    
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      setLoading(true);
+      const idsToDelete = [];
+      unregisteredData.duplicateClasses.forEach(d => {
+        // Sắp xếp theo created_at giảm dần (mới nhất lên đầu)
+        const sorted = [...(d.regs || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        // Giữ lại phần tử đầu tiên (mới nhất), xóa các phần tử cũ còn lại
+        const toDelete = sorted.slice(1);
+        toDelete.forEach(r => idsToDelete.push(r.id));
+      });
+
+      if (idsToDelete.length > 0) {
+        const { error } = await supabase
+          .from('cbq_sports_registrations')
+          .delete()
+          .in('id', idsToDelete);
+
+        if (error) throw error;
+
+        // Cập nhật state
+        setRegistrations(prev => prev.filter(r => !idsToDelete.includes(r.id)));
+        alert(`✓ Đã dọn dẹp thành công ${idsToDelete.length} đơn nộp trùng! Dữ liệu đã được chuẩn hóa.`);
+      }
+    } catch (err) {
+      console.error("Lỗi dọn dẹp đơn trùng:", err);
+      alert("Không thể dọn dẹp đơn trùng: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ================= XỬ LÝ SỬA ĐỘI HÌNH (ADMIN) =================
   const openEditTeamModal = (item) => {
     let roster = null;
@@ -948,6 +988,28 @@ export default function AdminSports() {
             >
               <Download size={14} /> Xuất Excel Lớp Chưa ĐK (1-...)
             </button>
+
+            {unregisteredData.duplicateClasses.length > 0 && (
+              <button
+                onClick={handleCleanupDuplicates}
+                style={{
+                  padding: '9px 14px',
+                  background: '#fef3c7',
+                  color: '#b45309',
+                  border: '1.5px solid #fde68a',
+                  borderRadius: '10px',
+                  fontWeight: 'bold',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Tự động xóa các đơn nộp cũ bị trùng và chỉ giữ lại đơn nộp mới nhất của mỗi lớp"
+              >
+                🧹 Dọn Đơn Trùng ({unregisteredData.duplicateClasses.length} lớp)
+              </button>
+            )}
           </div>
         </div>
 
