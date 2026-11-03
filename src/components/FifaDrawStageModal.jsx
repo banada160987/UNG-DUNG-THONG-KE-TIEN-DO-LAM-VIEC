@@ -10,7 +10,8 @@ import {
   prepareRegisteredTeams, 
   shuffleArray, 
   createSignmar34Draw,
-  exportFifaDrawResultsExcel 
+  exportFifaDrawResultsExcel,
+  exportCourtMatchScheduleExcel
 } from '../services/signmarTournamentService';
 
 // ==================== WEB AUDIO SYNTHESIZER ====================
@@ -397,6 +398,24 @@ export default function FifaDrawStageModal({
   // Xuất Excel Biên Bản
   const handleExportExcel = () => {
     exportFifaDrawResultsExcel(tournament, sportName, matchups);
+  };
+
+  // Xuất Bảng Phân Công Lịch Đấu Theo Sân & Trọng Tài (Chuẩn đẹp theo ảnh yêu cầu)
+  const handleExportCourtSchedule = () => {
+    const formatted = matchups.map((m, idx) => ({
+      court: (idx % 2 === 0 ? 1 : 2),
+      matchNumber: idx + 1,
+      teamA: m.teamA?.name || m.teamA?.cohort_year || m.teamA,
+      score: '',
+      teamB: m.teamB?.name || m.teamB?.cohort_year || m.teamB,
+      referee: 'Huỳnh Thanh Tú',
+      note: m.roundName || 'Vòng sơ loại'
+    }));
+    exportCourtMatchScheduleExcel({
+      tournamentTitle: tournament?.name,
+      sportName,
+      matches: formatted
+    });
   };
 
   // Áp dụng lưu vào hệ thống Sơ đồ thi đấu
@@ -1102,6 +1121,30 @@ export default function FifaDrawStageModal({
               }}
             >
               <FileSpreadsheet size={16} /> 📥 Xuất Biên Bản Bốc Thăm (Excel)
+            </button>
+
+            <button
+              onClick={handleExportCourtSchedule}
+              disabled={matchups.length === 0}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: matchups.length > 0 ? 'pointer' : 'not-allowed',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                opacity: matchups.length > 0 ? 1 : 0.5
+              }}
+              title="Xuất bảng Excel gồm các cột: Sân | Trận | Đội | gặp (tỷ số) | Đội | Trọng tài | Ghi chú đúng theo mẫu"
+            >
+              <Download size={16} /> 🏟️ Xuất Lịch Theo Sân & Trọng Tài (Excel)
             </button>
 
             {onApplyBracket && (

@@ -7,7 +7,8 @@ import {
   exportSignmarToExcel, 
   formatSignmarForZalo, 
   updateSignmarMatch, 
-  saveSignmarBracket 
+  saveSignmarBracket,
+  exportCourtMatchScheduleExcel
 } from '../services/signmarTournamentService';
 
 export default function SignmarBracketViewer({ 
@@ -88,6 +89,46 @@ export default function SignmarBracketViewer({
     } finally {
       setExportingExcel(false);
     }
+  };
+
+  // Xuất Bảng Lịch Đấu Theo Sân & Trọng Tài (khớp mẫu ảnh)
+  const handleExportCourtSchedule = () => {
+    const list = [];
+    let idx = 1;
+
+    // Vòng sơ loại
+    (bracket.matches.prelim || []).forEach(m => {
+      list.push({
+        court: ((idx - 1) % 2) + 1,
+        matchNumber: idx,
+        teamA: m.teamA?.name || '10A07',
+        score: (m.scoreA && m.scoreB) ? `${m.scoreA} - ${m.scoreB}` : '',
+        teamB: m.teamB?.name || '12A03',
+        referee: 'Huỳnh Thanh Tú',
+        note: m.roundName || 'Vòng sơ loại'
+      });
+      idx++;
+    });
+
+    // Vòng 32
+    (bracket.matches.round32 || []).forEach(m => {
+      list.push({
+        court: ((idx - 1) % 2) + 1,
+        matchNumber: idx,
+        teamA: m.teamA?.name || m.placeholderA || 'TBD',
+        score: (m.scoreA && m.scoreB) ? `${m.scoreA} - ${m.scoreB}` : '',
+        teamB: m.teamB?.name || m.placeholderB || 'TBD',
+        referee: 'Huỳnh Thanh Tú',
+        note: 'Vòng 1/16'
+      });
+      idx++;
+    });
+
+    exportCourtMatchScheduleExcel({
+      tournamentTitle: tournament?.name,
+      sportName,
+      matches: list
+    });
   };
 
   // Copy Zalo
@@ -179,6 +220,14 @@ export default function SignmarBracketViewer({
             title="Xuất sơ đồ cây xương cá ra Excel chuẩn A4 Landscape (1-So_do_signmar_34_doi...)"
           >
             <Download size={15} /> {exportingExcel ? 'Đang xuất...' : '📥 Xuất Excel Sơ Đồ Signmar (1-...)'}
+          </button>
+
+          <button
+            onClick={handleExportCourtSchedule}
+            style={{ padding: '8px 14px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}
+            title="Xuất bảng Excel Lịch thi đấu theo Sân & Trọng tài đúng theo mẫu yêu cầu (Sân | Trận | Đội | gặp (tỷ số) | Đội | Trọng tài | Ghi chú)"
+          >
+            <Download size={15} /> 🏟️ Xuất Lịch Sân & Trọng Tài (1-...)
           </button>
 
           <button

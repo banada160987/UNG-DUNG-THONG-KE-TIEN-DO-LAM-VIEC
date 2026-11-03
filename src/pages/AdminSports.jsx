@@ -19,6 +19,7 @@ import {
 } from '../services/sportsTournamentService';
 import SignmarBracketViewer from '../components/SignmarBracketViewer';
 import FifaDrawStageModal from '../components/FifaDrawStageModal';
+import CourtMatchScheduleModal from '../components/CourtMatchScheduleModal';
 import { 
   createSignmar34Draw, 
   saveSignmarBracket, 
@@ -81,6 +82,7 @@ export default function AdminSports() {
   const [signmarBracket, setSignmarBracket] = useState(null);
   const [copiedSchedule, setCopiedSchedule] = useState(false);
   const [showFifaModal, setShowFifaModal] = useState(false);
+  const [showCourtModal, setShowCourtModal] = useState(false);
 
   // 👁️ MODAL XEM CHI TIẾT ĐỘI HÌNH
   const [selectedTeamView, setSelectedTeamView] = useState(null);
@@ -809,6 +811,32 @@ export default function AdminSports() {
               title="Mở sân khấu bốc thăm bóng vàng phong cách FIFA World Cup với âm thanh kịch tính để quay video gửi các lớp"
             >
               <Trophy size={16} /> 🎬 Bốc Thăm FIFA (Quay Video)
+            </button>
+
+            <button
+              onClick={() => {
+                if (!drawSport && activeTourn?.sports?.[0]) {
+                  setDrawSport(activeTourn.sports[0]);
+                }
+                setShowCourtModal(true);
+              }}
+              style={{ 
+                padding: '9px 14px', 
+                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', 
+                color: '#ffffff', 
+                border: 'none', 
+                borderRadius: '9px', 
+                fontWeight: 'bold', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '13px', 
+                boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)' 
+              }}
+              title="Xem và xuất bảng phân công lịch thi đấu theo Sân và Trọng tài ra file Excel chuẩn"
+            >
+              <Calendar size={15} /> 🏟️ Lịch Thi Đấu (Sân & Trọng Tài)
             </button>
 
             <button
@@ -2014,10 +2042,10 @@ export default function AdminSports() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
                 <button
                   onClick={handleRandomDraw}
-                  style={{ flex: 1, padding: '9px 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}
+                  style={{ flex: 1, minWidth: '130px', padding: '9px 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}
                   title="Bốc thăm tức thì vào sơ đồ"
                 >
                   🎲 Bốc Thăm Nhanh
@@ -2028,10 +2056,18 @@ export default function AdminSports() {
                     setShowBracketModal(false);
                     setShowFifaModal(true);
                   }}
-                  style={{ flex: 1, padding: '9px 12px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(245,158,11,0.35)' }}
+                  style={{ flex: 1, minWidth: '150px', padding: '9px 12px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(245,158,11,0.35)' }}
                   title="Mở sân khấu xoay bóng vàng 3D kèm âm thanh kịch tính để quay video gửi các lớp"
                 >
-                  🎬 Sân Khấu FIFA (Quay Video)
+                  🎬 Sân Khấu FIFA
+                </button>
+
+                <button
+                  onClick={() => setShowCourtModal(true)}
+                  style={{ flex: 1, minWidth: '160px', padding: '9px 12px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2,132,199,0.25)' }}
+                  title="Mở bảng phân công sân và trọng tài để xem và xuất Excel"
+                >
+                  <Calendar size={15} /> 🏟️ Lịch Sân & Trọng Tài
                 </button>
               </div>
             </div>
@@ -2680,6 +2716,17 @@ export default function AdminSports() {
             setDrawnBrackets(bracket);
           }
         }}
+      />
+
+      {/* ================= BẢNG PHÂN CÔNG LỊCH THI ĐẤU THEO SÂN & TRỌNG TÀI ================= */}
+      <CourtMatchScheduleModal
+        isOpen={showCourtModal}
+        onClose={() => setShowCourtModal(false)}
+        tournament={activeTourn}
+        sportName={drawSport || (activeTourn?.sports?.[0]) || 'Bóng Chuyền'}
+        signmarBracket={signmarBracket}
+        drawnBrackets={drawnBrackets}
+        registrations={activeTournRegistrations}
       />
 
     </div>

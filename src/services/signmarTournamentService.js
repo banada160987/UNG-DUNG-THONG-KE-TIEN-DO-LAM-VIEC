@@ -986,3 +986,263 @@ export async function exportFifaDrawResultsExcel(tournament, sportName, matchups
 
   return { success: true, fileName };
 }
+
+/**
+ * Xuất Bảng Lịch Thi Đấu Theo Sân Và Trọng Tài Chuẩn Đẹp (Khớp 100% mẫu ảnh người dùng yêu cầu)
+ * Cột: Sân | Trận | Đội | gặp (tỷ số) | Đội | Trọng tài | Ghi chú
+ * Tuân thủ quy tắc GEMINI.md: Tiền tố số thứ tự 1-Lich_thi_dau_theo_san_va_trong_tai_...
+ */
+export async function exportCourtMatchScheduleExcel({
+  tournamentTitle = 'HỘI THAO TRƯỜNG THPT CAO BÁ QUÁT',
+  sportName = 'Bóng Chuyền',
+  matches = []
+}) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Trường THPT Cao Bá Quát - Ban Tổ Chức Hội Thao';
+  wb.created = new Date();
+
+  const cleanSport = sportName || 'Bóng Chuyền';
+  const tournName = tournamentTitle || 'Hội Thao Trường THPT Cao Bá Quát';
+
+  // ==================== SHEET 1: BẢN IN TRANG TRỌNG A4 ====================
+  const wsA4 = wb.addWorksheet('Lịch Thi Đấu (In A4)', {
+    pageSetup: { 
+      paperSize: 9, // A4
+      orientation: 'portrait', 
+      fitToPage: true, 
+      fitToWidth: 1, 
+      fitToHeight: 0,
+      margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 }
+    }
+  });
+
+  wsA4.columns = [
+    { width: 8 },  // A: Sân
+    { width: 8 },  // B: Trận
+    { width: 14 }, // C: Đội (1)
+    { width: 14 }, // D: gặp (tỷ số)
+    { width: 14 }, // E: Đội (2)
+    { width: 24 }, // F: Trọng tài
+    { width: 22 }  // G: Ghi chú
+  ];
+
+  // Header hành chính
+  wsA4.mergeCells('A1:C1');
+  wsA4.getCell('A1').value = 'TRƯỜNG THPT CAO BÁ QUÁT';
+  wsA4.getCell('A1').font = { name: 'Times New Roman', size: 10, bold: true };
+  wsA4.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsA4.mergeCells('E1:G1');
+  wsA4.getCell('E1').value = 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM';
+  wsA4.getCell('E1').font = { name: 'Times New Roman', size: 10, bold: true };
+  wsA4.getCell('E1').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsA4.mergeCells('A2:C2');
+  wsA4.getCell('A2').value = 'BAN TỔ CHỨC HỘI THAO';
+  wsA4.getCell('A2').font = { name: 'Times New Roman', size: 10, bold: true, color: { argb: 'FF1E3A8A' } };
+  wsA4.getCell('A2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsA4.mergeCells('E2:G2');
+  wsA4.getCell('E2').value = 'Độc lập - Tự do - Hạnh phúc';
+  wsA4.getCell('E2').font = { name: 'Times New Roman', size: 10, italic: true };
+  wsA4.getCell('E2').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Tiêu đề chính
+  wsA4.mergeCells('A4:G4');
+  wsA4.getCell('A4').value = 'LỊCH THI ĐẤU VÀ PHÂN CÔNG TRỌNG TÀI';
+  wsA4.getCell('A4').font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF1E3A8A' } };
+  wsA4.getCell('A4').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  wsA4.mergeCells('A5:G5');
+  wsA4.getCell('A5').value = `MÔN THI ĐẤU: ${cleanSport.toUpperCase()} | ${tournName.toUpperCase()}`;
+  wsA4.getCell('A5').font = { name: 'Times New Roman', size: 11, bold: true, italic: true, color: { argb: 'FFB91C1C' } };
+  wsA4.getCell('A5').alignment = { horizontal: 'center', vertical: 'middle' };
+
+  // Tiêu đề bảng (Dòng 7)
+  const headerA4 = wsA4.getRow(7);
+  headerA4.height = 28;
+  headerA4.values = ['Sân', 'Trận', 'Đội', 'gặp (tỷ số)', 'Đội', 'Trọng tài', 'Ghi chú'];
+  headerA4.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  headerA4.alignment = { horizontal: 'center', vertical: 'middle' };
+
+  for (let c = 1; c <= 7; c++) {
+    const cell = headerA4.getCell(c);
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E40AF' }
+    };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'medium' },
+      right: { style: 'thin' }
+    };
+  }
+
+  // Dữ liệu dòng (Sheet 1)
+  matches.forEach((m, idx) => {
+    const row = wsA4.getRow(8 + idx);
+    row.height = 24;
+    const teamAName = m.teamA ? (m.teamA.name || m.teamA.cohort_year || m.teamA) : '';
+    const teamBName = m.teamB ? (m.teamB.name || m.teamB.cohort_year || m.teamB) : '';
+    const scoreVal = m.score || (m.scoreA && m.scoreB ? `${m.scoreA} - ${m.scoreB}` : '');
+
+    row.values = [
+      m.court || (idx % 2 === 0 ? 1 : 2),
+      m.matchNumber || (idx + 1),
+      teamAName,
+      scoreVal,
+      teamBName,
+      m.referee || 'Huỳnh Thanh Tú',
+      m.note || ''
+    ];
+
+    row.font = { name: 'Times New Roman', size: 11 };
+    row.alignment = { vertical: 'middle' };
+    row.getCell(1).alignment = { horizontal: 'center', bold: true };
+    row.getCell(2).alignment = { horizontal: 'center', bold: true };
+    row.getCell(3).alignment = { horizontal: 'center', bold: true, color: { argb: 'FF1D4ED8' } };
+    row.getCell(4).alignment = { horizontal: 'center', bold: true, color: { argb: 'FFB91C1C' } };
+    row.getCell(5).alignment = { horizontal: 'center', bold: true, color: { argb: 'FFB45309' } };
+    row.getCell(6).alignment = { horizontal: 'left', bold: true };
+    row.getCell(7).alignment = { horizontal: 'left', italic: true };
+
+    for (let c = 1; c <= 7; c++) {
+      const cell = row.getCell(c);
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        left: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
+        right: { style: 'thin', color: { argb: 'FFCBD5E1' } }
+      };
+      if (idx % 2 === 1) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF8FAFC' }
+        };
+      }
+    }
+  });
+
+  // Chữ ký (Sheet 1)
+  const signRow = 8 + matches.length + 2;
+  wsA4.mergeCells(`A${signRow}:C${signRow}`);
+  wsA4.getCell(`A${signRow}`).value = 'ĐẠI DIỆN TỔ TRỌNG TÀI';
+  wsA4.getCell(`A${signRow}`).font = { name: 'Times New Roman', size: 11, bold: true };
+  wsA4.getCell(`A${signRow}`).alignment = { horizontal: 'center' };
+
+  wsA4.mergeCells(`E${signRow}:G${signRow}`);
+  wsA4.getCell(`E${signRow}`).value = 'TRƯỞNG BAN TỔ CHỨC';
+  wsA4.getCell(`E${signRow}`).font = { name: 'Times New Roman', size: 11, bold: true };
+  wsA4.getCell(`E${signRow}`).alignment = { horizontal: 'center' };
+
+  wsA4.mergeCells(`A${signRow + 1}:C${signRow + 1}`);
+  wsA4.getCell(`A${signRow + 1}`).value = '(Ký và ghi rõ họ tên)';
+  wsA4.getCell(`A${signRow + 1}`).font = { name: 'Times New Roman', size: 10, italic: true };
+  wsA4.getCell(`A${signRow + 1}`).alignment = { horizontal: 'center' };
+
+  wsA4.mergeCells(`E${signRow + 1}:G${signRow + 1}`);
+  wsA4.getCell(`E${signRow + 1}`).value = '(Ký và đóng dấu)';
+  wsA4.getCell(`E${signRow + 1}`).font = { name: 'Times New Roman', size: 10, italic: true };
+  wsA4.getCell(`E${signRow + 1}`).alignment = { horizontal: 'center' };
+
+  wsA4.mergeCells(`A${signRow + 5}:C${signRow + 5}`);
+  wsA4.getCell(`A${signRow + 5}`).value = 'Huỳnh Thanh Tú';
+  wsA4.getCell(`A${signRow + 5}`).font = { name: 'Times New Roman', size: 11, bold: true };
+  wsA4.getCell(`A${signRow + 5}`).alignment = { horizontal: 'center' };
+
+  // ==================== SHEET 2: BẢN CHUẨN ĐÚNG 100% NHƯ ẢNH NGƯỜI DÙNG ====================
+  // Hàng 1 bắt đầu trực tiếp: Sân | Trận | Đội | gặp (tỷ số) | Đội | Trọng tài | Ghi chú
+  const wsExact = wb.addWorksheet('Lịch Sân Trận (Chuẩn)', {
+    pageSetup: { paperSize: 9, orientation: 'portrait', fitToWidth: 1 }
+  });
+
+  wsExact.columns = [
+    { width: 10 }, // A: Sân
+    { width: 10 }, // B: Trận
+    { width: 16 }, // C: Đội
+    { width: 16 }, // D: gặp (tỷ số)
+    { width: 16 }, // E: Đội
+    { width: 24 }, // F: Trọng tài
+    { width: 22 }  // G: Ghi chú
+  ];
+
+  const headerRowExact = wsExact.getRow(1);
+  headerRowExact.height = 26;
+  headerRowExact.values = ['Sân', 'Trận', 'Đội', 'gặp (tỷ số)', 'Đội', 'Trọng tài', 'Ghi chú'];
+  headerRowExact.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FF000000' } };
+  headerRowExact.alignment = { horizontal: 'left', vertical: 'middle' };
+
+  // Kẻ viền và màu nền nhẹ cho header
+  for (let c = 1; c <= 7; c++) {
+    const cell = headerRowExact.getCell(c);
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFF1F5F9' } // Màu xám nhạt hiện đại, chuyên nghiệp
+    };
+    cell.border = {
+      top: { style: 'thin', color: { argb: 'FF94A3B8' } },
+      left: { style: 'thin', color: { argb: 'FF94A3B8' } },
+      bottom: { style: 'medium', color: { argb: 'FF475569' } },
+      right: { style: 'thin', color: { argb: 'FF94A3B8' } }
+    };
+  }
+
+  // Dữ liệu dòng (Sheet 2)
+  matches.forEach((m, idx) => {
+    const row = wsExact.getRow(2 + idx);
+    row.height = 24;
+    const teamAName = m.teamA ? (m.teamA.name || m.teamA.cohort_year || m.teamA) : '';
+    const teamBName = m.teamB ? (m.teamB.name || m.teamB.cohort_year || m.teamB) : '';
+    const scoreVal = m.score || (m.scoreA && m.scoreB ? `${m.scoreA} - ${m.scoreB}` : '');
+
+    row.values = [
+      m.court || (idx % 2 === 0 ? 1 : 2),
+      m.matchNumber || (idx + 1),
+      teamAName,
+      scoreVal,
+      teamBName,
+      m.referee || 'Huỳnh Thanh Tú',
+      m.note || ''
+    ];
+
+    row.font = { name: 'Times New Roman', size: 11 };
+    row.alignment = { vertical: 'middle' };
+    row.getCell(1).alignment = { horizontal: 'right', bold: true }; // Sân (căn phải như Excel mặc định với số)
+    row.getCell(2).alignment = { horizontal: 'right', bold: true }; // Trận
+    row.getCell(3).alignment = { horizontal: 'left', bold: true };  // Đội 1 (ví dụ 10A07)
+    row.getCell(4).alignment = { horizontal: 'center' };            // gặp (tỷ số)
+    row.getCell(5).alignment = { horizontal: 'left', bold: true };  // Đội 2 (ví dụ 12A03)
+    row.getCell(6).alignment = { horizontal: 'left' };              // Trọng tài (Huỳnh Thanh Tú)
+    row.getCell(7).alignment = { horizontal: 'left' };              // Ghi chú
+
+    for (let c = 1; c <= 7; c++) {
+      row.getCell(c).border = {
+        top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+        right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+      };
+    }
+  });
+
+  // Tải file tuân thủ quy tắc số thứ tự GEMINI.md
+  const safeSport = cleanSport.replace(/[^a-zA-Z0-9_\u00C0-\u1EF9]/g, '_').substring(0, 30);
+  const fileName = `1-Lich_thi_dau_theo_san_va_trong_tai_${safeSport}_THPT_Cao_Ba_Quat.xlsx`;
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  return { success: true, fileName };
+}
