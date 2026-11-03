@@ -598,6 +598,14 @@ export default function PublicHome() {
                   </div>
                 </Link>
 
+                <Link to="/kiem-tra-tap-trung" style={styles.actionCard('#fff7ed', '#ea580c', '#c2410c')}>
+                  <span style={{ fontSize: '22px' }}>🏛️</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Phòng Thi KTTT</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Tra cứu SBD & Lịch thi</div>
+                  </div>
+                </Link>
+
                 <Link to="/hoc-lieu-so" style={styles.actionCard('#faf5ff', '#a855f7', '#7e22ce')}>
                   <span style={{ fontSize: '22px' }}>📺</span>
                   <div>
@@ -739,6 +747,14 @@ export default function PublicHome() {
                   <div>
                     <div style={{ fontWeight: '800', fontSize: '13px' }}>Ra Đề & Trộn Đề</div>
                     <div style={{ fontSize: '10.5px', color: '#e11d48' }}>Ngân hàng đề thi</div>
+                  </div>
+                </Link>
+
+                <Link to="/admin/kiem-tra-tap-trung" style={styles.actionCard('#fff7ed', '#ea580c', '#c2410c')}>
+                  <span style={{ fontSize: '22px' }}>🏛️</span>
+                  <div>
+                    <div style={{ fontWeight: '800', fontSize: '13px' }}>Phòng Thi KTTT</div>
+                    <div style={{ fontSize: '10.5px', color: '#ea580c' }}>Khảo thí & Coi thi</div>
                   </div>
                 </Link>
 

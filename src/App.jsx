@@ -40,6 +40,8 @@ const StudentRegister = lazy(() => import('./pages/StudentRegister'));
 const StudentLogin = lazy(() => import('./pages/StudentLogin'));
 const PublicSportsRegister = lazy(() => import('./pages/PublicSportsRegister'));
 const AdminSports = lazy(() => import('./pages/AdminSports'));
+const PublicExamRooms = lazy(() => import('./pages/PublicExamRooms'));
+const AdminExamRooms = lazy(() => import('./pages/AdminExamRooms'));
 const PublicFeedbackSystem = lazy(() => import('./pages/PublicFeedbackSystem'));
 const AdminFeedbackSystem = lazy(() => import('./pages/AdminFeedbackSystem'));
 const StudentAspirationsPortal = lazy(() => import('./pages/StudentAspirationsPortal'));
@@ -166,6 +168,9 @@ function App() {
             <Route path="/binh-chon" element={<PublicVoting />} />
             <Route path="/nop-bai-thi" element={<PublicSubmission />} />
             <Route path="/dang-ky-the-thao" element={<PublicSportsRegister />} />
+            <Route path="/kiem-tra-tap-trung" element={<PublicExamRooms />} />
+            <Route path="/tra-cuu-phong-thi" element={<PublicExamRooms />} />
+            <Route path="/phong-thi" element={<PublicExamRooms />} />
             <Route path="/gop-y" element={<PublicFeedbackSystem />} />
             <Route path="/gop-y-quy-hoc-bong" element={<Navigate to="/gop-y" replace />} />
             <Route path="/hom-thu-hoc-sinh" element={<StudentAspirationsPortal />} />
@@ -319,6 +324,11 @@ function App() {
               <Route path="/admin/video-hoc-lieu" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/cantin" element={<AdminCanteenManager />} />
               <Route path="/admin/bep-sang" element={<AdminCanteenManager />} />
+              <Route path="/admin/kiem-tra-tap-trung" element={<AdminExamRooms />} />
+              <Route path="/admin/phong-thi" element={<AdminExamRooms />} />
+              <Route path="/admin/exam-rooms" element={<AdminExamRooms />} />
+              <Route path="/teacher/kiem-tra-tap-trung" element={<AdminExamRooms />} />
+              <Route path="/teacher-dashboard/kiem-tra-tap-trung" element={<AdminExamRooms />} />
             </>
           ) : (
             <Route path="/admin/*" element={<Navigate to="/login" replace />} />
