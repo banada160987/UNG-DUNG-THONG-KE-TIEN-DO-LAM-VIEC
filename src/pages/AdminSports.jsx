@@ -5,7 +5,8 @@ import {
   Dices, Printer, Users, DollarSign, CheckCircle2, AlertCircle, 
   X, ShieldAlert, Eye, Copy, Check, FileText, MessageCircle,
   Settings, Edit, Clock, Lock, CheckSquare, Save, AlertTriangle,
-  PlusCircle, Calendar, Tag, ChevronDown, Award, Send, Bell, ExternalLink, Share2
+  PlusCircle, Calendar, Tag, ChevronDown, Award, Send, Bell, ExternalLink, Share2,
+  FileSpreadsheet
 } from 'lucide-react';
 import { 
   fetchTournaments, 
@@ -15,7 +16,9 @@ import {
   DEFAULT_TOURNAMENTS,
   getUnregisteredClasses,
   generateZaloReminderMessage,
-  exportUnregisteredClassesExcel
+  exportUnregisteredClassesExcel,
+  exportAthletesListExcel,
+  exportSingleTeamRosterExcel
 } from '../services/sportsTournamentService';
 import SignmarBracketViewer from '../components/SignmarBracketViewer';
 import FifaDrawStageModal from '../components/FifaDrawStageModal';
@@ -86,6 +89,8 @@ export default function AdminSports() {
 
   // 👁️ MODAL XEM CHI TIẾT ĐỘI HÌNH
   const [selectedTeamView, setSelectedTeamView] = useState(null);
+  const [isExportingAthletes, setIsExportingAthletes] = useState(false);
+  const [isExportingSingle, setIsExportingSingle] = useState(false);
 
   // 📢 TÍNH NĂNG THÔNG BÁO ZALO CÁC LỚP CHƯA ĐĂNG KÝ
   const [showZaloModal, setShowZaloModal] = useState(false);
@@ -504,6 +509,45 @@ export default function AdminSports() {
     }
   };
 
+  // ================= XUẤT EXCEL DANH SÁCH CẦU THỦ THI ĐẤU CHUẨN ĐỊNH DẠNG EXCELJS =================
+  const handleExportAthletesExcel = async () => {
+    if (filteredRegistrations.length === 0) {
+      alert("Không có dữ liệu đăng ký trong giải đấu này để xuất file!");
+      return;
+    }
+
+    try {
+      setIsExportingAthletes(true);
+      const res = await exportAthletesListExcel(activeTourn, filteredRegistrations, {
+        sportFilter: filterSport
+      });
+      if (res?.success) {
+        alert(`✅ Đã xuất thành công file Excel "${res.fileName}"!\n- Tổng số: ${res.count} Đội Chi đoàn\n- Tổng số: ${res.totalAthletes} Cầu thủ / Vận động viên tham gia.\n(Bao gồm Sheet 1: Bảng Tổng hợp và Sheet 2: Danh sách chi tiết từng VĐV cho Tổ Trọng tài)`);
+      }
+    } catch (err) {
+      console.error("Lỗi khi xuất danh sách cầu thủ Excel:", err);
+      alert("Đã xảy ra lỗi khi tạo file Excel: " + (err.message || err));
+    } finally {
+      setIsExportingAthletes(false);
+    }
+  };
+
+  // Xuất phiếu thi đấu cho riêng 1 lớp đang xem
+  const handleExportSingleTeam = async (item) => {
+    try {
+      setIsExportingSingle(true);
+      const res = await exportSingleTeamRosterExcel(activeTourn, item);
+      if (res?.success) {
+        alert(`✅ Đã tải về phiếu đăng ký thi đấu của lớp ${item.cohort_year || item.unit_name} ("${res.fileName}")!`);
+      }
+    } catch (err) {
+      console.error("Lỗi xuất phiếu lớp:", err);
+      alert("Lỗi xuất phiếu: " + (err.message || err));
+    } finally {
+      setIsExportingSingle(false);
+    }
+  };
+
   // ================= XUẤT CSV TIỀN TỐ 1-... THEO GEMINI.MD =================
   const exportCSV = () => {
     if (filteredRegistrations.length === 0) {
@@ -839,12 +883,38 @@ export default function AdminSports() {
               <Calendar size={15} /> 🏟️ Lịch Thi Đấu (Sân & Trọng Tài)
             </button>
 
+            {/* NÚT XUẤT EXCEL DANH SÁCH CẦU THỦ THI ĐẤU CHUẨN ĐỊNH DẠNG EXCELJS */}
+            <button
+              onClick={handleExportAthletesExcel}
+              disabled={isExportingAthletes || filteredRegistrations.length === 0}
+              style={{ 
+                padding: '9px 15px', 
+                background: isExportingAthletes ? '#047857' : 'linear-gradient(135deg, #059669 0%, #047857 100%)', 
+                color: '#ffffff', 
+                border: 'none', 
+                borderRadius: '9px', 
+                fontWeight: 'bold', 
+                cursor: (isExportingAthletes || filteredRegistrations.length === 0) ? 'not-allowed' : 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '7px', 
+                fontSize: '13px', 
+                boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+                opacity: (isExportingAthletes || filteredRegistrations.length === 0) ? 0.7 : 1
+              }}
+              title="Xuất danh sách cầu thủ/VĐV thi đấu toàn trường (gồm Sheet 1: Bảng tổng hợp theo đội & Sheet 2: Danh sách chi tiết từng VĐV cho Tổ trọng tài điểm danh theo chuẩn tiền tố 1-...)"
+            >
+              <FileSpreadsheet size={16} />
+              {isExportingAthletes ? 'Đang tạo Excel...' : '📥 Xuất Excel Danh Sách Cầu Thủ (1-...)'}
+            </button>
+
+            {/* NÚT XUẤT CSV DỰ PHÒNG */}
             <button
               onClick={exportCSV}
-              style={{ padding: '9px 14px', background: '#166534', color: '#ffffff', border: 'none', borderRadius: '9px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', boxShadow: '0 4px 12px rgba(22,101,52,0.2)' }}
-              title="Xuất file Excel/CSV theo quy tắc tiền tố 1-..."
+              style={{ padding: '9px 10px', background: '#f8fafc', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '9px', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontSize: '12.5px' }}
+              title="Xuất file dữ liệu CSV thô"
             >
-              <Download size={15} /> Xuất File (1-...)
+              <Download size={14} /> CSV
             </button>
 
             <button
@@ -1958,10 +2028,33 @@ export default function AdminSports() {
               </div>
             )}
 
-            <div style={{ textAlign: 'right', marginTop: '14px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+              <button
+                onClick={() => handleExportSingleTeam(selectedTeamView.item)}
+                disabled={isExportingSingle}
+                style={{ 
+                  padding: '7px 14px', 
+                  background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', 
+                  color: '#ffffff', 
+                  border: 'none', 
+                  borderRadius: '7px', 
+                  fontWeight: 'bold', 
+                  fontSize: '12px', 
+                  cursor: isExportingSingle ? 'not-allowed' : 'pointer', 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(5,150,105,0.2)' 
+                }}
+                title="Xuất phiếu đăng ký thi đấu chuẩn A4 của riêng Chi đoàn lớp này theo quy tắc tiền tố 1-..."
+              >
+                <FileSpreadsheet size={14} />
+                {isExportingSingle ? 'Đang tạo file...' : '📥 Xuất Phiếu Lớp Này (Excel)'}
+              </button>
+
               <button
                 onClick={() => setSelectedTeamView(null)}
-                style={{ padding: '7px 14px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
+                style={{ padding: '7px 14px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '7px', fontWeight: 'bold', fontSize: '12.5px', cursor: 'pointer' }}
               >
                 Đóng
               </button>
