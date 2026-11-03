@@ -54,7 +54,7 @@ export default function AdminExamRooms() {
       const sessionGradeKey = `${selectedSessionId}-${selectedGrade}`;
       let data = await fetchExamRoomsData(sessionGradeKey);
 
-      // Nếu chưa có, tự động tạo mẫu ban đầu từ cbq_students
+      // Nếu chưa có, tự động tạo mẫu ban đầu từ cbq_students (Mặc định isPublished = false để bảo mật nội bộ)
       if (!data || !data.rooms || data.rooms.length === 0) {
         const students = await fetchStudentsFromDb(selectedGrade);
         if (students.length > 0) {
@@ -63,8 +63,10 @@ export default function AdminExamRooms() {
             examId: selectedSessionId,
             gradeLevel: selectedGrade,
             mode: isG12 ? 'national_12' : 'regular',
-            capacity: 24
+            capacity: 24,
+            isPublished: false
           });
+          data.isPublished = false;
           await saveExamRoomsData(sessionGradeKey, data);
         }
       }
@@ -73,6 +75,29 @@ export default function AdminExamRooms() {
       console.error('Lỗi nạp dữ liệu quản trị phòng thi:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ================= BẬT / TẮT CÔNG BỐ PHÒNG THI RA CỔNG PUBLIC CHO HỌC SINH =================
+  const handleTogglePublish = async () => {
+    if (!roomsData) return;
+    const newPublishStatus = !roomsData.isPublished;
+    const sessionGradeKey = `${selectedSessionId}-${selectedGrade}`;
+    const updated = {
+      ...roomsData,
+      isPublished: newPublishStatus
+    };
+    try {
+      await saveExamRoomsData(sessionGradeKey, updated);
+      setRoomsData(updated);
+      if (newPublishStatus) {
+        alert(`📢 ĐÃ BẬT CÔNG BỐ PHÒNG THI RA PUBLIC CHO ${selectedGrade.toUpperCase()}!\n\nTừ bây giờ, học sinh tại trang Public (/kiem-tra-tap-trung) có thể tra cứu trực tuyến Số Báo Danh và vị trí bàn thi cá nhân.`);
+      } else {
+        alert(`🔒 ĐÃ TẮT CÔNG BỐ RA PUBLIC CHO ${selectedGrade.toUpperCase()}!\n\nTrang Public ngoài sẽ chỉ hiển thị Bảng Lịch thi và liên kết tải file PDF thông báo (theo đúng phương thức hiện tại của trường). Toàn bộ danh sách phòng thi tự động được giữ kín nội bộ để chuẩn bị cho kỳ tới.`);
+      }
+    } catch (err) {
+      console.error('Lỗi lưu trạng thái công bố:', err);
+      alert('Lỗi cập nhật trạng thái công bố: ' + err.message);
     }
   };
 
@@ -98,7 +123,8 @@ export default function AdminExamRooms() {
         examId: selectedSessionId,
         gradeLevel: selectedGrade,
         mode: isG12 ? 'national_12' : 'regular',
-        capacity: Number(capacitySetting) || 24
+        capacity: Number(capacitySetting) || 24,
+        isPublished: roomsData?.isPublished || false
       });
 
       const sessionGradeKey = `${selectedSessionId}-${selectedGrade}`;
@@ -160,6 +186,32 @@ export default function AdminExamRooms() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            {/* NÚT BẬT / TẮT CÔNG BỐ CHO HỌC SINH */}
+            <button
+              onClick={handleTogglePublish}
+              style={{
+                padding: '9px 15px',
+                background: roomsData?.isPublished ? '#f0fdf4' : '#fffbeb',
+                color: roomsData?.isPublished ? '#15803d' : '#b45309',
+                border: roomsData?.isPublished ? '1.5px solid #86efac' : '1.5px solid #fde68a',
+                borderRadius: '10px',
+                fontWeight: 'bold',
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '7px',
+                transition: 'all 0.2s'
+              }}
+              title={roomsData?.isPublished ? 'Nhấn để TẮT công bố (ẩn SBD online khỏi học sinh)' : 'Nhấn để BẬT công bố (cho phép học sinh tra cứu SBD online)'}
+            >
+              {roomsData?.isPublished ? (
+                <>🟢 Cổng Public: ĐANG BẬT</>
+              ) : (
+                <>🔒 Cổng Public: ĐANG TẮT</>
+              )}
+            </button>
+
             <a
               href="/kiem-tra-tap-trung"
               target="_blank"
@@ -197,6 +249,40 @@ export default function AdminExamRooms() {
       </div>
 
       <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
+        
+        {/* BANNER THÔNG BÁO CHẾ ĐỘ NỘI BỘ DÀNH CHO BGH */}
+        <div style={{
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
+          borderLeft: '5px solid #0284c7',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <ShieldCheck size={20} color="#0284c7" style={{ flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: 1.5 }}>
+              <strong>Khu Vực Khảo Thí & Phân Phòng Nội Bộ:</strong> Nhà trường chưa triển khai tra cứu online cho kỳ này (đang thông báo qua file PDF). Toàn bộ thuật toán xếp phòng, sơ đồ 24 bàn zic-zac, in dán cửa và ký nộp bài tại đây đang được thiết lập sẵn sàng để áp dụng cho các kỳ thi tiếp theo theo chuẩn Quốc Gia (Khối 12) & Chuẩn Phổ thông (Khối 10, 11).
+            </div>
+          </div>
+          <div style={{
+            fontSize: '12px',
+            fontWeight: 'bold',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            background: roomsData?.isPublished ? '#dcfce7' : '#fef3c7',
+            color: roomsData?.isPublished ? '#166534' : '#92400e',
+            border: roomsData?.isPublished ? '1px solid #86efac' : '1px solid #fde68a'
+          }}>
+            {roomsData?.isPublished ? 'Cổng Public: Đang mở SBD' : 'Cổng Public: Đang ẩn (Chỉ hiện PDF)'}
+          </div>
+        </div>
         
         {/* ================= THANH ĐIỀU HƯỚNG VÀ CHỌN KHỐI ================= */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>

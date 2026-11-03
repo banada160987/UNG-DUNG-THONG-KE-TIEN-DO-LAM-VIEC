@@ -2,15 +2,14 @@ import { useState, useEffect, useMemo } from 'react';
 import { 
   Search, Calendar, Clock, MapPin, Award, CheckCircle, 
   FileText, Download, Share2, AlertCircle, Sparkles, User, 
-  BookOpen, ChevronRight, Hash, ArrowRight, Printer, Layers, HelpCircle
+  BookOpen, ChevronRight, Hash, ArrowRight, Eye, ShieldCheck,
+  FileCheck, HelpCircle, Info, ExternalLink
 } from 'lucide-react';
 import { 
   fetchExamSessions, 
   fetchExamRoomsData, 
-  fetchStudentsFromDb, 
-  generateExamRoomsAlgorithm,
-  exportExamRoomsExcel,
-  DEFAULT_EXAM_SESSIONS
+  DEFAULT_EXAM_SESSIONS,
+  DEFAULT_PDF_DOCUMENTS
 } from '../services/examRoomService';
 
 export default function PublicExamRooms() {
@@ -19,9 +18,9 @@ export default function PublicExamRooms() {
   const [roomsData, setRoomsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGradeTab, setSelectedGradeTab] = useState('Khối 10'); // 'Khối 10' | 'Khối 11' | 'Khối 12'
-  const [selectedRoomFilter, setSelectedRoomFilter] = useState('all');
+  const [selectedGradeFilter, setSelectedGradeFilter] = useState('all'); // 'all' | 'Khối 10' | 'Khối 11' | 'Khối 12'
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+  const [previewPdfModal, setPreviewPdfModal] = useState(null);
   const [copiedToast, setCopiedToast] = useState(false);
 
   // Lấy dữ liệu kỳ thi hiện tại
@@ -31,7 +30,7 @@ export default function PublicExamRooms() {
 
   useEffect(() => {
     loadExamData();
-  }, [selectedSessionId, selectedGradeTab]);
+  }, [selectedSessionId, selectedGradeFilter]);
 
   const loadExamData = async () => {
     setLoading(true);
@@ -39,33 +38,35 @@ export default function PublicExamRooms() {
       const allSessions = await fetchExamSessions();
       setSessions(allSessions);
 
-      // Lấy dữ liệu phòng thi đã lưu
-      let data = await fetchExamRoomsData(`${selectedSessionId}-${selectedGradeTab}`);
-      
-      // Nếu chưa có phòng thi được lưu cho khối này, tự động khởi tạo dữ liệu phòng thi từ CSDL cbq_students
-      if (!data || !data.rooms || data.rooms.length === 0) {
-        const students = await fetchStudentsFromDb(selectedGradeTab);
-        if (students.length > 0) {
-          const isGrade12 = selectedGradeTab === 'Khối 12';
-          data = generateExamRoomsAlgorithm(students, {
-            examId: selectedSessionId,
-            gradeLevel: selectedGradeTab,
-            mode: isGrade12 ? 'national_12' : 'regular',
-            capacity: isGrade12 ? 24 : 24
-          });
-        }
-      }
+      // CHỈ NẠP DỮ LIỆU ĐÃ LƯU - TUYỆT ĐỐI KHÔNG TỰ ĐỘNG CHẠY THUẬT TOÁN XẾP PHÒNG TẠI TRANG PUBLIC
+      const targetGrade = selectedGradeFilter === 'all' ? 'Khối 10' : selectedGradeFilter;
+      const data = await fetchExamRoomsData(`${selectedSessionId}-${targetGrade}`);
       setRoomsData(data);
     } catch (err) {
-      console.error('Lỗi nạp dữ liệu phòng thi KTTT:', err);
+      console.error('Lỗi nạp dữ liệu kỳ thi KTTT:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Toàn bộ thí sinh của khối hiện tại
+  // Lọc lịch thi theo khối được chọn
+  const filteredSchedule = useMemo(() => {
+    const list = currentSession?.schedule || [];
+    if (selectedGradeFilter === 'all') return list;
+    return list.filter(item => item.grade === selectedGradeFilter || item.grade.includes(selectedGradeFilter) || item.grade === 'Toàn trường');
+  }, [currentSession, selectedGradeFilter]);
+
+  // Lọc danh sách tài liệu PDF theo khối
+  const filteredPdfDocs = useMemo(() => {
+    if (selectedGradeFilter === 'all') return DEFAULT_PDF_DOCUMENTS;
+    return DEFAULT_PDF_DOCUMENTS.filter(doc => doc.grade === selectedGradeFilter);
+  }, [selectedGradeFilter]);
+
+  // Danh sách thí sinh khi Ban Khảo Thí đã BẬT CÔNG BỐ (isPublished === true)
+  const isOnlinePublished = Boolean(roomsData?.isPublished);
+
   const allCandidates = useMemo(() => {
-    if (!roomsData?.rooms) return [];
+    if (!isOnlinePublished || !roomsData?.rooms) return [];
     const list = [];
     roomsData.rooms.forEach(rm => {
       (rm.candidates || []).forEach(cand => {
@@ -79,34 +80,21 @@ export default function PublicExamRooms() {
       });
     });
     return list;
-  }, [roomsData]);
+  }, [isOnlinePublished, roomsData]);
 
-  // Lọc theo tìm kiếm học sinh
+  // Kết quả tìm kiếm thí sinh (nếu đã công bố online)
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
+    if (!q || !isOnlinePublished) return [];
     return allCandidates.filter(c => 
       (c.student_name || '').toLowerCase().includes(q) ||
       (c.sbd || '').toLowerCase().includes(q) ||
       (c.student_class || '').toLowerCase().includes(q) ||
       (c.student_code || '').toLowerCase().includes(q)
     );
-  }, [allCandidates, searchQuery]);
+  }, [allCandidates, searchQuery, isOnlinePublished]);
 
-  // Danh sách phòng thi hiển thị
-  const displayRooms = useMemo(() => {
-    if (!roomsData?.rooms) return [];
-    if (selectedRoomFilter === 'all') return roomsData.rooms;
-    return roomsData.rooms.filter(r => r.roomName === selectedRoomFilter);
-  }, [roomsData, selectedRoomFilter]);
-
-  // Lọc lịch thi theo khối
-  const scheduleForGrade = useMemo(() => {
-    const sch = currentSession?.schedule || [];
-    return sch.filter(s => s.grade === selectedGradeTab || s.grade === 'Toàn trường');
-  }, [currentSession, selectedGradeTab]);
-
-  // Chia sẻ / Copy link tra cứu
+  // Xử lý sao chép link
   const handleShare = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
@@ -115,453 +103,573 @@ export default function PublicExamRooms() {
     }
   };
 
-  // Xuất file Excel danh sách phòng thi
-  const handleExportExcel = () => {
-    if (!roomsData) return;
-    exportExamRoomsExcel(currentSession, roomsData);
+  // Giả lập tải / xem tệp PDF thông báo
+  const handleDownloadPdf = (doc) => {
+    alert(`📥 Đang tải tài liệu chính thức: "${doc.title}"\n- Cán bộ phụ trách: ${doc.author}\n- Thời gian cập nhật: ${doc.lastModified}`);
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(180deg, #090d16 0%, #0f172a 100%)', color: '#f8fafc', paddingBottom: '80px' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       
-      {/* ================= HEADER BANNER TRANG TRỌNG ================= */}
-      <div style={{
-        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 60%, #0f172a 100%)',
-        borderBottom: '1px solid rgba(255,255,255,0.1)',
-        padding: '36px 20px 30px',
-        position: 'relative',
-        overflow: 'hidden'
+      {/* ================= HEADER QUỐC GIA & TRƯỜNG TRANG TRỌNG ================= */}
+      <header style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%)',
+        color: '#ffffff',
+        borderBottom: '4px solid #38bdf8',
+        boxShadow: '0 8px 30px rgba(15, 23, 42, 0.15)',
+        position: 'relative'
       }}>
-        <div style={{
-          position: 'absolute',
-          top: '-50%',
-          right: '-10%',
-          width: '500px',
-          height: '500px',
-          background: 'radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%)',
-          filter: 'blur(50px)',
-          pointerEvents: 'none'
-        }} />
+        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '28px 20px 22px' }}>
+          
+          {/* TIÊU NGỮ HÀNH CHÍNH & TÊN TRƯỜNG */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '14px', marginBottom: '16px' }}>
+            <div>
+              <div style={{ fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#93c5fd', fontWeight: 'bold' }}>
+                SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK
+              </div>
+              <div style={{ fontSize: '15px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.5px' }}>
+                TRƯỜNG THPT CAO BÁ QUÁT
+              </div>
+            </div>
 
-        <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 1 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '5px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '12px' }}>
-            <Award size={14} /> HỘI ĐỒNG KHẢO THÍ THPT CAO BÁ QUÁT
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 'bold', textTransform: 'uppercase', color: '#f8fafc' }}>
+                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+              </div>
+              <div style={{ fontSize: '12px', color: '#38bdf8', fontStyle: 'italic', fontWeight: '500' }}>
+                Độc lập - Tự do - Hạnh phúc
+              </div>
+            </div>
           </div>
 
-          <h1 style={{ fontSize: 'clamp(22px, 4vw, 32px)', fontWeight: '900', color: '#ffffff', margin: '0 0 8px', letterSpacing: '0.5px' }}>
-            DANH SÁCH PHÒNG KIỂM TRA TẬP TRUNG (KTTT)
-          </h1>
-          <p style={{ margin: 0, fontSize: '14.5px', color: '#94a3b8', maxWidth: '720px', lineHeight: 1.5 }}>
-            {currentSession?.title} • Năm học {currentSession?.academic_year} • Tra cứu Số Báo Danh, Phòng thi, Bàn thi & Lịch thi chính thức.
-          </p>
+          {/* TIÊU ĐỀ LỚN CHÍNH THỨC */}
+          <div style={{ textAlign: 'center', margin: '14px 0 10px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '4px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold', color: '#7dd3fc', marginBottom: '8px' }}>
+              <Award size={14} /> HỘI ĐỒNG KHẢO THÍ & ĐÁNH GIÁ CHẤT LƯỢNG GIÁO DỤC
+            </div>
+            <h1 style={{
+              fontSize: 'clamp(22px, 4.5vw, 34px)',
+              fontWeight: '900',
+              color: '#ffffff',
+              margin: '0 0 6px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.8px',
+              textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+            }}>
+              DANH SÁCH PHÒNG KTTT GIỮA HỌC KỲ I
+            </h1>
+            <p style={{ margin: 0, fontSize: '14px', color: '#cbd5e1' }}>
+              Năm học {currentSession?.academic_year} • Áp dụng cho toàn thể học sinh Khối 10, Khối 11 và Khối 12
+            </p>
+          </div>
 
-          {/* CHỌN KHỐI LỚP (TABS KHỐI 10, 11, 12) */}
-          <div style={{ display: 'flex', gap: '10px', marginTop: '24px', flexWrap: 'wrap' }}>
-            {['Khối 10', 'Khối 11', 'Khối 12'].map(gr => {
-              const isSelected = selectedGradeTab === gr;
-              const isGrade12 = gr === 'Khối 12';
+          {/* BỘ LỌC KHỐI NHANH (TẤT CẢ - KHỐI 10 - KHỐI 11 - KHỐI 12) */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
+            {[
+              { id: 'all', label: 'Tất cả các khối' },
+              { id: 'Khối 10', label: 'Khối 10' },
+              { id: 'Khối 11', label: 'Khối 11' },
+              { id: 'Khối 12', label: 'Khối 12' }
+            ].map(tab => {
+              const isSelected = selectedGradeFilter === tab.id;
               return (
                 <button
-                  key={gr}
-                  onClick={() => { setSelectedGradeTab(gr); setSelectedCandidate(null); }}
+                  key={tab.id}
+                  onClick={() => { setSelectedGradeFilter(tab.id); setSelectedCandidate(null); }}
                   style={{
-                    padding: '10px 22px',
-                    borderRadius: '12px',
-                    fontWeight: '800',
-                    fontSize: '14px',
+                    padding: '8px 18px',
+                    borderRadius: '999px',
+                    fontWeight: 'bold',
+                    fontSize: '13px',
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    border: isSelected ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.15)',
-                    background: isSelected 
-                      ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' 
-                      : 'rgba(255,255,255,0.06)',
+                    border: isSelected ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
+                    background: isSelected ? '#0284c7' : 'rgba(255,255,255,0.1)',
                     color: '#ffffff',
-                    boxShadow: isSelected ? '0 0 20px rgba(2, 132, 199, 0.4)' : 'none',
+                    boxShadow: isSelected ? '0 0 16px rgba(2, 132, 199, 0.4)' : 'none',
                     transition: 'all 0.2s'
                   }}
                 >
-                  <BookOpen size={16} />
-                  {gr}
-                  {isGrade12 && (
-                    <span style={{ fontSize: '10px', background: '#f59e0b', color: '#78350f', padding: '2px 6px', borderRadius: '4px', fontWeight: '900' }}>
-                      Chuẩn Quốc Gia
-                    </span>
-                  )}
+                  {tab.label}
                 </button>
               );
             })}
           </div>
+
         </div>
-      </div>
+      </header>
 
-      <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '24px 16px' }}>
+      {/* ================= THÂN TRANG BỐ CỤC 2 CỘT CHUẨN GOOGLE SITES TRƯỜNG ================= */}
+      <main style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 16px' }}>
 
-        {/* ================= KHUNG TÌM KIẾM 1 CHẠM CỰC NHANH DÀNH CHO HỌC SINH ================= */}
+        {/* THÔNG BÁO TỔNG QUAN TỪ BAN GIÁM HIỆU */}
         <div style={{
-          background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%)',
-          borderRadius: '20px',
-          padding: '22px',
-          border: '1.5px solid rgba(56, 189, 248, 0.35)',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.4)',
-          marginBottom: '28px',
-          backdropFilter: 'blur(10px)'
+          background: '#eff6ff',
+          borderLeft: '5px solid #2563eb',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          marginBottom: '24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#38bdf8', fontWeight: 'bold', fontSize: '15px' }}>
-              <Search size={18} /> TRA CỨU PHÒNG THI & SỐ BÁO DANH ({selectedGradeTab.toUpperCase()})
-            </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              Tổng số thí sinh: <strong style={{ color: '#fbbf24' }}>{allCandidates.length}</strong> học sinh
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Info size={20} color="#2563eb" style={{ flexShrink: 0 }} />
+            <div style={{ fontSize: '13.5px', color: '#1e3a8a', lineHeight: 1.5 }}>
+              <strong>Kỳ Kiểm Tra Tập Trung Giữa Học Kỳ I:</strong> Thí sinh theo dõi lịch kiểm tra bên trái và bấm vào tệp PDF bên phải để xem danh sách phòng thi chính thức.
             </div>
           </div>
-
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              placeholder={`🔍 Nhập Họ tên học sinh (ví dụ: An, Khánh Thi...), Số báo danh, hoặc Lớp (${selectedGradeTab === 'Khối 10' ? '10A01, 10A02...' : (selectedGradeTab === 'Khối 11' ? '11A01...' : '12A01...')})`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '14px 20px 14px 44px',
-                borderRadius: '12px',
-                border: '1.5px solid rgba(255,255,255,0.2)',
-                background: 'rgba(15, 23, 42, 0.8)',
-                color: '#ffffff',
-                fontSize: '15px',
-                outline: 'none',
-                boxSizing: 'border-box',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#38bdf8'}
-              onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.2)'}
-            />
-            <Search size={20} color="#64748b" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
-          </div>
-
-          {/* DANH SÁCH GỢI Ý KHI TÌM KIẾM */}
-          {searchQuery.trim().length > 0 && (
-            <div style={{
-              marginTop: '12px',
-              background: 'rgba(15, 23, 42, 0.95)',
-              borderRadius: '12px',
-              border: '1px solid rgba(255,255,255,0.1)',
-              maxHeight: '280px',
-              overflowY: 'auto',
-              padding: '6px'
-            }}>
-              {searchResults.length === 0 ? (
-                <div style={{ padding: '16px', textAlign: 'center', color: '#94a3b8', fontSize: '13.5px' }}>
-                  Không tìm thấy thí sinh nào khớp với từ khóa "{searchQuery}" trong {selectedGradeTab}.
-                </div>
-              ) : (
-                searchResults.map(c => (
-                  <div
-                    key={c.id || c.sbd}
-                    onClick={() => { setSelectedCandidate(c); setSearchQuery(''); }}
-                    style={{
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      background: 'rgba(255,255,255,0.03)',
-                      marginBottom: '4px',
-                      transition: 'background 0.15s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(56, 189, 248, 0.15)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
-                  >
-                    <div>
-                      <span style={{ fontWeight: 'bold', color: '#ffffff', fontSize: '14px' }}>{c.student_name}</span>
-                      <span style={{ fontSize: '12px', color: '#94a3b8', marginLeft: '10px' }}>Lớp: {c.student_class}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <span style={{ fontSize: '13px', color: '#fbbf24', fontWeight: 'bold' }}>SBD: {c.sbd}</span>
-                      <span style={{ fontSize: '12px', background: '#0284c7', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>
-                        {c.roomName}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
+          <button
+            onClick={handleShare}
+            style={{
+              padding: '6px 12px',
+              background: '#ffffff',
+              border: '1px solid #bfdbfe',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              color: '#1d4ed8',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px'
+            }}
+          >
+            <Share2 size={13} /> {copiedToast ? 'Đã sao chép link!' : 'Chia sẻ trang'}
+          </button>
         </div>
 
-        {/* ================= MODAL / CARD THẺ BÁO THI CHI TIẾT (KHI CHỌN HỌC SINH) ================= */}
-        {selectedCandidate && (
+        {/* ================= BỐ CỤC 2 CỘT ================= */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+          gap: '24px',
+          alignItems: 'start'
+        }}>
+
+          {/* ================= CỘT 1 (BÊN TRÁI): BẢNG LỊCH KIỂM TRA TẬP TRUNG ================= */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.8) 0%, rgba(15, 23, 42, 0.95) 100%)',
-            border: '2px solid #38bdf8',
-            borderRadius: '20px',
-            padding: '24px',
-            marginBottom: '30px',
-            boxShadow: '0 0 35px rgba(56, 189, 248, 0.3)',
-            animation: 'fadeIn 0.3s ease-out'
+            background: '#ffffff',
+            borderRadius: '16px',
+            border: '1px solid #e2e8f0',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+            overflow: 'hidden'
           }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '14px', marginBottom: '16px' }}>
-              <div>
-                <span style={{ fontSize: '11px', background: '#f59e0b', color: '#78350f', padding: '3px 8px', borderRadius: '999px', fontWeight: 'bold' }}>
-                  THẺ BÁO THI ĐIỆN TỬ
-                </span>
-                <h2 style={{ margin: '6px 0 0', fontSize: '22px', color: '#ffffff', fontWeight: '900' }}>
-                  {selectedCandidate.student_name}
+            <div style={{
+              background: '#f8fafc',
+              padding: '16px 20px',
+              borderBottom: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Calendar size={18} color="#0284c7" />
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>
+                  LỊCH KIỂM TRA TẬP TRUNG GIỮA HỌC KỲ I
                 </h2>
-                <div style={{ fontSize: '13px', color: '#cbd5e1', marginTop: '2px' }}>
-                  Lớp: <strong style={{ color: '#38bdf8' }}>{selectedCandidate.student_class}</strong> • {selectedCandidate.grade_level} • Mã HS: {selectedCandidate.student_code || '-'}
-                </div>
               </div>
-              <button
-                onClick={() => setSelectedCandidate(null)}
-                style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontSize: '12px' }}
-              >
-                ✕ Đóng
-              </button>
+              <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                {filteredSchedule.length} Môn thi
+              </span>
             </div>
 
-            {/* THÔNG TIN PHÒNG THI & SỐ BÁO DANH TO RÕ */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '4px' }}>SỐ BÁO DANH (SBD)</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#fbbf24', letterSpacing: '1px' }}>
-                  {selectedCandidate.sbd}
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '4px' }}>PHÒNG THI</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#38bdf8' }}>
-                  {selectedCandidate.roomName}
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '4px' }}>VỊ TRÍ BÀN THI</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: '#4ade80' }}>
-                  Bàn #{selectedCandidate.seatNumber}
-                </div>
-              </div>
-
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
-                <div style={{ fontSize: '11.5px', color: '#94a3b8', marginBottom: '4px' }}>ĐỊA ĐIỂM PHÒNG THI</div>
-                <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#f1f5f9', marginTop: '6px' }}>
-                  {selectedCandidate.roomLocation}
-                </div>
-              </div>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
+                <thead>
+                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', color: '#334155' }}>
+                    <th style={{ padding: '10px 8px', fontWeight: 'bold', width: '90px' }}>Ngày</th>
+                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '65px' }}>Buổi</th>
+                    <th style={{ padding: '10px 10px', fontWeight: 'bold', textAlign: 'left' }}>Bài thi/Môn thi</th>
+                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '70px' }}>Khối</th>
+                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '75px' }}>Thời gian</th>
+                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '80px' }}>Giờ phát đề</th>
+                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '80px' }}>Giờ làm bài</th>
+                    <th style={{ padding: '10px 10px', fontWeight: 'bold', textAlign: 'left' }}>Hình thức</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredSchedule.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ padding: '24px', color: '#64748b' }}>
+                        Chưa có lịch kiểm tra tập trung cho khối này.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredSchedule.map((s, idx) => (
+                      <tr 
+                        key={idx} 
+                        style={{ 
+                          borderBottom: '1px solid #f1f5f9',
+                          background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                          transition: 'background 0.15s'
+                        }}
+                      >
+                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#0f172a' }}>{s.date}</td>
+                        <td style={{ padding: '10px 6px', color: s.session === 'Sáng' ? '#d97706' : '#0284c7', fontWeight: 'bold' }}>{s.session}</td>
+                        <td style={{ padding: '10px 10px', fontWeight: 'bold', color: '#1e293b', textAlign: 'left' }}>{s.subject}</td>
+                        <td style={{ padding: '10px 6px' }}>
+                          <span style={{ background: '#e2e8f0', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                            {s.grade}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 6px', color: '#64748b' }}>{s.duration}</td>
+                        <td style={{ padding: '10px 6px', color: '#475569' }}>{s.dispatchTime}</td>
+                        <td style={{ padding: '10px 6px', color: '#16a34a', fontWeight: 'bold' }}>{s.startTime}</td>
+                        <td style={{ padding: '10px 10px', textAlign: 'left', color: '#475569', fontSize: '12px' }}>{s.format}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
 
-            {/* LỊCH THI CÁ NHÂN CỦA HỌC SINH */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', borderRadius: '12px', padding: '14px', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Calendar size={15} /> CÁC MÔN THI THÍ SINH CẦN THAM DỰ:
+            {/* QUY ĐỊNH PHÒNG THI DÀNH CHO THÍ SINH */}
+            <div style={{ background: '#fffbeb', borderTop: '1px solid #fef3c7', padding: '14px 18px', fontSize: '12.5px', color: '#92400e', lineHeight: 1.5 }}>
+              <strong>⚠️ Chú ý:</strong> {currentSession?.notice}
+            </div>
+          </div>
+
+          {/* ================= CỘT 2 (BÊN PHẢI): DANH SÁCH PHÒNG THI & TẢI FILE PDF ================= */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+              padding: '20px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <FileText size={20} color="#dc2626" />
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>
+                  DANH SÁCH PHÒNG THI
+                </h2>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '8px' }}>
-                {scheduleForGrade.map(sch => (
-                  <div key={sch.id} style={{ background: 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: '8px', borderLeft: '3px solid #38bdf8' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 'bold', color: '#ffffff', fontSize: '13.5px' }}>{sch.subject}</span>
-                      <span style={{ fontSize: '11px', color: '#94a3b8' }}>{sch.date} ({sch.session})</span>
+              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
+                Các em <strong>CLICK CHUỘT</strong> vào để xem danh sách phòng thi các môn Giữa HKI:
+              </p>
+
+              {/* DANH SÁCH FILE PDF THEO FORM CỦA TRƯỜNG */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredPdfDocs.map(doc => (
+                  <div
+                    key={doc.id}
+                    style={{
+                      background: '#f8fafc',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '12px',
+                      padding: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '10px',
+                        background: '#fee2e2',
+                        color: '#dc2626',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: '900',
+                        fontSize: '12px',
+                        flexShrink: 0
+                      }}>
+                        PDF
+                      </div>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
+                          {doc.title}
+                        </h3>
+                        <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
+                          Sửa đổi lần cuối: <strong>{doc.lastModified} {doc.author}</strong>
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: '11.5px', color: '#cbd5e1', marginTop: '4px' }}>
-                      ⏰ Phát đề: <strong>{sch.dispatchTime}</strong> | Bắt đầu: <strong>{sch.startTime}</strong> ({sch.duration})
+
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      <button
+                        onClick={() => setPreviewPdfModal(doc)}
+                        style={{
+                          padding: '7px 12px',
+                          background: '#ffffff',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          color: '#334155',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
+                        title="Xem trước tài liệu"
+                      >
+                        <Eye size={13} /> Xem
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPdf(doc)}
+                        style={{
+                          padding: '7px 14px',
+                          background: '#dc2626',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          color: '#ffffff',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '5px',
+                          boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)'
+                        }}
+                      >
+                        <Download size={13} /> Tải
+                      </button>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* CARD GIẢI THÍCH CHUẨN BỊ CHO KỲ THI TIẾP THEO */}
+              <div style={{
+                marginTop: '18px',
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '10px',
+                padding: '12px 14px',
+                fontSize: '12.5px',
+                color: '#166534',
+                display: 'flex',
+                gap: '10px',
+                alignItems: 'flex-start'
+              }}>
+                <ShieldCheck size={18} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+                <div>
+                  <strong>Hệ thống Khảo thí 4.0:</strong> Kỳ thi hiện tại nhà trường phát hành danh sách phòng qua file PDF. Bắt đầu từ kỳ thi tiếp theo, hệ thống sẽ mở cổng tra cứu trực tuyến Số Báo Danh và Vị trí bàn thi tự động theo chuẩn Quốc Gia.
+                </div>
+              </div>
+            </div>
+
+            {/* TRƯỜNG HỢP BAN KHẢO THÍ ĐÃ BẬT CÔNG BỐ PHÒNG THI ONLINE (isPublished === true) */}
+            {isOnlinePublished && (
+              <div style={{
+                background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
+                color: '#ffffff',
+                borderRadius: '16px',
+                padding: '20px',
+                boxShadow: '0 8px 25px rgba(30, 58, 138, 0.25)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                  <Sparkles size={18} color="#38bdf8" />
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '900', color: '#ffffff' }}>
+                    TRA CỨU SỐ BÁO DANH TRỰC TUYẾN ({roomsData?.gradeLevel || 'CHÍNH THỨC'})
+                  </h3>
+                </div>
+                <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#94a3b8' }}>
+                  Nhập tên hoặc mã học sinh để xem phòng thi và chỗ ngồi cá nhân:
+                </p>
+
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    placeholder="🔍 Nhập họ tên học sinh hoặc mã học sinh..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 14px 10px 36px',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      background: 'rgba(0,0,0,0.3)',
+                      color: '#ffffff',
+                      fontSize: '13px',
+                      outline: 'none',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                </div>
+
+                {searchQuery.trim().length > 0 && (
+                  <div style={{ marginTop: '10px', background: '#ffffff', color: '#0f172a', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', padding: '4px' }}>
+                    {searchResults.length === 0 ? (
+                      <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+                        Không tìm thấy thí sinh nào khớp từ khóa.
+                      </div>
+                    ) : (
+                      searchResults.map(c => (
+                        <div
+                          key={c.sbd}
+                          onClick={() => { setSelectedCandidate(c); setSearchQuery(''); }}
+                          style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}
+                        >
+                          <div>
+                            <strong>{c.student_name}</strong> - Lớp {c.student_class}
+                          </div>
+                          <div style={{ color: '#0284c7', fontWeight: 'bold' }}>
+                            SBD: {c.sbd} • {c.roomName}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+          </div>
+
+        </div>
+
+        {/* ================= MODAL XEM CHI TIẾT THÍ SINH (KHI TÌM KIẾM ONLINE ĐƯỢC CHỌN) ================= */}
+        {selectedCandidate && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid #e2e8f0', paddingBottom: '10px' }}>
+                <div>
+                  <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: '999px', fontWeight: 'bold' }}>
+                    THÔNG TIN PHÒNG THI THÍ SINH
+                  </span>
+                  <h3 style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>
+                    {selectedCandidate.student_name}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedCandidate(null)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
+                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>SỐ BÁO DANH</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#d97706' }}>{selectedCandidate.sbd}</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>PHÒNG THI</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#0284c7' }}>{selectedCandidate.roomName}</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>VỊ TRÍ BÀN THI</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#16a34a' }}>Bàn #{selectedCandidate.seatNumber}</div>
+                </div>
+                <div style={{ background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b' }}>LỚP HỌC</div>
+                  <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#475569' }}>{selectedCandidate.student_class}</div>
+                </div>
+              </div>
+
+              <div style={{ fontSize: '12px', color: '#64748b', background: '#f1f5f9', padding: '10px', borderRadius: '8px' }}>
+                📍 <strong>Địa điểm:</strong> {selectedCandidate.roomLocation}
               </div>
             </div>
           </div>
         )}
 
-        {/* ================= KHỐI 1: LỊCH KIỂM TRA TẬP TRUNG (CHUẨN FORM TRƯỜNG) ================= */}
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.8)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          padding: '24px',
-          marginBottom: '28px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Calendar size={18} color="#38bdf8" />
-              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#ffffff' }}>
-                LỊCH KIỂM TRA TẬP TRUNG ({selectedGradeTab.toUpperCase()})
-              </h2>
-            </div>
-            <button
-              onClick={handleExportExcel}
-              style={{
-                padding: '7px 14px',
-                background: 'rgba(16, 185, 129, 0.15)',
-                color: '#34d399',
-                border: '1px solid rgba(16, 185, 129, 0.4)',
-                borderRadius: '8px',
-                fontWeight: 'bold',
-                fontSize: '12px',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-              title="Tải bảng lịch thi và danh sách phòng thi ra Excel chuẩn 1-..."
-            >
-              <Download size={14} /> Tải File Excel (1-...)
-            </button>
-          </div>
-
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: 'rgba(30, 58, 138, 0.5)', borderBottom: '2px solid rgba(56, 189, 248, 0.3)' }}>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Ngày</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Buổi</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#38bdf8', fontWeight: 'bold' }}>Bài thi/Môn thi</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Khối</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Thời gian</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Giờ phát đề</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', color: '#38bdf8', fontWeight: 'bold' }}>Giờ làm bài</th>
-                  <th style={{ padding: '10px 12px', textAlign: 'left', color: '#38bdf8', fontWeight: 'bold' }}>Hình thức</th>
-                </tr>
-              </thead>
-              <tbody>
-                {scheduleForGrade.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '24px', color: '#64748b' }}>
-                      Chưa có lịch kiểm tra tập trung cho {selectedGradeTab}.
-                    </td>
-                  </tr>
-                ) : (
-                  scheduleForGrade.map((s, idx) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', background: idx % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent' }}>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', fontWeight: 'bold', color: '#ffffff' }}>{s.date}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: s.session === 'Sáng' ? '#fbbf24' : '#38bdf8' }}>{s.session}</td>
-                      <td style={{ padding: '10px 12px', fontWeight: 'bold', color: '#f8fafc' }}>{s.subject}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center' }}>
-                        <span style={{ background: 'rgba(255,255,255,0.08)', padding: '2px 8px', borderRadius: '4px', fontSize: '11.5px' }}>{s.grade}</span>
-                      </td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: '#94a3b8' }}>{s.duration}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: '#cbd5e1' }}>{s.dispatchTime}</td>
-                      <td style={{ padding: '10px 8px', textAlign: 'center', color: '#4ade80', fontWeight: 'bold' }}>{s.startTime}</td>
-                      <td style={{ padding: '10px 12px', color: '#94a3b8', fontSize: '12px' }}>{s.format}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* ================= KHỐI 2: DANH SÁCH CÁC PHÒNG THI & SƠ ĐỒ CHỖ NGỒI ================= */}
-        <div style={{
-          background: 'rgba(15, 23, 42, 0.8)',
-          borderRadius: '20px',
-          border: '1px solid rgba(255,255,255,0.1)',
-          padding: '24px',
-          boxShadow: '0 10px 30px rgba(0,0,0,0.3)'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', flexWrap: 'wrap', gap: '12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Layers size={18} color="#38bdf8" />
-              <h2 style={{ margin: 0, fontSize: '17px', fontWeight: 'bold', color: '#ffffff' }}>
-                DANH SÁCH PHÒNG THI ({displayRooms.length} PHÒNG - {selectedGradeTab.toUpperCase()})
-              </h2>
-            </div>
-
-            {/* BỘ LỌC PHÒNG THI */}
-            <select
-              value={selectedRoomFilter}
-              onChange={(e) => setSelectedRoomFilter(e.target.value)}
-              style={{
-                padding: '7px 12px',
-                borderRadius: '8px',
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                color: '#ffffff',
-                fontSize: '13px',
-                outline: 'none'
-              }}
-            >
-              <option value="all" style={{ background: '#0f172a' }}>Tất cả các phòng thi</option>
-              {(roomsData?.rooms || []).map(r => (
-                <option key={r.roomNumber} value={r.roomName} style={{ background: '#0f172a' }}>
-                  {r.roomName} ({r.totalCandidates} thí sinh - SBD: {r.startSbd} ➔ {r.endSbd})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
-              Đang tải danh sách phòng thi...
-            </div>
-          ) : displayRooms.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
-              Chưa có phòng thi nào cho {selectedGradeTab}. Ban Khảo Thí đang cập nhật danh sách.
-            </div>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
-              {displayRooms.map(rm => (
-                <div
-                  key={rm.roomNumber}
-                  style={{
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: '14px',
-                    padding: '16px',
-                    transition: 'border-color 0.2s',
-                    position: 'relative'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(56, 189, 248, 0.4)'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#38bdf8' }}>
-                      {rm.roomName}
-                    </span>
-                    <span style={{ fontSize: '12px', background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
-                      {rm.totalCandidates} Thí sinh
-                    </span>
-                  </div>
-
-                  <div style={{ fontSize: '12.5px', color: '#cbd5e1', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <MapPin size={13} color="#94a3b8" /> {rm.roomLocation}
-                  </div>
-
-                  <div style={{ fontSize: '12px', color: '#94a3b8', background: 'rgba(0,0,0,0.2)', padding: '6px 10px', borderRadius: '6px', marginBottom: '12px' }}>
-                    SBD: <strong style={{ color: '#ffffff' }}>{rm.startSbd}</strong> ➔ <strong style={{ color: '#ffffff' }}>{rm.endSbd}</strong>
-                  </div>
-
-                  {/* THÍ SINH TIÊU BIỂU TRONG PHÒNG */}
-                  <div style={{ maxHeight: '140px', overflowY: 'auto', paddingRight: '4px', fontSize: '12px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '8px' }}>
-                    {(rm.candidates || []).slice(0, 5).map(c => (
-                      <div
-                        key={c.sbd}
-                        onClick={() => setSelectedCandidate(c)}
-                        style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 0', cursor: 'pointer', color: '#94a3b8' }}
-                        onMouseEnter={(e) => e.currentTarget.style.color = '#38bdf8'}
-                        onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
-                      >
-                        <span>{c.seatNumber}. {c.student_name}</span>
-                        <span style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{c.sbd}</span>
-                      </div>
-                    ))}
-                    {(rm.candidates || []).length > 5 && (
-                      <div style={{ textAlign: 'center', color: '#38bdf8', fontSize: '11px', marginTop: '4px', cursor: 'pointer' }} onClick={() => setSelectedRoomFilter(rm.roomName)}>
-                        Xem tất cả {rm.candidates.length} thí sinh của {rm.roomName} ➔
-                      </div>
-                    )}
+        {/* ================= MODAL XEM TRƯỚC TÀI LIỆU PDF ================= */}
+        {previewPdfModal && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '16px'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '650px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={22} color="#dc2626" />
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>
+                      {previewPdfModal.title}
+                    </h3>
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>
+                      Đăng tải bởi: {previewPdfModal.author} ({previewPdfModal.lastModified})
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+                <button
+                  onClick={() => setPreviewPdfModal(null)}
+                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 'bold' }}
+                >
+                  ✕ Đóng
+                </button>
+              </div>
 
-      </div>
+              <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '30px 20px', textAlign: 'center' }}>
+                <FileCheck size={48} color="#0284c7" style={{ margin: '0 auto 12px' }} />
+                <h4 style={{ margin: '0 0 6px', fontSize: '16px', color: '#0f172a' }}>
+                  Văn Bản Danh Sách Phòng Thi Chính Thức
+                </h4>
+                <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#64748b', maxWidth: '450px', marginInline: 'auto' }}>
+                  Tệp tài liệu dạng PDF có chữ ký và phê duyệt từ Ban Khảo Thí THPT Cao Bá Quát. Thí sinh có thể tải về để lưu trữ hoặc in ra đối chiếu.
+                </p>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                  <button
+                    onClick={() => { handleDownloadPdf(previewPdfModal); setPreviewPdfModal(null); }}
+                    style={{ padding: '9px 18px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Download size={14} /> Tải Về Máy Ngay
+                  </button>
+                  <button
+                    onClick={() => setPreviewPdfModal(null)}
+                    style={{ padding: '9px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Đóng cửa sổ
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+      {/* FOOTER BẢN QUYỀN TRANG TRỌNG */}
+      <footer style={{ marginTop: '50px', borderTop: '1px solid #e2e8f0', background: '#ffffff', padding: '24px 20px', textAlign: 'center', fontSize: '13px', color: '#64748b' }}>
+        <div>HỆ THỐNG THÔNG BÁO KHẢO THÍ & PHÒNG THI TẬP TRUNG • TRƯỜNG THPT CAO BÁ QUÁT</div>
+        <div style={{ fontSize: '11.5px', color: '#94a3b8', marginTop: '4px' }}>
+          Địa chỉ: Xã Cư M'gar, Tỉnh Đắk Lắk • Năm học 2026 - 2027
+        </div>
+      </footer>
+
     </div>
   );
 }

@@ -106,8 +106,53 @@ export const DEFAULT_EXAM_SESSIONS = [
         dispatchTime: '07 giờ 20',
         startTime: '07 giờ 30',
         format: 'Tự luận (Đọc hiểu & Viết)'
+      },
+      {
+        id: 'sch-7',
+        date: '12/11/2026',
+        session: 'Chiều',
+        subject: 'Tiếng Anh',
+        grade: 'Khối 11 & Khối 12',
+        duration: '60 phút',
+        dispatchTime: '14 giờ 20',
+        startTime: '14 giờ 30',
+        format: 'Trắc nghiệm khách quan'
       }
     ]
+  }
+];
+
+// ==================== TÀI LIỆU PDF PHÒNG THI CHÍNH THỨC CÔNG BỐ (CHUẨN FORM GOOGLE SITES) ====================
+export const DEFAULT_PDF_DOCUMENTS = [
+  {
+    id: 'pdf-g10',
+    title: 'Danh sách phòng KTTT khối 10.pdf',
+    grade: 'Khối 10',
+    lastModified: '18:24',
+    author: 'Xuân Bảo Nghiêm',
+    size: '1.2 MB',
+    downloadUrl: '/schedules/Danh_sach_phong_KTTT_khoi_10.pdf',
+    previewUrl: '#'
+  },
+  {
+    id: 'pdf-g11',
+    title: 'Danh sách phòng KTTT khối 11.pdf',
+    grade: 'Khối 11',
+    lastModified: '17:45',
+    author: 'Ban Khảo Thí',
+    size: '1.1 MB',
+    downloadUrl: '/schedules/Danh_sach_phong_KTTT_khoi_11.pdf',
+    previewUrl: '#'
+  },
+  {
+    id: 'pdf-g12',
+    title: 'Danh sách phòng KTTT khối 12.pdf',
+    grade: 'Khối 12',
+    lastModified: '17:30',
+    author: 'Ban Khảo Thí',
+    size: '1.4 MB',
+    downloadUrl: '/schedules/Danh_sach_phong_KTTT_khoi_12.pdf',
+    previewUrl: '#'
   }
 ];
 
@@ -365,6 +410,7 @@ export function generateExamRoomsAlgorithm(students = [], options = {}) {
     totalStudents: numberedStudents.length,
     totalRooms: rooms.length,
     capacityStandard: capacity,
+    isPublished: options.isPublished ?? false,
     createdAt: new Date().toISOString(),
     rooms
   };

@@ -337,6 +337,17 @@ export default function Dashboard() {
                   <ChevronRight size={18} color="#3b82f6" />
                 </Link>
 
+                <Link to="/admin/kiem-tra-tap-trung" style={styles.recordBox('#eff6ff', '#0284c7')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#e0f2fe', '#0369a1')}>🏛️</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#0c4a6e')}>Khảo Thí & Xếp Phòng Thi KTTT</h3>
+                      <p style={styles.boxDesc}>Xếp phòng tự động Khối 12 (chuẩn Quốc Gia 24 HS), Khối 10-11, in dán cửa & ký nộp bài</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#0284c7" />
+                </Link>
+
                 <Link to="/admin/schedule" style={styles.recordBox('#fff1f2', '#f43f5e')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={styles.iconCircle('#ffe4e6', '#be123c')}>📅</div>
