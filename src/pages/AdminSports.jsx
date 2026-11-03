@@ -519,7 +519,7 @@ export default function AdminSports() {
     try {
       setIsExportingAthletes(true);
       const res = await exportAthletesListExcel(activeTourn, filteredRegistrations, {
-        sportFilter: filterSport
+        sportFilter: selectedSport
       });
       if (res?.success) {
         alert(`✅ Đã xuất thành công file Excel "${res.fileName}"!\n- Tổng số: ${res.count} Đội Chi đoàn\n- Tổng số: ${res.totalAthletes} Cầu thủ / Vận động viên tham gia.\n(Bao gồm Sheet 1: Bảng Tổng hợp và Sheet 2: Danh sách chi tiết từng VĐV cho Tổ Trọng tài)`);
