@@ -1,5 +1,6 @@
 import ExcelJS from 'exceljs';
 import { supabase } from '../lib/supabase';
+import { normalizeClassName } from './sportsTournamentService';
 
 // 34 Chi đoàn lớp chính thức của Trường THPT Cao Bá Quát
 export const ALL_CBQ_CLASSES_34 = [
@@ -57,39 +58,62 @@ export function shuffleArray(arr) {
 }
 
 /**
- * Chuẩn hóa danh sách 34 đội đầu vào:
- * Nếu danh sách đội đăng ký ít hơn 34, tự động bù đủ 34 lớp trường CBQ.
+ * Chuẩn hóa danh sách các đội đã đăng ký (Loại bỏ 100% trùng lặp, giữ bản ghi mới nhất):
  */
-export function prepare34Teams(inputTeams = []) {
+export function prepareRegisteredTeams(inputTeams = []) {
   const map = new Map();
-  // Đưa các đội đăng ký vào trước
-  inputTeams.forEach(t => {
-    const name = t.cohort_year || t.unit_name || t.full_name || t.name;
-    if (name) {
-      const cleanName = name.replace(/^Lớp\s+/i, '').trim();
+  // Sắp xếp theo created_at hoặc id để bản ghi mới nhất ghi đè bản ghi cũ
+  const sorted = [...(inputTeams || [])].sort((a, b) => {
+    const timeA = new Date(a.created_at || 0).getTime();
+    const timeB = new Date(b.created_at || 0).getTime();
+    return timeA - timeB;
+  });
+
+  sorted.forEach(t => {
+    const raw = t.cohort_year || t.unit_name || t.full_name || t.name;
+    const cleanName = normalizeClassName(raw);
+    if (cleanName) {
       const grade = cleanName.startsWith('10') ? 'Khối 10' : (cleanName.startsWith('11') ? 'Khối 11' : 'Khối 12');
       map.set(cleanName, {
         id: t.id || cleanName,
         name: cleanName,
-        fullName: `Lớp ${cleanName}`,
+        fullName: `Chi đoàn ${cleanName}`,
         grade: grade,
         captain: t.full_name || t.captain_name || '',
         phone: t.phone || '',
         isRegistered: true,
-        source: 'registered'
+        source: 'registered',
+        created_at: t.created_at || null
       });
     }
   });
 
-  // Điền nốt các lớp CBQ còn thiếu để đủ 34 lớp
+  return Array.from(map.values());
+}
+
+/**
+ * Chuẩn hóa danh sách 34 đội đầu vào:
+ * Nếu danh sách đội đăng ký ít hơn 34, tự động bù đủ 34 lớp trường CBQ với nhãn (Chờ bổ sung).
+ * Đảm bảo 100% không có đội nào bị lặp lại.
+ */
+export function prepare34Teams(inputTeams = []) {
+  const map = new Map();
+  
+  // 1. Đưa các đội đăng ký hợp lệ vào trước (đã deduplicate theo tên lớp chuẩn)
+  const registeredTeams = prepareRegisteredTeams(inputTeams);
+  registeredTeams.forEach(team => {
+    map.set(team.name, team);
+  });
+
+  // 2. Điền nốt các lớp CBQ còn thiếu để đủ 34 lớp toàn trường
   ALL_CBQ_CLASSES_34.forEach(cls => {
     if (!map.has(cls.name)) {
       map.set(cls.name, {
         id: cls.id,
         name: cls.name,
-        fullName: `Lớp ${cls.name}`,
+        fullName: `Chi đoàn ${cls.name} (Chờ bổ sung)`,
         grade: cls.grade,
-        captain: '',
+        captain: 'Chưa nộp danh sách',
         phone: '',
         isRegistered: false,
         source: 'cbq_classes'
@@ -109,15 +133,23 @@ export function prepare34Teams(inputTeams = []) {
  *   + Vòng 16 (8 trận) -> Tứ kết (4 trận) -> Bán kết (2 trận) -> Chung kết (1 trận)
  */
 export function createSignmar34Draw(inputTeams = [], options = {}) {
-  const prepared = prepare34Teams(inputTeams);
-  const shuffled = shuffleArray(prepared);
+  let drawnTeams;
 
-  // Gán số thăm bốc thăm từ 1 đến 34
-  const drawnTeams = shuffled.map((team, idx) => ({
-    ...team,
-    drawNo: idx + 1,
-    branch: (idx + 1) <= 17 ? 'Nhánh Trên (A)' : 'Nhánh Dưới (B)'
-  }));
+  if (options.shuffledTeams && options.shuffledTeams.length >= 34) {
+    drawnTeams = options.shuffledTeams.map((team, idx) => ({
+      ...team,
+      drawNo: idx + 1,
+      branch: (idx + 1) <= 17 ? 'Nhánh Trên (A)' : 'Nhánh Dưới (B)'
+    }));
+  } else {
+    const prepared = prepare34Teams(inputTeams);
+    const shuffled = shuffleArray(prepared);
+    drawnTeams = shuffled.map((team, idx) => ({
+      ...team,
+      drawNo: idx + 1,
+      branch: (idx + 1) <= 17 ? 'Nhánh Trên (A)' : 'Nhánh Dưới (B)'
+    }));
+  }
 
   /**
    * Phân bổ 34 đội vào sơ đồ Signmar:
@@ -822,4 +854,135 @@ export async function fetchSignmarBracket(tournamentId, sportName) {
   } catch (e) {}
 
   return null;
+}
+
+/**
+ * Xuất Biên Bản Kết Quả Bốc Thăm (FIFA Live Draw) ra file Excel
+ * Đảm bảo quy tắc GEMINI.md: Tiền tố số thứ tự 1-Bien_ban_boc_tham_hoi_thao_...
+ */
+export async function exportFifaDrawResultsExcel(tournament, sportName, matchups = []) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'THPT Cao Bá Quát - Ban Tổ Chức Hội Thao';
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet('Bien_Ban_Boc_Tham', {
+    pageSetup: { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1 }
+  });
+
+  const tournTitle = tournament?.name || 'HỘI THAO TRƯỜNG THPT CAO BÁ QUÁT';
+  const cleanSport = sportName || 'Bóng Chuyền';
+
+  // Header Title
+  ws.mergeCells('A1:F1');
+  ws.getCell('A1').value = 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK - TRƯỜNG THPT CAO BÁ QUÁT';
+  ws.getCell('A1').font = { name: 'Times New Roman', size: 11, bold: true };
+  ws.getCell('A1').alignment = { horizontal: 'center' };
+
+  ws.mergeCells('A2:F2');
+  ws.getCell('A2').value = `BIÊN BẢN BỐC THĂM VÀ XẾP LỊCH THI ĐẤU - ${cleanSport.toUpperCase()}`;
+  ws.getCell('A2').font = { name: 'Times New Roman', size: 15, bold: true, color: { argb: 'FF1E3A8A' } };
+  ws.getCell('A2').alignment = { horizontal: 'center' };
+
+  ws.mergeCells('A3:F3');
+  ws.getCell('A3').value = `Giải đấu: ${tournTitle} | Thời gian lập: ${new Date().toLocaleString('vi-VN')}`;
+  ws.getCell('A3').font = { name: 'Times New Roman', size: 10, italic: true };
+  ws.getCell('A3').alignment = { horizontal: 'center' };
+
+  // Table Headers
+  const headerRow = ws.getRow(5);
+  headerRow.values = ['STT', 'Trận Đấu', 'Đội A (Mã Thăm)', 'Tỉ Số', 'Đội B (Mã Thăm)', 'Vòng Thi Đấu / Ghi Chú'];
+  headerRow.font = { name: 'Times New Roman', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+  headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+  for (let c = 1; c <= 6; c++) {
+    const cell = headerRow.getCell(c);
+    cell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E40AF' }
+    };
+    cell.border = {
+      top: { style: 'thin' },
+      left: { style: 'thin' },
+      bottom: { style: 'thin' },
+      right: { style: 'thin' }
+    };
+  }
+
+  // Rows
+  matchups.forEach((m, idx) => {
+    const row = ws.getRow(6 + idx);
+    const teamAName = m.teamA ? (m.teamA.fullName || m.teamA.name) : 'Đang chờ';
+    const teamBName = m.teamB ? (m.teamB.fullName || m.teamB.name) : (m.isBye ? 'Miễn đấu (Vé Bye)' : 'Đang chờ');
+    const drawA = m.teamA?.drawNo ? ` (Thăm ${m.teamA.drawNo})` : '';
+    const drawB = m.teamB?.drawNo ? ` (Thăm ${m.teamB.drawNo})` : '';
+
+    row.values = [
+      idx + 1,
+      m.roundName || `Trận ${idx + 1}`,
+      `${teamAName}${drawA}`,
+      '- VS -',
+      `${teamBName}${drawB}`,
+      m.note || m.branchName || 'Đấu loại trực tiếp'
+    ];
+    row.font = { name: 'Times New Roman', size: 11 };
+    row.alignment = { vertical: 'middle' };
+    row.getCell(1).alignment = { horizontal: 'center' };
+    row.getCell(2).alignment = { horizontal: 'center', bold: true };
+    row.getCell(3).alignment = { horizontal: 'left', bold: true };
+    row.getCell(4).alignment = { horizontal: 'center', bold: true, color: { argb: 'FFDC2626' } };
+    row.getCell(5).alignment = { horizontal: 'left', bold: true };
+    row.getCell(6).alignment = { horizontal: 'center', italic: true };
+
+    for (let c = 1; c <= 6; c++) {
+      row.getCell(c).border = {
+        top: { style: 'thin' },
+        left: { style: 'thin' },
+        bottom: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+      if (idx % 2 === 1) {
+        row.getCell(c).fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFF8FAFC' }
+        };
+      }
+    }
+  });
+
+  // Footer Signatures
+  const lastRow = 6 + matchups.length + 2;
+  ws.getCell(`B${lastRow}`).value = 'ĐẠI DIỆN TỔ TRỌNG TÀI';
+  ws.getCell(`B${lastRow}`).font = { name: 'Times New Roman', size: 11, bold: true };
+  ws.getCell(`B${lastRow}`).alignment = { horizontal: 'center' };
+
+  ws.getCell(`E${lastRow}`).value = 'TRƯỞNG BAN TỔ CHỨC';
+  ws.getCell(`E${lastRow}`).font = { name: 'Times New Roman', size: 11, bold: true };
+  ws.getCell(`E${lastRow}`).alignment = { horizontal: 'center' };
+
+  ws.columns = [
+    { width: 8 },
+    { width: 22 },
+    { width: 34 },
+    { width: 12 },
+    { width: 34 },
+    { width: 28 }
+  ];
+
+  const safeSport = cleanSport.replace(/[^a-zA-Z0-9]/g, '_');
+  const fileName = `1-Bien_ban_boc_tham_${safeSport}_THPT_Cao_Ba_Quat.xlsx`;
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+
+  return { success: true, fileName };
 }

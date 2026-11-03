@@ -18,10 +18,14 @@ import {
   exportUnregisteredClassesExcel
 } from '../services/sportsTournamentService';
 import SignmarBracketViewer from '../components/SignmarBracketViewer';
+import FifaDrawStageModal from '../components/FifaDrawStageModal';
 import { 
   createSignmar34Draw, 
   saveSignmarBracket, 
-  fetchSignmarBracket 
+  fetchSignmarBracket,
+  prepare34Teams,
+  prepareRegisteredTeams,
+  shuffleArray
 } from '../services/signmarTournamentService';
 
 export default function AdminSports() {
@@ -76,6 +80,7 @@ export default function AdminSports() {
   const [drawnBrackets, setDrawnBrackets] = useState(null);
   const [signmarBracket, setSignmarBracket] = useState(null);
   const [copiedSchedule, setCopiedSchedule] = useState(false);
+  const [showFifaModal, setShowFifaModal] = useState(false);
 
   // 👁️ MODAL XEM CHI TIẾT ĐỘI HÌNH
   const [selectedTeamView, setSelectedTeamView] = useState(null);
@@ -553,18 +558,22 @@ export default function AdminSports() {
 
   // ================= BỐC THĂM BẢNG ĐẤU & PHÂN CẶP =================
   const handleRandomDraw = () => {
+    const athletesInSport = activeTournRegistrations.filter(r => 
+      (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || '')
+    );
+
     // 1. THỂ THỨC SƠ ĐỒ NHÁNH SIGNMAR (34 ĐỘI CHUẨN THỂ THAO TRƯỜNG HỌC)
     if (drawMode === 'signmar_34') {
-      const athletesInSport = activeTournRegistrations.filter(r => 
-        (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || '')
-      );
-
       if (drawDataSource === 'registered_only' && athletesInSport.length === 0) {
         alert(`Hiện tại chưa có VĐV hoặc Đội nào đăng ký môn "${drawSport}" trong giải đấu này. Bạn có thể chọn nguồn "Đầy đủ 34 Chi đoàn Lớp CBQ" để bốc thăm toàn trường.`);
         return;
       }
 
-      const inputTeams = (drawDataSource === 'registered_only') ? athletesInSport : athletesInSport;
+      // Chuẩn hóa danh sách đội (tự động loại bỏ bản ghi nộp trùng, chỉ giữ bản ghi mới nhất)
+      const inputTeams = (drawDataSource === 'registered_only') 
+        ? prepareRegisteredTeams(athletesInSport) 
+        : prepare34Teams(athletesInSport);
+
       const newSignmar = createSignmar34Draw(inputTeams, {
         sportName: drawSport,
         tournamentName: activeTourn?.name || 'Giải Thể Thao Trường THPT Cao Bá Quát'
@@ -576,15 +585,16 @@ export default function AdminSports() {
     }
 
     // 2. CÁC THỂ THỨC KHÁC (KNOCKOUT CƠ BẢN / CHIA BẢNG VÒNG TRÒN)
-    const athletesInSport = activeTournRegistrations.filter(r => 
-      (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || '')
-    );
-    if (athletesInSport.length === 0) {
+    const validTeams = (drawDataSource === 'all_34_classes') 
+      ? prepare34Teams(athletesInSport) 
+      : prepareRegisteredTeams(athletesInSport);
+
+    if (validTeams.length === 0) {
       alert(`Hiện tại chưa có VĐV hoặc Đội nào đăng ký môn "${drawSport}" trong giải đấu này.`);
       return;
     }
 
-    const shuffled = [...athletesInSport].sort(() => Math.random() - 0.5);
+    const shuffled = shuffleArray(validTeams);
 
     if (drawMode === 'knockout') {
       const matchups = [];
@@ -773,6 +783,32 @@ export default function AdminSports() {
               style={{ padding: '9px 14px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '9px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', boxShadow: '0 4px 12px rgba(124,58,237,0.2)' }}
             >
               <Dices size={16} /> 🎲 Bốc Thăm
+            </button>
+
+            <button
+              onClick={() => {
+                if (!drawSport && activeTourn?.sports?.[0]) {
+                  setDrawSport(activeTourn.sports[0]);
+                }
+                setShowFifaModal(true);
+              }}
+              style={{ 
+                padding: '9px 15px', 
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', 
+                color: '#ffffff', 
+                border: 'none', 
+                borderRadius: '9px', 
+                fontWeight: '800', 
+                cursor: 'pointer', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '6px', 
+                fontSize: '13px', 
+                boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)' 
+              }}
+              title="Mở sân khấu bốc thăm bóng vàng phong cách FIFA World Cup với âm thanh kịch tính để quay video gửi các lớp"
+            >
+              <Trophy size={16} /> 🎬 Bốc Thăm FIFA (Quay Video)
             </button>
 
             <button
@@ -1978,12 +2014,24 @@ export default function AdminSports() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px' }}>
                 <button
                   onClick={handleRandomDraw}
-                  style={{ width: '100%', padding: '9px 16px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13.5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}
+                  style={{ flex: 1, padding: '9px 12px', background: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(124,58,237,0.3)' }}
+                  title="Bốc thăm tức thì vào sơ đồ"
                 >
-                  🎲 Tiến Hành Bốc Thăm
+                  🎲 Bốc Thăm Nhanh
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowBracketModal(false);
+                    setShowFifaModal(true);
+                  }}
+                  style={{ flex: 1, padding: '9px 12px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(245,158,11,0.35)' }}
+                  title="Mở sân khấu xoay bóng vàng 3D kèm âm thanh kịch tính để quay video gửi các lớp"
+                >
+                  🎬 Sân Khấu FIFA (Quay Video)
                 </button>
               </div>
             </div>
@@ -2614,6 +2662,25 @@ export default function AdminSports() {
           <span>✓ Đã sao chép tin nhắn nhắc riêng cho Lớp {singleClassCopied}!</span>
         </div>
       )}
+
+      {/* ================= SÂN KHẤU BỐC THĂM BÓNG VÀNG PHONG CÁCH FIFA WORLD CUP ================= */}
+      <FifaDrawStageModal
+        isOpen={showFifaModal}
+        onClose={() => setShowFifaModal(false)}
+        tournament={activeTourn}
+        sportName={drawSport || (activeTourn?.sports?.[0]) || 'Bóng Chuyền'}
+        inputTeams={activeTournRegistrations.filter(r => !drawSport || (r.sport_name || '').includes(drawSport) || drawSport.includes(r.sport_name || ''))}
+        drawMode={drawMode}
+        drawDataSource={drawDataSource}
+        onApplyBracket={bracket => {
+          if (drawMode === 'signmar_34') {
+            setSignmarBracket(bracket);
+            saveSignmarBracket(activeTourn?.id || 'default', drawSport, bracket);
+          } else {
+            setDrawnBrackets(bracket);
+          }
+        }}
+      />
 
     </div>
   );
