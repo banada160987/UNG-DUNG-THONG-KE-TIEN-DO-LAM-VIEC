@@ -255,6 +255,9 @@ export default function FifaDrawStageModal({
 
   // ==================== BỐC THĂM 1 BÓNG TIẾP THEO ====================
   const drawNextBall = () => {
+    // Nếu đang trong hoạt cảnh bốc thăm thì không cho bấm chồng lấn
+    if (drawState !== 'IDLE') return;
+
     if (drawnList.length >= teamsPool.length) {
       setDrawState('COMPLETED');
       stopAutoPlay();
@@ -286,6 +289,13 @@ export default function FifaDrawStageModal({
           // Đây là Đội A của cặp đấu
           setCurrentPairTeamA(teamWithDraw);
           setDrawnList(prev => [...prev, teamWithDraw]);
+
+          // Sau khi công bố Đội A, trở về IDLE để sẵn sàng bốc Đội B
+          setTimeout(() => {
+            setActiveBall(null);
+            setDrawState('IDLE');
+          }, isAutoPlaying ? 1600 : 1200);
+
         } else {
           // Đây là Đội B -> Chốt cặp đấu!
           setCurrentPairTeamB(teamWithDraw);
@@ -306,12 +316,13 @@ export default function FifaDrawStageModal({
             setMatchups(prev => [...prev, newMatch]);
 
             setTimeout(() => {
-              // Hoàn tất 1 cặp đấu, chuẩn bị cho cặp tiếp theo
+              // Hoàn tất 1 cặp đấu, dọn dẹp chuẩn bị cho cặp tiếp theo
+              setActiveBall(null);
               setCurrentPairTeamA(null);
               setCurrentPairTeamB(null);
               setCurrentMatchNumber(prev => prev + 1);
 
-              if (drawnList.length + 1 >= teamsPool.length) {
+              if (drawNo >= teamsPool.length) {
                 setDrawState('COMPLETED');
                 stopAutoPlay();
                 audio.playGrandTriumph();
@@ -893,7 +904,7 @@ export default function FifaDrawStageModal({
                 padding: '12px 24px',
                 background: remainingCount === 0 
                   ? '#475569' 
-                  : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  : (drawState !== 'IDLE' ? '#92400e' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'),
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '12px',
@@ -904,11 +915,20 @@ export default function FifaDrawStageModal({
                 alignItems: 'center',
                 gap: '8px',
                 boxShadow: (drawState === 'IDLE' && remainingCount > 0) ? '0 0 25px rgba(245, 158, 11, 0.5)' : 'none',
-                opacity: (drawState === 'IDLE' && remainingCount > 0) ? 1 : 0.6,
+                opacity: (drawState === 'IDLE' && remainingCount > 0) ? 1 : 0.75,
                 transition: 'all 0.2s'
               }}
             >
-              <Sparkles size={18} /> Bốc Quả Tiếp Theo
+              <Sparkles size={18} />
+              {drawState === 'SPINNING' 
+                ? 'Đang Quay Lồng...' 
+                : drawState === 'REVEAL_BALL' 
+                  ? 'Đang Rút Quả Bóng...' 
+                  : drawState === 'REVEAL_TEAM' 
+                    ? 'Đã Mở Thăm...' 
+                    : drawState === 'CLASH' 
+                      ? 'Ghép Cặp Đối Đầu...' 
+                      : (remainingCount === 0 ? 'Đã Hoàn Tất Bốc Thăm' : '✨ Bốc Quả Tiếp Theo')}
             </button>
 
             {/* NÚT TỰ ĐỘNG BỐC THĂM (AUTO-PLAY CHO QUAY VIDEO) */}
