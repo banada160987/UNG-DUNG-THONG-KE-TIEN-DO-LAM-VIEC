@@ -664,7 +664,10 @@ export default function PublicRegistrations() {
     a.href = signedDocUrl;
     const cleanClass = (studentClass || '12').replace(/^Lớp\s*/i, '').trim();
     const cleanName = (studentName || 'HocSinh').replace(/[/\\?%*:|"<>]/g, '_').trim();
-    a.download = signedDocFileName || `[${cleanClass}] - ${cleanName} - Don_Dang_Ky_Online.png`;
+    const prefixFileName = signedDocFileName 
+      ? (signedDocFileName.startsWith('1-') ? signedDocFileName : `1-${signedDocFileName}`)
+      : `1-[${cleanClass}]_${cleanName}_Don_Dang_Ky_Online.png`;
+    a.download = prefixFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);

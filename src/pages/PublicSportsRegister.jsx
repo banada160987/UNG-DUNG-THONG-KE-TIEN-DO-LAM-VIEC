@@ -9,7 +9,8 @@ import {
 import { 
   fetchTournaments, 
   checkTournamentStatus, 
-  DEFAULT_TOURNAMENTS 
+  DEFAULT_TOURNAMENTS,
+  normalizeClassName
 } from '../services/sportsTournamentService';
 
 export const OFFICIAL_ZALO_GROUP = 'https://zalo.me/g/lz7b83lfqx1r4tcpw9pa';
@@ -152,12 +153,14 @@ export default function PublicSportsRegister() {
     return new Set(activeTournRegistrations.map(r => r.cohort_year || r.unit_name).filter(Boolean));
   }, [activeTournRegistrations]);
 
-  // Kiểm tra đội đã đăng ký của lớp đang chọn
+  // Kiểm tra đội đã đăng ký của lớp đang chọn (Chuẩn hóa tên lớp triệt để tránh biến thể 11A6 vs 11A06)
   const existingTeamOfSelectedClass = useMemo(() => {
-    if (activeTourn?.format !== 'class_team') return null;
-    return activeTournRegistrations.find(r => 
-      (r.cohort_year === selectedClass || (r.unit_name || '').includes(selectedClass))
-    ) || null;
+    if (activeTourn?.format !== 'class_team' || !selectedClass) return null;
+    const normSelected = normalizeClassName(selectedClass);
+    return activeTournRegistrations.find(r => {
+      const normReg = normalizeClassName(r.cohort_year || r.unit_name || '');
+      return normReg === normSelected;
+    }) || null;
   }, [activeTournRegistrations, selectedClass, activeTourn]);
 
   // Cập nhật mảng VĐV Nam
@@ -228,16 +231,21 @@ export default function PublicSportsRegister() {
     setSubmitting(true);
     setSuccessMsg('');
 
-    // 🛡️ CHỐNG TRÙNG THỜI GIAN THỰC (Đội Lớp): Truy vấn trực tiếp cơ sở dữ liệu Supabase trước khi ghi
+    // 🛡️ CHỐNG TRÙNG THỜI GIAN THỰC (Đội Lớp): Chuẩn hóa tên lớp và truy vấn đối chiếu DB
     if (activeTourn?.prevent_duplicate) {
       try {
+        const normSelected = normalizeClassName(selectedClass);
         const { data: dbCheck } = await supabase
           .from('cbq_sports_registrations')
-          .select('id, full_name, created_at')
-          .eq('table_group', activeTourn.id)
-          .eq('cohort_year', selectedClass);
+          .select('id, full_name, cohort_year, unit_name, created_at')
+          .eq('table_group', activeTourn.id);
 
-        if (dbCheck && dbCheck.length > 0) {
+        const isDuplicate = (dbCheck || []).some(r => {
+          const normReg = normalizeClassName(r.cohort_year || r.unit_name || '');
+          return normReg === normSelected;
+        });
+
+        if (isDuplicate) {
           alert(
             `❌ KHÔNG THỂ NỘP:\n` +
             `Chi đoàn Lớp ${selectedClass} đã có bản đăng ký trong hệ thống!\n` +

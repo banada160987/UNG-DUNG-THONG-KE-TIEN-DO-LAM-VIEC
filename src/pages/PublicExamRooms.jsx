@@ -103,9 +103,17 @@ export default function PublicExamRooms() {
     }
   };
 
-  // Giả lập tải / xem tệp PDF thông báo
+  // Tải tệp PDF thông báo chính thức (Tuân thủ quy tắc tiền tố 1-... GEMINI.md)
   const handleDownloadPdf = (doc) => {
-    alert(`📥 Đang tải tài liệu chính thức: "${doc.title}"\n- Cán bộ phụ trách: ${doc.author}\n- Thời gian cập nhật: ${doc.lastModified}`);
+    const defaultPath = `/schedules/${(doc.title || 'Danh_sach_phong_KTTT_khoi_10.pdf').replace(/\s+/g, '_')}`;
+    const fileUrl = doc.downloadUrl || defaultPath;
+    const a = document.createElement('a');
+    a.href = fileUrl;
+    const prefix = /^\d+-/.test(doc.title) ? '' : '1-';
+    a.download = `${prefix}${doc.title}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
@@ -593,12 +601,12 @@ export default function PublicExamRooms() {
           </div>
         )}
 
-        {/* ================= MODAL XEM TRƯỚC TÀI LIỆU PDF ================= */}
+        {/* ================= MODAL XEM TRƯỚC TÀI LIỆU PDF CHÍNH THỨC ================= */}
         {previewPdfModal && (
           <div style={{
             position: 'fixed',
             inset: 0,
-            background: 'rgba(0,0,0,0.6)',
+            background: 'rgba(0,0,0,0.65)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -608,53 +616,49 @@ export default function PublicExamRooms() {
             <div style={{
               background: '#ffffff',
               borderRadius: '16px',
-              maxWidth: '650px',
+              maxWidth: '820px',
               width: '100%',
-              padding: '24px',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.3)'
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              overflow: 'hidden'
             }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileText size={22} color="#dc2626" />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <FileText size={24} color="#dc2626" />
                   <div>
                     <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>
                       {previewPdfModal.title}
                     </h3>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      Đăng tải bởi: {previewPdfModal.author} ({previewPdfModal.lastModified})
+                      Ban Khảo Thí THPT Cao Bá Quát • Cập nhật: {previewPdfModal.lastModified} ({previewPdfModal.author})
                     </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => setPreviewPdfModal(null)}
-                  style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '6px 12px', cursor: 'pointer', fontWeight: 'bold' }}
-                >
-                  ✕ Đóng
-                </button>
-              </div>
-
-              <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '30px 20px', textAlign: 'center' }}>
-                <FileCheck size={48} color="#0284c7" style={{ margin: '0 auto 12px' }} />
-                <h4 style={{ margin: '0 0 6px', fontSize: '16px', color: '#0f172a' }}>
-                  Văn Bản Danh Sách Phòng Thi Chính Thức
-                </h4>
-                <p style={{ margin: '0 0 18px', fontSize: '13px', color: '#64748b', maxWidth: '450px', marginInline: 'auto' }}>
-                  Tệp tài liệu dạng PDF có chữ ký và phê duyệt từ Ban Khảo Thí THPT Cao Bá Quát. Thí sinh có thể tải về để lưu trữ hoặc in ra đối chiếu.
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <button
-                    onClick={() => { handleDownloadPdf(previewPdfModal); setPreviewPdfModal(null); }}
-                    style={{ padding: '9px 18px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    onClick={() => handleDownloadPdf(previewPdfModal)}
+                    style={{ padding: '7px 14px', background: '#dc2626', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '12px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
-                    <Download size={14} /> Tải Về Máy Ngay
+                    <Download size={13} /> Tải Về (1-...)
                   </button>
                   <button
                     onClick={() => setPreviewPdfModal(null)}
-                    style={{ padding: '9px 16px', background: '#e2e8f0', color: '#334155', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                    style={{ background: '#e2e8f0', border: 'none', borderRadius: '8px', padding: '7px 12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px', color: '#334155' }}
                   >
-                    Đóng cửa sổ
+                    ✕ Đóng
                   </button>
                 </div>
+              </div>
+
+              {/* KHUNG XEM PDF TRỰC TIẾP */}
+              <div style={{ flex: 1, minHeight: '480px', background: '#334155', position: 'relative' }}>
+                <iframe
+                  src={previewPdfModal.downloadUrl || `/schedules/${previewPdfModal.title.replace(/\s+/g, '_')}`}
+                  title={previewPdfModal.title}
+                  style={{ width: '100%', height: '100%', minHeight: '480px', border: 'none' }}
+                />
               </div>
             </div>
           </div>

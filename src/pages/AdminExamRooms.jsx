@@ -716,8 +716,37 @@ export default function AdminExamRooms() {
 
       {/* ================= MODAL IN ẤN BẢN ĐẸP A4 (DÁN CỬA HOẶC KÝ NỘP BÀI) ================= */}
       {printModalRoom && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '30px', maxWidth: '820px', width: '100%', maxHeight: '95vh', overflowY: 'auto' }}>
+        <div className="exam-print-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <style>{`
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              .printable-exam-sheet, .printable-exam-sheet * {
+                visibility: visible !important;
+              }
+              .printable-exam-sheet {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 15mm 10mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                background: #ffffff !important;
+                color: #000000 !important;
+              }
+              .no-print {
+                display: none !important;
+              }
+              @page {
+                size: A4 portrait;
+                margin: 10mm;
+              }
+            }
+          `}</style>
+          <div className="printable-exam-sheet" style={{ background: '#ffffff', borderRadius: '16px', padding: '30px', maxWidth: '820px', width: '100%', maxHeight: '95vh', overflowY: 'auto' }}>
             
             {/* Header hành chính chuẩn Nghị định 30 */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #cbd5e1', paddingBottom: '14px', marginBottom: '16px' }}>
@@ -810,7 +839,7 @@ export default function AdminExamRooms() {
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '24px' }}>
               <button
                 onClick={() => window.print()}
                 style={{ padding: '8px 18px', background: '#0284c7', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}

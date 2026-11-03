@@ -290,10 +290,27 @@ export default function FifaDrawStageModal({
           setCurrentPairTeamA(teamWithDraw);
           setDrawnList(prev => [...prev, teamWithDraw]);
 
-          // Sau khi công bố Đội A, trở về IDLE để sẵn sàng bốc Đội B
+          // Sau khi công bố Đội A
           setTimeout(() => {
             setActiveBall(null);
-            setDrawState('IDLE');
+
+            // Kiểm tra trường hợp số đội lẻ và đây là đội cuối cùng (Ví dụ 33 đội -> Đội thứ 33 nhận vé Đặc cách Bye)
+            if (drawNo >= teamsPool.length) {
+              const byeMatch = {
+                matchNumber: currentMatchNumber,
+                roundName: 'Vé Đặc Cách (Vào thẳng vòng sau)',
+                teamA: teamWithDraw,
+                teamB: { name: 'ĐẶC CÁCH (BYE)', cohort_year: 'Miễn đấu V1', fullName: 'Đặc Cách (Miễn Đấu)' },
+                branchName: (teamWithDraw.drawNo <= teamsPool.length / 2) ? 'Nhánh Trên (A)' : 'Nhánh Dưới (B)'
+              };
+              setMatchups(prev => [...prev, byeMatch]);
+              setCurrentPairTeamA(null);
+              setDrawState('COMPLETED');
+              stopAutoPlay();
+              audio.playGrandTriumph();
+            } else {
+              setDrawState('IDLE');
+            }
           }, isAutoPlaying ? 1600 : 1200);
 
         } else {
