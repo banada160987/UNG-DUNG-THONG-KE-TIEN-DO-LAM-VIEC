@@ -415,6 +415,30 @@ export default function PublicLayout() {
               📅 Lịch & TKB
             </Link>
 
+            {/* MENU ĐỘC LẬP: PHÂN HỆ TIỆN ÍCH SỐ (22 MODULES) */}
+            <Link 
+              to="/huong-dan" 
+              style={{
+                ...(isActive('/huong-dan') ? styles.navItemHighlightActive : {
+                  ...styles.navItem,
+                  color: '#ffffff',
+                  background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.45), rgba(30, 64, 175, 0.45))',
+                  border: '1px solid rgba(147, 197, 253, 0.5)',
+                  borderRadius: '6px',
+                  margin: '2px 3px',
+                  padding: '6px 10px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  fontWeight: '700'
+                }),
+              }}
+              onClick={() => setMobileMenuOpen(false)}
+              title="Khám phá 22 phân hệ tiện ích số và cẩm nang hướng dẫn sử dụng"
+            >
+              <span>🏛️ Phân Hệ Tiện Ích</span>
+            </Link>
+
             {/* MENU ĐỘC LẬP: ĐIỂM TÂM SÁNG CBQ - TIẾP SỨC HỌC ĐƯỜNG */}
             <Link 
               to="/bep-sang" 
