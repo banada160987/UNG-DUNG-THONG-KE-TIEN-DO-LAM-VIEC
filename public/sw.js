@@ -1,5 +1,5 @@
 // Service Worker for THPT Cao Bá Quát PWA
-const CACHE_NAME = 'cbq-app-cache-v1';
+const CACHE_NAME = 'cbq-app-cache-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
