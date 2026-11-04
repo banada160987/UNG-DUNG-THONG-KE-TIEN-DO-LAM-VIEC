@@ -184,6 +184,7 @@ export default function PublicLayout() {
   const safeMenus = Array.isArray(publicMenus) && publicMenus.length > 0 ? publicMenus : DEFAULT_FULL_MENUS;
 
   const isGroupActive = (groupName) => {
+    if (groupName === 'school' && isActive('/huong-dan')) return true;
     return safeMenus
       .filter(m => (m?.parent_group === groupName || (!m?.parent_group && groupName === 'school')) && m?.is_active === true)
       .some(m => isActive(m?.path));
@@ -415,30 +416,6 @@ export default function PublicLayout() {
               📅 Lịch & TKB
             </Link>
 
-            {/* MENU ĐỘC LẬP: PHÂN HỆ TIỆN ÍCH SỐ (22 MODULES) */}
-            <Link 
-              to="/huong-dan" 
-              style={{
-                ...(isActive('/huong-dan') ? styles.navItemHighlightActive : {
-                  ...styles.navItem,
-                  color: '#ffffff',
-                  background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.45), rgba(30, 64, 175, 0.45))',
-                  border: '1px solid rgba(147, 197, 253, 0.5)',
-                  borderRadius: '6px',
-                  margin: '2px 3px',
-                  padding: '6px 10px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '5px',
-                  fontWeight: '700'
-                }),
-              }}
-              onClick={() => setMobileMenuOpen(false)}
-              title="Khám phá 22 phân hệ tiện ích số và cẩm nang hướng dẫn sử dụng"
-            >
-              <span>🏛️ Phân Hệ Tiện Ích</span>
-            </Link>
-
             {/* MENU ĐỘC LẬP: ĐIỂM TÂM SÁNG CBQ - TIẾP SỨC HỌC ĐƯỜNG */}
             <Link 
               to="/bep-sang" 
@@ -500,6 +477,25 @@ export default function PublicLayout() {
                   🏫 Vận Hành {activeDropdown === 'school' ? '▴' : '▾'}
                 </span>
                 <div className="nav-dropdown-content" style={styles.dropdownContent}>
+                  <Link 
+                    to="/huong-dan" 
+                    className="nav-dropdown-item" 
+                    style={{
+                      fontWeight: '700',
+                      color: '#0284c7',
+                      backgroundColor: isActive('/huong-dan') ? '#f0f9ff' : 'transparent',
+                      borderBottom: '1px solid #f1f5f9',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setActiveDropdown(null);
+                    }}
+                  >
+                    <span>🏛️ 22 Phân Hệ Tiện Ích & Cẩm Nang</span>
+                  </Link>
                   {safeMenus
                     .filter(m => (m?.parent_group === 'school' || !m?.parent_group) && m?.is_active === true && !m?.path?.includes('bep-sang') && !m?.path?.includes('cantin'))
                     .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
