@@ -139,7 +139,7 @@ export const DEFAULT_PDF_DOCUMENTS = [
     title: 'Danh sách phòng KTTT khối 11.pdf',
     grade: 'Khối 11',
     lastModified: '17:45',
-    author: 'Ban Khảo Thí',
+    author: 'Xuân Bảo Nghiêm',
     size: '1.1 MB',
     downloadUrl: '/schedules/Danh_sach_phong_KTTT_khoi_11.pdf',
     previewUrl: '#'
@@ -149,7 +149,7 @@ export const DEFAULT_PDF_DOCUMENTS = [
     title: 'Danh sách phòng KTTT khối 12.pdf',
     grade: 'Khối 12',
     lastModified: '17:30',
-    author: 'Ban Khảo Thí',
+    author: 'Xuân Bảo Nghiêm',
     size: '1.4 MB',
     downloadUrl: '/schedules/Danh_sach_phong_KTTT_khoi_12.pdf',
     previewUrl: '#'

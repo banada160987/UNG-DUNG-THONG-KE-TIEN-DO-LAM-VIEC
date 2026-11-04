@@ -119,60 +119,100 @@ export default function PublicExamRooms() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', color: '#1e293b', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
       
-      {/* ================= HEADER QUỐC GIA & TRƯỜNG TRANG TRỌNG ================= */}
+      {/* ================= THANH ĐIỀU HƯỚNG NHANH & LIÊN KẾT GOOGLE SITES GỐC ================= */}
+      <div style={{
+        background: '#0f172a',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        padding: '8px 16px',
+        fontSize: '12px',
+        color: '#94a3b8'
+      }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: 'bold', color: '#38bdf8' }}>SỞ GD&ĐT ĐẮK LẮK</span>
+            <span>•</span>
+            <span style={{ color: '#f1f5f9', fontWeight: '600' }}>TRƯỜNG THPT CAO BÁ QUÁT</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <a
+              href="https://sites.google.com/view/danhsachphongthigiuahki2627/trang-chủ"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                color: '#7dd3fc',
+                textDecoration: 'none',
+                fontWeight: '600',
+                padding: '3px 8px',
+                borderRadius: '4px',
+                background: 'rgba(56, 189, 248, 0.1)',
+                border: '1px solid rgba(56, 189, 248, 0.25)'
+              }}
+              title="Mở trang Google Sites gốc của trường"
+            >
+              <ExternalLink size={12} /> Google Sites gốc của Trường
+            </a>
+            <button
+              onClick={handleShare}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#cbd5e1',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                fontSize: '12px'
+              }}
+            >
+              <Share2 size={12} /> {copiedToast ? 'Đã sao chép link!' : 'Chia sẻ'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ================= BANNER ĐEN VÂN CHẤM BI CHUẨN GOOGLE SITES CỦA TRƯỜNG ================= */}
       <header style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #1e3a8a 100%)',
+        background: '#121212',
+        backgroundImage: 'radial-gradient(#3f3f46 1.4px, transparent 1.4px)',
+        backgroundSize: '16px 16px',
         color: '#ffffff',
-        borderBottom: '4px solid #38bdf8',
-        boxShadow: '0 8px 30px rgba(15, 23, 42, 0.15)',
+        padding: '42px 20px 32px',
+        textAlign: 'center',
+        borderBottom: '1px solid #27272a',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
         position: 'relative'
       }}>
-        <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '28px 20px 22px' }}>
+        <div style={{ maxWidth: '1240px', margin: '0 auto' }}>
+          <h1 style={{
+            fontSize: 'clamp(24px, 4.6vw, 42px)',
+            fontWeight: '900',
+            color: '#ffffff',
+            margin: 0,
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            fontFamily: '"Times New Roman", Times, "Playfair Display", Georgia, serif',
+            textShadow: '0 2px 14px rgba(0,0,0,0.8)'
+          }}>
+            DANH SÁCH PHÒNG KTTT GIỮA HỌC KỲ I
+          </h1>
           
-          {/* TIÊU NGỮ HÀNH CHÍNH & TÊN TRƯỜNG */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', borderBottom: '1px solid rgba(255,255,255,0.15)', paddingBottom: '14px', marginBottom: '16px' }}>
-            <div>
-              <div style={{ fontSize: '11.5px', textTransform: 'uppercase', letterSpacing: '0.8px', color: '#93c5fd', fontWeight: 'bold' }}>
-                SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK
-              </div>
-              <div style={{ fontSize: '15px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.5px' }}>
-                TRƯỜNG THPT CAO BÁ QUÁT
-              </div>
-            </div>
+          {/* THANH KẺ ĐỎ ĐẶC TRƯNG CHUẨN GOOGLE SITES */}
+          <div style={{
+            width: '620px',
+            maxWidth: '88%',
+            height: '5px',
+            background: '#dc2626',
+            margin: '14px auto 0',
+            borderRadius: '2px',
+            boxShadow: '0 0 10px rgba(220, 38, 38, 0.6)'
+          }} />
 
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 'bold', textTransform: 'uppercase', color: '#f8fafc' }}>
-                CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
-              </div>
-              <div style={{ fontSize: '12px', color: '#38bdf8', fontStyle: 'italic', fontWeight: '500' }}>
-                Độc lập - Tự do - Hạnh phúc
-              </div>
-            </div>
-          </div>
-
-          {/* TIÊU ĐỀ LỚN CHÍNH THỨC */}
-          <div style={{ textAlign: 'center', margin: '14px 0 10px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '4px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold', color: '#7dd3fc', marginBottom: '8px' }}>
-              <Award size={14} /> HỘI ĐỒNG KHẢO THÍ & ĐÁNH GIÁ CHẤT LƯỢNG GIÁO DỤC
-            </div>
-            <h1 style={{
-              fontSize: 'clamp(22px, 4.5vw, 34px)',
-              fontWeight: '900',
-              color: '#ffffff',
-              margin: '0 0 6px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.8px',
-              textShadow: '0 2px 10px rgba(0,0,0,0.3)'
-            }}>
-              DANH SÁCH PHÒNG KTTT GIỮA HỌC KỲ I
-            </h1>
-            <p style={{ margin: 0, fontSize: '14px', color: '#cbd5e1' }}>
-              Năm học {currentSession?.academic_year} • Áp dụng cho toàn thể học sinh Khối 10, Khối 11 và Khối 12
-            </p>
-          </div>
-
-          {/* BỘ LỌC KHỐI NHANH (TẤT CẢ - KHỐI 10 - KHỐI 11 - KHỐI 12) */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '18px', flexWrap: 'wrap' }}>
+          {/* BỘ LỌC KHỐI NHANH */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '22px', flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: 'Tất cả các khối' },
               { id: 'Khối 10', label: 'Khối 10' },
@@ -185,15 +225,15 @@ export default function PublicExamRooms() {
                   key={tab.id}
                   onClick={() => { setSelectedGradeFilter(tab.id); setSelectedCandidate(null); }}
                   style={{
-                    padding: '8px 18px',
+                    padding: '7px 18px',
                     borderRadius: '999px',
                     fontWeight: 'bold',
                     fontSize: '13px',
                     cursor: 'pointer',
-                    border: isSelected ? '2px solid #38bdf8' : '1px solid rgba(255,255,255,0.2)',
-                    background: isSelected ? '#0284c7' : 'rgba(255,255,255,0.1)',
+                    border: isSelected ? '2px solid #ef4444' : '1px solid rgba(255,255,255,0.25)',
+                    background: isSelected ? '#dc2626' : 'rgba(255,255,255,0.12)',
                     color: '#ffffff',
-                    boxShadow: isSelected ? '0 0 16px rgba(2, 132, 199, 0.4)' : 'none',
+                    boxShadow: isSelected ? '0 0 16px rgba(220, 38, 38, 0.4)' : 'none',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -202,7 +242,6 @@ export default function PublicExamRooms() {
               );
             })}
           </div>
-
         </div>
       </header>
 
@@ -213,40 +252,22 @@ export default function PublicExamRooms() {
         <div style={{
           background: '#eff6ff',
           borderLeft: '5px solid #2563eb',
-          borderRadius: '12px',
-          padding: '14px 18px',
-          marginBottom: '24px',
+          borderRadius: '10px',
+          padding: '12px 18px',
+          marginBottom: '20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Info size={20} color="#2563eb" style={{ flexShrink: 0 }} />
-            <div style={{ fontSize: '13.5px', color: '#1e3a8a', lineHeight: 1.5 }}>
-              <strong>Kỳ Kiểm Tra Tập Trung Giữa Học Kỳ I:</strong> Thí sinh theo dõi lịch kiểm tra bên trái và bấm vào tệp PDF bên phải để xem danh sách phòng thi chính thức.
+            <Info size={18} color="#2563eb" style={{ flexShrink: 0 }} />
+            <div style={{ fontSize: '13px', color: '#1e3a8a', lineHeight: 1.5 }}>
+              <strong>Kỳ Kiểm Tra Tập Trung Giữa Học Kỳ I (Năm học {currentSession?.academic_year || '2026 - 2027'}):</strong> Thí sinh theo dõi lịch kiểm tra bên trái và bấm vào tệp PDF bên phải để xem danh sách phòng thi chính thức.
             </div>
           </div>
-          <button
-            onClick={handleShare}
-            style={{
-              padding: '6px 12px',
-              background: '#ffffff',
-              border: '1px solid #bfdbfe',
-              borderRadius: '8px',
-              fontSize: '12px',
-              fontWeight: 'bold',
-              color: '#1d4ed8',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px'
-            }}
-          >
-            <Share2 size={13} /> {copiedToast ? 'Đã sao chép link!' : 'Chia sẻ trang'}
-          </button>
         </div>
 
         {/* ================= BỐ CỤC 2 CỘT ================= */}
@@ -260,42 +281,65 @@ export default function PublicExamRooms() {
           {/* ================= CỘT 1 (BÊN TRÁI): BẢNG LỊCH KIỂM TRA TẬP TRUNG ================= */}
           <div style={{
             background: '#ffffff',
-            borderRadius: '16px',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+            borderRadius: '12px',
+            border: '1px solid #cbd5e1',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
             overflow: 'hidden'
           }}>
+            {/* TIÊU NGỮ HÀNH CHÍNH QUỐC GIA CHUẨN VĂN BẢN TRƯỜNG */}
             <div style={{
-              background: '#f8fafc',
-              padding: '16px 20px',
+              padding: '18px 20px 14px',
               borderBottom: '1px solid #e2e8f0',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center'
+              background: '#ffffff'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={18} color="#0284c7" />
-                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '900', color: '#0f172a' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px', textAlign: 'center' }}>
+                <div style={{ textAlign: 'center', minWidth: '180px' }}>
+                  <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#334155', fontWeight: '600' }}>
+                    SỞ GIÁO DỤC VÀ ĐÀO TẠO TỈNH ĐẮK LẮK
+                  </div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#0f172a', textTransform: 'uppercase' }}>
+                    TRƯỜNG THPT CAO BÁ QUÁT
+                  </div>
+                  <div style={{ width: '80px', height: '1px', background: '#334155', margin: '2px auto 0' }} />
+                </div>
+
+                <div style={{ textAlign: 'center', minWidth: '200px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase', color: '#0f172a' }}>
+                    CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#0f172a', fontStyle: 'italic', fontWeight: '600' }}>
+                    Độc lập - Tự do - Hạnh phúc
+                  </div>
+                  <div style={{ width: '100px', height: '1px', background: '#334155', margin: '2px auto 0' }} />
+                </div>
+              </div>
+
+              <div style={{ textAlign: 'center', marginTop: '14px' }}>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '15.5px',
+                  fontWeight: 'bold',
+                  color: '#0f172a',
+                  textTransform: 'uppercase',
+                  fontFamily: '"Times New Roman", Times, serif'
+                }}>
                   LỊCH KIỂM TRA TẬP TRUNG GIỮA HỌC KỲ I
                 </h2>
               </div>
-              <span style={{ fontSize: '12px', background: '#e0f2fe', color: '#0369a1', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
-                {filteredSchedule.length} Môn thi
-              </span>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'center', border: '1px solid #cbd5e1' }}>
                 <thead>
-                  <tr style={{ background: '#f1f5f9', borderBottom: '2px solid #cbd5e1', color: '#334155' }}>
-                    <th style={{ padding: '10px 8px', fontWeight: 'bold', width: '90px' }}>Ngày</th>
-                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '65px' }}>Buổi</th>
-                    <th style={{ padding: '10px 10px', fontWeight: 'bold', textAlign: 'left' }}>Bài thi/Môn thi</th>
-                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '70px' }}>Khối</th>
-                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '75px' }}>Thời gian</th>
-                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '80px' }}>Giờ phát đề</th>
-                    <th style={{ padding: '10px 6px', fontWeight: 'bold', width: '80px' }}>Giờ làm bài</th>
-                    <th style={{ padding: '10px 10px', fontWeight: 'bold', textAlign: 'left' }}>Hình thức</th>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1.5px solid #94a3b8', color: '#0f172a' }}>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '85px' }}>Ngày</th>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '60px' }}>Buổi</th>
+                    <th style={{ padding: '8px 8px', fontWeight: 'bold', border: '1px solid #cbd5e1', textAlign: 'left' }}>Bài thi/Môn thi</th>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '65px' }}>Khối</th>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '70px' }}>Thời gian làm bài</th>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '75px' }}>Giờ phát đề cho thí sinh</th>
+                    <th style={{ padding: '8px 6px', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '75px' }}>Giờ bắt đầu làm bài</th>
+                    <th style={{ padding: '8px 8px', fontWeight: 'bold', border: '1px solid #cbd5e1', textAlign: 'left' }}>Hình thức</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -310,23 +354,23 @@ export default function PublicExamRooms() {
                       <tr 
                         key={idx} 
                         style={{ 
-                          borderBottom: '1px solid #f1f5f9',
-                          background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                          borderBottom: '1px solid #cbd5e1',
+                          background: idx % 2 === 0 ? '#ffffff' : '#fcfcfc',
                           transition: 'background 0.15s'
                         }}
                       >
-                        <td style={{ padding: '10px 8px', fontWeight: 'bold', color: '#0f172a' }}>{s.date}</td>
-                        <td style={{ padding: '10px 6px', color: s.session === 'Sáng' ? '#d97706' : '#0284c7', fontWeight: 'bold' }}>{s.session}</td>
-                        <td style={{ padding: '10px 10px', fontWeight: 'bold', color: '#1e293b', textAlign: 'left' }}>{s.subject}</td>
-                        <td style={{ padding: '10px 6px' }}>
-                          <span style={{ background: '#e2e8f0', color: '#334155', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                        <td style={{ padding: '8px 6px', fontWeight: 'bold', color: '#0f172a', border: '1px solid #cbd5e1' }}>{s.date}</td>
+                        <td style={{ padding: '8px 6px', color: '#0f172a', fontWeight: '600', textTransform: 'uppercase', border: '1px solid #cbd5e1' }}>{s.session}</td>
+                        <td style={{ padding: '8px 8px', fontWeight: 'bold', color: '#0f172a', textAlign: 'left', border: '1px solid #cbd5e1' }}>{s.subject}</td>
+                        <td style={{ padding: '8px 6px', border: '1px solid #cbd5e1' }}>
+                          <span style={{ color: '#0f172a', fontWeight: 'bold' }}>
                             {s.grade}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 6px', color: '#64748b' }}>{s.duration}</td>
-                        <td style={{ padding: '10px 6px', color: '#475569' }}>{s.dispatchTime}</td>
-                        <td style={{ padding: '10px 6px', color: '#16a34a', fontWeight: 'bold' }}>{s.startTime}</td>
-                        <td style={{ padding: '10px 10px', textAlign: 'left', color: '#475569', fontSize: '12px' }}>{s.format}</td>
+                        <td style={{ padding: '8px 6px', color: '#334155', border: '1px solid #cbd5e1' }}>{s.duration}</td>
+                        <td style={{ padding: '8px 6px', color: '#334155', border: '1px solid #cbd5e1' }}>{s.dispatchTime}</td>
+                        <td style={{ padding: '8px 6px', color: '#0f172a', fontWeight: 'bold', border: '1px solid #cbd5e1' }}>{s.startTime}</td>
+                        <td style={{ padding: '8px 8px', textAlign: 'left', color: '#334155', border: '1px solid #cbd5e1', fontSize: '12px' }}>{s.format}</td>
                       </tr>
                     ))
                   )}
@@ -335,126 +379,167 @@ export default function PublicExamRooms() {
             </div>
 
             {/* QUY ĐỊNH PHÒNG THI DÀNH CHO THÍ SINH */}
-            <div style={{ background: '#fffbeb', borderTop: '1px solid #fef3c7', padding: '14px 18px', fontSize: '12.5px', color: '#92400e', lineHeight: 1.5 }}>
+            <div style={{ background: '#fffbeb', borderTop: '1px solid #fef3c7', padding: '12px 16px', fontSize: '12px', color: '#92400e', lineHeight: 1.5 }}>
               <strong>⚠️ Chú ý:</strong> {currentSession?.notice}
             </div>
           </div>
 
-          {/* ================= CỘT 2 (BÊN PHẢI): DANH SÁCH PHÒNG THI & TẢI FILE PDF ================= */}
+          {/* ================= CỘT 2 (BÊN PHẢI): DANH SÁCH PHÒNG THI CHUẨN GOOGLE SITES ================= */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             
             <div style={{
               background: '#ffffff',
-              borderRadius: '16px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 15px rgba(0,0,0,0.05)',
+              borderRadius: '12px',
+              border: '1px solid #cbd5e1',
+              boxShadow: '0 4px 15px rgba(0,0,0,0.04)',
               padding: '20px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                <FileText size={20} color="#dc2626" />
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>
-                  DANH SÁCH PHÒNG THI
-                </h2>
-              </div>
-              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
-                Các em <strong>CLICK CHUỘT</strong> vào để xem danh sách phòng thi các môn Giữa HKI:
+              <h2 style={{
+                margin: '0 0 10px',
+                fontSize: '22px',
+                fontWeight: '900',
+                color: '#0f172a',
+                textAlign: 'center',
+                fontFamily: '"Times New Roman", Times, serif',
+                letterSpacing: '0.5px'
+              }}>
+                DANH SÁCH PHÒNG THI
+              </h2>
+              
+              <p style={{
+                margin: '0 0 16px',
+                fontSize: '13px',
+                color: '#1e293b',
+                lineHeight: 1.6
+              }}>
+                Các em <strong>CLICK CHUỘT</strong> vào để xem danh sách các môn thi Giữa HKI dành cho <strong>{selectedGradeFilter === 'all' ? 'Khối 10' : selectedGradeFilter}</strong>:
               </p>
 
-              {/* DANH SÁCH FILE PDF THEO FORM CỦA TRƯỜNG */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {filteredPdfDocs.map(doc => (
-                  <div
-                    key={doc.id}
-                    style={{
-                      background: '#f8fafc',
-                      border: '1.5px solid #e2e8f0',
-                      borderRadius: '12px',
-                      padding: '14px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <div style={{
-                        width: '42px',
-                        height: '42px',
-                        borderRadius: '10px',
-                        background: '#fee2e2',
-                        color: '#dc2626',
-                        display: 'flex',
+              {/* BẢNG TẬP TIN PDF CHUẨN THEO ĐÚNG GOOGLE SITES CỦA TRƯỜNG */}
+              <div style={{
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                overflow: 'hidden',
+                background: '#ffffff'
+              }}>
+                {/* TIÊU ĐỀ CỘT CHUẨN GOOGLE SITES: TỰA ĐỀ | SỬA ĐỔI LẦN CUỐI */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 180px',
+                  background: '#f8fafc',
+                  padding: '9px 14px',
+                  borderBottom: '1px solid #cbd5e1',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: '#475569',
+                  textTransform: 'uppercase'
+                }}>
+                  <div>TỰA ĐỀ</div>
+                  <div style={{ textAlign: 'right' }}>SỬA ĐỔI LẦN CUỐI</div>
+                </div>
+
+                {/* DANH SÁCH FILE PDF THEO FORM CỦA THẦY XUÂN BẢO NGHIÊM */}
+                <div>
+                  {filteredPdfDocs.map((doc, idx) => (
+                    <div
+                      key={doc.id}
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: '1fr 180px',
+                        padding: '12px 14px',
+                        borderBottom: idx < filteredPdfDocs.length - 1 ? '1px solid #f1f5f9' : 'none',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        fontWeight: '900',
-                        fontSize: '12px',
-                        flexShrink: 0
-                      }}>
-                        PDF
-                      </div>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 'bold', color: '#1e293b' }}>
-                          {doc.title}
-                        </h3>
-                        <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '3px' }}>
-                          Sửa đổi lần cuối: <strong>{doc.lastModified} {doc.author}</strong>
+                        gap: '10px',
+                        background: '#ffffff',
+                        transition: 'background 0.15s',
+                        cursor: 'pointer'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                      onClick={() => setPreviewPdfModal(doc)}
+                    >
+                      {/* CỘT TỰA ĐỀ CÓ ICON PDF ĐỎ ĐẶC TRƯNG */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        <div style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '6px',
+                          background: '#dc2626',
+                          color: '#ffffff',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 'bold',
+                          fontSize: '9.5px',
+                          letterSpacing: '0.5px',
+                          flexShrink: 0
+                        }}>
+                          PDF
+                        </div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{
+                            fontSize: '13px',
+                            fontWeight: '600',
+                            color: '#1d4ed8',
+                            textDecoration: 'none',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}>
+                            {doc.title}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>
+                            {doc.size || '1.2 MB'} • Nhấp để xem hoặc tải
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <button
-                        onClick={() => setPreviewPdfModal(doc)}
-                        style={{
-                          padding: '7px 12px',
-                          background: '#ffffff',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: '#334155',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '4px'
-                        }}
-                        title="Xem trước tài liệu"
-                      >
-                        <Eye size={13} /> Xem
-                      </button>
-                      <button
-                        onClick={() => handleDownloadPdf(doc)}
-                        style={{
-                          padding: '7px 14px',
-                          background: '#dc2626',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          color: '#ffffff',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '5px',
-                          boxShadow: '0 2px 8px rgba(220, 38, 38, 0.25)'
-                        }}
-                      >
-                        <Download size={13} /> Tải
-                      </button>
+                      {/* CỘT SỬA ĐỔI LẦN CUỐI: GIỜ & TÁC GIẢ (VD: 18:24 XUÂN BẢO NGHIÊM) */}
+                      <div style={{ textAlign: 'right', fontSize: '12px', color: '#475569', whiteSpace: 'nowrap' }}>
+                        <span style={{ fontWeight: '600', color: '#1e293b' }}>{doc.lastModified}</span> {doc.author}
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* NÚT THAO TÁC XEM VÀ TẢI NHANH */}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap' }}>
+                {filteredPdfDocs.map(doc => (
+                  <button
+                    key={'dl-' + doc.id}
+                    onClick={() => handleDownloadPdf(doc)}
+                    style={{
+                      padding: '7px 14px',
+                      background: '#f1f5f9',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: '#0f172a',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      transition: 'all 0.15s'
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#e2e8f0'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = '#f1f5f9'; }}
+                    title={`Tải file ${doc.title} (tự động có tiền tố 1- theo quy chuẩn)`}
+                  >
+                    <Download size={13} color="#dc2626" /> Tải {doc.grade} (1-...)
+                  </button>
                 ))}
               </div>
 
               {/* CARD GIẢI THÍCH CHUẨN BỊ CHO KỲ THI TIẾP THEO */}
               <div style={{
-                marginTop: '18px',
+                marginTop: '16px',
                 background: '#f0fdf4',
                 border: '1px solid #bbf7d0',
-                borderRadius: '10px',
+                borderRadius: '8px',
                 padding: '12px 14px',
-                fontSize: '12.5px',
+                fontSize: '12px',
                 color: '#166534',
                 display: 'flex',
                 gap: '10px',
@@ -467,72 +552,70 @@ export default function PublicExamRooms() {
               </div>
             </div>
 
-            {/* TRƯỜNG HỢP BAN KHẢO THÍ ĐÃ BẬT CÔNG BỐ PHÒNG THI ONLINE (isPublished === true) */}
-            {isOnlinePublished && (
-              <div style={{
-                background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)',
-                color: '#ffffff',
-                borderRadius: '16px',
-                padding: '20px',
-                boxShadow: '0 8px 25px rgba(30, 58, 138, 0.25)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                  <Sparkles size={18} color="#38bdf8" />
-                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '900', color: '#ffffff' }}>
-                    TRA CỨU SỐ BÁO DANH TRỰC TUYẾN ({roomsData?.gradeLevel || 'CHÍNH THỨC'})
-                  </h3>
-                </div>
-                <p style={{ margin: '0 0 12px', fontSize: '12.5px', color: '#94a3b8' }}>
-                  Nhập tên hoặc mã học sinh để xem phòng thi và chỗ ngồi cá nhân:
-                </p>
-
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="text"
-                    placeholder="🔍 Nhập họ tên học sinh hoặc mã học sinh..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px 10px 36px',
-                      borderRadius: '8px',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      background: 'rgba(0,0,0,0.3)',
-                      color: '#ffffff',
-                      fontSize: '13px',
-                      outline: 'none',
-                      boxSizing: 'border-box'
-                    }}
-                  />
-                  <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-                </div>
-
-                {searchQuery.trim().length > 0 && (
-                  <div style={{ marginTop: '10px', background: '#ffffff', color: '#0f172a', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', padding: '4px' }}>
-                    {searchResults.length === 0 ? (
-                      <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
-                        Không tìm thấy thí sinh nào khớp từ khóa.
-                      </div>
-                    ) : (
-                      searchResults.map(c => (
-                        <div
-                          key={c.sbd}
-                          onClick={() => { setSelectedCandidate(c); setSearchQuery(''); }}
-                          style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}
-                        >
-                          <div>
-                            <strong>{c.student_name}</strong> - Lớp {c.student_class}
-                          </div>
-                          <div style={{ color: '#0284c7', fontWeight: 'bold' }}>
-                            SBD: {c.sbd} • {c.roomName}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
+            {/* TIỆN ÍCH TRA CỨU SỐ BÁO DANH TRỰC TUYẾN DÀNH CHO HỌC SINH */}
+            <div style={{
+              background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+              color: '#ffffff',
+              borderRadius: '12px',
+              padding: '18px 20px',
+              boxShadow: '0 8px 25px rgba(15, 23, 42, 0.2)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <Sparkles size={16} color="#38bdf8" />
+                <h3 style={{ margin: 0, fontSize: '14.5px', fontWeight: 'bold', color: '#ffffff' }}>
+                  TRA CỨU SỐ BÁO DANH TRỰC TUYẾN 4.0
+                </h3>
               </div>
-            )}
+              <p style={{ margin: '0 0 12px', fontSize: '12px', color: '#94a3b8' }}>
+                Nhập họ tên hoặc mã học sinh để xem phòng thi và vị trí bàn thi cá nhân nhanh chóng:
+              </p>
+
+              <div style={{ position: 'relative' }}>
+                <input
+                  type="text"
+                  placeholder="🔍 Nhập họ tên học sinh hoặc mã học sinh..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px 10px 36px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(255,255,255,0.3)',
+                    background: 'rgba(0,0,0,0.3)',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    outline: 'none',
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              </div>
+
+              {searchQuery.trim().length > 0 && (
+                <div style={{ marginTop: '10px', background: '#ffffff', color: '#0f172a', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto', padding: '4px' }}>
+                  {searchResults.length === 0 ? (
+                    <div style={{ padding: '10px', textAlign: 'center', fontSize: '12px', color: '#64748b' }}>
+                      Không tìm thấy thí sinh nào khớp từ khóa "{searchQuery}".
+                    </div>
+                  ) : (
+                    searchResults.map(c => (
+                      <div
+                        key={c.sbd}
+                        onClick={() => { setSelectedCandidate(c); setSearchQuery(''); }}
+                        style={{ padding: '8px 10px', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}
+                      >
+                        <div>
+                          <strong>{c.student_name}</strong> - Lớp {c.student_class}
+                        </div>
+                        <div style={{ color: '#0284c7', fontWeight: 'bold' }}>
+                          SBD: {c.sbd} • {c.roomName}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
 
           </div>
 

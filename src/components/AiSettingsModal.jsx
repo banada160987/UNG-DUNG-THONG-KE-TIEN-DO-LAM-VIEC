@@ -14,7 +14,7 @@ import {
 
 export default function AiSettingsModal({ isOpen, onClose }) {
   const [apiKeyInput, setApiKeyInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState('gemini-1.5-flash');
+  const [selectedModel, setSelectedModel] = useState('gemini-2.5-flash');
   const [keySource, setKeySource] = useState('none');
   const [showKey, setShowKey] = useState(false);
   const [testing, setTesting] = useState(false);

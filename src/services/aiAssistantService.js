@@ -6,11 +6,13 @@
  */
 
 export const AI_MODELS = [
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Khuyên dùng - Ổn định)', desc: 'Siêu tốc, ổn định tuyệt đối, miễn phí 100%, phản hồi < 1 giây' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Chuyên sâu)', desc: 'Xử lý tài liệu dài, bài toán khó và ma trận đề thi phức tạp' }
+  { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash (Khuyên dùng - Ổn định & Siêu tốc)', desc: 'Phản hồi cực nhanh (<1s), thông minh vượt trội, chuẩn Google AI mới nhất' },
+  { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash Lite (Tức thì)', desc: 'Tốc độ tối ưu cho trắc nghiệm và phản hồi nhanh' },
+  { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro (Chuyên sâu)', desc: 'Xử lý ma trận đề thi phức tạp và văn bản hành chính dài' },
+  { id: 'gemini-3.8-flash', name: 'Gemini 3.8 Flash (Thế hệ mới)', desc: 'Mô hình tiên tiến đa phương thức cho tác vụ nâng cao' }
 ];
 
-const DEFAULT_MODEL = 'gemini-1.5-flash';
+const DEFAULT_MODEL = 'gemini-2.5-flash';
 const STORAGE_KEY = 'cbq_ai_api_key';
 const STORAGE_MODEL_KEY = 'cbq_ai_model';
 
@@ -58,12 +60,13 @@ export function getAiKeySource() {
 export function getStoredAiModel() {
   try {
     const saved = localStorage.getItem(STORAGE_MODEL_KEY);
-    if (saved && saved !== 'gemini-2.0-flash' && AI_MODELS.some(m => m.id === saved)) {
-      return saved;
-    }
-    // Nếu trước đó đang lưu gemini-2.0-flash (đã bị Google khai tử), tự động dọn dẹp sang gemini-1.5-flash
-    if (saved === 'gemini-2.0-flash') {
+    // Nếu trước đó đang lưu model cũ bị Google khai tử (1.5 hoặc 2.0), tự động chuyển sang gemini-2.5-flash
+    if (saved && (saved.includes('1.5') || saved.includes('2.0') || !AI_MODELS.some(m => m.id === saved))) {
       localStorage.setItem(STORAGE_MODEL_KEY, DEFAULT_MODEL);
+      return DEFAULT_MODEL;
+    }
+    if (saved && AI_MODELS.some(m => m.id === saved)) {
+      return saved;
     }
   } catch (e) {}
   return DEFAULT_MODEL;
@@ -74,7 +77,7 @@ export function getStoredAiModel() {
  */
 export function saveStoredAiKey(key, model = DEFAULT_MODEL) {
   try {
-    const safeModel = (model === 'gemini-2.0-flash') ? DEFAULT_MODEL : model;
+    const safeModel = (model && (model.includes('1.5') || model.includes('2.0'))) ? DEFAULT_MODEL : (model || DEFAULT_MODEL);
     if (key && key.trim()) {
       localStorage.setItem(STORAGE_KEY, key.trim());
     } else {
@@ -93,13 +96,23 @@ export function saveStoredAiKey(key, model = DEFAULT_MODEL) {
 }
 
 /**
- * Kiểm tra kết nối API Key trực tiếp với Google Gemini
+ * Danh sách cascade các model Google Gemini khả dụng để tự động fallback
+ */
+export const GEMINI_CASCADE_MODELS = [
+  'gemini-2.5-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-pro',
+  'gemini-3.8-flash'
+];
+
+/**
+ * Kiểm tra kết nối API Key trực tiếp với Google Gemini (Tự động thử cascade qua các model khả dụng)
  */
 export async function testGeminiConnection(customKey = null, customModel = null) {
   const apiKey = (customKey !== null ? customKey : getStoredAiKey())?.trim();
-  let model = customModel || getStoredAiModel();
-  if (model === 'gemini-2.0-flash') {
-    model = 'gemini-1.5-flash';
+  let requestedModel = customModel || getStoredAiModel();
+  if (requestedModel.includes('1.5') || requestedModel.includes('2.0')) {
+    requestedModel = DEFAULT_MODEL;
   }
 
   if (!apiKey) {
@@ -109,85 +122,78 @@ export async function testGeminiConnection(customKey = null, customModel = null)
     };
   }
 
-  const startTime = Date.now();
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const testModels = [requestedModel, ...GEMINI_CASCADE_MODELS.filter(m => m !== requestedModel)];
+  let lastErrorMsg = '';
+  let fastestLatency = 0;
 
-  try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: 'Chào bạn, hãy phản hồi đúng 5 từ: "Trợ lý AI THPT Cao Bá Quát sẵn sàng."' }]
+  for (const modelToTry of testModels) {
+    const startTime = Date.now();
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTry}:generateContent?key=${apiKey}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: 'user',
+              parts: [{ text: 'Chào bạn, hãy phản hồi đúng 5 từ: "Trợ lý AI THPT Cao Bá Quát sẵn sàng."' }]
+            }
+          ],
+          generationConfig: {
+            temperature: 0.1,
+            maxOutputTokens: 60
           }
-        ],
-        generationConfig: {
-          temperature: 0.1,
-          maxOutputTokens: 60
-        }
-      })
-    });
+        })
+      });
 
-    const latencyMs = Date.now() - startTime;
+      fastestLatency = Date.now() - startTime;
 
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const errMsg = errData.error?.message || `Mã lỗi HTTP ${response.status}`;
+      if (response.ok) {
+        const data = await response.json();
+        const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-      // Tự động chuyển vùng sang gemini-1.5-flash nếu model cũ bị Google khai tử
-      if (model !== 'gemini-1.5-flash' && (errMsg.includes('no longer available') || errMsg.includes('not found') || response.status === 404)) {
-        console.warn(`Model ${model} không còn khả dụng trên Google API (${errMsg}), tự động chuyển sang gemini-1.5-flash`);
-        saveStoredAiKey(apiKey, 'gemini-1.5-flash');
-        return testGeminiConnection(apiKey, 'gemini-1.5-flash');
+        // Tự động lưu mô hình hoạt động tốt nhất vào bộ nhớ
+        saveStoredAiKey(apiKey, modelToTry);
+
+        return {
+          success: true,
+          latencyMs: fastestLatency,
+          model: modelToTry,
+          replyText: replyText.trim(),
+          message: `Kết nối thành công với ${modelToTry}! Độ trễ phản hồi: ${fastestLatency}ms.`
+        };
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        lastErrorMsg = errData.error?.message || `Mã lỗi HTTP ${response.status}`;
+        console.warn(`[Gemini Connection Test] Model ${modelToTry} thất bại: ${lastErrorMsg}, đang thử model tiếp theo...`);
       }
-
-      return {
-        success: false,
-        latencyMs,
-        error: `Kết nối không thành công (${errMsg}). Vui lòng kiểm tra lại Key từ Google AI Studio.`
-      };
+    } catch (netErr) {
+      lastErrorMsg = netErr.message || 'Lỗi mạng';
     }
-
-    const data = await response.json();
-    const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    // Cập nhật lại model chuẩn vào storage nếu trước đó đang chọn model cũ
-    if (model !== getStoredAiModel()) {
-      saveStoredAiKey(apiKey, model);
-    }
-
-    return {
-      success: true,
-      latencyMs,
-      model,
-      replyText: replyText.trim(),
-      message: `Kết nối thành công với ${model}! Độ trễ phản hồi: ${latencyMs}ms.`
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: 'Không thể kết nối đến máy chủ Google Gemini. Vui lòng kiểm tra kết nối Internet.'
-    };
   }
+
+  return {
+    success: false,
+    latencyMs: fastestLatency,
+    error: `Kết nối không thành công (${lastErrorMsg}). Vui lòng kiểm tra lại Key từ Google AI Studio.`
+  };
 }
 
 /**
- * GỌI TRỰC TIẾP GOOGLE GEMINI AI VỚI NỘI DUNG TÙY BIẾN
+ * GỌI TRỰC TIẾP GOOGLE GEMINI AI VỚI NỘI DUNG TÙY BIẾN (TỰ ĐỘNG CASCADE FALLBACK AN TOÀN)
  */
 export async function callGeminiRaw({ prompt, systemInstruction = '', temperature = 0.4, jsonMode = false, model = null }) {
   const apiKey = getStoredAiKey();
   let targetModel = model || getStoredAiModel();
-  if (targetModel === 'gemini-2.0-flash') {
-    targetModel = 'gemini-1.5-flash';
+  if (targetModel.includes('1.5') || targetModel.includes('2.0')) {
+    targetModel = DEFAULT_MODEL;
   }
 
   if (!apiKey) {
     throw new Error('Chưa cấu hình API Key. Thầy/Cô vui lòng bấm biểu tượng Trợ lý AI để gán Key miễn phí từ Google AI Studio.');
   }
-
-  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${targetModel}:generateContent?key=${apiKey}`;
 
   const bodyPayload = {
     contents: [
@@ -211,37 +217,33 @@ export async function callGeminiRaw({ prompt, systemInstruction = '', temperatur
     bodyPayload.generationConfig.responseMimeType = 'application/json';
   }
 
-  let response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bodyPayload)
-  });
+  const modelsToTry = [targetModel, ...GEMINI_CASCADE_MODELS.filter(m => m !== targetModel)];
+  let lastError = null;
 
-  if (!response.ok) {
-    const errData = await response.json().catch(() => ({}));
-    const errMsg = errData.error?.message || '';
-
-    // Tự động chuyển đổi sang gemini-1.5-flash nếu model truyền vào không khả dụng
-    if (targetModel !== 'gemini-1.5-flash' && (errMsg.includes('no longer available') || errMsg.includes('not found') || response.status === 404)) {
-      console.warn(`Model ${targetModel} không khả dụng, tự động chuyển về gemini-1.5-flash`);
-      saveStoredAiKey(apiKey, 'gemini-1.5-flash');
-      const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-      response = await fetch(fallbackEndpoint, {
+  for (const curModel of modelsToTry) {
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${curModel}:generateContent?key=${apiKey}`;
+    try {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyPayload)
       });
-    }
 
-    if (!response.ok) {
-      const finalErr = await response.json().catch(() => ({}));
-      throw new Error(finalErr.error?.message || `Lỗi gọi Gemini API (HTTP ${response.status})`);
+      if (response.ok) {
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        return text.trim();
+      }
+
+      const errData = await response.json().catch(() => ({}));
+      lastError = new Error(errData.error?.message || `Lỗi gọi Gemini API (HTTP ${response.status})`);
+      console.warn(`[callGeminiRaw] Model ${curModel} không phản hồi (${lastError.message}), chuyển sang fallback...`);
+    } catch (fetchErr) {
+      lastError = fetchErr;
     }
   }
 
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  return text.trim();
+  throw lastError || new Error('Không thể kết nối đến máy chủ Google Gemini.');
 }
 
 /**

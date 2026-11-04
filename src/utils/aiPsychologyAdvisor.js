@@ -163,7 +163,7 @@ export async function callGeminiChat(messages = [], systemPrompt = CBQ_SYSTEM_IN
     contents.push({ role: 'user', parts: [{ text: 'Xin chào Trợ lý AI CBQ' }] });
   }
 
-  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
+  const models = ['gemini-2.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-pro', 'gemini-3.8-flash'];
 
   for (const model of models) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
@@ -531,7 +531,7 @@ YÊU CẦU:
 
   if (apiKey) {
     try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
