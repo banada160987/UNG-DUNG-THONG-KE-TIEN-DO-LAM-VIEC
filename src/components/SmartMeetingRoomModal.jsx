@@ -1982,6 +1982,30 @@ export default function SmartMeetingRoomModal({
                   >
                     <FileText size={16} /> Xuất Biên Bản Word (NĐ 30)
                   </button>
+
+                  <a
+                    href="/admin/bien-ban-hop-ai"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      padding: '10px 14px',
+                      backgroundColor: '#e11d48',
+                      color: '#fff',
+                      borderRadius: '8px',
+                      fontWeight: 'bold',
+                      fontSize: '12.5px',
+                      textDecoration: 'none',
+                      marginTop: '8px',
+                      boxShadow: '0 2px 6px rgba(225, 29, 72, 0.25)'
+                    }}
+                    title="Mở Trợ lý Thư ký AI: Ghi âm trực tuyến & Soạn thoại biên bản tự động bóc tách diễn giả"
+                  >
+                    <Mic size={15} /> 🎙️ Mở Studio Ghi Âm & Soạn Biên Bản AI
+                  </a>
                 </div>
               )}
             </div>

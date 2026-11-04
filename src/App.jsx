@@ -111,6 +111,7 @@ const AdminCanteenManager = lazy(() => import('./pages/admin/AdminCanteenManager
 const PublicServicesPortal = lazy(() => import('./pages/public/PublicServicesPortal'));
 const AdminPublicServices = lazy(() => import('./pages/admin/AdminPublicServices'));
 const InternalChatPage = lazy(() => import('./pages/InternalChatPage'));
+const AdminAiMeetingMinutes = lazy(() => import('./pages/AdminAiMeetingMinutes'));
 import FacebookMessengerWidget from './components/FacebookMessengerWidget';
 import ScrollToTopButton from './components/ScrollToTopButton';
 
@@ -148,6 +149,9 @@ function App() {
           <Route path="/admin/decree30-formatter" element={<Decree30DocFormatter />} />
           <Route path="/chat" element={<InternalChatPage />} />
           <Route path="/tin-nhan" element={<InternalChatPage />} />
+          <Route path="/bien-ban-hop-ai" element={<AdminAiMeetingMinutes />} />
+          <Route path="/giao-vien/bien-ban-hop-ai" element={<AdminAiMeetingMinutes />} />
+          <Route path="/tro-ly-thu-ky-ai" element={<AdminAiMeetingMinutes />} />
 
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>
@@ -234,6 +238,8 @@ function App() {
             <Route path="/giao-vien/tien-ich-thong-minh" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
             <Route path="/teacher/smart-utilities" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
             <Route path="/teacher-dashboard/smart-utilities" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
+            <Route path="/teacher/bien-ban-hop-ai" element={<TeacherRoute><AdminAiMeetingMinutes /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/bien-ban-hop-ai" element={<TeacherRoute><AdminAiMeetingMinutes /></TeacherRoute>} />
 
             {/* Teacher Route Aliases */}
             <Route path="/teacher/lesson-plans" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
@@ -316,6 +322,8 @@ function App() {
               <Route path="/admin/hom-thu-hoc-sinh" element={(role === 'admin' || role === 'secretary' || permissions.canViewFeedback || permissions.canViewStudents) ? <AdminStudentAspirations /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/diem-danh-hop-online" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminMeetingAttendance /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/hop-online" element={<Navigate to="/admin/diem-danh-hop-online" replace />} />
+              <Route path="/admin/bien-ban-hop-ai" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminAiMeetingMinutes /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/ai-meeting-minutes" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminAiMeetingMinutes /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/truyen-lua-control" element={(role === 'admin' || role === 'secretary' || permissions.canViewPages) ? <AdminTorchControl /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/so-dau-bai" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/class-journals" element={(role === 'admin' || role === 'secretary' || permissions.canViewStudents) ? <ClassJournal /> : <Navigate to="/admin/committee" replace />} />

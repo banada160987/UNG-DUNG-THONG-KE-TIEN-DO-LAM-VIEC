@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { 
   Users, Video, Clock, CheckCircle2, AlertCircle, XCircle, 
   Download, Printer, MessageSquare, Plus, Edit3, Trash2, 
   ExternalLink, Copy, Check, RefreshCw, Eye, ShieldCheck, 
-  FileText, QrCode, Play, Square, Award, Filter, Search, ChevronDown, ChevronRight
+  FileText, QrCode, Play, Square, Award, Filter, Search, ChevronDown, ChevronRight, Mic
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { OnlineMeetingService, DEFAULT_DEPARTMENTS } from '../services/onlineMeetingService';
@@ -1180,6 +1181,19 @@ export default function AdminMeetingAttendance() {
                 >
                   <Printer size={16} /> 📄 Biên Bản (NĐ 30)
                 </button>
+
+                <Link
+                  to="/admin/bien-ban-hop-ai"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
+                    backgroundColor: '#e11d48', color: '#fff', border: 'none', borderRadius: '8px',
+                    fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', textDecoration: 'none',
+                    boxShadow: '0 2px 8px rgba(225, 29, 72, 0.3)'
+                  }}
+                  title="Soạn thảo biên bản cuộc họp thông qua ghi âm trực tuyến tích hợp AI & Nghị định 30"
+                >
+                  <Mic size={16} /> 🎙️ Soạn Biên Bản AI (Voice)
+                </Link>
 
                 <button
                   onClick={exportExcelPro}

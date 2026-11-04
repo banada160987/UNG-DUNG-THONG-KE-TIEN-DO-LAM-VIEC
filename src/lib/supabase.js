@@ -1,12 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabase1Url = import.meta.env.VITE_SUPABASE_URL;
-const supabase1AnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase1ServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : (typeof process !== 'undefined' ? process.env : {});
 
-const supabase2Url = import.meta.env.VITE_SUPABASE_2_URL;
-const supabase2AnonKey = import.meta.env.VITE_SUPABASE_2_ANON_KEY;
-const supabase2ServiceKey = import.meta.env.VITE_SUPABASE_2_SERVICE_ROLE_KEY;
+const supabase1Url = env.VITE_SUPABASE_URL;
+const supabase1AnonKey = env.VITE_SUPABASE_ANON_KEY;
+const supabase1ServiceKey = env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+const supabase2Url = env.VITE_SUPABASE_2_URL;
+const supabase2AnonKey = env.VITE_SUPABASE_2_ANON_KEY;
+const supabase2ServiceKey = env.VITE_SUPABASE_2_SERVICE_ROLE_KEY;
 
 // 🟢 CHẾ ĐỘ FAILOVER DỰ PHÒNG CHUYỂN VÙNG TỰ ĐỘNG:
 // Supabase 1 bị khóa (HTTP 402 Egress Exceeded). Toàn bộ ứng dụng sẽ được tự động chuyển sang sử dụng Supabase 2!
@@ -21,11 +23,11 @@ if (!primaryUrl || !primaryAnonKey) {
 }
 
 // Client thông thường (Dành cho tất cả các trang - Đã tự động chuyển sang Supabase 2)
-export const supabase = createClient(primaryUrl || '', primaryAnonKey || '');
+export const supabase = createClient(primaryUrl || 'https://mock-supabase-cbq.supabase.co', primaryAnonKey || 'mock-anon-key');
 
 // Client Admin đặc quyền Service Role (Đã tự động chuyển sang Supabase 2)
 export const supabaseAdmin = primaryServiceKey 
-  ? createClient(primaryUrl, primaryServiceKey, {
+  ? createClient(primaryUrl || 'https://mock-supabase-cbq.supabase.co', primaryServiceKey, {
       auth: {
         persistSession: false,
         autoRefreshToken: false

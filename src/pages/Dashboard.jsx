@@ -6,7 +6,7 @@ import {
   FolderOpen, Award, Users, Calendar, FileText, LayoutDashboard, 
   Bike, Bus, QrCode, MessageSquare, Download, Trophy, Sparkles, 
   BookOpen, CheckCircle, Clock, AlertTriangle, Plus, ChevronRight, ShieldCheck,
-  GitBranch, Activity
+  GitBranch, Activity, Mic
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import TaskModal from '../components/TaskModal';
@@ -264,6 +264,16 @@ export default function Dashboard() {
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: '#6b21a8' }}>Tra Cứu Học Bạ Số</div>
                     <div style={{ fontSize: '11px', color: '#9333ea' }}>Sổ sách & Văn bằng</div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/bien-ban-hop-ai" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <Mic size={20} color="#e11d48" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#9f1239' }}>🎙️ Thư Ký AI: Biên Bản Họp</div>
+                    <div style={{ fontSize: '11px', color: '#e11d48' }}>Ghi âm & Soạn NĐ 30</div>
                   </div>
                 </div>
               </Link>
