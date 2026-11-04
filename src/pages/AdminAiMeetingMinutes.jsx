@@ -4,7 +4,8 @@ import {
   Mic, MicOff, Square, Play, Pause, RefreshCw, Sparkles, 
   FileText, Download, Save, CheckCircle2, AlertCircle, Clock, 
   Users, MapPin, Award, Upload, ChevronRight, Edit3, Trash2, 
-  Volume2, ShieldCheck, FileSpreadsheet, Eye, Copy, Check, MessageSquare
+  Volume2, ShieldCheck, FileSpreadsheet, Eye, Copy, Check, MessageSquare,
+  X, HelpCircle, ShieldAlert
 } from 'lucide-react';
 import { 
   synthesizeMeetingMinutesAi, 
@@ -30,6 +31,8 @@ export default function AdminAiMeetingMinutes() {
   const [liveInterimText, setLiveInterimText] = useState('');
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
+  const [showMicrophoneGuide, setShowMicrophoneGuide] = useState(false);
+  const [micErrorInfo, setMicErrorInfo] = useState(null);
 
   // Trạng thái AI
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
@@ -120,6 +123,19 @@ export default function AdminAiMeetingMinutes() {
 
   // ==================== BẮT ĐẦU GHI ÂM & NHẬN DIỆN GIỌNG NÓI ====================
   const startRecording = async () => {
+    // 0. Kiểm tra hỗ trợ của trình duyệt & Secure Context (HTTPS / localhost)
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMicErrorInfo({
+        code: 'NOT_SUPPORTED',
+        title: 'Trình Duyệt Hoặc Kết Nối Chưa Hỗ Trợ Micro',
+        message: window.isSecureContext === false
+          ? 'Trình duyệt yêu cầu kết nối bảo mật HTTPS hoặc http://localhost để mở Micro. Nếu Thầy/Cô đang mở trang bằng IP mạng LAN (ví dụ: http://192.168.x.x:5173), vui lòng truy cập bằng http://localhost:5173 trên máy chủ hoặc cấu hình HTTPS.'
+          : 'Trình duyệt hiện tại không hỗ trợ API ghi âm MediaDevices. Thầy/Cô vui lòng sử dụng Google Chrome, Cốc Cốc hoặc Microsoft Edge mới nhất.'
+      });
+      setShowMicrophoneGuide(true);
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       audioChunksRef.current = [];
@@ -146,6 +162,8 @@ export default function AdminAiMeetingMinutes() {
       setIsRecording(true);
       setIsPaused(false);
       setRecordingSeconds(0);
+      setShowMicrophoneGuide(false);
+      setMicErrorInfo(null);
 
       // 2. Setup Web Speech Recognition API (Tiếng Việt vi-VN)
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -185,7 +203,34 @@ export default function AdminAiMeetingMinutes() {
       }
     } catch (err) {
       console.error('Lỗi khởi tạo micro ghi âm:', err);
-      alert('Không thể truy cập Microphone của thiết bị. Vui lòng cấp quyền truy cập Micro trên trình duyệt để ghi âm.');
+      let errorData = {
+        code: err.name || 'UNKNOWN',
+        title: 'Không Thể Truy Cập Microphone Của Thiết Bị',
+        message: 'Trình duyệt hoặc hệ điều hành Windows chưa cho phép trang web sử dụng Micro.'
+      };
+
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        errorData = {
+          code: 'PERMISSION_DENIED',
+          title: 'Quyền Truy Cập Micro Đang Bị Chặn',
+          message: 'Trình duyệt hoặc hệ điều hành Windows đang chặn quyền ghi âm. Vui lòng làm theo 3 bước bên dưới để mở lại quyền chỉ trong 30 giây.'
+        };
+      } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+        errorData = {
+          code: 'NO_DEVICE',
+          title: 'Không Tìm Thấy Thiết Bị Micro Cắm Vào Máy',
+          message: 'Máy tính chưa nhận diện được micro hoặc tai nghe có mic cắm vào cổng âm thanh USB / 3.5mm.'
+        };
+      } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+        errorData = {
+          code: 'CONFLICT',
+          title: 'Micro Đang Bị Ứng Dụng Khác Chiếm Dụng',
+          message: 'Micro đang được sử dụng độc quyền bởi Google Meet, Zoom, Zalo Call hoặc ứng dụng khác. Thầy/Cô vui lòng ngắt cuộc gọi trên ứng dụng đó rồi thử lại.'
+        };
+      }
+
+      setMicErrorInfo(errorData);
+      setShowMicrophoneGuide(true);
     }
   };
 
@@ -1106,6 +1151,293 @@ Bế mạc: ${generatedMinutes.closingTime}
           </div>
 
         </div>
+
+        {/* ==================== MODAL HƯỚNG DẪN MỞ QUYỀN MICROPHONE ==================== */}
+        {showMicrophoneGuide && (
+          <div 
+            style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px'
+            }}
+            onClick={() => setShowMicrophoneGuide(false)}
+          >
+            <div 
+              style={{
+                backgroundColor: '#ffffff',
+                borderRadius: '16px',
+                width: '100%',
+                maxWidth: '620px',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+                overflow: 'hidden',
+                border: '1px solid #e2e8f0',
+                animation: 'fadeIn 0.2s ease-out'
+              }}
+              onClick={e => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div style={{
+                padding: '18px 24px',
+                backgroundColor: '#fff1f2',
+                borderBottom: '1px solid #fecdd3',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '10px',
+                    backgroundColor: '#ffe4e6',
+                    color: '#e11d48',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <MicOff size={20} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', color: '#9f1239' }}>
+                      {micErrorInfo?.title || 'Hướng Dẫn Cấp Quyền Microphone'}
+                    </h3>
+                    <p style={{ margin: '2px 0 0 0', fontSize: '12px', color: '#be123c' }}>
+                      Mở Micro trên trình duyệt Chrome, Cốc Cốc, Edge hoặc Windows
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setShowMicrophoneGuide(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#9f1239',
+                    cursor: 'pointer',
+                    padding: '6px',
+                    borderRadius: '6px'
+                  }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div style={{ padding: '22px 24px', maxHeight: '70vh', overflowY: 'auto' }}>
+                {/* Thông báo lỗi cụ thể */}
+                <div style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#fef2f2',
+                  border: '1px solid #fecaca',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  color: '#991b1b',
+                  marginBottom: '18px',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px'
+                }}>
+                  <AlertCircle size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
+                  <div>
+                    <strong>Chi tiết: </strong>
+                    {micErrorInfo?.message || 'Trình duyệt chưa được cấp quyền sử dụng Microphone.'}
+                  </div>
+                </div>
+
+                <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                  🛠️ CÁC BƯỚC KHẮC PHỤC NHANH (TRONG 30 GIÂY):
+                </h4>
+
+                {/* BƯỚC 1: TRÌNH DUYỆT */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  marginBottom: '14px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: '#0284c7',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    flexShrink: 0
+                  }}>1</div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
+                      Bấm vào biểu tượng Ổ Khóa 🔒 bên trái thanh địa chỉ
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>
+                      Tại góc trên bên trái trình duyệt (ngay trước chữ <code>localhost</code> hoặc tên miền web), nhấp vào biểu tượng <strong>Ổ khóa 🔒</strong> hoặc <strong>Cài đặt trang web</strong> $\rightarrow$ Chuyển mục <strong>Micro (Microphone)</strong> từ <em>"Chặn"</em> sang <strong>"Cho phép" (Allow)</strong>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* BƯỚC 2: WINDOWS PRIVACY */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  marginBottom: '14px',
+                  padding: '12px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: '#0284c7',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    flexShrink: 0
+                  }}>2</div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#0f172a', marginBottom: '4px' }}>
+                      Kiểm tra Cài đặt Quyền riêng tư của Windows 10/11
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.5 }}>
+                      Nhấn phím <strong>Windows + I</strong> $\rightarrow$ Vào <strong>Privacy & Security</strong> (Quyền riêng tư) $\rightarrow$ <strong>Microphone</strong> $\rightarrow$ Đảm bảo bật công tắc <strong>"Microphone access"</strong> và <strong>"Let desktop apps access your microphone"</strong> sang <strong>ON</strong>.
+                    </div>
+                  </div>
+                </div>
+
+                {/* BƯỚC 3: GIẢI PHÁP THAY THẾ KHUYÊN DÙNG */}
+                <div style={{
+                  display: 'flex',
+                  gap: '12px',
+                  padding: '12px',
+                  backgroundColor: '#f0fdf4',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '10px'
+                }}>
+                  <div style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '50%',
+                    backgroundColor: '#16a34a',
+                    color: '#fff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    flexShrink: 0
+                  }}>3</div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#15803d', marginBottom: '4px' }}>
+                      💡 Mẹo Thực Chiến: Dùng Điện Thoại Thu Âm Rõ Nét Hơn
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#166534', lineHeight: 1.5 }}>
+                      Thầy/Cô có thể đặt điện thoại trên bàn họp bật app <strong>Ghi Âm</strong>. Sau cuộc họp, tải file âm thanh (.mp3, .m4a, .wav) lên hệ thống để AI tự động bóc tách và soạn biên bản ngay lập tức mà không cần micro máy tính!
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div style={{
+                padding: '16px 24px',
+                backgroundColor: '#f8fafc',
+                borderTop: '1px solid #e2e8f0',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+                flexWrap: 'wrap'
+              }}>
+                <button
+                  onClick={() => {
+                    setShowMicrophoneGuide(false);
+                    fileInputRef.current?.click();
+                  }}
+                  style={{
+                    padding: '9px 16px',
+                    backgroundColor: '#f1f5f9',
+                    color: '#0f172a',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Upload size={15} /> 📁 Tải Tệp Âm Thanh (.mp3, .m4a)
+                </button>
+
+                <button
+                  onClick={() => {
+                    loadPresetScenario(PRESET_MEETING_SCENARIOS[0]);
+                    setShowMicrophoneGuide(false);
+                  }}
+                  style={{
+                    padding: '9px 16px',
+                    backgroundColor: '#eff6ff',
+                    color: '#1d4ed8',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <Sparkles size={15} /> ⚡ Dùng Kịch Bản Mẫu (Demo)
+                </button>
+
+                <button
+                  onClick={() => {
+                    setShowMicrophoneGuide(false);
+                    startRecording();
+                  }}
+                  style={{
+                    padding: '9px 18px',
+                    backgroundColor: '#e11d48',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 6px rgba(225, 29, 72, 0.3)'
+                  }}
+                >
+                  <RefreshCw size={15} /> Thử Cấp Quyền Lại
+                </button>
+              </div>
+
+            </div>
+          </div>
+        )}
 
       </div>
     </Layout>
