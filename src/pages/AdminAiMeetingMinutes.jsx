@@ -11,6 +11,7 @@ import {
   synthesizeMeetingMinutesAi, 
   transcribeAudioFileWithAi,
   exportMeetingMinutesToWord, 
+  generateHeuristicMinutes,
   saveMeetingMinutesToDb, 
   fetchMeetingMinutesFromDb,
   PRESET_MEETING_SCENARIOS 
@@ -24,11 +25,13 @@ import {
 import { OnlineMeetingService } from '../services/onlineMeetingService';
 
 export default function AdminAiMeetingMinutes() {
+  const defaultScenario = PRESET_MEETING_SCENARIOS[0];
+
   // Trạng thái ghi âm
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [transcript, setTranscript] = useState('');
+  const [transcript, setTranscript] = useState(defaultScenario.sampleTranscript);
   const [liveInterimText, setLiveInterimText] = useState('');
   const [audioBlob, setAudioBlob] = useState(null);
   const [audioUrl, setAudioUrl] = useState('');
@@ -48,17 +51,26 @@ export default function AdminAiMeetingMinutes() {
   // Thông tin cuộc họp
   const [meetingsList, setMeetingsList] = useState([]);
   const [selectedMeetingId, setSelectedMeetingId] = useState('');
-  const [meetingTitle, setMeetingTitle] = useState('Hội Nghị Sư Phạm & Triển Khai Nhiệm Vụ Tháng');
-  const [meetingType, setMeetingType] = useState('Hội đồng sư phạm toàn trường');
-  const [location, setLocation] = useState('Hội trường lớn - Trường THPT Cao Bá Quát');
-  const [chairPerson, setChairPerson] = useState('Thầy Xuân Bảo Nghiêm - Hiệu trưởng');
-  const [secretary, setSecretary] = useState('Cô Lê Thị Kim Oanh - Thư ký Hội đồng');
+  const [meetingTitle, setMeetingTitle] = useState(defaultScenario.title);
+  const [meetingType, setMeetingType] = useState(defaultScenario.meetingType);
+  const [location, setLocation] = useState(defaultScenario.location);
+  const [chairPerson, setChairPerson] = useState(defaultScenario.chairPerson);
+  const [secretary, setSecretary] = useState(defaultScenario.secretary);
   const [attendeesCount, setAttendeesCount] = useState('86/88 cán bộ, giáo viên (Vắng 02 có phép)');
 
-  // Dữ liệu biên bản sau tổng hợp
-  const [generatedMinutes, setGeneratedMinutes] = useState(null);
+  // Dữ liệu biên bản sau tổng hợp (mặc định sẵn sàng 100% để xem và xuất Word ngay)
+  const [generatedMinutes, setGeneratedMinutes] = useState(() => 
+    generateHeuristicMinutes(defaultScenario.sampleTranscript, {
+      title: defaultScenario.title,
+      meetingType: defaultScenario.meetingType,
+      location: defaultScenario.location,
+      chairPerson: defaultScenario.chairPerson,
+      secretary: defaultScenario.secretary
+    })
+  );
   const [copiedToast, setCopiedToast] = useState(false);
   const [isSavedDb, setIsSavedDb] = useState(false);
+  const [wordExportToast, setWordExportToast] = useState(null);
 
   // Audio & Speech Recognition Refs
   const mediaRecorderRef = useRef(null);
@@ -337,7 +349,14 @@ export default function AdminAiMeetingMinutes() {
     setSecretary(scenario.secretary);
     setTranscript(scenario.sampleTranscript);
     setLiveInterimText('');
-    setGeneratedMinutes(null);
+    const minutesData = generateHeuristicMinutes(scenario.sampleTranscript, {
+      title: scenario.title,
+      meetingType: scenario.meetingType,
+      location: scenario.location,
+      chairPerson: scenario.chairPerson,
+      secretary: scenario.secretary
+    });
+    setGeneratedMinutes(minutesData);
     setIsSavedDb(false);
   };
 
@@ -391,13 +410,38 @@ export default function AdminAiMeetingMinutes() {
 
   // ==================== XUẤT FILE MICROSOFT WORD (NGHỊ ĐỊNH 30) ====================
   const handleExportWord = () => {
-    if (!generatedMinutes) {
-      alert('Chưa có biên bản hoàn chỉnh để xuất Word!');
-      return;
-    }
-    const res = exportMeetingMinutesToWord(generatedMinutes);
-    if (res?.success) {
-      alert(`🎉 ĐÃ XUẤT THÀNH CÔNG VĂN BẢN WORD CHUẨN NGHỊ ĐỊNH 30!\nTệp tải về: "${res.fileName}"\n(Đã tuân thủ quy tắc tiền tố số thứ tự GEMINI.md).`);
+    try {
+      let targetMinutes = generatedMinutes;
+      // Nếu chưa có biên bản AI nhưng đã có văn bản ghi âm -> Tự động sinh biên bản thông minh ngay!
+      if (!targetMinutes) {
+        const textToUse = transcript.trim() || defaultScenario.sampleTranscript;
+        targetMinutes = generateHeuristicMinutes(textToUse, {
+          title: meetingTitle,
+          meetingType,
+          location,
+          chairPerson,
+          secretary,
+          attendeesCount
+        });
+        setGeneratedMinutes(targetMinutes);
+      }
+
+      const res = exportMeetingMinutesToWord(targetMinutes);
+      if (res?.success) {
+        setWordExportToast({
+          type: 'success',
+          fileName: res.fileName,
+          message: `Đã xuất tệp Word "${res.fileName}" thành công!`
+        });
+        setTimeout(() => setWordExportToast(null), 8000);
+      }
+    } catch (err) {
+      console.error('Lỗi xuất file Word:', err);
+      setWordExportToast({
+        type: 'error',
+        message: 'Lỗi xuất file Word: ' + err.message
+      });
+      setTimeout(() => setWordExportToast(null), 8000);
     }
   };
 
@@ -1100,7 +1144,6 @@ Bế mạc: ${generatedMinutes.closingTime}
 
                 <button
                   onClick={handleExportWord}
-                  disabled={!generatedMinutes}
                   style={{
                     padding: '8px 16px',
                     background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
@@ -1109,7 +1152,7 @@ Bế mạc: ${generatedMinutes.closingTime}
                     borderRadius: '8px',
                     fontSize: '12.5px',
                     fontWeight: 'bold',
-                    cursor: generatedMinutes ? 'pointer' : 'not-allowed',
+                    cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '6px',
@@ -1148,6 +1191,46 @@ Bế mạc: ${generatedMinutes.closingTime}
                   ) : (
                     <div style={{ fontFamily: '"Times New Roman", Times, serif', color: '#000000', lineHeight: 1.4, fontSize: '14.5px' }}>
                       
+                      {/* BANNER THAO TÁC NHANH: XUẤT FILE WORD 1-CHẠM */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        backgroundColor: '#f0fdf4',
+                        border: '1px solid #bbf7d0',
+                        borderRadius: '10px',
+                        padding: '10px 14px',
+                        marginBottom: '18px',
+                        flexWrap: 'wrap',
+                        gap: '10px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <CheckCircle2 size={18} color="#16a34a" />
+                          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#166534' }}>
+                            Biên bản đã sẵn sàng xuất bản Word chuẩn Nghị định 30/2020/NĐ-CP
+                          </span>
+                        </div>
+                        <button
+                          onClick={handleExportWord}
+                          style={{
+                            padding: '7px 16px',
+                            backgroundColor: '#16a34a',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '12.5px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)'
+                          }}
+                        >
+                          <Download size={14} /> Xuất Tệp Word Ngay (1-...)
+                        </button>
+                      </div>
+
                       {/* TIÊU NGỮ HÀNH CHÍNH NGHỊ ĐỊNH 30 */}
                       <div style={{ display: 'grid', gridTemplateColumns: '45% 55%', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px', marginBottom: '20px' }}>
                         <div style={{ textAlign: 'center' }}>
@@ -1666,6 +1749,57 @@ Bế mạc: ${generatedMinutes.closingTime}
               </div>
 
             </div>
+          </div>
+        )}
+
+        {/* TOAST THÔNG BÁO XUẤT FILE WORD THÀNH CÔNG KHÔNG BỊ CHẶN POPUP */}
+        {wordExportToast && (
+          <div style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            maxWidth: '90vw',
+            width: '420px',
+            backgroundColor: wordExportToast.type === 'error' ? '#ef4444' : '#15803d',
+            color: '#ffffff',
+            padding: '14px 18px',
+            borderRadius: '12px',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            zIndex: 9999,
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            {wordExportToast.type === 'error' ? (
+              <AlertCircle size={24} style={{ flexShrink: 0 }} />
+            ) : (
+              <CheckCircle2 size={24} style={{ flexShrink: 0 }} />
+            )}
+            <div style={{ flex: 1, fontSize: '13px', lineHeight: 1.4 }}>
+              <div style={{ fontWeight: 'bold' }}>{wordExportToast.message}</div>
+              {wordExportToast.fileName && (
+                <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px', wordBreak: 'break-all' }}>
+                  📁 Tệp tải về: <strong>{wordExportToast.fileName}</strong>
+                </div>
+              )}
+            </div>
+            <button 
+              onClick={() => setWordExportToast(null)}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#ffffff',
+                cursor: 'pointer',
+                padding: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Đóng"
+            >
+              <X size={18} />
+            </button>
           </div>
         )}
 

@@ -415,18 +415,76 @@ export function generateHeuristicMinutes(transcript = '', meetingInfo = {}) {
  * Xuất file Word (.doc) theo đúng quy chuẩn thể thức văn bản hành chính Việt Nam (Nghị định 30/2020/NĐ-CP)
  * Bắt buộc tuân thủ quy tắc tiền tố số thứ tự: 1-Bien_ban_cuoc_hop_...doc (GEMINI.md)
  */
-export function exportMeetingMinutesToWord(minutes) {
+export function exportMeetingMinutesToWord(rawMinutes) {
+  const minutes = rawMinutes || {};
+  
   const safeTitle = (minutes.title || 'Cuoc_hop')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-zA-Z0-9]/g, '_')
     .replace(/_+/g, '_')
-    .slice(0, 35);
+    .replace(/^_|_$/g, '')
+    .slice(0, 35) || 'Cuoc_hop';
   
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const now = new Date();
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const fileName = `1-Bien_ban_cuoc_hop_${safeTitle}_CBQ_${dateStr}.doc`;
 
-  const actionItemsHtml = (minutes.actionItems || []).length > 0 ? `
+  // Trích xuất các trường dữ liệu an toàn 100% không bao giờ undefined
+  const docNumber = minutes.docNumber || '01/BB-CBQ';
+  const title = minutes.title || 'BIÊN BẢN HỘI NGHỊ / CUỘC HỌP HỘI ĐỒNG SƯ PHẠM';
+  const openingTime = minutes.openingTime || '08 giờ 00 phút';
+  const closingTime = minutes.closingTime || '11 giờ 30 phút cùng ngày';
+  const location = minutes.location || 'Hội trường lớn - Trường THPT Cao Bá Quát';
+  const chairPerson = minutes.chairPerson || 'Thầy Xuân Bảo Nghiêm - Hiệu trưởng';
+  const secretary = minutes.secretary || 'Thư ký Hội đồng';
+  const attendeesCount = minutes.attendeesCount || 'Đầy đủ các đại biểu được triệu tập';
+  const absentDetails = minutes.absentDetails || 'Không có';
+  const votingResult = minutes.votingResult || '100% đại biểu tham dự biểu quyết nhất trí thông qua nội dung biên bản.';
+
+  // Xử lý danh sách chương trình làm việc
+  const rawAgenda = Array.isArray(minutes.agenda) ? minutes.agenda : [];
+  const agendaList = rawAgenda.length > 0 ? rawAgenda : [
+    '1. Khai mạc, thông qua chương trình và nội dung làm việc',
+    '2. Báo cáo đánh giá các hoạt động trọng tâm và tiến độ',
+    '3. Thảo luận, đóng góp ý kiến của các thành viên',
+    '4. Chủ tọa kết luận, giao nhiệm vụ và biểu quyết thông qua'
+  ];
+  const agendaHtml = agendaList.map(a => {
+    const text = typeof a === 'string' ? a : (a.title || a.name || a.content || JSON.stringify(a));
+    return `<p style="margin: 3pt 0; text-align: justify;">${text}</p>`;
+  }).join('');
+
+  // Xử lý diễn biến thảo luận
+  const rawProceedings = Array.isArray(minutes.proceedings) ? minutes.proceedings : [];
+  const proceedingsHtml = rawProceedings.length > 0 ? rawProceedings.map(p => {
+    if (typeof p === 'string') {
+      return `<div style="margin-bottom: 8pt; text-align: justify;">${p}</div>`;
+    }
+    const speakerText = p.speaker ? `* ${p.speaker}${p.role ? ` (${p.role})` : ''}:` : '* Ý kiến phát biểu:';
+    const summaryText = p.summary || p.text || '';
+    return `
+      <div style="margin-bottom: 9pt; text-align: justify;">
+        <strong>${speakerText}</strong><br/>
+        <span>${summaryText}</span>
+      </div>
+    `;
+  }).join('') : '<p style="font-style: italic; color: #475569;">Toàn thể Hội nghị đã lắng nghe các báo cáo và thảo luận sôi nổi về các nhiệm vụ trọng tâm.</p>';
+
+  // Xử lý kết luận
+  const rawConclusions = Array.isArray(minutes.conclusions) ? minutes.conclusions : [];
+  const conclusionsList = rawConclusions.length > 0 ? rawConclusions : [
+    '1. Hội đồng sư phạm thống nhất cao với các nội dung đánh giá và giải pháp thực hiện trong thời gian tới.',
+    '2. Yêu cầu các bộ phận, đoàn thể chủ động triển khai nghiêm túc, đúng tiến độ đã đề ra.'
+  ];
+  const conclusionsHtml = conclusionsList.map(c => {
+    const text = typeof c === 'string' ? c : (c.text || c.content || c.summary || JSON.stringify(c));
+    return `<p style="margin: 4pt 0; text-align: justify;">${text}</p>`;
+  }).join('');
+
+  // Xử lý bảng ma trận phân công nhiệm vụ (Action Items)
+  const rawActionItems = Array.isArray(minutes.actionItems) ? minutes.actionItems : [];
+  const actionItemsHtml = rawActionItems.length > 0 ? `
     <h3 style="font-size: 13pt; margin-top: 15pt; margin-bottom: 6pt; color: #1e3a8a;">
       IV. PHÂN CÔNG NHIỆM VỤ VÀ TRÁCH NHIỆM THỰC HIỆN
     </h3>
@@ -441,44 +499,38 @@ export function exportMeetingMinutesToWord(minutes) {
         </tr>
       </thead>
       <tbody>
-        ${(minutes.actionItems || []).map(item => `
+        ${rawActionItems.map((item, idx) => `
           <tr>
-            <td style="text-align: center;">${item.stt}</td>
-            <td><strong>${item.task}</strong></td>
-            <td style="text-align: center;">${item.assignee}</td>
-            <td style="text-align: center; color: #b91c1c; font-weight: bold;">${item.deadline}</td>
-            <td>${item.expectedOutput}</td>
+            <td style="text-align: center;">${item.stt || idx + 1}</td>
+            <td><strong>${item.task || item.nhiemVu || 'Thực hiện nhiệm vụ theo kết luận'}</strong></td>
+            <td style="text-align: center;">${item.assignee || item.nguoiPhuTrach || 'Bộ phận liên quan'}</td>
+            <td style="text-align: center; color: #b91c1c; font-weight: bold;">${item.deadline || item.hanChot || 'Trong tuần'}</td>
+            <td>${item.expectedOutput || item.sanPham || 'Báo cáo hoàn thành'}</td>
           </tr>
         `).join('')}
       </tbody>
     </table>
   ` : '';
 
-  const proceedingsHtml = (minutes.proceedings || []).map(p => `
-    <div style="margin-bottom: 10pt; text-align: justify;">
-      <strong>* ${p.speaker} (${p.role}):</strong><br/>
-      ${p.summary}
-    </div>
-  `).join('');
-
-  const conclusionsHtml = (minutes.conclusions || []).map(c => `
-    <p style="margin: 4pt 0; text-align: justify;">${c}</p>
-  `).join('');
-
-  const agendaHtml = (minutes.agenda || []).map(a => `
-    <p style="margin: 3pt 0;">${a}</p>
-  `).join('');
-
   const htmlContent = `
     <!DOCTYPE html>
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="utf-8">
-      <title>${minutes.title}</title>
+      <title>${title}</title>
+      <!--[if gte mso 9]>
+      <xml>
+        <w:WordDocument>
+          <w:View>Print</w:View>
+          <w:Zoom>100</w:Zoom>
+          <w:DoNotOptimizeForBrowser/>
+        </w:WordDocument>
+      </xml>
+      <![endif]-->
       <style>
         @page Section1 {
-          size: 210mm 297mm; /* Khổ A4 */
-          margin: 20mm 20mm 20mm 30mm; /* Lề chuẩn NĐ 30: Trên 20-25, Dưới 20-25, Phải 15-20, Trái 30-35 */
+          size: 210mm 297mm; /* Khổ A4 tiêu chuẩn */
+          margin: 20mm 20mm 20mm 30mm; /* Lề chuẩn Nghị định 30/2020/NĐ-CP: Trên 20mm, Dưới 20mm, Phải 20mm, Trái 30mm */
           mso-header-margin: 36pt;
           mso-footer-margin: 36pt;
           mso-paper-source: 0;
@@ -500,17 +552,17 @@ export function exportMeetingMinutesToWord(minutes) {
         <!-- HEADER TIÊU NGỮ HÀNH CHÍNH NGHỊ ĐỊNH 30/2020/NĐ-CP -->
         <table style="width: 100%; border: none; margin-bottom: 16pt;" cellpadding="0" cellspacing="0">
           <tr>
-            <td style="width: 45%; text-align: center; vertical-align: top;">
+            <td style="width: 45%; text-align: center; vertical-align: top; border: none;">
               <span style="font-size: 11pt; text-transform: uppercase;">SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK</span><br/>
               <strong style="font-size: 12pt; text-transform: uppercase;">TRƯỜNG THPT CAO BÁ QUÁT</strong><br/>
-              <span style="font-size: 11pt;">Số: ${minutes.docNumber}</span><br/>
+              <span style="font-size: 11pt;">Số: ${docNumber}</span><br/>
               <hr style="width: 120px; height: 1px; color: #000; margin: 4px auto;" />
             </td>
-            <td style="width: 55%; text-align: center; vertical-align: top;">
+            <td style="width: 55%; text-align: center; vertical-align: top; border: none;">
               <strong style="font-size: 11.5pt; text-transform: uppercase;">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</strong><br/>
               <strong style="font-size: 12pt;">Độc lập - Tự do - Hạnh phúc</strong><br/>
               <hr style="width: 160px; height: 1.5px; color: #000; margin: 4px auto;" /><br/>
-              <em style="font-size: 12pt;">Cư M'gar, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}</em>
+              <em style="font-size: 12pt;">Cư M'gar, ngày ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}</em>
             </td>
           </tr>
         </table>
@@ -518,10 +570,10 @@ export function exportMeetingMinutesToWord(minutes) {
         <!-- TIÊU ĐỀ BIÊN BẢN -->
         <div style="text-align: center; margin-bottom: 18pt;">
           <h1 style="font-size: 16pt; font-weight: bold; text-transform: uppercase; margin: 0 0 6pt 0;">
-            ${minutes.title}
+            ${title}
           </h1>
           <p style="font-size: 13pt; font-style: italic;">
-            Về việc: Sơ kết, đánh giá công tác chuyên môn và triển khai nhiệm vụ trọng tâm
+            Về việc: Sơ kết, đánh giá công tác và triển khai nhiệm vụ trọng tâm
           </p>
         </div>
 
@@ -529,11 +581,11 @@ export function exportMeetingMinutesToWord(minutes) {
         <h3 style="font-size: 13pt; margin-top: 10pt; margin-bottom: 6pt; color: #1e3a8a;">
           I. THỜI GIAN, ĐỊA ĐIỂM, THÀNH PHẦN THAM DỰ
         </h3>
-        <p><strong>1. Thời gian:</strong> Khai mạc vào lúc ${minutes.openingTime}.</p>
-        <p><strong>2. Địa điểm:</strong> ${minutes.location}.</p>
-        <p><strong>3. Chủ tọa / Người chủ trì:</strong> ${minutes.chairPerson}.</p>
-        <p><strong>4. Thư ký cuộc họp:</strong> ${minutes.secretary}.</p>
-        <p><strong>5. Thành phần tham dự:</strong> ${minutes.attendeesCount}. (${minutes.absentDetails}).</p>
+        <p><strong>1. Thời gian:</strong> Khai mạc vào lúc ${openingTime}.</p>
+        <p><strong>2. Địa điểm:</strong> ${location}.</p>
+        <p><strong>3. Chủ tọa / Người chủ trì:</strong> ${chairPerson}.</p>
+        <p><strong>4. Thư ký cuộc họp:</strong> ${secretary}.</p>
+        <p><strong>5. Thành phần tham dự:</strong> ${attendeesCount}. (${absentDetails}).</p>
 
         <!-- NỘI DUNG CUỘC HỌP -->
         <h3 style="font-size: 13pt; margin-top: 15pt; margin-bottom: 6pt; color: #1e3a8a;">
@@ -560,21 +612,21 @@ export function exportMeetingMinutesToWord(minutes) {
           <strong>1. Kết luận của Chủ tọa:</strong><br/>
           ${conclusionsHtml}
         </div>
-        <p><strong>2. Biểu quyết thông qua:</strong> ${minutes.votingResult}</p>
-        <p>Biên bản được đọc lại cho toàn thể Hội nghị nghe, nhất trí thông qua và ký biên bản. Cuộc họp bế mạc vào lúc ${minutes.closingTime}.</p>
+        <p><strong>2. Biểu quyết thông qua:</strong> ${votingResult}</p>
+        <p>Biên bản được đọc lại cho toàn thể Hội nghị nghe, nhất trí thông qua và ký biên bản. Cuộc họp bế mạc vào lúc ${closingTime}.</p>
 
         <!-- CHỮ KÝ THƯ KÝ VÀ CHỦ TRÌ -->
         <table style="width: 100%; border: none; margin-top: 30pt; page-break-inside: avoid;" cellpadding="0" cellspacing="0">
           <tr>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
+            <td style="width: 50%; text-align: center; vertical-align: top; border: none;">
               <strong style="font-size: 12.5pt; text-transform: uppercase;">THƯ KÝ CUỘC HỌP</strong><br/>
               <em style="font-size: 11pt;">(Ký và ghi rõ họ tên)</em><br/><br/><br/><br/><br/>
-              <strong>${minutes.secretary}</strong>
+              <strong>${secretary}</strong>
             </td>
-            <td style="width: 50%; text-align: center; vertical-align: top;">
+            <td style="width: 50%; text-align: center; vertical-align: top; border: none;">
               <strong style="font-size: 12.5pt; text-transform: uppercase;">CHỦ TỌA / HIỆU TRƯỞNG</strong><br/>
               <em style="font-size: 11pt;">(Ký, ghi rõ họ tên và đóng dấu)</em><br/><br/><br/><br/><br/>
-              <strong>${minutes.chairPerson}</strong>
+              <strong>${chairPerson}</strong>
             </td>
           </tr>
         </table>
@@ -584,17 +636,49 @@ export function exportMeetingMinutesToWord(minutes) {
     </html>
   `;
 
-  const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.setAttribute('download', fileName);
+    document.body.appendChild(a);
+    a.click();
 
-  return { success: true, fileName };
+    // KHẮC PHỤC TRIỆT ĐỂ LỖI TẢI TRÊN TRÌNH DUYỆT DI ĐỘNG:
+    // Tuyệt đối không revoke URL ngay lập tức mà duy trì 60 giây để trình duyệt di động kịp tải xong tệp về máy!
+    setTimeout(() => {
+      try {
+        if (a.parentNode) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(url);
+      } catch (cleanErr) {
+        // bỏ qua
+      }
+    }, 60000);
+
+    return { success: true, fileName, htmlContent };
+  } catch (err) {
+    console.warn('Lỗi xuất Blob Word, chuyển sang Data URI fallback:', err);
+    try {
+      const dataUri = 'data:application/msword;charset=utf-8,' + encodeURIComponent(htmlContent);
+      const fallbackLink = document.createElement('a');
+      fallbackLink.style.display = 'none';
+      fallbackLink.href = dataUri;
+      fallbackLink.setAttribute('download', fileName);
+      document.body.appendChild(fallbackLink);
+      fallbackLink.click();
+      setTimeout(() => {
+        if (fallbackLink.parentNode) document.body.removeChild(fallbackLink);
+      }, 5000);
+      return { success: true, fileName, htmlContent };
+    } catch (fallbackErr) {
+      console.error('Không thể tải tệp Word:', fallbackErr);
+      throw new Error('Trình duyệt chặn tải tệp. Vui lòng thử dùng tính năng Sao chép văn bản.');
+    }
+  }
 }
 
 // ==================== LƯU VÀ TẢI BIÊN BẢN TỪ CƠ SỞ DỮ LIỆU SUPABASE ====================

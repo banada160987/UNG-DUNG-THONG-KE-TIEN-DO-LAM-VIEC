@@ -1061,16 +1061,23 @@ export function exportDecree30ToWord(docData, elementId = 'decree30-preview-cont
     </html>
   `;
 
-  const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+  const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
+  a.style.display = 'none';
   a.href = url;
   const filePrefix = /^\d+-/.test(cleanFileName) ? '' : '1-';
   a.download = `${filePrefix}${cleanFileName}_ND30.doc`;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  
+  // Duy trì Object URL trong 60 giây để tránh bị hủy giữa chừng trên trình duyệt di động
+  setTimeout(() => {
+    try {
+      if (a.parentNode) document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {}
+  }, 60000);
 }
 
 /**
