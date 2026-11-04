@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { 
   Mic, MicOff, Square, Play, Pause, RefreshCw, Sparkles, 
   FileText, Download, Save, CheckCircle2, AlertCircle, Clock, 
-  Users, MapPin, Award, Upload, ChevronRight, Edit3, Trash2, 
-  Volume2, ShieldCheck, FileSpreadsheet, Eye, Copy, Check, MessageSquare,
-  X, HelpCircle, ShieldAlert
+  Upload, ChevronRight, Edit3, 
+  Volume2, Eye, Copy, X,
+  ChevronDown, ChevronUp, Maximize2, Minimize2,
+  ExternalLink, SlidersHorizontal
 } from 'lucide-react';
 import { 
   synthesizeMeetingMinutesAi, 
@@ -14,7 +15,6 @@ import {
   exportMeetingMinutesToWord, 
   generateHeuristicMinutes,
   saveMeetingMinutesToDb, 
-  fetchMeetingMinutesFromDb,
   PRESET_MEETING_SCENARIOS 
 } from '../services/aiMeetingMinutesService';
 import { 
@@ -72,6 +72,13 @@ export default function AdminAiMeetingMinutes() {
   const [copiedToast, setCopiedToast] = useState(false);
   const [isSavedDb, setIsSavedDb] = useState(false);
   const [wordExportToast, setWordExportToast] = useState(null);
+
+  // Chế độ xem & Thu gọn tinh ý (Compact Mode / Collapsible Panels)
+  const [isCompactMode, setIsCompactMode] = useState(true); // Mặc định chế độ gọn gàng tinh ý
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(false); // Header thu gọn mặc định để tiết kiệm diện tích
+  const [isPresetsExpanded, setIsPresetsExpanded] = useState(false); // Kịch bản mẫu (thu gọn thành hàng chip)
+  const [isMetaExpanded, setIsMetaExpanded] = useState(false); // Thông tin hành chính (thu gọn thành tóm tắt 1 chạm)
+  const [isFullScreenMinutes, setIsFullScreenMinutes] = useState(false); // Phóng to toàn màn hình biên bản
 
   // Audio & Speech Recognition Refs
   const mediaRecorderRef = useRef(null);
@@ -495,77 +502,231 @@ Bế mạc: ${generatedMinutes.closingTime}
     <Layout title="Trợ Lý Thư Ký AI: Ghi Âm Trực Tuyến & Soạn Thảo Biên Bản Cuộc Họp">
       <div style={{ maxWidth: '1360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '22px', paddingBottom: '90px' }}>
         
-        {/* ================= HEADER BANNER TRANG TRỌNG ================= */}
+        {/* ================= HEADER BANNER THU GỌN TINH Ý ================= */}
         <div style={{
           background: 'linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0369a1 100%)',
-          borderRadius: '20px',
-          padding: '26px 30px',
+          borderRadius: '16px',
+          padding: isHeaderExpanded ? '22px 24px' : '14px 20px',
           color: '#ffffff',
-          boxShadow: '0 12px 30px rgba(15, 23, 42, 0.2)',
+          boxShadow: '0 8px 25px rgba(15, 23, 42, 0.18)',
+          transition: 'all 0.3s ease',
           position: 'relative',
           overflow: 'hidden'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', position: 'relative', zIndex: 1 }}>
-            <div>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.15)', padding: '5px 14px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold', color: '#fef08a', marginBottom: '10px' }}>
-                <Sparkles size={14} color="#facc15" /> MODULE HIỆN ĐẠI CHUYỂN ĐỔI SỐ NĂM HỌC 2026 - 2027
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', position: 'relative', zIndex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: '260px' }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                background: 'rgba(255,255,255,0.15)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Sparkles size={20} color="#facc15" />
               </div>
-              <h1 style={{ margin: 0, fontSize: '26px', fontWeight: '900', letterSpacing: '0.3px' }}>
-                Soạn Thảo Biên Bản Cuộc Họp Thông Minh Bằng Giọng Nói (AI Meeting Transcriber)
-              </h1>
-              <p style={{ margin: '8px 0 0', fontSize: '13.5px', color: '#cbd5e1', maxWidth: '780px', lineHeight: 1.5 }}>
-                Ghi âm trực tuyến thời gian thực • Tự động bóc tách diễn giả và ý kiến thảo luận • Trích xuất ma trận phân công nhiệm vụ • Xuất bản file Word chuẩn thể thức <strong>Nghị định 30/2020/NĐ-CP</strong>.
-              </p>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <h1 style={{ margin: 0, fontSize: isHeaderExpanded ? '22px' : '16.5px', fontWeight: '900', letterSpacing: '0.2px' }}>
+                    Thư Ký AI: Ghi Âm & Soạn Thảo Biên Bản Cuộc Họp
+                  </h1>
+                  <span style={{ fontSize: '11px', background: 'rgba(250, 204, 21, 0.2)', color: '#fef08a', padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold' }}>
+                    Nghị Định 30/2020
+                  </span>
+                </div>
+                {!isHeaderExpanded && (
+                  <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#cbd5e1' }}>
+                    Ghi âm trực tuyến • Bóc băng giọng nói • Trích xuất ma trận việc & Xuất file Word (1-...)
+                  </p>
+                )}
+              </div>
             </div>
 
-            {/* BADGE TRẠNG THÁI AI & CHỌN MODEL */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '14px', padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', color: '#93c5fd', fontWeight: 'bold', letterSpacing: '0.5px' }}>
-                MÔ HÌNH AI HOẠT ĐỘNG
-              </div>
-              <select
-                value={selectedModel}
-                onChange={(e) => {
-                  setSelectedModel(e.target.value);
-                  testGeminiConnection(null, e.target.value).then(res => {
-                    setAiStatus({
-                      tested: true,
-                      success: res.success,
-                      message: res.success ? `Đã kết nối Gemini ${e.target.value}` : res.error
-                    });
-                  });
-                }}
-                style={{
-                  background: 'rgba(255,255,255,0.1)',
-                  border: '1px solid rgba(255,255,255,0.3)',
-                  color: '#ffffff',
-                  padding: '6px 10px',
-                  borderRadius: '8px',
-                  fontSize: '12.5px',
-                  fontWeight: 'bold',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                {AI_MODELS.map(m => (
-                  <option key={m.id} value={m.id} style={{ background: '#0f172a', color: '#ffffff' }}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-              <div style={{ fontSize: '11px', color: aiStatus.success ? '#86efac' : '#fde047', display: 'flex', alignItems: 'center', gap: '4px' }}>
+            {/* THANH ĐIỀU KHIỂN: CHỌN MÔ HÌNH AI & NÚT CHI TIẾT */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              {/* BADGE TRẠNG THÁI AI & CHỌN MODEL GỌN GÀNG */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(15, 23, 42, 0.6)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)' }}>
                 <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: aiStatus.success ? '#22c55e' : '#eab308' }} />
-                {aiStatus.message || 'Đang kiểm tra kết nối...'}
+                <select
+                  value={selectedModel}
+                  onChange={(e) => {
+                    setSelectedModel(e.target.value);
+                    testGeminiConnection(null, e.target.value).then(res => {
+                      setAiStatus({
+                        tested: true,
+                        success: res.success,
+                        message: res.success ? `Đã kết nối Gemini ${e.target.value}` : res.error
+                      });
+                    });
+                  }}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontSize: '11.5px',
+                    fontWeight: 'bold',
+                    outline: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {AI_MODELS.map(m => (
+                    <option key={m.id} value={m.id} style={{ background: '#0f172a', color: '#ffffff' }}>
+                      {m.name.split('(')[0].trim()}
+                    </option>
+                  ))}
+                </select>
               </div>
+
+              {/* NÚT BẬT/TẮT THÔNG TIN CHI TIẾT */}
+              <button
+                onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+                style={{
+                  padding: '6px 10px',
+                  background: 'rgba(255,255,255,0.12)',
+                  border: '1px solid rgba(255,255,255,0.25)',
+                  color: '#ffffff',
+                  borderRadius: '8px',
+                  fontSize: '11.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title={isHeaderExpanded ? 'Thu gọn phần giới thiệu' : 'Mở rộng hướng dẫn chi tiết'}
+              >
+                {isHeaderExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                <span>{isHeaderExpanded ? 'Thu gọn' : 'Chi tiết'}</span>
+              </button>
             </div>
           </div>
+
+          {/* NỘI DUNG MỞ RỘNG KHI BẤM 'CHI TIẾT' */}
+          {isHeaderExpanded && (
+            <div style={{ marginTop: '16px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.15)', fontSize: '12.5px', color: '#e2e8f0', lineHeight: 1.6 }}>
+              <p style={{ margin: '0 0 10px' }}>
+                Module chuyển đổi số sư phạm năm học 2026 - 2027 phục vụ Ban Giám Hiệu, Thư ký Hội đồng và các Tổ Chuyên Môn Trường THPT Cao Bá Quát:
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '8px' }}>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
+                  🎙️ <strong>Ghi âm trực tuyến:</strong> Nhận diện giọng nói thời gian thực và tự động tạo phụ đề.
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
+                  🤖 <strong>AI Bóc Băng Tự Động:</strong> Tách biệt phát biểu của Chủ tọa, Thư ký và từng Tổ trưởng.
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
+                  🎯 <strong>Ma Trận Nhiệm Vụ:</strong> Trích xuất việc cần làm, người phụ trách và hạn chót (Deadline).
+                </div>
+                <div style={{ background: 'rgba(255,255,255,0.06)', padding: '8px 10px', borderRadius: '8px' }}>
+                  📄 <strong>Xuất Word Nghị Định 30:</strong> File .doc chuẩn thể thức có tiền tố <code>1-...</code>.
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ================= THANH ĐIỀU KHIỂN CHẾ ĐỘ THÔNG MINH (COMPACT / FULL) ================= */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px',
+          background: '#ffffff',
+          padding: '10px 16px',
+          borderRadius: '14px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.03)'
+        }}>
+          {/* CÔNG TẮC CHẾ ĐỘ GỌN GÀNG TINH Ý */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 'bold', color: '#475569', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <SlidersHorizontal size={14} color="#0284c7" /> Bố cục giao diện:
+            </span>
+            <div style={{ display: 'inline-flex', background: '#f1f5f9', padding: '3px', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+              <button
+                onClick={() => {
+                  setIsCompactMode(true);
+                  setIsPresetsExpanded(false);
+                  setIsMetaExpanded(false);
+                }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '11.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  backgroundColor: isCompactMode ? '#2563eb' : 'transparent',
+                  color: isCompactMode ? '#ffffff' : '#64748b',
+                  boxShadow: isCompactMode ? '0 1px 4px rgba(37,99,235,0.25)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s'
+                }}
+                title="Bố cục siêu gọn, thu nhỏ biểu mẫu để xem nhanh và xuất Word tức thì"
+              >
+                ⚡ Gọn Gàng
+              </button>
+              <button
+                onClick={() => {
+                  setIsCompactMode(false);
+                  setIsPresetsExpanded(true);
+                  setIsMetaExpanded(true);
+                }}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '11.5px',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  backgroundColor: !isCompactMode ? '#2563eb' : 'transparent',
+                  color: !isCompactMode ? '#ffffff' : '#64748b',
+                  boxShadow: !isCompactMode ? '0 1px 4px rgba(37,99,235,0.25)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  transition: 'all 0.15s'
+                }}
+                title="Mở rộng đầy đủ tất cả các ô nhập liệu và danh sách kịch bản mẫu"
+              >
+                📐 Mở Rộng
+              </button>
+            </div>
+          </div>
+
+          {/* LIÊN KẾT NHANH SANG THƯ VIỆN MẪU LATENDOC */}
+          <Link
+            to="/can-chinh-nghi-dinh-30"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 12px',
+              background: '#eff6ff',
+              color: '#1d4ed8',
+              borderRadius: '8px',
+              fontSize: '12px',
+              fontWeight: '700',
+              textDecoration: 'none',
+              border: '1px solid #bfdbfe'
+            }}
+            title="Mở Thư viện 20+ mẫu văn bản A4 và bóc ảnh sang Word OCR"
+          >
+            <span>📑 Thư Viện Mẫu A4 (Latendoc)</span>
+            <ExternalLink size={13} />
+          </Link>
         </div>
 
         {/* RESPONSIVE STYLESHEET */}
         <style>{`
           .meeting-minutes-grid {
             display: grid;
-            grid-template-columns: minmax(350px, 1fr) minmax(420px, 1.4fr);
+            grid-template-columns: ${isFullScreenMinutes ? '1fr' : 'minmax(350px, 1fr) minmax(420px, 1.4fr)'};
             gap: 22px;
             align-items: start;
           }
@@ -600,14 +761,24 @@ Bế mạc: ${generatedMinutes.closingTime}
               display: block !important;
             }
             .left-panel-meeting {
-              display: ${mobileViewTab === 'studio' ? 'flex' : 'none'} !important;
+              display: ${mobileViewTab === 'studio' && !isFullScreenMinutes ? 'flex' : 'none'} !important;
               width: 100% !important;
             }
             .right-panel-meeting {
-              display: ${mobileViewTab === 'minutes' ? 'flex' : 'none'} !important;
+              display: ${mobileViewTab === 'minutes' || isFullScreenMinutes ? 'flex' : 'none'} !important;
               width: 100% !important;
             }
           }
+          ${isFullScreenMinutes ? `
+            .left-panel-meeting {
+              display: none !important;
+            }
+            .right-panel-meeting {
+              width: 100% !important;
+              max-width: 960px !important;
+              margin: 0 auto !important;
+            }
+          ` : ''}
         `}</style>
 
         {/* THANH CHUYỂN TAB TRÊN DI ĐỘNG (STICKY MOBILE TAB BAR) */}
@@ -932,106 +1103,206 @@ Bế mạc: ${generatedMinutes.closingTime}
                 </div>
               )}
 
-              {/* 3 KỊCH BẢN MẪU THỰC TẾ TRƯỜNG THPT (1-CLICK DEMO) */}
+              {/* 3 KỊCH BẢN MẪU THỰC TẾ TRƯỜNG THPT (THU GỌN TINH Ý) */}
               <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>
-                  ⚡ THỬ NGHIỆM NHANH VỚI CÁC PHIÊN HỌP SƯ PHẠM MẪU:
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '11.5px', fontWeight: 'bold', color: '#64748b' }}>
+                    ⚡ KỊCH BẢN MẪU SƯ PHẠM (1-CHẠM):
+                  </div>
+                  <button
+                    onClick={() => setIsPresetsExpanded(!isPresetsExpanded)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#0284c7',
+                      fontSize: '11px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '2px'
+                    }}
+                  >
+                    {isPresetsExpanded ? 'Thu gọn ▲' : 'Xem dạng danh sách ▼'}
+                  </button>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {PRESET_MEETING_SCENARIOS.map(sc => (
-                    <button
-                      key={sc.id}
-                      onClick={() => handleSelectPresetScenario(sc)}
-                      style={{
-                        padding: '8px 12px',
-                        background: '#f8fafc',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        textAlign: 'left',
-                        cursor: 'pointer',
-                        fontSize: '12.5px',
-                        color: '#1e293b',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        transition: 'all 0.15s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.borderColor = '#0284c7'}
-                      onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}
-                    >
-                      <span><strong>{sc.title}</strong> ({sc.audioDuration})</span>
-                      <ChevronRight size={14} color="#0284c7" />
-                    </button>
-                  ))}
-                </div>
+
+                {!isPresetsExpanded ? (
+                  /* DẠNG CHIPS NGANG GỌN GÀNG (1 DÒNG DUY NHẤT) */
+                  <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {PRESET_MEETING_SCENARIOS.map(sc => {
+                      const isSelected = meetingTitle === sc.title;
+                      const shortLabel = sc.id === 'scenario_su_pham_thang' 
+                        ? '🏫 Sơ kết 20/11' 
+                        : (sc.id === 'scenario_giao_ban_bgh' ? '👔 Giao ban BGH' : '📚 Sinh hoạt tổ');
+                      return (
+                        <button
+                          key={sc.id}
+                          onClick={() => handleSelectPresetScenario(sc)}
+                          style={{
+                            padding: '6px 10px',
+                            background: isSelected ? '#eff6ff' : '#f8fafc',
+                            border: isSelected ? '1.5px solid #3b82f6' : '1px solid #e2e8f0',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '11.5px',
+                            fontWeight: isSelected ? 'bold' : '500',
+                            color: isSelected ? '#1d4ed8' : '#334155',
+                            whiteSpace: 'nowrap',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            flexShrink: 0,
+                            boxShadow: isSelected ? '0 1px 4px rgba(59,130,246,0.2)' : 'none',
+                            transition: 'all 0.15s'
+                          }}
+                          title={`Áp dụng kịch bản: ${sc.title}`}
+                        >
+                          <span>{shortLabel}</span>
+                          <span style={{ fontSize: '10px', color: '#94a3b8' }}>({sc.audioDuration})</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* DẠNG DANH SÁCH CHI TIẾT ĐẦY ĐỦ */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {PRESET_MEETING_SCENARIOS.map(sc => (
+                      <button
+                        key={sc.id}
+                        onClick={() => handleSelectPresetScenario(sc)}
+                        style={{
+                          padding: '8px 12px',
+                          background: meetingTitle === sc.title ? '#eff6ff' : '#f8fafc',
+                          border: meetingTitle === sc.title ? '1.5px solid #3b82f6' : '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          color: '#1e293b',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.borderColor = '#0284c7'}
+                        onMouseLeave={(e) => e.currentTarget.style.borderColor = meetingTitle === sc.title ? '#3b82f6' : '#e2e8f0'}
+                      >
+                        <span><strong>{sc.title}</strong> ({sc.audioDuration})</span>
+                        <ChevronRight size={14} color="#0284c7" />
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* THẺ THIẾT LẬP THÔNG TIN CUỘC HỌP */}
+            {/* THẺ THIẾT LẬP THÔNG TIN CUỘC HỌP (CHẾ ĐỘ THU GỌN TINH Ý) */}
             <div style={{
               background: '#ffffff',
               borderRadius: '16px',
               border: '1px solid #e2e8f0',
-              padding: '20px',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.04)'
+              padding: isMetaExpanded ? '18px 20px' : '12px 16px',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.04)',
+              transition: 'all 0.2s ease'
             }}>
-              <h3 style={{ margin: '0 0 14px', fontSize: '15px', fontWeight: 'bold', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Edit3 size={16} color="#0284c7" /> Thông Tin Phiên Họp (Hành Chính)
-              </h3>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
-                <div>
-                  <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '4px' }}>Tiêu đề phiên họp (*)</label>
-                  <input
-                    type="text"
-                    value={meetingTitle}
-                    onChange={(e) => setMeetingTitle(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '4px' }}>Chủ tọa / Chủ trì</label>
-                    <input
-                      type="text"
-                      value={chairPerson}
-                      onChange={(e) => setChairPerson(e.target.value)}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '4px' }}>Thư ký ghi chép</label>
-                    <input
-                      type="text"
-                      value={secretary}
-                      onChange={(e) => setSecretary(e.target.value)}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                    />
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMetaExpanded ? '12px' : '0' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
+                  <Edit3 size={16} color="#0284c7" />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#0f172a' }}>
+                        Thông Tin Phiên Họp
+                      </span>
+                      <span style={{ fontSize: '10.5px', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
+                        Hành chính NĐ 30
+                      </span>
+                    </div>
+                    {!isMetaExpanded && (
+                      <div style={{ fontSize: '11.5px', color: '#64748b', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <strong>{meetingTitle}</strong> • Chủ trì: {chairPerson} • Thư ký: {secretary}
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                  <div>
-                    <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '4px' }}>Địa điểm tổ chức</label>
-                    <input
-                      type="text"
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '4px' }}>Sĩ số đại biểu</label>
-                    <input
-                      type="text"
-                      value={attendeesCount}
-                      onChange={(e) => setAttendeesCount(e.target.value)}
-                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
-                    />
-                  </div>
-                </div>
+                <button
+                  onClick={() => setIsMetaExpanded(!isMetaExpanded)}
+                  style={{
+                    padding: '5px 10px',
+                    background: isMetaExpanded ? '#f1f5f9' : '#eff6ff',
+                    border: isMetaExpanded ? '1px solid #cbd5e1' : '1px solid #bfdbfe',
+                    borderRadius: '8px',
+                    color: isMetaExpanded ? '#475569' : '#1d4ed8',
+                    fontSize: '11px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    flexShrink: 0
+                  }}
+                  title={isMetaExpanded ? 'Thu gọn form để giao diện gọn gàng' : 'Mở rộng để chỉnh sửa chi tiết các trường'}
+                >
+                  {isMetaExpanded ? 'Thu gọn ▲' : 'Sửa form ✏️'}
+                </button>
               </div>
+
+              {isMetaExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12.5px', marginTop: '8px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                  <div>
+                    <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>Tiêu đề phiên họp (*)</label>
+                    <input
+                      type="text"
+                      value={meetingTitle}
+                      onChange={(e) => setMeetingTitle(e.target.value)}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12.5px', boxSizing: 'border-box' }}
+                    />
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>Chủ tọa / Chủ trì</label>
+                      <input
+                        type="text"
+                        value={chairPerson}
+                        onChange={(e) => setChairPerson(e.target.value)}
+                        style={{ width: '100%', padding: '7px 9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>Thư ký ghi chép</label>
+                      <input
+                        type="text"
+                        value={secretary}
+                        onChange={(e) => setSecretary(e.target.value)}
+                        style={{ width: '100%', padding: '7px 9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>Địa điểm tổ chức</label>
+                      <input
+                        type="text"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        style={{ width: '100%', padding: '7px 9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', color: '#475569', fontWeight: 'bold', marginBottom: '3px' }}>Sĩ số đại biểu</label>
+                      <input
+                        type="text"
+                        value={attendeesCount}
+                        onChange={(e) => setAttendeesCount(e.target.value)}
+                        style={{ width: '100%', padding: '7px 9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* NÚT KÍCH HOẠT TỔNG HỢP BIÊN BẢN BẰNG AI */}
@@ -1302,8 +1573,29 @@ Bế mạc: ${generatedMinutes.closingTime}
                 </button>
               </div>
 
-              {/* NÚT HÀNH ĐỘNG XUẤT WORD & LƯU */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              {/* NÚT HÀNH ĐỘNG XUẤT WORD & LƯU & TOÀN MÀN HÌNH */}
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setIsFullScreenMinutes(!isFullScreenMinutes)}
+                  style={{
+                    padding: '8px 12px',
+                    background: isFullScreenMinutes ? '#eff6ff' : '#ffffff',
+                    border: isFullScreenMinutes ? '1px solid #3b82f6' : '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    color: isFullScreenMinutes ? '#1d4ed8' : '#475569',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title={isFullScreenMinutes ? 'Thu nhỏ lại bố cục 2 cột' : 'Phóng to toàn màn hình để đọc biên bản rõ nét'}
+                >
+                  {isFullScreenMinutes ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+                  <span>{isFullScreenMinutes ? 'Thu Nhỏ' : 'Toàn Màn Hình'}</span>
+                </button>
+
                 <button
                   onClick={handleCopyMinutes}
                   disabled={!generatedMinutes}
