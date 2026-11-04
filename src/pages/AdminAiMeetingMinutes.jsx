@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 import { 
   Mic, MicOff, Square, Play, Pause, RefreshCw, Sparkles, 
@@ -399,6 +400,9 @@ export default function AdminAiMeetingMinutes() {
       setGeneratedMinutes(result);
       setActiveTab('minutes');
       setMobileViewTab('minutes'); // Tự động chuyển tab sang biên bản trên màn hình điện thoại!
+      if (typeof window !== 'undefined') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       setIsSavedDb(false);
     } catch (err) {
       console.error('Lỗi tổng hợp biên bản AI:', err);
@@ -568,6 +572,9 @@ Bế mạc: ${generatedMinutes.closingTime}
           .mobile-tab-bar {
             display: none;
           }
+          .mobile-only-back {
+            display: none;
+          }
           .spin-animation {
             animation: spin 1s linear infinite;
           }
@@ -581,6 +588,16 @@ Bế mạc: ${generatedMinutes.closingTime}
             }
             .mobile-tab-bar {
               display: flex !important;
+              position: sticky !important;
+              top: 8px !important;
+              z-index: 45 !important;
+              backdrop-filter: blur(12px) !important;
+              background: rgba(241, 245, 249, 0.95) !important;
+              box-shadow: 0 4px 14px rgba(0,0,0,0.08) !important;
+              border: 1px solid #cbd5e1 !important;
+            }
+            .mobile-only-back {
+              display: block !important;
             }
             .left-panel-meeting {
               display: ${mobileViewTab === 'studio' ? 'flex' : 'none'} !important;
@@ -593,16 +610,19 @@ Bế mạc: ${generatedMinutes.closingTime}
           }
         `}</style>
 
-        {/* THANH CHUYỂN TAB TRÊN DI ĐỘNG (MOBILE TAB BAR) */}
+        {/* THANH CHUYỂN TAB TRÊN DI ĐỘNG (STICKY MOBILE TAB BAR) */}
         <div className="mobile-tab-bar" style={{
           backgroundColor: '#e2e8f0',
-          padding: '4px',
+          padding: '5px',
           borderRadius: '12px',
           gap: '6px',
-          marginBottom: '6px'
+          marginBottom: '12px'
         }}>
           <button
-            onClick={() => setMobileViewTab('studio')}
+            onClick={() => {
+              setMobileViewTab('studio');
+              if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             style={{
               flex: 1,
               padding: '10px 12px',
@@ -624,7 +644,10 @@ Bế mạc: ${generatedMinutes.closingTime}
           </button>
 
           <button
-            onClick={() => setMobileViewTab('minutes')}
+            onClick={() => {
+              setMobileViewTab('minutes');
+              if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             style={{
               flex: 1,
               padding: '10px 12px',
@@ -1042,10 +1065,189 @@ Bế mạc: ${generatedMinutes.closingTime}
                         : '✨ Tổng Hợp Biên Bản Bằng AI (Nghị Định 30)'))}
             </button>
 
+            {/* THẺ XEM NHANH & THAO TÁC BIÊN BẢN TRÊN DI ĐỘNG (LOẠI BỎ TRIỆT ĐỂ KHOẢNG TRẮNG) */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              border: '1.5px solid #bfdbfe',
+              padding: '16px',
+              boxShadow: '0 4px 16px rgba(37, 99, 235, 0.08)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <CheckCircle2 size={18} color="#16a34a" />
+                  <span style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a' }}>
+                    {generatedMinutes ? 'Bản Thảo Biên Bản NĐ 30 Sẵn Sàng' : 'Bản Thảo Biên Bản'}
+                  </span>
+                </div>
+                <span style={{ fontSize: '11px', background: '#f0fdf4', color: '#166534', padding: '3px 8px', borderRadius: '6px', fontWeight: 'bold', border: '1px solid #bbf7d0' }}>
+                  Chuẩn NĐ 30
+                </span>
+              </div>
+
+              {generatedMinutes ? (
+                <>
+                  {/* MÔ PHỎNG TỜ GIẤY A4 THU NHỎ PHONG CÁCH LATENDOC */}
+                  <div 
+                    onClick={() => {
+                      setMobileViewTab('minutes');
+                      if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    style={{
+                      backgroundColor: '#f8fafc',
+                      borderRadius: '10px',
+                      border: '1px solid #cbd5e1',
+                      padding: '12px 14px',
+                      cursor: 'pointer',
+                      fontFamily: '"Times New Roman", Times, serif',
+                      lineHeight: 1.3,
+                      boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.03)'
+                    }}
+                    title="Bấm để mở toàn màn hình Biên Bản"
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', borderBottom: '0.5px solid #94a3b8', paddingBottom: '4px', marginBottom: '6px' }}>
+                      <div style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        <div>SỞ GD&ĐT ĐẮK LẮK</div>
+                        <div>TRƯỜNG THPT CAO BÁ QUÁT</div>
+                        <div style={{ fontWeight: 'normal', fontSize: '8px' }}>Số: {generatedMinutes.docNumber}</div>
+                      </div>
+                      <div style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                        <div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                        <div style={{ fontWeight: 'normal' }}>Độc lập - Tự do - Hạnh phúc</div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'center', fontWeight: 'bold', fontSize: '11.5px', textTransform: 'uppercase', color: '#1e3a8a', margin: '4px 0' }}>
+                      {generatedMinutes.title}
+                    </div>
+
+                    <div style={{ fontSize: '10px', color: '#334155', marginTop: '6px', lineHeight: '1.4' }}>
+                      <div>• <strong>Chủ trì:</strong> {generatedMinutes.chairPerson}</div>
+                      <div>• <strong>Thư ký:</strong> {generatedMinutes.secretary}</div>
+                      <div>• <strong>Kết luận cốt lõi:</strong> {generatedMinutes.conclusions?.[0] || 'Toàn thể hội đồng nhất trí thông qua nội dung.'}</div>
+                      <div>• <strong>Ma trận nhiệm vụ:</strong> {generatedMinutes.actionItems?.length || 0} việc cần làm (phân công cụ thể)</div>
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '11px', color: '#2563eb', fontWeight: 'bold' }}>
+                      👉 Nhấn vào đây để xem toàn văn & biên tập biên bản →
+                    </div>
+                  </div>
+
+                  {/* CÁC NÚT THAO TÁC NHANH TRÊN DI ĐỘNG */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <button
+                      onClick={() => {
+                        setMobileViewTab('minutes');
+                        if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      style={{
+                        padding: '11px 12px',
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '9px',
+                        fontWeight: 'bold',
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(37,99,235,0.25)'
+                      }}
+                    >
+                      <Eye size={15} /> Xem Bản Đầy Đủ
+                    </button>
+
+                    <button
+                      onClick={handleExportWord}
+                      style={{
+                        padding: '11px 12px',
+                        background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '9px',
+                        fontWeight: 'bold',
+                        fontSize: '12.5px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 8px rgba(22,163,74,0.25)'
+                      }}
+                      title="Xuất file Word chuẩn Nghị định 30 với tiền tố 1-... GEMINI.md"
+                    >
+                      <Download size={15} /> Tải Word (1-...)
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '12.5px', color: '#64748b', textAlign: 'center', padding: '16px' }}>
+                  <FileText size={32} color="#94a3b8" style={{ margin: '0 auto 8px' }} />
+                  <div>Thầy/Cô hãy bấm ghi âm giọng nói, nạp file âm thanh hoặc chọn Phiên họp mẫu để xem trước biên bản tại đây.</div>
+                </div>
+              )}
+
+              {/* LIÊN KẾT SANG THƯ VIỆN MẪU LATENDOC */}
+              <Link
+                to="/can-chinh-nghi-dinh-30"
+                style={{
+                  padding: '10px 14px',
+                  background: '#f8fafc',
+                  border: '1px dashed #cbd5e1',
+                  borderRadius: '10px',
+                  color: '#0284c7',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <span>📑 Khám phá Thư Viện Mẫu Văn Bản Hành Chính (Latendoc)</span>
+                <ChevronRight size={14} />
+              </Link>
+            </div>
+
           </div>
 
           {/* ================= CỘT PHẢI: XEM & BIÊN TẬP BIÊN BẢN CHUẨN NGHỊ ĐỊNH 30 ================= */}
           <div className="right-panel-meeting" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+            {/* NÚT QUAY LẠI PHÒNG THU CHO DI ĐỘNG */}
+            <div className="mobile-only-back">
+              <button
+                onClick={() => {
+                  setMobileViewTab('studio');
+                  if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
+                style={{
+                  width: '100%',
+                  padding: '11px 16px',
+                  backgroundColor: '#ffffff',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '12px',
+                  fontSize: '13px',
+                  fontWeight: '800',
+                  color: '#1e40af',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                }}
+              >
+                ← Quay lại Phòng Thu Âm & Nạp Tệp Âm Thanh
+              </button>
+            </div>
             
             {/* THANH TABS CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>

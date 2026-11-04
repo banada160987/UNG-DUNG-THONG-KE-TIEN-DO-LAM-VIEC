@@ -6,7 +6,7 @@ import {
   Lock, Key, Users, GraduationCap, School, CheckCircle2,
   FileText, Cpu, Camera, Clock, Smartphone, Gamepad2,
   QrCode, Compass, FolderLock, FileSpreadsheet, Layers,
-  ArrowRight, ShieldAlert, Check
+  ArrowRight, ShieldAlert, Check, ClipboardCheck
 } from 'lucide-react';
 
 export default function PublicGuide() {

@@ -97,6 +97,8 @@ export default function MobileBottomNav() {
     { title: 'Trạm Video Kỹ Năng Số', path: '/hoc-lieu-so', icon: '📺', desc: 'Kho học liệu số, video thí nghiệm & kỹ năng' }
   ] : teacher ? [
     { title: '🏛️ 22 Phân Hệ Tiện Ích Số', path: '/huong-dan', icon: '🏛️', desc: 'Sơ đồ hệ sinh thái số & hướng dẫn nghiệp vụ' },
+    { title: '🎙️ Thư Ký AI: Soạn Biên Bản Họp', path: '/bien-ban-hop-ai', icon: '🎙️', desc: 'Ghi âm trực tuyến & xuất Word chuẩn NĐ 30' },
+    { title: '📑 Studio Nghị Định 30 (Latendoc)', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Thư viện mẫu A4, bóc ảnh sang Word OCR' },
     { title: 'Tiếp Nhận Dịch Vụ Công', path: '/admin/dich-vu-cong', icon: '🏛️', desc: 'Thẩm định giấy xác nhận & đơn nghỉ phép' },
     { title: 'Kênh Chat Nội Bộ Trường', path: '/chat', icon: '💬', desc: 'Trao đổi chuyên môn & hội thoại lớp' },
     { title: 'Điểm Tâm Sáng CBQ', path: '/bep-sang', icon: '🍳', desc: 'Suất ăn tiếp sức Thầy Cô giáo' },
@@ -105,12 +107,13 @@ export default function MobileBottomNav() {
     { title: 'Ngân Hàng Đề Thi & Trộn Đề', path: '/giao-vien/ra-de-thi', icon: '✏️', desc: 'Hỗ trợ công thức LaTeX, tạo mã đề đa dạng' },
     { title: 'Ngân Hàng Câu Hỏi Tổ Chuyên Môn', path: '/giao-vien/ngan-hang-cau-hoi', icon: '🌳', desc: 'Quản lý cây thư mục Chương - Bài & bốc đề ma trận' },
     { title: 'Sổ Chấm Điểm Thi Đua Tuần', path: '/cham-diem-thi-dua', icon: '📋', desc: 'Đánh giá nề nếp thi đua 34 lớp học' },
-    { title: 'Căn Chỉnh Nghị Định 30', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Chuẩn hóa thể thức văn bản hành chính' },
     { title: 'Hồ Sơ Tổ Chuyên Môn', path: '/to-chuyen-mon', icon: '🌳', desc: 'Cây phân cấp 4 tầng & hoạt động chuyên môn' },
     { title: 'Quản Lý Điểm Danh CLB', path: '/admin/registrations', icon: '🎯', desc: 'Theo dõi học sinh đăng ký các câu lạc bộ' },
     { title: 'Quản Lý Xe Máy Học Sinh', path: '/admin/parking', icon: '🛵', desc: 'Duyệt vé xe và kiểm tra phương tiện học sinh' }
   ] : [
     { title: '🏛️ 22 Phân Hệ Tiện Ích Số', path: '/huong-dan', icon: '🏛️', desc: 'Giới thiệu các phân hệ tiện ích & Cổng phân quyền' },
+    { title: '🎙️ Thư Ký AI: Ghi Âm & Biên Bản Họp', path: '/bien-ban-hop-ai', icon: '🎙️', desc: 'Bóc băng âm thanh & xuất file Word chuẩn NĐ 30' },
+    { title: '📑 Studio Nghị Định 30 (Latendoc)', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Thư viện mẫu A4, bóc ảnh sang Word OCR chuẩn NĐ 30' },
     { title: 'Cổng Dịch Vụ Công 4.0', path: '/dich-vu-cong', icon: '🏛️', desc: 'Xin giấy xác nhận học sinh, nghỉ phép, sao y học bạ' },
     { title: 'Nhắn Tin Nội Bộ (CBQ Chat)', path: '/chat', icon: '💬', desc: 'Hội thoại trực tiếp Thầy Cô, Phụ huynh & Học sinh' },
     { title: 'Điểm Tâm Sáng CBQ', path: '/bep-sang', icon: '🍳', desc: 'Chương trình điểm tâm sáng học đường' },
