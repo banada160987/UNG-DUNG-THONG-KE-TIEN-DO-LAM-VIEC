@@ -3,7 +3,177 @@
  * Trường THPT Cao Bá Quát - Đắk Lắk
  */
 
+export const TEMPLATE_CATEGORIES = [
+  { id: 'all', name: 'Tất cả' },
+  { id: 'teacher', name: 'Giáo viên' },
+  { id: 'party', name: 'Chi bộ & Đảng' },
+  { id: 'admin', name: 'Ban Giám hiệu' },
+  { id: 'office', name: 'Văn phòng, nhân sự' },
+  { id: 'union', name: 'Công đoàn & Đoàn trường' }
+];
+
 export const DECREE_30_TEMPLATES = [
+  {
+    id: 'giay_moi_chi_bo',
+    title: 'Giấy mời dự Đại hội Chi bộ',
+    category: 'party',
+    category_name: 'Chi bộ & Đảng',
+    tags: ['Chi bộ', 'Giấy mời', 'Đại hội', 'Đảng viên'],
+    type_code: 'GM',
+    type_name: 'GIẤY MỜI',
+    subject: 'Về việc tham dự Đại hội Chi bộ nhiệm kỳ 2025 - 2027',
+    department: 'ĐẢNG BỘ TRƯỜNG THPT CAO BÁ QUÁT',
+    issuer: 'CHI BỘ 1',
+    sub_unit: '',
+    doc_number: '.../GM-CB1',
+    location_date: 'Tân An, ngày 20 tháng 10 năm 2026',
+    signer_title: 'TM. CHI ỦY CHI BỘ\nBÍ THƯ',
+    signer_name: 'Nguyễn Văn Minh',
+    recipients: [
+      '- Thường trực Đảng ủy trường (để kính mời);',
+      '- Toàn thể đảng viên Chi bộ 1 (để t/h);',
+      '- Đại biểu khách mời;',
+      '- Lưu: Hồ sơ Chi bộ.'
+    ],
+    content: `Chi ủy Chi bộ 1 trân trọng kính mời:
+- Đại diện Thường trực Đảng ủy Trường THPT Cao Bá Quát;
+- Toàn thể các đồng chí Đảng viên đang sinh hoạt tại Chi bộ 1;
+- Các đồng chí đoàn viên ưu tú là đối tượng kết nạp Đảng.
+
+VÀO THAM DỰ ĐẠI HỘI CHI BỘ 1 NHIỆM KỲ 2025 - 2027
+
+1. Thời gian: Vào lúc 08 giờ 00 phút, ngày 28 tháng 10 năm 2026 (Thứ Bảy).
+2. Địa điểm: Phòng Hội đồng sư phạm Trường THPT Cao Bá Quát.
+3. Nội dung:
+- Tổng kết, đánh giá kết quả thực hiện Nghị quyết Đại hội Chi bộ nhiệm kỳ 2022 - 2025; xác định phương hướng, mục tiêu và nhiệm vụ công tác nhiệm kỳ 2025 - 2027.
+- Kiểm điểm sự lãnh đạo, chỉ đạo của Chi ủy Chi bộ nhiệm kỳ 2022 - 2025.
+- Bầu Chi ủy, Bí thư, Phó Bí thư Chi bộ 1 nhiệm kỳ 2025 - 2027.
+- Bầu đoàn đại biểu đi dự Đại hội đại biểu Đảng bộ Trường THPT Cao Bá Quát.
+
+Trang phục: Đảng viên nam mặc áo sơ mi trắng, thắt cà vạt (hoặc veston); Đảng viên nữ mặc áo dài truyền thống. Đeo huy hiệu Đảng đầy đủ.
+
+Kính mong sự có mặt đúng giờ của quý đại biểu và toàn thể các đồng chí để Đại hội thành công tốt đẹp./.`
+  },
+  {
+    id: 'giay_moi_hop_phhs',
+    title: 'Giấy mời họp Cha mẹ học sinh lớp',
+    category: 'teacher',
+    category_name: 'Giáo viên',
+    tags: ['Giáo viên', 'Giấy mời', 'Chủ nhiệm', 'PHHS'],
+    type_code: 'GM',
+    type_name: 'GIẤY MỜI',
+    subject: 'Về việc tham dự phiên họp Ban đại diện Cha mẹ học sinh học kỳ I',
+    department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+    issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
+    sub_unit: 'LỚP 10A1',
+    doc_number: '.../GM-GVCN',
+    location_date: 'Tân An, ngày 22 tháng 09 năm 2026',
+    signer_title: 'GIÁO VIÊN CHỦ NHIỆM',
+    signer_name: 'Hoàng Văn C',
+    recipients: [
+      '- Kính gửi: Cha mẹ học sinh;',
+      '- Lưu: Hồ sơ chủ nhiệm.'
+    ],
+    content: `Trân trọng kính mời: Ông/Bà là Cha (Mẹ) hoặc người giám hộ hợp pháp của học sinh: ...................................................., lớp 10A1.
+
+ĐẾN THAM DỰ PHIÊN HỌP PHỤ HUYNH HỌC SINH ĐẦU NĂM HỌC 2026 - 2027
+
+1. Thời gian: Đúng 08 giờ 00 phút, ngày 27 tháng 09 năm 2026 (Chủ nhật).
+2. Địa điểm: Phòng học số 12 (Tầng 2 - Dãy Nhà A), Trường THPT Cao Bá Quát.
+3. Nội dung cuộc họp:
+- Báo cáo đặc điểm tình hình lớp, kết quả khảo sát đầu năm và thông qua nội quy, quy chế học tập của nhà trường.
+- Triển khai phương hướng, kế hoạch phối hợp giữa gia đình và nhà trường trong năm học 2026 - 2027 theo Chương trình GDPT 2018.
+- Bầu Ban đại diện Cha mẹ học sinh lớp năm học 2026 - 2027.
+- Thảo luận, đóng góp ý kiến của quý phụ huynh.
+
+Sự có mặt đầy đủ, đúng giờ của Quý Phụ huynh là yếu tố then chốt quyết định kết quả rèn luyện và học tập của các em học sinh. Rất mong Quý Phụ huynh sắp xếp thời gian đến dự đông đủ./.`
+  },
+  {
+    id: 'quyet_dinh_hoi_dong_thi',
+    title: 'Quyết định thành lập Hội đồng kiểm tra tập trung',
+    category: 'admin',
+    category_name: 'Ban Giám hiệu',
+    tags: ['Ban Giám hiệu', 'Quyết định', 'Khảo thí', 'KTTT'],
+    type_code: 'QĐ',
+    type_name: 'QUYẾT ĐỊNH',
+    subject: 'Về việc thành lập Hội đồng coi và chấm kiểm tra tập trung Giữa Học kỳ I năm học 2026 - 2027',
+    department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+    issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
+    sub_unit: '',
+    doc_number: '142/QĐ-CBQ',
+    location_date: 'Tân An, ngày 28 tháng 10 năm 2026',
+    signer_title: 'HIỆU TRƯỞNG',
+    signer_name: 'Lê Thị Thảo',
+    recipients: [
+      '- Như Điều 3 (để t/h);',
+      '- Ban Giám hiệu (để chỉ đạo);',
+      '- Tổ Khảo thí & ĐBCL (để p/h);',
+      '- Lưu: VT.'
+    ],
+    content: `Căn cứ Điều lệ trường trung học cơ sở, trường trung học phổ thông và trường phổ thông có nhiều cấp học ban hành kèm theo Thông tư số 32/2020/TT-BGDĐT ngày 15/9/2020 của Bộ trưởng Bộ Giáo dục và Đào tạo;
+Căn cứ Thông tư số 22/2021/TT-BGDĐT ngày 20/7/2021 của Bộ Giáo dục và Đào tạo quy định về đánh giá học sinh trung học cơ sở và trung học phổ thông;
+Căn cứ Kế hoạch giáo dục năm học 2026 - 2027 của Trường THPT Cao Bá Quát;
+Xét đề nghị của Tổ trưởng Tổ Khảo thí và Đảm bảo chất lượng giáo dục,
+
+QUYẾT ĐỊNH:
+
+Điều 1. Thành lập Hội đồng coi và chấm kiểm tra tập trung Giữa Học kỳ I năm học 2026 - 2027 gồm các ông (bà) có tên trong danh sách kèm theo.
+- Chủ tịch Hội đồng: Bà Lê Thị Thảo - Hiệu trưởng.
+- Phó Chủ tịch Hội đồng: Ông Trần Văn B - Phó Hiệu trưởng (Phụ trách Chuyên môn).
+- Thư ký Hội đồng: Ông Xuân Bảo Nghiêm - Thư ký Hội đồng khảo thí.
+- Các ủy viên: Toàn thể giáo viên bộ môn và giám thị được phân công làm nhiệm vụ coi thi, chấm thi theo lịch.
+
+Điều 2. Hội đồng coi và chấm kiểm tra tập trung có nhiệm vụ:
+- Chuẩn bị cơ sở vật chất, phòng thi, niêm phong đề thi và tổ chức coi thi an toàn, nghiêm túc, đúng quy chế.
+- Tiến hành rọc phách, chấm bài tập trung, nhập điểm vào phần mềm quản lý và báo cáo kết quả cho Ban Giám hiệu trước ngày 15/11/2026.
+- Hội đồng tự giải thể sau khi hoàn thành nhiệm vụ.
+
+Điều 3. Các bộ phận liên quan, các Tổ Chuyên môn và các ông (bà) có tên tại Điều 1 chịu trách nhiệm thi hành Quyết định này kể từ ngày ký./.`
+  },
+  {
+    id: 'ke_hoach_on_thi_2025',
+    title: 'Kế hoạch ôn tập thi Tốt nghiệp THPT 2025',
+    category: 'teacher',
+    category_name: 'Giáo viên',
+    tags: ['Giáo viên', 'Kế hoạch', 'Khối 12', 'Chuyên môn', '2025'],
+    type_code: 'KH',
+    type_name: 'KẾ HOẠCH',
+    subject: 'Kế hoạch tổ chức ôn tập và kiểm tra thử chuẩn bị kỳ thi Tốt nghiệp THPT năm 2025',
+    department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+    issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
+    sub_unit: 'BAN CHUYÊN MÔN',
+    doc_number: '56/KH-CBQ',
+    location_date: 'Tân An, ngày 15 tháng 10 năm 2026',
+    signer_title: 'TM. BAN GIÁM HIỆU\nPHÓ HIỆU TRƯỞNG',
+    signer_name: 'Trần Văn B',
+    recipients: [
+      '- Ban Giám hiệu (để b/c);',
+      '- Giáo viên dạy khối 12 (để t/h);',
+      '- Phụ huynh và học sinh khối 12 (để p/h);',
+      '- Lưu: VT, CM.'
+    ],
+    content: `Căn cứ Thông tư và Hướng dẫn của Bộ Giáo dục và Đào tạo về phương án tổ chức Kỳ thi Tốt nghiệp THPT theo Chương trình GDPT 2018;
+Nhằm nâng cao chất lượng tốt nghiệp và chuẩn bị tâm thế vững vàng cho học sinh khối 12, Ban Chuyên môn Trường THPT Cao Bá Quát xây dựng Kế hoạch ôn tập như sau:
+
+I. MỤC ĐÍCH, YÊU CẦU
+1. Mục đích:
+- Hệ thống hóa toàn bộ kiến thức trọng tâm các môn học thuộc chương trình lớp 10, 11 và 12.
+- Rèn luyện kỹ năng giải các dạng câu hỏi trắc nghiệm mới theo cấu trúc chuẩn: Phần I (Trắc nghiệm nhiều lựa chọn), Phần II (Trắc nghiệm Đúng/Sai) và Phần III (Trắc nghiệm trả lời ngắn).
+- Nâng cao tỷ lệ đậu tốt nghiệp và điểm xét tuyển Đại học của học sinh.
+
+2. Yêu cầu:
+- Giáo viên bám sát đề minh họa của Bộ GD&ĐT, biên soạn tài liệu ôn tập phù hợp với từng đối tượng học sinh.
+- Tổ chức kiểm tra thử định kỳ, chấm bài nghiêm túc và phân tích phổ điểm để điều chỉnh phương pháp dạy.
+
+II. NỘI DUNG VÀ THỜI GIAN THỰC HIỆN
+- Giai đoạn 1: Từ ngày 01/11/2026 đến hết Học kỳ I (Ôn tập bám sát chương trình chính khóa).
+- Giai đoạn 2: Từ ngày 15/01/2027 đến ngày 15/04/2027 (Luyện giải đề phân hóa và ôn tập chuyên đề nâng cao).
+- Giai đoạn 3: Từ ngày 20/04/2027 đến ngày 15/06/2027 (Thi thử toàn diện và tổng rà soát kiến thức).
+
+III. TỔ CHỨC THỰC HIỆN
+- Tổ trưởng chuyên môn duyệt giáo án ôn tập hàng tuần của giáo viên.
+- Giáo viên chủ nhiệm phối hợp chặt chẽ với phụ huynh học sinh để quản lý giờ giấc học tập của các em./.`
+  },
   {
     id: 'ke_hoach_chuyen_mon',
     title: 'Kế hoạch hoạt động / Chuyên môn',

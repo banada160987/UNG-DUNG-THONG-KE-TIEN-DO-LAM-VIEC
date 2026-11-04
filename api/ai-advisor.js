@@ -33,44 +33,56 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Thiếu promptText trong yêu cầu gửi lên.' });
   }
 
-  const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const candidateModels = [
+    'gemini-2.5-flash',
+    'gemini-3.5-flash-lite',
+    'gemini-2.5-pro'
+  ];
 
-  try {
-    const response = await fetch(geminiEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{ text: `${systemInstruction ? systemInstruction + '\n\n' : ''}${promptText}` }]
-        }],
-        generationConfig: {
-          temperature: temperature,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2500
-        }
-      })
-    });
+  let lastError = null;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      return res.status(response.status).json({
-        error: `Gemini API Error: ${errText}`
+  for (const model of candidateModels) {
+    const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+    try {
+      const response = await fetch(geminiEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: `${systemInstruction ? systemInstruction + '\n\n' : ''}${promptText}` }]
+          }],
+          generationConfig: {
+            temperature: temperature,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 3000
+          }
+        })
       });
+
+      if (response.ok) {
+        const data = await response.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        return res.status(200).json({
+          success: true,
+          text: candidateText,
+          modelUsed: model,
+          source: 'vercel_serverless_gemini'
+        });
+      } else {
+        const errText = await response.text();
+        lastError = `Model ${model} Error (${response.status}): ${errText}`;
+        console.warn(lastError);
+      }
+    } catch (err) {
+      lastError = err.message;
+      console.warn(`Fetch error on ${model}:`, err);
     }
-
-    const data = await response.json();
-    const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-    return res.status(200).json({
-      success: true,
-      text: candidateText,
-      source: 'vercel_serverless_gemini'
-    });
-  } catch (err) {
-    console.error('Serverless AI Advisor Error:', err);
-    return res.status(500).json({
-      error: err.message || 'Lỗi xử lý nội bộ trên máy chủ Vercel'
-    });
   }
+
+  return res.status(500).json({
+    error: lastError || 'Toàn bộ các mô hình Gemini AI đều không thể phản hồi.'
+  });
 }

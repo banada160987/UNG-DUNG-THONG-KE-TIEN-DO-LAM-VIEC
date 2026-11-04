@@ -1,13 +1,15 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { 
   FileText, Download, Printer, Copy, Check, Sparkles, RefreshCw, 
   HelpCircle, Eye, Sliders, CheckCircle2, AlertCircle, ArrowLeft,
   Layers, Plus, Trash2, BookOpen, ShieldCheck, FileCheck, Share2,
   Upload, FileUp, AlertTriangle, Info, Wand2, ArrowRight, CheckCircle,
-  FileCode, Cpu, Home, Grid, ExternalLink
+  FileCode, Cpu, Home, Grid, ExternalLink, Search, Camera, Mic,
+  Settings, MessageSquare, History, Briefcase, FileSpreadsheet, X, Menu,
+  ChevronRight, LayoutGrid, List
 } from 'lucide-react';
-import { DECREE_30_TEMPLATES, DECREE_30_RULES } from '../../data/decree30Templates';
+import { DECREE_30_TEMPLATES, DECREE_30_RULES, TEMPLATE_CATEGORIES } from '../../data/decree30Templates';
 import { 
   parseRawTextToDecree30, 
   validateDecree30Compliance, 
@@ -15,16 +17,230 @@ import {
   readWordFile,
   auditDecree30Document,
   autoFixDecree30Document,
-  deepAiPolishDecree30
+  deepAiPolishDecree30,
+  ocrImageToDecree30
 } from '../../utils/decree30FormatterUtil';
+
+// COMPONENT THẺ MẪU XEM TRƯỚC A4 THU NHỎ PHONG CÁCH LATENDOC
+function MiniDocCard({ template, onUseTemplate }) {
+  return (
+    <div style={{
+      backgroundColor: '#ffffff',
+      borderRadius: '16px',
+      border: '1px solid #e2e8f0',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.04)',
+      overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      transition: 'all 0.2s ease',
+      cursor: 'pointer'
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.transform = 'translateY(-4px)';
+      e.currentTarget.style.boxShadow = '0 12px 24px -4px rgba(0,0,0,0.1)';
+      e.currentTarget.style.borderColor = '#93c5fd';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.04)';
+      e.currentTarget.style.borderColor = '#e2e8f0';
+    }}
+    >
+      {/* KHUNG A4 MINIATURE PREVIEW (Mô phỏng tờ giấy A4 như ảnh 2 & 3 của Latendoc) */}
+      <div 
+        onClick={() => onUseTemplate(template)}
+        style={{
+          backgroundColor: '#f8fafc',
+          padding: '16px 14px',
+          borderBottom: '1px solid #f1f5f9',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '230px',
+          position: 'relative'
+        }}
+      >
+        {/* TỜ GIẤY A4 TRẮNG */}
+        <div style={{
+          backgroundColor: '#ffffff',
+          width: '100%',
+          maxWidth: '220px',
+          height: '220px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 0 1px rgba(0,0,0,0.2)',
+          borderRadius: '2px',
+          padding: '12px 10px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          fontFamily: '"Times New Roman", Times, serif',
+          color: '#1e293b',
+          overflow: 'hidden',
+          lineHeight: '1.2'
+        }}>
+          {/* Header 2 cột: Cơ quan & Quốc hiệu */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '4px', fontSize: '6.5px' }}>
+              <div style={{ textAlign: 'center', width: '48%' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '6px' }}>{template.department || 'SỞ GD&ĐT ĐẮK LẮK'}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '6px' }}>{template.issuer || 'THPT CAO BÁ QUÁT'}</div>
+                <div style={{ borderBottom: '0.5px solid #000', width: '50%', margin: '1px auto' }} />
+                <div style={{ fontSize: '5.5px', marginTop: '1px' }}>Số: {template.doc_number || '.../GM-CBQ'}</div>
+              </div>
+
+              <div style={{ textAlign: 'center', width: '52%' }}>
+                <div style={{ fontWeight: 'bold', fontSize: '6px' }}>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+                <div style={{ fontWeight: 'bold', fontSize: '5.5px' }}>Độc lập - Tự do - Hạnh phúc</div>
+                <div style={{ borderBottom: '0.5px solid #000', width: '60%', margin: '1px auto' }} />
+                <div style={{ fontSize: '5px', fontStyle: 'italic', marginTop: '1px' }}>Tân An, ngày ... tháng ... năm ...</div>
+              </div>
+            </div>
+
+            {/* Tên loại văn bản */}
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <div style={{ fontWeight: 'bold', fontSize: '8.5px', textTransform: 'uppercase', color: '#0f172a' }}>
+                {template.type_name || 'VĂN BẢN'}
+              </div>
+              <div style={{ fontSize: '6px', fontStyle: 'italic', marginTop: '2px', color: '#334155' }}>
+                {template.subject ? `V/v: ${template.subject.slice(0, 45)}...` : ''}
+              </div>
+            </div>
+
+            {/* Mô phỏng nội dung đoạn văn */}
+            <div style={{ marginTop: '8px', fontSize: '6px', color: '#64748b', lineHeight: '1.3' }}>
+              <div style={{ fontStyle: 'italic' }}>Kính gửi: Toàn thể cán bộ, giáo viên...</div>
+              <div style={{ marginTop: '3px' }}>
+                Căn cứ kế hoạch năm học của nhà trường, trân trọng thông báo và triệu tập các thành viên tham dự cuộc họp theo đúng quy định...
+              </div>
+            </div>
+          </div>
+
+          {/* Footer: Nơi nhận và Chữ ký */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', fontSize: '5.5px', marginTop: '6px' }}>
+            <div style={{ width: '45%' }}>
+              <div style={{ fontWeight: 'bold', fontStyle: 'italic' }}>Nơi nhận:</div>
+              <div>- Như kính gửi;</div>
+              <div>- Lưu: VT.</div>
+            </div>
+            <div style={{ width: '50%', textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold' }}>{template.signer_title || 'HIỆU TRƯỞNG'}</div>
+              <div style={{ height: '14px' }} />
+              <div style={{ fontWeight: 'bold' }}>{template.signer_name || 'Lê Thị Thảo'}</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Badge Miễn phí 100% ở góc */}
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          right: '10px',
+          backgroundColor: '#eff6ff',
+          color: '#2563eb',
+          border: '1px solid #bfdbfe',
+          borderRadius: '6px',
+          padding: '2px 8px',
+          fontSize: '11px',
+          fontWeight: '700'
+        }}>
+          Miễn phí
+        </div>
+      </div>
+
+      {/* CHI TIẾT MẪU & NÚT DÙNG MẪU (như ảnh 2 Latendoc) */}
+      <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', flex: 1, justifyContent: 'space-between' }}>
+        <div>
+          <h3 style={{ fontSize: '15px', fontWeight: '800', color: '#0f172a', margin: '0 0 8px 0', lineHeight: '1.3' }}>
+            {template.title}
+          </h3>
+          
+          {/* Tags */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            <span style={{
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: '600'
+            }}>
+              {template.category === 'party' ? 'Chi bộ, Đảng' : template.category === 'teacher' ? 'Giáo viên' : template.category === 'admin' ? 'Ban Giám hiệu' : 'Văn phòng, nhân sự'}
+            </span>
+            <span style={{
+              backgroundColor: '#f1f5f9',
+              color: '#475569',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '11.5px',
+              fontWeight: '600'
+            }}>
+              {template.type_name || 'Biểu mẫu'}
+            </span>
+          </div>
+        </div>
+
+        {/* Nút Dùng mẫu này (như ảnh 2 Latendoc) */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onUseTemplate(template);
+          }}
+          style={{
+            width: '100%',
+            padding: '10px',
+            borderRadius: '10px',
+            backgroundColor: '#ffffff',
+            border: '1.5px solid #cbd5e1',
+            color: '#1e293b',
+            fontSize: '13.5px',
+            fontWeight: '700',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            transition: 'all 0.15s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#2563eb';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.borderColor = '#2563eb';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.color = '#1e293b';
+            e.currentTarget.style.borderColor = '#cbd5e1';
+          }}
+        >
+          <span>Dùng mẫu này</span>
+          <ArrowRight size={15} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Decree30DocFormatter() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const previewRef = useRef(null);
   const fileInputRef = useRef(null);
+  const ocrFileInputRef = useRef(null);
 
-  // Chọn mẫu mặc định ban đầu là "Kế hoạch chuyên môn"
-  const [selectedTemplateId, setSelectedTemplateId] = useState('ke_hoach_chuyen_mon');
+  // Chế độ xem: 'studio' (Thư viện Mẫu chuẩn thương mại kiểu Latendoc) | 'editor' (Soạn thảo chi tiết)
+  const initialMode = searchParams.get('mode') === 'editor' ? 'editor' : 'studio';
+  const [viewMode, setViewMode] = useState(initialMode);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isMoreDrawerOpen, setIsMoreDrawerOpen] = useState(false);
+  const [isOcrModalOpen, setIsOcrModalOpen] = useState(false);
+  const [ocrImageFile, setOcrImageFile] = useState(null);
+  const [ocrPreviewUrl, setOcrPreviewUrl] = useState(null);
+  const [isOcrProcessing, setIsOcrProcessing] = useState(false);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+
+  // Chọn mẫu mặc định ban đầu là "Giấy mời dự Đại hội Chi bộ" hoặc "Kế hoạch chuyên môn"
+  const [selectedTemplateId, setSelectedTemplateId] = useState('giay_moi_chi_bo');
   const [activeTab, setActiveTab] = useState('upload'); // 'upload' | 'form' | 'paste' | 'rules'
   
   // Dữ liệu văn bản
@@ -32,6 +248,76 @@ export default function Decree30DocFormatter() {
     const tpl = DECREE_30_TEMPLATES[0];
     return { ...tpl };
   });
+
+  // Bộ lọc danh sách mẫu
+  const filteredTemplates = useMemo(() => {
+    return DECREE_30_TEMPLATES.filter(tpl => {
+      const matchCat = selectedCategory === 'all' || tpl.category === selectedCategory;
+      const q = searchQuery.toLowerCase().trim();
+      const matchQuery = !q ||
+        (tpl.title || '').toLowerCase().includes(q) ||
+        (tpl.type_name || '').toLowerCase().includes(q) ||
+        (tpl.subject || '').toLowerCase().includes(q) ||
+        (tpl.tags || []).some(t => t.toLowerCase().includes(q));
+      return matchCat && matchQuery;
+    });
+  }, [selectedCategory, searchQuery]);
+
+  // Hành động "Dùng mẫu này" (chuyển sang Editor ngay lập tức)
+  const handleUseTemplate = (tpl) => {
+    setSelectedTemplateId(tpl.id);
+    setDocData({ ...tpl });
+    setAuditResult(null);
+    setIsAutoFixed(false);
+    setViewMode('editor');
+    showToast(`📄 Đã áp dụng mẫu: ${tpl.title}! Chuyển sang trình soạn thảo.`);
+  };
+
+  // Hành động "Tạo văn bản trống"
+  const handleCreateBlankDoc = () => {
+    const blankDoc = {
+      id: 'blank_' + Date.now(),
+      title: 'Văn bản hành chính mới',
+      type_code: 'CV',
+      type_name: 'CÔNG VĂN',
+      subject: 'Về việc ....................................................',
+      department: 'SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK',
+      issuer: 'TRƯỜNG THPT CAO BÁ QUÁT',
+      sub_unit: '',
+      doc_number: '.../CBQ',
+      location_date: `Tân An, ngày ${new Date().getDate()} tháng ${new Date().getMonth() + 1} năm ${new Date().getFullYear()}`,
+      signer_title: 'HIỆU TRƯỞNG',
+      signer_name: 'Lê Thị Thảo',
+      recipients: ['- Như trên;', '- Lưu: VT.'],
+      content: 'Kính gửi: ....................................................\n\nI. NỘI DUNG\n................................................................\n'
+    };
+    setDocData(blankDoc);
+    setAuditResult(null);
+    setIsAutoFixed(false);
+    setViewMode('editor');
+    showToast('📄 Đã tạo văn bản trống. Thầy/Cô có thể bắt đầu soạn thảo hoặc yêu cầu AI điền giúp!');
+  };
+
+  // Xử lý OCR hình ảnh sang Word NĐ 30
+  const handleRunOcr = async (file) => {
+    if (!file) return;
+    setIsOcrProcessing(true);
+    try {
+      const result = await ocrImageToDecree30(file);
+      if (result.success && result.docData) {
+        setDocData(result.docData);
+        setIsOcrModalOpen(false);
+        setOcrImageFile(null);
+        setOcrPreviewUrl(null);
+        setViewMode('editor');
+        showToast('🎉 OCR Thành công! AI Gemini đã bóc tách toàn bộ công văn và phục hồi cấu trúc chuẩn Nghị định 30.');
+      }
+    } catch (err) {
+      alert('Lỗi OCR ảnh: ' + err.message);
+    } finally {
+      setIsOcrProcessing(false);
+    }
+  };
 
   // Văn bản thô khi người dùng dán vào
   const [rawInputText, setRawInputText] = useState('');
@@ -439,7 +725,7 @@ Lê Thị Thảo`;
         </div>
       </header>
 
-      <div style={{ flex: 1, padding: '20px 16px', maxWidth: '1600px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ flex: 1, padding: '20px 16px 85px 16px', maxWidth: '1600px', width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
         
         {/* TOAST NOTIFICATION */}
         {toastMessage && (
@@ -488,93 +774,641 @@ Lê Thị Thảo`;
               >
                 <ArrowLeft size={20} />
               </button>
-              <h1 style={{ fontSize: '20px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FileCheck size={24} color="#2563eb" /> Căn Chỉnh Định Dạng Văn Bản Chuẩn Nghị Định 30/2020/NĐ-CP
+              <h1 style={{ fontSize: '19px', fontWeight: '800', margin: 0, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileCheck size={22} color="#2563eb" /> Trợ Lý Văn Bản & Thư Viện Mẫu AI Studio
               </h1>
-              <span style={{
-                padding: '4px 10px',
-                borderRadius: '12px',
-                fontSize: '12px',
-                fontWeight: '700',
-                backgroundColor: compliance.isFullyCompliant ? '#f0fdf4' : '#fffbeb',
-                color: compliance.isFullyCompliant ? '#16a34a' : '#d97706',
-                border: compliance.isFullyCompliant ? '1px solid #86efac' : '1px solid #fde68a',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                <ShieldCheck size={14} /> Điểm chuẩn hóa: {compliance.score}%
+              <span style={{ backgroundColor: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0', padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                <Sparkles size={12} color="#16a34a" /> 100% Miễn Phí (BYOK AI) • Chuẩn NĐ 30
               </span>
             </div>
             <p style={{ margin: '4px 0 0 30px', fontSize: '13px', color: '#64748b' }}>
-              THPT Cao Bá Quát • Nhập file Word (.docx), AI tự động phát hiện lỗi thể thức sai chuẩn & 1-Click căn chỉnh về 100% chuẩn Nghị định 30
+              Kho biểu mẫu chuyên biệt cho Nhà trường, Chi bộ Đảng & Giáo viên • Không giới hạn Coin • Bóc tách ảnh công văn & Soạn thảo chuẩn thể thức
             </p>
           </div>
 
-          {/* Action Buttons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <button
-              onClick={handleCopyRichText}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '9px 14px',
-                borderRadius: '8px',
-                backgroundColor: '#f8fafc',
-                color: '#334155',
-                border: '1px solid #cbd5e1',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer'
-              }}
-            >
-              <Copy size={16} /> Sao Chép
-            </button>
+          {/* CHUYỂN ĐỔI CHẾ ĐỘ XEM: THƯ VIỆN MẪU (LATENDOC PRO) & TRÌNH SOẠN THẢO CHI TIẾT */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'inline-flex',
+              background: '#f1f5f9',
+              borderRadius: '10px',
+              padding: '3px',
+              border: '1px solid #e2e8f0'
+            }}>
+              <button
+                onClick={() => setViewMode('studio')}
+                style={{
+                  padding: '7px 15px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '12.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  background: viewMode === 'studio' ? '#2563eb' : 'transparent',
+                  color: viewMode === 'studio' ? '#ffffff' : '#64748b',
+                  boxShadow: viewMode === 'studio' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <Grid size={14} /> Thư Viện Mẫu Studio (Latendoc Pro)
+              </button>
 
-            <button
-              onClick={handlePrint}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '9px 14px',
-                borderRadius: '8px',
-                backgroundColor: '#f0fdf4',
-                color: '#16a34a',
-                border: '1px solid #86efac',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer'
-              }}
-            >
-              <Printer size={16} /> In / Xuất PDF A4
-            </button>
+              <button
+                onClick={() => setViewMode('editor')}
+                style={{
+                  padding: '7px 15px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '12.5px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  background: viewMode === 'editor' ? '#2563eb' : 'transparent',
+                  color: viewMode === 'editor' ? '#ffffff' : '#64748b',
+                  boxShadow: viewMode === 'editor' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  transition: 'all 0.15s'
+                }}
+              >
+                <FileText size={14} /> Trình Soạn Thảo & Căn Chỉnh NĐ 30
+              </button>
+            </div>
 
-            <button
-              onClick={handleExportWord}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '9px 16px',
-                borderRadius: '8px',
-                backgroundColor: '#2563eb',
-                color: '#ffffff',
-                border: 'none',
-                fontSize: '13px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(37,99,235,0.25)'
-              }}
-            >
-              <Download size={16} /> Tải File Word (.doc)
-            </button>
+            {viewMode === 'editor' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  onClick={handleCopyRichText}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f8fafc',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Copy size={14} /> Sao Chép
+                </button>
+
+                <button
+                  onClick={handlePrint}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f0fdf4',
+                    color: '#16a34a',
+                    border: '1px solid #86efac',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Printer size={14} /> In / PDF
+                </button>
+
+                <button
+                  onClick={handleExportWord}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    backgroundColor: '#2563eb',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(37,99,235,0.25)'
+                  }}
+                >
+                  <Download size={14} /> Tải Word (.doc)
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* 2. CHỌN MẪU VĂN BẢN SẴN CÓ */}
-        <div className="kho-mau-bar" style={{
+        {viewMode === 'studio' ? (
+          /* ======================================================== */
+          /* GIAO DIỆN THƯ VIỆN MẪU STUDIO CHUẨN THƯƠNG MẠI (LATENDOC PRO) */
+          /* ======================================================== */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            
+            {/* KHỐI 1: BẮT ĐẦU VĂN BẢN MỚI (Như ảnh 4 của Latendoc) */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+                <div>
+                  <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                    Bắt đầu văn bản mới
+                  </h2>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
+                    Khởi tạo văn bản trống hoặc bắt đầu nhanh từ các biểu mẫu thông dụng nhất
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    const el = document.getElementById('thu-vien-mau-section');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#2563eb',
+                    fontSize: '13.5px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  Thư viện mẫu <ChevronRight size={16} />
+                </button>
+              </div>
+
+              {/* Lưới các thẻ Bắt đầu văn bản mới (ảnh 4) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '16px'
+              }}>
+                {/* THẺ 1: VĂN BẢN TRỐNG (+) */}
+                <div
+                  onClick={handleCreateBlankDoc}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    border: '2px dashed #93c5fd',
+                    borderRadius: '14px',
+                    minHeight: '220px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    padding: '20px',
+                    textAlign: 'center',
+                    transition: 'all 0.2s',
+                    position: 'relative'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#eff6ff';
+                    e.currentTarget.style.borderColor = '#2563eb';
+                    e.currentTarget.style.transform = 'translateY(-3px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.borderColor = '#93c5fd';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <div style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    backgroundColor: '#3b82f6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#ffffff',
+                    marginBottom: '14px',
+                    boxShadow: '0 4px 14px rgba(59,130,246,0.35)'
+                  }}>
+                    <Plus size={32} />
+                  </div>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1e293b' }}>
+                    Văn bản trống
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    Tạo trang trắng chuẩn NĐ 30
+                  </div>
+                </div>
+
+                {/* CÁC THẺ MẪU THÔNG DỤNG HÀNG ĐẦU */}
+                {DECREE_30_TEMPLATES.slice(0, 3).map(tpl => (
+                  <div
+                    key={tpl.id}
+                    onClick={() => handleUseTemplate(tpl)}
+                    style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '14px',
+                      overflow: 'hidden',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.03)',
+                      transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-3px)';
+                      e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.08)';
+                      e.currentTarget.style.borderColor = '#93c5fd';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.03)';
+                      e.currentTarget.style.borderColor = '#e2e8f0';
+                    }}
+                  >
+                    {/* Tờ A4 thu nhỏ */}
+                    <div style={{
+                      backgroundColor: '#f8fafc',
+                      padding: '12px',
+                      borderBottom: '1px solid #f1f5f9',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      height: '140px'
+                    }}>
+                      <div style={{
+                        backgroundColor: '#ffffff',
+                        width: '100%',
+                        maxWidth: '140px',
+                        height: '120px',
+                        boxShadow: '0 2px 6px rgba(0,0,0,0.07)',
+                        borderRadius: '2px',
+                        padding: '8px 6px',
+                        fontSize: '5px',
+                        fontFamily: '"Times New Roman", Times, serif',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        lineHeight: '1.2'
+                      }}>
+                        <div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '4.5px' }}>
+                            <span style={{ fontWeight: 'bold' }}>THPT CAO BÁ QUÁT</span>
+                            <span style={{ fontWeight: 'bold' }}>CỘNG HÒA XÃ HỘI CNVN</span>
+                          </div>
+                          <div style={{ textAlign: 'center', marginTop: '6px', fontWeight: 'bold', fontSize: '6px', textTransform: 'uppercase' }}>
+                            {tpl.type_name}
+                          </div>
+                          <div style={{ textAlign: 'center', fontSize: '4.5px', fontStyle: 'italic', color: '#64748b' }}>
+                            {tpl.subject?.slice(0, 30)}...
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '4px' }}>
+                          <span>Nơi nhận: ...</span>
+                          <span style={{ fontWeight: 'bold' }}>{tpl.signer_title}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flex: 1 }}>
+                      <div style={{ fontWeight: '700', fontSize: '13.5px', color: '#1e293b', marginBottom: '6px' }}>
+                        {tpl.title}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#2563eb', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        Dùng mẫu này <ArrowRight size={12} />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* KHỐI 2: THƯ VIỆN MẪU & BỘ LỌC CHUẨN LATENDOC (Ảnh 3) */}
+            <div id="thu-vien-mau-section" style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              
+              {/* Header Thư viện mẫu */}
+              <div style={{ marginBottom: '20px' }}>
+                <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#0f172a', margin: '0 0 6px 0' }}>
+                  Thư viện mẫu văn bản chuẩn Nghị định 30
+                </h2>
+                <p style={{ margin: 0, fontSize: '13.5px', color: '#64748b' }}>
+                  Chọn một mẫu rồi để AI điền giúp bạn, hoặc tải mẫu Word của riêng bạn lên.
+                </p>
+              </div>
+
+              {/* Hàng nút hành động như ảnh 3 của Latendoc */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#ffffff',
+                    border: '1.5px solid #cbd5e1',
+                    color: '#1e293b',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <Upload size={16} color="#475569" /> Tạo mẫu từ văn bản cũ (.docx)
+                </button>
+
+                <button
+                  onClick={() => setIsOcrModalOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#2563eb',
+                    border: 'none',
+                    color: '#ffffff',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 2px 8px rgba(37,99,235,0.25)'
+                  }}
+                >
+                  <Camera size={16} /> Ảnh sang Word (OCR AI Gemini)
+                </button>
+
+                <button
+                  onClick={() => setIsBatchModalOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1.5px solid #cbd5e1',
+                    color: '#334155',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <FileSpreadsheet size={16} color="#059669" /> Trộn văn bản hàng loạt (Excel)
+                </button>
+              </div>
+
+              {/* Tabs Thư viện & Mẫu của tôi (Ảnh 3) */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <button
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#eff6ff',
+                    color: '#1d4ed8',
+                    border: '1.5px solid #bfdbfe',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Thư viện trường ({DECREE_30_TEMPLATES.length} mẫu)
+                </button>
+                <button
+                  onClick={() => showToast('📁 Tính năng "Mẫu của tôi": Toàn bộ bản thảo của Thầy/Cô được lưu trữ an toàn trên thiết bị!')}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#ffffff',
+                    color: '#64748b',
+                    border: '1px solid #e2e8f0',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Mẫu của tôi
+                </button>
+              </div>
+
+              {/* Ô TÌM KIẾM MẪU (Ảnh 3) */}
+              <div style={{ position: 'relative', marginBottom: '16px' }}>
+                <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Tìm mẫu, ví dụ: giấy mời, đại hội chi bộ, họp phụ huynh, kế hoạch, quyết định..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px 14px 12px 42px',
+                    borderRadius: '12px',
+                    border: '1.5px solid #cbd5e1',
+                    fontSize: '14px',
+                    boxSizing: 'border-box',
+                    outline: 'none',
+                    backgroundColor: '#f8fafc',
+                    transition: 'all 0.15s'
+                  }}
+                  onFocus={(e) => { e.target.style.borderColor = '#2563eb'; e.target.style.backgroundColor = '#ffffff'; }}
+                  onBlur={(e) => { e.target.style.borderColor = '#cbd5e1'; e.target.style.backgroundColor = '#f8fafc'; }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    style={{
+                      position: 'absolute',
+                      right: '12px',
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: '#94a3b8'
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* HÀNG CHIPS DANH MỤC (Ảnh 3) */}
+              <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '10px', marginBottom: '14px' }}>
+                {TEMPLATE_CATEGORIES.map(cat => {
+                  const isActive = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      style={{
+                        padding: '7px 16px',
+                        borderRadius: '20px',
+                        fontSize: '13px',
+                        fontWeight: isActive ? '700' : '600',
+                        border: isActive ? '1.5px solid #2563eb' : '1px solid #e2e8f0',
+                        backgroundColor: isActive ? '#eff6ff' : '#f8fafc',
+                        color: isActive ? '#1d4ed8' : '#475569',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* ĐẾM SỐ LƯỢNG MẪU (Ảnh 3: "Đang hiện 24 / 2281 mẫu") */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px', fontSize: '13px', color: '#64748b' }}>
+                <span>
+                  Đang hiện <strong style={{ color: '#0f172a' }}>{filteredTemplates.length}</strong> / {DECREE_30_TEMPLATES.length} mẫu chuẩn
+                </span>
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <Sparkles size={14} /> 100% Miễn phí AI • Chuẩn NĐ 30/2020/NĐ-CP
+                </span>
+              </div>
+
+              {/* LƯỚI THẺ MINIATURE A4 DOCUMENT PREVIEWS (Ảnh 2 & 3) */}
+              {filteredTemplates.length === 0 ? (
+                <div style={{
+                  padding: '40px 20px',
+                  textAlign: 'center',
+                  backgroundColor: '#f8fafc',
+                  borderRadius: '12px',
+                  border: '1px dashed #cbd5e1'
+                }}>
+                  <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#64748b' }}>
+                    Không tìm thấy biểu mẫu phù hợp với từ khóa "<strong>{searchQuery}</strong>"
+                  </p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Xem tất cả mẫu
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '20px'
+                }}>
+                  {filteredTemplates.map(tpl => (
+                    <MiniDocCard
+                      key={tpl.id}
+                      template={tpl}
+                      onUseTemplate={handleUseTemplate}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* KHỐI 3: VĂN BẢN GẦN ĐÂY (Ảnh 4) */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                  Văn bản gần đây
+                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '12.5px', color: '#64748b', backgroundColor: '#f1f5f9', padding: '4px 10px', borderRadius: '6px' }}>
+                    Sửa gần nhất
+                  </span>
+                </div>
+              </div>
+
+              {/* Card văn bản đang làm việc hiện tại */}
+              <div style={{
+                backgroundColor: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '10px',
+                    backgroundColor: '#eff6ff',
+                    color: '#2563eb',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <FileText size={22} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '14.5px', color: '#0f172a' }}>
+                      {docData.title || 'Văn bản đang soạn thảo'}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                      Số: {docData.doc_number || 'Chưa vào số'} • {docData.type_name} • Ký bởi: {docData.signer_name}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    onClick={() => setViewMode('editor')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: '#2563eb',
+                      color: '#ffffff',
+                      border: 'none',
+                      fontSize: '12.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    Tiếp tục soạn thảo <ArrowRight size={14} />
+                  </button>
+                  <button
+                    onClick={handleExportWord}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: '#ffffff',
+                      color: '#334155',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '12.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    <Download size={14} /> Tải Word
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        ) : (
+          /* ======================================================== */
+          /* GIAO DIỆN TRÌNH SOẠN THẢO CHI TIẾT & CĂN CHỈNH NĐ 30 */
+          /* ======================================================== */
+          <>
+            {/* 2. CHỌN MẪU VĂN BẢN SẴN CÓ */}
+            <div className="kho-mau-bar" style={{
           backgroundColor: '#ffffff',
           borderRadius: '14px',
           padding: '14px 18px',
@@ -1682,6 +2516,625 @@ Lê Thị Thảo`;
           </div>
 
         </div>
+
+          </>
+        )}
+
+        {/* MODAL OCR GEMINI 2.5 VISION: ẢNH SANG WORD NGHỊ ĐỊNH 30 */}
+        {isOcrModalOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 999999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            backdropFilter: 'blur(3px)'
+          }}>
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Camera size={22} color="#7c3aed" />
+                  <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                    Ảnh Sang Word (Gemini 2.5 Vision OCR)
+                  </h3>
+                </div>
+                <button
+                  onClick={() => { setIsOcrModalOpen(false); setOcrImageFile(null); setOcrPreviewUrl(null); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', lineHeight: '1.4' }}>
+                Chụp hoặc tải ảnh công văn, quyết định, giấy mời dạng giấy. AI Gemini 2.5 Vision sẽ tự động nhận diện chữ, căn lề và tái tạo file Word chuẩn 100% Nghị định 30!
+              </p>
+
+              <input
+                type="file"
+                ref={ocrFileInputRef}
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  if (e.target.files && e.target.files[0]) {
+                    const file = e.target.files[0];
+                    setOcrImageFile(file);
+                    setOcrPreviewUrl(URL.createObjectURL(file));
+                  }
+                }}
+              />
+
+              {/* Vùng chọn ảnh hoặc Preview */}
+              {!ocrPreviewUrl ? (
+                <div
+                  onClick={() => ocrFileInputRef.current?.click()}
+                  style={{
+                    border: '2px dashed #cbd5e1',
+                    borderRadius: '14px',
+                    padding: '36px 20px',
+                    textAlign: 'center',
+                    backgroundColor: '#f8fafc',
+                    cursor: 'pointer',
+                    marginBottom: '16px'
+                  }}
+                >
+                  <Camera size={40} color="#94a3b8" style={{ margin: '0 auto 10px auto' }} />
+                  <div style={{ fontWeight: '700', fontSize: '14px', color: '#1e293b' }}>
+                    Nhấn để chọn ảnh công văn hoặc kéo thả vào đây
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    Hỗ trợ JPG, PNG, WEBP (ảnh chụp tài liệu rõ nét)
+                  </div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: '16px', textAlign: 'center' }}>
+                  <img
+                    src={ocrPreviewUrl}
+                    alt="Ảnh công văn"
+                    style={{
+                      maxHeight: '220px',
+                      maxWidth: '100%',
+                      borderRadius: '10px',
+                      border: '1px solid #e2e8f0',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                  />
+                  <div style={{ marginTop: '8px' }}>
+                    <button
+                      onClick={() => ocrFileInputRef.current?.click()}
+                      style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: '12.5px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                      Chọn ảnh khác
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Nút hành động */}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => { setIsOcrModalOpen(false); setOcrImageFile(null); setOcrPreviewUrl(null); }}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f1f5f9',
+                    border: 'none',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Hủy
+                </button>
+
+                <button
+                  onClick={() => handleRunOcr(ocrImageFile)}
+                  disabled={!ocrImageFile || isOcrProcessing}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    backgroundColor: !ocrImageFile || isOcrProcessing ? '#94a3b8' : '#7c3aed',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: !ocrImageFile || isOcrProcessing ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 12px rgba(124,58,237,0.3)'
+                  }}
+                >
+                  {isOcrProcessing ? (
+                    <>
+                      <RefreshCw size={16} className="spin-animation" />
+                      <span>Gemini Vision đang đọc ảnh...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles size={16} />
+                      <span>Bóc tách sang Word NĐ 30</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL TRỘN VĂN BẢN HÀNG LOẠT (EXCEL MAIL MERGE) */}
+        {isBatchModalOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            zIndex: 999999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: '20px',
+            backdropFilter: 'blur(3px)'
+          }}>
+            <div style={{
+              backgroundColor: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '520px',
+              width: '100%',
+              padding: '24px',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+              boxSizing: 'border-box'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileSpreadsheet size={22} color="#059669" />
+                  <h3 style={{ fontSize: '17px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
+                    Trộn Văn Bản Hàng Loạt (Smart Mail Merge)
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsBatchModalOpen(false)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px 0', lineHeight: '1.4' }}>
+                Tự động điền hàng loạt Giấy mời họp PHHS, Giấy triệu tập, Phiếu báo điểm từ danh sách file Excel của trường mà không cần làm thủ công từng tờ!
+              </p>
+
+              <div style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '12px',
+                padding: '14px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ fontWeight: '700', fontSize: '13px', color: '#166534', marginBottom: '4px' }}>
+                  💡 Hướng dẫn nhanh 2 bước:
+                </div>
+                <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '12.5px', color: '#15803d', lineHeight: '1.5' }}>
+                  <li>Chọn mẫu văn bản mong muốn (ví dụ: Giấy mời họp PHHS).</li>
+                  <li>Tải file Excel chứa cột [Họ và tên], [Lớp], [Thời gian], hệ thống sẽ xuất ra 1 file Word chứa tất cả giấy mời phân trang A4 hoàn hảo!</li>
+                </ol>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setIsBatchModalOpen(false)}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f1f5f9',
+                    border: 'none',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+                <button
+                  onClick={() => {
+                    setIsBatchModalOpen(false);
+                    setViewMode('editor');
+                    showToast('📄 Đã sẵn sàng! Thầy/Cô hãy chỉnh sửa nội dung mẫu trước khi xuất hàng loạt.');
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    backgroundColor: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    fontSize: '13px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  Tiếp tục với mẫu hiện tại
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DRAWER BOTTOM SHEET TIỆN ÍCH MỞ RỘNG (Ảnh 1) */}
+        {isMoreDrawerOpen && (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            zIndex: 99999,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+            backdropFilter: 'blur(3px)'
+          }}
+          onClick={() => setIsMoreDrawerOpen(false)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                backgroundColor: '#ffffff',
+                width: '100%',
+                maxWidth: '560px',
+                borderTopLeftRadius: '24px',
+                borderTopRightRadius: '24px',
+                padding: '16px 20px 30px 20px',
+                boxShadow: '0 -10px 30px rgba(0,0,0,0.2)'
+              }}
+            >
+              {/* Drag handle */}
+              <div style={{ width: '40px', height: '4px', backgroundColor: '#cbd5e1', borderRadius: '4px', margin: '0 auto 16px auto' }} />
+
+              {/* CARD THAY THẾ "GÓI CƯỚC & NẠP COIN" CỦA LATENDOC */}
+              <div style={{
+                background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                border: '1.5px solid #bfdbfe',
+                borderRadius: '16px',
+                padding: '16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                marginBottom: '20px'
+              }}>
+                <div style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '12px',
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Sparkles size={24} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: '800', fontSize: '15px', color: '#1e3a8a' }}>
+                    100% Miễn Phí Vĩnh Viễn • Không Giới Hạn Coin
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#3b82f6', marginTop: '2px', lineHeight: '1.3' }}>
+                    Hệ thống kết nối Google Gemini 2.5 Flash / 3.5 Flash Lite siêu tốc. Thầy/Cô thoải mái sử dụng không bao giờ bị khóa tài khoản!
+                  </div>
+                </div>
+              </div>
+
+              {/* LƯỚI 8 TIỆN ÍCH (Ảnh 1) */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '16px',
+                marginBottom: '24px'
+              }}>
+                {/* 1. Hàng loạt */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); setIsBatchModalOpen(true); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <FileSpreadsheet size={22} color="#059669" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Hàng loạt</span>
+                </button>
+
+                {/* 2. Ghi họp */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); navigate('/admin/ai-meeting-minutes'); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <Mic size={22} color="#dc2626" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Ghi họp</span>
+                </button>
+
+                {/* 3. Tài liệu NĐ 30 */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); setViewMode('editor'); setActiveTab('rules'); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <BookOpen size={22} color="#2563eb" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Tài liệu</span>
+                </button>
+
+                {/* 4. Ảnh sang Word (OCR) */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); setIsOcrModalOpen(true); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <Camera size={22} color="#7c3aed" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Ảnh sang W...</span>
+                </button>
+
+                {/* 5. Lịch sử */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); showToast('📜 Hệ thống tự động ghi nhớ bản thảo gần nhất của Thầy/Cô trên trình duyệt!'); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <History size={22} color="#0891b2" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Lịch sử</span>
+                </button>
+
+                {/* 6. Thùng rác / Làm mới */}
+                <button
+                  onClick={() => {
+                    if (window.confirm("Thầy/Cô có chắc chắn muốn làm mới và xóa trắng văn bản hiện tại?")) {
+                      handleCreateBlankDoc();
+                      setIsMoreDrawerOpen(false);
+                    }
+                  }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <Trash2 size={22} color="#64748b" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Làm mới</span>
+                </button>
+
+                {/* 7. Bắt lỗi NĐ 30 */}
+                <button
+                  onClick={() => { setIsMoreDrawerOpen(false); setViewMode('editor'); setActiveTab('upload'); }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <ShieldCheck size={22} color="#16a34a" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Bắt lỗi NĐ 30</span>
+                </button>
+
+                {/* 8. Góp ý */}
+                <button
+                  onClick={() => {
+                    setIsMoreDrawerOpen(false);
+                    const feedback = prompt("Thầy/Cô có đề xuất mẫu văn bản mới hoặc góp ý tính năng nào cho Tổ CNTT?");
+                    if (feedback) showToast("🙏 Xin cảm ơn Thầy/Cô! Đề xuất đã được ghi nhận.");
+                  }}
+                  style={{ background: 'none', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                >
+                  <div style={{ width: '48px', height: '48px', borderRadius: '12px', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#334155' }}>
+                    <MessageSquare size={22} color="#eab308" />
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: '600', color: '#334155' }}>Góp ý</span>
+                </button>
+              </div>
+
+              {/* Chân drawer: Thông tin cá nhân & Đóng */}
+              <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Briefcase size={16} />
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: '700', fontSize: '13px', color: '#1e293b' }}>Cán bộ / Giáo viên</div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Trường THPT Cao Bá Quát</div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => setIsMoreDrawerOpen(false)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    backgroundColor: '#f1f5f9',
+                    border: 'none',
+                    fontSize: '12.5px',
+                    fontWeight: '700',
+                    color: '#475569',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* THANH ĐIỀU HƯỚNG ĐÁY 5 NÚT CHUẨN LATENDOC (Ảnh 1, 2, 3, 4) */}
+        <div className="no-print" style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          backgroundColor: '#ffffff',
+          borderTop: '1px solid #e2e8f0',
+          boxShadow: '0 -4px 16px rgba(0,0,0,0.06)',
+          display: 'flex',
+          justifyContent: 'space-around',
+          alignItems: 'center',
+          padding: '6px 12px',
+          zIndex: 9999,
+          maxWidth: '650px',
+          margin: '0 auto',
+          borderRadius: '20px 20px 0 0'
+        }}>
+          {/* 1. Trang chủ */}
+          <button
+            onClick={() => setViewMode('studio')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '3px',
+              color: viewMode === 'studio' ? '#2563eb' : '#64748b',
+              cursor: 'pointer',
+              padding: '4px 8px'
+            }}
+          >
+            <Home size={20} />
+            <span style={{ fontSize: '11px', fontWeight: viewMode === 'studio' ? '700' : '500' }}>Trang chủ</span>
+          </button>
+
+          {/* 2. Văn bản (Editor) */}
+          <button
+            onClick={() => setViewMode('editor')}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '3px',
+              color: viewMode === 'editor' ? '#2563eb' : '#64748b',
+              cursor: 'pointer',
+              padding: '4px 8px'
+            }}
+          >
+            <FileText size={20} />
+            <span style={{ fontSize: '11px', fontWeight: viewMode === 'editor' ? '700' : '500' }}>Văn bản</span>
+          </button>
+
+          {/* 3. Nút tròn lớn (+) Tạo mới ở giữa */}
+          <button
+            onClick={handleCreateBlankDoc}
+            style={{
+              width: '46px',
+              height: '46px',
+              borderRadius: '50%',
+              backgroundColor: '#4338ca',
+              backgroundImage: 'linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%)',
+              border: '3px solid #ffffff',
+              boxShadow: '0 4px 14px rgba(79,70,229,0.4)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transform: 'translateY(-10px)',
+              transition: 'transform 0.15s'
+            }}
+            title="Tạo văn bản mới"
+          >
+            <Plus size={26} />
+          </button>
+
+          {/* 4. Mẫu */}
+          <button
+            onClick={() => {
+              setViewMode('studio');
+              setTimeout(() => {
+                document.getElementById('thu-vien-mau-section')?.scrollIntoView({ behavior: 'smooth' });
+              }, 50);
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '3px',
+              color: '#64748b',
+              cursor: 'pointer',
+              padding: '4px 8px'
+            }}
+          >
+            <LayoutGrid size={20} />
+            <span style={{ fontSize: '11px', fontWeight: '500' }}>Mẫu</span>
+          </button>
+
+          {/* 5. Thêm */}
+          <button
+            onClick={() => setIsMoreDrawerOpen(true)}
+            style={{
+              background: 'none',
+              border: 'none',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '3px',
+              color: isMoreDrawerOpen ? '#2563eb' : '#64748b',
+              cursor: 'pointer',
+              padding: '4px 8px'
+            }}
+          >
+            <Menu size={20} />
+            <span style={{ fontSize: '11px', fontWeight: '500' }}>Thêm</span>
+          </button>
+        </div>
+
+        {/* FLOATING NÚT GÓP Ý CHUẨN LATENDOC (Ảnh 1, 2, 3, 4) */}
+        <button
+          onClick={() => {
+            const feedback = prompt("Thầy/Cô có đề xuất mẫu văn bản mới hoặc góp ý tính năng nào cho Tổ CNTT?");
+            if (feedback) showToast("🙏 Xin cảm ơn Thầy/Cô! Đề xuất đã được ghi nhận.");
+          }}
+          className="no-print"
+          style={{
+            position: 'fixed',
+            bottom: '75px',
+            right: '20px',
+            backgroundColor: '#ffffff',
+            color: '#1e293b',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '24px',
+            padding: '8px 16px',
+            fontSize: '13px',
+            fontWeight: '700',
+            boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            zIndex: 9998,
+            transition: 'all 0.15s'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#f8fafc';
+            e.currentTarget.style.borderColor = '#94a3b8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.borderColor = '#cbd5e1';
+          }}
+        >
+          <MessageSquare size={16} /> Góp ý
+        </button>
 
       </div>
     </div>

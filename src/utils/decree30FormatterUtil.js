@@ -1181,3 +1181,112 @@ Yêu cầu:
     notice: 'Đã áp dụng bộ lọc Rule-based cục bộ do chưa kết nối được API Gemini trực tiếp.'
   };
 }
+
+/**
+ * OCR AI ĐA PHƯƠNG THỨC: CHUYỂN ẢNH CHỤP CÔNG VĂN / TÀI LIỆU SANG VĂN BẢN NGHỊ ĐỊNH 30
+ * Sử dụng Google Gemini 2.5 Flash Vision siêu tốc
+ */
+export async function ocrImageToDecree30(imageFile, customApiKey = null) {
+  if (!imageFile) throw new Error("Chưa chọn ảnh công văn cần OCR.");
+
+  // Lấy API Key
+  let apiKey = customApiKey;
+  if (!apiKey) {
+    try {
+      apiKey = localStorage.getItem('cbq_ai_api_key') || '';
+    } catch (e) {}
+  }
+  if (!apiKey && typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_API_KEY) {
+    apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  }
+
+  if (!apiKey) {
+    throw new Error("Chưa cấu hình API Key. Thầy/Cô vui lòng dán Google AI Studio Key để sử dụng tính năng OCR Ảnh sang Word.");
+  }
+
+  // Chuyển file sang Base64
+  const base64Data = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(imageFile);
+  });
+
+  const mimeType = imageFile.type || 'image/jpeg';
+
+  const systemInstruction = `Bạn là Chuyên gia Số hóa và Thẩm định Thể thức Văn bản Hành chính theo Nghị định 30/2020/NĐ-CP của Chính phủ.
+Nhiệm vụ của bạn là đọc và bóc tách TOÀN BỘ nội dung trong ảnh chụp công văn/tài liệu này và trích xuất thành đối tượng JSON chuẩn xác 100%.
+
+YÊU CẦU ĐỊNH DẠNG JSON TRẢ VỀ:
+{
+  "title": "Tiêu đề ngắn gọn của văn bản",
+  "type_name": "Tên loại văn bản in hoa (ví dụ: GIẤY MỜI, KẾ HOẠCH, QUYẾT ĐỊNH, THÔNG BÁO, TỜ TRÌNH, BIÊN BẢN...)",
+  "subject": "Trích yếu nội dung (Về việc...)",
+  "department": "Tên cơ quan cấp trên nếu có (in hoa)",
+  "issuer": "Tên cơ quan ban hành văn bản (in hoa)",
+  "sub_unit": "Đơn vị trực thuộc nếu có",
+  "doc_number": "Số và ký hiệu văn bản (vd: 12/GM-CBQ)",
+  "location_date": "Địa danh, ngày tháng năm (vd: Tân An, ngày 20 tháng 10 năm 2026)",
+  "signer_title": "Chức vụ người ký (in hoa, vd: HIỆU TRƯỞNG, TM. CHI ỦY CHI BỘ / BÍ THƯ)",
+  "signer_name": "Họ và tên người ký",
+  "recipients": ["Mảng các nơi nhận, mỗi dòng một phần tử kèm gạch đầu dòng"],
+  "content": "Toàn bộ nội dung thân văn bản, giữ nguyên các phần I, II, III, các gạch đầu dòng và bảng biểu (dạng markdown table nếu có)"
+}
+CHỈ TRẢ VỀ DUY NHẤT CHUỖI JSON HỢP LỆ. KHÔNG VIẾT THÊM LỜI DẪN.`;
+
+  const payload = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              mimeType,
+              data: base64Data
+            }
+          },
+          {
+            text: 'Hãy đọc và bóc tách toàn bộ công văn trong ảnh thành JSON cấu trúc chuẩn Nghị định 30/2020/NĐ-CP.'
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.1,
+      responseMimeType: 'application/json'
+    }
+  };
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey.trim()}`;
+  
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error?.message || `Lỗi OCR Gemini API (HTTP ${response.status})`);
+  }
+
+  const data = await response.json();
+  const textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!textOutput) {
+    throw new Error("Không nhận diện được nội dung trong hình ảnh.");
+  }
+
+  let cleanJsonStr = textOutput.trim();
+  if (cleanJsonStr.startsWith('```json')) cleanJsonStr = cleanJsonStr.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+  else if (cleanJsonStr.startsWith('```')) cleanJsonStr = cleanJsonStr.replace(/^```\s*/, '').replace(/\s*```$/, '');
+
+  const parsedDoc = JSON.parse(cleanJsonStr);
+  return {
+    success: true,
+    docData: parsedDoc
+  };
+}
