@@ -183,8 +183,9 @@ export async function testGeminiConnection(customKey = null, customModel = null)
 
 /**
  * GỌI TRỰC TIẾP GOOGLE GEMINI AI VỚI NỘI DUNG TÙY BIẾN (TỰ ĐỘNG CASCADE FALLBACK AN TOÀN)
+ * Hỗ trợ cả text prompt và multimodal parts (Audio, Image, PDF Base64)
  */
-export async function callGeminiRaw({ prompt, systemInstruction = '', temperature = 0.4, jsonMode = false, model = null }) {
+export async function callGeminiRaw({ prompt, parts = null, systemInstruction = '', temperature = 0.4, jsonMode = false, model = null }) {
   const apiKey = getStoredAiKey();
   let targetModel = model || getStoredAiModel();
   if (targetModel.includes('1.5') || targetModel.includes('2.0')) {
@@ -195,11 +196,13 @@ export async function callGeminiRaw({ prompt, systemInstruction = '', temperatur
     throw new Error('Chưa cấu hình API Key. Thầy/Cô vui lòng bấm biểu tượng Trợ lý AI để gán Key miễn phí từ Google AI Studio.');
   }
 
+  const userParts = parts || [{ text: prompt }];
+
   const bodyPayload = {
     contents: [
       {
         role: 'user',
-        parts: [{ text: prompt }]
+        parts: userParts
       }
     ],
     generationConfig: {

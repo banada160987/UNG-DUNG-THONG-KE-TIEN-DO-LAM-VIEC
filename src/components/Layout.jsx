@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail, ChevronDown, Search, X, Minimize2, Maximize2, ExternalLink, Utensils, FileBadge, MessageCircle, MessageSquare, Check, Mic } from 'lucide-react';
+import { LogOut, Home, Users, CheckSquare, FileText, Globe, Gift, Settings, Image, LayoutDashboard, Menu, Bell, Calendar, Link2, Activity, Trophy, BookOpen, Bike, Bus, QrCode, FolderOpen, Flame, Heart, Award, FileSpreadsheet, FileCheck, Video, Mail, ChevronDown, Search, X, Minimize2, Maximize2, ExternalLink, Utensils, FileBadge, MessageCircle, MessageSquare, Check, Mic, Sparkles } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { differenceInDays } from 'date-fns';
@@ -162,7 +162,7 @@ export default function Layout({ children, title }) {
   const menuItems = [
     // 1. 📚 QUẢN LÝ TỔ CHUYÊN MÔN & SỔ SÁCH GIẢNG DẠY
     { path: '/admin', icon: Home, label: '📊 Tổng Quan Điều Hành Sổ Sách', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' },
-    { path: '/can-chinh-nghi-dinh-30', icon: FileCheck, label: '📄 Căn Chỉnh Văn Bản Chuẩn NĐ 30', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
+    { path: '/can-chinh-nghi-dinh-30', icon: Sparkles, label: '✨ Trợ Lý Soạn Thảo & Thư Viện Mẫu Studio (NĐ 30)', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
     { path: '/kiem-tra-ho-so-tn', icon: FileSpreadsheet, label: '🎓 Kiểm Tra Hồ Sơ Thi TN THPT', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: true },
     { path: '/admin/department-drives', icon: FolderOpen, label: '📁 Sổ Kế Hoạch & Hồ Sơ Tổ Chuyên Môn', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || role === 'secretary' || !!permissions.canManageDepartments },
     { path: '/admin/schedule', icon: Calendar, label: '📅 Lịch Công Tác & Thời Khóa Biểu', group: '📚 QUẢN LÝ TỔ CHUYÊN MÔN & GIẢNG DẠY', show: isAdmin || !!permissions.canViewDocs },
@@ -193,6 +193,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents || !!permissions.canViewEmulation },
 
     // 4. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
+    { path: '/can-chinh-nghi-dinh-30', icon: Sparkles, label: '✨ Xưởng Soạn Thảo & Mẫu Văn Bản AI Studio (NĐ 30)', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
     { path: '/admin/docs', icon: FileText, label: '📄 Sổ Văn Bản - Thông Báo Nội Bộ', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/news', icon: Image, label: '📰 Tin tức - Sự kiện Nhà trường', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },
     { path: '/admin/gallery', icon: Image, label: '🖼️ Thư viện ảnh Hoạt động', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { 
   synthesizeMeetingMinutesAi, 
+  transcribeAudioFileWithAi,
   exportMeetingMinutesToWord, 
   saveMeetingMinutesToDb, 
   fetchMeetingMinutesFromDb,
@@ -39,6 +40,10 @@ export default function AdminAiMeetingMinutes() {
   const [selectedModel, setSelectedModel] = useState(getStoredAiModel());
   const [aiStatus, setAiStatus] = useState({ tested: false, success: false, message: '' });
   const [activeTab, setActiveTab] = useState('minutes'); // 'minutes' | 'action_items' | 'transcript'
+  const [mobileViewTab, setMobileViewTab] = useState('studio'); // 'studio' | 'minutes'
+  const [isTranscribingAudio, setIsTranscribingAudio] = useState(false);
+  const [transcribingStatusMsg, setTranscribingStatusMsg] = useState('');
+  const [uploadedAudioInfo, setUploadedAudioInfo] = useState(null);
 
   // Thông tin cuộc họp
   const [meetingsList, setMeetingsList] = useState([]);
@@ -269,17 +274,58 @@ export default function AdminAiMeetingMinutes() {
     }
   };
 
+  // ==================== BÓC BĂNG FILE ÂM THANH BẰNG AI ====================
+  const handleTranscribeCurrentAudio = async (fileToTranscribe = null) => {
+    const file = fileToTranscribe || audioBlob;
+    if (!file) {
+      alert("Chưa có tệp âm thanh nào được nạp!");
+      return null;
+    }
+
+    setIsTranscribingAudio(true);
+    setTranscribingStatusMsg('🤖 AI Gemini 2.5 Flash đang đọc và bóc băng âm thanh tiếng Việt...');
+    try {
+      const transcribedText = await transcribeAudioFileWithAi(file, {
+        model: selectedModel,
+        onProgress: (msg) => setTranscribingStatusMsg(msg)
+      });
+
+      if (transcribedText) {
+        setTranscript(transcribedText);
+        // Tự động gán tiêu đề nếu chưa sửa
+        if (file.name && (!meetingTitle || meetingTitle.includes('Triển Khai Nhiệm Vụ'))) {
+          const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ');
+          setMeetingTitle(`Cuộc họp: ${cleanName}`);
+        }
+        alert(`🎉 AI Gemini đã đọc & bóc băng thành công!\n• Tệp: ${file.name || 'Ghi âm'}\n• Độ dài văn bản: ${transcribedText.length} ký tự.\n\nĐã nạp toàn bộ lời thoại vào hệ thống! Thầy/Cô hãy nhấn "Tổng Hợp Biên Bản Bằng AI" để hoàn tất biên bản.`);
+        return transcribedText;
+      }
+    } catch (err) {
+      console.error("Lỗi bóc băng audio:", err);
+      alert(`⚠️ Không thể bóc băng tự động từ file âm thanh này: ${err.message}\n\nThầy/Cô có thể bấm nạp "Phiên họp sư phạm mẫu" hoặc gõ/dán ghi chú vào khung thoại.`);
+      return null;
+    } finally {
+      setIsTranscribingAudio(false);
+      setTranscribingStatusMsg('');
+    }
+  };
+
   // ==================== TẢI FILE ÂM THANH CÓ SẴN (NGOÀI MÁY) ====================
-  const handleUploadAudioFile = (e) => {
+  const handleUploadAudioFile = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const url = URL.createObjectURL(file);
     setAudioUrl(url);
     setAudioBlob(file);
+    setUploadedAudioInfo({
+      name: file.name,
+      size: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+      type: file.type || file.name.split('.').pop()
+    });
 
-    // Điền mẫu tóm tắt và nhắc nhở
-    alert(`📁 Đã nạp tệp âm thanh: "${file.name}" (${(file.size / (1024 * 1024)).toFixed(2)} MB).\n\nThầy/Cô có thể bấm "Nạp kịch bản mẫu" hoặc gõ thêm ghi chú vào khung thoại để AI tổng hợp biên bản.`);
+    // Tự động kích hoạt AI bóc băng file âm thanh ngay lập tức
+    await handleTranscribeCurrentAudio(file);
   };
 
   // ==================== CHỌN KỊCH BẢN MẪU (1-CLICK DEMO) ====================
@@ -297,8 +343,20 @@ export default function AdminAiMeetingMinutes() {
 
   // ==================== GỌI AI TỔNG HỢP BIÊN BẢN CUỘC HỌP ====================
   const handleSynthesizeAi = async () => {
-    if (!transcript || transcript.trim().length < 20) {
-      alert('Vui lòng ghi âm giọng nói hoặc chọn Kịch bản mẫu trước khi tổng hợp biên bản!');
+    let currentTranscript = transcript ? transcript.trim() : '';
+
+    // Nếu chưa có transcript nhưng đã nạp file âm thanh -> Tự động bóc băng trước!
+    if (!currentTranscript && audioBlob) {
+      const transcribed = await handleTranscribeCurrentAudio(audioBlob);
+      if (transcribed) {
+        currentTranscript = transcribed.trim();
+      } else {
+        return;
+      }
+    }
+
+    if (!currentTranscript || currentTranscript.length < 20) {
+      alert('Vui lòng ghi âm giọng nói, tải file âm thanh hoặc chọn Kịch bản mẫu trước khi tổng hợp biên bản!');
       return;
     }
 
@@ -314,13 +372,14 @@ export default function AdminAiMeetingMinutes() {
       };
 
       const result = await synthesizeMeetingMinutesAi({
-        transcript,
+        transcript: currentTranscript,
         meetingInfo,
         model: selectedModel
       });
 
       setGeneratedMinutes(result);
       setActiveTab('minutes');
+      setMobileViewTab('minutes'); // Tự động chuyển tab sang biên bản trên màn hình điện thoại!
       setIsSavedDb(false);
     } catch (err) {
       console.error('Lỗi tổng hợp biên bản AI:', err);
@@ -386,7 +445,7 @@ Bế mạc: ${generatedMinutes.closingTime}
 
   return (
     <Layout title="Trợ Lý Thư Ký AI: Ghi Âm Trực Tuyến & Soạn Thảo Biên Bản Cuộc Họp">
-      <div style={{ maxWidth: '1360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+      <div style={{ maxWidth: '1360px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '22px', paddingBottom: '90px' }}>
         
         {/* ================= HEADER BANNER TRANG TRỌNG ================= */}
         <div style={{
@@ -454,11 +513,100 @@ Bế mạc: ${generatedMinutes.closingTime}
           </div>
         </div>
 
+        {/* RESPONSIVE STYLESHEET */}
+        <style>{`
+          .meeting-minutes-grid {
+            display: grid;
+            grid-template-columns: minmax(350px, 1fr) minmax(420px, 1.4fr);
+            gap: 22px;
+            align-items: start;
+          }
+          .mobile-tab-bar {
+            display: none;
+          }
+          .spin-animation {
+            animation: spin 1s linear infinite;
+          }
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+          @media (max-width: 900px) {
+            .meeting-minutes-grid {
+              display: block !important;
+            }
+            .mobile-tab-bar {
+              display: flex !important;
+            }
+            .left-panel-meeting {
+              display: ${mobileViewTab === 'studio' ? 'flex' : 'none'} !important;
+              width: 100% !important;
+            }
+            .right-panel-meeting {
+              display: ${mobileViewTab === 'minutes' ? 'flex' : 'none'} !important;
+              width: 100% !important;
+            }
+          }
+        `}</style>
+
+        {/* THANH CHUYỂN TAB TRÊN DI ĐỘNG (MOBILE TAB BAR) */}
+        <div className="mobile-tab-bar" style={{
+          backgroundColor: '#e2e8f0',
+          padding: '4px',
+          borderRadius: '12px',
+          gap: '6px',
+          marginBottom: '6px'
+        }}>
+          <button
+            onClick={() => setMobileViewTab('studio')}
+            style={{
+              flex: 1,
+              padding: '10px 12px',
+              borderRadius: '9px',
+              border: 'none',
+              fontWeight: '800',
+              fontSize: '13px',
+              cursor: 'pointer',
+              backgroundColor: mobileViewTab === 'studio' ? '#2563eb' : 'transparent',
+              color: mobileViewTab === 'studio' ? '#ffffff' : '#475569',
+              boxShadow: mobileViewTab === 'studio' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <Mic size={16} /> 1. Phòng Thu & Nạp File
+          </button>
+
+          <button
+            onClick={() => setMobileViewTab('minutes')}
+            style={{
+              flex: 1,
+              padding: '10px 12px',
+              borderRadius: '9px',
+              border: 'none',
+              fontWeight: '800',
+              fontSize: '13px',
+              cursor: 'pointer',
+              backgroundColor: mobileViewTab === 'minutes' ? '#2563eb' : 'transparent',
+              color: mobileViewTab === 'minutes' ? '#ffffff' : '#475569',
+              boxShadow: mobileViewTab === 'minutes' ? '0 2px 8px rgba(37,99,235,0.25)' : 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <FileText size={16} /> 2. Biên Bản NĐ 30 {generatedMinutes ? '✨' : ''}
+          </button>
+        </div>
+
         {/* ================= BỐ CỤC 2 CỘT CHÍNH ================= */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(350px, 1fr) minmax(420px, 1.4fr)', gap: '22px', alignItems: 'start' }}>
+        <div className="meeting-minutes-grid">
           
           {/* ================= CỘT TRÁI: STUDIO GHI ÂM & THIẾT LẬP CUỘC HỌP ================= */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div className="left-panel-meeting" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             
             {/* THẺ STUDIO GHI ÂM TRỰC TUYẾN */}
             <div style={{
@@ -633,11 +781,87 @@ Bế mạc: ${generatedMinutes.closingTime}
                 </button>
               </div>
 
-              {/* NGHE LẠI AUDIO ĐÃ GHI */}
+              {/* NGHE LẠI AUDIO & BÓC BĂNG BẰNG AI */}
               {audioUrl && (
-                <div style={{ background: '#f1f5f9', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Volume2 size={18} color="#2563eb" />
-                  <audio src={audioUrl} controls style={{ width: '100%', height: '34px' }} />
+                <div style={{
+                  background: '#f8fafc',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  marginBottom: '16px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Volume2 size={18} color="#2563eb" />
+                      <span style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a' }}>
+                        {uploadedAudioInfo?.name || 'Bản ghi âm cuộc họp'}
+                      </span>
+                      {uploadedAudioInfo?.size && (
+                        <span style={{ fontSize: '11px', color: '#64748b', background: '#e2e8f0', padding: '1px 6px', borderRadius: '4px' }}>
+                          {uploadedAudioInfo.size}
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => handleTranscribeCurrentAudio()}
+                      disabled={isTranscribingAudio}
+                      style={{
+                        padding: '6px 12px',
+                        background: isTranscribingAudio ? '#94a3b8' : '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: isTranscribingAudio ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '5px'
+                      }}
+                    >
+                      {isTranscribingAudio ? <RefreshCw size={13} className="spin-animation" /> : <Sparkles size={13} />}
+                      {isTranscribingAudio ? 'AI Đang Bóc Băng...' : '⚡ Bóc Băng Lại Bằng AI'}
+                    </button>
+                  </div>
+
+                  <audio src={audioUrl} controls style={{ width: '100%', height: '36px', marginBottom: '8px' }} />
+
+                  {isTranscribingAudio && (
+                    <div style={{
+                      backgroundColor: '#eff6ff',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '8px',
+                      padding: '10px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      color: '#1d4ed8',
+                      fontSize: '12.5px',
+                      fontWeight: '600'
+                    }}>
+                      <RefreshCw size={16} className="spin-animation" />
+                      <span>{transcribingStatusMsg || 'AI Gemini 2.5 Flash đang nghe và nhận diện giọng nói...'}</span>
+                    </div>
+                  )}
+
+                  {!isTranscribingAudio && transcript && (
+                    <div style={{
+                      backgroundColor: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      color: '#15803d',
+                      fontSize: '12px',
+                      fontWeight: '600'
+                    }}>
+                      <CheckCircle2 size={15} color="#16a34a" />
+                      <span>Đã bóc băng thành công <strong>{transcript.length}</strong> ký tự lời thoại! Sẵn sàng tổng hợp biên bản.</span>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -746,32 +970,38 @@ Bế mạc: ${generatedMinutes.closingTime}
             {/* NÚT KÍCH HOẠT TỔNG HỢP BIÊN BẢN BẰNG AI */}
             <button
               onClick={handleSynthesizeAi}
-              disabled={isGeneratingAi || !transcript.trim()}
+              disabled={isGeneratingAi || isTranscribingAudio || (!transcript.trim() && !audioBlob)}
               style={{
                 padding: '14px 20px',
-                background: (isGeneratingAi || !transcript.trim()) ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #1e40af 100%)',
+                background: (isGeneratingAi || isTranscribingAudio || (!transcript.trim() && !audioBlob)) ? '#94a3b8' : 'linear-gradient(135deg, #0284c7 0%, #1e40af 100%)',
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: '12px',
                 fontWeight: '900',
                 fontSize: '15px',
-                cursor: (isGeneratingAi || !transcript.trim()) ? 'not-allowed' : 'pointer',
+                cursor: (isGeneratingAi || isTranscribingAudio || (!transcript.trim() && !audioBlob)) ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                boxShadow: (isGeneratingAi || !transcript.trim()) ? 'none' : '0 6px 20px rgba(2, 132, 199, 0.35)',
+                boxShadow: (isGeneratingAi || isTranscribingAudio || (!transcript.trim() && !audioBlob)) ? 'none' : '0 6px 20px rgba(2, 132, 199, 0.35)',
                 transition: 'all 0.2s'
               }}
             >
               <Sparkles size={20} color="#facc15" />
-              {isGeneratingAi ? '⏳ AI Đang Phân Tích & Soạn Thảo Biên Bản...' : '✨ Tổng Hợp Biên Bản Bằng AI (Nghị Định 30)'}
+              {isGeneratingAi 
+                ? '⏳ AI Đang Phân Tích & Soạn Thảo Biên Bản...' 
+                : (isTranscribingAudio 
+                    ? '🤖 AI Đang Bóc Băng File Âm Thanh...' 
+                    : (!transcript.trim() && audioBlob 
+                        ? '⚡ AI Bóc Băng & Tổng Hợp Biên Bản (NĐ 30)' 
+                        : '✨ Tổng Hợp Biên Bản Bằng AI (Nghị Định 30)'))}
             </button>
 
           </div>
 
           {/* ================= CỘT PHẢI: XEM & BIÊN TẬP BIÊN BẢN CHUẨN NGHỊ ĐỊNH 30 ================= */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="right-panel-meeting" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             
             {/* THANH TABS CHUYỂN ĐỔI CHẾ ĐỘ XEM */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>

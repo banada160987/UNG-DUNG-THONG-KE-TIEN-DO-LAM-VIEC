@@ -27,11 +27,15 @@ export default async function handler(req, res) {
     });
   }
 
-  const { promptText, systemInstruction, temperature = 0.3 } = req.body || {};
+  const { promptText, parts, systemInstruction, temperature = 0.3 } = req.body || {};
 
-  if (!promptText) {
-    return res.status(400).json({ error: 'Thiếu promptText trong yêu cầu gửi lên.' });
+  if (!promptText && (!parts || parts.length === 0)) {
+    return res.status(400).json({ error: 'Thiếu promptText hoặc parts trong yêu cầu gửi lên.' });
   }
+
+  const userParts = (parts && parts.length > 0)
+    ? parts
+    : [{ text: `${systemInstruction ? systemInstruction + '\n\n' : ''}${promptText}` }];
 
   const candidateModels = [
     'gemini-2.5-flash',
@@ -50,7 +54,7 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contents: [{
-            parts: [{ text: `${systemInstruction ? systemInstruction + '\n\n' : ''}${promptText}` }]
+            parts: userParts
           }],
           generationConfig: {
             temperature: temperature,

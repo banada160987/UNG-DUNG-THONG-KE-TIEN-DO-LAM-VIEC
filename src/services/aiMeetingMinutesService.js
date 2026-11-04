@@ -222,6 +222,113 @@ function normalizeMinutesData(data, meetingInfo) {
 }
 
 /**
+ * Chuyển đổi file Audio/Blob sang Base64 chuỗi thuần
+ */
+export function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64Str = dataUrl.split(',')[1];
+      resolve(base64Str);
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * BÓC BĂNG FILE ÂM THANH CUỘC HỌP BẰNG GOOGLE GEMINI AI (Audio Multimodal)
+ * Hỗ trợ các định dạng .mp3, .m4a, .wav, .aac, .ogg, .webm
+ */
+export async function transcribeAudioFileWithAi(file, { model = null, onProgress = null } = {}) {
+  if (!file) throw new Error('Chưa chọn tệp âm thanh');
+
+  // Kiểm tra kích thước (Giới hạn 25MB cho Base64 Payload)
+  const maxBytes = 25 * 1024 * 1024;
+  if (file.size > maxBytes) {
+    throw new Error(`Kích thước file (${(file.size / (1024 * 1024)).toFixed(1)} MB) vượt quá giới hạn 25 MB. Thầy/Cô vui lòng dùng file nén nhẹ hơn hoặc chia nhỏ file.`);
+  }
+
+  if (onProgress) onProgress('Đang nạp và mã hóa dữ liệu âm thanh...');
+  const base64Data = await fileToBase64(file);
+
+  // Xác định chuẩn MIME Type âm thanh
+  let mimeType = file.type || '';
+  if (!mimeType || mimeType === 'application/octet-stream') {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'mp3') mimeType = 'audio/mp3';
+    else if (ext === 'm4a') mimeType = 'audio/m4a';
+    else if (ext === 'wav') mimeType = 'audio/wav';
+    else if (ext === 'aac') mimeType = 'audio/aac';
+    else if (ext === 'ogg') mimeType = 'audio/ogg';
+    else if (ext === 'webm') mimeType = 'audio/webm';
+    else mimeType = 'audio/mp3';
+  }
+
+  const promptText = `Bạn là Thư ký AI chuyên nghiệp của Trường THPT Cao Bá Quát (Đắk Lắk).
+Nhiệm vụ của bạn: Hãy lắng nghe thật kỹ toàn bộ file ghi âm cuộc họp này và bóc băng chính xác 100% toàn bộ lời thoại (Speech-to-Text) sang tiếng Việt có dấu.
+
+QUY TẮC BÓC BĂNG:
+1. Tự động nhận diện và phân chia các diễn giả phát biểu (ví dụ: [Chủ tọa / Thầy Hiệu trưởng], [Thư ký], [Tổ trưởng], [Đại biểu]...).
+2. Bóc băng trung thực, rõ ràng từng ý kiến thảo luận, các số liệu báo cáo, các nhiệm vụ được giao và thời hạn hoàn thành (deadline).
+3. Đảm bảo ngôn từ chính xác về các thuật ngữ giáo dục phổ thông (GDPT 2018, kiểm tra tập trung, ma trận đặc tả, kế hoạch bài dạy, Thông tư 22, thi tốt nghiệp THPT 2025...).
+4. Trả về toàn bộ nội dung lời thoại đã bóc băng chi tiết.`;
+
+  if (onProgress) onProgress('AI Gemini 2.5 Flash đang nghe và phân tích giọng nói tiếng Việt...');
+
+  // 1. Thử gọi trực tiếp với key cấu hình trong máy
+  try {
+    const rawTranscript = await callGeminiRaw({
+      parts: [
+        {
+          inlineData: {
+            mimeType,
+            data: base64Data
+          }
+        },
+        { text: promptText }
+      ],
+      temperature: 0.2,
+      model: model || 'gemini-2.5-flash'
+    });
+
+    if (rawTranscript && rawTranscript.trim().length > 10) {
+      return rawTranscript.trim();
+    }
+  } catch (directErr) {
+    console.warn('Lỗi gọi Gemini direct cho audio, thử qua backend proxy:', directErr);
+    
+    // 2. Thử gọi qua Vercel Proxy
+    const proxyRes = await fetch('/api/ai-advisor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        parts: [
+          {
+            inlineData: {
+              mimeType,
+              data: base64Data
+            }
+          },
+          { text: promptText }
+        ],
+        temperature: 0.2
+      })
+    });
+
+    if (proxyRes.ok) {
+      const data = await proxyRes.json();
+      if (data.success && data.text) {
+        return data.text.trim();
+      }
+    }
+
+    throw directErr;
+  }
+}
+
+/**
  * THUẬT TOÁN AI DỰ PHÒNG NỘI BỘ (HEURISTIC NLP RULE-BASED ENGINE)
  * Chạy offline 100% khi giáo viên chưa kịp cài đặt Gemini API Key
  */

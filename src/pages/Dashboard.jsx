@@ -277,6 +277,16 @@ export default function Dashboard() {
                   </div>
                 </div>
               </Link>
+
+              <Link to="/can-chinh-nghi-dinh-30" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <Sparkles size={20} color="#2563eb" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#1d4ed8' }}>✨ Xưởng Mẫu & Soạn Thảo NĐ 30</div>
+                    <div style={{ fontSize: '11px', color: '#2563eb' }}>Kho mẫu AI & Soạn chuẩn</div>
+                  </div>
+                </div>
+              </Link>
             </div>
           </div>
 
