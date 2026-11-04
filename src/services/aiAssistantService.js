@@ -6,8 +6,7 @@
  */
 
 export const AI_MODELS = [
-  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Khuyên dùng)', desc: 'Siêu tốc, ổn định, miễn phí 100%, phản hồi < 1 giây' },
-  { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash (Thế hệ mới)', desc: 'Mới nhất 2026, suy luận logic sư phạm vượt trội' },
+  { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash (Khuyên dùng - Ổn định)', desc: 'Siêu tốc, ổn định tuyệt đối, miễn phí 100%, phản hồi < 1 giây' },
   { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro (Chuyên sâu)', desc: 'Xử lý tài liệu dài, bài toán khó và ma trận đề thi phức tạp' }
 ];
 
@@ -59,8 +58,12 @@ export function getAiKeySource() {
 export function getStoredAiModel() {
   try {
     const saved = localStorage.getItem(STORAGE_MODEL_KEY);
-    if (saved && AI_MODELS.some(m => m.id === saved)) {
+    if (saved && saved !== 'gemini-2.0-flash' && AI_MODELS.some(m => m.id === saved)) {
       return saved;
+    }
+    // Nếu trước đó đang lưu gemini-2.0-flash (đã bị Google khai tử), tự động dọn dẹp sang gemini-1.5-flash
+    if (saved === 'gemini-2.0-flash') {
+      localStorage.setItem(STORAGE_MODEL_KEY, DEFAULT_MODEL);
     }
   } catch (e) {}
   return DEFAULT_MODEL;
@@ -71,17 +74,18 @@ export function getStoredAiModel() {
  */
 export function saveStoredAiKey(key, model = DEFAULT_MODEL) {
   try {
+    const safeModel = (model === 'gemini-2.0-flash') ? DEFAULT_MODEL : model;
     if (key && key.trim()) {
       localStorage.setItem(STORAGE_KEY, key.trim());
     } else {
       localStorage.removeItem(STORAGE_KEY);
     }
-    if (model) {
-      localStorage.setItem(STORAGE_MODEL_KEY, model);
+    if (safeModel) {
+      localStorage.setItem(STORAGE_MODEL_KEY, safeModel);
     }
     // Bắn sự kiện để tất cả các component/tab trên màn hình tự cập nhật tức thì
     window.dispatchEvent(new CustomEvent('cbq_ai_key_updated', {
-      detail: { hasKey: Boolean(key && key.trim()), model }
+      detail: { hasKey: Boolean(key && key.trim()), model: safeModel }
     }));
   } catch (e) {
     console.error('Lỗi lưu trữ AI key:', e);
@@ -93,7 +97,10 @@ export function saveStoredAiKey(key, model = DEFAULT_MODEL) {
  */
 export async function testGeminiConnection(customKey = null, customModel = null) {
   const apiKey = (customKey !== null ? customKey : getStoredAiKey())?.trim();
-  const model = customModel || getStoredAiModel();
+  let model = customModel || getStoredAiModel();
+  if (model === 'gemini-2.0-flash') {
+    model = 'gemini-1.5-flash';
+  }
 
   if (!apiKey) {
     return {
@@ -128,6 +135,14 @@ export async function testGeminiConnection(customKey = null, customModel = null)
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
       const errMsg = errData.error?.message || `Mã lỗi HTTP ${response.status}`;
+
+      // Tự động chuyển vùng sang gemini-1.5-flash nếu model cũ bị Google khai tử
+      if (model !== 'gemini-1.5-flash' && (errMsg.includes('no longer available') || errMsg.includes('not found') || response.status === 404)) {
+        console.warn(`Model ${model} không còn khả dụng trên Google API (${errMsg}), tự động chuyển sang gemini-1.5-flash`);
+        saveStoredAiKey(apiKey, 'gemini-1.5-flash');
+        return testGeminiConnection(apiKey, 'gemini-1.5-flash');
+      }
+
       return {
         success: false,
         latencyMs,
@@ -138,12 +153,17 @@ export async function testGeminiConnection(customKey = null, customModel = null)
     const data = await response.json();
     const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
+    // Cập nhật lại model chuẩn vào storage nếu trước đó đang chọn model cũ
+    if (model !== getStoredAiModel()) {
+      saveStoredAiKey(apiKey, model);
+    }
+
     return {
       success: true,
       latencyMs,
       model,
       replyText: replyText.trim(),
-      message: `Kết nối thành công! Độ trễ phản hồi: ${latencyMs}ms.`
+      message: `Kết nối thành công với ${model}! Độ trễ phản hồi: ${latencyMs}ms.`
     };
   } catch (err) {
     return {
@@ -158,7 +178,10 @@ export async function testGeminiConnection(customKey = null, customModel = null)
  */
 export async function callGeminiRaw({ prompt, systemInstruction = '', temperature = 0.4, jsonMode = false, model = null }) {
   const apiKey = getStoredAiKey();
-  const targetModel = model || getStoredAiModel();
+  let targetModel = model || getStoredAiModel();
+  if (targetModel === 'gemini-2.0-flash') {
+    targetModel = 'gemini-1.5-flash';
+  }
 
   if (!apiKey) {
     throw new Error('Chưa cấu hình API Key. Thầy/Cô vui lòng bấm biểu tượng Trợ lý AI để gán Key miễn phí từ Google AI Studio.');
@@ -188,7 +211,7 @@ export async function callGeminiRaw({ prompt, systemInstruction = '', temperatur
     bodyPayload.generationConfig.responseMimeType = 'application/json';
   }
 
-  const response = await fetch(endpoint, {
+  let response = await fetch(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(bodyPayload)
@@ -196,7 +219,24 @@ export async function callGeminiRaw({ prompt, systemInstruction = '', temperatur
 
   if (!response.ok) {
     const errData = await response.json().catch(() => ({}));
-    throw new Error(errData.error?.message || `Lỗi gọi Gemini API (HTTP ${response.status})`);
+    const errMsg = errData.error?.message || '';
+
+    // Tự động chuyển đổi sang gemini-1.5-flash nếu model truyền vào không khả dụng
+    if (targetModel !== 'gemini-1.5-flash' && (errMsg.includes('no longer available') || errMsg.includes('not found') || response.status === 404)) {
+      console.warn(`Model ${targetModel} không khả dụng, tự động chuyển về gemini-1.5-flash`);
+      saveStoredAiKey(apiKey, 'gemini-1.5-flash');
+      const fallbackEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      response = await fetch(fallbackEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyPayload)
+      });
+    }
+
+    if (!response.ok) {
+      const finalErr = await response.json().catch(() => ({}));
+      throw new Error(finalErr.error?.message || `Lỗi gọi Gemini API (HTTP ${response.status})`);
+    }
   }
 
   const data = await response.json();

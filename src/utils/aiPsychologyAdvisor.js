@@ -163,7 +163,7 @@ export async function callGeminiChat(messages = [], systemPrompt = CBQ_SYSTEM_IN
     contents.push({ role: 'user', parts: [{ text: 'Xin chào Trợ lý AI CBQ' }] });
   }
 
-  const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+  const models = ['gemini-1.5-flash', 'gemini-1.5-pro'];
 
   for (const model of models) {
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
