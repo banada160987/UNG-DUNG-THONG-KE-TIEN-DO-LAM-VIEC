@@ -5,7 +5,7 @@ import {
   Calendar, Grid, LogOut, CheckCircle, ChevronRight, UserCheck, Search, Filter,
   Home, FolderArchive, Layers, Sparkles, CalendarCheck, FileSpreadsheet, FileCheck,
   Compass, Heart, Video, Plus, Trophy, Gamepad2, FolderTree, Camera,
-  Clock, Shuffle, RotateCcw, DollarSign, Send
+  Clock, Shuffle, RotateCcw, DollarSign, Send, Mic
 } from 'lucide-react';
 import ClubAttendanceManager from '../components/ClubAttendanceManager';
 import MobileBottomNav from '../components/MobileBottomNav';
@@ -1689,6 +1689,74 @@ export default function TeacherDashboard() {
                     }}
                   >
                     <FolderArchive size={16} /> Mở Kho Học Liệu Tổ
+                  </button>
+                </div>
+
+                {/* CARD 4: TRỢ LÝ THƯ KÝ AI: SOẠN BIÊN BẢN HỌP & SINH HOẠT TỔ */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fecdd3',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff1f2',
+                        color: '#e11d48',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Mic size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff1f2',
+                        color: '#be123c',
+                        border: '1px solid #fecdd3'
+                      }}>
+                        Trợ Lý AI • NĐ 30
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Thư Ký AI: Soạn Biên Bản Họp & Sinh Hoạt Tổ
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Ghi âm trực tiếp phiên họp Hội đồng hoặc Sinh hoạt Tổ chuyên môn, tự động bóc tách diễn giả, trích xuất ma trận phân công nhiệm vụ và xuất file Word chuẩn Nghị định 30.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/admin/bien-ban-hop-ai')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#e11d48',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(225,29,72,0.3)'
+                    }}
+                  >
+                    <Mic size={16} /> Mở Studio Soạn Biên Bản AI
                   </button>
                 </div>
 

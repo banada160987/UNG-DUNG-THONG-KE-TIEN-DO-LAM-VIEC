@@ -89,6 +89,21 @@ export default function AppHub() {
       }
     }
 
+    // Luôn đảm bảo có ứng dụng Trợ Lý Thư Ký AI: Ghi Âm & Soạn Biên Bản Họp (NĐ 30)
+    if (!filtered.some(a => (a.url || '').includes('bien-ban-hop-ai'))) {
+      filtered.unshift({
+        id: 'ai_meeting_minutes_studio',
+        title: '🎙️ Thư Ký AI: Biên Bản Họp (NĐ 30)',
+        url: '/admin/bien-ban-hop-ai',
+        category: 'Hành Chính & Chuyên Môn',
+        description: 'Studio ghi âm thoại trực tuyến, tự động bóc tách diễn giả, trích xuất kết luận của Chủ tọa và xuất file Word chuẩn Nghị định 30/2020/NĐ-CP.',
+        icon: 'FileText',
+        bg_color: '#ffe4e6',
+        border_color: '#fda4af',
+        type: 'hub_global'
+      });
+    }
+
     // Luôn đảm bảo có ứng dụng Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)
     if (!filtered.some(a => (a.url || '').includes('bep-sang') || (a.url || '').includes('cantin'))) {
       filtered.unshift({
