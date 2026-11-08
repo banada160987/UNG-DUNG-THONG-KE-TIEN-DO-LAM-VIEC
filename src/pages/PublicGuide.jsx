@@ -13,17 +13,63 @@ export default function PublicGuide() {
   const [activeTab, setActiveTab] = useState('ecosystem');
 
   return (
-    <div style={styles.container}>
+    <div className="guide-container" style={styles.container}>
+      <style>{`
+        /* RESPONSIVE MOBILE-FIRST PUBLIC GUIDE CBQ */
+        @media (max-width: 640px) {
+          .guide-container {
+            padding: 12px 10px 60px 10px !important;
+          }
+          .guide-header-card {
+            padding: 16px 14px !important;
+            border-radius: 14px !important;
+          }
+          .guide-header-title {
+            font-size: 16.5px !important;
+            line-height: 1.35 !important;
+          }
+          .guide-header-subtitle {
+            font-size: 12px !important;
+            line-height: 1.45 !important;
+          }
+          .guide-security-banner {
+            padding: 14px 12px !important;
+            border-radius: 14px !important;
+          }
+          .guide-login-gateways {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .guide-module-section-card {
+            padding: 14px 12px !important;
+            border-radius: 14px !important;
+            margin-bottom: 16px !important;
+          }
+          .guide-module-grid {
+            grid-template-columns: 1fr !important;
+            gap: 12px !important;
+          }
+          .guide-module-card {
+            padding: 14px 12px !important;
+            border-radius: 12px !important;
+          }
+          .guide-step-grid {
+            grid-template-columns: 1fr !important;
+            gap: 10px !important;
+          }
+        }
+      `}</style>
+
       {/* BANNER HEADER */}
-      <div style={styles.headerCard}>
+      <div className="guide-header-card" style={styles.headerCard}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '10px' }}>
           <div style={{ background: '#fef08a', padding: '12px', borderRadius: '12px', color: '#854d0e', flexShrink: 0 }}>
             <BookOpen size={36} />
           </div>
           <div>
             <span style={styles.badge}>CỔNG THÔNG TIN HƯỚNG DẪN CHÍNH THỨC</span>
-            <h1 style={styles.title}>GIỚI THIỆU HỆ SINH THÁI ĐIỀU HÀNH & TIỆN ÍCH SỐ</h1>
-            <p style={styles.subtitle}>Trường THPT Cao Bá Quát • Nền tảng số thông minh tích hợp AI & Chuẩn hóa Nghị định 30/2020/NĐ-CP</p>
+            <h1 className="guide-header-title" style={styles.title}>GIỚI THIỆU HỆ SINH THÁI ĐIỀU HÀNH & TIỆN ÍCH SỐ</h1>
+            <p className="guide-header-subtitle" style={styles.subtitle}>Trường THPT Cao Bá Quát • Nền tảng số thông minh tích hợp AI & Chuẩn hóa Nghị định 30/2020/NĐ-CP</p>
           </div>
         </div>
       </div>
@@ -81,12 +127,12 @@ export default function PublicGuide() {
         <div style={{ marginBottom: '35px' }}>
           
           {/* BANNER THÔNG BÁO NGUYÊN TẮC BẢO MẬT & PHÂN QUYỀN */}
-          <div style={styles.securityBanner}>
+          <div className="guide-security-banner" style={styles.securityBanner}>
             <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
               <div style={styles.securityIconCircle}>
                 <ShieldAlert size={26} color="#ffffff" />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <h3 style={{ margin: '0 0 6px 0', fontSize: '16.5px', color: '#1e3a8a', fontWeight: '800' }}>
                   🛡️ NGUYÊN TẮC BẢO MẬT & PHÂN QUYỀN TRUY CẬP HỆ THỐNG
                 </h3>
@@ -100,7 +146,7 @@ export default function PublicGuide() {
             </div>
 
             {/* 3 CỔNG ĐĂNG NHẬP CHÍNH THỨC */}
-            <div style={styles.loginGatewaysGrid}>
+            <div className="guide-login-gateways" style={styles.loginGatewaysGrid}>
               <Link to="/login" style={{ ...styles.loginGateCard, borderColor: '#93c5fd' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <div style={{ background: '#dbeafe', padding: '8px', borderRadius: '10px', color: '#1d4ed8' }}>
@@ -864,7 +910,8 @@ const styles = {
     maxWidth: '1160px',
     margin: '0 auto',
     padding: '20px 15px 50px 15px',
-    fontFamily: 'Arial, Helvetica, sans-serif'
+    fontFamily: 'Arial, Helvetica, sans-serif',
+    overflowX: 'hidden'
   },
   headerCard: {
     background: 'linear-gradient(135deg, #be123c 0%, #881337 100%)',
@@ -970,7 +1017,7 @@ const styles = {
   },
   loginGatewaysGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
     gap: '12px',
     marginTop: '18px'
   },
@@ -1025,7 +1072,7 @@ const styles = {
   },
   moduleGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))',
     gap: '16px',
     marginTop: '16px'
   },
@@ -1192,7 +1239,7 @@ const styles = {
   },
   stepGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
     gap: '15px',
     margin: '15px 0'
   },

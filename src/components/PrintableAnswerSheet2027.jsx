@@ -234,18 +234,46 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
           background-color: #000000;
           z-index: 1;
         }
+        @media (max-width: 768px) {
+          .mobile-preview-hint {
+            display: flex !important;
+          }
+        }
       `}</style>
 
-      {/* TỜ PHIẾU IN TRẮC NGHIỆM CHUẨN (A4 / A5) */}
-      <div id="cbq-printable-sheet" style={{
-        backgroundColor: '#ffffff',
-        border: '2px solid #000000',
-        padding: isA5 ? '10px' : '16px',
-        position: 'relative',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-        color: '#000000',
-        minHeight: isA5 ? '135mm' : '260mm'
+      {/* THÔNG BÁO HƯỚNG DẪN VUỐT XEM TRÊN ĐIỆN THOẠI */}
+      <div className="no-print mobile-preview-hint" style={{
+        fontSize: '12px',
+        color: '#0369a1',
+        backgroundColor: '#f0f9ff',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        marginBottom: '12px',
+        border: '1px solid #bae6fd',
+        display: 'none',
+        alignItems: 'center',
+        gap: '6px'
       }}>
+        <span>📱 <em>Mẹo: Khổ giấy A4/A5 rộng hơn màn hình điện thoại. Bạn có thể vuốt ngang để xem toàn bộ phiếu trước khi in.</em></span>
+      </div>
+
+      {/* CONTAINER CUỘN NGANG GIỮ NGUYÊN TỈ LỆ IN ẤN CHUẨN XÁC */}
+      <div className="cbq-sheet-scroll-wrap" style={{
+        overflowX: 'auto',
+        WebkitOverflowScrolling: 'touch',
+        paddingBottom: '16px'
+      }}>
+        {/* TỜ PHIẾU IN TRẮC NGHIỆM CHUẨN (A4 / A5) */}
+        <div id="cbq-printable-sheet" style={{
+          minWidth: isA5 ? '560px' : '700px',
+          backgroundColor: '#ffffff',
+          border: '2px solid #000000',
+          padding: isA5 ? '10px' : '16px',
+          position: 'relative',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+          color: '#000000',
+          minHeight: isA5 ? '135mm' : '260mm'
+        }}>
 
         {/* 4 MỐC ARUCO ĐỊNH VỊ 4 GÓC CHUYÊN DỤNG (BẮT GÓC CAMERA CHÍNH XÁC 100%) */}
         <div className="corner-anchor" style={{ top: '8px', left: '8px' }}></div>
@@ -483,6 +511,7 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
           </div>
         )}
 
+      </div>
       </div>
 
     </div>

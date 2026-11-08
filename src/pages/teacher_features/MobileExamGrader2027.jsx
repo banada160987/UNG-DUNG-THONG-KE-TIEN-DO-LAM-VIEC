@@ -592,23 +592,92 @@ export default function MobileExamGrader2027() {
   }, [schoolStudents]);
 
   return (
-    <div style={{
+    <div className="omr-mobile-wrapper" style={{
       minHeight: '100dvh',
       backgroundColor: '#f5f5f5',
       color: '#0f172a',
       fontFamily: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       paddingBottom: '90px',
-      position: 'relative'
+      position: 'relative',
+      overflowX: 'hidden'
     }}>
+      <style>{`
+        /* RESPONSIVE MOBILE-FIRST OMR MASTER PRO 2027 */
+        .omr-mobile-wrapper {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+        @media (max-width: 480px) {
+          .omr-main-container {
+            padding: 10px 8px !important;
+          }
+          .omr-header-bar {
+            padding: 0 10px !important;
+            height: 52px !important;
+          }
+          .omr-header-title {
+            font-size: 14.5px !important;
+          }
+          .omr-banner-box {
+            padding: 14px 12px !important;
+            border-radius: 16px !important;
+          }
+          .omr-home-card {
+            padding: 13px 14px !important;
+            gap: 12px !important;
+            border-radius: 14px !important;
+          }
+          .omr-home-card-title {
+            font-size: 15.5px !important;
+          }
+          .omr-cam-hud {
+            aspect-ratio: 4/3 !important;
+            max-height: 40vh !important;
+            min-height: 240px !important;
+            border-radius: 14px !important;
+          }
+          .omr-inspect-modal-body {
+            padding: 12px 10px !important;
+          }
+          .omr-inspect-grid-p1 {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 6px !important;
+          }
+          .omr-inspect-grid-p2 {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .omr-ans-grid-p1 {
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+            gap: 6px !important;
+          }
+          .omr-ans-grid-p2 {
+            grid-template-columns: 1fr !important;
+            gap: 8px !important;
+          }
+          .omr-ans-grid-p3 {
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 8px !important;
+          }
+        }
+        /* Chống iOS Safari auto-zoom khi focus ô nhập liệu */
+        @media (max-width: 768px) {
+          .omr-mobile-wrapper input[type="text"],
+          .omr-mobile-wrapper input[type="number"],
+          .omr-mobile-wrapper select {
+            font-size: 16px !important;
+          }
+        }
+      `}</style>
 
       {/* =========================================================================
           PURPLE APP BAR (MÀU TÍM ĐẬM THƯƠNG MẠI #6200EE CHUẨN XÁC Y HỆT ẢNH CHỤP)
           ========================================================================= */}
-      <header style={{
+      <header className="omr-header-bar" style={{
         background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #4338ca 100%)',
         borderBottom: '2px solid #10b981',
         color: '#ffffff',
-        padding: '0 16px',
+        padding: '0 14px',
         height: '56px',
         display: 'flex',
         alignItems: 'center',
@@ -616,9 +685,10 @@ export default function MobileExamGrader2027() {
         boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
         position: 'sticky',
         top: 0,
-        zIndex: 1000
+        zIndex: 1000,
+        boxSizing: 'border-box'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', minWidth: 0, flex: 1 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
           <button
             type="button"
             onClick={handleHeaderBack}
@@ -635,15 +705,15 @@ export default function MobileExamGrader2027() {
             }}
             title="Quay lại"
           >
-            <ArrowLeft size={22} />
+            <ArrowLeft size={21} />
           </button>
 
           <img 
             src="/logo.jpg" 
             alt="Logo THPT Cao Bá Quát" 
             style={{ 
-              width: '32px', 
-              height: '32px', 
+              width: '30px', 
+              height: '30px', 
               borderRadius: '8px', 
               objectFit: 'contain', 
               backgroundColor: '#ffffff',
@@ -653,15 +723,17 @@ export default function MobileExamGrader2027() {
             }} 
           />
 
-          <h1 style={{
+          <h1 className="omr-header-title" style={{
             margin: 0,
-            fontSize: '18px',
+            fontSize: 'clamp(14px, 4vw, 17px)',
             fontWeight: '700',
             letterSpacing: '-0.2px',
             color: '#ffffff',
             whiteSpace: 'nowrap',
             overflow: 'hidden',
-            textOverflow: 'ellipsis'
+            textOverflow: 'ellipsis',
+            flex: 1,
+            minWidth: 0
           }}>
             {getHeaderTitle()}
           </h1>
@@ -714,94 +786,96 @@ export default function MobileExamGrader2027() {
       </header>
 
       {/* Main Content Area - Căn giữa cho Mobile & Tablet */}
-      <main style={{ maxWidth: '540px', margin: '0 auto', padding: '16px 14px' }}>
+      <main className="omr-main-container" style={{ maxWidth: '540px', margin: '0 auto', padding: '14px 12px', boxSizing: 'border-box' }}>
 
         {/* =======================================================================
             SCREEN 0: "TRANG CHỦ CHẤM THI 2027" (CHÍNH XÁC 100% THEO SCREENSHOT 3)
             ======================================================================= */}
         {currentView === 'home' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {/* BANNER NHẬN DIỆN THƯƠNG HIỆU: PHIÊN BẢN ĐẶC BIỆT THPT CAO BÁ QUÁT */}
-            <div style={{
+            <div className="omr-banner-box" style={{
               background: 'linear-gradient(135deg, #064e3b 0%, #047857 60%, #312e81 100%)',
               color: '#ffffff',
-              borderRadius: '20px',
-              padding: '20px',
-              boxShadow: '0 8px 26px rgba(6, 78, 59, 0.25)',
+              borderRadius: '18px',
+              padding: '16px 14px',
+              boxShadow: '0 6px 20px rgba(6, 78, 59, 0.22)',
               border: '1.5px solid #10b981',
               position: 'relative',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              boxSizing: 'border-box'
             }}>
               {/* Trang trí vòng sáng */}
-              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(52, 211, 153, 0.2)', filter: 'blur(25px)' }} />
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '90px', height: '90px', borderRadius: '50%', background: 'rgba(52, 211, 153, 0.2)', filter: 'blur(25px)' }} />
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', position: 'relative', zIndex: 1 }}>
                 <img 
                   src="/logo.jpg" 
                   alt="THPT Cao Bá Quát" 
                   style={{ 
-                    width: '52px', 
-                    height: '52px', 
-                    borderRadius: '12px', 
+                    width: '46px', 
+                    height: '46px', 
+                    borderRadius: '10px', 
                     border: '2px solid #34d399', 
                     backgroundColor: '#ffffff', 
                     padding: '2px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
                     flexShrink: 0
                   }} 
                 />
-                <div>
-                  <div style={{ fontSize: '11px', color: '#6ee7b7', fontWeight: '800', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '10px', color: '#6ee7b7', fontWeight: '800', letterSpacing: '0.6px', textTransform: 'uppercase' }}>
                     TRƯỜNG THPT CAO BÁ QUÁT • KHẢO THÍ SỐ 2027
                   </div>
-                  <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.2px' }}>
+                  <h2 style={{ margin: '2px 0 0 0', fontSize: '16px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.2px' }}>
                     OMR MASTER PRO • BẢN ĐẶC BIỆT
                   </h2>
-                  <div style={{ fontSize: '12px', color: '#e2e8f0', marginTop: '2px' }}>
-                    Động cơ kép: OMR Canvas Thật + Gemini AI Vision • Chính xác 100%
+                  <div style={{ fontSize: '11px', color: '#e2e8f0', marginTop: '2px', lineHeight: 1.3 }}>
+                    Động cơ kép: OMR Canvas Thật + Gemini AI Vision • Chuẩn 100%
                   </div>
                 </div>
               </div>
 
               {/* Badges các mẫu phiếu hỗ trợ */}
-              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '14px', position: 'relative', zIndex: 1 }}>
-                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
-                  ✓ Bộ GD&ĐT 2025 (3 phần)
+              <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginTop: '10px', position: 'relative', zIndex: 1 }}>
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ Bộ GD&ĐT 2025
                 </span>
-                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
-                  ✓ TNMaker 20/40/50/100
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ TNMaker
                 </span>
-                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
-                  ✓ Azota A4/A5/Tự luận
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ Azota
                 </span>
-                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: '#10b981', color: '#064e3b', fontWeight: '900' }}>
-                  ⭐ CBQ Exclusive A4/A5
+                <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', backgroundColor: '#10b981', color: '#064e3b', fontWeight: '900' }}>
+                  ⭐ CBQ Exclusive
                 </span>
               </div>
             </div>
 
             {/* 5 Main Function Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {/* 1. Danh sách chấm */}
               <div
                 onClick={() => setCurrentView('batches')}
+                className="omr-home-card"
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '18px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  gap: '14px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                   cursor: 'pointer',
                   border: '1px solid #f1f5f9',
                   transition: 'transform 0.15s ease'
                 }}
               >
-                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
-                  <FileSpreadsheet size={24} strokeWidth={2.2} />
+                <div style={{ color: '#065f46', display: 'flex', alignItems: 'center' }}>
+                  <FileSpreadsheet size={22} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                <div className="omr-home-card-title" style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
                   Danh sách chấm
                 </div>
               </div>
@@ -809,23 +883,24 @@ export default function MobileExamGrader2027() {
               {/* 2. Tải phiếu trả lời */}
               <div
                 onClick={() => setCurrentView('print_sheet')}
+                className="omr-home-card"
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '18px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  gap: '14px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                   cursor: 'pointer',
                   border: '1px solid #f1f5f9',
                   transition: 'transform 0.15s ease'
                 }}
               >
-                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
-                  <FileText size={24} strokeWidth={2.2} />
+                <div style={{ color: '#0284c7', display: 'flex', alignItems: 'center' }}>
+                  <FileText size={22} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                <div className="omr-home-card-title" style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
                   Tải phiếu trả lời
                 </div>
               </div>
@@ -833,23 +908,24 @@ export default function MobileExamGrader2027() {
               {/* 3. Cài đặt */}
               <div
                 onClick={() => setCurrentView('settings')}
+                className="omr-home-card"
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '18px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  gap: '14px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                   cursor: 'pointer',
                   border: '1px solid #f1f5f9',
                   transition: 'transform 0.15s ease'
                 }}
               >
-                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
-                  <Settings size={24} strokeWidth={2.2} />
+                <div style={{ color: '#475569', display: 'flex', alignItems: 'center' }}>
+                  <Settings size={22} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                <div className="omr-home-card-title" style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
                   Cài đặt
                 </div>
               </div>
@@ -857,23 +933,24 @@ export default function MobileExamGrader2027() {
               {/* 4. Tài khoản */}
               <div
                 onClick={() => setShowAccountModal(true)}
+                className="omr-home-card"
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '18px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  gap: '14px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                   cursor: 'pointer',
                   border: '1px solid #f1f5f9',
                   transition: 'transform 0.15s ease'
                 }}
               >
-                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
-                  <Users size={24} strokeWidth={2.2} />
+                <div style={{ color: '#6200ee', display: 'flex', alignItems: 'center' }}>
+                  <Users size={22} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                <div className="omr-home-card-title" style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
                   Tài khoản
                 </div>
               </div>
@@ -881,23 +958,24 @@ export default function MobileExamGrader2027() {
               {/* 5. Lớp học */}
               <div
                 onClick={() => setCurrentView('choose_class')}
+                className="omr-home-card"
                 style={{
                   backgroundColor: '#ffffff',
-                  borderRadius: '16px',
-                  padding: '18px 22px',
+                  borderRadius: '14px',
+                  padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '18px',
-                  boxShadow: '0 2px 10px rgba(0,0,0,0.06)',
+                  gap: '14px',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
                   cursor: 'pointer',
                   border: '1px solid #f1f5f9',
                   transition: 'transform 0.15s ease'
                 }}
               >
-                <div style={{ color: '#1e293b', display: 'flex', alignItems: 'center' }}>
-                  <Award size={24} strokeWidth={2.2} />
+                <div style={{ color: '#0d9488', display: 'flex', alignItems: 'center' }}>
+                  <Award size={22} strokeWidth={2.2} />
                 </div>
-                <div style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a' }}>
+                <div className="omr-home-card-title" style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a' }}>
                   Lớp học
                 </div>
               </div>
@@ -1899,13 +1977,13 @@ export default function MobileExamGrader2027() {
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#6200ee', marginBottom: '12px' }}>
                       Phần 1: Trắc nghiệm 4 lựa chọn ({selectedBatch.parts.part1.count} câu)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px' }}>
+                    <div className="omr-ans-grid-p1" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '8px' }}>
                       {Array.from({ length: selectedBatch.parts.part1.count }).map((_, idx) => {
                         const currentAns = selectedBatch.answerKeys[activeExamCode].part1?.[idx] || 'A';
                         return (
-                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', padding: '6px 8px', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
-                            <span style={{ fontWeight: 'bold' }}>Câu {idx + 1}:</span>
-                            <div style={{ display: 'flex', gap: '4px' }}>
+                          <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f8fafc', padding: '7px 9px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '12.5px' }}>
+                            <span style={{ fontWeight: 'bold', color: '#1e293b' }}>Câu {idx + 1}:</span>
+                            <div style={{ display: 'flex', gap: '5px' }}>
                               {['A', 'B', 'C', 'D'].map(opt => (
                                 <button
                                   key={opt}
@@ -1925,16 +2003,20 @@ export default function MobileExamGrader2027() {
                                     saveExamBatches(batches.map(b => b.id === updatedBatch.id ? updatedBatch : b));
                                   }}
                                   style={{
-                                    width: '20px',
-                                    height: '20px',
+                                    width: '28px',
+                                    height: '28px',
                                     borderRadius: '50%',
                                     border: currentAns === opt ? 'none' : '1px solid #cbd5e1',
                                     backgroundColor: currentAns === opt ? '#6200ee' : '#ffffff',
                                     color: currentAns === opt ? '#ffffff' : '#334155',
-                                    fontSize: '11px',
+                                    fontSize: '12px',
                                     fontWeight: 'bold',
                                     cursor: 'pointer',
-                                    padding: 0
+                                    padding: 0,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    boxShadow: currentAns === opt ? '0 2px 6px rgba(98, 0, 238, 0.3)' : 'none'
                                   }}
                                 >
                                   {opt}
@@ -1954,18 +2036,18 @@ export default function MobileExamGrader2027() {
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#6200ee', marginBottom: '12px' }}>
                       Phần 2: Đúng / Sai ({selectedBatch.parts.part2.count} câu)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div className="omr-ans-grid-p2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
                       {Array.from({ length: selectedBatch.parts.part2.count }).map((_, qIdx) => {
                         const qObj = selectedBatch.answerKeys[activeExamCode].part2?.[qIdx] || { a: 'D', b: 'S', c: 'D', d: 'S' };
                         return (
-                          <div key={qIdx} style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontWeight: 'bold', fontSize: '12.5px', marginBottom: '6px' }}>
+                          <div key={qIdx} style={{ backgroundColor: '#f8fafc', padding: '10px 12px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '8px', color: '#1e293b' }}>
                               Câu {qIdx + 1}
                             </div>
                             {['a', 'b', 'c', 'd'].map(sub => (
-                              <div key={sub} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11.5px', margin: '3px 0' }}>
-                                <span>{sub})</span>
-                                <div style={{ display: 'flex', gap: '4px' }}>
+                              <div key={sub} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', margin: '5px 0' }}>
+                                <span style={{ fontWeight: '600', color: '#334155' }}>Ý {sub})</span>
+                                <div style={{ display: 'flex', gap: '6px' }}>
                                   {['D', 'S'].map(choice => (
                                     <button
                                       key={choice}
@@ -1985,14 +2067,19 @@ export default function MobileExamGrader2027() {
                                         saveExamBatches(batches.map(b => b.id === updatedBatch.id ? updatedBatch : b));
                                       }}
                                       style={{
-                                        padding: '2px 8px',
-                                        borderRadius: '4px',
+                                        width: '34px',
+                                        height: '28px',
+                                        borderRadius: '6px',
                                         border: (qObj[sub] || 'D') === choice ? 'none' : '1px solid #cbd5e1',
-                                        backgroundColor: (qObj[sub] || 'D') === choice ? '#6200ee' : '#ffffff',
+                                        backgroundColor: (qObj[sub] || 'D') === choice ? (choice === 'D' ? '#16a34a' : '#dc2626') : '#ffffff',
                                         color: (qObj[sub] || 'D') === choice ? '#ffffff' : '#334155',
-                                        fontSize: '10.5px',
+                                        fontSize: '12px',
                                         fontWeight: 'bold',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        boxShadow: (qObj[sub] || 'D') === choice ? '0 2px 5px rgba(0,0,0,0.2)' : 'none'
                                       }}
                                     >
                                       {choice === 'D' ? 'Đ' : 'S'}
@@ -2014,16 +2101,16 @@ export default function MobileExamGrader2027() {
                     <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#6200ee', marginBottom: '12px' }}>
                       Phần 3: Trả lời ngắn / Điền số ({selectedBatch.parts.part3.count} câu)
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                    <div className="omr-ans-grid-p3" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '10px' }}>
                       {Array.from({ length: selectedBatch.parts.part3.count }).map((_, idx) => {
                         const val = selectedBatch.answerKeys[activeExamCode].part3?.[idx] || '';
                         return (
-                          <div key={idx} style={{ backgroundColor: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '11px', fontWeight: 'bold' }}>Câu {idx + 1}</div>
+                          <div key={idx} style={{ backgroundColor: '#f8fafc', padding: '10px', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#1e293b' }}>Câu {idx + 1}</div>
                             <input
                               type="text"
                               value={val}
-                              placeholder="Số"
+                              placeholder="Nhập số/kết quả"
                               onChange={e => {
                                 const newP3 = [...(selectedBatch.answerKeys[activeExamCode].part3 || [])];
                                 newP3[idx] = e.target.value;
@@ -2038,7 +2125,18 @@ export default function MobileExamGrader2027() {
                                 setSelectedBatch(updatedBatch);
                                 saveExamBatches(batches.map(b => b.id === updatedBatch.id ? updatedBatch : b));
                               }}
-                              style={{ width: '100%', padding: '6px', fontSize: '12.5px', borderRadius: '6px', border: '1px solid #cbd5e1', marginTop: '4px', boxSizing: 'border-box' }}
+                              style={{ 
+                                width: '100%', 
+                                padding: '8px 10px', 
+                                fontSize: '16px', 
+                                borderRadius: '8px', 
+                                border: '1.5px solid #cbd5e1', 
+                                marginTop: '6px', 
+                                boxSizing: 'border-box',
+                                fontWeight: 'bold',
+                                color: '#0f172a',
+                                textAlign: 'center'
+                              }}
                             />
                           </div>
                         );
@@ -2078,28 +2176,28 @@ export default function MobileExamGrader2027() {
             `}</style>
             
             {/* Header thanh công cụ máy ảnh */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div>
-                <span style={{ fontSize: '11px', color: '#6200ee', fontWeight: 'bold' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <span style={{ fontSize: '11px', color: '#6200ee', fontWeight: 'bold', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   Đang chấm: {selectedBatch?.title}
                 </span>
-                <div style={{ fontSize: '14.5px', fontWeight: '800', color: '#0f172a' }}>
-                  Khung Ngắm Định Vị OMR 2027 (AR Scanner)
+                <div style={{ fontSize: '13.5px', fontWeight: '800', color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Khung Ngắm OMR 2027 (AR HUD)
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ display: 'flex', gap: '5px', flexShrink: 0 }}>
                 {/* Nút bật tắt đèn pin */}
                 <button
                   type="button"
                   onClick={toggleTorch}
                   style={{
-                    padding: '7px 11px',
+                    padding: '6px 9px',
                     backgroundColor: torchOn ? '#fef08a' : '#f8fafc',
                     color: torchOn ? '#854d0e' : '#475569',
                     border: torchOn ? '1.5px solid #eab308' : '1px solid #cbd5e1',
-                    borderRadius: '10px',
-                    fontSize: '12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
                     fontWeight: 'bold',
                     cursor: 'pointer',
                     display: 'flex',
@@ -2108,24 +2206,24 @@ export default function MobileExamGrader2027() {
                   }}
                   title="Bật/Tắt đèn pin Flash"
                 >
-                  <Zap size={15} color={torchOn ? '#ca8a04' : '#64748b'} />
-                  {torchOn ? 'Tắt Flash' : 'Đèn Flash'}
+                  <Zap size={14} color={torchOn ? '#ca8a04' : '#64748b'} />
+                  {torchOn ? 'Tắt Flash' : 'Flash'}
                 </button>
 
                 <label style={{
-                  padding: '7px 11px',
+                  padding: '6px 9px',
                   backgroundColor: '#eff6ff',
                   color: '#2563eb',
                   border: '1px solid #bfdbfe',
-                  borderRadius: '10px',
-                  fontSize: '12px',
+                  borderRadius: '8px',
+                  fontSize: '11.5px',
                   fontWeight: 'bold',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
-                  <ImageIcon size={15} /> Tải ảnh
+                  <ImageIcon size={14} /> Tải ảnh
                   <input
                     type="file"
                     multiple
@@ -2139,33 +2237,36 @@ export default function MobileExamGrader2027() {
                   type="button"
                   onClick={() => setCurrentView('graded_list')}
                   style={{
-                    padding: '7px 11px',
+                    padding: '6px 9px',
                     backgroundColor: '#ecfdf5',
                     color: '#059669',
                     border: '1px solid #a7f3d0',
-                    borderRadius: '10px',
-                    fontSize: '12px',
+                    borderRadius: '8px',
+                    fontSize: '11.5px',
                     fontWeight: 'bold',
                     cursor: 'pointer'
                   }}
                 >
-                  Kết quả ({batchResults.length})
+                  ({batchResults.length}) Bài
                 </button>
               </div>
             </div>
 
             {/* MÀN HÌNH CAMERA STREAM VỚI KHUNG ĐỊNH VỊ 4 GÓC VÀ TIA LASER QUÉT */}
-            <div style={{
+            <div className="omr-cam-hud" style={{
               position: 'relative',
               width: '100%',
-              height: '420px',
+              aspectRatio: '4/3',
+              maxHeight: '44vh',
+              minHeight: '260px',
               backgroundColor: '#000000',
-              borderRadius: '24px',
+              borderRadius: '20px',
               overflow: 'hidden',
-              boxShadow: '0 8px 30px rgba(0,0,0,0.3)',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              boxSizing: 'border-box'
             }}>
               
               <video
@@ -2303,116 +2404,117 @@ export default function MobileExamGrader2027() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '8px 12px',
+              padding: '7px 10px',
               backgroundColor: '#f8fafc',
-              borderRadius: '12px',
+              borderRadius: '10px',
               border: '1px solid #e2e8f0',
-              fontSize: '12px'
+              fontSize: '11.5px',
+              boxSizing: 'border-box'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#475569', fontWeight: '600' }}>
-                <Sparkles size={14} color="#7c3aed" />
-                <span>Động cơ kép: <strong>OMR Canvas Thật</strong> + <strong>Gemini Vision</strong></span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', color: '#475569', fontWeight: '600' }}>
+                <Sparkles size={13} color="#7c3aed" />
+                <span>Động cơ: <strong>OMR</strong> + <strong>AI Vision</strong></span>
               </div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', userSelect: 'none' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', userSelect: 'none' }}>
                 <input
                   type="checkbox"
                   checked={autoAiMode}
                   onChange={(e) => setAutoAiMode(e.target.checked)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', width: '14px', height: '14px', accentColor: '#7c3aed' }}
                 />
-                <span style={{ fontSize: '11.5px', color: autoAiMode ? '#7c3aed' : '#64748b', fontWeight: autoAiMode ? 'bold' : 'normal' }}>
-                  Tự gọi AI khi nghi vấn
+                <span style={{ fontSize: '11px', color: autoAiMode ? '#7c3aed' : '#64748b', fontWeight: autoAiMode ? 'bold' : 'normal' }}>
+                  Tự gọi AI nghi vấn
                 </span>
               </label>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              {/* Nút 1: Chấm OMR Cục Bộ Siêu Tốc */}
+            {/* HÀNG 1: 2 NÚT CHÍNH (CHỤP OMR & AI VISION) */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: '8px' }}>
               <button
                 type="button"
                 disabled={isProcessingImage || isAiProcessing}
                 onClick={() => processFrameAndGrade(null, false)}
                 style={{
-                  flex: 1,
-                  minWidth: '150px',
-                  padding: '14px',
+                  padding: '12px 8px',
                   backgroundColor: '#6200ee',
                   color: '#ffffff',
                   border: 'none',
-                  borderRadius: '16px',
-                  fontSize: '14.5px',
+                  borderRadius: '14px',
+                  fontSize: '13.5px',
                   fontWeight: '800',
                   cursor: (isProcessingImage || isAiProcessing) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: '6px',
-                  boxShadow: '0 6px 18px rgba(98, 0, 238, 0.35)'
+                  gap: '5px',
+                  boxShadow: '0 4px 14px rgba(98, 0, 238, 0.3)',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                <Zap size={18} /> {isProcessingImage && !isAiProcessing ? 'Đang đọc vết chì...' : 'CHỤP & CHẤM OMR'}
+                <Zap size={17} /> {isProcessingImage && !isAiProcessing ? 'Đang đọc...' : 'CHỤP & CHẤM'}
               </button>
 
-              {/* Nút 2: Chấm Thẩm Định Bằng AI Vision */}
               <button
                 type="button"
                 disabled={isProcessingImage || isAiProcessing}
                 onClick={() => processFrameAndGrade(null, true)}
                 style={{
-                  padding: '14px 18px',
-                  backgroundColor: '#7c3aed',
+                  padding: '12px 8px',
                   background: 'linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%)',
                   color: '#ffffff',
                   border: 'none',
-                  borderRadius: '16px',
-                  fontSize: '14px',
+                  borderRadius: '14px',
+                  fontSize: '13px',
                   fontWeight: '800',
                   cursor: (isProcessingImage || isAiProcessing) ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 6px 18px rgba(124, 58, 237, 0.35)',
+                  justifyContent: 'center',
+                  gap: '5px',
+                  boxShadow: '0 4px 14px rgba(124, 58, 237, 0.3)',
                   whiteSpace: 'nowrap'
                 }}
                 title="Chấm bài bằng AI Gemini Vision (Chính xác 100% kể cả phiếu nhăn, mờ, bóng tối)"
               >
-                <Sparkles size={17} /> {isAiProcessing ? 'AI đang soi...' : '⚡ AI Vision'}
-              </button>
-
-              {/* Nút 3: Quét liên tục tự động */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (scanning) {
-                    clearInterval(scanIntervalId);
-                    setScanIntervalId(null);
-                    setScanning(false);
-                  } else {
-                    const id = setInterval(() => {
-                      processFrameAndGrade(null, false);
-                    }, (settings.scanSpeedSeconds || 1) * 1000);
-                    setScanIntervalId(id);
-                    setScanning(true);
-                  }
-                }}
-                style={{
-                  padding: '14px 16px',
-                  borderRadius: '16px',
-                  border: '1px solid #cbd5e1',
-                  backgroundColor: scanning ? '#dc2626' : '#ffffff',
-                  color: scanning ? '#ffffff' : '#475569',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                  fontWeight: 'bold',
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}
-              >
-                {scanning ? 'Dừng quét' : 'Tự động (Burst)'}
+                <Sparkles size={15} /> {isAiProcessing ? 'AI đang soi...' : '⚡ AI Vision'}
               </button>
             </div>
+
+            {/* HÀNG 2: TỰ ĐỘNG CHẤM LIÊN TỤC (BURST MODE) */}
+            <button
+              type="button"
+              onClick={() => {
+                if (scanning) {
+                  clearInterval(scanIntervalId);
+                  setScanIntervalId(null);
+                  setScanning(false);
+                } else {
+                  const id = setInterval(() => {
+                    processFrameAndGrade(null, false);
+                  }, (settings.scanSpeedSeconds || 1) * 1000);
+                  setScanIntervalId(id);
+                  setScanning(true);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: scanning ? '1.5px solid #dc2626' : '1px solid #cbd5e1',
+                backgroundColor: scanning ? '#dc2626' : '#ffffff',
+                color: scanning ? '#ffffff' : '#334155',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                fontWeight: 'bold',
+                fontSize: '12.5px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px'
+              }}
+            >
+              <Play size={14} /> {scanning ? '⏹ Đang quét liên tục... Bấm để dừng' : 'Chấm tự động liên tục (Burst Mode)'}
+            </button>
 
           </div>
         )}
@@ -3153,7 +3255,7 @@ export default function MobileExamGrader2027() {
             </div>
 
             {/* Thân Modal */}
-            <div style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div className="omr-inspect-modal-body" style={{ padding: '16px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
               {/* Điểm số tổng */}
               <div style={{ backgroundColor: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -3183,9 +3285,9 @@ export default function MobileExamGrader2027() {
                 display: 'grid',
                 gridTemplateColumns: '1fr 1fr',
                 gap: '10px',
-                padding: '10px',
+                padding: '10px 12px',
                 backgroundColor: '#f1f5f9',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 fontSize: '12.5px'
               }}>
                 <div>
@@ -3211,11 +3313,12 @@ export default function MobileExamGrader2027() {
                     }}
                     style={{
                       width: '100%',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
                       fontWeight: 'bold',
-                      fontSize: '13px'
+                      fontSize: '16px',
+                      boxSizing: 'border-box'
                     }}
                   />
                 </div>
@@ -3241,12 +3344,13 @@ export default function MobileExamGrader2027() {
                     }}
                     style={{
                       width: '100%',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #cbd5e1',
                       fontWeight: 'bold',
-                      fontSize: '13px',
-                      backgroundColor: '#ffffff'
+                      fontSize: '16px',
+                      backgroundColor: '#ffffff',
+                      boxSizing: 'border-box'
                     }}
                   >
                     {Object.keys(selectedBatch?.answerKeys || {}).map(code => (
@@ -3261,7 +3365,7 @@ export default function MobileExamGrader2027() {
                 <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px' }}>
                   Phần 1: Trắc nghiệm 4 lựa chọn ({inspectingResult.details?.part1?.totalQuestions || 0} câu)
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '8px' }}>
+                <div className="omr-inspect-grid-p1" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '8px' }}>
                   {(inspectingResult.details?.part1?.details || []).map((q, idx) => (
                     <div
                       key={idx}
@@ -3312,15 +3416,18 @@ export default function MobileExamGrader2027() {
                               }}
                               style={{
                                 flex: 1,
-                                height: '24px',
+                                height: '28px',
                                 borderRadius: '6px',
                                 border: isStudentSelected ? '2px solid #000' : '1px solid #cbd5e1',
                                 backgroundColor: isStudentSelected ? (q.correctAnswer === opt ? '#22c55e' : '#ef4444') : '#ffffff',
                                 color: isStudentSelected ? '#ffffff' : '#334155',
-                                fontSize: '11px',
+                                fontSize: '12px',
                                 fontWeight: 'bold',
                                 cursor: 'pointer',
-                                padding: 0
+                                padding: 0,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                               }}
                             >
                               {opt}
@@ -3339,12 +3446,12 @@ export default function MobileExamGrader2027() {
                   <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
                     Phần 2: Trắc nghiệm Đúng / Sai ({inspectingResult.details?.part2?.totalQuestions || 0} câu)
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
+                  <div className="omr-inspect-grid-p2" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '10px' }}>
                     {inspectingResult.details.part2.details.map((q, qIdx) => (
                       <div
                         key={qIdx}
                         style={{
-                          padding: '10px',
+                          padding: '10px 12px',
                           borderRadius: '10px',
                           backgroundColor: '#f8fafc',
                           border: '1px solid #cbd5e1'
@@ -3357,9 +3464,9 @@ export default function MobileExamGrader2027() {
                         {['a', 'b', 'c', 'd'].map(sub => {
                           const subInfo = q.subDetails?.[sub] || {};
                           return (
-                            <div key={sub} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '11.5px' }}>
-                              <span>Ý {sub}) (Đ/A: <strong>{subInfo.correct}</strong>)</span>
-                              <div style={{ display: 'flex', gap: '4px' }}>
+                            <div key={sub} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px', fontSize: '12px' }}>
+                              <span style={{ color: '#334155' }}>Ý {sub}) (Đ/A: <strong>{subInfo.correct}</strong>)</span>
+                              <div style={{ display: 'flex', gap: '5px' }}>
                                 {['D', 'S'].map(val => {
                                   const isSel = subInfo.student === val;
                                   return (
@@ -3384,15 +3491,18 @@ export default function MobileExamGrader2027() {
                                         }));
                                       }}
                                       style={{
-                                        width: '26px',
-                                        height: '22px',
-                                        borderRadius: '4px',
+                                        width: '32px',
+                                        height: '26px',
+                                        borderRadius: '5px',
                                         border: isSel ? '1.5px solid #000' : '1px solid #cbd5e1',
                                         backgroundColor: isSel ? (subInfo.correct === val ? '#22c55e' : '#ef4444') : '#ffffff',
                                         color: isSel ? '#ffffff' : '#334155',
-                                        fontSize: '11px',
+                                        fontSize: '12px',
                                         fontWeight: 'bold',
-                                        cursor: 'pointer'
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
                                       }}
                                     >
                                       {val === 'D' ? 'Đ' : 'S'}
@@ -3415,7 +3525,7 @@ export default function MobileExamGrader2027() {
                   <div style={{ fontSize: '13.5px', fontWeight: 'bold', color: '#1e293b', marginBottom: '8px', borderTop: '1px solid #e2e8f0', paddingTop: '12px' }}>
                     Phần 3: Trả lời ngắn / Điền số ({inspectingResult.details?.part3?.totalQuestions || 0} câu)
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
                     {inspectingResult.details.part3.details.map((q, qIdx) => (
                       <div
                         key={qIdx}
@@ -3457,11 +3567,12 @@ export default function MobileExamGrader2027() {
                             }}
                             style={{
                               flex: 1,
-                              padding: '4px 8px',
+                              padding: '6px 8px',
                               borderRadius: '6px',
-                              border: '1px solid #cbd5e1',
+                              border: '1.5px solid #cbd5e1',
                               fontWeight: 'bold',
-                              fontSize: '12px'
+                              fontSize: '16px',
+                              textAlign: 'center'
                             }}
                           />
                         </div>
