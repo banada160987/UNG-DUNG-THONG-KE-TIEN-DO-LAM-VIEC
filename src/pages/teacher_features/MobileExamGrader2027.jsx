@@ -18,6 +18,7 @@ import {
   getOmrSettings, 
   saveOmrSettings, 
   gradeStudentSubmission, 
+  getGradeClassification,
   exportExamResultsToExcel, 
   exportToSmasExcel,
   exportToVnEduExcel,
