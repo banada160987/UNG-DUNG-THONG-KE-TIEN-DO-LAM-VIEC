@@ -118,6 +118,14 @@ export const SHEET_TEMPLATES = [
     description: 'In 2 phiếu trên 1 tờ A4, giảm 50% chi phí photo tài liệu cho học sinh',
     defaults: { p1Count: 12, p1Point: 0.25, p2Count: 4, p3Count: 3, p3Point: 0.5 }
   },
+  { 
+    id: 'CBQ_2027_DGNL_60', 
+    name: 'CBQ 2027 - ĐGNL 60 Câu Chuyên Đề', 
+    category: 'gdpt2018',
+    format: 'p1_only',
+    description: 'Phiếu khảo sát năng lực 60 câu trắc nghiệm 4 lựa chọn (Toán, KHTN, Đọc hiểu)',
+    defaults: { p1Count: 60, p1Point: 0.166, p2Count: 0, p3Count: 0, p3Point: 0 }
+  },
 
   // --- NHÓM 2: MẪU TRUYỀN THỐNG CHUẨN TNMAKER & BỘ GD (TRẮC NGHIỆM A/B/C/D) ---
   { 

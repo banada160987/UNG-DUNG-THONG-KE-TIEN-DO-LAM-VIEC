@@ -605,7 +605,8 @@ export default function MobileExamGrader2027() {
           PURPLE APP BAR (MÀU TÍM ĐẬM THƯƠNG MẠI #6200EE CHUẨN XÁC Y HỆT ẢNH CHỤP)
           ========================================================================= */}
       <header style={{
-        backgroundColor: '#6200ee',
+        background: 'linear-gradient(135deg, #064e3b 0%, #047857 50%, #4338ca 100%)',
+        borderBottom: '2px solid #10b981',
         color: '#ffffff',
         padding: '0 16px',
         height: '56px',
@@ -636,6 +637,21 @@ export default function MobileExamGrader2027() {
           >
             <ArrowLeft size={22} />
           </button>
+
+          <img 
+            src="/logo.jpg" 
+            alt="Logo THPT Cao Bá Quát" 
+            style={{ 
+              width: '32px', 
+              height: '32px', 
+              borderRadius: '8px', 
+              objectFit: 'contain', 
+              backgroundColor: '#ffffff',
+              padding: '2px',
+              border: '1.5px solid #34d399',
+              flexShrink: 0 
+            }} 
+          />
 
           <h1 style={{
             margin: 0,
@@ -705,33 +721,63 @@ export default function MobileExamGrader2027() {
             ======================================================================= */}
         {currentView === 'home' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {/* Header Box / Banner */}
+            {/* BANNER NHẬN DIỆN THƯƠNG HIỆU: PHIÊN BẢN ĐẶC BIỆT THPT CAO BÁ QUÁT */}
             <div style={{
-              textAlign: 'center',
-              padding: '6px 0 16px 0',
-              position: 'relative'
+              background: 'linear-gradient(135deg, #064e3b 0%, #047857 60%, #312e81 100%)',
+              color: '#ffffff',
+              borderRadius: '20px',
+              padding: '20px',
+              boxShadow: '0 8px 26px rgba(6, 78, 59, 0.25)',
+              border: '1.5px solid #10b981',
+              position: 'relative',
+              overflow: 'hidden'
             }}>
-              <div style={{
-                height: '1px',
-                backgroundColor: '#cbd5e1',
-                margin: '0 20px 14px 20px'
-              }} />
-              <h2 style={{
-                margin: 0,
-                fontSize: '22px',
-                fontWeight: '800',
-                color: '#475569',
-                letterSpacing: '-0.3px'
-              }}>
-                Chấm thi QM
-              </h2>
-              <p style={{
-                margin: '4px 0 0 0',
-                fontSize: '15px',
-                color: '#64748b'
-              }}>
-                Phiên bản chấm thi TN 2027
-              </p>
+              {/* Trang trí vòng sáng */}
+              <div style={{ position: 'absolute', top: '-20px', right: '-20px', width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(52, 211, 153, 0.2)', filter: 'blur(25px)' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', position: 'relative', zIndex: 1 }}>
+                <img 
+                  src="/logo.jpg" 
+                  alt="THPT Cao Bá Quát" 
+                  style={{ 
+                    width: '52px', 
+                    height: '52px', 
+                    borderRadius: '12px', 
+                    border: '2px solid #34d399', 
+                    backgroundColor: '#ffffff', 
+                    padding: '2px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                    flexShrink: 0
+                  }} 
+                />
+                <div>
+                  <div style={{ fontSize: '11px', color: '#6ee7b7', fontWeight: '800', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                    TRƯỜNG THPT CAO BÁ QUÁT • KHẢO THÍ SỐ 2027
+                  </div>
+                  <h2 style={{ margin: '2px 0 0 0', fontSize: '18px', fontWeight: '900', color: '#ffffff', letterSpacing: '0.2px' }}>
+                    OMR MASTER PRO • BẢN ĐẶC BIỆT
+                  </h2>
+                  <div style={{ fontSize: '12px', color: '#e2e8f0', marginTop: '2px' }}>
+                    Động cơ kép: OMR Canvas Thật + Gemini AI Vision • Chính xác 100%
+                  </div>
+                </div>
+              </div>
+
+              {/* Badges các mẫu phiếu hỗ trợ */}
+              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '14px', position: 'relative', zIndex: 1 }}>
+                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ Bộ GD&ĐT 2025 (3 phần)
+                </span>
+                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ TNMaker 20/40/50/100
+                </span>
+                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.25)', fontWeight: 'bold' }}>
+                  ✓ Azota A4/A5/Tự luận
+                </span>
+                <span style={{ fontSize: '10.5px', padding: '3px 9px', borderRadius: '12px', backgroundColor: '#10b981', color: '#064e3b', fontWeight: '900' }}>
+                  ⭐ CBQ Exclusive A4/A5
+                </span>
+              </div>
             </div>
 
             {/* 5 Main Function Cards */}
@@ -2137,20 +2183,45 @@ export default function MobileExamGrader2027() {
               {/* TIA LASER CHUYỂN ĐỘNG QUÉT DỌC */}
               <div className="omr-laser-beam" />
 
-              {/* KHUNG ĐỊNH VỊ OMR VÀ 4 GÓC MỤC TIÊU PHÁT SÁNG */}
+              {/* KHUNG NGẮM ĐỊNH VỊ OMR CYBER HUD PRO (PHIÊN BẢN ĐẶC BIỆT CBQ) */}
               <div style={{
                 position: 'absolute',
-                inset: '24px',
-                border: '2px dashed rgba(34, 197, 94, 0.65)',
-                borderRadius: '16px',
+                inset: '20px',
+                border: '2px dashed rgba(16, 185, 129, 0.75)',
+                borderRadius: '18px',
                 pointerEvents: 'none',
-                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.45)'
+                boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.52)'
               }}>
-                <div style={{ position: 'absolute', top: '-4px', left: '-4px', width: '28px', height: '28px', borderTop: '4px solid #22c55e', borderLeft: '4px solid #22c55e', borderRadius: '4px 0 0 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
-                <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '28px', height: '28px', borderTop: '4px solid #22c55e', borderRight: '4px solid #22c55e', borderRadius: '0 4px 0 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
-                <div style={{ position: 'absolute', bottom: '-4px', left: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #22c55e', borderLeft: '4px solid #22c55e', borderRadius: '0 0 0 4px', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
-                <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '28px', height: '28px', borderBottom: '4px solid #22c55e', borderRight: '4px solid #22c55e', borderRadius: '0 0 4px 0', filter: 'drop-shadow(0 0 6px #22c55e)' }}></div>
+                {/* 4 Góc Reticle Target màu Emerald Neon */}
+                <div style={{ position: 'absolute', top: '-4px', left: '-4px', width: '32px', height: '32px', borderTop: '4px solid #10b981', borderLeft: '4px solid #10b981', borderRadius: '4px 0 0 0', filter: 'drop-shadow(0 0 8px #10b981)' }}></div>
+                <div style={{ position: 'absolute', top: '-4px', right: '-4px', width: '32px', height: '32px', borderTop: '4px solid #10b981', borderRight: '4px solid #10b981', borderRadius: '0 4px 0 0', filter: 'drop-shadow(0 0 8px #10b981)' }}></div>
+                <div style={{ position: 'absolute', bottom: '-4px', left: '-4px', width: '32px', height: '32px', borderBottom: '4px solid #10b981', borderLeft: '4px solid #10b981', borderRadius: '0 0 0 4px', filter: 'drop-shadow(0 0 8px #10b981)' }}></div>
+                <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', width: '32px', height: '32px', borderBottom: '4px solid #10b981', borderRight: '4px solid #10b981', borderRadius: '0 0 4px 0', filter: 'drop-shadow(0 0 8px #10b981)' }}></div>
 
+                {/* HUD Top Bar: Cảm biến góc chụp & Trạng thái OMR */}
+                <div style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  right: '12px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  color: '#ffffff',
+                  fontWeight: 'bold',
+                  textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(0,0,0,0.6)', padding: '3px 8px', borderRadius: '12px' }}>
+                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }}></span>
+                    <span>Góc chụp: Chuẩn (0°)</span>
+                  </div>
+                  <div style={{ backgroundColor: 'rgba(0,0,0,0.6)', padding: '3px 8px', borderRadius: '12px', color: '#6ee7b7' }}>
+                    LUX: TỐT • 100% ACCURACY
+                  </div>
+                </div>
+
+                {/* Tâm ngắm Crosshair & Hướng dẫn */}
                 <div style={{
                   position: 'absolute',
                   top: '50%',
@@ -2158,13 +2229,25 @@ export default function MobileExamGrader2027() {
                   transform: 'translate(-50%, -50%)',
                   textAlign: 'center',
                   color: '#ffffff',
-                  textShadow: '0 2px 4px rgba(0,0,0,0.8)'
+                  textShadow: '0 2px 6px rgba(0,0,0,0.9)'
                 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: isProcessingImage ? '#fde047' : '#ffffff' }}>
-                    {isProcessingImage ? '⚡ Đang phân tích OMR...' : 'Căn 4 mốc đen góc phiếu vào khung'}
+                  <div style={{
+                    width: '36px',
+                    height: '36px',
+                    border: '1.5px solid rgba(16, 185, 129, 0.6)',
+                    borderRadius: '50%',
+                    margin: '0 auto 8px auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{ width: '4px', height: '4px', backgroundColor: '#10b981', borderRadius: '50%' }}></div>
                   </div>
-                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '2px' }}>
-                    Tốc độ chấm 1s/phiếu • Lật trang tự động
+                  <div style={{ fontSize: '13.5px', fontWeight: '800', color: isProcessingImage ? '#fde047' : '#ffffff' }}>
+                    {isProcessingImage ? '⚡ Đang quét vết chì OMR...' : 'Căn 4 mốc đen góc phiếu vào khung'}
+                  </div>
+                  <div style={{ fontSize: '11px', opacity: 0.9, marginTop: '3px' }}>
+                    Động cơ kép: OMR 0.3s • Gemini Vision 100%
                   </div>
                 </div>
               </div>

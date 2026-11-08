@@ -1,9 +1,17 @@
 import React, { useState } from 'react';
-import { Printer, ArrowLeft, CheckCircle2, Sliders, Layers } from 'lucide-react';
+import { Printer, ArrowLeft, CheckCircle2, Sliders, Layers, Sparkles, Award, ShieldCheck } from 'lucide-react';
 import { SHEET_TEMPLATES } from '../services/mobileOmrScannerService';
 
 export default function PrintableAnswerSheet2027({ batch, onBack }) {
-  const [selectedTemplateId, setSelectedTemplateId] = useState(batch?.sheetTemplate || 'BOGD_2025_A4');
+  const [selectedCategory, setSelectedCategory] = useState('all'); // 'all' | 'gdpt2018' | 'traditional' | 'azota' | 'cbq'
+  const [selectedTemplateId, setSelectedTemplateId] = useState(batch?.sheetTemplate || 'CBQ_2027_A4');
+
+  const filteredTemplates = SHEET_TEMPLATES.filter(tpl => {
+    if (selectedCategory === 'all') return true;
+    if (selectedCategory === 'cbq') return tpl.id.startsWith('CBQ_');
+    if (selectedCategory === 'gdpt2018') return tpl.category === 'gdpt2018' && !tpl.id.startsWith('CBQ_');
+    return tpl.category === selectedCategory;
+  });
 
   const currentTemplate = SHEET_TEMPLATES.find(t => t.id === selectedTemplateId) || SHEET_TEMPLATES[0];
 
@@ -14,68 +22,142 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
 
   const isTraditionalOnly = currentTemplate.format === 'p1_only' || (p2Count === 0 && p3Count === 0);
   const isA5 = selectedTemplateId.includes('A5');
+  const isHybrid = currentTemplate.format === 'hybrid' || selectedTemplateId.includes('TULUAN');
 
   const handlePrint = () => {
     window.print();
   };
 
   return (
-    <div style={{ padding: '16px', maxWidth: '900px', margin: '0 auto', fontFamily: '"Times New Roman", Times, serif' }}>
+    <div style={{ padding: '16px', maxWidth: '940px', margin: '0 auto', fontFamily: '"Times New Roman", Times, serif' }}>
       
       {/* THANH CÔNG CỤ ĐIỀU KHIỂN & CHỌN MẪU PHIẾU (ẨN KHI IN) */}
       <div className="no-print" style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '12px',
         background: '#ffffff',
-        padding: '14px 18px',
-        borderRadius: '14px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+        padding: '16px 20px',
+        borderRadius: '16px',
+        boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
         marginBottom: '20px',
+        border: '1.5px solid #e2e8f0',
         fontFamily: '"Inter", sans-serif'
       }}>
-        <button
-          type="button"
-          onClick={onBack}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: '#f1f5f9',
-            border: '1px solid #cbd5e1',
-            padding: '8px 14px',
-            borderRadius: '8px',
-            fontSize: '13px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            color: '#334155'
-          }}
-        >
-          <ArrowLeft size={16} /> Quay lại
-        </button>
+        {/* Hàng 1: Nút back & nút In */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: '#f1f5f9',
+              border: '1px solid #cbd5e1',
+              padding: '8px 14px',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              color: '#334155'
+            }}
+          >
+            <ArrowLeft size={16} /> Quay lại
+          </button>
 
-        {/* Bộ chọn mẫu phiếu nhanh */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Layers size={16} color="#7c3aed" />
-          <span style={{ fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>Chọn mẫu phiếu in:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '4px 10px',
+              borderRadius: '20px',
+              backgroundColor: '#ecfdf5',
+              border: '1px solid #a7f3d0',
+              color: '#065f46',
+              fontSize: '11.5px',
+              fontWeight: 'bold'
+            }}>
+              <ShieldCheck size={14} color="#059669" /> Phiên Bản Đặc Biệt CBQ Pro 2027
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handlePrint}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+              color: '#ffffff',
+              border: 'none',
+              padding: '10px 24px',
+              borderRadius: '10px',
+              fontSize: '14px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)'
+            }}
+          >
+            <Printer size={18} /> In Phiếu Chuẩn A4/A5
+          </button>
+        </div>
+
+        {/* Hàng 2: Bộ lọc nhóm mẫu phiếu */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0', paddingTop: '12px' }}>
+          <span style={{ fontSize: '12.5px', fontWeight: 'bold', color: '#475569' }}>Nhóm mẫu:</span>
+          {[
+            { id: 'all', label: '🏛️ Tất cả (15)' },
+            { id: 'cbq', label: '⭐ CBQ Đặc Biệt (3)' },
+            { id: 'gdpt2018', label: '📘 Bộ GD&ĐT 2025 (5)' },
+            { id: 'traditional', label: '⚡ TNMaker (4)' },
+            { id: 'azota', label: '🟣 Azota (3)' }
+          ].map(tab => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => {
+                setSelectedCategory(tab.id);
+                const firstMatch = SHEET_TEMPLATES.find(t => {
+                  if (tab.id === 'all') return true;
+                  if (tab.id === 'cbq') return t.id.startsWith('CBQ_');
+                  if (tab.id === 'gdpt2018') return t.category === 'gdpt2018' && !t.id.startsWith('CBQ_');
+                  return t.category === tab.id;
+                });
+                if (firstMatch) setSelectedTemplateId(firstMatch.id);
+              }}
+              style={{
+                padding: '5px 12px',
+                borderRadius: '20px',
+                border: selectedCategory === tab.id ? '1.5px solid #059669' : '1px solid #cbd5e1',
+                backgroundColor: selectedCategory === tab.id ? '#ecfdf5' : '#ffffff',
+                color: selectedCategory === tab.id ? '#065f46' : '#64748b',
+                fontWeight: selectedCategory === tab.id ? 'bold' : 'normal',
+                fontSize: '12px',
+                cursor: 'pointer'
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+
+          {/* Select chi tiết */}
           <select
             value={selectedTemplateId}
             onChange={(e) => setSelectedTemplateId(e.target.value)}
             style={{
-              padding: '7px 12px',
+              marginLeft: 'auto',
+              padding: '6px 12px',
               borderRadius: '8px',
-              border: '1.5px solid #c4b5fd',
-              backgroundColor: '#f5f3ff',
-              fontSize: '13px',
-              fontWeight: '600',
-              color: '#5b21b6',
+              border: '1.5px solid #10b981',
+              backgroundColor: '#f0fdf4',
+              fontSize: '12.5px',
+              fontWeight: 'bold',
+              color: '#065f46',
               cursor: 'pointer',
               outline: 'none'
             }}
           >
-            {SHEET_TEMPLATES.map(tpl => (
+            {filteredTemplates.map(tpl => (
               <option key={tpl.id} value={tpl.id}>
                 {tpl.name}
               </option>
@@ -83,26 +165,10 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
           </select>
         </div>
 
-        <button
-          type="button"
-          onClick={handlePrint}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)',
-            color: '#ffffff',
-            border: 'none',
-            padding: '9px 20px',
-            borderRadius: '9px',
-            fontSize: '14px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(124, 58, 237, 0.35)'
-          }}
-        >
-          <Printer size={17} /> In Phiếu Ngay
-        </button>
+        {/* Mô tả mẫu đang chọn */}
+        <div style={{ marginTop: '10px', fontSize: '12px', color: '#475569', backgroundColor: '#f8fafc', padding: '8px 12px', borderRadius: '8px' }}>
+          📌 <strong>{currentTemplate.name}:</strong> {currentTemplate.description}
+        </div>
       </div>
 
       {/* Style chuyên biệt cho máy in */}
@@ -120,7 +186,7 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
             top: 0;
             width: 100%;
             margin: 0;
-            padding: 6mm;
+            padding: 5mm;
             box-shadow: none !important;
             border: none !important;
           }
@@ -129,7 +195,7 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
           }
           @page {
             size: A4 portrait;
-            margin: 5mm;
+            margin: 4mm;
           }
         }
 
@@ -137,20 +203,36 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          width: 15px;
-          height: 15px;
+          width: 14.5px;
+          height: 14.5px;
           border-radius: 50%;
           border: 1.2px solid #000000;
-          font-size: 9.5px;
+          font-size: 9px;
           font-weight: bold;
           color: #000000;
           line-height: 1;
         }
 
+        /* 4 MỐC ARUCO TARGET ĐỊNH VỊ CHUYÊN NGHIỆP */
         .corner-anchor {
-          width: 18px;
-          height: 18px;
+          width: 22px;
+          height: 22px;
           background-color: #000000;
+          position: absolute;
+          box-sizing: border-box;
+        }
+        .corner-anchor::after {
+          content: '';
+          position: absolute;
+          inset: 4px;
+          background-color: #ffffff;
+        }
+        .corner-anchor::before {
+          content: '';
+          position: absolute;
+          inset: 7px;
+          background-color: #000000;
+          z-index: 1;
         }
       `}</style>
 
@@ -161,82 +243,119 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
         padding: isA5 ? '10px' : '16px',
         position: 'relative',
         boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-        color: '#000000'
+        color: '#000000',
+        minHeight: isA5 ? '135mm' : '260mm'
       }}>
 
-        {/* 4 MỐC ĐỊNH VỊ 4 GÓC (ArUco / OMR Targets) */}
-        <div className="corner-anchor" style={{ position: 'absolute', top: '10px', left: '10px' }}></div>
-        <div className="corner-anchor" style={{ position: 'absolute', top: '10px', right: '10px' }}></div>
-        <div className="corner-anchor" style={{ position: 'absolute', bottom: '10px', left: '10px' }}></div>
-        <div className="corner-anchor" style={{ position: 'absolute', bottom: '10px', right: '10px' }}></div>
+        {/* 4 MỐC ARUCO ĐỊNH VỊ 4 GÓC CHUYÊN DỤNG (BẮT GÓC CAMERA CHÍNH XÁC 100%) */}
+        <div className="corner-anchor" style={{ top: '8px', left: '8px' }}></div>
+        <div className="corner-anchor" style={{ top: '8px', right: '8px' }}></div>
+        <div className="corner-anchor" style={{ bottom: '8px', left: '8px' }}></div>
+        <div className="corner-anchor" style={{ bottom: '8px', right: '8px' }}></div>
 
-        {/* Header Quốc Huy & Tên trường */}
-        <div style={{ textAlign: 'center', marginBottom: '10px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-            SỞ GIÁO DỤC VÀ ĐÀO TẠO ĐẮK LẮK • TRƯỜNG THPT CAO BÁ QUÁT
-          </div>
-          <div style={{ fontSize: '17px', fontWeight: 'bold', textTransform: 'uppercase', color: '#000000', marginTop: '2px', letterSpacing: '0.5px' }}>
-            PHIẾU TRẢ LỜI TRẮC NGHIỆM
-          </div>
-          <div style={{ fontSize: '12px', fontStyle: 'italic', fontWeight: 'bold' }}>
-            Mẫu: {currentTemplate.name} • Năm học 2026 - 2027
-          </div>
-          <div style={{ fontSize: '11px', marginTop: '2px' }}>
-            Bài thi: <strong>{batch?.title || 'Kiểm tra trắc nghiệm'}</strong> • Môn: <strong>{batch?.subject || 'Chung'}</strong> • Lớp: <strong>{batch?.className || '............'}</strong>
-          </div>
-        </div>
-
-        {/* Bảng thông tin thí sinh & Mã đề, SBD */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.9fr', gap: '8px', border: '1.5px solid #000000', padding: '6px', marginBottom: '8px', fontSize: '11.5px' }}>
+        {/* Header Hành Chính & Logo Trường THPT Cao Bá Quát */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1.5px solid #000000', paddingBottom: '8px', marginBottom: '8px' }}>
           
-          {/* Thông tin thí sinh */}
-          <div style={{ borderRight: '1px solid #000000', paddingRight: '6px' }}>
-            <div style={{ marginBottom: '5px' }}>1. Họ và tên: ....................................................</div>
-            <div style={{ marginBottom: '5px' }}>2. Ngày sinh: ...... / ...... / ............ Giới tính: ........</div>
-            <div style={{ marginBottom: '5px' }}>3. Lớp: ........................ Phòng thi số: ..............</div>
-            <div style={{ marginTop: '6px', borderTop: '1px dashed #666', paddingTop: '3px', fontSize: '10px' }}>
-              <strong>HƯỚNG DẪN TÔ ĐÁP ÁN:</strong><br/>
-              • Dùng bút chì 2B tô kín và đậm các ô tròn: <span className="omr-bubble" style={{ background: '#000', color: '#fff', width: '12px', height: '12px', fontSize: '8px' }}>✓</span><br/>
-              • Giữ phẳng phiếu, không gấp mép, tẩy sạch khi đổi đáp án.
+          {/* Cột trái: Logo & Đơn vị chủ quản */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+            <img 
+              src="/logo.jpg" 
+              alt="Logo THPT Cao Bá Quát" 
+              style={{ width: '42px', height: '42px', objectFit: 'contain' }}
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+            <div>
+              <div style={{ fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                SỞ GD&ĐT ĐẮK LẮK
+              </div>
+              <div style={{ fontSize: '12.5px', fontWeight: '900', textTransform: 'uppercase', color: '#000000' }}>
+                TRƯỜNG THPT CAO BÁ QUÁT
+              </div>
+              <div style={{ fontSize: '10px', fontStyle: 'italic' }}>
+                Khảo thí số OMR Pro 2027
+              </div>
             </div>
           </div>
 
-          {/* SỐ BÁO DANH (6 số) */}
+          {/* Cột giữa: Tiêu đề phiếu */}
+          <div style={{ textAlign: 'center', flex: 1.6 }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              PHIẾU TRẢ LỜI TRẮC NGHIỆM
+            </div>
+            <div style={{ fontSize: '11.5px', fontWeight: 'bold', fontStyle: 'italic', marginTop: '1px' }}>
+              Mẫu: {currentTemplate.name}
+            </div>
+            <div style={{ fontSize: '10.5px', marginTop: '2px' }}>
+              Môn: <strong>{batch?.subject || '...............'}</strong> • Lớp: <strong>{batch?.className || '............'}</strong>
+            </div>
+          </div>
+
+          {/* Cột phải: Mã định danh & Giám thị */}
+          <div style={{ textAlign: 'right', flex: 1, fontSize: '10px' }}>
+            <div style={{ border: '1px solid #000', padding: '3px 6px', display: 'inline-block', textAlign: 'center' }}>
+              <div style={{ fontWeight: 'bold' }}>MÃ PHIẾU CBQ</div>
+              <div style={{ fontFamily: 'monospace', fontWeight: 'bold', fontSize: '11px' }}>
+                {batch?.id ? String(batch.id).slice(-8).toUpperCase() : 'CBQ-2027'}
+              </div>
+            </div>
+            <div style={{ marginTop: '3px', fontStyle: 'italic' }}>
+              Cán bộ coi thi: ....................
+            </div>
+          </div>
+
+        </div>
+
+        {/* Bảng thông tin thí sinh & Khung tô Số báo danh, Mã đề */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr 0.9fr', gap: '8px', border: '1.5px solid #000000', padding: '6px', marginBottom: '8px', fontSize: '11px' }}>
+          
+          {/* Thông tin cá nhân thí sinh */}
+          <div style={{ borderRight: '1px solid #000000', paddingRight: '6px' }}>
+            <div style={{ marginBottom: '4px' }}>1. Họ và tên: .............................................................</div>
+            <div style={{ marginBottom: '4px' }}>2. Ngày sinh: ...... / ...... / ............ Giới tính: ...............</div>
+            <div style={{ marginBottom: '4px' }}>3. Lớp: ........................ Phòng thi số: ......................</div>
+            <div style={{ marginTop: '5px', borderTop: '1px dashed #666', paddingTop: '3px', fontSize: '9.5px', lineHeight: 1.3 }}>
+              <strong>HƯỚNG DẪN TÔ ĐÁP ÁN:</strong><br/>
+              • Dùng bút chì 2B tô kín và đậm ô tròn: <span className="omr-bubble" style={{ background: '#000', color: '#fff', width: '11px', height: '11px', fontSize: '7.5px' }}>✓</span><br/>
+              • Giữ phẳng phiếu, không gấp mép, tẩy sạch khi đổi ý.
+            </div>
+          </div>
+
+          {/* SỐ BÁO DANH (6 CỘT TÔ TỪ 0 ĐẾN 9) */}
           <div style={{ borderRight: '1px solid #000000', paddingRight: '6px', textAlign: 'center' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', marginBottom: '3px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '10.5px', textTransform: 'uppercase', marginBottom: '2px' }}>
               4. SỐ BÁO DANH
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '3px', marginBottom: '3px' }}>
               {[0, 1, 2, 3, 4, 5].map(col => (
-                <div key={col} style={{ width: '16px', height: '16px', border: '1.2px solid #000', fontSize: '10px', fontWeight: 'bold' }}></div>
+                <div key={col} style={{ width: '15px', height: '15px', border: '1.2px solid #000', fontSize: '9.5px', fontWeight: 'bold' }}></div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
               {[0, 1, 2, 3, 4, 5].map(col => (
-                <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
+                <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.2px' }}>
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                    <span key={num} className="omr-bubble" style={{ width: '14px', height: '14px', fontSize: '8.5px' }}>{num}</span>
+                    <span key={num} className="omr-bubble" style={{ width: '13.5px', height: '13.5px', fontSize: '8px' }}>{num}</span>
                   ))}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* MÃ ĐỀ THI (3 hoặc 4 số) */}
+          {/* MÃ ĐỀ THI (3 hoặc 4 CỘT TÔ TỪ 0 ĐẾN 9) */}
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', marginBottom: '3px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '10.5px', textTransform: 'uppercase', marginBottom: '2px' }}>
               5. MÃ ĐỀ THI
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '3px', marginBottom: '3px' }}>
               {Array.from({ length: codeDigits }).map((_, col) => (
-                <div key={col} style={{ width: '16px', height: '16px', border: '1.2px solid #000', fontSize: '10px', fontWeight: 'bold' }}></div>
+                <div key={col} style={{ width: '15px', height: '15px', border: '1.2px solid #000', fontSize: '9.5px', fontWeight: 'bold' }}></div>
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'center', gap: '3px' }}>
               {Array.from({ length: codeDigits }).map((_, col) => (
-                <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
+                <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.2px' }}>
                   {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(num => (
-                    <span key={num} className="omr-bubble" style={{ width: '14px', height: '14px', fontSize: '8.5px' }}>{num}</span>
+                    <span key={num} className="omr-bubble" style={{ width: '13.5px', height: '13.5px', fontSize: '8px' }}>{num}</span>
                   ))}
                 </div>
               ))}
@@ -245,9 +364,9 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
 
         </div>
 
-        {/* PHẦN I: TRẮC NGHIỆM NHIỀU PHƯƠNG ÁN LỰA CHỌN */}
+        {/* PHẦN I: TRẮC NGHIỆM NHIỀU LỰA CHỌN */}
         <div style={{ marginBottom: '8px' }}>
-          <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}>
+          <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '10.5px', textTransform: 'uppercase' }}>
             {isTraditionalOnly 
               ? `PHẦN TRẮC NGHIỆM: Trả lời từ câu 1 đến câu ${p1Count}. Mỗi câu chỉ chọn một phương án.` 
               : `PHẦN I: Trả lời từ câu 1 đến câu ${p1Count}. Mỗi câu chỉ chọn một phương án.`}
@@ -259,7 +378,7 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
             gap: '4px', 
             border: '1px solid #000000', 
             borderTop: 'none', 
-            padding: '5px' 
+            padding: '4px' 
           }}>
             {(() => {
               const numCols = p1Count <= 20 ? 2 : (p1Count <= 50 ? 4 : 5);
@@ -269,12 +388,12 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
                 const endQ = Math.min((colIdx + 1) * perCol, p1Count);
                 if (startQ > p1Count) return null;
                 return (
-                  <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div key={colIdx} style={{ display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
                     {Array.from({ length: endQ - startQ + 1 }).map((__, rowIdx) => {
                       const qNum = startQ + rowIdx;
                       return (
-                        <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10.5px' }}>
-                          <span style={{ width: '22px', fontWeight: 'bold', textAlign: 'right' }}>{qNum}.</span>
+                        <div key={qNum} style={{ display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px' }}>
+                          <span style={{ width: '20px', fontWeight: 'bold', textAlign: 'right' }}>{qNum}.</span>
                           {['A', 'B', 'C', 'D'].map(opt => (
                             <span key={opt} className="omr-bubble">{opt}</span>
                           ))}
@@ -294,18 +413,18 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
             {/* PHẦN II: TRẮC NGHIỆM ĐÚNG / SAI */}
             {p2Count > 0 && (
               <div style={{ marginBottom: '8px' }}>
-                <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}>
+                <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '10.5px', textTransform: 'uppercase' }}>
                   PHẦN II: Thí sinh trả lời từ câu 1 đến câu {p2Count}. Trong mỗi ý a), b), c), d) chọn Đúng (Đ) hoặc Sai (S).
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${p2Count}, 1fr)`, gap: '4px', border: '1px solid #000000', borderTop: 'none', padding: '5px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${p2Count}, 1fr)`, gap: '4px', border: '1px solid #000000', borderTop: 'none', padding: '4px' }}>
                   {Array.from({ length: p2Count }).map((_, qIdx) => (
-                    <div key={qIdx} style={{ border: '1px solid #ddd', padding: '4px', textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '10.5px', marginBottom: '3px', background: '#f5f5f5' }}>Câu {qIdx + 1}</div>
+                    <div key={qIdx} style={{ border: '1px solid #ddd', padding: '3px', textAlign: 'center' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '2px', background: '#f5f5f5' }}>Câu {qIdx + 1}</div>
                       {['a', 'b', 'c', 'd'].map(sub => (
-                        <div key={sub} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', marginBottom: '2px' }}>
-                          <span style={{ width: '14px', fontWeight: 'bold', fontSize: '10px' }}>{sub})</span>
-                          <span className="omr-bubble" style={{ width: '14px', height: '14px', fontSize: '8.5px' }}>Đ</span>
-                          <span className="omr-bubble" style={{ width: '14px', height: '14px', fontSize: '8.5px' }}>S</span>
+                        <div key={sub} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px', marginBottom: '1.5px' }}>
+                          <span style={{ width: '13px', fontWeight: 'bold', fontSize: '9.5px' }}>{sub})</span>
+                          <span className="omr-bubble" style={{ width: '13.5px', height: '13.5px', fontSize: '8px' }}>Đ</span>
+                          <span className="omr-bubble" style={{ width: '13.5px', height: '13.5px', fontSize: '8px' }}>S</span>
                         </div>
                       ))}
                     </div>
@@ -316,30 +435,30 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
 
             {/* PHẦN III: TRẮC NGHIỆM TRẢ LỜI NGẮN (ĐIỀN SỐ) */}
             {p3Count > 0 && (
-              <div>
-                <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase' }}>
+              <div style={{ marginBottom: '8px' }}>
+                <div style={{ background: '#000000', color: '#ffffff', padding: '3px 8px', fontWeight: 'bold', fontSize: '10.5px', textTransform: 'uppercase' }}>
                   PHẦN III: Thí sinh trả lời từ câu 1 đến câu {p3Count}. Mỗi câu tô các ký tự và chữ số từ trên xuống dưới.
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${p3Count}, 1fr)`, gap: '4px', border: '1px solid #000000', borderTop: 'none', padding: '5px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${p3Count}, 1fr)`, gap: '4px', border: '1px solid #000000', borderTop: 'none', padding: '4px' }}>
                   {Array.from({ length: p3Count }).map((_, qIdx) => (
-                    <div key={qIdx} style={{ border: '1px solid #ccc', padding: '3px', textAlign: 'center' }}>
-                      <div style={{ fontWeight: 'bold', fontSize: '10px', marginBottom: '2px' }}>Câu {qIdx + 1}</div>
+                    <div key={qIdx} style={{ border: '1px solid #ccc', padding: '2px', textAlign: 'center' }}>
+                      <div style={{ fontWeight: 'bold', fontSize: '9.5px', marginBottom: '1.5px' }}>Câu {qIdx + 1}</div>
                       <div style={{ display: 'flex', justifyContent: 'center', gap: '2px' }}>
                         {/* Cột Dấu âm */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
-                          <div style={{ width: '12px', height: '12px', border: '1px solid #000', fontSize: '8px' }}></div>
-                          <span className="omr-bubble" style={{ width: '12px', height: '12px', fontSize: '8px' }}>-</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2px' }}>
+                          <div style={{ width: '11px', height: '11px', border: '1px solid #000', fontSize: '7.5px' }}></div>
+                          <span className="omr-bubble" style={{ width: '11.5px', height: '11.5px', fontSize: '7.5px' }}>-</span>
                           {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                            <span key={n} className="omr-bubble" style={{ width: '12px', height: '12px', fontSize: '7.5px' }}>{n}</span>
+                            <span key={n} className="omr-bubble" style={{ width: '11.5px', height: '11.5px', fontSize: '7px' }}>{n}</span>
                           ))}
                         </div>
-                        {/* 3 Cột số thập phân */}
+                        {/* 3 Cột số */}
                         {[1, 2, 3].map(col => (
-                          <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.5px' }}>
-                            <div style={{ width: '12px', height: '12px', border: '1px solid #000', fontSize: '8px' }}></div>
-                            <span className="omr-bubble" style={{ width: '12px', height: '12px', fontSize: '8px' }}>,</span>
+                          <div key={col} style={{ display: 'flex', flexDirection: 'column', gap: '1.2px' }}>
+                            <div style={{ width: '11px', height: '11px', border: '1px solid #000', fontSize: '7.5px' }}></div>
+                            <span className="omr-bubble" style={{ width: '11.5px', height: '11.5px', fontSize: '7.5px' }}>,</span>
                             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                              <span key={n} className="omr-bubble" style={{ width: '12px', height: '12px', fontSize: '7.5px' }}>{n}</span>
+                              <span key={n} className="omr-bubble" style={{ width: '11.5px', height: '11.5px', fontSize: '7px' }}>{n}</span>
                             ))}
                           </div>
                         ))}
@@ -350,6 +469,18 @@ export default function PrintableAnswerSheet2027({ batch, onBack }) {
               </div>
             )}
           </>
+        )}
+
+        {/* NẾU LÀ MẪU AZOTA HYBRID (KẾT HỢP TỰ LUẬN) */}
+        {isHybrid && (
+          <div style={{ marginTop: '10px', border: '1.5px solid #000', padding: '8px' }}>
+            <div style={{ fontWeight: 'bold', fontSize: '11px', textTransform: 'uppercase', marginBottom: '4px' }}>
+              PHẦN BÀI LÀM TỰ LUẬN (DÀNH CHO HỌC SINH VIẾT TỰ LUẬN HOẶC TRÌNH BÀY)
+            </div>
+            <div style={{ height: '80mm', border: '1px dashed #666', borderRadius: '4px', padding: '8px', fontSize: '11px', color: '#666', fontStyle: 'italic' }}>
+              Thí sinh làm bài tự luận vào khung này.........................................................................................................
+            </div>
+          </div>
         )}
 
       </div>
