@@ -530,6 +530,76 @@ export default function TeacherDashboard() {
                   </button>
                 </div>
 
+                {/* CARD 1.2: VĂN PHÒNG ĐIỆN TỬ e-OFFICE & BÚT PHÊ ĐIỀU HÀNH */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #bbf7d0',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  background: 'linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%)'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#dcfce7',
+                        color: '#15803d',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <FileCheck size={24} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '800',
+                        backgroundColor: '#dcfce7',
+                        color: '#166534',
+                        border: '1px solid #86efac'
+                      }}>
+                        Bút Phê & Điều Hành BGH
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '800', margin: '0 0 6px 0', color: '#0f172a' }}>
+                      🏛️ e-Office: Sổ Văn Bản & Bút Phê
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#475569', margin: 0, lineHeight: '1.5' }}>
+                      Xem công văn Đi - Đến của Trường & Sở GD&ĐT, nhận việc theo bút phê chỉ đạo của BGH, cập nhật % tiến độ thực hiện và tra cứu văn bản ký số.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/e-office')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#16a34a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 10px rgba(22,163,74,0.3)',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    <FileCheck size={16} /> Mở e-Office & Bút Phê
+                  </button>
+                </div>
+
                 {/* CARD 1.5: HỌC LIỆU SỐ PHÂN QUYỀN & VIETQR */}
                 <div style={{
                   backgroundColor: '#ffffff',

@@ -193,6 +193,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents || !!permissions.canViewEmulation },
 
     // 4. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
+    { path: '/admin/e-office', icon: FileCheck, label: '🏛️ e-Office: Sổ Văn Bản Đi - Đến & Bút Phê', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
     { path: '/can-chinh-nghi-dinh-30', icon: Sparkles, label: '✨ Xưởng Soạn Thảo & Mẫu Văn Bản AI Studio (NĐ 30)', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
     { path: '/admin/docs', icon: FileText, label: '📄 Sổ Văn Bản - Thông Báo Nội Bộ', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/news', icon: Image, label: '📰 Tin tức - Sự kiện Nhà trường', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },

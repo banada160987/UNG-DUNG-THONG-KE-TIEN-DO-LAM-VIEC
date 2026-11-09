@@ -97,6 +97,7 @@ export default function MobileBottomNav() {
     { title: 'Trạm Video Kỹ Năng Số', path: '/hoc-lieu-so', icon: '📺', desc: 'Kho học liệu số, video thí nghiệm & kỹ năng' }
   ] : teacher ? [
     { title: '🏛️ 22 Phân Hệ Tiện Ích Số', path: '/huong-dan', icon: '🏛️', desc: 'Sơ đồ hệ sinh thái số & hướng dẫn nghiệp vụ' },
+    { title: '📁 e-Office: Sổ Văn Bản & Bút Phê', path: '/e-office', icon: '📁', desc: 'Quản lý công văn Đi - Đến, Bút phê BGH & Tiến độ nhiệm vụ' },
     { title: '🎙️ Thư Ký AI: Soạn Biên Bản Họp', path: '/bien-ban-hop-ai', icon: '🎙️', desc: 'Ghi âm trực tuyến & xuất Word chuẩn NĐ 30' },
     { title: '📑 Studio Nghị Định 30 (Latendoc)', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Thư viện mẫu A4, bóc ảnh sang Word OCR' },
     { title: 'Tiếp Nhận Dịch Vụ Công', path: '/admin/dich-vu-cong', icon: '🏛️', desc: 'Thẩm định giấy xác nhận & đơn nghỉ phép' },
@@ -112,6 +113,7 @@ export default function MobileBottomNav() {
     { title: 'Quản Lý Xe Máy Học Sinh', path: '/admin/parking', icon: '🛵', desc: 'Duyệt vé xe và kiểm tra phương tiện học sinh' }
   ] : [
     { title: '🏛️ 22 Phân Hệ Tiện Ích Số', path: '/huong-dan', icon: '🏛️', desc: 'Giới thiệu các phân hệ tiện ích & Cổng phân quyền' },
+    { title: '📁 e-Office: Sổ Văn Bản Đi - Đến', path: '/e-office', icon: '📁', desc: 'Sổ văn bản điều hành, bút phê BGH & tra cứu tiến độ' },
     { title: '🎙️ Thư Ký AI: Ghi Âm & Biên Bản Họp', path: '/bien-ban-hop-ai', icon: '🎙️', desc: 'Bóc băng âm thanh & xuất file Word chuẩn NĐ 30' },
     { title: '📑 Studio Nghị Định 30 (Latendoc)', path: '/can-chinh-nghi-dinh-30', icon: '📑', desc: 'Thư viện mẫu A4, bóc ảnh sang Word OCR chuẩn NĐ 30' },
     { title: 'Cổng Dịch Vụ Công 4.0', path: '/dich-vu-cong', icon: '🏛️', desc: 'Xin giấy xác nhận học sinh, nghỉ phép, sao y học bạ' },

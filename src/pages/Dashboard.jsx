@@ -6,7 +6,7 @@ import {
   FolderOpen, Award, Users, Calendar, FileText, LayoutDashboard, 
   Bike, Bus, QrCode, MessageSquare, Download, Trophy, Sparkles, 
   BookOpen, CheckCircle, Clock, AlertTriangle, Plus, ChevronRight, ShieldCheck,
-  GitBranch, Activity, Mic
+  GitBranch, Activity, Mic, FileCheck
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import TaskModal from '../components/TaskModal';
@@ -264,6 +264,16 @@ export default function Dashboard() {
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: '800', color: '#6b21a8' }}>Tra Cứu Học Bạ Số</div>
                     <div style={{ fontSize: '11px', color: '#9333ea' }}>Sổ sách & Văn bằng</div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link to="/admin/e-office" style={{ textDecoration: 'none' }}>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
+                  <FileCheck size={20} color="#16a34a" />
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#15803d' }}>🏛️ e-Office: Sổ Văn Bản & Bút Phê</div>
+                    <div style={{ fontSize: '11px', color: '#16a34a' }}>Văn bản Đi - Đến & Giao việc AI</div>
                   </div>
                 </div>
               </Link>
