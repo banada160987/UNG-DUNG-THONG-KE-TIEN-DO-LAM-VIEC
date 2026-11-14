@@ -245,10 +245,10 @@ export async function fetchStudentsByClass(className) {
 }
 
 /**
- * Gợi ý tên học sinh trực tuyến khi gõ (Chỉ trả về tối đa 8 kết quả siêu nhẹ)
+ * Gợi ý tên học sinh trực tuyến khi gõ (Hỗ trợ tìm kiếm theo cả Tên và Mã HS, từ 1 ký tự trở lên)
  */
 export async function searchStudentsByName(nameQuery, className = '') {
-  if (!nameQuery || nameQuery.trim().length < 2) return [];
+  if (!nameQuery || !nameQuery.trim()) return [];
   try {
     const cleanName = nameQuery.trim();
     const cleanClass = className ? className.trim().toUpperCase() : '';
@@ -256,9 +256,9 @@ export async function searchStudentsByName(nameQuery, className = '') {
     const res = await DualSupabaseService.selectSmart(
       'cbq_students',
       (q) => {
-        let builder = q.ilike('student_name', `%${cleanName}%`).eq('is_active', true).limit(8);
+        let builder = q.or(`student_name.ilike.%${cleanName}%,student_code.ilike.%${cleanName}%`).eq('is_active', true).limit(15);
         if (cleanClass) builder = builder.eq('student_class', cleanClass);
-        return builder;
+        return builder.order('student_name', { ascending: true });
       }
     );
 

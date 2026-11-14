@@ -20,6 +20,7 @@ export default function PublicParkingRegister() {
   const [packages, setPackages] = useState(DEFAULT_PACKAGES);
   const [busPackages, setBusPackages] = useState(DEFAULT_BUS_PACKAGES);
   const [studentRoster, setStudentRoster] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   
   const [studentName, setStudentName] = useState('');
   const [studentClass, setStudentClass] = useState('');
@@ -168,9 +169,24 @@ export default function PublicParkingRegister() {
   }
 
   async function fetchStudentRoster() {
-    // 🟢 CÁCH 02: Không nạp 3,000 học sinh khi vừa mở trang nữa!
-    // Hệ thống sẽ tự nạp ngầm ~35 học sinh theo Lớp khi chọn Lớp.
+    // Không nạp toàn bộ học sinh khi vừa mở trang, nạp theo lớp hoặc tìm kiếm trực tuyến
   }
+
+  const loadClassStudents = async (cls) => {
+    if (!cls || !cls.trim()) return [];
+    const clean = cls.trim().toUpperCase();
+    setLoadingStudents(true);
+    try {
+      const list = await fetchStudentsByClass(clean);
+      setStudentRoster(list || []);
+      return list || [];
+    } catch (e) {
+      console.warn("Lỗi tải danh sách học sinh lớp:", e);
+      return [];
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
 
   const [classSuggestions, setClassSuggestions] = useState([]);
   const [showClassSuggestions, setShowClassSuggestions] = useState(false);
@@ -297,42 +313,66 @@ export default function PublicParkingRegister() {
   };
 
   // Autocomplete Search for Student Name
-  const filterNameSuggestions = (nameVal, classVal = studentClass) => {
-    const cleanName = (nameVal || '').trim().toLowerCase();
-    const cleanClass = (classVal || '').trim().toLowerCase();
+  const filterNameSuggestions = async (nameVal, classVal = studentClass, preloadedList = null) => {
+    const cleanName = (nameVal || '').trim();
+    const cleanClass = (classVal || '').trim().toUpperCase();
 
     const normalize = (str) => {
       return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase();
     };
     const cleanNameNormalized = normalize(cleanName);
 
-    let matches = studentRoster;
-    if (cleanClass) {
-      matches = matches.filter(s => s.student_class?.toLowerCase() === cleanClass);
-    }
-    if (cleanName) {
-      matches = matches.filter(s => {
-        const studentName = s.student_name?.toLowerCase() || '';
-        const studentCode = s.student_code?.toLowerCase() || '';
-        return studentName.includes(cleanName) || 
-               normalize(studentName).includes(cleanNameNormalized) ||
-               studentCode.includes(cleanName);
-      });
+    // 1. Nếu đã có Lớp, ưu tiên nạp và lọc trong danh sách học sinh của Lớp
+    let list = preloadedList || studentRoster;
+    if (cleanClass && (!list || list.length === 0 || list[0]?.student_class?.toUpperCase() !== cleanClass)) {
+      list = await loadClassStudents(cleanClass);
     }
 
-    const sliced = matches.slice(0, 12);
-    setSuggestions(sliced);
-    setShowSuggestions(sliced.length > 0);
+    if (list && list.length > 0) {
+      let matches = list;
+      if (cleanName) {
+        matches = matches.filter(s => {
+          const studentName = s.student_name || '';
+          const studentCode = s.student_code || '';
+          return studentName.toLowerCase().includes(cleanName.toLowerCase()) || 
+                 normalize(studentName).includes(cleanNameNormalized) ||
+                 studentCode.toLowerCase().includes(cleanName.toLowerCase());
+        });
+      }
+      const sliced = matches.slice(0, 15);
+      setSuggestions(sliced);
+      setShowSuggestions(sliced.length > 0);
+      return;
+    }
+
+    // 2. Nếu chưa chọn lớp nhưng học sinh gõ tên (từ 1 ký tự trở lên)
+    if (cleanName.length >= 1) {
+      setLoadingStudents(true);
+      try {
+        const matches = await searchStudentsByName(cleanName, cleanClass);
+        const sliced = (matches || []).slice(0, 15);
+        setSuggestions(sliced);
+        setShowSuggestions(sliced.length > 0);
+      } catch (err) {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setLoadingStudents(false);
+      }
+    } else {
+      setSuggestions([]);
+      setShowSuggestions(false);
+    }
   };
 
   const handleNameChange = (val) => {
     setStudentName(val);
     setIsVerifiedStudent(false);
-    filterNameSuggestions(val);
+    filterNameSuggestions(val, studentClass);
   };
 
   const handleNameFocus = () => {
-    filterNameSuggestions(studentName);
+    filterNameSuggestions(studentName, studentClass);
   };
 
   // Autocomplete Search for Class
@@ -361,17 +401,24 @@ export default function PublicParkingRegister() {
   const handleClassChange = (val) => {
     setStudentClass(val);
     filterClassSuggestions(val);
+    const clean = (val || '').trim().toUpperCase();
+    if (/^\d{2}[A-Z]\d{2}$/.test(clean)) {
+      loadClassStudents(clean).then(list => {
+        filterNameSuggestions(studentName, clean, list);
+      });
+    }
   };
 
   const handleClassFocus = () => {
     filterClassSuggestions(studentClass);
   };
 
-  const handleSelectClassSuggestion = (clsName) => {
+  const handleSelectClassSuggestion = async (clsName) => {
     setStudentClass(clsName);
     setShowClassSuggestions(false);
-    // Automatically trigger student suggestions for this class
-    filterNameSuggestions(studentName, clsName);
+    // Tự động tải danh sách học sinh của lớp ngay lập tức và hiển thị gợi ý
+    const list = await loadClassStudents(clsName);
+    filterNameSuggestions(studentName, clsName, list);
   };
 
   const handleSelectSuggestion = (student) => {
@@ -434,24 +481,49 @@ export default function PublicParkingRegister() {
       return;
     }
 
-    if (!isVerifiedStudent && !editingTicket) {
-      alert("Bạn phải chọn đúng họ tên và mã học sinh từ danh sách gợi ý của hệ thống để đăng ký.");
-      return;
-    }
-
-    if (!studentCode || !studentCode.trim()) {
-      alert("LỖI: Tài khoản của bạn chưa được nhà trường cấp Mã Học Sinh (Mã HS). Vui lòng liên hệ nhà trường để bổ sung mã trước khi đăng ký!");
-      return;
-    }
-
     setLoading(true);
     try {
-      if (!editingTicket) {
+      const cleanClass = studentClass.trim().toUpperCase();
+      const cleanName = studentName.trim();
+      let finalStudentCode = (studentCode || '').trim();
+      let verified = isVerifiedStudent;
+
+      // Tự động đối chiếu thông minh với CSDL lớp nếu chưa bấm chọn từ gợi ý
+      if (!verified && !editingTicket) {
+        const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+        const cleanNameNorm = normalize(cleanName);
+
+        let list = studentRoster;
+        if (!list || list.length === 0 || list[0]?.student_class?.toUpperCase() !== cleanClass) {
+          list = await loadClassStudents(cleanClass);
+        }
+
+        const matchedStudent = list.find(s => 
+          normalize(s.student_name) === cleanNameNorm || 
+          (finalStudentCode && s.student_code && s.student_code.toLowerCase() === finalStudentCode.toLowerCase())
+        );
+
+        if (matchedStudent) {
+          verified = true;
+          setIsVerifiedStudent(true);
+          finalStudentCode = matchedStudent.student_code;
+          setStudentCode(finalStudentCode);
+          setStudentName(matchedStudent.student_name);
+        } else {
+          // Nếu học sinh chưa có trong CSDL (học sinh mới bổ sung), cấp mã định danh tạm thời để hoàn tất đăng ký
+          finalStudentCode = `HS-${cleanClass}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+          setStudentCode(finalStudentCode);
+          verified = true;
+          setIsVerifiedStudent(true);
+        }
+      }
+
+      if (!editingTicket && finalStudentCode) {
         // Kiểm tra xem học sinh đã đăng ký vé gửi xe chưa
         const { data: existing, error: checkErr } = await supabase
           .from('cbq_parking_registrations')
           .select('ticket_code')
-          .eq('student_code', studentCode.trim());
+          .eq('student_code', finalStudentCode);
         
         if (!checkErr && existing && existing.length > 0) {
           alert(`LỖI: Học sinh này đã đăng ký vé gửi xe (Mã vé: ${existing[0].ticket_code}).\nMỗi học sinh chỉ được đăng ký 1 vé. Nếu muốn thay đổi thông tin, vui lòng qua tab "Tra cứu / Sửa".`);
@@ -464,7 +536,6 @@ export default function PublicParkingRegister() {
       const today = new Date().toISOString().split('T')[0];
       const endDate = calculateEndDate(today, selectedPkg.months);
       
-      const cleanClass = studentClass.trim().toUpperCase();
       const timeStampSuffix = Date.now().toString(36).toUpperCase().slice(-3);
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticketCode = `PARK-${cleanClass}-${timeStampSuffix}${randomNum}`;
@@ -479,7 +550,7 @@ export default function PublicParkingRegister() {
       const payload = {
         ticket_code: finalTicketCode,
         student_name: studentName.trim(),
-        student_code: studentCode.trim(),
+        student_code: finalStudentCode,
         student_class: cleanClass,
         grade_level: gradeLevel,
         license_plate: finalLicensePlate,
@@ -525,24 +596,47 @@ export default function PublicParkingRegister() {
       return;
     }
 
-    if (!isVerifiedStudent && !editingTicket) {
-      alert("Bạn phải chọn đúng họ tên và mã học sinh từ danh sách gợi ý của hệ thống để đăng ký.");
-      return;
-    }
-
-    if (!studentCode || !studentCode.trim()) {
-      alert("LỖI: Tài khoản của bạn chưa được nhà trường cấp Mã Học Sinh (Mã HS). Vui lòng liên hệ nhà trường để bổ sung mã trước khi đăng ký!");
-      return;
-    }
-
     setLoading(true);
     try {
-      if (!editingTicket) {
+      const cleanClass = studentClass.trim().toUpperCase();
+      const cleanName = studentName.trim();
+      let finalStudentCode = (studentCode || '').trim();
+      let verified = isVerifiedStudent;
+
+      if (!verified && !editingTicket) {
+        const normalize = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().trim();
+        const cleanNameNorm = normalize(cleanName);
+
+        let list = studentRoster;
+        if (!list || list.length === 0 || list[0]?.student_class?.toUpperCase() !== cleanClass) {
+          list = await loadClassStudents(cleanClass);
+        }
+
+        const matchedStudent = list.find(s => 
+          normalize(s.student_name) === cleanNameNorm || 
+          (finalStudentCode && s.student_code && s.student_code.toLowerCase() === finalStudentCode.toLowerCase())
+        );
+
+        if (matchedStudent) {
+          verified = true;
+          setIsVerifiedStudent(true);
+          finalStudentCode = matchedStudent.student_code;
+          setStudentCode(finalStudentCode);
+          setStudentName(matchedStudent.student_name);
+        } else {
+          finalStudentCode = `HS-${cleanClass}-${Date.now().toString(36).toUpperCase().slice(-4)}`;
+          setStudentCode(finalStudentCode);
+          verified = true;
+          setIsVerifiedStudent(true);
+        }
+      }
+
+      if (!editingTicket && finalStudentCode) {
         // Kiểm tra xem học sinh đã đăng ký xe đưa đón chưa
         const { data: existing, error: checkErr } = await supabase
           .from('cbq_bus_registrations')
           .select('ticket_code')
-          .eq('student_code', studentCode.trim());
+          .eq('student_code', finalStudentCode);
         
         if (!checkErr && existing && existing.length > 0) {
           alert(`LỖI: Học sinh này đã đăng ký xe đưa đón (Mã vé: ${existing[0].ticket_code}).\nMỗi học sinh chỉ được đăng ký 1 tuyến. Nếu muốn thay đổi, vui lòng qua tab "Tra cứu / Sửa".`);
@@ -551,7 +645,6 @@ export default function PublicParkingRegister() {
         }
       }
 
-      const cleanClass = studentClass.trim().toUpperCase();
       const randomNum = Math.floor(100 + Math.random() * 900);
       const ticketCode = `BUS-${cleanClass}-${randomNum}`;
       
@@ -897,14 +990,20 @@ export default function PublicParkingRegister() {
               {/* AUTOCOMPLETE SUGGESTIONS DROPDOWN */}
               {showSuggestions && suggestions.length > 0 && (
                 <div style={styles.suggestionsDropdown}>
-                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                    💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG ({suggestions.length} học sinh):
+                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG ({suggestions.length} học sinh):</span>
+                    {loadingStudents && <span style={{ color: '#be123c', fontStyle: 'italic' }}>Đang tìm...</span>}
                   </div>
                   {suggestions.map((st, idx) => (
                     <div 
                       key={st.id || idx}
                       onClick={() => handleSelectSuggestion(st)}
-                      style={styles.suggestionItem}
+                      style={{
+                        ...styles.suggestionItem,
+                        backgroundColor: '#ffffff'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#ffffff'}
                     >
                       <div style={{ fontWeight: 'bold', color: '#1e293b' }}>{st.student_name}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>
@@ -1104,15 +1203,24 @@ export default function PublicParkingRegister() {
               />
               {showSuggestions && suggestions.length > 0 && (
                 <div style={styles.suggestionsDropdown}>
-                  {suggestions.map(s => (
+                  <div style={{ padding: '6px 12px', fontSize: '11px', fontWeight: 'bold', color: '#64748b', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>💡 GỢI Ý HỌC SINH TỪ CSDL NHÀ TRƯỜNG ({suggestions.length} học sinh):</span>
+                    {loadingStudents && <span style={{ color: '#b45309', fontStyle: 'italic' }}>Đang tìm...</span>}
+                  </div>
+                  {suggestions.map((s, idx) => (
                     <div 
-                      key={s.id} 
-                      style={styles.suggestionItem}
+                      key={s.id || idx} 
+                      style={{
+                        ...styles.suggestionItem,
+                        backgroundColor: '#ffffff'
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
+                      onMouseLeave={e => e.currentTarget.style.backgroundColor = '#ffffff'}
                       onClick={() => handleSelectSuggestion(s)}
                     >
                       <div style={{ fontWeight: 'bold', color: '#0f172a' }}>{s.student_name}</div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        Lớp: {s.student_class} | Mã HS: {s.student_code}
+                        Lớp: <strong style={{ color: '#b45309' }}>{s.student_class}</strong> • Mã HS: {s.student_code}
                       </div>
                     </div>
                   ))}
@@ -1338,10 +1446,10 @@ const styles = {
     backgroundColor: '#ffffff',
     border: '1px solid #cbd5e1',
     borderRadius: '8px',
-    boxShadow: '0 10px 25px rgba(0,0,0,0.12)',
-    zIndex: 100,
+    boxShadow: '0 10px 25px rgba(0,0,0,0.15)',
+    zIndex: 9999,
     marginTop: '4px',
-    maxHeight: '220px',
+    maxHeight: '260px',
     overflowY: 'auto'
   },
   suggestionItem: {
