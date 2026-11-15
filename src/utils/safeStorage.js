@@ -319,3 +319,53 @@ export function safeRemoveItem(key) {
     });
   } catch (_) {}
 }
+
+/**
+ * BỘ ĐÁNH CHẶN TOÀN CỤC (GLOBAL INTERCEPTOR) CHO LOCALSTORAGE
+ * Bọc lớp bảo vệ mọi lệnh gọi localStorage.setItem trong toàn bộ ứng dụng,
+ * tự động giải phóng dung lượng khi gặp QuotaExceededError, không bao giờ để lỗi văng ra màn hình.
+ */
+export function installGlobalStorageInterceptor() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  if (window.__cbq_storage_interceptor_installed) return;
+  
+  try {
+    const originalSetItem = window.localStorage.setItem;
+    window.localStorage.setItem = function(key, val) {
+      try {
+        originalSetItem.call(window.localStorage, key, val);
+      } catch (e) {
+        const isQuota = 
+          e.name === 'QuotaExceededError' || 
+          e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+          e.code === 22 || 
+          e.code === 1014 ||
+          (e.message && e.message.toLowerCase().includes('quota'));
+
+        if (isQuota) {
+          console.warn(`[SafeStorage Global] LocalStorage Quota Exceeded on key: "${key}". Đang tự động dọn rác...`);
+          cleanStorageQuota(true);
+          try {
+            originalSetItem.call(window.localStorage, key, val);
+            return;
+          } catch (_) {
+            // Nếu vẫn đầy, fallback an toàn sang sessionStorage
+            try {
+              if (window.sessionStorage) window.sessionStorage.setItem(key, val);
+            } catch (_) {}
+          }
+        } else {
+          throw e;
+        }
+      }
+    };
+    window.__cbq_storage_interceptor_installed = true;
+  } catch (err) {
+    console.warn('[SafeStorage] Không thể cài đặt Global Interceptor:', err);
+  }
+}
+
+// Tự động kích hoạt ngay khi file được nạp
+if (typeof window !== 'undefined') {
+  installGlobalStorageInterceptor();
+}

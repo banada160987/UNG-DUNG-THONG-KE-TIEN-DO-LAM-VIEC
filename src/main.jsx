@@ -6,6 +6,16 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import { BrowserRouter } from 'react-router-dom'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import { initSessionWatchdog } from './services/authSessionManager.js'
+import { cleanStorageQuota, getStorageUsage } from './utils/safeStorage.js'
+
+// Tự động giải phóng dung lượng bộ nhớ đệm nếu trình duyệt người dùng bị quá tải (> 3MB)
+try {
+  const usage = getStorageUsage();
+  if (usage && usage.bytes > 3000000) {
+    console.warn(`[SafeStorage] Phát hiện localStorage chiếm ${usage.mb}MB (${usage.percent}%). Đang tự động giải phóng...`);
+    cleanStorageQuota(true);
+  }
+} catch (_) {}
 
 // Khởi chạy bộ giám sát phiên làm việc tự động (Session Timeout & Auto Cleanup)
 initSessionWatchdog();
@@ -16,6 +26,8 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then((reg) => {
         console.log('✅ PWA ServiceWorker đã kích hoạt thành công:', reg.scope);
+        // Tự động kiểm tra bản cập nhật mới nhất từ Vercel
+        try { reg.update(); } catch (_) {}
       })
       .catch((err) => {
         console.warn('PWA ServiceWorker đăng ký chưa hoàn tất:', err);
