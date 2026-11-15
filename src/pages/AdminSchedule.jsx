@@ -65,6 +65,7 @@ import {
 } from '../utils/extracurricularClubSolver';
 import { DEFAULT_PERIOD_TIMINGS, getStoredPeriodTimings } from './PublicSchedule';
 import { saveTimetableConfigToCloud, fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
+import { safeSetItem, safeGetItem, cleanStorageQuota, getStorageUsage } from '../utils/safeStorage';
 
 
 
@@ -651,52 +652,62 @@ export default function AdminSchedule() {
       if (!error && data && data.length > 0) {
         finalTimetable = processRawTimetableItems(data);
         setTimetableData(finalTimetable);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
+        safeSetItem('cbq_master_timetable', finalTimetable);
       } else {
-        const cached = localStorage.getItem('cbq_master_timetable');
+        const cached = safeGetItem('cbq_master_timetable');
         if (cached) {
-          const parsed = JSON.parse(cached);
-          if (parsed && parsed.length > 0) {
-            finalTimetable = processRawTimetableItems(parsed);
-          } else {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && (Array.isArray(parsed) ? parsed.length > 0 : parsed?.data?.length > 0)) {
+              finalTimetable = processRawTimetableItems(Array.isArray(parsed) ? parsed : parsed.data);
+            } else {
+              finalTimetable = processRawTimetableItems(masterTimetableData);
+            }
+          } catch (_) {
             finalTimetable = processRawTimetableItems(masterTimetableData);
           }
         } else {
           finalTimetable = processRawTimetableItems(masterTimetableData);
         }
         setTimetableData(finalTimetable);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify(finalTimetable));
+        safeSetItem('cbq_master_timetable', finalTimetable);
       }
 
       // Tự động trích xuất và đồng bộ phân công chuyên môn cho toàn bộ 34 lớp
       if (finalTimetable && finalTimetable.length > 0) {
-        const cachedAsgs = localStorage.getItem('cbq_teaching_assignments');
+        const cachedAsgs = safeGetItem('cbq_teaching_assignments');
         if (!cachedAsgs || JSON.parse(cachedAsgs).length === 0) {
           const extracted = extractAssignmentsFromTimetable(finalTimetable);
           setTeachingAssignments(extracted);
-          localStorage.setItem('cbq_teaching_assignments', JSON.stringify(extracted));
+          safeSetItem('cbq_teaching_assignments', extracted);
         } else {
           try {
             setTeachingAssignments(JSON.parse(cachedAsgs));
           } catch(e) {
             const extracted = extractAssignmentsFromTimetable(finalTimetable);
             setTeachingAssignments(extracted);
+            safeSetItem('cbq_teaching_assignments', extracted);
           }
         }
       }
     } catch (err) {
-      const cached = localStorage.getItem('cbq_master_timetable');
+      console.warn("Lỗi tải TKB từ Cloud, chuyển sang bộ nhớ đệm cục bộ:", err);
+      const cached = safeGetItem('cbq_master_timetable');
       if (cached) {
-        const parsed = processRawTimetableItems(JSON.parse(cached));
-        setTimetableData(parsed);
-        const extracted = extractAssignmentsFromTimetable(parsed);
-        setTeachingAssignments(extracted);
-      } else {
-        const parsed = processRawTimetableItems(masterTimetableData);
-        setTimetableData(parsed);
-        const extracted = extractAssignmentsFromTimetable(parsed);
-        setTeachingAssignments(extracted);
+        try {
+          const parsed = JSON.parse(cached);
+          const rawItems = Array.isArray(parsed) ? parsed : parsed?.data || [];
+          const processed = processRawTimetableItems(rawItems);
+          setTimetableData(processed);
+          const extracted = extractAssignmentsFromTimetable(processed);
+          setTeachingAssignments(extracted);
+          return;
+        } catch (_) {}
       }
+      const fallback = processRawTimetableItems(masterTimetableData);
+      setTimetableData(fallback);
+      const extracted = extractAssignmentsFromTimetable(fallback);
+      setTeachingAssignments(extracted);
     }
   }
 
@@ -1263,9 +1274,14 @@ export default function AdminSchedule() {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
       }
 
-      // 2. Save to localStorage
-      localStorage.setItem('cbq_master_timetable', JSON.stringify(excelPreview));
-      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(tkbMetadata));
+      // 2. Lưu bộ nhớ đệm an toàn (Chống tràn Quota localStorage, tự động compact & dọn dẹp)
+      try {
+        safeSetItem('cbq_master_timetable', excelPreview);
+        safeSetItem('cbq_timetable_metadata', tkbMetadata);
+      } catch (cacheErr) {
+        console.warn("Lưu bộ nhớ đệm TKB cục bộ cảnh báo:", cacheErr);
+      }
+
       window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
       setTimetableData(excelPreview);
       setExcelPreview([]);
@@ -1279,8 +1295,14 @@ export default function AdminSchedule() {
 
   const handleLoadSampleTimetable = async () => {
     setTimetableData(SAMPLE_TIMETABLE_DATA);
-    localStorage.setItem('cbq_master_timetable', JSON.stringify(SAMPLE_TIMETABLE_DATA));
+    safeSetItem('cbq_master_timetable', SAMPLE_TIMETABLE_DATA);
     alert("🎉 Đã khôi phục Thời Khóa Biểu Mẫu Chuẩn cho THPT Cao Bá Quát!");
+  };
+
+  const handleCleanBrowserStorage = () => {
+    const freed = cleanStorageQuota(true);
+    const usage = getStorageUsage();
+    alert(`🧹 ĐÃ DỌN DẸP BỘ NHỚ ĐỆM TRÌNH DUYỆT THÀNH CÔNG!\n\n• Đã giải phóng: ${freed} mục cache rác/tạm thời.\n• Dung lượng hiện tại: ${usage.mb} MB (${usage.percent}% hạn mức).\n• Dữ liệu Thời khóa biểu và Hệ thống trên Cloud vẫn an toàn 100%.`);
   };
 
   // Filter Timetable List
@@ -1342,7 +1364,7 @@ export default function AdminSchedule() {
       const extracted = extractAssignmentsFromTimetable(timetableData);
       if (Array.isArray(extracted) && extracted.length > 0) {
         setTeachingAssignments(extracted);
-        localStorage.setItem('cbq_teaching_assignments', JSON.stringify(extracted));
+        safeSetItem('cbq_teaching_assignments', extracted);
         return;
       }
     }
@@ -1351,7 +1373,7 @@ export default function AdminSchedule() {
     const defaults = getDefaultTeachingAssignments();
     if (defaults && defaults.length > 0) {
       setTeachingAssignments(defaults);
-      localStorage.setItem('cbq_teaching_assignments', JSON.stringify(defaults));
+      safeSetItem('cbq_teaching_assignments', defaults);
     }
   }, [timetableData]);
 
@@ -1478,7 +1500,7 @@ export default function AdminSchedule() {
     const sourceData = (timetableData && timetableData.length > 0) ? timetableData : masterTimetableData;
     const defaults = extractAssignmentsFromTimetable(sourceData);
     setTeachingAssignments(defaults);
-    localStorage.setItem('cbq_teaching_assignments', JSON.stringify(defaults));
+    safeSetItem('cbq_teaching_assignments', defaults);
     alert(`🎉 Đã nạp và trích xuất thành công toàn bộ ${defaults.length} phân công chuyên môn (${defaults.reduce((s, a) => s + (Number(a.periods_per_week) || 0), 0)} tiết/tuần) cho tất cả 34 lớp của Trường THPT Cao Bá Quát!`);
   };
 
@@ -1494,7 +1516,7 @@ export default function AdminSchedule() {
       teacher_name: getFullTeacherName(a.teacher_name, a.subject)
     }));
     setTeachingAssignments(cleanedAssignments);
-    localStorage.setItem('cbq_teaching_assignments', JSON.stringify(cleanedAssignments));
+    safeSetItem('cbq_teaching_assignments', cleanedAssignments);
 
     setIsSolving(true);
     setSolverProgress(15);
@@ -1531,15 +1553,15 @@ export default function AdminSchedule() {
 
               const placedSchedule = res.schedule || res.scheduleItems || [];
               setDraftSchedule(placedSchedule);
-              localStorage.setItem('cbq_draft_timetable', JSON.stringify(placedSchedule));
+              safeSetItem('cbq_draft_timetable', placedSchedule);
 
               // Lưu snapshot theo Đợt
               if (activeRotationCycle === 'cycle_1') {
                 setCycle1Draft(placedSchedule);
-                localStorage.setItem('cbq_cycle_1_timetable', JSON.stringify(placedSchedule));
+                safeSetItem('cbq_cycle_1_timetable', placedSchedule);
               } else {
                 setCycle2Draft(placedSchedule);
-                localStorage.setItem('cbq_cycle_2_timetable', JSON.stringify(placedSchedule));
+                safeSetItem('cbq_cycle_2_timetable', placedSchedule);
               }
 
               setSolverResult(res);
@@ -1571,7 +1593,7 @@ export default function AdminSchedule() {
       teacher_name: getFullTeacherName(a.teacher_name, a.subject)
     }));
     setTeachingAssignments(cleanedAssignments);
-    localStorage.setItem('cbq_teaching_assignments', JSON.stringify(cleanedAssignments));
+    safeSetItem('cbq_teaching_assignments', cleanedAssignments);
 
     const res = runAiTimetableSolver({
       assignments: cleanedAssignments,
@@ -1590,7 +1612,7 @@ export default function AdminSchedule() {
 
     const placedSchedule = res.schedule || res.scheduleItems || [];
     setDraftSchedule(placedSchedule);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(placedSchedule));
+    safeSetItem('cbq_draft_timetable', placedSchedule);
     setSolverResult(res);
     alert(`🎉 ĐÃ XỬ LÝ TRIỆT ĐỂ 100%!\n- Số tiết trùng: ${res.clashCount} tiết (0% Xung đột)\n- Điểm chất lượng: ${res.qualityScore}/100\n- Tổng số tiết xếp: ${placedSchedule.length} tiết`);
   };
@@ -1931,7 +1953,7 @@ export default function AdminSchedule() {
     }
 
     setDraftSchedule(newSchedule);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(newSchedule));
+    safeSetItem('cbq_draft_timetable', newSchedule);
     setSwapSourceSlot(null);
     setDraggingSlot(null);
     setConflictModalData(null);
@@ -2010,7 +2032,7 @@ export default function AdminSchedule() {
     updatedDraft.push(newItem);
 
     setDraftSchedule(updatedDraft);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updatedDraft));
+    safeSetItem('cbq_draft_timetable', updatedDraft);
 
     // Cập nhật pinned slots
     let updatedPins = pinnedSlots.filter(p => !(p.student_class === cls && p.day_of_week === day && Number(p.period) === period));
@@ -2018,7 +2040,7 @@ export default function AdminSchedule() {
       updatedPins.push(newItem);
     }
     setPinnedSlots(updatedPins);
-    localStorage.setItem('cbq_pinned_slots', JSON.stringify(updatedPins));
+    safeSetItem('cbq_pinned_slots', updatedPins);
 
     // Cập nhật lại chẩn đoán chất lượng
     const diag = generateAiDiagnostics(updatedDraft, teachingAssignments, teacherLocks);
@@ -2038,11 +2060,11 @@ export default function AdminSchedule() {
     if (!window.confirm(`Bạn có chắc muốn xóa tiết này khỏi lớp ${studentClass}?`)) return;
     const updatedDraft = draftSchedule.filter(s => !(s.student_class === studentClass && s.day_of_week === day && Number(s.period) === Number(period)));
     setDraftSchedule(updatedDraft);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(updatedDraft));
+    safeSetItem('cbq_draft_timetable', updatedDraft);
 
     const updatedPins = pinnedSlots.filter(p => !(p.student_class === studentClass && p.day_of_week === day && Number(p.period) === Number(period)));
     setPinnedSlots(updatedPins);
-    localStorage.setItem('cbq_pinned_slots', JSON.stringify(updatedPins));
+    safeSetItem('cbq_pinned_slots', updatedPins);
 
     const diag = generateAiDiagnostics(updatedDraft, teachingAssignments, teacherLocks);
     setSolverResult(prev => ({
@@ -2178,7 +2200,7 @@ export default function AdminSchedule() {
     }
 
     setDraftSchedule(newSchedule);
-    localStorage.setItem('cbq_draft_timetable', JSON.stringify(newSchedule));
+    safeSetItem('cbq_draft_timetable', newSchedule);
     setSwapSourceSlot(null);
     setDraggingSlot(null);
     setConflictModalData(null);
@@ -2586,7 +2608,7 @@ export default function AdminSchedule() {
     };
     const updated = [newScen, ...scenarios];
     setScenarios(updated);
-    localStorage.setItem('cbq_timetable_scenarios', JSON.stringify(updated));
+    safeSetItem('cbq_timetable_scenarios', updated);
     if (!compareScenarioA) setCompareScenarioA(newScen.id);
     else if (!compareScenarioB && compareScenarioA !== newScen.id) setCompareScenarioB(newScen.id);
     setShowSaveScenarioModal(false);
@@ -2599,7 +2621,7 @@ export default function AdminSchedule() {
     if (!scen || !scen.schedule) return;
     if (window.confirm(`Bạn có chắc muốn áp dụng "${scen.name}" vào Bàn làm việc Studio và Bản nháp?`)) {
       setDraftSchedule([...scen.schedule]);
-      localStorage.setItem('cbq_draft_timetable', JSON.stringify(scen.schedule));
+      safeSetItem('cbq_draft_timetable', scen.schedule);
       alert(`✅ Đã nạp thành công "${scen.name}" (${scen.schedule.length} tiết)!`);
     }
   };
@@ -2608,7 +2630,7 @@ export default function AdminSchedule() {
     if (!window.confirm("Bạn có chắc muốn xóa phương án này?")) return;
     const updated = scenarios.filter(s => s.id !== id);
     setScenarios(updated);
-    localStorage.setItem('cbq_timetable_scenarios', JSON.stringify(updated));
+    safeSetItem('cbq_timetable_scenarios', updated);
   };
 
   const handleExportWorkloadExcel = () => {
@@ -2649,8 +2671,14 @@ export default function AdminSchedule() {
         console.warn("Lưu Supabase TKB thất bại, sử dụng lưu Cache:", dbErr);
       }
 
-      localStorage.setItem('cbq_master_timetable', JSON.stringify(draftSchedule));
-      localStorage.setItem('cbq_timetable_metadata', JSON.stringify(tkbMetadata));
+      // 2. Lưu bộ nhớ đệm an toàn (Chống tràn Quota localStorage, tự động compact & dọn dẹp)
+      try {
+        safeSetItem('cbq_master_timetable', draftSchedule);
+        safeSetItem('cbq_timetable_metadata', tkbMetadata);
+      } catch (cacheErr) {
+        console.warn("Lưu bộ nhớ đệm TKB dự thảo cảnh báo:", cacheErr);
+      }
+
       window.dispatchEvent(new Event('cbq_tkb_metadata_updated'));
       setTimetableData(draftSchedule);
       setShowPublishModal(false);
@@ -3619,6 +3647,15 @@ export default function AdminSchedule() {
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 16px', backgroundColor: '#f8fafc', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
                 >
                   <RefreshCw size={16} /> Nạp TKB Thử Nghệ Mẫu
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCleanBrowserStorage}
+                  title="Dọn dẹp các cache rác/tạm thời của trình duyệt để giải phóng dung lượng lưu trữ TKB"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 14px', backgroundColor: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  <Trash2 size={16} /> Dọn Cache Trình Duyệt
                 </button>
 
                 <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '10px 18px', backgroundColor: '#166534', color: '#ffffff', borderRadius: '8px', fontWeight: 'bold', fontSize: '13px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(22, 101, 52, 0.3)' }}>

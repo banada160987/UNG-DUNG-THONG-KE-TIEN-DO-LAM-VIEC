@@ -28,6 +28,7 @@ import {
 } from '../utils/decree30ScheduleWord';
 import { fetchTimetableConfigFromCloud } from '../utils/timetableConfigSync';
 import { downloadTeacherScheduleIcs } from '../utils/icalExporter';
+import { safeSetItem, safeGetItem } from '../utils/safeStorage';
 import AiStatusBadge from '../components/AiStatusBadge';
 import AiSettingsModal from '../components/AiSettingsModal';
 
@@ -775,7 +776,7 @@ export default function PublicSchedule() {
       // Kiểm tra bộ nhớ đệm TKB (TTL 5 phút, tránh gọi liên tục gây quá tải)
       if (!forceRefresh) {
         try {
-          const cached = localStorage.getItem('cbq_master_timetable');
+          const cached = safeGetItem('cbq_master_timetable');
           if (cached) {
             const parsed = JSON.parse(cached);
             const cachedItems = Array.isArray(parsed) ? parsed : parsed?.data;
@@ -798,10 +799,10 @@ export default function PublicSchedule() {
       if (!error && data && data.length > 0) {
         const cleaned = processRawTimetableItems(data);
         setTimetableData(cleaned);
-        localStorage.setItem('cbq_master_timetable', JSON.stringify({
+        safeSetItem('cbq_master_timetable', {
           data: cleaned,
           timestamp: Date.now()
-        }));
+        });
       } else {
         loadTimetableFromCacheOrMaster();
       }
@@ -811,7 +812,7 @@ export default function PublicSchedule() {
   }
 
   function loadTimetableFromCacheOrMaster() {
-    const cached = localStorage.getItem('cbq_master_timetable');
+    const cached = safeGetItem('cbq_master_timetable');
     if (cached) {
       try {
         const parsed = JSON.parse(cached);
@@ -829,10 +830,10 @@ export default function PublicSchedule() {
     }
     const masterCleaned = processRawTimetableItems(masterTimetableData);
     setTimetableData(masterCleaned);
-    localStorage.setItem('cbq_master_timetable', JSON.stringify({
+    safeSetItem('cbq_master_timetable', {
       data: masterCleaned,
       timestamp: Date.now()
-    }));
+    });
   }
 
   const availableClasses = useMemo(() => {
