@@ -24,7 +24,10 @@ import {
   getFundStatistics,
   exportScholarshipExcel,
   exportScholarshipDecisionWord,
-  exportFundReportExcel
+  exportFundReportExcel,
+  approveStudentForSponsorship,
+  disburseSponsorshipToStudent,
+  exportHandoverDocx
 } from '../services/scholarshipFundService';
 
 const ALL_CLASSES = [];
@@ -123,8 +126,17 @@ export default function AdminScholarshipFund() {
     if (!selectedApp) return;
 
     try {
-      await reviewScholarshipApplication(selectedApp.id, reviewModalData);
-      alert(`Đã cập nhật trạng thái hồ sơ của học sinh ${selectedApp.student_name}!`);
+      if (reviewModalData.status === 'ready_for_sponsor') {
+        await approveStudentForSponsorship(selectedApp.id, {
+          target_support_amount: reviewModalData.granted_amount,
+          review_note: reviewModalData.review_note,
+          approved_by: 'Ban Giám Hiệu THPT Cao Bá Quát'
+        });
+        alert(`Đã phê duyệt đưa học sinh ${selectedApp.student_name} vào danh mục để Mạnh Thường Quân nhận bảo trợ!`);
+      } else {
+        await reviewScholarshipApplication(selectedApp.id, reviewModalData);
+        alert(`Đã cập nhật trạng thái hồ sơ của học sinh ${selectedApp.student_name}!`);
+      }
       setSelectedApp(null);
       loadAllData();
     } catch (err) {
@@ -795,7 +807,8 @@ export default function AdminScholarshipFund() {
                         onChange={(e) => setReviewModalData({ ...reviewModalData, status: e.target.value })}
                         style={styles.select}
                       >
-                        <option value="approved">✓ PHÊ DUYỆT TRAO HỌC BỔNG</option>
+                        <option value="approved">✓ PHÊ DUYỆT TRAO HỌC BỔNG (QUỸ CHUNG)</option>
+                        <option value="ready_for_sponsor">🌟 PHÊ DUYỆT ĐƯA VÀO DANH MỤC BẢO TRỢ (MẠNH THƯỜNG QUÂN)</option>
                         <option value="pending">⏳ Đang chờ xác minh thêm</option>
                         <option value="rejected">✕ Không đủ điều kiện (Từ chối)</option>
                       </select>
@@ -847,7 +860,14 @@ export default function AdminScholarshipFund() {
                     />
                   </div>
 
-                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                  <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px', flexWrap: 'wrap' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => exportHandoverDocx(selectedApp)} 
+                      style={{ ...styles.cancelBtn, background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                    >
+                      <FileText size={15} /> Tải Biên Bản Bàn Giao (Word NĐ30)
+                    </button>
                     <button type="button" onClick={() => setSelectedApp(null)} style={styles.cancelBtn}>
                       Đóng
                     </button>

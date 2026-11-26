@@ -10,7 +10,9 @@ import { getTeacherSession, clearTeacherSession, getStudentSession, clearStudent
 const DEFAULT_FULL_MENUS = [
   // Nhóm 1: Vận hành nhà trường (school)
   { id: 'm_sc_chap_canh', target_type: 'public', parent_group: 'school', label: '🕊️ Quỹ "Chắp cánh ước mơ"', path: '/chap-canh-uoc-mo', sort_order: 1, is_active: true },
-  { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 2, is_active: true },
+  { id: 'm_sc_mtq', target_type: 'public', parent_group: 'school', label: '🤝 Cổng Mạnh Thường Quân Bảo Trợ', path: '/manh-thuong-quan', sort_order: 2, is_active: true },
+  { id: 'm_sc_dexuat', target_type: 'public', parent_group: 'school', label: '📝 GVCN & Đoàn: Đề Xuất Học Sinh Khó Khăn', path: '/giao-vien/de-xuat-hoc-sinh-kho-khan', sort_order: 3, is_active: true },
+  { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 4, is_active: true },
   { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)', path: '/bep-sang', sort_order: 2, is_active: true },
   { id: 'm_sc_2', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: false },
   { id: 'm_sc_3', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: false },
@@ -481,6 +483,39 @@ export default function PublicLayout() {
                 letterSpacing: '0.3px',
                 lineHeight: 1.1
               }}>LAN TỎA</span>
+            </Link>
+
+            {/* MENU ĐỘC LẬP: CỔNG MẠNH THƯỜNG QUÂN ĐỒNG HÀNH & BẢO TRỢ */}
+            <Link 
+              to="/manh-thuong-quan" 
+              style={{
+                ...(isActive('/manh-thuong-quan') || isActive('/bao-tro-hoc-sinh') ? styles.navItemHighlightActive : {
+                  ...styles.navItem,
+                  color: '#bbf7d0',
+                  background: 'linear-gradient(135deg, rgba(5, 150, 105, 0.25), rgba(16, 185, 129, 0.25))',
+                  border: '1px solid rgba(110, 231, 183, 0.4)',
+                  borderRadius: '6px',
+                  margin: '2px 3px',
+                  padding: '6px 9px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }),
+              }}
+              onClick={() => setMobileMenuOpen(false)}
+              title="Cổng Mạnh Thường Quân Đồng Hành & Giám Sát Nguồn Tiền Bảo Trợ"
+            >
+              <span>🤝 Cổng MTQ</span>
+              <span style={{
+                fontSize: '9px',
+                backgroundColor: '#b45309',
+                color: '#ffffff',
+                padding: '1px 5px',
+                borderRadius: '6px',
+                fontWeight: '900',
+                letterSpacing: '0.3px',
+                lineHeight: 1.1
+              }}>BẢO TRỢ</span>
             </Link>
 
             {/* MENU ĐỘC LẬP: TRẠM HỌC LIỆU SỐ & VIDEO (Ưu tiên hiển thị màn hình rộng) */}

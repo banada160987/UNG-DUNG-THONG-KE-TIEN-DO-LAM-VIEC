@@ -73,6 +73,8 @@ const PublicMeetingAttendance = lazy(() => import('./pages/PublicMeetingAttendan
 const AdminMeetingAttendance = lazy(() => import('./pages/AdminMeetingAttendance'));
 const PublicScholarshipFund = lazy(() => import('./pages/PublicScholarshipFund'));
 const AdminScholarshipFund = lazy(() => import('./pages/AdminScholarshipFund'));
+const PublicSponsorPortal = lazy(() => import('./pages/PublicSponsorPortal'));
+const TeacherStudentSupportProposal = lazy(() => import('./pages/TeacherStudentSupportProposal'));
 
 // Student Features
 const ClassJournal = lazy(() => import('./pages/student_features/ClassJournal'));
@@ -171,6 +173,11 @@ function App() {
             <Route path="/chap-canh-uoc-mo" element={<PublicScholarshipFund />} />
             <Route path="/quy-chap-canh-uoc-mo" element={<PublicScholarshipFund />} />
             <Route path="/hoc-bong" element={<PublicScholarshipFund />} />
+            <Route path="/manh-thuong-quan" element={<PublicSponsorPortal />} />
+            <Route path="/nha-hao-tam" element={<PublicSponsorPortal />} />
+            <Route path="/bao-tro-hoc-sinh" element={<PublicSponsorPortal />} />
+            <Route path="/giao-vien/de-xuat-hoc-sinh-kho-khan" element={<TeacherStudentSupportProposal />} />
+            <Route path="/doan-truong/de-xuat-hoc-sinh" element={<TeacherStudentSupportProposal />} />
             <Route path="/thu-vien-anh" element={<PublicGallery />} />
             <Route path="/luu-but" element={<PublicGuestbook />} />
             <Route path="/cuoc-thi" element={<PublicQuiz />} />
@@ -305,6 +312,8 @@ function App() {
               <Route path="/admin/chap-canh-uoc-mo" element={<AdminScholarshipFund />} />
               <Route path="/admin/quy-chap-canh-uoc-mo" element={<AdminScholarshipFund />} />
               <Route path="/admin/hoc-bong" element={<AdminScholarshipFund />} />
+              <Route path="/admin/de-xuat-hoc-sinh-kho-khan" element={<TeacherStudentSupportProposal />} />
+              <Route path="/admin/manh-thuong-quan" element={<PublicSponsorPortal />} />
               <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/news" element={permissions.canViewNews ? <AdminNews /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/guests" element={permissions.canViewGuests ? <AdminGuests /> : <Navigate to="/admin/committee" replace />} />
