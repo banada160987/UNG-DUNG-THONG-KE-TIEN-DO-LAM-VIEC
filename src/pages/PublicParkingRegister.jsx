@@ -468,12 +468,16 @@ export default function PublicParkingRegister() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!studentName.trim() || !studentClass.trim()) {
-      alert("Vui lòng điền đầy đủ các thông tin bắt buộc (*)");
+    if (!studentName.trim()) {
+      alert("Vui lòng nhập Họ và Tên học sinh (*)");
+      return;
+    }
+    if (!studentClass.trim()) {
+      alert("Vui lòng chọn hoặc nhập Lớp học (*) (VD: 10A01, 11A02, 12A05...)");
       return;
     }
     if (!isBicycle && !noLicensePlate && !licensePlate.trim()) {
-      alert("Vui lòng nhập Biển số xe.");
+      alert("Vui lòng nhập Biển số xe (*) hoặc tích chọn ô 'Xe chưa có biển số (Hệ thống sẽ cấp tem dán)'.");
       return;
     }
     if (isBicycle && !vehicleColor.trim()) {
@@ -960,6 +964,10 @@ export default function PublicParkingRegister() {
               <h3 style={styles.formTitle}>
                 {editingTicket ? '✏️ ĐIỀU CHỈNH THÔNG TIN VÉ GỬI XE' : '📝 Thông tin Đăng ký Vé Gửi Xe Học Sinh'}
               </h3>
+
+              <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '10px', padding: '12px 16px', marginBottom: '18px', fontSize: '13.5px', color: '#1e40af', lineHeight: 1.5 }}>
+                💡 <strong>Mẹo đăng ký nhanh:</strong> Bạn nên bấm chọn <strong>Lớp học</strong> trước (VD: 10A01, 11A02...) để danh sách học sinh của lớp hiển thị ngay. Nếu xe mới chưa có biển số, hãy tích vào ô <i>"Xe chưa có biển số"</i> để được cấp tem dán.
+              </div>
 
               <div style={styles.formGrid}>
                 {/* AUTOCOMPLETE STUDENT NAME FIELD */}

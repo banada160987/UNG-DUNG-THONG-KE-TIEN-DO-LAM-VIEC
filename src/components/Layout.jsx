@@ -186,6 +186,7 @@ export default function Layout({ children, title }) {
     { path: '/admin/gop-y', icon: FileText, label: '✍️ Tiếp Nhận Phản Hồi & Góp Ý', group: '📋 QUẢN LÝ DỊCH VỤ & ĐĂNG KÝ TRỰC TUYẾN', show: isAdmin || !!permissions.canViewFeedback },
 
     // 3. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
+    { path: '/admin/chap-canh-uoc-mo', icon: Heart, label: '🕊️ Quỹ "Chắp Cánh Ước Mơ"', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: true },
     { path: '/admin/hom-thu-hoc-sinh', icon: Mail, label: '💌 Hòm Thư Tâm Tư & Nguyện Vọng HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || role === 'secretary' || !!permissions.canViewFeedback || !!permissions.canViewStudents },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Sổ Học Sinh & Chuyển Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
@@ -193,7 +194,6 @@ export default function Layout({ children, title }) {
     { path: '/admin/qr-scanner', icon: QrCode, label: '📱 Quét Mã QR Check-in / Điểm Danh', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents || !!permissions.canViewEmulation },
 
     // 4. 📄 VĂN BẢN, TRUYỀN THÔNG & TƯ LIỆU TRUYỀN THỐNG
-    { path: '/admin/e-office', icon: FileCheck, label: '🏛️ e-Office: Sổ Văn Bản Đi - Đến & Bút Phê', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
     { path: '/can-chinh-nghi-dinh-30', icon: Sparkles, label: '✨ Xưởng Soạn Thảo & Mẫu Văn Bản AI Studio (NĐ 30)', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: true },
     { path: '/admin/docs', icon: FileText, label: '📄 Sổ Văn Bản - Thông Báo Nội Bộ', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewDocs },
     { path: '/admin/news', icon: Image, label: '📰 Tin tức - Sự kiện Nhà trường', group: '📄 VĂN BẢN & TƯ LIỆU TRUYỀN THỐNG', show: isAdmin || !!permissions.canViewNews },

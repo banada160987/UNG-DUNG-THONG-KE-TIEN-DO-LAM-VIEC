@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import { supabase } from '../lib/supabase';
 import { Users, Plus, Save, Trash2, Edit3, Eye, Upload, List, RefreshCw, Search, Filter, BookOpen } from 'lucide-react';
 import masterTimetableData from '../data/master_timetable.json';
-import { TEACHER_FULL_MAP } from '../utils/proTimetableSolver';
+import { TEACHER_FULL_MAP } from '../utils/timetableHelpers';
 
 export default function AdminStaff() {
   const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'department'

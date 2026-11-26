@@ -71,6 +71,8 @@ const PublicRegistrations = lazy(() => import('./pages/PublicRegistrations'));
 const AdminRegistrations = lazy(() => import('./pages/AdminRegistrations'));
 const PublicMeetingAttendance = lazy(() => import('./pages/PublicMeetingAttendance'));
 const AdminMeetingAttendance = lazy(() => import('./pages/AdminMeetingAttendance'));
+const PublicScholarshipFund = lazy(() => import('./pages/PublicScholarshipFund'));
+const AdminScholarshipFund = lazy(() => import('./pages/AdminScholarshipFund'));
 
 // Student Features
 const ClassJournal = lazy(() => import('./pages/student_features/ClassJournal'));
@@ -112,7 +114,6 @@ const PublicServicesPortal = lazy(() => import('./pages/public/PublicServicesPor
 const AdminPublicServices = lazy(() => import('./pages/admin/AdminPublicServices'));
 const InternalChatPage = lazy(() => import('./pages/InternalChatPage'));
 const AdminAiMeetingMinutes = lazy(() => import('./pages/AdminAiMeetingMinutes'));
-const AdminEOffice = lazy(() => import('./pages/AdminEOffice'));
 import FacebookMessengerWidget from './components/FacebookMessengerWidget';
 import ScrollToTopButton from './components/ScrollToTopButton';
 
@@ -154,13 +155,6 @@ function App() {
           <Route path="/giao-vien/bien-ban-hop-ai" element={<AdminAiMeetingMinutes />} />
           <Route path="/tro-ly-thu-ky-ai" element={<AdminAiMeetingMinutes />} />
 
-          {/* e-Office: Sổ Văn Bản Đi - Đến, Bút Phê & Điều Hành Tác Nghiệp */}
-          <Route path="/e-office" element={<AdminEOffice />} />
-          <Route path="/van-ban-dieu-hanh" element={<AdminEOffice />} />
-          <Route path="/quan-ly-van-ban" element={<AdminEOffice />} />
-          <Route path="/giao-vien/e-office" element={<AdminEOffice />} />
-          <Route path="/teacher/e-office" element={<AdminEOffice />} />
-
           {/* Public Portal Routes with Nested Routing */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<PublicHome />} />
@@ -174,6 +168,9 @@ function App() {
             <Route path="/tin-tuc" element={<PublicNewsList />} />
             <Route path="/van-ban" element={<PublicDocs />} />
             <Route path="/bang-vang" element={<PublicSponsorsList />} />
+            <Route path="/chap-canh-uoc-mo" element={<PublicScholarshipFund />} />
+            <Route path="/quy-chap-canh-uoc-mo" element={<PublicScholarshipFund />} />
+            <Route path="/hoc-bong" element={<PublicScholarshipFund />} />
             <Route path="/thu-vien-anh" element={<PublicGallery />} />
             <Route path="/luu-but" element={<PublicGuestbook />} />
             <Route path="/cuoc-thi" element={<PublicQuiz />} />
@@ -248,9 +245,6 @@ function App() {
             <Route path="/teacher-dashboard/smart-utilities" element={<TeacherRoute><TeacherSmartUtilities /></TeacherRoute>} />
             <Route path="/teacher/bien-ban-hop-ai" element={<TeacherRoute><AdminAiMeetingMinutes /></TeacherRoute>} />
             <Route path="/teacher-dashboard/bien-ban-hop-ai" element={<TeacherRoute><AdminAiMeetingMinutes /></TeacherRoute>} />
-            <Route path="/teacher/e-office" element={<TeacherRoute><AdminEOffice /></TeacherRoute>} />
-            <Route path="/teacher-dashboard/e-office" element={<TeacherRoute><AdminEOffice /></TeacherRoute>} />
-            <Route path="/teacher-dashboard/van-ban" element={<TeacherRoute><AdminEOffice /></TeacherRoute>} />
 
             {/* Teacher Route Aliases */}
             <Route path="/teacher/lesson-plans" element={<TeacherRoute><TeacherLessonPlanBuilder /></TeacherRoute>} />
@@ -308,6 +302,9 @@ function App() {
               <Route path="/admin/qr-scanner" element={permissions.canViewStudents ? <AdminQRScanner /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/schedule" element={permissions.canViewDocs ? <AdminSchedule /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/staff" element={permissions.canViewDocs ? <AdminStaff /> : <Navigate to="/admin/committee" replace />} />
+              <Route path="/admin/chap-canh-uoc-mo" element={<AdminScholarshipFund />} />
+              <Route path="/admin/quy-chap-canh-uoc-mo" element={<AdminScholarshipFund />} />
+              <Route path="/admin/hoc-bong" element={<AdminScholarshipFund />} />
               <Route path="/admin/sponsors" element={permissions.canViewSponsors ? <AdminSponsors /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/news" element={permissions.canViewNews ? <AdminNews /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/guests" element={permissions.canViewGuests ? <AdminGuests /> : <Navigate to="/admin/committee" replace />} />
@@ -343,9 +340,6 @@ function App() {
               <Route path="/admin/video-hoc-lieu" element={(role === 'admin' || role === 'secretary' || permissions.canViewDocs) ? <AdminEduVideos /> : <Navigate to="/admin/committee" replace />} />
               <Route path="/admin/cantin" element={<AdminCanteenManager />} />
               <Route path="/admin/bep-sang" element={<AdminCanteenManager />} />
-              <Route path="/admin/e-office" element={<AdminEOffice />} />
-              <Route path="/admin/van-ban-dieu-hanh" element={<AdminEOffice />} />
-              <Route path="/admin/quan-ly-van-ban" element={<AdminEOffice />} />
               <Route path="/admin/kiem-tra-tap-trung" element={<AdminExamRooms />} />
               <Route path="/admin/phong-thi" element={<AdminExamRooms />} />
               <Route path="/admin/exam-rooms" element={<AdminExamRooms />} />

@@ -321,6 +321,15 @@ export function safeRemoveItem(key) {
 }
 
 /**
+ * Tiện ích safeStorage tương thích API chuẩn Storage
+ */
+export const safeStorage = {
+  setItem: (key, val) => safeSetJson(key, val),
+  getItem: (key, def = null) => safeGetJson(key, def),
+  removeItem: (key) => safeRemoveItem(key)
+};
+
+/**
  * BỘ ĐÁNH CHẶN TOÀN CỤC (GLOBAL INTERCEPTOR) CHO LOCALSTORAGE
  * Bọc lớp bảo vệ mọi lệnh gọi localStorage.setItem trong toàn bộ ứng dụng,
  * tự động giải phóng dung lượng khi gặp QuotaExceededError, không bao giờ để lỗi văng ra màn hình.

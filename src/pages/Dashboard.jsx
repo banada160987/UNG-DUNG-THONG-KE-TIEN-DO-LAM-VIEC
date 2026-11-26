@@ -268,16 +268,6 @@ export default function Dashboard() {
                 </div>
               </Link>
 
-              <Link to="/admin/e-office" style={{ textDecoration: 'none' }}>
-                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
-                  <FileCheck size={20} color="#16a34a" />
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '800', color: '#15803d' }}>🏛️ e-Office: Sổ Văn Bản & Bút Phê</div>
-                    <div style={{ fontSize: '11px', color: '#16a34a' }}>Văn bản Đi - Đến & Giao việc AI</div>
-                  </div>
-                </div>
-              </Link>
-
               <Link to="/admin/bien-ban-hop-ai" style={{ textDecoration: 'none' }}>
                 <div style={{ backgroundColor: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '10px', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: '10px', transition: 'all 0.2s ease', cursor: 'pointer' }}>
                   <Mic size={20} color="#e11d48" />
@@ -427,6 +417,17 @@ export default function Dashboard() {
             {/* TAB 2: STUDENT & CLASS REGISTERS */}
             {activeTab === 'student' && (
               <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <Link to="/admin/chap-canh-uoc-mo" style={styles.recordBox('#eff6ff', '#2563eb')}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={styles.iconCircle('#dbeafe', '#1e40af')}>🕊️</div>
+                    <div>
+                      <h3 style={styles.boxTitle('#1e3a8a')}>Quỹ "Chắp Cánh Ước Mơ"</h3>
+                      <p style={styles.boxDesc}>Xét duyệt hồ sơ học sinh khó khăn, sổ quỹ thu chi & vinh danh nhà hảo tâm</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={18} color="#2563eb" />
+                </Link>
+
                 <Link to="/admin/emulation" style={styles.recordBox('#f0fdf4', '#22c55e')}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={styles.iconCircle('#dcfce7', '#166534')}>📋</div>
