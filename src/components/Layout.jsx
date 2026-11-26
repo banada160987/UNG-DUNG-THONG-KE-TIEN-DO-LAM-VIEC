@@ -187,8 +187,6 @@ export default function Layout({ children, title }) {
 
     // 3. 👨‍🎓 QUẢN LÝ HỌC SINH & SỔ SÁCH NỀ NẾP
     { path: '/admin/chap-canh-uoc-mo', icon: Heart, label: '🕊️ Quỹ "Chắp Cánh Ước Mơ"', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: true },
-    { path: '/giao-vien/de-xuat-hoc-sinh-kho-khan', icon: Heart, label: '📝 GVCN & Đoàn: Đề Xuất Học Sinh Khó Khăn', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: true },
-    { path: '/manh-thuong-quan', icon: ShieldCheck, label: '🤝 Cổng Mạnh Thường Quân Bảo Trợ', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: true },
     { path: '/admin/hom-thu-hoc-sinh', icon: Mail, label: '💌 Hòm Thư Tâm Tư & Nguyện Vọng HS', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || role === 'secretary' || !!permissions.canViewFeedback || !!permissions.canViewStudents },
     { path: '/admin/emulation', icon: Trophy, label: '📋 Sổ Chấm Điểm Thi Đua & Nề Nếp Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewEmulation },
     { path: '/admin/students', icon: Users, label: '👨‍🎓 Sổ Học Sinh & Chuyển Lớp', group: '👨‍🎓 QUẢN LÝ HỌC SINH & NỀ NẾP', show: isAdmin || !!permissions.canViewStudents },
