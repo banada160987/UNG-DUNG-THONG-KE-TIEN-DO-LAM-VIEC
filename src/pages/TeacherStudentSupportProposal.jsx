@@ -5,12 +5,13 @@
 // =========================================================================
 
 import { useState, useEffect } from 'react';
-import Layout from '../components/Layout';
 import { 
   Users, Heart, Plus, Search, FileText, CheckCircle2, Clock, 
   Upload, Trash2, Edit3, ArrowRight, ShieldCheck, Award, 
-  Send, Sparkles, BookOpen, MessageSquare, AlertCircle, RefreshCw
+  Send, Sparkles, BookOpen, MessageSquare, AlertCircle, RefreshCw,
+  Home, ChevronRight
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { 
   fetchStudentsByClassForProposal, 
   proposeStudentDifficulty, 
@@ -248,8 +249,17 @@ export default function TeacherStudentSupportProposal() {
   };
 
   return (
-    <Layout>
+    <div style={styles.pageWrapper}>
       <div style={styles.container}>
+        {/* BREADCRUMB */}
+        <div style={styles.breadcrumb}>
+          <Link to="/" style={styles.breadcrumbLink}><Home size={14} /> Trang chủ</Link>
+          <ChevronRight size={14} color="#94a3b8" />
+          <Link to="/chap-canh-uoc-mo" style={styles.breadcrumbLink}>🕊️ Quỹ "Chắp Cánh Ước Mơ"</Link>
+          <ChevronRight size={14} color="#94a3b8" />
+          <span style={{ color: '#0f172a', fontWeight: 600 }}>Cổng GVCN & Đoàn Thanh Niên</span>
+        </div>
+
         {/* HEADER */}
         <div style={styles.header}>
           <div>
@@ -706,11 +716,33 @@ export default function TeacherStudentSupportProposal() {
         )}
 
       </div>
-    </Layout>
+    </div>
   );
 }
 
 const styles = {
+  pageWrapper: {
+    minHeight: '85vh',
+    backgroundColor: '#f8fafc',
+    padding: '20px 16px 60px 16px'
+  },
+  breadcrumb: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    fontSize: '13px',
+    color: '#64748b',
+    marginBottom: '20px',
+    flexWrap: 'wrap'
+  },
+  breadcrumbLink: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '4px',
+    color: '#2563eb',
+    textDecoration: 'none',
+    fontWeight: 500
+  },
   container: {
     maxWidth: '1350px',
     margin: '0 auto',
