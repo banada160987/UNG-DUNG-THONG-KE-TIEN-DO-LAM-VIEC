@@ -12,6 +12,8 @@ import {
   Home, ChevronRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { getTeacherSession } from '../services/authSessionManager';
 import { 
   fetchStudentsByClassForProposal, 
   proposeStudentDifficulty, 
@@ -40,7 +42,12 @@ const DIFFICULT_CATEGORIES = [
 ];
 
 export default function TeacherStudentSupportProposal() {
-  const [selectedClass, setSelectedClass] = useState('10A01');
+  const teacher = getTeacherSession();
+  const { user, role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin'));
+  const teacherHomeroom = teacher?.homeroomClass || teacher?.homeroom_class || '';
+
+  const [selectedClass, setSelectedClass] = useState(() => teacherHomeroom || '10A01');
   const [classStudents, setClassStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
@@ -53,7 +60,7 @@ export default function TeacherStudentSupportProposal() {
   const [selectedStudentFromRoster, setSelectedStudentFromRoster] = useState('');
   const [formData, setFormData] = useState({
     student_name: '',
-    student_class: '10A01',
+    student_class: teacherHomeroom || '10A01',
     student_code: '',
     gender: 'Nam',
     birthday: '',
@@ -68,9 +75,9 @@ export default function TeacherStudentSupportProposal() {
     dream_aspiration: '',
     target_support_amount: 2000000,
     granted_item: '',
-    proposer_name: '',
-    proposer_phone: '',
-    proposed_by_role: 'homeroom_teacher', // 'homeroom_teacher' | 'youth_union'
+    proposer_name: teacher?.name || teacher?.full_name || (isAdmin ? 'Ban Giám Hiệu' : ''),
+    proposer_phone: teacher?.phone || '',
+    proposed_by_role: teacherHomeroom ? 'homeroom_teacher' : 'youth_union', // 'homeroom_teacher' | 'youth_union'
     evidence_urls: []
   });
   const [submitting, setSubmitting] = useState(false);
@@ -278,6 +285,76 @@ export default function TeacherStudentSupportProposal() {
           <Link to="/chap-canh-uoc-mo" style={styles.breadcrumbLink}>🕊️ Quỹ "Chắp Cánh Ước Mơ"</Link>
           <ChevronRight size={14} color="#94a3b8" />
           <span style={{ color: '#0f172a', fontWeight: 600 }}>Cổng GVCN & Đoàn Thanh Niên</span>
+        </div>
+
+        {/* ROLE IDENTIFICATION BANNER */}
+        <div style={{
+          backgroundColor: isAdmin ? '#eff6ff' : '#f0fdf4',
+          border: `1.5px solid ${isAdmin ? '#bfdbfe' : '#bbf7d0'}`,
+          borderRadius: '12px',
+          padding: '12px 18px',
+          marginBottom: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '10px'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '22px' }}>{isAdmin ? '🛡️' : '👨‍🏫'}</span>
+            <div>
+              <div style={{ fontSize: '13.5px', fontWeight: '800', color: isAdmin ? '#1e40af' : '#166534' }}>
+                {isAdmin ? 'PHIÊN LÀM VIỆC BAN GIÁM HIỆU / QUẢN TRỊ VIÊN' : `CÁN BỘ GIÁO VIÊN: ${teacher?.name || teacher?.full_name || 'Thầy/Cô'}`}
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                {isAdmin 
+                  ? 'Thầy/Cô có toàn quyền rà soát, đề xuất học sinh cho tất cả các lớp và quản trị phê duyệt hồ sơ.'
+                  : (teacherHomeroom ? `Phụ trách chủ nhiệm lớp: ${teacherHomeroom}. Thầy/Cô chỉ cần rà soát học sinh lớp mình để gửi BGH phê duyệt.` : 'Cán bộ Đoàn trường / Giáo viên bộ môn (Được quyền đề xuất học sinh có hoàn cảnh khó khăn toàn trường).')}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            {isAdmin ? (
+              <Link 
+                to="/admin/chap-canh-uoc-mo" 
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  color: '#1e40af',
+                  textDecoration: 'none'
+                }}
+              >
+                <span>⚙️ Bảng Quản Trị Quỹ BGH →</span>
+              </Link>
+            ) : (
+              <Link 
+                to="/teacher-dashboard" 
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #bbf7d0',
+                  borderRadius: '8px',
+                  fontSize: '12.5px',
+                  fontWeight: '700',
+                  color: '#166534',
+                  textDecoration: 'none'
+                }}
+              >
+                <span>← Trở về Cổng Giáo Viên</span>
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* HEADER */}

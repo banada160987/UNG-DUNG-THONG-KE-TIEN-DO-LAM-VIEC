@@ -1451,6 +1451,74 @@ export default function TeacherDashboard() {
                   </button>
                 </div>
 
+                {/* CARD 4: ĐỀ XUẤT HỌC SINH KHÓ KHĂN (QUỸ ƯỚC MƠ) */}
+                <div style={{
+                  backgroundColor: '#ffffff',
+                  borderRadius: '16px',
+                  padding: '22px',
+                  border: '1px solid #fed7aa',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        backgroundColor: '#fff7ed',
+                        color: '#ea580c',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        <Heart size={22} />
+                      </div>
+                      <span style={{
+                        padding: '3px 10px',
+                        borderRadius: '20px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        backgroundColor: '#fff7ed',
+                        color: '#c2410c',
+                        border: '1px solid #ffedd5'
+                      }}>
+                        Quỹ Ước Mơ
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '16px', fontWeight: '700', margin: '0 0 6px 0', color: '#1e293b' }}>
+                      Đề Xuất Học Sinh Khó Khăn
+                    </h3>
+                    <p style={{ fontSize: '13px', color: '#64748b', margin: 0, lineHeight: '1.5' }}>
+                      Rà soát học sinh lớp chủ nhiệm, cập nhật hoàn cảnh gia đình gửi BGH phê duyệt cấp học bổng và kết nối Mạnh Thường Quân.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => navigate('/giao-vien/de-xuat-hoc-sinh-kho-khan')}
+                    style={{
+                      marginTop: '20px',
+                      width: '100%',
+                      padding: '11px 16px',
+                      backgroundColor: '#ea580c',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '13.5px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px',
+                      boxShadow: '0 3px 8px rgba(234,88,12,0.3)'
+                    }}
+                  >
+                    <Heart size={16} /> Đề Xuất Học Sinh Lớp {teacher?.homeroomClass || ''}
+                  </button>
+                </div>
+
               </div>
             </section>
           )}

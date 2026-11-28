@@ -204,6 +204,44 @@ body {
   right: 0 !important;
 }
 
+/* Quỹ Ước Mơ 2.0 Modern Mega Menu Popover */
+.fund-mega-menu {
+  background-color: #ffffff !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.06) !important;
+  min-width: 620px !important;
+  max-width: 94vw !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  z-index: 10000 !important;
+}
+
+.fund-mega-item {
+  text-decoration: none !important;
+  color: #0f172a !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 10px !important;
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+  transition: all 0.15s ease !important;
+  border-bottom: none !important;
+}
+
+.fund-mega-item:hover {
+  background-color: #f8fafc !important;
+  transform: translateX(2px);
+}
+
+@media (max-width: 768px) {
+  .fund-mega-menu {
+    min-width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 0 !important;
+  }
+}
+
 /* Invisible hover bridge to keep dropdown open when moving cursor */
 .nav-dropdown-content::before {
   content: '';

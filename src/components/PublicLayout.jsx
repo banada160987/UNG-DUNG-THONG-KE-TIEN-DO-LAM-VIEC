@@ -1,18 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2, User, ExternalLink, Link2 } from 'lucide-react';
+import { GraduationCap, Briefcase, ShieldCheck, Activity, Clock, Sparkles, Cpu, Layers, Radio, Globe, Wifi, CheckCircle2, User, ExternalLink, Link2, Heart, Award, Key, Lock, ChevronRight, Check } from 'lucide-react';
 import ChatbotWidget from './ChatbotWidget';
 import MobileBottomNav from './MobileBottomNav';
 import ErrorBoundary from './ErrorBoundary';
+import { useAuth } from '../contexts/AuthContext';
 import { getTeacherSession, clearTeacherSession, getStudentSession, clearStudentSession } from '../services/authSessionManager';
 
 const DEFAULT_FULL_MENUS = [
   // Nhóm 1: Vận hành nhà trường (school)
-  { id: 'm_sc_chap_canh', target_type: 'public', parent_group: 'school', label: '🕊️ Quỹ "Chắp cánh ước mơ"', path: '/chap-canh-uoc-mo', sort_order: 1, is_active: true },
-  { id: 'm_sc_mtq', target_type: 'public', parent_group: 'school', label: '🤝 Cổng Mạnh Thường Quân Bảo Trợ', path: '/manh-thuong-quan', sort_order: 2, is_active: true },
-  { id: 'm_sc_dexuat', target_type: 'public', parent_group: 'school', label: '📝 GVCN & Đoàn: Đề Xuất Học Sinh Khó Khăn', path: '/giao-vien/de-xuat-hoc-sinh-kho-khan', sort_order: 3, is_active: true },
-  { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 4, is_active: true },
+  { id: 'm_sc_1', target_type: 'public', parent_group: 'school', label: '👨‍🏫 Đội ngũ & Tổ chuyên môn', path: '/to-chuyen-mon', sort_order: 1, is_active: true },
   { id: 'm_sc_canteen', target_type: 'public', parent_group: 'school', label: '🍳 Điểm Tâm Sáng CBQ (Tiếp Sức Học Đường)', path: '/bep-sang', sort_order: 2, is_active: true },
   { id: 'm_sc_2', target_type: 'public', parent_group: 'school', label: '🛵 Đăng ký Xe máy Học sinh', path: '/dang-ky-xe-may', sort_order: 3, is_active: false },
   { id: 'm_sc_3', target_type: 'public', parent_group: 'school', label: '📝 Đăng ký Hoạt động / Sự kiện', path: '/dang-ky-hoat-dong', sort_order: 3, is_active: false },
@@ -51,6 +49,11 @@ export default function PublicLayout() {
   const [loggedTeacher, setLoggedTeacher] = useState(() => getTeacherSession());
   const [loggedStudent, setLoggedStudent] = useState(() => getStudentSession());
   const [externalLinks, setExternalLinks] = useState([]);
+
+  // Phân quyền người dùng & vai trò
+  const { user, role } = useAuth();
+  const isAdmin = role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin'));
+  const isSponsorLoggedIn = Boolean(typeof window !== 'undefined' && (localStorage.getItem('cbq_sponsor_session') || localStorage.getItem('cbq_sponsor_code')));
 
   useEffect(() => {
     async function fetchExternalLinks() {
@@ -453,17 +456,17 @@ export default function PublicLayout() {
             </Link>
 
             {/* DROPDOWN DUY NHẤT: QUỸ HỌC BỔNG "CHẮP CÁNH ƯỚC MƠ" */}
-            <div className={`nav-dropdown ${activeDropdown === 'fund' ? 'active-touch' : ''}`}>
+            <div className={`nav-dropdown ${activeDropdown === 'fund' ? 'active-touch' : ''}`} style={{ position: 'relative' }}>
               <span 
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleDropdown('fund');
                 }}
                 style={{
-                  ...(isActive('/chap-canh-uoc-mo') || isActive('/manh-thuong-quan') || isActive('/giao-vien/de-xuat-hoc-sinh-kho-khan') ? styles.navItemHighlightActive : {
+                  ...(isActive('/chap-canh-uoc-mo') || isActive('/manh-thuong-quan') || isActive('/giao-vien/de-xuat-hoc-sinh-kho-khan') || isActive('/co-van-uoc-mo') || isActive('/tra-cuu-uoc-mo') || isActive('/bang-vang') ? styles.navItemHighlightActive : {
                     ...styles.navItem,
                     color: '#fef08a',
-                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.3), rgba(5, 150, 105, 0.3))',
+                    background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.35), rgba(5, 150, 105, 0.35))',
                     border: '1px solid rgba(253, 224, 71, 0.4)',
                     borderRadius: '6px',
                     margin: '2px 3px',
@@ -490,136 +493,231 @@ export default function PublicLayout() {
                 <span style={{ fontSize: '10px', marginLeft: '2px' }}>{activeDropdown === 'fund' ? '▴' : '▾'}</span>
               </span>
 
-              <div className="nav-dropdown-content" style={{ ...styles.dropdownContent, minWidth: '280px' }}>
-                <Link 
-                  to="/chap-canh-uoc-mo" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '700',
-                    color: '#1e40af',
-                    backgroundColor: isActive('/chap-canh-uoc-mo') ? '#eff6ff' : 'transparent',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>🕊️</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px' }}>Về Quỹ & Tôn Chỉ Hoạt Động</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Mục đích, đối tượng & quy trình xét duyệt</div>
+              {/* MODERN MEGA POPOVER CARD */}
+              <div 
+                className="nav-dropdown-content fund-mega-menu"
+              >
+                {/* POPOVER HEADER */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #065f46 0%, #047857 50%, #0284c7 100%)',
+                  padding: '12px 18px',
+                  color: '#ffffff',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid rgba(255, 255, 255, 0.15)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>🕊️</span>
+                    <div>
+                      <div style={{ fontSize: '13px', fontWeight: '900', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                        Quỹ Học Bổng "Chắp Cánh Ước Mơ"
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#a7f3d0' }}>
+                        Minh bạch số 100% • Giám sát trực tiếp • Đồng hành trọn vẹn
+                      </div>
+                    </div>
                   </div>
-                </Link>
 
-                <Link 
-                  to="/manh-thuong-quan" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '700',
-                    color: '#047857',
-                    backgroundColor: isActive('/manh-thuong-quan') ? '#ecfdf5' : 'transparent',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>🤝</span>
+                  {/* USER ROLE BADGE */}
                   <div>
-                    <div style={{ fontSize: '13.5px' }}>Cổng Mạnh Thường Quân Bảo Trợ</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Giám sát nguồn tiền & tiến bộ học sinh</div>
+                    {isAdmin ? (
+                      <span style={{ fontSize: '10.5px', backgroundColor: 'rgba(239, 68, 68, 0.3)', border: '1px solid rgba(254, 202, 202, 0.6)', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                        🛡️ BGH / Quản Trị
+                      </span>
+                    ) : loggedTeacher ? (
+                      <span style={{ fontSize: '10.5px', backgroundColor: 'rgba(16, 185, 129, 0.35)', border: '1px solid rgba(167, 243, 208, 0.6)', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                        👨‍🏫 Giáo Viên ({loggedTeacher.name?.split(' ').slice(-1)[0] || 'GV'})
+                      </span>
+                    ) : isSponsorLoggedIn ? (
+                      <span style={{ fontSize: '10.5px', backgroundColor: 'rgba(245, 158, 11, 0.35)', border: '1px solid rgba(253, 230, 138, 0.6)', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                        💎 Mạnh Thường Quân
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '10.5px', backgroundColor: 'rgba(255, 255, 255, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)', color: '#ffffff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }}>
+                        🌐 Cộng Đồng & Khách
+                      </span>
+                    )}
                   </div>
-                </Link>
+                </div>
 
-                <Link 
-                  to="/giao-vien/de-xuat-hoc-sinh-kho-khan" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '700',
-                    color: '#b45309',
-                    backgroundColor: isActive('/giao-vien/de-xuat-hoc-sinh-kho-khan') ? '#fffbeb' : 'transparent',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>👨‍🏫</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px' }}>GVCN & Đoàn: Đề Xuất Học Sinh</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Chọn học sinh từ CSDL & cập nhật gia cảnh</div>
-                  </div>
-                </Link>
+                {/* 2-COLUMN MEGA MENU CONTENT */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0px' }}>
+                  
+                  {/* CỘT 1: CỘNG ĐỒNG & MẠNH THƯỜNG QUÂN */}
+                  <div style={{ padding: '12px 14px', borderRight: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#047857', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>🤝</span> CỘNG ĐỒNG & MẠNH THƯỜNG QUÂN
+                    </div>
 
-                <Link 
-                  to="/co-van-uoc-mo" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '700',
-                    color: '#0f766e',
-                    backgroundColor: isActive('/co-van-uoc-mo') ? '#f0fdfa' : 'transparent',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>🧭</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px' }}>Mạng Lưới Cố Vấn 1-1 (Mentorship)</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Cựu HS & GV đồng hành ôn thi, hướng nghiệp</div>
-                  </div>
-                </Link>
+                    <Link 
+                      to="/chap-canh-uoc-mo" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/chap-canh-uoc-mo') ? '#ecfdf5' : 'transparent',
+                        marginBottom: '4px'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>🕊️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#065f46' }}>Về Quỹ & Tôn Chỉ Hoạt Động</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Mục đích, tiêu chuẩn & quy trình bảo trợ</div>
+                      </div>
+                    </Link>
 
-                <Link 
-                  to="/tra-cuu-uoc-mo" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '700',
-                    color: '#2563eb',
-                    backgroundColor: isActive('/tra-cuu-uoc-mo') ? '#eff6ff' : 'transparent',
-                    borderBottom: '1px solid #f1f5f9',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>🔍</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px' }}>Tra Cứu & Xác Thực Minh Bạch Số</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Xác thực mã băm biên bản & sổ cái trao tiền</div>
-                  </div>
-                </Link>
+                    <Link 
+                      to="/manh-thuong-quan" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/manh-thuong-quan') ? '#ecfdf5' : 'transparent',
+                        marginBottom: '4px'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>💎</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#047857' }}>Cổng Mạnh Thường Quân</span>
+                          <span style={{ fontSize: '9px', fontWeight: '800', backgroundColor: '#fef3c7', color: '#92400e', padding: '1px 5px', borderRadius: '4px', border: '1px solid #fde68a' }}>MTQ</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Giám sát nguồn tiền & tiến độ học sinh</div>
+                      </div>
+                    </Link>
 
-                <Link 
-                  to="/bang-vang" 
-                  className="nav-dropdown-item" 
-                  style={{
-                    fontWeight: '600',
-                    color: '#d97706',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px'
-                  }}
-                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
-                >
-                  <span>🎖️</span>
-                  <div>
-                    <div style={{ fontSize: '13.5px' }}>Bảng Vàng Tri Ân & Đóng Góp</div>
-                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Vinh danh nhà hảo tâm & Quét mã VietQR</div>
+                    <Link 
+                      to="/bang-vang" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/bang-vang') ? '#fffbeb' : 'transparent',
+                        marginBottom: '4px'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>🎖️</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#b45309' }}>Bảng Vàng Tri Ân & Đóng Góp</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Vinh danh nhà hảo tâm & Quét VietQR</div>
+                      </div>
+                    </Link>
+
+                    <Link 
+                      to="/tra-cuu-uoc-mo" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/tra-cuu-uoc-mo') ? '#eff6ff' : 'transparent'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>🔍</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#0284c7' }}>Tra Cứu & Xác Thực Minh Bạch Số</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Xác thực mã băm & biên bản trao tiền</div>
+                      </div>
+                    </Link>
                   </div>
-                </Link>
+
+                  {/* CỘT 2: ĐỒNG HÀNH & PHÂN QUYỀN NỘI BỘ */}
+                  <div style={{ padding: '12px 14px', backgroundColor: '#f8fafc' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>🧭</span> ĐỒNG HÀNH & NỘI BỘ NHÀ TRƯỜNG
+                    </div>
+
+                    <Link 
+                      to="/co-van-uoc-mo" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/co-van-uoc-mo') ? '#f0fdfa' : '#ffffff',
+                        border: '1px solid #e2e8f0',
+                        marginBottom: '6px'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>🧭</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#0f766e' }}>Mạng Lưới Cố Vấn (Mentorship)</span>
+                          <span style={{ fontSize: '9px', fontWeight: '800', backgroundColor: '#ccfbf1', color: '#0f766e', padding: '1px 5px', borderRadius: '4px' }}>1-1</span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Cựu HS & GV đồng hành ôn thi, hướng nghiệp</div>
+                      </div>
+                    </Link>
+
+                    {/* CHỨC NĂNG PHÂN QUYỀN: GVCN & ĐOÀN ĐỀ XUẤT */}
+                    <Link 
+                      to="/giao-vien/de-xuat-hoc-sinh-kho-khan" 
+                      className="fund-mega-item" 
+                      style={{
+                        backgroundColor: isActive('/giao-vien/de-xuat-hoc-sinh-kho-khan') ? '#fff7ed' : '#ffffff',
+                        border: (loggedTeacher || isAdmin) ? '1px solid #fed7aa' : '1px dashed #cbd5e1',
+                        marginBottom: '6px'
+                      }}
+                      onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                    >
+                      <span style={{ fontSize: '17px', marginTop: '1px' }}>👨‍🏫</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '700', color: '#c2410c' }}>GVCN & Đoàn: Đề Xuất Học Sinh</span>
+                          <span style={{ 
+                            fontSize: '9px', 
+                            fontWeight: '800', 
+                            backgroundColor: (loggedTeacher || isAdmin) ? '#dcfce7' : '#fee2e2', 
+                            color: (loggedTeacher || isAdmin) ? '#166534' : '#991b1b', 
+                            padding: '1px 5px', 
+                            borderRadius: '4px',
+                            border: `1px solid ${(loggedTeacher || isAdmin) ? '#bbf7d0' : '#fecaca'}`
+                          }}>
+                            {(loggedTeacher || isAdmin) ? '✓ ĐÃ PHÂN QUYỀN' : '🔒 NỘI BỘ GV'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          {(loggedTeacher || isAdmin) 
+                            ? 'Chọn học sinh từ CSDL & cập nhật gia cảnh'
+                            : 'Yêu cầu tài khoản Giáo viên / Quản trị viên'}
+                        </div>
+                      </div>
+                    </Link>
+
+                    {/* NẾU LÀ ADMIN / BGH: HIỂN THỊ LINK QUẢN TRỊ DUYỆT HỌC BỔNG */}
+                    {isAdmin && (
+                      <Link 
+                        to="/admin/chap-canh-uoc-mo" 
+                        className="fund-mega-item" 
+                        style={{
+                          backgroundColor: '#fef2f2',
+                          border: '1px solid #fecaca'
+                        }}
+                        onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                      >
+                        <span style={{ fontSize: '17px', marginTop: '1px' }}>🛡️</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#be123c' }}>BGH: Phê Duyệt & Quản Trị Quỹ</span>
+                            <span style={{ fontSize: '9px', fontWeight: '800', backgroundColor: '#f43f5e', color: '#ffffff', padding: '1px 5px', borderRadius: '4px' }}>ADMIN</span>
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#64748b' }}>Duyệt đề xuất GVCN, ghép nối MTQ & điều phối quỹ</div>
+                        </div>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+
+                {/* POPOVER FOOTER */}
+                <div style={{
+                  padding: '9px 14px',
+                  backgroundColor: '#f1f5f9',
+                  borderTop: '1px solid #e2e8f0',
+                  fontSize: '11px',
+                  color: '#64748b',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span>🔒 Thông tin gia cảnh học sinh được bảo vệ tuyệt đối theo quy chế</span>
+                  <Link to="/chap-canh-uoc-mo" onClick={() => setActiveDropdown(null)} style={{ color: '#059669', fontWeight: 'bold', textDecoration: 'none' }}>
+                    Xem chi tiết quy chế quỹ →
+                  </Link>
+                </div>
               </div>
             </div>
 

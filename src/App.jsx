@@ -178,8 +178,8 @@ function App() {
             <Route path="/manh-thuong-quan" element={<PublicSponsorPortal />} />
             <Route path="/nha-hao-tam" element={<PublicSponsorPortal />} />
             <Route path="/bao-tro-hoc-sinh" element={<PublicSponsorPortal />} />
-            <Route path="/giao-vien/de-xuat-hoc-sinh-kho-khan" element={<TeacherStudentSupportProposal />} />
-            <Route path="/doan-truong/de-xuat-hoc-sinh" element={<TeacherStudentSupportProposal />} />
+            <Route path="/giao-vien/de-xuat-hoc-sinh-kho-khan" element={<TeacherRoute><TeacherStudentSupportProposal /></TeacherRoute>} />
+            <Route path="/doan-truong/de-xuat-hoc-sinh" element={<TeacherRoute><TeacherStudentSupportProposal /></TeacherRoute>} />
             <Route path="/tra-cuu-uoc-mo" element={<PublicScholarshipVerification />} />
             <Route path="/xac-thuc-kinh-phi" element={<PublicScholarshipVerification />} />
             <Route path="/co-van-uoc-mo" element={<PublicMentorshipNetwork />} />
@@ -274,6 +274,8 @@ function App() {
             <Route path="/teacher/class-journal" element={<TeacherRoute><ClassJournal /></TeacherRoute>} />
             <Route path="/teacher-dashboard/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
             <Route path="/teacher/career-advisor" element={<TeacherRoute><StudentCareerAdvisor /></TeacherRoute>} />
+            <Route path="/teacher/de-xuat-hoc-sinh" element={<TeacherRoute><TeacherStudentSupportProposal /></TeacherRoute>} />
+            <Route path="/teacher-dashboard/de-xuat-hoc-sinh" element={<TeacherRoute><TeacherStudentSupportProposal /></TeacherRoute>} />
             <Route path="/so-dau-bai-dien-tu" element={<ClassJournal />} />
             <Route path="/tu-van-to-hop-2-cong-2" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
             <Route path="/tu-van-nghe-nghiep" element={<StudentRoute><StudentCareerAdvisor /></StudentRoute>} />
