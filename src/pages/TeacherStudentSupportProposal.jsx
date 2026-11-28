@@ -16,7 +16,8 @@ import {
   fetchStudentsByClassForProposal, 
   proposeStudentDifficulty, 
   fetchScholarshipApplications, 
-  addStudentProgressReport 
+  addStudentProgressReport,
+  addGrowthTimelineMilestone
 } from '../services/scholarshipFundService';
 
 const ALL_CLASSES = [];
@@ -79,11 +80,13 @@ export default function TeacherStudentSupportProposal() {
   const [progressModalStudent, setProgressModalStudent] = useState(null);
   const [progressData, setProgressData] = useState({
     term: 'Học kỳ I Năm học 2026-2027',
+    growth_title: 'Báo cáo tiến bộ học kỳ I',
     academic_score: '8.5 (Học lực Tốt)',
     conduct: 'Tốt',
     teacher_notes: '',
     student_letter: '',
-    letter_image_url: ''
+    letter_image_url: '',
+    badge_awarded: ''
   });
   const [savingProgress, setSavingProgress] = useState(false);
 
@@ -229,16 +232,33 @@ export default function TeacherStudentSupportProposal() {
 
     setSavingProgress(true);
     try {
+      // 1. Cập nhật báo cáo tiến bộ truyền thống
       await addStudentProgressReport(progressModalStudent.id, progressData);
-      alert(`Đã cập nhật báo cáo tiến bộ của em ${progressModalStudent.student_name} tới Mạnh Thường Quân!`);
+      
+      // 2. Ghi cột mốc vào Hành trình trưởng thành số (Growth Timeline)
+      await addGrowthTimelineMilestone(progressModalStudent.id, {
+        title: progressData.growth_title || `Cập nhật tiến bộ: ${progressData.term}`,
+        category: progressData.badge_awarded ? 'badge' : (progressData.student_letter ? 'letter' : 'academic'),
+        description: progressData.teacher_notes + (progressData.student_letter ? `\n\nThư học trò: "${progressData.student_letter}"` : ''),
+        badge_awarded: progressData.badge_awarded || null,
+        academic_score: progressData.academic_score,
+        conduct_grade: progressData.conduct,
+        image_urls: progressData.letter_image_url ? [progressData.letter_image_url] : [],
+        author_role: 'homeroom_teacher',
+        author_name: progressModalStudent.proposer_name || 'GVCN'
+      });
+
+      alert(`Đã cập nhật báo cáo tiến bộ và ghi cột mốc trưởng thành của em ${progressModalStudent.student_name} tới Mạnh Thường Quân!`);
       setProgressModalStudent(null);
       setProgressData({
         term: 'Học kỳ I Năm học 2026-2027',
+        growth_title: 'Báo cáo tiến bộ học kỳ I',
         academic_score: '8.5 (Học lực Tốt)',
         conduct: 'Tốt',
         teacher_notes: '',
         student_letter: '',
-        letter_image_url: ''
+        letter_image_url: '',
+        badge_awarded: ''
       });
       loadProposedList();
     } catch (err) {
@@ -383,6 +403,25 @@ export default function TeacherStudentSupportProposal() {
                             <div style={{ fontSize: '11px', color: '#64748b' }}>
                               Đã giải ngân: {(Number(item.delivered_amount) || 0).toLocaleString('vi-VN')} đ
                             </div>
+                            {item.mentor_name && (
+                              <div style={{ marginTop: '4px', fontSize: '11px', color: '#047857', fontWeight: 600 }}>
+                                🧭 Cố vấn: {item.mentor_name}
+                              </div>
+                            )}
+                            {Array.isArray(item.student_badges) && item.student_badges.length > 0 && (
+                              <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+                                {item.student_badges.map((b, bi) => (
+                                  <span key={bi} style={{ fontSize: '10px', background: '#fef3c7', color: '#b45309', padding: '1px 6px', borderRadius: '10px', fontWeight: 600 }}>
+                                    🏅 {b}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                            {Array.isArray(item.messages_from_sponsor) && item.messages_from_sponsor.length > 0 && (
+                              <div style={{ marginTop: '4px', fontSize: '11px', color: '#d97706', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                                <MessageSquare size={12} /> Có {item.messages_from_sponsor.length} lời nhắn từ MTQ
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <span style={{ color: '#94a3b8', fontStyle: 'italic' }}>Đang chờ kết nối...</span>
@@ -394,11 +433,13 @@ export default function TeacherStudentSupportProposal() {
                             setProgressModalStudent(item);
                             setProgressData({
                               term: 'Học kỳ I Năm học 2026-2027',
+                              growth_title: 'Báo cáo tiến bộ học kỳ I',
                               academic_score: `${item.academic_grade || 'Tốt'} (Học lực)`,
                               conduct: item.conduct_grade || 'Tốt',
                               teacher_notes: '',
                               student_letter: '',
-                              letter_image_url: ''
+                              letter_image_url: '',
+                              badge_awarded: ''
                             });
                           }}
                           style={styles.progressBtn}
@@ -643,6 +684,31 @@ export default function TeacherStudentSupportProposal() {
               </div>
 
               <form onSubmit={handleProgressSubmit} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {Array.isArray(progressModalStudent.messages_from_sponsor) && progressModalStudent.messages_from_sponsor.length > 0 && (
+                  <div style={{ background: '#fef3c7', border: '1px solid #fde68a', borderRadius: '10px', padding: '12px 14px', fontSize: '13px', color: '#92400e' }}>
+                    <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                      <MessageSquare size={15} /> Lời nhắn gửi từ Mạnh Thường Quân:
+                    </div>
+                    {progressModalStudent.messages_from_sponsor.slice(0, 2).map((m, mi) => (
+                      <div key={mi} style={{ fontStyle: 'italic', marginTop: '2px' }}>
+                        "{m.message || m}" <span style={{ fontSize: '11px', color: '#b45309' }}>({m.date || 'Gần đây'})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div>
+                  <label style={styles.label}>Tiêu đề Cột Mốc Trưởng Thành (*)</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={progressData.growth_title}
+                    onChange={(e) => setProgressData({ ...progressData, growth_title: e.target.value })}
+                    style={styles.input}
+                    placeholder="VD: Báo cáo kết quả giữa kỳ I / Em nhận bàn học mới"
+                  />
+                </div>
+
                 <div>
                   <label style={styles.label}>Kỳ báo cáo tiến độ (*)</label>
                   <input 
@@ -679,6 +745,22 @@ export default function TeacherStudentSupportProposal() {
                 </div>
 
                 <div>
+                  <label style={styles.label}>Trao Huy Hiệu Vươn Lên (Xuất hiện trên Hồ sơ số học trò)</label>
+                  <select
+                    value={progressData.badge_awarded}
+                    onChange={(e) => setProgressData({ ...progressData, badge_awarded: e.target.value })}
+                    style={styles.select}
+                  >
+                    <option value="">(Không trao huy hiệu đợt này)</option>
+                    <option value="Vượt khó học tốt">🏅 Vượt khó học tốt</option>
+                    <option value="Bứt phá điểm số">🚀 Bứt phá điểm số</option>
+                    <option value="Đoàn viên gương mẫu">⭐ Đoàn viên gương mẫu</option>
+                    <option value="Đôi bạn cùng tiến">🤝 Đôi bạn cùng tiến</option>
+                    <option value="Ý chí kiên cường">💡 Ý chí kiên cường</option>
+                  </select>
+                </div>
+
+                <div>
                   <label style={styles.label}>Nhận xét của GVCN về sự tiến bộ của học sinh (*)</label>
                   <textarea 
                     required
@@ -698,6 +780,17 @@ export default function TeacherStudentSupportProposal() {
                     onChange={(e) => setProgressData({ ...progressData, student_letter: e.target.value })}
                     style={styles.textarea}
                     placeholder="Lời cảm ơn chân thành từ học sinh gửi tới bác/cô chú nhà tài trợ..."
+                  />
+                </div>
+
+                <div>
+                  <label style={styles.label}>Link Ảnh Thư Tay Học Sinh / Ảnh Trao Quà Thực Tế (Không bắt buộc)</label>
+                  <input 
+                    type="url" 
+                    value={progressData.letter_image_url}
+                    onChange={(e) => setProgressData({ ...progressData, letter_image_url: e.target.value })}
+                    style={styles.input}
+                    placeholder="https://... ảnh nét chữ thư tay hoặc ảnh em nhận góc học tập mới"
                   />
                 </div>
 

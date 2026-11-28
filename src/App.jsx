@@ -75,6 +75,8 @@ const PublicScholarshipFund = lazy(() => import('./pages/PublicScholarshipFund')
 const AdminScholarshipFund = lazy(() => import('./pages/AdminScholarshipFund'));
 const PublicSponsorPortal = lazy(() => import('./pages/PublicSponsorPortal'));
 const TeacherStudentSupportProposal = lazy(() => import('./pages/TeacherStudentSupportProposal'));
+const PublicScholarshipVerification = lazy(() => import('./pages/PublicScholarshipVerification'));
+const PublicMentorshipNetwork = lazy(() => import('./pages/PublicMentorshipNetwork'));
 
 // Student Features
 const ClassJournal = lazy(() => import('./pages/student_features/ClassJournal'));
@@ -178,6 +180,10 @@ function App() {
             <Route path="/bao-tro-hoc-sinh" element={<PublicSponsorPortal />} />
             <Route path="/giao-vien/de-xuat-hoc-sinh-kho-khan" element={<TeacherStudentSupportProposal />} />
             <Route path="/doan-truong/de-xuat-hoc-sinh" element={<TeacherStudentSupportProposal />} />
+            <Route path="/tra-cuu-uoc-mo" element={<PublicScholarshipVerification />} />
+            <Route path="/xac-thuc-kinh-phi" element={<PublicScholarshipVerification />} />
+            <Route path="/co-van-uoc-mo" element={<PublicMentorshipNetwork />} />
+            <Route path="/mentorship" element={<PublicMentorshipNetwork />} />
             <Route path="/thu-vien-anh" element={<PublicGallery />} />
             <Route path="/luu-but" element={<PublicGuestbook />} />
             <Route path="/cuoc-thi" element={<PublicQuiz />} />

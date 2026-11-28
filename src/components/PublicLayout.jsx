@@ -558,6 +558,50 @@ export default function PublicLayout() {
                 </Link>
 
                 <Link 
+                  to="/co-van-uoc-mo" 
+                  className="nav-dropdown-item" 
+                  style={{
+                    fontWeight: '700',
+                    color: '#0f766e',
+                    backgroundColor: isActive('/co-van-uoc-mo') ? '#f0fdfa' : 'transparent',
+                    borderBottom: '1px solid #f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 14px'
+                  }}
+                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                >
+                  <span>🧭</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px' }}>Mạng Lưới Cố Vấn 1-1 (Mentorship)</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Cựu HS & GV đồng hành ôn thi, hướng nghiệp</div>
+                  </div>
+                </Link>
+
+                <Link 
+                  to="/tra-cuu-uoc-mo" 
+                  className="nav-dropdown-item" 
+                  style={{
+                    fontWeight: '700',
+                    color: '#2563eb',
+                    backgroundColor: isActive('/tra-cuu-uoc-mo') ? '#eff6ff' : 'transparent',
+                    borderBottom: '1px solid #f1f5f9',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 14px'
+                  }}
+                  onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
+                >
+                  <span>🔍</span>
+                  <div>
+                    <div style={{ fontSize: '13.5px' }}>Tra Cứu & Xác Thực Minh Bạch Số</div>
+                    <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 'normal' }}>Xác thực mã băm biên bản & sổ cái trao tiền</div>
+                  </div>
+                </Link>
+
+                <Link 
                   to="/bang-vang" 
                   className="nav-dropdown-item" 
                   style={{

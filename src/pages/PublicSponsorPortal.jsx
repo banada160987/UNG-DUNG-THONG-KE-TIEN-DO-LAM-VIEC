@@ -10,7 +10,7 @@ import {
   Search, ArrowRight, DollarSign, ExternalLink, QrCode, 
   MessageSquare, User, Calendar, Download, Sparkles, AlertCircle, 
   Image, Check, Copy, ChevronRight, Lock, Key, LogIn, LogOut,
-  UserCheck, Shield, HelpCircle
+  UserCheck, Shield, HelpCircle, Compass, Star, BookOpen, CheckCircle
 } from 'lucide-react';
 import { 
   fetchApprovedStudentsForSponsors, 
@@ -19,7 +19,9 @@ import {
   sendSponsorEncouragementMessage,
   fetchFundSettings,
   exportHandoverDocx,
-  exportSponsorReportExcel
+  exportSponsorReportExcel,
+  exportThankYouLetterDocx,
+  verifyDisbursementCode
 } from '../services/scholarshipFundService';
 
 export default function PublicSponsorPortal() {
@@ -70,6 +72,27 @@ export default function PublicSponsorPortal() {
   // Tìm kiếm học sinh (khi đã đăng nhập)
   const [searchStudent, setSearchStudent] = useState('');
   const [filterClass, setFilterClass] = useState('all');
+
+  // Quỹ 2.0: Modal Hành trình trưởng thành số & Tra cứu mã băm xác thực
+  const [viewTimelineStudent, setViewTimelineStudent] = useState(null);
+  const [verifyCodeInput, setVerifyCodeInput] = useState('');
+  const [verifyResult, setVerifyResult] = useState(null);
+  const [verifying, setVerifying] = useState(false);
+
+  const handleVerifyCode = async (e) => {
+    e?.preventDefault();
+    if (!verifyCodeInput.trim()) return;
+    setVerifying(true);
+    setVerifyResult(null);
+    try {
+      const res = await verifyDisbursementCode(verifyCodeInput);
+      setVerifyResult(res);
+    } catch {
+      setVerifyResult({ valid: false, message: 'Lỗi tra cứu máy chủ xác thực.' });
+    } finally {
+      setVerifying(false);
+    }
+  };
 
   useEffect(() => {
     loadPortalData();
@@ -598,6 +621,21 @@ export default function PublicSponsorPortal() {
                                 <div style={{ fontSize: '13px', color: '#64748b' }}>
                                   GVCN phụ trách: <strong>{student.proposer_name || 'Giáo viên chủ nhiệm'}</strong> (SĐT: {student.proposer_phone || 'Liên hệ qua trường'})
                                 </div>
+                                {student.mentor_name && (
+                                  <div style={{ marginTop: '6px', display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ecfdf5', color: '#047857', padding: '3px 10px', borderRadius: '6px', fontSize: '12px', fontWeight: 600, border: '1px solid #a7f3d0' }}>
+                                    <Compass size={14} color="#059669" />
+                                    <span>Cố vấn 1-1: <strong>{student.mentor_name}</strong></span>
+                                  </div>
+                                )}
+                                {Array.isArray(student.student_badges) && student.student_badges.length > 0 && (
+                                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                                    {student.student_badges.map((b, bIdx) => (
+                                      <span key={bIdx} style={{ fontSize: '11.5px', background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '12px', fontWeight: 600, border: '1px solid #fde68a' }}>
+                                        🏅 {b}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -641,13 +679,51 @@ export default function PublicSponsorPortal() {
                               <h4 style={{ margin: 0, fontSize: '16px', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 <Award size={18} color="#2563eb" /> Nhật Ký Tiến Bộ Của Học Sinh ({reports.length} đợt cập nhật)
                               </h4>
-                              <div style={{ display: 'flex', gap: '8px' }}>
+                              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                <button 
+                                  onClick={() => setViewTimelineStudent(student)}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '7px 12px',
+                                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '12.5px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Xem toàn bộ cột mốc trưởng thành, thư tay cảm ơn và ảnh tiến bộ"
+                                >
+                                  <Sparkles size={14} /> Hành Trình Trưởng Thành Số
+                                </button>
+                                <button 
+                                  onClick={() => exportThankYouLetterDocx(student, sponsorSession, fundSettings)}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '6px',
+                                    padding: '7px 12px',
+                                    background: '#059669',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    fontSize: '12.5px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Tải thư tri ân trang trọng của Ban Giám Hiệu chuẩn Nghị định 30"
+                                >
+                                  <Award size={14} /> Thư Tri Ân BGH (Word NĐ30)
+                                </button>
                                 <button 
                                   onClick={() => exportHandoverDocx(student, sponsorSession)}
                                   style={styles.downloadDocBtn}
                                   title="Tải biên bản bàn giao kinh phí chuẩn Nghị định 30"
                                 >
-                                  <FileText size={14} /> Tải Biên Bản Trao Tiền (Word NĐ30)
+                                  <FileText size={14} /> Biên Bản Trao Tiền (Word NĐ30)
                                 </button>
                                 <button 
                                   onClick={() => setMessageStudent(student)}
@@ -719,6 +795,91 @@ export default function PublicSponsorPortal() {
                     Nhà trường cam kết 100% kinh phí từ Quý Mạnh Thường Quân được chuyển trực tiếp tới học sinh và gia đình 
                     dưới sự giám sát của Ban Giám Hiệu, Công đoàn và Giáo viên chủ nhiệm.
                   </p>
+                </div>
+
+                {/* CÔNG CỤ TRA CỨU & XÁC THỰC MÃ BĂM SỐ HÓA */}
+                <div style={{
+                  background: 'linear-gradient(135deg, #eff6ff, #f0fdf4)',
+                  border: '1px solid #bfdbfe',
+                  borderRadius: '14px',
+                  padding: '20px 24px',
+                  marginBottom: '24px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                    <ShieldCheck size={22} color="#059669" />
+                    <h3 style={{ margin: 0, fontSize: '16.5px', color: '#1e3a8a', fontWeight: 700 }}>
+                      Tra Cứu & Xác Thực Tính Hợp Lệ Của Khoản Tài Trợ (Mã Băm Số Hóa)
+                    </h3>
+                  </div>
+                  <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#475569' }}>
+                    Mỗi biên bản bàn giao kinh phí và đợt trao học bổng được nhà trường cấp một mã định danh duy nhất (Ví dụ: <code>CBQ-UOCMO-2026-X8F9A</code>) để Quý vị kiểm tra đối chiếu trực tiếp với hồ sơ gốc có dấu mộc BGH.
+                  </p>
+                  
+                  <form onSubmit={handleVerifyCode} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <input 
+                      type="text"
+                      placeholder="Nhập Mã xác thực (VD: CBQ-UOCMO-2026-X8F9A)..."
+                      value={verifyCodeInput}
+                      onChange={(e) => setVerifyCodeInput(e.target.value)}
+                      style={{
+                        flex: '1',
+                        minWidth: '260px',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid #93c5fd',
+                        fontSize: '13.5px',
+                        outline: 'none',
+                        textTransform: 'uppercase'
+                      }}
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={verifying}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '10px 20px',
+                        background: '#2563eb',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        fontSize: '13.5px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <Search size={16} />
+                      <span>{verifying ? 'Đang tra cứu...' : 'Xác Thực Ngay'}</span>
+                    </button>
+                  </form>
+
+                  {verifyResult && (
+                    <div style={{
+                      marginTop: '16px',
+                      padding: '16px',
+                      borderRadius: '10px',
+                      background: verifyResult.valid ? '#ecfdf5' : '#fef2f2',
+                      border: verifyResult.valid ? '1px solid #a7f3d0' : '1px solid #fecaca'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                        {verifyResult.valid ? <CheckCircle size={20} color="#059669" /> : <AlertCircle size={20} color="#dc2626" />}
+                        <strong style={{ fontSize: '14px', color: verifyResult.valid ? '#065f46' : '#991b1b' }}>
+                          {verifyResult.message}
+                        </strong>
+                      </div>
+                      {verifyResult.data && (
+                        <div style={{ fontSize: '13px', color: '#334155', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginTop: '10px', background: '#ffffff', padding: '12px', borderRadius: '8px' }}>
+                          <div><strong>Mã tra cứu:</strong> <code>{verifyResult.data.verification_code}</code></div>
+                          <div><strong>Học sinh:</strong> {verifyResult.data.student_masked_name} ({verifyResult.data.student_class})</div>
+                          <div><strong>Số tiền trao:</strong> <span style={{ color: '#059669', fontWeight: 700 }}>{Number(verifyResult.data.disbursed_amount).toLocaleString('vi-VN')} đ</span></div>
+                          <div><strong>Ngày bàn giao:</strong> {verifyResult.data.disbursed_date}</div>
+                          <div><strong>Nhà tài trợ:</strong> {verifyResult.data.sponsor_masked_name}</div>
+                          <div><strong>Đại diện trao:</strong> {verifyResult.data.handover_officer}</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div style={styles.tableWrap}>
@@ -852,6 +1013,156 @@ export default function PublicSponsorPortal() {
         </div>
       )}
 
+      {/* ===================== MODAL HÀNH TRÌNH TRƯỞNG THÀNH SỐ ===================== */}
+      {viewTimelineStudent && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalContent, maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Sparkles size={22} color="#f59e0b" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>
+                    Hành Trình Trưởng Thành Số: {viewTimelineStudent.student_name}
+                  </h3>
+                  <div style={{ fontSize: '12.5px', color: '#64748b' }}>
+                    Lớp {viewTimelineStudent.student_class} • Mã hồ sơ: <code>{viewTimelineStudent.application_code}</code>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setViewTimelineStudent(null)} style={styles.closeBtn}>×</button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              {/* HUY HIỆU NỖ LỰC & CỐ VẤN */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '4px' }}>Huy hiệu nỗ lực học trò:</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {Array.isArray(viewTimelineStudent.student_badges) && viewTimelineStudent.student_badges.length > 0 ? (
+                      viewTimelineStudent.student_badges.map((bg, bIdx) => (
+                        <span key={bIdx} style={{ fontSize: '12px', background: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: '14px', fontWeight: 700, border: '1px solid #fde68a' }}>
+                          🏅 {bg}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Đang nỗ lực rèn luyện để nhận huy hiệu đợt tới</span>
+                    )}
+                  </div>
+                </div>
+
+                {viewTimelineStudent.mentor_name && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Cố vấn 1-1 đồng hành:</div>
+                    <div style={{ fontSize: '13.5px', color: '#0f766e', fontWeight: 700 }}>🧭 {viewTimelineStudent.mentor_name}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* DÒNG THỜI GIAN CÁC CỘT MỐC */}
+              <div style={{ position: 'relative', paddingLeft: '30px', borderLeft: '2px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                {/* Cột mốc 1: Tiếp nhận */}
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#2563eb', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #bfdbfe' }}></div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                    {viewTimelineStudent.created_at ? viewTimelineStudent.created_at.split('T')[0] : '2026-09-05'}
+                  </div>
+                  <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#0f172a' }}>🕊️ Nhà trường khảo sát hoàn cảnh & Thẩm định hồ sơ</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    Học sinh được GVCN đề xuất diện: <strong>{viewTimelineStudent.category}</strong>. Ban Giám Hiệu đã phê duyệt đưa vào danh mục nhận bảo trợ.
+                  </p>
+                </div>
+
+                {/* Cột mốc 2: MTQ bảo trợ */}
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#059669', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #a7f3d0' }}></div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                    {viewTimelineStudent.delivery_date || '2026-10-15'}
+                  </div>
+                  <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#065f46' }}>🤝 Mạnh Thường Quân nhận bảo trợ học tập</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    Quý MTQ <strong>{sponsorSession?.sponsor_name || viewTimelineStudent.sponsor_name}</strong> nhận bảo trợ với mức kinh phí {(Number(viewTimelineStudent.target_support_amount) || 2000000).toLocaleString('vi-VN')} đ.
+                  </p>
+                </div>
+
+                {/* Các cột mốc từ growth_timeline */}
+                {Array.isArray(viewTimelineStudent.growth_timeline) && viewTimelineStudent.growth_timeline.map((ml, mIdx) => (
+                  <div key={ml.id || mIdx} style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: ml.category === 'badge' ? '#f59e0b' : ml.category === 'letter' ? '#e11d48' : '#6366f1', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #e2e8f0' }}></div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{ml.date}</div>
+                    <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#0f172a' }}>{ml.title}</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{ml.description}</p>
+                    {ml.academic_score && (
+                      <div style={{ fontSize: '12.5px', color: '#1e40af', marginTop: '4px' }}>
+                        Điểm rèn luyện: <strong>{ml.academic_score}</strong> • Hạnh kiểm: <strong>{ml.conduct_grade}</strong>
+                      </div>
+                    )}
+                    {Array.isArray(ml.image_urls) && ml.image_urls.length > 0 && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                        {ml.image_urls.map((img, iIdx) => (
+                          <a key={iIdx} href={img} target="_blank" rel="noreferrer">
+                            <img src={img} alt="Ảnh cột mốc" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Cột mốc Thư tay cảm ơn */}
+                {Array.isArray(viewTimelineStudent.progress_reports) && viewTimelineStudent.progress_reports.filter(r => r.student_letter).map((r, rIdx) => (
+                  <div key={rIdx} style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#e11d48', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #fecdd3' }}></div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{r.date}</div>
+                    <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#9f1239' }}>💌 Thư cảm ơn viết tay của em {viewTimelineStudent.student_name}</h4>
+                    <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', color: '#881337', fontStyle: 'italic', lineHeight: 1.6, marginTop: '6px' }}>
+                      "{r.student_letter}"
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* NÚT TẢI BÁO CÁO & THƯ TRI ÂN NĐ30 */}
+              <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <button 
+                  onClick={() => exportThankYouLetterDocx(viewTimelineStudent, sponsorSession, fundSettings)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '9px 16px',
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Award size={15} /> Tải Thư Tri Ân BGH (Word NĐ30)
+                </button>
+
+                <button 
+                  onClick={() => setViewTimelineStudent(null)}
+                  style={{
+                    padding: '9px 18px',
+                    background: '#f1f5f9',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng Cửa Sổ
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ===================== MODAL THÀNH CÔNG & VIETQR ===================== */}
       {adoptSuccessInfo && (
         <div style={styles.modalOverlay}>
@@ -923,6 +1234,156 @@ export default function PublicSponsorPortal() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== MODAL HÀNH TRÌNH TRƯỞNG THÀNH SỐ ===================== */}
+      {viewTimelineStudent && (
+        <div style={styles.modalOverlay}>
+          <div style={{ ...styles.modalContent, maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={styles.modalHeader}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Sparkles size={22} color="#f59e0b" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>
+                    Hành Trình Trưởng Thành Số: {viewTimelineStudent.student_name}
+                  </h3>
+                  <div style={{ fontSize: '12.5px', color: '#64748b' }}>
+                    Lớp {viewTimelineStudent.student_class} • Mã hồ sơ: <code>{viewTimelineStudent.application_code}</code>
+                  </div>
+                </div>
+              </div>
+              <button onClick={() => setViewTimelineStudent(null)} style={styles.closeBtn}>×</button>
+            </div>
+
+            <div style={{ padding: '24px' }}>
+              {/* HUY HIỆU NỖ LỰC & CỐ VẤN */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '24px' }}>
+                <div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600, marginBottom: '4px' }}>Huy hiệu nỗ lực học trò:</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {Array.isArray(viewTimelineStudent.student_badges) && viewTimelineStudent.student_badges.length > 0 ? (
+                      viewTimelineStudent.student_badges.map((bg, bIdx) => (
+                        <span key={bIdx} style={{ fontSize: '12px', background: '#fef3c7', color: '#b45309', padding: '3px 10px', borderRadius: '14px', fontWeight: 700, border: '1px solid #fde68a' }}>
+                          🏅 {bg}
+                        </span>
+                      ))
+                    ) : (
+                      <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Đang nỗ lực rèn luyện để nhận huy hiệu đợt tới</span>
+                    )}
+                  </div>
+                </div>
+
+                {viewTimelineStudent.mentor_name && (
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>Cố vấn 1-1 đồng hành:</div>
+                    <div style={{ fontSize: '13.5px', color: '#0f766e', fontWeight: 700 }}>🧭 {viewTimelineStudent.mentor_name}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* DÒNG THỜI GIAN CÁC CỘT MỐC */}
+              <div style={{ position: 'relative', paddingLeft: '30px', borderLeft: '2px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+                {/* Cột mốc 1: Tiếp nhận */}
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#2563eb', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #bfdbfe' }}></div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                    {viewTimelineStudent.created_at ? viewTimelineStudent.created_at.split('T')[0] : '2026-09-05'}
+                  </div>
+                  <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#0f172a' }}>🕊️ Nhà trường khảo sát hoàn cảnh & Thẩm định hồ sơ</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    Học sinh được GVCN đề xuất diện: <strong>{viewTimelineStudent.category}</strong>. Ban Giám Hiệu đã phê duyệt đưa vào danh mục nhận bảo trợ.
+                  </p>
+                </div>
+
+                {/* Cột mốc 2: MTQ bảo trợ */}
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#059669', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #a7f3d0' }}></div>
+                  <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>
+                    {viewTimelineStudent.delivery_date || '2026-10-15'}
+                  </div>
+                  <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#065f46' }}>🤝 Mạnh Thường Quân nhận bảo trợ học tập</h4>
+                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
+                    Quý MTQ <strong>{sponsorSession?.sponsor_name || viewTimelineStudent.sponsor_name}</strong> nhận bảo trợ với mức kinh phí {(Number(viewTimelineStudent.target_support_amount) || 2000000).toLocaleString('vi-VN')} đ.
+                  </p>
+                </div>
+
+                {/* Các cột mốc từ growth_timeline */}
+                {Array.isArray(viewTimelineStudent.growth_timeline) && viewTimelineStudent.growth_timeline.map((ml, mIdx) => (
+                  <div key={ml.id || mIdx} style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: ml.category === 'badge' ? '#f59e0b' : ml.category === 'letter' ? '#e11d48' : '#6366f1', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #e2e8f0' }}></div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{ml.date}</div>
+                    <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#0f172a' }}>{ml.title}</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>{ml.description}</p>
+                    {ml.academic_score && (
+                      <div style={{ fontSize: '12.5px', color: '#1e40af', marginTop: '4px' }}>
+                        Điểm rèn luyện: <strong>{ml.academic_score}</strong> • Hạnh kiểm: <strong>{ml.conduct_grade}</strong>
+                      </div>
+                    )}
+                    {Array.isArray(ml.image_urls) && ml.image_urls.length > 0 && (
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '8px', flexWrap: 'wrap' }}>
+                        {ml.image_urls.map((img, iIdx) => (
+                          <a key={iIdx} href={img} target="_blank" rel="noreferrer">
+                            <img src={img} alt="Ảnh cột mốc" style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {/* Cột mốc Thư tay cảm ơn */}
+                {Array.isArray(viewTimelineStudent.progress_reports) && viewTimelineStudent.progress_reports.filter(r => r.student_letter).map((r, rIdx) => (
+                  <div key={rIdx} style={{ position: 'relative' }}>
+                    <div style={{ position: 'absolute', left: '-39px', top: '0', width: '18px', height: '18px', borderRadius: '50%', background: '#e11d48', border: '3px solid #ffffff', boxShadow: '0 0 0 2px #fecdd3' }}></div>
+                    <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 600 }}>{r.date}</div>
+                    <h4 style={{ margin: '4px 0', fontSize: '15px', color: '#9f1239' }}>💌 Thư cảm ơn viết tay của em {viewTimelineStudent.student_name}</h4>
+                    <div style={{ background: '#fff1f2', border: '1px solid #fecdd3', padding: '12px 14px', borderRadius: '10px', fontSize: '13px', color: '#881337', fontStyle: 'italic', lineHeight: 1.6, marginTop: '6px' }}>
+                      "{r.student_letter}"
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* NÚT TẢI BÁO CÁO & THƯ TRI ÂN NĐ30 */}
+              <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <button 
+                  onClick={() => exportThankYouLetterDocx(viewTimelineStudent, sponsorSession, fundSettings)}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '9px 16px',
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Award size={15} /> Tải Thư Tri Ân BGH (Word NĐ30)
+                </button>
+
+                <button 
+                  onClick={() => setViewTimelineStudent(null)}
+                  style={{
+                    padding: '9px 18px',
+                    background: '#f1f5f9',
+                    color: '#334155',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Đóng Cửa Sổ
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

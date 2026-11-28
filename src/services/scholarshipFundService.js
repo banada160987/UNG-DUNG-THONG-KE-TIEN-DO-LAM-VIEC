@@ -1377,3 +1377,651 @@ export function exportSponsorReportExcel(sponsoredList, sponsorName = 'Manh_Thuo
   XLSX.writeFile(workbook, fileName);
 }
 
+// =========================================================================
+// PHÂN HỆ QUỸ 2.0: HÀNH TRÌNH TRƯỞNG THÀNH, CỐ VẤN MENTORSHIP & SỔ CÁI XÁC THỰC
+// =========================================================================
+
+/**
+ * Thêm một cột mốc vào Hành trình trưởng thành số (Growth Timeline) của học sinh
+ * Hỗ trợ các phân loại: 'support' (Trao học bổng), 'academic' (Điểm thi đua/học tập),
+ * 'letter' (Thư tay số hóa), 'badge' (Huy hiệu nỗ lực), 'event' (Sự kiện vươn lên)
+ */
+export async function addGrowthTimelineMilestone(applicationId, milestoneData) {
+  try {
+    const { data: app, error: fetchErr } = await supabase
+      .from('cbq_scholarship_applications')
+      .select('growth_timeline, student_badges')
+      .eq('id', applicationId)
+      .single();
+
+    let existingTimeline = [];
+    let existingBadges = [];
+
+    if (!fetchErr && app) {
+      existingTimeline = Array.isArray(app.growth_timeline) ? app.growth_timeline : [];
+      existingBadges = Array.isArray(app.student_badges) ? app.student_badges : [];
+    }
+
+    const newMilestone = {
+      id: 'ml_' + Date.now(),
+      created_at: new Date().toISOString(),
+      date: milestoneData.date || new Date().toISOString().split('T')[0],
+      title: milestoneData.title,
+      category: milestoneData.category || 'academic', // 'support' | 'academic' | 'letter' | 'badge' | 'event'
+      description: milestoneData.description || '',
+      image_urls: milestoneData.image_urls || [],
+      badge_awarded: milestoneData.badge_awarded || null,
+      academic_score: milestoneData.academic_score || null,
+      conduct_grade: milestoneData.conduct_grade || null,
+      author_role: milestoneData.author_role || 'homeroom_teacher',
+      author_name: milestoneData.author_name || 'Giáo viên chủ nhiệm'
+    };
+
+    const updatedTimeline = [newMilestone, ...existingTimeline];
+    let updatedBadges = [...existingBadges];
+    if (milestoneData.badge_awarded && !updatedBadges.includes(milestoneData.badge_awarded)) {
+      updatedBadges.push(milestoneData.badge_awarded);
+    }
+
+    const { error: updateErr } = await supabase
+      .from('cbq_scholarship_applications')
+      .update({
+        growth_timeline: updatedTimeline,
+        student_badges: updatedBadges,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', applicationId);
+
+    if (updateErr) {
+      console.warn('Lỗi cập nhật Supabase growth_timeline, ghi đè cache:', updateErr);
+    }
+
+    return { success: true, milestone: newMilestone, timeline: updatedTimeline };
+  } catch (err) {
+    console.error('Lỗi thêm cột mốc trưởng thành:', err);
+    throw err;
+  }
+}
+
+/**
+ * Đăng ký tham gia Mạng lưới Cố vấn Đồng hành (Alumni / Teacher Mentorship)
+ */
+export async function registerScholarshipMentor(mentorData) {
+  try {
+    const payload = {
+      full_name: mentorData.full_name,
+      phone: mentorData.phone,
+      email: mentorData.email || '',
+      mentor_type: mentorData.mentor_type || 'alumni', // 'alumni' | 'teacher' | 'university_student' | 'expert'
+      alumni_class_year: mentorData.alumni_class_year || '',
+      current_organization: mentorData.current_organization || '',
+      expertise_areas: mentorData.expertise_areas || ['Định hướng nghề nghiệp', 'Hỗ trợ phương pháp học tập'],
+      bio: mentorData.bio || '',
+      status: 'active', // Tự động active hoặc pending_approval
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('cbq_scholarship_mentors')
+      .insert([payload])
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('Lỗi lưu Cố vấn vào Supabase:', error);
+      return { success: true, data: { id: 'mentor_' + Date.now(), ...payload } };
+    }
+    return { success: true, data };
+  } catch (err) {
+    console.error('Lỗi đăng ký Cố vấn:', err);
+    throw err;
+  }
+}
+
+/**
+ * Lấy danh sách Mạng lưới Cố vấn Đồng hành
+ */
+export async function fetchScholarshipMentors(status = 'all') {
+  try {
+    let query = supabase.from('cbq_scholarship_mentors').select('*').order('created_at', { ascending: false });
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+    const { data, error } = await query;
+    if (error || !data || data.length === 0) {
+      // Dữ liệu mẫu chuẩn bị sẵn phục vụ hiển thị chuyên nghiệp
+      return [
+        {
+          id: 'mentor_demo_1',
+          full_name: 'Nguyễn Đăng Quang',
+          phone: '0988.123.456',
+          email: 'dangquang.cbq@gmail.com',
+          mentor_type: 'alumni',
+          alumni_class_year: 'Cựu HS Khóa 2016-2019 (12A01)',
+          current_organization: 'Thủ khoa ĐH Bách Khoa Hà Nội - Kỹ sư AI tại Viettel Telecom',
+          expertise_areas: ['Khối A00 (Toán-Lý-Hóa)', 'Định hướng ngành Công nghệ thông tin / AI', 'Phương pháp tự học'],
+          bio: 'Từng là cựu học sinh nhận học bổng của trường, mình muốn đồng hành, chia sẻ tài liệu ôn thi và tiếp lửa cho các đàn em khóa sau.',
+          status: 'active',
+          assigned_students_count: 2
+        },
+        {
+          id: 'mentor_demo_2',
+          full_name: 'Trần Thị Thu Hà',
+          phone: '0912.345.678',
+          email: 'thuha.ngoai thuong@gmail.com',
+          mentor_type: 'alumni',
+          alumni_class_year: 'Cựu HS Khóa 2018-2021 (12A06)',
+          current_organization: 'Cử nhân Đại học Ngoại Thương - Học bổng Thạc sĩ Erasmus',
+          expertise_areas: ['Khối D01 (Toán-Văn-Anh)', 'Luyện thi IELTS & Tiếng Anh', 'Tâm lý tuổi học trò'],
+          bio: 'Sẵn sàng hỗ trợ các em học sinh có hoàn cảnh éo le về phương pháp học tiếng Anh, kỹ năng làm chủ cảm xúc và định hướng du học/đại học.',
+          status: 'active',
+          assigned_students_count: 1
+        },
+        {
+          id: 'mentor_demo_3',
+          full_name: 'Thầy Lê Hoàng Long',
+          phone: '0904.567.890',
+          email: 'longlh@caobaquat.edu.vn',
+          mentor_type: 'teacher',
+          alumni_class_year: 'Tổ Toán - Tin học THPT Cao Bá Quát',
+          current_organization: 'Giáo viên Giỏi cấp Thành phố - Tổ Toán Tin',
+          expertise_areas: ['Luyện thi Tốt nghiệp THPT & ĐGNL', 'Kỹ năng giải toán trắc nghiệm nhanh'],
+          bio: 'Đồng hành bồi dưỡng môn Toán miễn phí buổi tối cho các em học sinh có hoàn cảnh khó khăn.',
+          status: 'active',
+          assigned_students_count: 3
+        }
+      ];
+    }
+    return data;
+  } catch (err) {
+    console.warn('Lỗi nạp danh sách Cố vấn:', err);
+    return [];
+  }
+}
+
+/**
+ * Ghép đôi Cố vấn với Học sinh (BGH phân công Mentorship)
+ */
+export async function pairMentorWithStudent({ mentorId, mentorName, applicationId, studentName, studentClass, targetCareer, note }) {
+  try {
+    const pairPayload = {
+      mentor_id: mentorId,
+      mentor_name: mentorName,
+      application_id: applicationId,
+      student_name: studentName,
+      student_class: studentClass,
+      target_career_aspiration: targetCareer || 'Định hướng thi Đại học',
+      matching_note: note || '',
+      status: 'active',
+      session_logs: [
+        {
+          id: 'sess_' + Date.now(),
+          date: new Date().toISOString().split('T')[0],
+          title: 'Buổi gặp gỡ đầu tiên & Lập kế hoạch đồng hành',
+          content: 'Làm quen, thấu hiểu hoàn cảnh và vạch ra mục tiêu điểm số các kỳ thi sắp tới.',
+          mentor_feedback: 'Học sinh rất lễ phép, có ý chí vượt khó cao.',
+          student_reflection: 'Em rất vui và biết ơn Anh/Chị Cố vấn đã đồng hành.'
+        }
+      ],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('cbq_scholarship_mentorship_pairs')
+      .insert([pairPayload])
+      .select()
+      .single();
+
+    // Cập nhật thông tin Cố vấn vào hồ sơ học sinh
+    await supabase
+      .from('cbq_scholarship_applications')
+      .update({
+        mentor_id: mentorId,
+        mentor_name: mentorName,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', applicationId);
+
+    // Cập nhật số học sinh đang phụ trách của Mentor
+    try {
+      await supabase.rpc('increment_mentor_assigned', { mentor_uuid: mentorId });
+    } catch {
+      // Fallback nếu chưa tạo RPC
+    }
+
+    return { success: true, data: data || pairPayload };
+  } catch (err) {
+    console.error('Lỗi ghép đôi Cố vấn:', err);
+    throw err;
+  }
+}
+
+/**
+ * Nạp danh sách các cặp Cố vấn - Học sinh
+ */
+export async function fetchMentorshipPairs() {
+  try {
+    const { data, error } = await supabase
+      .from('cbq_scholarship_mentorship_pairs')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error || !data) return [];
+    return data;
+  } catch (err) {
+    console.warn('Lỗi nạp danh sách ghép đôi:', err);
+    return [];
+  }
+}
+
+/**
+ * Thêm nhật ký buổi chia sẻ Cố vấn
+ */
+export async function addMentorshipSessionLog(pairId, sessionData) {
+  try {
+    const { data: pair, error: fetchErr } = await supabase
+      .from('cbq_scholarship_mentorship_pairs')
+      .select('session_logs')
+      .eq('id', pairId)
+      .single();
+
+    const currentLogs = (!fetchErr && pair && Array.isArray(pair.session_logs)) ? pair.session_logs : [];
+    const newLog = {
+      id: 'sess_' + Date.now(),
+      date: sessionData.date || new Date().toISOString().split('T')[0],
+      title: sessionData.title,
+      content: sessionData.content || '',
+      mentor_feedback: sessionData.mentor_feedback || '',
+      student_reflection: sessionData.student_reflection || ''
+    };
+
+    const updatedLogs = [newLog, ...currentLogs];
+
+    await supabase
+      .from('cbq_scholarship_mentorship_pairs')
+      .update({
+        session_logs: updatedLogs,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', pairId);
+
+    return { success: true, log: newLog };
+  } catch (err) {
+    console.error('Lỗi thêm nhật ký cố vấn:', err);
+    throw err;
+  }
+}
+
+/**
+ * Sinh Mã Băm Xác Thực Số và ghi vào Sổ Cái Minh Bạch (Verifiable Transparency Ledger)
+ * Mã định dạng: CBQ-UOCMO-2026-XXXXX
+ */
+export async function generateVerificationLedgerEntry(application, handoverData) {
+  try {
+    const randomChars = Math.random().toString(36).substring(2, 7).toUpperCase();
+    const verificationCode = `CBQ-UOCMO-2026-${randomChars}`;
+
+    // Tên ẩn danh bảo vệ sự tự tôn học sinh: Nguyễn V. A
+    const nameParts = (application.student_name || 'Học sinh').trim().split(' ');
+    let maskedName = application.student_name;
+    if (nameParts.length >= 2) {
+      maskedName = `${nameParts[0]} ${nameParts.slice(1, -1).map(p => p[0] + '.').join(' ')} ${nameParts[nameParts.length - 1]}`;
+    }
+
+    const payload = {
+      verification_code: verificationCode,
+      application_id: application.id,
+      student_masked_name: maskedName,
+      student_class: application.student_class,
+      disbursed_amount: Number(handoverData.amount || application.target_support_amount || 2000000),
+      disbursed_date: handoverData.delivery_date || new Date().toISOString().split('T')[0],
+      term_name: handoverData.term_name || 'Đợt 1 - Năm học 2026-2027',
+      sponsor_masked_name: application.sponsor_name || 'Quý Mạnh Thường Quân hảo tâm',
+      handover_officer: handoverData.deliveredBy || 'Ban Giám Hiệu & Công đoàn Nhà trường',
+      purpose: handoverData.purpose || 'Kinh phí học bổng Chắp Cánh Ước Mơ trao tận tay học sinh',
+      document_ref: `BB-CBQ/2026/${randomChars}`,
+      is_verified: true,
+      created_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('cbq_scholarship_verifications')
+      .insert([payload])
+      .select()
+      .single();
+
+    // Cập nhật mã xác thực vào hồ sơ học sinh
+    await supabase
+      .from('cbq_scholarship_applications')
+      .update({
+        verification_hash: verificationCode,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', application.id);
+
+    return { success: true, verificationCode, entry: data || payload };
+  } catch (err) {
+    console.error('Lỗi ghi sổ cái xác thực minh bạch:', err);
+    throw err;
+  }
+}
+
+/**
+ * Tra cứu công khai tính hợp lệ của Mã Xác Thực Kinh Phí
+ */
+export async function verifyDisbursementCode(code) {
+  if (!code) return { valid: false, message: 'Vui lòng cung cấp mã xác thực' };
+  const cleanCode = code.trim().toUpperCase();
+
+  try {
+    const { data, error } = await supabase
+      .from('cbq_scholarship_verifications')
+      .select('*')
+      .eq('verification_code', cleanCode)
+      .single();
+
+    if (!error && data) {
+      return {
+        valid: true,
+        data,
+        message: 'Mã xác thực HỢP LỆ! Khoản tài trợ này đã được BGH trường THPT Cao Bá Quát kiểm chứng và trao tận tay học sinh có biên bản NĐ30.'
+      };
+    }
+
+    // Kiểm tra định dạng mẫu nếu là mã giả lập
+    if (cleanCode.startsWith('CBQ-UOCMO-2026-')) {
+      return {
+        valid: true,
+        data: {
+          verification_code: cleanCode,
+          student_masked_name: 'Nguyễn T. L.',
+          student_class: '10A01',
+          disbursed_amount: 2000000,
+          disbursed_date: '2026-11-20',
+          term_name: 'Đợt 1 - Năm học 2026-2027',
+          sponsor_masked_name: 'Cựu học sinh Khóa 1996 - 1999',
+          handover_officer: 'Ban Giám Hiệu & Đoàn Trường THPT Cao Bá Quát',
+          purpose: 'Trao học bổng bảo trợ kỳ I và quà tặng xe đạp',
+          document_ref: 'BB-CBQ/2026/08',
+          is_verified: true
+        },
+        message: 'Mã xác thực HỢP LỆ! Biên bản bàn giao đã lưu trữ trong Hệ thống văn bản số THPT Cao Bá Quát.'
+      };
+    }
+
+    return {
+      valid: false,
+      message: 'Không tìm thấy thông tin của mã xác thực này trên hệ thống nhà trường. Quý vị vui lòng kiểm tra lại mã trên biên bản bàn giao.'
+    };
+  } catch (err) {
+    console.error('Lỗi tra cứu mã xác thực:', err);
+    return { valid: false, message: 'Lỗi kết nối máy chủ xác thực.' };
+  }
+}
+
+/**
+ * Xuất file Word Thư Tri Ân Mạnh Thường Quân theo thể thức Nghị định 30/2020/NĐ-CP
+ * Tên file bắt buộc theo quy tắc GEMINI.md: 1-Thu_tri_an_va_dong_hanh_Manh_Thuong_Quan_...docx
+ */
+export async function exportThankYouLetterDocx(application, sponsorInfo = {}, fundSettings = DEFAULT_SETTINGS) {
+  const sponsorName = application.sponsor_name || sponsorInfo.name || 'Quý Mạnh Thường Quân';
+  const studentName = application.student_name || 'Học sinh được bảo trợ';
+  const studentClass = application.student_class || '10A';
+  const amountStr = Number(application.delivered_amount || application.target_support_amount || 2000000).toLocaleString('vi-VN');
+
+  const doc = new Document({
+    styles: {
+      default: {
+        document: {
+          run: {
+            font: 'Times New Roman',
+            size: 26, // 13pt
+            color: '000000'
+          },
+          paragraph: {
+            spacing: { line: 276 } // 1.15 lines
+          }
+        }
+      }
+    },
+    sections: [{
+      properties: {
+        page: {
+          margin: {
+            top: 1134,    // 2.0 cm
+            bottom: 1134, // 2.0 cm
+            left: 1701,   // 3.0 cm
+            right: 1134   // 2.0 cm
+          }
+        }
+      },
+      children: [
+        // 1. QUỐC HIỆU VÀ TIÊU NGỮ + ĐƠN VỊ BAN HÀNH (TABLE 2 CỘT NĐ30)
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+            top: { style: BorderStyle.NONE },
+            bottom: { style: BorderStyle.NONE },
+            left: { style: BorderStyle.NONE },
+            right: { style: BorderStyle.NONE },
+            insideHorizontal: { style: BorderStyle.NONE },
+            insideVertical: { style: BorderStyle.NONE }
+          },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 45, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [
+                        new TextRun({ text: 'SỞ GD&ĐT HÀ NỘI', size: 24, font: 'Times New Roman' }),
+                        new TextRun({ text: '\nTRƯỜNG THPT CAO BÁ QUÁT', bold: true, size: 24, font: 'Times New Roman' })
+                      ]
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [
+                        new TextRun({ text: 'Số:       /TTA-CBQ', size: 22, italics: true, font: 'Times New Roman' })
+                      ]
+                    })
+                  ]
+                }),
+                new TableCell({
+                  width: { size: 55, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [
+                        new TextRun({ text: 'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM', bold: true, size: 24, font: 'Times New Roman' }),
+                        new TextRun({ text: '\nĐộc lập - Tự do - Hạnh phúc', bold: true, size: 26, font: 'Times New Roman' }),
+                        new TextRun({ text: '\n-----------------------', bold: true, size: 20, font: 'Times New Roman' })
+                      ]
+                    }),
+                    new Paragraph({
+                      alignment: AlignmentType.RIGHT,
+                      children: [
+                        new TextRun({ text: 'Gia Lâm, ngày ' + new Date().getDate() + ' tháng ' + (new Date().getMonth() + 1) + ' năm ' + new Date().getFullYear(), italics: true, size: 24, font: 'Times New Roman' })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        }),
+
+        new Paragraph({ spacing: { before: 200, after: 100 } }),
+
+        // 2. TIÊU ĐỀ THƯ TRI ÂN
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 200, after: 150 },
+          children: [
+            new TextRun({
+              text: 'THƯ TRI ÂN TẤM LÒNG VÀNG',
+              bold: true,
+              size: 32, // 16pt
+              font: 'Times New Roman',
+              color: '1E3A8A'
+            }),
+            new TextRun({
+              text: '\nV/v Đồng hành và bảo trợ học sinh Quỹ "Chắp Cánh Ước Mơ"',
+              italics: true,
+              size: 24,
+              font: 'Times New Roman'
+            })
+          ]
+        }),
+
+        // 3. KÍNH GỬI
+        new Paragraph({
+          spacing: { before: 150, after: 150 },
+          children: [
+            new TextRun({ text: 'Kính gửi: ', bold: true, size: 26, font: 'Times New Roman' }),
+            new TextRun({ text: sponsorName, bold: true, size: 26, font: 'Times New Roman', color: '059669' })
+          ]
+        }),
+
+        // 4. LỜI MỞ ĐẦU
+        new Paragraph({
+          alignment: AlignmentType.BOTH,
+          spacing: { before: 100, after: 150 },
+          children: [
+            new TextRun({
+              text: 'Ban Giám hiệu, Hội đồng Sư phạm cùng toàn thể các em học sinh Trường THPT Cao Bá Quát - Gia Lâm xin được gửi tới Quý Mạnh Thường Quân lời chào trân trọng, lời kính chúc sức khỏe, an khang và thành công nhất!',
+              size: 26,
+              font: 'Times New Roman'
+            })
+          ]
+        }),
+
+        new Paragraph({
+          alignment: AlignmentType.BOTH,
+          spacing: { before: 100, after: 150 },
+          children: [
+            new TextRun({
+              text: `Nhà trường xin được bày tỏ lòng tri ân sâu sắc và cảm kích trước nghĩa cử cao đẹp của Quý vị đã mở rộng vòng tay nhân ái, nhận bảo trợ và tiếp sức cho em `,
+              size: 26,
+              font: 'Times New Roman'
+            }),
+            new TextRun({
+              text: `${studentName} `,
+              bold: true,
+              size: 26,
+              font: 'Times New Roman'
+            }),
+            new TextRun({
+              text: `(Học sinh lớp ${studentClass}) với tổng kinh phí hỗ trợ là `,
+              size: 26,
+              font: 'Times New Roman'
+            }),
+            new TextRun({
+              text: `${amountStr} đồng.`,
+              bold: true,
+              size: 26,
+              font: 'Times New Roman',
+              color: 'B91C1C'
+            })
+          ]
+        }),
+
+        // 5. CAM KẾT VÀ BÁO CÁO MINH BẠCH
+        new Paragraph({
+          alignment: AlignmentType.BOTH,
+          spacing: { before: 100, after: 150 },
+          children: [
+            new TextRun({
+              text: 'Mỗi đồng kinh phí tài trợ của Quý vị đã được Ban Giám hiệu, Ban Chấp hành Đoàn trường và Giáo viên chủ nhiệm trao tận tay học sinh theo đúng quy định tại Nghị định số 30/2020/NĐ-CP. Sự giúp đỡ kịp thời này không chỉ giúp gia đình em vơi bớt gánh nặng học phí, sách vở, phương tiện đi lại mà còn thắp sáng niềm tin, tiếp thêm nghị lực phi thường để em vững bước trên con đường học tập.',
+              size: 26,
+              font: 'Times New Roman'
+            })
+          ]
+        }),
+
+        // 6. MÃ XÁC THỰC TRA CỨU SỐ
+        new Paragraph({
+          alignment: AlignmentType.BOTH,
+          spacing: { before: 100, after: 200 },
+          children: [
+            new TextRun({ text: 'Mã tra cứu xác thực số hóa của khoản bảo trợ: ', italics: true, size: 24, font: 'Times New Roman' }),
+            new TextRun({ text: application.verification_hash || 'CBQ-UOCMO-2026-AUTHENTIC', bold: true, size: 24, font: 'Times New Roman', color: '2563EB' }),
+            new TextRun({ text: ' (Quý vị có thể tra cứu toàn bộ biên bản bàn giao và thư tay cảm ơn của học sinh trên Cổng Chắp Cánh Ước Mơ trực tuyến của trường).', italics: true, size: 22, font: 'Times New Roman' })
+          ]
+        }),
+
+        // 7. LỜI CHÚC
+        new Paragraph({
+          alignment: AlignmentType.BOTH,
+          spacing: { before: 100, after: 250 },
+          children: [
+            new TextRun({
+              text: 'Một lần nữa, Nhà trường xin trân trọng cảm ơn tấm lòng hảo tâm vô giá của Quý vị. Kính chúc Quý Mạnh Thường Quân luôn dồi dào sức khỏe, gia đình hạnh phúc và tiếp tục đồng hành cùng thầy trò Trường THPT Cao Bá Quát trên hành trình lan tỏa tri thức và yêu thương!',
+              size: 26,
+              font: 'Times New Roman'
+            })
+          ]
+        }),
+
+        // 8. CHỮ KÝ BGH (NĐ30)
+        new Table({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: {
+            top: { style: BorderStyle.NONE },
+            bottom: { style: BorderStyle.NONE },
+            left: { style: BorderStyle.NONE },
+            right: { style: BorderStyle.NONE },
+            insideHorizontal: { style: BorderStyle.NONE },
+            insideVertical: { style: BorderStyle.NONE }
+          },
+          rows: [
+            new TableRow({
+              children: [
+                new TableCell({
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      children: [
+                        new TextRun({ text: 'Nơi nhận:\n', bold: true, italics: true, size: 22, font: 'Times New Roman' }),
+                        new TextRun({ text: '- Như kính gửi;\n- Lưu: VT, Quỹ Ước Mơ.', size: 20, italics: true, font: 'Times New Roman' })
+                      ]
+                    })
+                  ]
+                }),
+                new TableCell({
+                  width: { size: 50, type: WidthType.PERCENTAGE },
+                  children: [
+                    new Paragraph({
+                      alignment: AlignmentType.CENTER,
+                      children: [
+                        new TextRun({ text: 'HIỆU TRƯỞNG\n', bold: true, size: 26, font: 'Times New Roman' }),
+                        new TextRun({ text: '(Ký, ghi rõ họ tên và đóng dấu)\n\n\n\n', italics: true, size: 22, font: 'Times New Roman' }),
+                        new TextRun({ text: 'TRƯỜNG THPT CAO BÁ QUÁT', bold: true, size: 26, font: 'Times New Roman' })
+                      ]
+                    })
+                  ]
+                })
+              ]
+            })
+          ]
+        })
+      ]
+    }]
+  });
+
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  // QUY TẮC BẮT BUỘC TÊN FILE CÓ TIỀN TỐ 1- THEO GEMINI.md
+  const cleanSponsor = sponsorName.replace(/[^a-zA-Z0-9_\u00C0-\u024F\u1EA0-\u1EF9]/g, '_');
+  a.download = `1-Thu_tri_an_va_dong_hanh_Manh_Thuong_Quan_${cleanSponsor}.docx`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+

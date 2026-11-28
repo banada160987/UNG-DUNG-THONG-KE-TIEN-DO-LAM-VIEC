@@ -27,7 +27,9 @@ import {
   exportFundReportExcel,
   approveStudentForSponsorship,
   disburseSponsorshipToStudent,
-  exportHandoverDocx
+  exportHandoverDocx,
+  exportThankYouLetterDocx,
+  generateVerificationLedgerEntry
 } from '../services/scholarshipFundService';
 
 const ALL_CLASSES = [];
@@ -860,7 +862,50 @@ export default function AdminScholarshipFund() {
                     />
                   </div>
 
+                  {selectedApp.verification_hash && (
+                    <div style={{ marginTop: '14px', background: '#ecfdf5', border: '1px solid #a7f3d0', padding: '10px 14px', borderRadius: '8px', fontSize: '13px', color: '#047857', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <strong>Mã băm xác thực minh bạch:</strong> <code>{selectedApp.verification_hash}</code>
+                      </div>
+                      <a href={`/tra-cuu-uoc-mo?code=${selectedApp.verification_hash}`} target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 700, textDecoration: 'underline' }}>
+                        Xem chứng thư xác thực ↗
+                      </a>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px', flexWrap: 'wrap' }}>
+                    {!selectedApp.verification_hash && (
+                      <button 
+                        type="button" 
+                        onClick={async () => {
+                          try {
+                            const res = await generateVerificationLedgerEntry(selectedApp, {
+                              amount: selectedApp.delivered_amount || selectedApp.target_support_amount || 2000000,
+                              delivery_date: selectedApp.delivery_date || new Date().toISOString().split('T')[0],
+                              term_name: selectedApp.scholarship_term || 'Học kỳ I',
+                              purpose: 'Kinh phí học bổng Chắp cánh ước mơ'
+                            });
+                            alert(`Đã cấp Mã băm xác thực chống giả mạo: ${res.verificationCode}`);
+                            setSelectedApp({ ...selectedApp, verification_hash: res.verificationCode });
+                            loadAllData();
+                          } catch (err) {
+                            alert("Lỗi cấp mã: " + err.message);
+                          }
+                        }}
+                        style={{ ...styles.cancelBtn, background: '#f0fdf4', color: '#059669', border: '1px solid #a7f3d0', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        <ShieldCheck size={15} /> Cấp Mã Băm Xác Thực
+                      </button>
+                    )}
+                    {selectedApp.sponsor_name && (
+                      <button 
+                        type="button" 
+                        onClick={() => exportThankYouLetterDocx(selectedApp, { name: selectedApp.sponsor_name }, fundSettings)} 
+                        style={{ ...styles.cancelBtn, background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                      >
+                        <Award size={15} /> Tải Thư Tri Ân MTQ (Word NĐ30)
+                      </button>
+                    )}
                     <button 
                       type="button" 
                       onClick={() => exportHandoverDocx(selectedApp)} 
