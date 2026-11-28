@@ -15,8 +15,36 @@ const DEFAULT_PACKAGES = [
   { id: 'p1', package_key: 'month', title: 'Đăng ký Theo Tháng', months_count: 1, fee_amount: 50000, description: 'Thời hạn 1 tháng (50.000 VNĐ)', sort_order: 1, is_active: true },
   { id: 'p2', package_key: 'quarter', title: 'Đăng ký Theo Quý (3 tháng)', months_count: 3, fee_amount: 130000, description: 'Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)', sort_order: 2, is_active: true },
   { id: 'p3', package_key: 'term', title: 'Đăng ký Theo Học Kỳ (5 tháng)', months_count: 5, fee_amount: 200000, description: 'Thời hạn 1 Học kỳ (Tiết kiệm 50.000 VNĐ)', sort_order: 3, is_active: true },
-  { id: 'p4', package_key: 'year', title: 'Đăng ký Cả Năm Học (9 tháng)', months_count: 9, fee_amount: 400000, description: 'Thời hạn trọn cả năm học (Tiết kiệm 50.000 VNĐ)', sort_order: 4, is_active: true }
+  { id: 'p4', package_key: 'year', title: 'Đăng ký Cả Năm Học (7 tháng)', months_count: 7, fee_amount: 350000, description: 'Thời hạn 7 tháng (Từ 01/11/2026 đến 31/05/2027)', sort_order: 4, is_active: true }
 ];
+
+export const calculateParkingDates = (packageKey, customStart = null, packagesList = []) => {
+  const todayStr = new Date().toISOString().split('T')[0];
+  const pkg = (packagesList || []).find(p => (p.package_key || p.key) === packageKey) || {};
+  
+  if (packageKey === 'year') {
+    return {
+      start_date: '2026-11-01',
+      end_date: '2027-05-31',
+      fee_amount: Number(pkg.fee_amount || pkg.fee) || 350000,
+      months_count: 7
+    };
+  }
+
+  const startDate = customStart || todayStr;
+  const months = Number(pkg.months_count || pkg.months) || (packageKey === 'quarter' ? 3 : packageKey === 'term' ? 5 : 1);
+  const d = new Date(startDate);
+  d.setMonth(d.getMonth() + months);
+  const endDate = d.toISOString().split('T')[0];
+  const fee = Number(pkg.fee_amount || pkg.fee) || (months * 50000);
+
+  return {
+    start_date: startDate,
+    end_date: endDate,
+    fee_amount: fee,
+    months_count: months
+  };
+};
 
 export default function AdminParking() {
   const [activeTab, setActiveTab] = useState('list'); // 'list', 'config', 'checkin', 'alerts'
@@ -80,26 +108,48 @@ export default function AdminParking() {
         setParkingList(parkingRes.data);
       }
 
+      const normalizePkgList = (list) => {
+        return (list || []).map(p => {
+          if (p.package_key === 'year' || p.key === 'year') {
+            return {
+              ...p,
+              title: (p.title && !p.title.includes('9 tháng')) ? p.title : 'Đăng ký Cả Năm Học (7 tháng)',
+              months_count: 7,
+              fee_amount: (p.fee_amount && Number(p.fee_amount) !== 400000 && Number(p.fee_amount) !== 450000) ? Number(p.fee_amount) : 350000,
+              description: 'Thời hạn 7 tháng (Từ 01/11/2026 đến 31/05/2027)'
+            };
+          }
+          return p;
+        });
+      };
+
       if (!pkgRes.error && pkgRes.data && pkgRes.data.length > 0) {
         const local = localStorage.getItem('cbq_parking_packages');
+        let pkgList = pkgRes.data;
         if (local) {
           try {
             const parsedLocal = JSON.parse(local);
             const mergedMap = new Map();
             pkgRes.data.forEach(p => mergedMap.set(p.package_key || String(p.id), p));
             parsedLocal.forEach(p => mergedMap.set(p.package_key || String(p.id), { ...mergedMap.get(p.package_key || String(p.id)), ...p }));
-            const mergedList = Array.from(mergedMap.values());
-            setPackages(mergedList);
+            pkgList = Array.from(mergedMap.values());
           } catch {
-            setPackages(pkgRes.data);
+            pkgList = pkgRes.data;
           }
-        } else {
-          setPackages(pkgRes.data);
         }
+        const normalized = normalizePkgList(pkgList);
+        setPackages(normalized);
+        localStorage.setItem('cbq_parking_packages', JSON.stringify(normalized));
       } else {
         const local = localStorage.getItem('cbq_parking_packages');
         if (local) {
-          setPackages(JSON.parse(local));
+          try {
+            const parsed = normalizePkgList(JSON.parse(local));
+            setPackages(parsed);
+            localStorage.setItem('cbq_parking_packages', JSON.stringify(parsed));
+          } catch {
+            setPackages(DEFAULT_PACKAGES);
+          }
         } else {
           setPackages(DEFAULT_PACKAGES);
           localStorage.setItem('cbq_parking_packages', JSON.stringify(DEFAULT_PACKAGES));
@@ -494,7 +544,23 @@ export default function AdminParking() {
   };
 
   const handleOpenEdit = (item) => {
-    setEditingTicket({ ...item });
+    let ticket = { ...item };
+    if (ticket.package_type === 'year') {
+      if (!ticket.start_date || ticket.start_date !== '2026-11-01' || ticket.end_date !== '2027-05-31') {
+        const calc = calculateParkingDates('year', null, packages);
+        ticket.start_date = calc.start_date;
+        ticket.end_date = calc.end_date;
+        if (!ticket.fee_amount || Number(ticket.fee_amount) === 50000 || Number(ticket.fee_amount) === 400000) {
+          ticket.fee_amount = calc.fee_amount;
+        }
+      }
+    } else if (!ticket.start_date || !ticket.end_date) {
+      const calc = calculateParkingDates(ticket.package_type || 'month', null, packages);
+      ticket.start_date = calc.start_date;
+      ticket.end_date = calc.end_date;
+      ticket.fee_amount = ticket.fee_amount || calc.fee_amount;
+    }
+    setEditingTicket(ticket);
     setShowEditModal(true);
   };
 
@@ -507,7 +573,10 @@ export default function AdminParking() {
         student_class: editingTicket.student_class,
         license_plate: editingTicket.license_plate,
         vehicle_type: editingTicket.vehicle_type,
-        package_type: editingTicket.package_type
+        package_type: editingTicket.package_type,
+        start_date: editingTicket.start_date,
+        end_date: editingTicket.end_date,
+        fee_amount: Number(editingTicket.fee_amount) || 0
       };
 
       let query = dbClient
@@ -543,7 +612,7 @@ export default function AdminParking() {
         return i;
       }));
       
-      const changes = `Admin sửa vé: Tên(${updatedRecord.student_name}), Lớp(${updatedRecord.student_class}), Biển số(${updatedRecord.license_plate}), Loại xe(${updatedRecord.vehicle_type}), Gói(${updatedRecord.package_type})`;
+      const changes = `Admin sửa vé: Tên(${updatedRecord.student_name}), Lớp(${updatedRecord.student_class}), Biển số(${updatedRecord.license_plate}), Loại xe(${updatedRecord.vehicle_type}), Gói(${updatedRecord.package_type}), Thời hạn(${updatedRecord.start_date} đến ${updatedRecord.end_date}), Phí(${updatedRecord.fee_amount})`;
       await logActivity('parking', updatedRecord.id || editingTicket.id, updatedRecord.ticket_code || editingTicket.ticket_code, 'UPDATE', 'admin', changes);
 
       setShowEditModal(false);
@@ -933,7 +1002,7 @@ export default function AdminParking() {
                         </td>
                         <td style={{ padding: '10px', color: '#475569' }}>{item.vehicle_type}</td>
                         <td style={{ padding: '10px', fontWeight: 'bold', color: '#b45309' }}>
-                          {item.package_type === 'month' ? 'Tháng' : item.package_type === 'term' ? 'Học kỳ' : 'Cả năm'}
+                          {item.package_type === 'month' ? 'Tháng (1 thg)' : item.package_type === 'quarter' ? 'Quý (3 thg)' : item.package_type === 'term' ? 'Học kỳ (5 thg)' : 'Cả năm (7 thg)'}
                         </td>
                         <td style={{ padding: '10px', fontSize: '12.5px', color: '#64748b' }}>
                           Từ {item.start_date} <br />Đến {item.end_date}
@@ -1351,15 +1420,80 @@ export default function AdminParking() {
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
                   <label style={styles.label}>Gói đăng ký (*)</label>
-                  <select value={editingTicket.package_type} onChange={e => setEditingTicket({...editingTicket, package_type: e.target.value})} style={styles.input}>
+                  <select 
+                    value={editingTicket.package_type} 
+                    onChange={e => {
+                      const newPkgKey = e.target.value;
+                      const calc = calculateParkingDates(newPkgKey, null, packages);
+                      setEditingTicket({
+                        ...editingTicket, 
+                        package_type: newPkgKey,
+                        start_date: calc.start_date,
+                        end_date: calc.end_date,
+                        fee_amount: calc.fee_amount
+                      });
+                    }} 
+                    style={styles.input}
+                  >
                     {packages.map(p => (
-                      <option key={p.package_key} value={p.package_key}>{p.title}</option>
+                      <option key={p.package_key || p.id} value={p.package_key}>{p.title}</option>
                     ))}
                   </select>
+                  {editingTicket.package_type === 'year' ? (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '12.5px', color: '#92400e', lineHeight: 1.4 }}>
+                      📅 <strong>Quy định Gói Cả Năm:</strong> Tính 7 tháng từ đầu tháng 11 năm 2026 (Từ <strong>01/11/2026</strong> đến <strong>31/05/2027</strong>). Lệ phí: <strong>350.000 VNĐ</strong>.
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: '8px', padding: '8px 12px', backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', fontSize: '12.5px', color: '#166534', lineHeight: 1.4 }}>
+                      📅 <strong>Thời hạn áp dụng:</strong> Tự động tính từ ngày hiện tại ({new Date().toISOString().split('T')[0]}). Thầy cô có thể tùy chỉnh ngày bên dưới nếu muốn.
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label style={styles.label}>Ngày bắt đầu (*)</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={editingTicket.start_date || ''} 
+                    onChange={e => {
+                      const newStart = e.target.value;
+                      const calc = calculateParkingDates(editingTicket.package_type, newStart, packages);
+                      setEditingTicket({
+                        ...editingTicket,
+                        start_date: newStart,
+                        end_date: editingTicket.package_type === 'year' ? '2027-05-31' : calc.end_date
+                      });
+                    }} 
+                    style={styles.input} 
+                  />
+                </div>
+                <div>
+                  <label style={styles.label}>Ngày kết thúc (*)</label>
+                  <input 
+                    type="date" 
+                    required 
+                    value={editingTicket.end_date || ''} 
+                    onChange={e => setEditingTicket({ ...editingTicket, end_date: e.target.value })} 
+                    style={styles.input} 
+                  />
+                </div>
+
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={styles.label}>Lệ phí gửi xe (VNĐ) (*)</label>
+                  <input 
+                    type="number" 
+                    required 
+                    min="0"
+                    step="1000"
+                    value={editingTicket.fee_amount !== undefined ? editingTicket.fee_amount : 0} 
+                    onChange={e => setEditingTicket({ ...editingTicket, fee_amount: Number(e.target.value) || 0 })} 
+                    style={{ ...styles.input, fontWeight: 'bold', color: '#be123c' }} 
+                  />
                 </div>
               </div>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" onClick={() => setShowEditModal(false)} style={{ padding: '9px 18px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold' }}>Hủy</button>
+                <button type="button" onClick={() => setShowEditModal(false)} style={{ padding: '9px 18px', background: '#cbd5e1', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>Hủy</button>
                 <button type="submit" className="btn-primary" style={{ padding: '9px 24px', backgroundColor: '#0284c7' }}>Lưu Thay Đổi</button>
               </div>
             </form>

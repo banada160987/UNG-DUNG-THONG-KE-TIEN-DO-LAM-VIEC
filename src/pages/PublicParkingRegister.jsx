@@ -7,7 +7,7 @@ const DEFAULT_PACKAGES = [
   { key: 'month', label: 'Đăng ký Theo Tháng', months: 1, fee: 50000, desc: 'Thời hạn 1 tháng (50.000 VNĐ)' },
   { key: 'quarter', label: 'Đăng ký Theo Quý (3 tháng)', months: 3, fee: 130000, desc: 'Thời hạn 3 tháng (Tiết kiệm 20.000 VNĐ)' },
   { key: 'term', label: 'Đăng ký Theo Học Kỳ (5 tháng)', months: 5, fee: 200000, desc: 'Thời hạn 1 Học kỳ (Tiết kiệm 50.000 VNĐ)' },
-  { key: 'year', label: 'Đăng ký Cả Năm Học (9 tháng)', months: 9, fee: 400000, desc: 'Thời hạn trọn cả năm học (Tiết kiệm 50.000 VNĐ)' }
+  { key: 'year', label: 'Đăng ký Cả Năm Học (7 tháng)', months: 7, fee: 350000, desc: 'Thời hạn 7 tháng (Từ 01/11/2026 đến 31/05/2027)' }
 ];
 
 const DEFAULT_BUS_PACKAGES = [
@@ -144,15 +144,18 @@ export default function PublicParkingRegister() {
       ]);
 
       if (!parkingRes.error && parkingRes.data && parkingRes.data.length > 0) {
-        const formatted = parkingRes.data.map(p => ({
-          key: p.package_key, 
-          label: p.title, 
-          months: p.months_count, 
-          fee: Number(p.fee_amount) || 0, 
-          hide_fee: !!p.hide_fee, 
-          desc: p.description || `${p.title}`,
-          applicable_vehicles: p.applicable_vehicles || []
-        }));
+        const formatted = parkingRes.data.map(p => {
+          const isYear = p.package_key === 'year';
+          return {
+            key: p.package_key, 
+            label: isYear ? 'Đăng ký Cả Năm Học (7 tháng)' : p.title, 
+            months: isYear ? 7 : p.months_count, 
+            fee: isYear && (p.fee_amount === 400000 || !p.fee_amount) ? 350000 : (Number(p.fee_amount) || 0), 
+            hide_fee: !!p.hide_fee, 
+            desc: isYear ? 'Thời hạn 7 tháng (Từ 01/11/2026 đến 31/05/2027)' : (p.description || `${p.title}`),
+            applicable_vehicles: p.applicable_vehicles || []
+          };
+        });
         setPackages(formatted);
       }
       
@@ -538,7 +541,25 @@ export default function PublicParkingRegister() {
 
       const selectedPkg = packages.find(p => p.key === packageType) || packages[0];
       const today = new Date().toISOString().split('T')[0];
-      const endDate = calculateEndDate(today, selectedPkg.months);
+
+      let startDate;
+      let endDate;
+      let feeAmount = selectedPkg.fee;
+
+      if (packageType === 'year') {
+        startDate = '2026-11-01';
+        endDate = '2027-05-31';
+        feeAmount = (selectedPkg.fee && selectedPkg.fee !== 400000) ? selectedPkg.fee : 350000;
+      } else {
+        // Nếu đang sửa vé và giữ nguyên gói đó thì giữ nguyên ngày bắt đầu cũ, nếu đổi gói khác thì tính từ ngày hiện tại
+        if (editingTicket && editingTicket.package_type === packageType && editingTicket.start_date) {
+          startDate = editingTicket.start_date;
+          endDate = editingTicket.end_date || calculateEndDate(startDate, selectedPkg.months);
+        } else {
+          startDate = today;
+          endDate = calculateEndDate(startDate, selectedPkg.months);
+        }
+      }
       
       const timeStampSuffix = Date.now().toString(36).toUpperCase().slice(-3);
       const randomNum = Math.floor(100 + Math.random() * 900);
@@ -561,9 +582,9 @@ export default function PublicParkingRegister() {
         vehicle_type: vehicleType,
         vehicle_color: vehicleColor.trim(),
         package_type: packageType,
-        start_date: editingTicket ? editingTicket.start_date : today,
-        end_date: editingTicket ? editingTicket.end_date : endDate,
-        fee_amount: selectedPkg.fee,
+        start_date: startDate,
+        end_date: endDate,
+        fee_amount: feeAmount,
         status: 'active'
       };
 
@@ -1155,6 +1176,11 @@ export default function PublicParkingRegister() {
                 </div>
               ))}
             </div>
+            {packageType === 'year' && (
+              <div style={{ marginTop: '12px', padding: '10px 14px', backgroundColor: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', color: '#92400e', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>📅 <strong>Quy định Gói Cả Năm:</strong> Thời hạn 7 tháng, áp dụng từ ngày <strong>01/11/2026</strong> đến ngày <strong>31/05/2027</strong> (Lệ phí: 350.000 VNĐ).</span>
+              </div>
+            )}
           </div>
 
           {isBicycle && (
