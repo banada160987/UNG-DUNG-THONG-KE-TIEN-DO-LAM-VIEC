@@ -609,10 +609,10 @@ export default function PublicHome() {
                 <div style={{ flex: 1, fontSize: '12px' }}>
                   <div style={{ fontWeight: 700, color: '#1e293b' }}>Trường THPT Cao Bá Quát</div>
                   <div style={{ color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
-                    Km 28, QL26, Xã Ea Yông, Huyện Krông Pắc, Tỉnh Đắk Lắk
+                    Km9 - QL14 - Phường Tân An - Tỉnh Đắk Lắk
                   </div>
                   <a 
-                    href="https://maps.google.com/?q=Trường+THPT+Cao+Bá+Quát+Đắk+Lắk" 
+                    href="https://maps.google.com/?q=Trường+THPT+Cao+Bá+Quát+Km9+QL14+Phường+Tân+An+Đắk+Lắk" 
                     target="_blank" 
                     rel="noreferrer"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#0284c7', fontWeight: 600, textDecoration: 'none', marginTop: '4px' }}
@@ -1811,13 +1811,13 @@ export default function PublicHome() {
           </PortalBlock>
           )}
 
-          {/* ĐIỂM TÂM SÁNG CBQ - TIẾP SỨC HỌC ĐƯỜNG (CĂNG TIN SỐ 4.0) */}
-          <PortalBlock title="ĐIỂM TÂM SÁNG CBQ" color="#ea580c" icon="🍳">
+          {/* THÔNG BÁO & CHỈ ĐẠO CHUYÊN MÔN NHÀ TRƯỜNG */}
+          <PortalBlock title="THÔNG BÁO & CHUYÊN MÔN" color="#0369a1" icon="📑">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               {/* STATUS BAR LIVE */}
               <div style={{
-                background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                border: '1px solid #fed7aa',
+                background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+                border: '1px solid #bae6fd',
                 borderRadius: '10px',
                 padding: '8px 12px',
                 display: 'flex',
@@ -1825,125 +1825,202 @@ export default function PublicHome() {
                 justifyContent: 'space-between'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', boxShadow: '0 0 6px #22c55e' }}></span>
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#9a3412' }}>
-                    BẾP ĐANG PHỤC VỤ SÁNG
+                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#0284c7', boxShadow: '0 0 6px #0284c7' }}></span>
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#0369a1' }}>
+                    CHỈ ĐẠO CHUYÊN MÔN & THÔNG BÁO
                   </span>
                 </div>
-                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#ea580c', color: '#ffffff', padding: '2px 7px', borderRadius: '4px' }}>
-                  CHỐT ĐƠN 06:30
+                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#0284c7', color: '#ffffff', padding: '2px 7px', borderRadius: '4px' }}>
+                  2026 - 2027
                 </span>
               </div>
 
-              {/* MENU NÓNG HỔI HÔM NAY */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {/* MÓN 1 */}
+              {/* NỘI DUNG CHUYÊN MÔN & THÔNG BÁO NỔI BẬT */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                {/* MỤC 1: GDPT 2018 & THAO GIẢNG */}
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
+                  padding: '9px 11px',
                   backgroundColor: '#ffffff',
-                  border: '1px solid #fed7aa',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
+                  border: '1px solid #e0f2fe',
+                  borderRadius: '9px',
+                  boxShadow: '0 2px 6px rgba(2, 132, 199, 0.06)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>🍲</span>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Phở Bò Hà Nội / Bún Bò Huế</div>
-                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Nóng hổi, nước hầm xương đậm vị • Bổ dưỡng</div>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#0369a1', backgroundColor: '#e0f2fe', padding: '2px 6px', borderRadius: '4px' }}>
+                      CHUYÊN MÔN GDPT 2018
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: '#64748b' }}>Tuần 12</span>
                   </div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
-                    25.000đ
+                  <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a', lineHeight: 1.35 }}>
+                    Đổi Mới PPDH & Đánh Giá Năng Lực Học Sinh
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
+                    Triển khai sinh hoạt chuyên môn theo nghiên cứu bài học; ứng dụng học liệu số và AI hỗ trợ xây dựng KHBD.
                   </div>
                 </div>
 
-                {/* MÓN 2 */}
+                {/* MỤC 2: MA TRẬN ĐỀ & KHẢO SÁT CHẤT LƯỢNG */}
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
+                  padding: '9px 11px',
                   backgroundColor: '#ffffff',
                   border: '1px solid #fed7aa',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
+                  borderRadius: '9px',
+                  boxShadow: '0 2px 6px rgba(234, 88, 12, 0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>🥖</span>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Bánh Mì Que Pate / Xôi Bắp Nóng</div>
-                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Vỏ giòn nhân béo ngậy • Nhanh gọn vào lớp</div>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#c2410c', backgroundColor: '#ffedd5', padding: '2px 6px', borderRadius: '4px' }}>
+                      KHẢO SÁT HỌC KỲ I
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: '#9a3412', fontWeight: '700' }}>Hạn 15/12</span>
                   </div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
-                    15.000đ
+                  <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a', lineHeight: 1.35 }}>
+                    Thống Nhất Ma Trận & Bảng Đặc Tả Đề Thi
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
+                    Chuẩn hóa ngân hàng câu hỏi trắc nghiệm nhiều lựa chọn, đúng/sai và trả lời ngắn cho cả 3 khối 10, 11, 12.
                   </div>
                 </div>
 
-                {/* MÓN 3 */}
+                {/* MỤC 3: BGH CHỈ ĐẠO & HỒ SƠ GIÁO ÁN */}
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
+                  padding: '9px 11px',
                   backgroundColor: '#ffffff',
-                  border: '1px solid #fed7aa',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
+                  border: '1px solid #fecaca',
+                  borderRadius: '9px',
+                  boxShadow: '0 2px 6px rgba(225, 29, 72, 0.05)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '20px' }}>🥛</span>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Sữa Hạt Dinh Dưỡng / Sữa Chua Dầm</div>
-                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Thanh mát tiêu hóa • Năng lượng học tập</div>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '10px', fontWeight: '800', color: '#b91c1c', backgroundColor: '#fee2e2', padding: '2px 6px', borderRadius: '4px' }}>
+                      BGH CHỈ ĐẠO
+                    </span>
+                    <span style={{ fontSize: '10.5px', color: '#64748b' }}>Định kỳ thứ Sáu</span>
                   </div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
-                    10.000đ
+                  <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#0f172a', lineHeight: 1.35 }}>
+                    Kiểm Tra Sổ Điểm Điện Tử & Báo Giảng
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#475569', lineHeight: 1.4 }}>
+                    Đảm bảo tiến độ cập nhật điểm kiểm tra thường xuyên, ký duyệt giáo án số trên hệ thống đúng quy chế.
                   </div>
                 </div>
+
+                {/* THÔNG BÁO MỚI TỪ HỆ THỐNG NẾU CÓ */}
+                {news && news.length > 0 && (
+                  <div style={{
+                    padding: '8px 10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px dashed #cbd5e1',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '5px'
+                  }}>
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: '#334155', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      <span>📢</span>
+                      <span>Tin Thông Báo Mới Ban Hành:</span>
+                    </div>
+                    {news.slice(0, 2).map((item, idx) => (
+                      <div 
+                        key={item.id || idx}
+                        onClick={() => setSelectedNews(item)}
+                        style={{
+                          fontSize: '11.5px',
+                          color: '#0284c7',
+                          fontWeight: '700',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '5px',
+                          lineHeight: 1.35,
+                          textDecoration: 'none'
+                        }}
+                      >
+                        <span style={{ color: '#0284c7', minWidth: '10px' }}>▸</span>
+                        <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={item.title}>
+                          {item.title}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              {/* CAM KẾT TIÊU CHUẨN VÀNG */}
-              <div style={{
-                padding: '8px 10px',
-                backgroundColor: '#fffbeb',
-                border: '1px dashed #fcd34d',
-                borderRadius: '8px',
-                fontSize: '11px',
-                color: '#92400e',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}>
-                <span>🛡️</span>
-                <span><strong>100% ATTP</strong> • Quét mã nhận suất 10s • Trợ giá Quỹ Ước Mơ</span>
+              {/* CỤM NÚT TÁC NGHIỆP CHUYÊN MÔN */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
+                <Link 
+                  to="/lich-cong-tac" 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    backgroundColor: '#f0fdf4',
+                    border: '1px solid #bbf7d0',
+                    color: '#166534',
+                    padding: '8px 6px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    textDecoration: 'none',
+                    textAlign: 'center'
+                  }}
+                >
+                  <Calendar size={13} />
+                  <span>Lịch Báo Giảng</span>
+                </Link>
+                <Link 
+                  to="/to-chuyen-mon" 
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px',
+                    backgroundColor: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    color: '#1d4ed8',
+                    padding: '8px 6px',
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    textDecoration: 'none',
+                    textAlign: 'center'
+                  }}
+                >
+                  <Users size={13} />
+                  <span>8 Tổ Chuyên Môn</span>
+                </Link>
               </div>
 
-              {/* NÚT XEM THỰC ĐƠN & ĐẶT MÓN */}
+              {/* NÚT XEM TOÀN BỘ VĂN BẢN HƯỚNG DẪN */}
               <Link 
-                to="/bep-sang" 
+                to="/van-ban" 
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '6px',
-                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                   color: '#ffffff',
-                  padding: '10px 14px',
+                  padding: '9px 14px',
                   borderRadius: '10px',
-                  fontSize: '12.5px',
+                  fontSize: '12px',
                   fontWeight: '800',
                   textDecoration: 'none',
-                  boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
+                  boxShadow: '0 3px 10px rgba(2, 132, 199, 0.28)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <span>🍳 Xem Thực Đơn & Đặt Suất Sáng Ngay</span>
-                <ArrowRight size={14} />
+                <BookOpen size={14} />
+                <span>Xem Kho Văn Bản & Chỉ Đạo Chuyên Môn</span>
+                <ArrowRight size={13} />
               </Link>
             </div>
           </PortalBlock>

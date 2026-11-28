@@ -1110,7 +1110,7 @@ export default function PublicLayout() {
               Kênh thông tin chính thức phục vụ cán bộ giáo viên, nhân viên, phụ huynh và học sinh toàn trường. Hoạt động 24/7 trên mọi nền tảng.
             </p>
             <div style={{ fontSize: '12.5px', color: '#cbd5e1', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div>📍 <strong>Địa chỉ:</strong> Trường THPT Cao Bá Quát</div>
+              <div>📍 <strong>Địa chỉ:</strong> Km9 - QL14 - Phường Tân An - Tỉnh Đắk Lắk</div>
               <div>📞 <strong>Điện thoại:</strong> 0123.456.789</div>
               <div>✉️ <strong>Email:</strong> c3caobaquat@daklak.edu.vn</div>
             </div>
