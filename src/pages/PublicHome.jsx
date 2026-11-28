@@ -1811,13 +1811,13 @@ export default function PublicHome() {
           </PortalBlock>
           )}
 
-          {/* BẢNG VÀNG THI ĐUA & VINH DANH TUẦN PRO */}
-          <PortalBlock title="BẢNG VÀNG THI ĐUA TUẦN" color="#166534" icon="🏆">
+          {/* ĐIỂM TÂM SÁNG CBQ - TIẾP SỨC HỌC ĐƯỜNG (CĂNG TIN SỐ 4.0) */}
+          <PortalBlock title="ĐIỂM TÂM SÁNG CBQ" color="#ea580c" icon="🍳">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {/* HEADER TUẦN HIỆN TẠI */}
+              {/* STATUS BAR LIVE */}
               <div style={{
-                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                border: '1px solid #fcd34d',
+                background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                border: '1px solid #fed7aa',
                 borderRadius: '10px',
                 padding: '8px 12px',
                 display: 'flex',
@@ -1825,122 +1825,124 @@ export default function PublicHome() {
                 justifyContent: 'space-between'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Award size={18} color="#b45309" />
-                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#78350f' }}>
-                    XẾP HẠNG NỀ NẾP TUẦN
+                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e', boxShadow: '0 0 6px #22c55e' }}></span>
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#9a3412' }}>
+                    BẾP ĐANG PHỤC VỤ SÁNG
                   </span>
                 </div>
-                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#b45309', color: '#ffffff', padding: '2px 6px', borderRadius: '4px' }}>
-                  HỌC KỲ I
+                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#ea580c', color: '#ffffff', padding: '2px 7px', borderRadius: '4px' }}>
+                  CHỐT ĐƠN 06:30
                 </span>
               </div>
 
-              {/* BỤC VINH DANH TOP 3 LỚP XUẤT SẮC */}
+              {/* MENU NÓNG HỔI HÔM NAY */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                {/* HẠNG 1 */}
+                {/* MÓN 1 */}
                 <div style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '8px 10px',
-                  backgroundColor: '#fefce8',
-                  border: '1.5px solid #fef08a',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 6px rgba(234, 179, 8, 0.12)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>🥇</span>
-                    <div>
-                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#854d0e' }}>Lớp 12A01 (Cờ Nhất Toàn Trường)</div>
-                      <div style={{ fontSize: '10.5px', color: '#a16207' }}>GVCN: Thầy Hoàng • Khối 12</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#ca8a04', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #fef08a' }}>
-                    100.0 đ
-                  </div>
-                </div>
-
-                {/* HẠNG 2 */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  backgroundColor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>🥈</span>
-                    <div>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Lớp 11A04 (Cờ Nhất Khối 11)</div>
-                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>GVCN: Cô Mai • Khối 11</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#475569', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-                    99.5 đ
-                  </div>
-                </div>
-
-                {/* HẠNG 3 */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 10px',
-                  backgroundColor: '#fff7ed',
+                  backgroundColor: '#ffffff',
                   border: '1px solid #fed7aa',
-                  borderRadius: '8px'
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '18px' }}>🥉</span>
+                    <span style={{ fontSize: '20px' }}>🍲</span>
                     <div>
-                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#9a3412' }}>Lớp 10A02 (Cờ Nhất Khối 10)</div>
-                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>GVCN: Thầy Hùng • Khối 10</div>
+                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Phở Bò Hà Nội / Bún Bò Huế</div>
+                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Nóng hổi, nước hầm xương đậm vị • Bổ dưỡng</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#ea580c', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #fed7aa' }}>
-                    99.0 đ
+                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
+                    25.000đ
+                  </div>
+                </div>
+
+                {/* MÓN 2 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>🥖</span>
+                    <div>
+                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Bánh Mì Que Pate / Xôi Bắp Nóng</div>
+                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Vỏ giòn nhân béo ngậy • Nhanh gọn vào lớp</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
+                    15.000đ
+                  </div>
+                </div>
+
+                {/* MÓN 3 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 5px rgba(234, 88, 12, 0.06)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '20px' }}>🥛</span>
+                    <div>
+                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#9a3412' }}>Sữa Hạt Dinh Dưỡng / Sữa Chua Dầm</div>
+                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>Thanh mát tiêu hóa • Năng lượng học tập</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#c2410c', backgroundColor: '#fff7ed', padding: '3px 8px', borderRadius: '6px', border: '1px solid #ffedd5' }}>
+                    10.000đ
                   </div>
                 </div>
               </div>
 
-              {/* TIÊU BIỂU GIẢNG DẠY */}
+              {/* CAM KẾT TIÊU CHUẨN VÀNG */}
               <div style={{
                 padding: '8px 10px',
-                backgroundColor: '#f0fdf4',
-                border: '1px dashed #86efac',
+                backgroundColor: '#fffbeb',
+                border: '1px dashed #fcd34d',
                 borderRadius: '8px',
                 fontSize: '11px',
-                color: '#166534',
+                color: '#92400e',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px'
               }}>
-                <span>👨‍🏫</span>
-                <span>Tuyên dương 12 tiết dạy Xuất Sắc đạt Giờ Học Tốt trong tuần</span>
+                <span>🛡️</span>
+                <span><strong>100% ATTP</strong> • Quét mã nhận suất 10s • Trợ giá Quỹ Ước Mơ</span>
               </div>
 
-              {/* NÚT XEM CHI TIẾT */}
+              {/* NÚT XEM THỰC ĐƠN & ĐẶT MÓN */}
               <Link 
-                to="/cham-diem-thi-dua" 
+                to="/bep-sang" 
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '6px',
-                  background: 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
+                  background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
                   color: '#ffffff',
-                  padding: '9px 14px',
+                  padding: '10px 14px',
                   borderRadius: '10px',
-                  fontSize: '12px',
+                  fontSize: '12.5px',
                   fontWeight: '800',
                   textDecoration: 'none',
-                  boxShadow: '0 3px 10px rgba(22, 101, 52, 0.25)',
+                  boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
                   transition: 'all 0.2s ease'
                 }}
               >
-                <span>Xem Sổ Điểm Thi Đua 34 Lớp Chi Tiết</span>
+                <span>🍳 Xem Thực Đơn & Đặt Suất Sáng Ngay</span>
                 <ArrowRight size={14} />
               </Link>
             </div>
