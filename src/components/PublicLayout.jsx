@@ -826,9 +826,9 @@ export default function PublicLayout() {
               </div>
             )}
 
-            {/* DROPDOWN 3: ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU) - CĂN PHẢI TRÁNH TRÀN */}
+            {/* DROPDOWN 3: ĐẠI LỄ KỶ NIỆM 30 NĂM (TƯ LIỆU) - CĂN PHẢI TRÁNH TRÀN (MÀN HÌNH RỘNG >= 1380px) */}
             {safeMenus.some(m => m?.parent_group === 'anniversary' && m?.is_active === true) && (
-              <div className={`nav-dropdown align-right ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
+              <div className={`nav-dropdown nav-desktop-split align-right ${activeDropdown === 'anniversary' ? 'active-touch' : ''}`}>
                 <span 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -859,9 +859,9 @@ export default function PublicLayout() {
               </div>
             )}
 
-            {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI - CĂN PHẢI TRÁNH TRÀN */}
+            {/* DROPDOWN 4: CÁC TRANG LIÊN KẾT NGOÀI - CĂN PHẢI TRÁNH TRÀN (MÀN HÌNH RỘNG >= 1380px) */}
             {externalLinks && externalLinks.length > 0 && (
-              <div className={`nav-dropdown align-right ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
+              <div className={`nav-dropdown nav-desktop-split align-right ${activeDropdown === 'links' ? 'active-touch' : ''}`}>
                 <span 
                   onClick={(e) => {
                     e.stopPropagation();
@@ -893,6 +893,70 @@ export default function PublicLayout() {
                 </div>
               </div>
             )}
+
+            {/* DROPDOWN GỘP: MỞ RỘNG (TỰ ĐỘNG KÍCH HOẠT KHI MÀN HÌNH < 1380px ĐỂ CHỐNG TRÀN TUYỆT ĐỐI) */}
+            <div className={`nav-dropdown nav-desktop-merged align-right ${activeDropdown === 'more' ? 'active-touch' : ''}`}>
+              <span 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleDropdown('more');
+                }}
+                style={isGroupActive('anniversary') || activeDropdown === 'more' ? styles.navItemActive : styles.navItem}
+                title="Tư liệu 30 năm & Liên kết ngoài"
+              >
+                ✨ Mở Rộng {activeDropdown === 'more' ? '▴' : '▾'}
+              </span>
+              <div className="nav-dropdown-content" style={{ ...styles.dropdownContent, minWidth: '270px' }}>
+                {safeMenus.some(m => m?.parent_group === 'anniversary' && m?.is_active === true) && (
+                  <>
+                    <div style={{ padding: '8px 14px 4px 14px', fontSize: '11px', fontWeight: '800', color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      🎉 ĐẠI LỄ KỶ NIỆM 30 NĂM
+                    </div>
+                    {safeMenus
+                      .filter(m => m?.parent_group === 'anniversary' && m?.is_active === true)
+                      .sort((a, b) => (Number(a?.sort_order) || 0) - (Number(b?.sort_order) || 0))
+                      .map(m => (
+                        <Link 
+                          key={m.id || m.path} 
+                          to={m.path} 
+                          className="nav-dropdown-item" 
+                          onClick={() => {
+                            setMobileMenuOpen(false);
+                            setActiveDropdown(null);
+                          }}
+                        >
+                          {m.label}
+                        </Link>
+                      ))}
+                  </>
+                )}
+
+                {externalLinks && externalLinks.length > 0 && (
+                  <>
+                    <div style={{ padding: '10px 14px 4px 14px', fontSize: '11px', fontWeight: '800', color: '#93c5fd', textTransform: 'uppercase', letterSpacing: '0.5px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                      🔗 LIÊN KẾT NGOÀI
+                    </div>
+                    {externalLinks.filter(l => l && l.url).map((link, idx) => (
+                      <a 
+                        key={link.id || link.url || idx} 
+                        href={link.url} 
+                        target="_blank" 
+                        rel="noreferrer"
+                        className="nav-dropdown-item" 
+                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}
+                        onClick={() => {
+                          setMobileMenuOpen(false);
+                          setActiveDropdown(null);
+                        }}
+                      >
+                        <span>{link.title || link.url}</span>
+                        <ExternalLink size={12} style={{ opacity: 0.6 }} />
+                      </a>
+                    ))}
+                  </>
+                )}
+              </div>
+            </div>
 
             {/* In mobile drawer: show large login cards */}
             <div className="mobile-drawer-portals">
@@ -941,7 +1005,7 @@ export default function PublicLayout() {
               <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #0284c7, #0369a1)', borderRadius: '10px', padding: '3px 8px', gap: '5px', boxShadow: '0 2px 6px rgba(2, 132, 199, 0.3)' }}>
                 <Link to="/student-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <GraduationCap size={13} />
-                  <span style={{ maxWidth: '95px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                  <span className="portal-session-name">
                     {loggedStudent.full_name || 'Học Sinh'}
                   </span>
                 </Link>
@@ -960,7 +1024,9 @@ export default function PublicLayout() {
               </div>
             ) : (
               <Link to="/dang-nhap-hoc-sinh" className="premium-nav-btn student" title="Cổng Không Gian Số Học Sinh">
-                <GraduationCap size={13} /> Học Sinh
+                <GraduationCap size={13} />
+                <span className="portal-btn-label-full">Học Sinh</span>
+                <span className="portal-btn-label-compact">HS</span>
               </Link>
             )}
 
@@ -968,7 +1034,7 @@ export default function PublicLayout() {
               <div style={{ display: 'inline-flex', alignItems: 'center', background: 'linear-gradient(135deg, #16a34a, #15803d)', borderRadius: '10px', padding: '3px 8px', gap: '5px', boxShadow: '0 2px 6px rgba(22, 163, 74, 0.3)' }}>
                 <Link to="/teacher-dashboard" style={{ color: 'white', textDecoration: 'none', fontSize: '11.5px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                   <Briefcase size={13} />
-                  <span style={{ maxWidth: '95px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                  <span className="portal-session-name">
                     {loggedTeacher.full_name || loggedTeacher.name || 'Giáo Viên'}
                   </span>
                 </Link>
@@ -987,12 +1053,16 @@ export default function PublicLayout() {
               </div>
             ) : (
               <Link to="/dang-nhap-giao-vien" className="premium-nav-btn teacher" title="Cổng Không Gian Số Giáo Viên">
-                <Briefcase size={13} /> Giáo Viên
+                <Briefcase size={13} />
+                <span className="portal-btn-label-full">Giáo Viên</span>
+                <span className="portal-btn-label-compact">GV</span>
               </Link>
             )}
 
             <Link to="/admin" className="premium-nav-btn admin" title="Trang Quản Lý & Bảng Điều Khiển Nhà Trường">
-              <ShieldCheck size={13} /> Quản Trị
+              <ShieldCheck size={13} />
+              <span className="portal-btn-label-full">Quản Trị</span>
+              <span className="portal-btn-label-compact">Admin</span>
             </Link>
           </div>
         </div>
