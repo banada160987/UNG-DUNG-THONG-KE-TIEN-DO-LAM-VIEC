@@ -8,7 +8,8 @@ import {
   Sparkles, ExternalLink, ArrowRight, UserCheck, Key, Lock,
   FileBadge, Compass, Video, LayoutDashboard, ChevronDown,
   ShieldAlert, Cpu, Layers, Smartphone, Gamepad2, FolderLock,
-  FileSpreadsheet, Check, School
+  FileSpreadsheet, Check, School, Phone, Mail, Trophy, Navigation,
+  Zap, Globe, Star, Activity, ArrowUpRight
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
@@ -38,6 +39,21 @@ const FALLBACK_SLIDER_IMAGES = [
   { id: 'f5', image_url: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80', uploaded_by: 'Hoạt Động Ngoại Khóa' }
 ];
 
+const QUICK_SEARCH_ITEMS = [
+  { label: 'Điểm Tâm Sáng CBQ (Tiếp sức học đường)', path: '/bep-sang', category: 'Dịch vụ', icon: '🍳' },
+  { label: 'Quỹ Học Bổng "Chắp Cánh Ước Mơ"', path: '/chap-canh-uoc-mo', category: 'Quỹ ước mơ', icon: '🕊️' },
+  { label: 'Cổng Mạnh Thường Quân Bảo Trợ', path: '/manh-thuong-quan', category: 'Quỹ ước mơ', icon: '💎' },
+  { label: 'Thời Khóa Biểu & Lịch Công Tác', path: '/lich-cong-tac', category: 'Chuyên môn', icon: '📅' },
+  { label: 'Sổ Chấm Điểm Thi Đua Tuần 34 Lớp', path: '/cham-diem-thi-dua', category: 'Nề nếp', icon: '🏆' },
+  { label: 'Tra Cứu Phòng Thi & SBD Tập Trung', path: '/kiem-tra-tap-trung', category: 'Khảo thí', icon: '📝' },
+  { label: 'Tra Cứu Bằng Tốt Nghiệp & Học Bạ Số', path: '/tra-cuu-van-bang', category: 'Hồ sơ', icon: '📜' },
+  { label: 'Kho Bài Giảng Số & Học Liệu 4.0', path: '/hoc-lieu-so', category: 'Học tập', icon: '📺' },
+  { label: 'Đăng Ký Vé Xe Máy & Xe Đạp Điện', path: '/dang-ky-xe-may', category: 'Dịch vụ', icon: '🛵' },
+  { label: 'Mạng Lưới Cố Vấn Ước Mơ (Mentorship)', path: '/co-van-uoc-mo', category: 'Cố vấn', icon: '🧭' },
+  { label: 'Hòm Thư Góp Ý & Tâm Tư Học Sinh', path: '/hom-thu-hoc-sinh', category: 'Tâm lý', icon: '💌' },
+  { label: 'Dịch Vụ Hành Chính Công 4.0', path: '/dich-vu-cong', category: 'Hành chính', icon: '🏛️' }
+];
+
 export default function PublicHome() {
   const [sponsors, setSponsors] = useState([]);
   const [news, setNews] = useState([]);
@@ -51,6 +67,11 @@ export default function PublicHome() {
   const [rsvpResult, setRsvpResult] = useState(null);
   const [inviteConfig, setInviteConfig] = useState(null);
   const inviteRef = useRef(null);
+
+  // SMART QUICK SEARCH
+  const [quickSearchQuery, setQuickSearchQuery] = useState('');
+  const [quickSearchOpen, setQuickSearchOpen] = useState(false);
+  const quickSearchRef = useRef(null);
   
   // LIVE SEARCH SUGGESTIONS
   const [allGuests, setAllGuests] = useState([]);
@@ -104,6 +125,23 @@ export default function PublicHome() {
   };
 
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  const filteredQuickSearch = quickSearchQuery.trim() ? QUICK_SEARCH_ITEMS.filter(item => {
+    const cleanQ = removeAccents(quickSearchQuery);
+    const cleanL = removeAccents(item.label);
+    const cleanC = removeAccents(item.category);
+    return cleanL.includes(cleanQ) || cleanC.includes(cleanQ);
+  }) : [];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (quickSearchRef.current && !quickSearchRef.current.contains(e.target)) {
+        setQuickSearchOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -316,26 +354,141 @@ export default function PublicHome() {
 
         {/* LEFT COLUMN */}
         <div className="portal-left-col" style={styles.leftCol}>
-          {/* GIỚI THIỆU & THÔNG TIN CHÍNH THỨC NHÀ TRƯỜNG */}
-          <PortalBlock title="🏛️ TRƯỜNG THPT CAO BÁ QUÁT" color="#166534" icon="🌟">
+          {/* KHÔNG GIAN SỐ 4.0 & TRUNG TÂM ĐIỀU HÀNH THÔNG MINH */}
+          <PortalBlock title="TRUNG TÂM ĐIỀU HÀNH SỐ" color="#166534" icon="🚀">
             <div style={{ marginBottom: '10px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '800', color: '#166534', marginBottom: '6px' }}>
-                HỆ THỐNG ĐIỀU HÀNH & KHÔNG GIAN SỐ 4.0
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span style={{ fontSize: '11px', fontWeight: '800', color: '#047857', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
+                  HỆ SINH THÁI GIÁO DỤC 4.0
+                </span>
+                <span style={{ fontSize: '10px', backgroundColor: '#dcfce7', color: '#15803d', padding: '2px 7px', borderRadius: '10px', fontWeight: 'bold', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#16a34a', display: 'inline-block' }}></span> TRỰC TUYẾN 24/7
+                </span>
               </div>
-              <p style={{ margin: 0, fontSize: '12.5px', color: '#334155', lineHeight: '1.6' }}>
-                Trường THPT Cao Bá Quát — Tiên phong chuyển đổi số toàn diện trong quản lý chuyên môn, giảng dạy và phục vụ phụ huynh, học sinh.
-              </p>
-            </div>
-            
-            <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
-                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> 100% Hồ sơ & Sổ sách giáo dục số hóa
+
+              {/* THANH TÌM KIẾM NHANH THÔNG MINH */}
+              <div ref={quickSearchRef} style={{ position: 'relative', marginBottom: '12px' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#f8fafc',
+                  border: '1.5px solid #cbd5e1',
+                  borderRadius: '10px',
+                  padding: '7px 10px',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: quickSearchOpen ? '0 0 0 3px rgba(22, 101, 52, 0.15)' : 'none'
+                }}>
+                  <Search size={14} color="#047857" />
+                  <input 
+                    type="text"
+                    placeholder="Tìm nhanh lớp, TKB, điểm tâm, quỹ..."
+                    value={quickSearchQuery}
+                    onChange={(e) => {
+                      setQuickSearchQuery(e.target.value);
+                      setQuickSearchOpen(true);
+                    }}
+                    onFocus={() => setQuickSearchOpen(true)}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      outline: 'none',
+                      fontSize: '12.5px',
+                      width: '100%',
+                      color: '#0f172a'
+                    }}
+                  />
+                  {quickSearchQuery && (
+                    <button 
+                      type="button"
+                      onClick={() => setQuickSearchQuery('')}
+                      style={{ border: 'none', background: 'transparent', color: '#94a3b8', cursor: 'pointer', padding: 0, fontSize: '12px' }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* KẾT QUẢ GỢI Ý TÌM KIẾM */}
+                {quickSearchOpen && quickSearchQuery.trim() && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    zIndex: 200,
+                    backgroundColor: '#ffffff',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    boxShadow: '0 12px 28px -5px rgba(0,0,0,0.2)',
+                    marginTop: '4px',
+                    maxHeight: '230px',
+                    overflowY: 'auto'
+                  }}>
+                    {filteredQuickSearch.length > 0 ? (
+                      filteredQuickSearch.map((item, idx) => (
+                        <Link
+                          key={idx}
+                          to={item.path}
+                          onClick={() => { setQuickSearchOpen(false); setQuickSearchQuery(''); }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '9px 12px',
+                            borderBottom: '1px solid #f1f5f9',
+                            textDecoration: 'none',
+                            color: '#0f172a',
+                            fontSize: '12px',
+                            transition: 'background 0.15s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#ecfdf5'}
+                          onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '15px' }}>{item.icon}</span>
+                            <span style={{ fontWeight: 600 }}>{item.label}</span>
+                          </span>
+                          <span style={{ fontSize: '10px', color: '#166534', backgroundColor: '#dcfce7', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                            {item.category}
+                          </span>
+                        </Link>
+                      ))
+                    ) : (
+                      <div style={{ padding: '12px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+                        Không tìm thấy tiện ích phù hợp
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
-                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Tra cứu Thời khóa biểu & Học bạ trực tuyến
+
+              {/* 3 LIVE CLOUD METRICS */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', marginBottom: '12px' }}>
+                <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '7px 4px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#166534' }}>34/34</div>
+                  <div style={{ fontSize: '10px', color: '#15803d', fontWeight: 700 }}>Lớp Số Hóa</div>
+                </div>
+                <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '7px 4px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#1e40af' }}>100%</div>
+                  <div style={{ fontSize: '10px', color: '#1d4ed8', fontWeight: 700 }}>Cloud Đồng Bộ</div>
+                </div>
+                <div style={{ backgroundColor: '#fef3c7', border: '1px solid #fde68a', borderRadius: '8px', padding: '7px 4px', textAlign: 'center' }}>
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: '#b45309' }}>24/7</div>
+                  <div style={{ fontSize: '10px', color: '#92400e', fontWeight: 700 }}>Dịch Vụ Số</div>
+                </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: '#475569' }}>
-                <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Kênh tiếp nhận ý kiến phụ huynh & HS 24/7
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#475569', borderTop: '1px dashed #cbd5e1', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> 100% Sổ sách điện tử & Ký số giáo viên
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Tra cứu Thời khóa biểu & Học bạ trực tuyến
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ color: '#16a34a', fontWeight: 'bold' }}>✓</span> Kênh tiếp nhận ý kiến phụ huynh & HS 24/7
+                </div>
               </div>
             </div>
           </PortalBlock>
@@ -436,64 +589,181 @@ export default function PublicHome() {
           </PortalBlock>
           )}
 
+          {/* THÔNG TIN LIÊN HỆ CHÍNH THỨC */}
           {homeConfig.show_contact && (
           <PortalBlock title="THÔNG TIN LIÊN HỆ" color="#166534" icon="📞">
-            <ul style={styles.listStyle}>
-              <li>📍 Địa chỉ trường THPT Cao Bá Quát</li>
-              <li>📞 Hotline: 0123.456.789</li>
-              <li>✉️ Email: lk@caobaquat.edu.vn</li>
-            </ul>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+              {/* ĐỊA CHỈ */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: '10px',
+                padding: '8px 10px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#ecfdf5', color: '#15803d', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '2px' }}>
+                  <MapPin size={15} />
+                </div>
+                <div style={{ flex: 1, fontSize: '12px' }}>
+                  <div style={{ fontWeight: 700, color: '#1e293b' }}>Trường THPT Cao Bá Quát</div>
+                  <div style={{ color: '#64748b', marginTop: '2px', lineHeight: 1.4 }}>
+                    Km 28, QL26, Xã Ea Yông, Huyện Krông Pắc, Tỉnh Đắk Lắk
+                  </div>
+                  <a 
+                    href="https://maps.google.com/?q=Trường+THPT+Cao+Bá+Quát+Đắk+Lắk" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '11px', color: '#0284c7', fontWeight: 600, textDecoration: 'none', marginTop: '4px' }}
+                  >
+                    <span>Chỉ đường Google Maps</span>
+                    <ArrowUpRight size={11} />
+                  </a>
+                </div>
+              </div>
+
+              {/* HOTLINE */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 10px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Phone size={14} />
+                </div>
+                <div style={{ flex: 1, fontSize: '12px' }}>
+                  <div style={{ color: '#64748b', fontSize: '11px' }}>Hotline Văn Phòng / BGH:</div>
+                  <a 
+                    href="tel:02623521456" 
+                    style={{ fontWeight: 800, color: '#1d4ed8', fontSize: '13px', textDecoration: 'none' }}
+                  >
+                    0262.3521.456
+                  </a>
+                </div>
+              </div>
+
+              {/* EMAIL */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '8px 10px',
+                backgroundColor: '#f8fafc',
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#fef2f2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <Mail size={14} />
+                </div>
+                <div style={{ flex: 1, fontSize: '12px' }}>
+                  <div style={{ color: '#64748b', fontSize: '11px' }}>Hộp Thư Công Vụ:</div>
+                  <a 
+                    href="mailto:c3caobaquat@daklak.edu.vn" 
+                    style={{ fontWeight: 700, color: '#b91c1c', fontSize: '12px', textDecoration: 'none', wordBreak: 'break-all' }}
+                  >
+                    c3caobaquat@daklak.edu.vn
+                  </a>
+                </div>
+              </div>
+
+              {/* GIỜ TIẾP CÔNG DÂN */}
+              <div style={{ fontSize: '11px', color: '#475569', padding: '5px 8px', backgroundColor: '#f1f5f9', borderRadius: '6px', textAlign: 'center' }}>
+                ⏰ Tiếp công dân: Thứ 2 – Thứ 7 (07:00 – 17:00)
+              </div>
+            </div>
           </PortalBlock>
           )}
 
+          {/* HỆ SINH THÁI LIÊN KẾT ĐA NỀN TẢNG */}
           {homeConfig.show_external_links && (
-          <PortalBlock title="LIÊN KẾT TRANG" color="#166534" icon="🔗">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {externalLinks && externalLinks.length > 0 ? (
-                externalLinks.filter(l => l && l.url).map((link, idx) => (
+          <PortalBlock title="HỆ SINH THÁI LIÊN KẾT SỐ" color="#166534" icon="🌐">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              {/* NHÓM 1: TIỆN ÍCH NỘI BỘ CBQ */}
+              <div>
+                <div style={{ fontSize: '10.5px', fontWeight: '800', color: '#047857', letterSpacing: '0.4px', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🏫</span> TIỆN ÍCH NỘI BỘ CBQ
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <Link 
+                    to="/chap-canh-uoc-mo" 
+                    style={styles.ecosystemLink('#ecfdf5', '#a7f3d0')}
+                  >
+                    <span style={{ fontSize: '16px' }}>🕊️</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#065f46' }}>Quỹ "Chắp Cánh Ước Mơ"</div>
+                      <div style={{ fontSize: '10.5px', color: '#047857' }}>Bảo trợ học sinh & Minh bạch số</div>
+                    </div>
+                    <ArrowUpRight size={13} color="#059669" />
+                  </Link>
+
+                  <Link 
+                    to="/bep-sang" 
+                    style={styles.ecosystemLink('#fffbeb', '#fde68a')}
+                  >
+                    <span style={{ fontSize: '16px' }}>🍳</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#92400e' }}>Điểm Tâm Sáng CBQ</div>
+                      <div style={{ fontSize: '10.5px', color: '#b45309' }}>Tiếp sức học đường & Suất ăn</div>
+                    </div>
+                    <ArrowUpRight size={13} color="#d97706" />
+                  </Link>
+
+                  <Link 
+                    to="/co-van-uoc-mo" 
+                    style={styles.ecosystemLink('#f0fdfa', '#99f6e4')}
+                  >
+                    <span style={{ fontSize: '16px' }}>🧭</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#115e59' }}>Mạng Lưới Cố Vấn 1-1</div>
+                      <div style={{ fontSize: '10.5px', color: '#0f766e' }}>Cựu HS & GV đồng hành hướng nghiệp</div>
+                    </div>
+                    <ArrowUpRight size={13} color="#0d9488" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* NHÓM 2: CỔNG QUỐC GIA & NGÀNH GD */}
+              <div>
+                <div style={{ fontSize: '10.5px', fontWeight: '800', color: '#1e40af', letterSpacing: '0.4px', textTransform: 'uppercase', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🏛️</span> CỔNG QUỐC GIA & NGÀNH GD
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <a 
-                    key={link.id || link.url || idx}
-                    href={link.url} 
+                    href="https://moet.gov.vn" 
                     target="_blank" 
                     rel="noreferrer"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '8px 12px',
-                      backgroundColor: '#f8fafc',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      color: '#0f172a',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      textDecoration: 'none',
-                      transition: 'all 0.2s ease',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#ecfdf5';
-                      e.currentTarget.style.borderColor = '#86efac';
-                      e.currentTarget.style.color = '#15803d';
-                      e.currentTarget.style.transform = 'translateX(3px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                      e.currentTarget.style.color = '#0f172a';
-                      e.currentTarget.style.transform = 'translateX(0)';
-                    }}
+                    style={styles.ecosystemLink('#eff6ff', '#bfdbfe')}
                   >
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ color: '#16a34a' }}>🔗</span>
-                      <span>{link.title}</span>
-                    </span>
-                    <ExternalLink size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <span style={{ fontSize: '16px' }}>🇻🇳</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#1e3a8a' }}>Cổng Thông Tin Bộ GD&ĐT</div>
+                      <div style={{ fontSize: '10.5px', color: '#2563eb' }}>Chính sách, văn bản & chỉ đạo quốc gia</div>
+                    </div>
+                    <ExternalLink size={13} color="#3b82f6" />
                   </a>
-                ))
-              ) : (
-                <div style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '13px', padding: '6px 0' }}>Đang cập nhật...</div>
-              )}
+
+                  <a 
+                    href="https://daklak.edu.vn" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    style={styles.ecosystemLink('#f8fafc', '#e2e8f0')}
+                  >
+                    <span style={{ fontSize: '16px' }}>🌐</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#334155' }}>Sở GD&ĐT Tỉnh Đắk Lắk</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>Cổng thông tin ngành GD tỉnh nhà</div>
+                    </div>
+                    <ExternalLink size={13} color="#64748b" />
+                  </a>
+                </div>
+              </div>
+
             </div>
           </PortalBlock>
           )}
@@ -1541,29 +1811,138 @@ export default function PublicHome() {
           </PortalBlock>
           )}
 
-          <PortalBlock title="🏆 VINH DANH THI ĐUA & THÀNH TÍCH" color="#166534" icon="🎖️">
-            <div style={{ textAlign: 'center', padding: '14px 10px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0' }}>
-              <div style={{ fontSize: '24px', marginBottom: '4px' }}>🎖️</div>
-              <div style={{ fontWeight: 'bold', color: '#166534', fontSize: '13.5px' }}>Thi Đua Chuyên Môn & Nề Nếp Tuần</div>
-              <p style={{ fontSize: '12px', color: '#334155', margin: '6px 0 12px 0', lineHeight: '1.5' }}>
-                Tuyên dương các Tập thể Lớp đạt Cờ Nhất thi đua tuần & Cán bộ Giáo viên đạt tích xuất sắc trong giảng dạy.
-              </p>
-              <a 
-                href="/cham-diem-thi-dua" 
+          {/* BẢNG VÀNG THI ĐUA & VINH DANH TUẦN PRO */}
+          <PortalBlock title="BẢNG VÀNG THI ĐUA TUẦN" color="#166534" icon="🏆">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* HEADER TUẦN HIỆN TẠI */}
+              <div style={{
+                background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
+                border: '1px solid #fcd34d',
+                borderRadius: '10px',
+                padding: '8px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Award size={18} color="#b45309" />
+                  <span style={{ fontSize: '12px', fontWeight: '800', color: '#78350f' }}>
+                    XẾP HẠNG NỀ NẾP TUẦN
+                  </span>
+                </div>
+                <span style={{ fontSize: '10px', fontWeight: '800', backgroundColor: '#b45309', color: '#ffffff', padding: '2px 6px', borderRadius: '4px' }}>
+                  HỌC KỲ I
+                </span>
+              </div>
+
+              {/* BỤC VINH DANH TOP 3 LỚP XUẤT SẮC */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                {/* HẠNG 1 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  backgroundColor: '#fefce8',
+                  border: '1.5px solid #fef08a',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 6px rgba(234, 179, 8, 0.12)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>🥇</span>
+                    <div>
+                      <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#854d0e' }}>Lớp 12A01 (Cờ Nhất Toàn Trường)</div>
+                      <div style={{ fontSize: '10.5px', color: '#a16207' }}>GVCN: Thầy Hoàng • Khối 12</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12.5px', fontWeight: '900', color: '#ca8a04', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #fef08a' }}>
+                    100.0 đ
+                  </div>
+                </div>
+
+                {/* HẠNG 2 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  backgroundColor: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>🥈</span>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#334155' }}>Lớp 11A04 (Cờ Nhất Khối 11)</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>GVCN: Cô Mai • Khối 11</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#475569', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
+                    99.5 đ
+                  </div>
+                </div>
+
+                {/* HẠNG 3 */}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 10px',
+                  backgroundColor: '#fff7ed',
+                  border: '1px solid #fed7aa',
+                  borderRadius: '8px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '18px' }}>🥉</span>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: '#9a3412' }}>Lớp 10A02 (Cờ Nhất Khối 10)</div>
+                      <div style={{ fontSize: '10.5px', color: '#c2410c' }}>GVCN: Thầy Hùng • Khối 10</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12px', fontWeight: '800', color: '#ea580c', backgroundColor: '#ffffff', padding: '3px 7px', borderRadius: '6px', border: '1px solid #fed7aa' }}>
+                    99.0 đ
+                  </div>
+                </div>
+              </div>
+
+              {/* TIÊU BIỂU GIẢNG DẠY */}
+              <div style={{
+                padding: '8px 10px',
+                backgroundColor: '#f0fdf4',
+                border: '1px dashed #86efac',
+                borderRadius: '8px',
+                fontSize: '11px',
+                color: '#166534',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <span>👨‍🏫</span>
+                <span>Tuyên dương 12 tiết dạy Xuất Sắc đạt Giờ Học Tốt trong tuần</span>
+              </div>
+
+              {/* NÚT XEM CHI TIẾT */}
+              <Link 
+                to="/cham-diem-thi-dua" 
                 style={{
-                  display: 'inline-block',
-                  background: 'linear-gradient(135deg, #166534 0%, #15803d 100%)',
-                  color: 'white',
-                  padding: '7px 16px',
-                  borderRadius: '20px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(135deg, #15803d 0%, #166534 100%)',
+                  color: '#ffffff',
+                  padding: '9px 14px',
+                  borderRadius: '10px',
                   fontSize: '12px',
-                  fontWeight: 'bold',
+                  fontWeight: '800',
                   textDecoration: 'none',
-                  boxShadow: '0 2px 8px rgba(22, 101, 52, 0.25)'
+                  boxShadow: '0 3px 10px rgba(22, 101, 52, 0.25)',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                Xem Sổ Thi Đua Trực Tuần ➔
-              </a>
+                <span>Xem Sổ Điểm Thi Đua 34 Lớp Chi Tiết</span>
+                <ArrowRight size={14} />
+              </Link>
             </div>
           </PortalBlock>
         </div>
@@ -1657,30 +2036,32 @@ function PortalBlock({ title, color = '#166534', icon, children }) {
     ? 'linear-gradient(135deg, #be123c 0%, #9f1239 100%)'
     : color === '#b45309' || color === '#d97706'
     ? 'linear-gradient(135deg, #d97706 0%, #b45309 100%)'
-    : 'linear-gradient(135deg, #166534 0%, #14532d 100%)';
+    : 'linear-gradient(135deg, #065f46 0%, #15803d 50%, #166534 100%)';
 
   return (
     <div style={{
       backgroundColor: '#ffffff',
       border: '1px solid #e2e8f0',
-      borderRadius: '14px',
+      borderRadius: '16px',
       overflow: 'hidden',
-      boxShadow: '0 4px 18px rgba(0,0,0,0.04)',
-      marginBottom: '16px'
+      boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+      marginBottom: '16px',
+      transition: 'box-shadow 0.2s ease'
     }}>
       <div style={{
         background: headerBg,
         color: 'white',
         padding: '11px 16px',
         fontWeight: 'bold',
-        fontSize: '14px',
+        fontSize: '13.5px',
         display: 'flex',
         alignItems: 'center',
         gap: '8px',
         letterSpacing: '0.4px',
-        borderBottom: '2px solid rgba(254, 240, 138, 0.4)'
+        borderBottom: '2px solid rgba(254, 240, 138, 0.45)',
+        textShadow: '0 1px 2px rgba(0,0,0,0.2)'
       }}>
-        {icon && <span style={{ fontSize: '15px' }}>{icon}</span>}
+        {icon && <span style={{ fontSize: '16px' }}>{icon}</span>}
         <span>{title}</span>
       </div>
       <div style={{ padding: '14px' }}>
@@ -1691,6 +2072,20 @@ function PortalBlock({ title, color = '#166534', icon, children }) {
 }
 
 const styles = {
+  // Ecosystem Link Helper
+  ecosystemLink: (bg, border) => ({
+    display: 'flex',
+    alignItems: 'center',
+    gap: '9px',
+    padding: '8px 10px',
+    backgroundColor: bg,
+    border: `1px solid ${border}`,
+    borderRadius: '8px',
+    textDecoration: 'none',
+    transition: 'all 0.2s ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+  }),
+
   // Card Helper
   actionCard: (bg, border, color) => ({
     display: 'flex',
