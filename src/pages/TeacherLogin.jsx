@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { 
   BookOpen, User, Lock, LogIn, ArrowLeft, Eye, EyeOff, 
@@ -29,6 +29,9 @@ export default function TeacherLogin() {
   const [activeStudent, setActiveStudent] = useState(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTarget = searchParams.get('redirect') || location.state?.from?.pathname || '/teacher-dashboard';
 
   const loadTeacherDirectory = async () => {
     setLoadingDirectory(true);
@@ -239,8 +242,8 @@ export default function TeacherLogin() {
       // Lưu phiên làm việc an toàn với chữ ký bảo mật (Tự động thanh lọc phiên học sinh nếu có)
       saveTeacherSession(safeTeacher, rememberMe);
 
-      // Chuyển hướng ngay đến Không gian Giáo Viên
-      navigate('/teacher-dashboard');
+      // Chuyển hướng ngay đến trang yêu cầu hoặc Không gian Giáo Viên
+      navigate(redirectTarget);
 
     } catch (err) {
       console.error(err);

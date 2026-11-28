@@ -9,9 +9,9 @@ import {
   Users, Heart, Plus, Search, FileText, CheckCircle2, Clock, 
   Upload, Trash2, Edit3, ArrowRight, ShieldCheck, Award, 
   Send, Sparkles, BookOpen, MessageSquare, AlertCircle, RefreshCw,
-  Home, ChevronRight
+  Home, ChevronRight, Lock, ShieldAlert, LogIn
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { getTeacherSession } from '../services/authSessionManager';
 import { 
@@ -44,10 +44,21 @@ const DIFFICULT_CATEGORIES = [
 export default function TeacherStudentSupportProposal() {
   const teacher = getTeacherSession();
   const { user, role } = useAuth();
-  const isAdmin = role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin'));
-  const teacherHomeroom = teacher?.homeroomClass || teacher?.homeroom_class || '';
+  const location = useLocation();
 
-  const [selectedClass, setSelectedClass] = useState(() => teacherHomeroom || '10A01');
+  // Kiểm tra xác thực & thẩm quyền
+  const isAdmin = role === 'admin' || role === 'secretary' || Boolean(user?.email?.includes('admin'));
+  const isTeacher = Boolean(teacher && (teacher.role === 'teacher' || teacher.name || teacher.username));
+  const isAuthenticated = Boolean(isTeacher || isAdmin);
+
+  const teacherHomeroom = (teacher?.homeroomClass || teacher?.homeroom_class || '').trim();
+  // Giáo viên chủ nhiệm: có lớp chủ nhiệm cụ thể và không phải admin
+  const isGVCN = Boolean(teacherHomeroom && !isAdmin);
+  // Đoàn thanh niên / BGH: quản lý toàn trường
+  const isUnionOrAdmin = Boolean(isAdmin || !teacherHomeroom || teacher?.role === 'union' || teacher?.is_union);
+
+  // Khóa cứng lớp nếu là GVCN, nếu là Đoàn/BGH thì mặc định 10A01 hoặc lớp đầu tiên
+  const [selectedClass, setSelectedClass] = useState(() => isGVCN ? teacherHomeroom : (teacherHomeroom || '10A01'));
   const [classStudents, setClassStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
 
@@ -60,7 +71,7 @@ export default function TeacherStudentSupportProposal() {
   const [selectedStudentFromRoster, setSelectedStudentFromRoster] = useState('');
   const [formData, setFormData] = useState({
     student_name: '',
-    student_class: teacherHomeroom || '10A01',
+    student_class: isGVCN ? teacherHomeroom : (teacherHomeroom || '10A01'),
     student_code: '',
     gender: 'Nam',
     birthday: '',
@@ -77,7 +88,7 @@ export default function TeacherStudentSupportProposal() {
     granted_item: '',
     proposer_name: teacher?.name || teacher?.full_name || (isAdmin ? 'Ban Giám Hiệu' : ''),
     proposer_phone: teacher?.phone || '',
-    proposed_by_role: teacherHomeroom ? 'homeroom_teacher' : 'youth_union', // 'homeroom_teacher' | 'youth_union'
+    proposed_by_role: isGVCN ? 'homeroom_teacher' : 'youth_union', // 'homeroom_teacher' | 'youth_union'
     evidence_urls: []
   });
   const [submitting, setSubmitting] = useState(false);
@@ -97,13 +108,18 @@ export default function TeacherStudentSupportProposal() {
   });
   const [savingProgress, setSavingProgress] = useState(false);
 
+  // NẠP DỮ LIỆU: BẢO MẬT TUYỆT ĐỐI - CHỈ GỌI KHI ĐÃ ĐĂNG NHẬP
   useEffect(() => {
-    loadClassRoster(selectedClass);
-    loadProposedList();
-  }, [selectedClass]);
+    if (!isAuthenticated) return;
 
-  // Nạp danh sách học sinh của lớp từ CSDL
+    const currentTargetClass = isGVCN ? teacherHomeroom : selectedClass;
+    loadClassRoster(currentTargetClass);
+    loadProposedList();
+  }, [selectedClass, isAuthenticated, isGVCN, teacherHomeroom]);
+
+  // Nạp danh sách học sinh của lớp từ CSDL (Chỉ chạy khi đã xác thực GV/Đoàn/Admin)
   async function loadClassRoster(cls) {
+    if (!cls || !isAuthenticated) return;
     setLoadingStudents(true);
     try {
       const list = await fetchStudentsByClassForProposal(cls);
@@ -117,11 +133,21 @@ export default function TeacherStudentSupportProposal() {
 
   // Nạp các hồ sơ đã đề xuất
   async function loadProposedList() {
+    if (!isAuthenticated) return;
     setLoadingList(true);
     try {
       const allApps = await fetchScholarshipApplications();
-      // Lọc các hồ sơ do GVCN / Đoàn trường đề xuất hoặc của lớp này
-      setProposedList(allApps || []);
+      // Nếu là GVCN: Lọc đúng các hồ sơ của lớp mình chủ nhiệm hoặc do mình đề xuất
+      if (isGVCN && teacherHomeroom) {
+        const filtered = (allApps || []).filter(item => 
+          (item.student_class || '').toUpperCase() === teacherHomeroom.toUpperCase() ||
+          (item.proposer_phone && item.proposer_phone === teacher?.phone)
+        );
+        setProposedList(filtered);
+      } else {
+        // Cán bộ Đoàn trường & BGH: Xem danh sách toàn trường
+        setProposedList(allApps || []);
+      }
     } catch (e) {
       console.warn("Lỗi nạp hồ sơ:", e);
     } finally {
@@ -129,16 +155,157 @@ export default function TeacherStudentSupportProposal() {
     }
   }
 
+  // NẾU CHƯA ĐĂNG NHẬP: CHẶN TRUY XUẤT CSDL VÀ HIỂN THỊ MÀN HÌNH BẢO VỆ DỮ LIỆU
+  if (!isAuthenticated) {
+    return (
+      <div style={styles.pageWrapper}>
+        <div style={styles.container}>
+          {/* BREADCRUMB */}
+          <div style={styles.breadcrumb}>
+            <Link to="/" style={styles.breadcrumbLink}><Home size={14} /> Trang chủ</Link>
+            <ChevronRight size={14} color="#94a3b8" />
+            <Link to="/chap-canh-uoc-mo" style={styles.breadcrumbLink}>🕊️ Quỹ "Chắp Cánh Ước Mơ"</Link>
+            <ChevronRight size={14} color="#94a3b8" />
+            <span style={{ color: '#0f172a', fontWeight: 600 }}>Cổng GVCN & Đoàn Thanh Niên</span>
+          </div>
+
+          {/* SECURITY LOCKED CARD */}
+          <div style={{
+            maxWidth: '740px',
+            margin: '40px auto',
+            backgroundColor: '#ffffff',
+            borderRadius: '20px',
+            border: '1.5px solid #fecaca',
+            boxShadow: '0 20px 40px -15px rgba(239, 68, 68, 0.15)',
+            overflow: 'hidden',
+            textAlign: 'center'
+          }}>
+            <div style={{
+              background: 'linear-gradient(135deg, #b91c1c 0%, #dc2626 50%, #ea580c 100%)',
+              padding: '36px 24px',
+              color: '#ffffff'
+            }}>
+              <div style={{
+                width: '76px',
+                height: '76px',
+                borderRadius: '50%',
+                backgroundColor: 'rgba(255, 255, 255, 0.18)',
+                border: '2px solid rgba(255, 255, 255, 0.35)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+                backdropFilter: 'blur(8px)'
+              }}>
+                <ShieldAlert size={42} color="#ffffff" />
+              </div>
+              <h2 style={{ margin: '0 0 8px 0', fontSize: '22px', fontWeight: '900', letterSpacing: '0.5px' }}>
+                TRUY XUẤT CƠ SỞ DỮ LIỆU HỌC SINH ĐƯỢC BẢO VỆ
+              </h2>
+              <p style={{ margin: 0, fontSize: '14px', color: '#fecaca', maxWidth: '560px', marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.5 }}>
+                Tuân thủ Nghị định số 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân & Quy chế Quản lý thông tin học sinh Trường THPT Cao Bá Quát
+              </p>
+            </div>
+
+            <div style={{ padding: '32px 28px' }}>
+              <div style={{
+                backgroundColor: '#fff7ed',
+                border: '1px solid #fed7aa',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                textAlign: 'left',
+                marginBottom: '26px',
+                fontSize: '13.5px',
+                color: '#9a3412',
+                lineHeight: 1.6
+              }}>
+                <div style={{ fontWeight: '800', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>⚠️</span> QUY ĐỊNH PHÂN QUYỀN TRUY CẬP CSDL HỌC SINH:
+                </div>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  <li style={{ marginBottom: '6px' }}>
+                    <strong>Giáo viên Chủ nhiệm (GVCN):</strong> Đăng nhập để truy xuất danh sách học sinh của đúng lớp mình chủ nhiệm, rà soát gia cảnh và lập phiếu đề xuất hỗ trợ. GVCN không được phép xem CSDL của lớp khác.
+                  </li>
+                  <li style={{ marginBottom: '6px' }}>
+                    <strong>Cán bộ Đoàn Trường & Ban Giám Hiệu:</strong> Đăng nhập với quyền thẩm định, rà soát học sinh khó khăn toàn trường và điều phối học bổng.
+                  </li>
+                  <li>
+                    <strong>Học sinh & Khách vãng lai:</strong> Không được phép truy xuất thông tin cá nhân và dữ liệu CSDL của học sinh để phòng tránh rò rỉ thông tin riêng tư.
+                  </li>
+                </ul>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '440px', margin: '0 auto' }}>
+                <Link 
+                  to={`/dang-nhap-giao-vien?redirect=${encodeURIComponent(location.pathname)}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '13px 24px',
+                    background: 'linear-gradient(135deg, #15803d 0%, #16a34a 100%)',
+                    color: '#ffffff',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '800',
+                    textDecoration: 'none',
+                    boxShadow: '0 4px 12px rgba(22, 163, 74, 0.35)'
+                  }}
+                >
+                  <LogIn size={18} /> Đăng Nhập Cổng Giáo Viên & Đoàn Trường
+                </Link>
+
+                <Link 
+                  to={`/login?redirect=${encodeURIComponent(location.pathname)}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '10px',
+                    padding: '12px 24px',
+                    backgroundColor: '#ffffff',
+                    color: '#1e3a8a',
+                    border: '1.5px solid #bfdbfe',
+                    borderRadius: '12px',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <ShieldCheck size={18} color="#2563eb" /> Đăng Nhập Cổng Ban Giám Hiệu / Quản Trị
+                </Link>
+
+                <Link 
+                  to="/chap-canh-uoc-mo"
+                  style={{
+                    color: '#64748b',
+                    fontSize: '13px',
+                    textDecoration: 'underline',
+                    marginTop: '6px'
+                  }}
+                >
+                  ← Trở về Trang Thông Tin Quỹ "Chắp Cánh Ước Mơ"
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Khi chọn một học sinh trong danh sách CSDL của lớp
   const handleSelectStudent = (stId) => {
     setSelectedStudentFromRoster(stId);
     const found = classStudents.find(s => s.id === stId || s.student_code === stId);
     if (found) {
+      const activeClass = isGVCN ? teacherHomeroom : (found.student_class || selectedClass);
       setFormData(prev => ({
         ...prev,
         student_name: found.student_name || '',
         student_code: found.student_code || '',
-        student_class: selectedClass,
+        student_class: activeClass,
         gender: found.gender || 'Nam',
         birthday: found.birthday || '',
         phone: found.phone || found.parent_phone || '',
@@ -374,34 +541,96 @@ export default function TeacherStudentSupportProposal() {
             <button onClick={loadProposedList} style={styles.refreshBtn}>
               <RefreshCw size={16} /> Làm mới
             </button>
-            <button onClick={() => setShowAddModal(true)} style={styles.addBtn}>
+            <button 
+              onClick={() => {
+                const targetCls = isGVCN ? teacherHomeroom : selectedClass;
+                setFormData(prev => ({
+                  ...prev,
+                  student_class: targetCls,
+                  proposed_by_role: isGVCN ? 'homeroom_teacher' : 'youth_union',
+                  proposer_name: teacher?.name || teacher?.full_name || (isAdmin ? 'Ban Giám Hiệu' : 'Cán bộ Đoàn trường'),
+                  proposer_phone: teacher?.phone || ''
+                }));
+                setShowAddModal(true);
+              }} 
+              style={styles.addBtn}
+            >
               <Plus size={18} /> Đề Xuất Học Sinh Khó Khăn
             </button>
           </div>
         </div>
 
-        {/* BỘ LỌC KHỐI LỚP & THỐNG KÊ NHANH */}
+        {/* BỘ LỌC KHỐI LỚP & THỐNG KÊ NHANH (PHÂN QUYỀN GVCN VS ĐOÀN TRƯỜNG/BGH) */}
         <div style={styles.filterCard}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <label style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>
-              Chọn Lớp chủ nhiệm / Phụ trách:
-            </label>
-            <select 
-              value={selectedClass}
-              onChange={(e) => {
-                setSelectedClass(e.target.value);
-                setFormData(prev => ({ ...prev, student_class: e.target.value }));
-              }}
-              style={styles.selectClass}
-            >
-              {ALL_CLASSES.map(cls => (
-                <option key={cls} value={cls}>Lớp {cls}</option>
-              ))}
-            </select>
-            <span style={{ fontSize: '13px', color: '#64748b' }}>
-              (Sĩ số: {classStudents.length} học sinh trong CSDL)
-            </span>
-          </div>
+          {isGVCN ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '14px', fontWeight: 700, color: '#166534', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🏫</span> Lớp Chủ Nhiệm Phụ Trách:
+              </label>
+              <div style={{
+                padding: '6px 14px',
+                backgroundColor: '#dcfce7',
+                border: '1.5px solid #86efac',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: '900',
+                color: '#15803d',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <span>Lớp {teacherHomeroom}</span>
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  backgroundColor: '#15803d',
+                  color: '#ffffff',
+                  padding: '2px 7px',
+                  borderRadius: '4px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  🔒 Cố định theo GVCN
+                </span>
+              </div>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
+                (Sĩ số: {classStudents.length} học sinh trong CSDL - Khóa bảo mật theo đúng lớp phụ trách)
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+              <label style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>🏛️</span> Chọn Lớp Rà Soát (Toàn Trường):
+              </label>
+              <select 
+                value={selectedClass}
+                onChange={(e) => {
+                  setSelectedClass(e.target.value);
+                  setFormData(prev => ({ ...prev, student_class: e.target.value }));
+                }}
+                style={styles.selectClass}
+              >
+                {ALL_CLASSES.map(cls => (
+                  <option key={cls} value={cls}>Lớp {cls}</option>
+                ))}
+              </select>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: '700',
+                backgroundColor: '#e0e7ff',
+                color: '#3730a3',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: '1px solid #c7d2fe'
+              }}>
+                🛡️ Thẩm quyền Đoàn Thanh Niên / BGH
+              </span>
+              <span style={{ fontSize: '13px', color: '#64748b' }}>
+                (Sĩ số: {classStudents.length} học sinh trong CSDL)
+              </span>
+            </div>
+          )}
 
           <div style={styles.statSummary}>
             <div style={styles.statBadge}>
@@ -540,7 +769,7 @@ export default function TeacherStudentSupportProposal() {
               <div style={styles.modalHeader}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>
-                    Phiếu Đề Xuất Học Sinh Hoàn Cảnh Khó Khăn (Lớp {selectedClass})
+                    Phiếu Đề Xuất Học Sinh Hoàn Cảnh Khó Khăn (Lớp {isGVCN ? teacherHomeroom : selectedClass})
                   </h3>
                   <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#64748b' }}>
                     Chọn học sinh từ CSDL có sẵn và cập nhật thông tin gia cảnh để trình Lãnh đạo thẩm định.
@@ -552,7 +781,7 @@ export default function TeacherStudentSupportProposal() {
               <form onSubmit={handleProposalSubmit} style={{ padding: '24px' }}>
                 {/* 1. CHỌN HỌC SINH TỪ CSDL */}
                 <div style={styles.formSection}>
-                  <h4 style={styles.sectionHeading}>1. Chọn học sinh từ CSDL lớp {selectedClass}</h4>
+                  <h4 style={styles.sectionHeading}>1. Chọn học sinh từ CSDL lớp {isGVCN ? teacherHomeroom : selectedClass}</h4>
                   <div>
                     <label style={styles.label}>Chọn học sinh trong danh sách lớp (*)</label>
                     <select 

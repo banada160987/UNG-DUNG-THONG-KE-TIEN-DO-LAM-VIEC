@@ -645,11 +645,14 @@ export default function PublicLayout() {
 
                     {/* CHỨC NĂNG PHÂN QUYỀN: GVCN & ĐOÀN ĐỀ XUẤT */}
                     <Link 
-                      to="/giao-vien/de-xuat-hoc-sinh-kho-khan" 
+                      to={(loggedTeacher || isAdmin) 
+                        ? "/giao-vien/de-xuat-hoc-sinh-kho-khan" 
+                        : "/dang-nhap-giao-vien?redirect=/giao-vien/de-xuat-hoc-sinh-kho-khan"
+                      } 
                       className="fund-mega-item" 
                       style={{
                         backgroundColor: isActive('/giao-vien/de-xuat-hoc-sinh-kho-khan') ? '#fff7ed' : '#ffffff',
-                        border: (loggedTeacher || isAdmin) ? '1px solid #fed7aa' : '1px dashed #cbd5e1',
+                        border: (loggedTeacher || isAdmin) ? '1px solid #fed7aa' : '1px dashed #fca5a5',
                         marginBottom: '6px'
                       }}
                       onClick={() => { setActiveDropdown(null); setMobileMenuOpen(false); }}
@@ -662,18 +665,20 @@ export default function PublicLayout() {
                             fontSize: '9px', 
                             fontWeight: '800', 
                             backgroundColor: (loggedTeacher || isAdmin) ? '#dcfce7' : '#fee2e2', 
-                            color: (loggedTeacher || isAdmin) ? '#166534' : '#991b1b', 
-                            padding: '1px 5px', 
+                            color: (loggedTeacher || isAdmin) ? '#166534' : '#b91c1c', 
+                            padding: '1px 6px', 
                             borderRadius: '4px',
-                            border: `1px solid ${(loggedTeacher || isAdmin) ? '#bbf7d0' : '#fecaca'}`
+                            border: `1px solid ${(loggedTeacher || isAdmin) ? '#bbf7d0' : '#fca5a5'}`
                           }}>
-                            {(loggedTeacher || isAdmin) ? '✓ ĐÃ PHÂN QUYỀN' : '🔒 NỘI BỘ GV'}
+                            {(loggedTeacher || isAdmin) 
+                              ? ((loggedTeacher?.homeroom_class || loggedTeacher?.homeroomClass) ? `✓ GVCN ${loggedTeacher?.homeroom_class || loggedTeacher?.homeroomClass}` : (isAdmin ? '✓ BGH / ADMIN' : '✓ ĐOÀN TRƯỜNG')) 
+                              : '🔒 CẦN ĐĂNG NHẬP (GV/ĐOÀN)'}
                           </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                        <div style={{ fontSize: '11px', color: (loggedTeacher || isAdmin) ? '#64748b' : '#b91c1c' }}>
                           {(loggedTeacher || isAdmin) 
                             ? 'Chọn học sinh từ CSDL & cập nhật gia cảnh'
-                            : 'Yêu cầu tài khoản Giáo viên / Quản trị viên'}
+                            : 'Yêu cầu GVCN / Đoàn trường đăng nhập để truy xuất CSDL'}
                         </div>
                       </div>
                     </Link>
